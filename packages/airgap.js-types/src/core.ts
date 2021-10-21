@@ -200,39 +200,6 @@ export type Removable = {
   remove(): void;
 };
 
-/** Airgap request source types */
-export type AirgapRequestSource =
-  | 'airgap.js' // emitted by airgap.isAllowed()
-  | 'fetch'
-  | 'xhr'
-  | 'websocket'
-  | 'webtransport'
-  | 'worker'
-  | 'eventsource'
-  | 'beacon'
-  | 'CSPV'
-  | AirgapDOMRequestSource;
-
-/** Airgap DOM-initiated request source types */
-export type AirgapDOMRequestSource =
-  | 'DOM:script'
-  | 'DOM:style'
-  | 'DOM:image'
-  | 'DOM:media'
-  | 'DOM:video'
-  | 'DOM:audio'
-  | 'DOM:track'
-  | 'DOM:link'
-  | 'DOM:form'
-  | 'DOM:form-action'
-  | 'DOM:view' // iframe {srcdoc, src}, object, embed
-  | 'DOM:navigation' // currently unregulated outside of form submission
-  | 'DOM:ping'
-  | 'DOM:unknown';
-
-/** Airgap sync types */
-export type AirgapSyncType = 'consent' | 'events';
-
 /** Any value which implements `toString()` */
 export type Stringifiable =
   | string
