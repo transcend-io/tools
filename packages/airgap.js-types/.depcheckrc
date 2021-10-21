@@ -1,0 +1,1 @@
+ignores: ["@transcend-io/airgap.js-types", "tslib"]
