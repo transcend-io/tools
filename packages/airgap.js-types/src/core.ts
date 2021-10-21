@@ -5,7 +5,7 @@ import * as t from 'io-ts';
 import { valuesOf } from './type-utils';
 
 // local
-import { ConfigurablePurpose, SpecialTrackingPurpose } from './enums';
+import { ConfigurablePurpose, PrivacyRegimeEnum, SpecialTrackingPurpose } from './enums';
 
 /* eslint-disable max-lines */
 
@@ -110,20 +110,7 @@ export const BooleanString = t.keyof({
 export type BooleanString = t.TypeOf<typeof BooleanString>;
 
 /** Potentially applicable data privacy legal regimes */
-export const PrivacyRegime = t.union([
-  /** California Privacy Rights Act (and CCPA: California Consumer Privacy Act) */
-  t.literal('CPRA'),
-  /** EU General Data Protection Regulation */
-  t.literal('GDPR'),
-  /** Brazil Lei Geral de Proteção de Dados (General Personal Data Protection Law) */
-  t.literal('LGPD'),
-  /** Virginia Consumer Data Protection Act */
-  t.literal('CDPA'),
-  /** Colorado Privacy Act */
-  t.literal('CPA'),
-  /** Unable to determine any applicable regimes */
-  t.literal('Unknown'),
-]);
+export const PrivacyRegime = valuesOf(PrivacyRegimeEnum);
 
 /** type overload */
 export type PrivacyRegime = t.TypeOf<typeof PrivacyRegime>;
