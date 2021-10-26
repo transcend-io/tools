@@ -2,10 +2,14 @@
 import * as t from 'io-ts';
 
 // main
-import { valuesOf } from './type-utils';
+import { valuesOf } from '@transcend-io/type-utils';
 
 // local
-import { ConfigurablePurpose, PrivacyRegimeEnum, SpecialTrackingPurpose } from './enums';
+import {
+  ConfigurablePurpose,
+  PrivacyRegimeEnum,
+  SpecialTrackingPurpose,
+} from './enums';
 
 /* eslint-disable max-lines */
 
@@ -65,10 +69,10 @@ export type LogEntry = {
 /**
  * Log emitter function
  */
-export type LogEmitter = ((...entries: any[]) => void) & {
+export type LogEmitter = {
   /** Styled log emitter function */
-  styled(styles?: null | string | string[], ...entries: any[]): void;
-};
+  styled(styles?: null | string | string[], ...entries: any[]): void; // eslint-disable-line @typescript-eslint/no-explicit-any,max-len
+} & ((...entries: any[]) => void); // eslint-disable-line @typescript-eslint/no-explicit-any
 
 /** Transcend Logger API */
 export type Logger = {
@@ -76,7 +80,7 @@ export type Logger = {
    * Set log tag during callback execution or from
    * this point on if no callback is provided.
    */
-  tag(logTag: string, callback?: () => any): void;
+  tag(logTag: string, callback?: () => any): void; // eslint-disable-line @typescript-eslint/no-explicit-any
 } & {
   /** Log emitter (e.g. `logger.log()`) */
   [method in LogLevel]: LogEmitter;

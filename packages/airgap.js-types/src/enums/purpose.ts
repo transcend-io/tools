@@ -1,5 +1,5 @@
 // main
-import { makeEnum } from '../type-utils';
+import { makeEnum } from '@transcend-io/type-utils';
 
 /**
  * The options for the type of purpose that airgap classifies requests into

@@ -2,7 +2,7 @@
 import * as t from 'io-ts';
 
 // main
-import { valuesOf } from './type-utils';
+import { valuesOf } from '@transcend-io/type-utils';
 
 // local
 import {

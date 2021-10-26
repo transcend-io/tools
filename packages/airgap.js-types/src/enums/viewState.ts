@@ -1,5 +1,5 @@
 // main
-import { makeEnum } from '../type-utils';
+import { makeEnum } from '@transcend-io/type-utils';
 
 /**
  * Consent Manager view states that can be used at launch

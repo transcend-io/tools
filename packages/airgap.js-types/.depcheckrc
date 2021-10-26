@@ -1,1 +1,1 @@
-ignores: ["@transcend-io/airgap.js-types", "tslib"]
+ignores: ["@yarnpkg/sdks", "depcheck", "prettier", "@yarnpkg/pnpify", "tslib"]
