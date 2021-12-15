@@ -15,6 +15,8 @@ import {
 export type PreInitTranscendAPI = {
   /** Ready event subscriber */
   ready(callback: (transcend: TranscendAPI) => void): void;
+  /** Ready event dispatch queue */
+  readyQueue: ((transcend: TranscendAPI) => void)[];
 };
 
 /**
