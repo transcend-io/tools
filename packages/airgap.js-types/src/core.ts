@@ -123,6 +123,8 @@ export type PrivacyRegime = t.TypeOf<typeof PrivacyRegime>;
 export type AirgapAPI = Readonly<{
   /** Airgap ready event subscriber */
   ready(callback: (airgap: AirgapAPI) => void): void;
+  /** Queue of callbacks to dispatch once airgap is ready */
+  readyQueue?: ((airgap: AirgapAPI) => void)[];
   /** Enqueue cross-domain data sync across all airgap bundle domains */
   sync(): Promise<void>;
   /** Resolve airgap request overrides for a URL */
