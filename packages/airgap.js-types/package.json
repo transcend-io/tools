@@ -2,7 +2,7 @@
   "author": "Transcend Inc.",
   "name": "@transcend-io/airgap.js-types",
   "description": "TypeScript types for airgap.js interoperability with custom consent UIs",
-  "version": "6.8.0",
+  "version": "6.8.1",
   "homepage": "https://github.com/transcend-io/airgap.js-types",
   "repository": {
     "type": "git",
@@ -21,7 +21,7 @@
     "clean": "yarn pnpify tsc --build --clean",
     "lint": "yarn pnpify eslint src --ext .ts",
     "prepublish": "yarn build",
-    "test": "echo 'no tests' || yarn pnpify mocha './src/**/*.test.ts'"
+    "test": "echo 'no tests'"
   },
   "dependencies": {
     "@transcend-io/type-utils": "^1.0.4",
@@ -30,7 +30,6 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@types/mocha": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^5.1.0",
     "@typescript-eslint/parser": "^5.1.0",
     "@yarnpkg/pnpify": "^3.1.0-rc.2",
@@ -42,10 +41,9 @@
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-import": "2.25.2",
     "eslint-plugin-jsdoc": "^36.1.1",
-    "mocha": "^8.2.1",
     "prettier": "^2.4.1",
     "ts-node": "^10.4.0",
     "typescript": "^4.4.4"
   },
-  "packageManager": "yarn@sources"
+  "packageManager": "yarn@3.1.1"
 }
