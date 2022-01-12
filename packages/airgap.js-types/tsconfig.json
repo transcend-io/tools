@@ -4,13 +4,14 @@
     "incremental": true,
     "target": "es2019",
     "module": "commonjs",
-    "lib": ["esnext", "dom"],
+    "lib": ["esnext", "es2020", "es2019", "dom"],
     "allowJs": false,
     "checkJs": false, // speeds up webpack and tsc
     "declaration": true,
     "composite": true,
     "declarationMap": true,
     "sourceMap": true,
+    "preserveConstEnums": true,
 
     /* Strict Type-Checking Options */
     "strict": true,
