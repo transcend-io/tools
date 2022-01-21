@@ -321,6 +321,11 @@ export type TrackingConsent = {
 export type TrackingConsentDetails = {
   /** Tracking consent config */
   purposes: TrackingConsent;
+  /**
+   * Was tracking consent confirmed by the user?
+   * If this is false, the consent was resolved from defaults & is not yet confirmed
+   */
+  confirmed: boolean;
   /** Consent last-modified timestamp (ISO 8601) */
   timestamp: string;
 };
