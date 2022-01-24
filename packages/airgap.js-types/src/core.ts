@@ -128,7 +128,7 @@ export type AirgapAPI = Readonly<{
   /** Enqueue cross-domain data sync across all airgap bundle domains */
   sync(): Promise<void>;
   /** Resolve airgap request overrides for a URL */
-  resolve(url: Stringifiable): string;
+  resolve(url: Stringifiable): Stringifiable;
   /** Get tracking consent */
   getConsent(): TrackingConsentDetails;
   /** Set tracking consent */
