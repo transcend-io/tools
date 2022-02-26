@@ -2,7 +2,7 @@
   "author": "Transcend Inc.",
   "name": "@transcend-io/airgap.js-types",
   "description": "TypeScript types for airgap.js interoperability with custom consent UIs",
-  "version": "6.8.16",
+  "version": "6.8.17",
   "homepage": "https://github.com/transcend-io/airgap.js-types",
   "repository": {
     "type": "git",
@@ -24,26 +24,26 @@
     "test": "echo 'no tests'"
   },
   "dependencies": {
-    "@transcend-io/type-utils": "^1.0.4",
-    "fp-ts": "^2.11.4",
+    "@transcend-io/type-utils": "^1.0.5",
+    "fp-ts": "^2.11.8",
     "io-ts": "^2.2.16",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.1"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^5.1.0",
-    "@typescript-eslint/parser": "^5.1.0",
-    "@yarnpkg/pnpify": "^3.1.0-rc.2",
-    "@yarnpkg/sdks": "^2.5.0-rc.2",
-    "depcheck": "^1.4.2",
-    "eslint": "^7.30.0",
-    "eslint-config-airbnb-base": "^14.2.1",
+    "@typescript-eslint/eslint-plugin": "^5.12.1",
+    "@typescript-eslint/parser": "^5.12.1",
+    "@yarnpkg/pnpify": "^3.1.1",
+    "@yarnpkg/sdks": "^2.6.0",
+    "depcheck": "^1.4.3",
+    "eslint": "^8.10.0",
+    "eslint-config-airbnb-base": "^15.0.0",
     "eslint-import-resolver-typescript": "^2.5.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-import": "2.25.2",
-    "eslint-plugin-jsdoc": "^36.1.1",
-    "prettier": "^2.4.1",
-    "ts-node": "^10.4.0",
-    "typescript": "^4.4.4"
+    "eslint-plugin-import": "2.25.4",
+    "eslint-plugin-jsdoc": "^37.9.4",
+    "prettier": "^2.5.1",
+    "ts-node": "^10.5.0",
+    "typescript": "^4.5.5"
   },
-  "packageManager": "yarn@3.1.1"
+  "packageManager": "yarn@3.2.0"
 }
