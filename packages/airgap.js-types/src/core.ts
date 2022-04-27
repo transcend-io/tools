@@ -164,9 +164,9 @@ export type AirgapAPI = Readonly<{
     autoReload?: boolean,
   ): boolean;
   /** Get a list of legal regimes that are potentially applicable to the user */
-  getRegimes(): Promise<Set<PrivacyRegime>>;
+  getRegimes(): Set<PrivacyRegime>;
   /** Get a list of detected active user agent privacy signals */
-  getPrivacySignals(): Promise<Set<UserPrivacySignal>>;
+  getPrivacySignals(): Set<UserPrivacySignal>;
   /** airgap.js version number */
   version: string;
 }> &
