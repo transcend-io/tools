@@ -65,6 +65,10 @@ export const ConsentManagerConfig = t.type({
   breakpoints: Breakpoints,
   /** The privacy policy URL to redirect to */
   privacyPolicy: t.string,
+  /** Custom CSS stylesheet */
+  css: t.string,
+  /** Path to localizations directory */
+  messages: t.string,
   /** What state the consent manager should launch in */
   initialViewStateByPrivacyRegime: t.record(
     valuesOf(PrivacyRegimeEnum),
