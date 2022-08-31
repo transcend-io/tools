@@ -12,6 +12,7 @@ import {
   PrivacyRegimeEnum,
   ViewState,
 } from './enums';
+import { AirgapAuth } from './core';
 
 /** Transcend Smart Quarantine API (window.transcend) */
 export type PreInitTranscendAPI = {
@@ -41,6 +42,11 @@ export type ConsentManagerAPI = {
   toggleConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Hide consent manager */
   hideConsentManager(): Promise<void>;
+  /** Opt out of the sale of personal info & show a disclosure */
+  doNotSell(
+    auth: AirgapAuth,
+    options?: ShowConsentManagerOptions,
+  ): Promise<void>;
 };
 
 /** Transcend Smart Quarantine API (window.transcend) */
