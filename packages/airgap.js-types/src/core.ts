@@ -2,7 +2,7 @@
 import * as t from 'io-ts';
 
 // main
-import { valuesOf } from '@transcend-io/type-utils';
+import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 
 // local
 import {
@@ -360,9 +360,8 @@ export const ConsentChange = t.record(TrackingPurpose, t.boolean);
 /** type overload */
 export type ConsentChange = t.TypeOf<typeof ConsentChange>;
 
-export const PrivacyRegimeToViewState = t.record(
-  PrivacyRegime,
-  valuesOf(ViewState),
+export const PrivacyRegimeToViewState = t.partial(
+  applyEnum(PrivacyRegimeEnum, () => valuesOf(ViewState)),
 );
 
 /** type overload */

@@ -2,7 +2,7 @@
 import * as t from 'io-ts';
 
 // main
-import { valuesOf } from '@transcend-io/type-utils';
+import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 
 // local
 import {
@@ -49,9 +49,8 @@ export type TranscendAPI = PreInitTranscendAPI & ConsentManagerAPI;
 /**
  * Custom styles
  */
-export const ConsentManagerThemeStyles = t.record(
-  valuesOf(CustomConsentManagerStyle),
-  t.string,
+export const ConsentManagerThemeStyles = t.partial(
+  applyEnum(CustomConsentManagerStyle, () => t.string),
 );
 /** Type override */
 export type ConsentManagerThemeStyles = t.TypeOf<
