@@ -6,6 +6,7 @@ import { valuesOf } from '@transcend-io/type-utils';
 
 // local
 import {
+  CustomConsentManagerStyle,
   DismissedViewState,
   InitialViewState,
   PrivacyRegimeEnum,
@@ -46,32 +47,58 @@ export type ConsentManagerAPI = {
 export type TranscendAPI = PreInitTranscendAPI & ConsentManagerAPI;
 
 /**
+ * Custom styles
+ */
+export const ConsentManagerThemeStyles = t.record(
+  valuesOf(CustomConsentManagerStyle),
+  t.string,
+);
+/** Type override */
+export type ConsentManagerThemeStyles = t.TypeOf<
+  typeof ConsentManagerThemeStyles
+>;
+
+/**
  * Customer theming
  */
-const Theme = t.type({
-  /** Primary color */
-  primaryColor: t.string,
-  /** Font color */
-  fontColor: t.string,
-});
+export const ConsentManagerTheme = t.intersection([
+  t.type({
+    /** Primary color */
+    primaryColor: t.string,
+    /** Font color */
+    fontColor: t.string,
+  }),
+  t.partial({
+    /** Custom CSS */
+    styles: ConsentManagerThemeStyles,
+  }),
+]);
+
+/** Type override */
+export type ConsentManagerTheme = t.TypeOf<typeof ConsentManagerTheme>;
 
 /**
  * Mobile-first responsive breakpoints
  * No media query for mobile, which is the default
  */
-const Breakpoints = t.type({
+export const ConsentManagerBreakpoints = t.type({
   /** In px, at or above this width is tablet */
   tablet: t.string,
   /** In px, at or above this width is desktop */
   desktop: t.string,
 });
 
+/** Type override */
+export type ConsentManagerBreakpoints = t.TypeOf<
+  typeof ConsentManagerBreakpoints
+>;
+
 /** Consent manager UI configuration */
 export const ConsentManagerConfig = t.type({
   /** Customer theming */
-  theme: Theme,
+  theme: ConsentManagerTheme,
   /** A set of responsive breakpoints */
-  breakpoints: Breakpoints,
+  breakpoints: ConsentManagerBreakpoints,
   /** The privacy policy URL to redirect to */
   privacyPolicy: t.string,
   /** Custom CSS stylesheet */
