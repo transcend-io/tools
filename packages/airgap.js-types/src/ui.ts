@@ -9,6 +9,7 @@ import {
   DismissedViewState,
   InitialViewState,
   PrivacyRegimeEnum,
+  ViewState,
 } from './enums';
 
 /** Transcend Smart Quarantine API (window.transcend) */
@@ -19,18 +20,26 @@ export type PreInitTranscendAPI = {
   readyQueue: ((transcend: TranscendAPI) => void)[];
 };
 
+/** showConsentManager() */
+export interface ShowConsentManagerOptions {
+  /** View state */
+  viewState?: ViewState;
+}
+
 /**
  * Transcend Consent Manager external methods
  */
 export type ConsentManagerAPI = {
+  /** Possible ViewState values */
+  viewStates: Set<ViewState>;
   /** Show consent manager unless recently dismissed */
-  autoShowConsentManager(): Promise<void>;
+  autoShowConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Show consent manager */
-  showConsentManager(): Promise<void>;
+  showConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
+  /** Toggle consent manager */
+  toggleConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Hide consent manager */
   hideConsentManager(): Promise<void>;
-  /** Toggle consent manager */
-  toggleConsentManager(): Promise<void>;
 };
 
 /** Transcend Smart Quarantine API (window.transcend) */
