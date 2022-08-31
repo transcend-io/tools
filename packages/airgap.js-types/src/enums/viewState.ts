@@ -9,8 +9,12 @@ export const InitialViewState = makeEnum({
   QuickOptions: 'QuickOptions',
   /* accept all or more options */
   AcceptAll: 'AcceptAll',
+  /* accept all or reject all */
+  AcceptOrRejectAll: 'AcceptOrRejectAll',
   /* data collection notice with do not sell */
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
+  /* notice that do not sell has been acknowledged properly */
+  DoNotSellAcknowledgement: 'DoNotSellAcknowledgement',
   /* hidden */
   Hidden: 'Hidden',
 });
