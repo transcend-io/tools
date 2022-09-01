@@ -120,6 +120,18 @@ export const PrivacyRegime = valuesOf(PrivacyRegimeEnum);
 /** type overload */
 export type PrivacyRegime = t.TypeOf<typeof PrivacyRegime>;
 
+export interface GetPurposeTypesOptions {
+  /** Regimes to include */
+  regimes?: PrivacyRegime[];
+  /** Privacy signals to include */
+  signals?: UserPrivacySignal[];
+}
+
+/**
+ * Regime to purpose scope map
+ */
+export type RegimeToPurposeScopes = [PrivacyRegime[], TrackingPurpose[]][];
+
 /** airgap.js API */
 export type AirgapAPI = Readonly<{
   /** Airgap ready event subscriber */
@@ -153,8 +165,10 @@ export type AirgapAPI = Readonly<{
   isOptedIn(): boolean;
   /** Returns true if the user is fully-opted out to all first-order tracking purposes */
   isOptedOut(): boolean;
+  /** Resolve regime tracking purposes. If no regimes are provided, then the user's detected regimes are used */
+  getRegimePurposes(regimes?: PrivacyRegime[]): TrackingPurpose[];
   /** Get initialized tracking purposes config */
-  getPurposeTypes(): TrackingPurposesTypes;
+  getPurposeTypes(options?: GetPurposeTypesOptions): TrackingPurposesTypes;
   /** Clear airgap queue & caches. Returns `true` on success. */
   clear(auth: AirgapAuth): boolean;
   /** Reset airgap queue and consent. Returns `true` on success. */
