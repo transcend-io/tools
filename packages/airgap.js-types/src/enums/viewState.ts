@@ -14,7 +14,7 @@ export const InitialViewState = makeEnum({
   /* data collection notice with do not sell */
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
   /* notice that do not sell has been acknowledged properly */
-  DoNotSellAcknowledgement: 'DoNotSellAcknowledgement',
+  DoNotSellDisclosure: 'DoNotSellDisclosure',
   /* hidden */
   Hidden: 'Hidden',
 });
