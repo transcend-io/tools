@@ -2,14 +2,13 @@
 import * as t from 'io-ts';
 
 // main
-import { applyEnum, valuesOf } from '@transcend-io/type-utils';
+import { valuesOf } from '@transcend-io/type-utils';
 
 // local
 import {
   ConfigurablePurpose,
   PrivacyRegimeEnum,
   SpecialTrackingPurpose,
-  ViewState,
 } from './enums';
 
 /* eslint-disable max-lines */
@@ -373,14 +372,5 @@ export const ConsentChange = t.record(TrackingPurpose, t.boolean);
 
 /** type overload */
 export type ConsentChange = t.TypeOf<typeof ConsentChange>;
-
-export const PrivacyRegimeToViewState = t.partial(
-  applyEnum(PrivacyRegimeEnum, () => valuesOf(ViewState)),
-);
-
-/** type overload */
-export type PrivacyRegimeToViewState = t.TypeOf<
-  typeof PrivacyRegimeToViewState
->;
 
 /* eslint-enable max-lines */

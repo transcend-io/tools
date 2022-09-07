@@ -7,10 +7,10 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // local
 import {
   CustomConsentManagerStyle,
-  DismissedViewState,
+  ViewState,
   InitialViewState,
   PrivacyRegimeEnum,
-  ViewState,
+  DismissedViewState,
 } from './enums';
 import { AirgapAuth } from './core';
 
@@ -98,6 +98,25 @@ export type ConsentManagerBreakpoints = t.TypeOf<
   typeof ConsentManagerBreakpoints
 >;
 
+export const PrivacyRegimeToInitialViewStateInput = t.partial(
+  applyEnum(PrivacyRegimeEnum, () => valuesOf(InitialViewState)),
+);
+
+/** type overload */
+export type PrivacyRegimeToInitialViewStateInput = t.TypeOf<
+  typeof PrivacyRegimeToInitialViewStateInput
+>;
+
+export const PrivacyRegimeToInitialViewState = t.record(
+  valuesOf(PrivacyRegimeEnum),
+  valuesOf(InitialViewState),
+);
+
+/** type overload */
+export type PrivacyRegimeToInitialViewState = t.TypeOf<
+  typeof PrivacyRegimeToInitialViewState
+>;
+
 /** Consent manager UI configuration */
 export const ConsentManagerConfig = t.type({
   /** Customer theming */
@@ -111,10 +130,7 @@ export const ConsentManagerConfig = t.type({
   /** Path to localizations directory */
   messages: t.string,
   /** What state the consent manager should launch in */
-  initialViewStateByPrivacyRegime: t.record(
-    valuesOf(PrivacyRegimeEnum),
-    valuesOf(InitialViewState),
-  ),
+  initialViewStateByPrivacyRegime: PrivacyRegimeToInitialViewState,
   /** What state the consent manager should go to when dismissed */
   dismissedViewState: valuesOf(DismissedViewState),
 });
@@ -138,20 +154,19 @@ export type TranscendView = Window & {
   transcend: TranscendAPI;
 };
 
-export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: {
-  [k in PrivacyRegimeEnum]: ViewState;
-} = {
-  // California
-  // TODO: https://transcend.height.app/T-17251 - migrate to DoNotSellDisclosure
-  CPRA: ViewState.NoticeAndDoNotSell,
-  // EU
-  GDPR: ViewState.QuickOptions,
-  // Brazil
-  LGPD: ViewState.QuickOptions,
-  // Virginia (unreachable as we don't detect this regime yet)
-  CDPA: ViewState.NoticeAndDoNotSell,
-  // Colorado (unreachable as we don't detect this regime yet)
-  CPA: ViewState.NoticeAndDoNotSell,
-  // Other
-  Unknown: ViewState.Hidden,
-};
+export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: PrivacyRegimeToInitialViewState =
+  {
+    // California
+    // TODO: https://transcend.height.app/T-17251 - migrate to DoNotSellDisclosure
+    CPRA: InitialViewState.NoticeAndDoNotSell,
+    // EU
+    GDPR: InitialViewState.QuickOptions,
+    // Brazil
+    LGPD: InitialViewState.QuickOptions,
+    // Virginia (unreachable as we don't detect this regime yet)
+    CDPA: InitialViewState.NoticeAndDoNotSell,
+    // Colorado (unreachable as we don't detect this regime yet)
+    CPA: InitialViewState.NoticeAndDoNotSell,
+    // Other
+    Unknown: InitialViewState.Hidden,
+  };
