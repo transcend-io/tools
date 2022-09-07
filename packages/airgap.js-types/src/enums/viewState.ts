@@ -15,6 +15,8 @@ export const InitialViewState = makeEnum({
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
   /* notice that do not sell has been acknowledged properly */
   DoNotSellDisclosure: 'DoNotSellDisclosure',
+  /* expanded and showing full checkbox options */
+  CompleteOptions: 'CompleteOptions',
   /* hidden */
   Hidden: 'Hidden',
 });
@@ -29,8 +31,6 @@ export type InitialViewState =
  * Consent Manager view states that can be navigated to after initial view state
  */
 export const DeepViewState = makeEnum({
-  /* expanded and showing full checkbox options */
-  CompleteOptions: 'CompleteOptions',
   /* language options */
   LanguageOptions: 'LanguageOptions',
 });
@@ -59,13 +59,13 @@ export type DismissedViewState =
 /**
  * All possible view states of the Consent Manager
  */
-export const ViewState = {
+export const ViewState = makeEnum({
   ...InitialViewState,
   ...DeepViewState,
   ...DismissedViewState,
-};
+});
 
 /**
  * Type override
  */
-export type ViewState = InitialViewState | DeepViewState | DismissedViewState;
+export type ViewState = typeof ViewState[keyof typeof ViewState];
