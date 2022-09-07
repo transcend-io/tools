@@ -137,3 +137,21 @@ export type TranscendView = Window & {
   /** Transcend Smart Quarantine API */
   transcend: TranscendAPI;
 };
+
+export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: {
+  [k in PrivacyRegimeEnum]: ViewState;
+} = {
+  // California
+  // TODO: https://transcend.height.app/T-17251 - migrate to DoNotSellDisclosure
+  CPRA: ViewState.NoticeAndDoNotSell,
+  // EU
+  GDPR: ViewState.QuickOptions,
+  // Brazil
+  LGPD: ViewState.QuickOptions,
+  // Virginia (unreachable as we don't detect this regime yet)
+  CDPA: ViewState.NoticeAndDoNotSell,
+  // Colorado (unreachable as we don't detect this regime yet)
+  CPA: ViewState.NoticeAndDoNotSell,
+  // Other
+  Unknown: ViewState.Hidden,
+};
