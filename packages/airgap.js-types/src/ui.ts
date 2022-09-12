@@ -3,6 +3,7 @@ import * as t from 'io-ts';
 
 // main
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
+import type { ConsentManagerLanguageKey } from '@transcend-io/internationalization';
 
 // local
 import {
@@ -26,6 +27,8 @@ export type PreInitTranscendAPI = {
 export interface ShowConsentManagerOptions {
   /** View state */
   viewState?: ViewState;
+  /** The selected language (otherwise falls back to default) */
+  locale?: ConsentManagerLanguageKey;
 }
 
 /**
@@ -38,6 +41,8 @@ export type ConsentManagerAPI = {
   autoShowConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Show consent manager */
   showConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
+  /** Set the current active language */
+  setActiveLocale(locale: ConsentManagerLanguageKey): Promise<void>;
   /** Toggle consent manager */
   toggleConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Hide consent manager */

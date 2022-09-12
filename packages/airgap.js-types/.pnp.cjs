@@ -33,6 +33,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
         [null, {\
           "packageLocation": "./",\
           "packageDependencies": [\
+            ["@transcend-io/internationalization", "npm:1.4.0"],\
             ["@transcend-io/type-utils", "npm:1.0.5"],\
             ["@typescript-eslint/eslint-plugin", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
             ["@typescript-eslint/parser", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
@@ -392,6 +393,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./",\
           "packageDependencies": [\
             ["@transcend-io/airgap.js-types", "workspace:."],\
+            ["@transcend-io/internationalization", "npm:1.4.0"],\
             ["@transcend-io/type-utils", "npm:1.0.5"],\
             ["@typescript-eslint/eslint-plugin", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
             ["@typescript-eslint/parser", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
@@ -412,6 +414,16 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["typescript", "patch:typescript@npm%3A4.5.5#~builtin<compat/typescript>::version=4.5.5&hash=bda367"]\
           ],\
           "linkType": "SOFT"\
+        }]\
+      ]],\
+      ["@transcend-io/internationalization", [\
+        ["npm:1.4.0", {\
+          "packageLocation": "./.yarn/cache/@transcend-io-internationalization-npm-1.4.0-e53a856096-7ae844c32a.zip/node_modules/@transcend-io/internationalization/",\
+          "packageDependencies": [\
+            ["@transcend-io/internationalization", "npm:1.4.0"],\
+            ["@transcend-io/type-utils", "npm:1.0.5"]\
+          ],\
+          "linkType": "HARD"\
         }]\
       ]],\
       ["@transcend-io/type-utils", [\
