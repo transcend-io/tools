@@ -7,7 +7,6 @@ import type { ConsentManagerLanguageKey } from '@transcend-io/internationalizati
 
 // local
 import {
-  CustomConsentManagerStyle,
   ViewState,
   InitialViewState,
   PrivacyRegimeEnum,
@@ -58,31 +57,14 @@ export type ConsentManagerAPI = {
 export type TranscendAPI = PreInitTranscendAPI & ConsentManagerAPI;
 
 /**
- * Custom styles
- */
-export const ConsentManagerThemeStyles = t.partial(
-  applyEnum(CustomConsentManagerStyle, () => t.string),
-);
-/** Type override */
-export type ConsentManagerThemeStyles = t.TypeOf<
-  typeof ConsentManagerThemeStyles
->;
-
-/**
  * Customer theming
  */
-export const ConsentManagerTheme = t.intersection([
-  t.type({
-    /** Primary color */
-    primaryColor: t.string,
-    /** Font color */
-    fontColor: t.string,
-  }),
-  t.partial({
-    /** Custom CSS */
-    styles: ConsentManagerThemeStyles,
-  }),
-]);
+export const ConsentManagerTheme = t.type({
+  /** Primary color */
+  primaryColor: t.string,
+  /** Font color */
+  fontColor: t.string,
+});
 
 /** Type override */
 export type ConsentManagerTheme = t.TypeOf<typeof ConsentManagerTheme>;
