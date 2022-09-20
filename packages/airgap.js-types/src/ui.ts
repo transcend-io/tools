@@ -150,10 +150,13 @@ export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: PrivacyRegimeToInitialViewSta
     GDPR: InitialViewState.QuickOptions,
     // Brazil
     LGPD: InitialViewState.QuickOptions,
-    // Virginia (unreachable as we don't detect this regime yet)
+    // Virginia
     CDPA: InitialViewState.NoticeAndDoNotSell,
-    // Colorado (unreachable as we don't detect this regime yet)
+    // Colorado
     CPA: InitialViewState.NoticeAndDoNotSell,
+    // Utah
+    // TODO: https://transcend.height.app/T-17644 - change Utah default view state once UCPA is in effect
+    UCPA: InitialViewState.Hidden,
     // Other
     Unknown: InitialViewState.Hidden,
   };
