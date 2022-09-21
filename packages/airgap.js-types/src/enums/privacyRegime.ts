@@ -12,6 +12,4 @@ export enum PrivacyRegimeEnum {
   CDPA = 'CDPA',
   /** Colorado Privacy Act */
   CPA = 'CPA',
-  /** Utah Consumer Privacy Act */
-  UCPA = 'UCPA',
 }
