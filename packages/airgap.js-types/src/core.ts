@@ -131,6 +131,12 @@ export interface GetPurposeTypesOptions {
  */
 export type RegimeToPurposeScopes = [PrivacyRegime[], TrackingPurpose[]][];
 
+/** setConsent() options */
+export interface ConsentOptions {
+  /** Was consent confirmed by the user? */
+  confirmed?: boolean;
+}
+
 /** airgap.js API */
 export type AirgapAPI = Readonly<{
   /** Airgap ready event subscriber */
@@ -149,6 +155,8 @@ export type AirgapAPI = Readonly<{
     auth: AirgapAuth,
     /** The tracking consent options. */
     consent: TrackingConsent,
+    /** Consent options */
+    options?: ConsentOptions,
   ): boolean;
   /** Consents the user to all tracking purposes (requires recent UI interaction) */
   optIn(
