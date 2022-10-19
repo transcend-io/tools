@@ -5,11 +5,7 @@ import * as t from 'io-ts';
 import { valuesOf } from '@transcend-io/type-utils';
 
 // local
-import {
-  ConfigurablePurpose,
-  PrivacyRegimeEnum,
-  SpecialTrackingPurpose,
-} from './enums';
+import { ConfigurablePurpose, SpecialTrackingPurpose } from './enums';
 
 /* eslint-disable max-lines */
 
@@ -113,11 +109,8 @@ export const BooleanString = t.keyof({
 /** Type override */
 export type BooleanString = t.TypeOf<typeof BooleanString>;
 
-/** Potentially applicable data privacy legal regimes */
-export const PrivacyRegime = valuesOf(PrivacyRegimeEnum);
-
-/** type overload */
-export type PrivacyRegime = t.TypeOf<typeof PrivacyRegime>;
+/** Data privacy legal regimes */
+export type PrivacyRegime = string;
 
 export interface GetPurposeTypesOptions {
   /** Regimes to include */
