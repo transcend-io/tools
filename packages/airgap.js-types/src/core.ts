@@ -254,6 +254,17 @@ export type DefaultConsentConfigValue = t.TypeOf<
   typeof DefaultConsentConfigValue
 >;
 
+/** User-configurable user agent privacy signal */
+export const UserPrivacySignal = t.union([
+  /** Global Privacy Control */
+  t.literal('GPC'),
+  /** Do Not Track */
+  t.literal('DNT'),
+]);
+
+/** type overload */
+export type UserPrivacySignal = t.TypeOf<typeof UserPrivacySignal>;
+
 /** Tracking purpose metadata */
 export const TrackingPurposeDetails = t.intersection([
   t.type({
@@ -282,6 +293,8 @@ export const TrackingPurposeDetails = t.intersection([
   t.partial({
     /** Tracking type */
     trackingType: valuesOf(ConfigurablePurpose),
+    /** Respected opt-out privacy signals */
+    optOutSignals: t.array(UserPrivacySignal),
   }),
 ]);
 /** Type override */
@@ -356,17 +369,6 @@ export type TrackingPurpose = t.TypeOf<typeof TrackingPurpose>;
 
 /** Tracking purposes */
 export type TrackingPurposes = Set<TrackingPurpose>;
-
-/** User-configurable user agent privacy signal */
-export const UserPrivacySignal = t.union([
-  /** Global Privacy Control */
-  t.literal('GPC'),
-  /** Do Not Track */
-  t.literal('DNT'),
-]);
-
-/** type overload */
-export type UserPrivacySignal = t.TypeOf<typeof UserPrivacySignal>;
 
 /** Tracking consent change diffs */
 export const ConsentChange = t.record(TrackingPurpose, t.boolean);
