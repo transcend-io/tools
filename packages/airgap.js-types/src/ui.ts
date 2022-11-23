@@ -143,16 +143,18 @@ export type TranscendView = Window & {
 
 export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: PrivacyRegimeToInitialViewState =
   {
-    // California
-    CPRA: InitialViewState.Hidden,
     // EU
     GDPR: InitialViewState.QuickOptions,
     // Brazil
     LGPD: InitialViewState.QuickOptions,
-    // Virginia
-    CDPA: InitialViewState.NoticeAndDoNotSell,
-    // Colorado
-    CPA: InitialViewState.NoticeAndDoNotSell,
+    // US: California
+    CPRA: InitialViewState.Hidden,
+    // US: Virginia
+    CDPA: InitialViewState.Hidden,
+    // US: Colorado
+    CPA: InitialViewState.Hidden,
+    // US: Nevada
+    'Nevada SB220': InitialViewState.Hidden,
     // Other
     Unknown: InitialViewState.Hidden,
   };
