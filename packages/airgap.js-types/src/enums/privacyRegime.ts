@@ -1,4 +1,7 @@
-/** Potentially applicable data privacy legal regimes */
+/**
+ * Potentially applicable data privacy legal regimes
+ * NOTE: Please make sure that new entries are compatible with GraphQL Enums
+ */
 export enum PrivacyRegimeEnum {
   /** Unable to determine any applicable regimes */
   Unknown = 'Unknown',
@@ -13,5 +16,5 @@ export enum PrivacyRegimeEnum {
   /** Colorado Privacy Act */
   CPA = 'CPA',
   /** Nevada Senate Bill 220 */
-  'Nevada SB220' = 'Nevada SB220',
+  'NEVADA_SB220' = 'NEVADA_SB220',
 }

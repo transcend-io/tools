@@ -154,7 +154,7 @@ export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: PrivacyRegimeToInitialViewSta
     // US: Colorado
     CPA: InitialViewState.Hidden,
     // US: Nevada
-    'Nevada SB220': InitialViewState.Hidden,
+    NEVADA_SB220: InitialViewState.Hidden,
     // Other
     Unknown: InitialViewState.Hidden,
   };
