@@ -7,14 +7,20 @@ import { makeEnum } from '@transcend-io/type-utils';
 export const InitialViewState = makeEnum({
   /* expanded and showing quick select options */
   QuickOptions: 'QuickOptions',
+  /* three option UI: essential, functional/analytics, advertising */
+  QuickOptions3: 'QuickOptions3',
   /* accept all or more options */
   AcceptAll: 'AcceptAll',
   /* accept all or reject all */
   AcceptOrRejectAll: 'AcceptOrRejectAll',
   /* data collection notice with do not sell */
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
+  /* open a modal that allows for an explanation of do not sell/share, before opting out */
+  DoNotSellNotice: 'DoNotSellNotice',
   /* notice that do not sell has been acknowledged properly */
   DoNotSellDisclosure: 'DoNotSellDisclosure',
+  /* open a modal that shows a notice that the privacy policy has changed, without any prompt to change consent */
+  PrivacyPolicyNotice: 'PrivacyPolicyNotice',
   /* expanded and showing full checkbox options */
   CompleteOptions: 'CompleteOptions',
   /* hidden */
