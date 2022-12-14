@@ -16,7 +16,7 @@ export const InitialViewState = makeEnum({
   /* data collection notice with do not sell */
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
   /* open a modal that allows for an explanation of do not sell/share, before opting out */
-  DoNotSellNotice: 'DoNotSellNotice',
+  DoNotSellExplainer: 'DoNotSellExplainer',
   /* notice that do not sell has been acknowledged properly */
   DoNotSellDisclosure: 'DoNotSellDisclosure',
   /* open a modal that shows a notice that the privacy policy has changed, without any prompt to change consent */
