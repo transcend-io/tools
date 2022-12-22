@@ -112,6 +112,8 @@ export const ConsentManagerConfig = t.type({
   breakpoints: ConsentManagerBreakpoints,
   /** The privacy policy URL to redirect to */
   privacyPolicy: t.string,
+  /** The secondary policy URL to redirect to */
+  secondaryPolicy: t.string,
   /** Custom CSS stylesheet */
   css: t.string,
   /** Path to localizations directory */
