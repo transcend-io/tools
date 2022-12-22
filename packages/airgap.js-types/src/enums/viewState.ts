@@ -13,6 +13,8 @@ export const InitialViewState = makeEnum({
   AcceptAll: 'AcceptAll',
   /* accept all or reject all */
   AcceptOrRejectAll: 'AcceptOrRejectAll',
+  /* accept or reject the Analytics script tag */
+  AcceptOrRejectAnalytics: 'AcceptOrRejectAnalytics',
   /* data collection notice with do not sell */
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
   /* open a modal that allows for an explanation of do not sell/share, before opting out */
@@ -23,6 +25,8 @@ export const InitialViewState = makeEnum({
   PrivacyPolicyNotice: 'PrivacyPolicyNotice',
   /* expanded and showing full checkbox options */
   CompleteOptions: 'CompleteOptions',
+  /* complete options, but selecting a checkbox means the user is opted out */
+  CompleteOptionsInverted: 'CompleteOptionsInverted',
   /* hidden */
   Hidden: 'Hidden',
 });
