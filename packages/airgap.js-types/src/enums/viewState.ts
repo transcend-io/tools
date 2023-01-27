@@ -19,8 +19,6 @@ export const InitialViewState = makeEnum({
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
   /* open a modal that allows for an explanation of do not sell/share, before opting out */
   DoNotSellExplainer: 'DoNotSellExplainer',
-  /* notice that do not sell has been acknowledged properly */
-  DoNotSellDisclosure: 'DoNotSellDisclosure',
   /* open a modal that shows a notice that the privacy policy has changed, without any prompt to change consent */
   PrivacyPolicyNotice: 'PrivacyPolicyNotice',
   /* expanded and showing full checkbox options */
@@ -36,6 +34,20 @@ export const InitialViewState = makeEnum({
  */
 export type InitialViewState =
   typeof InitialViewState[keyof typeof InitialViewState];
+
+/**
+ * View states that are displayed in response to a user request (e.g. transcend.doNotSell() or )
+ */
+export const ResponseViewState = makeEnum({
+  /* notice that do not sell has been acknowledged properly */
+  DoNotSellDisclosure: 'DoNotSellDisclosure',
+});
+
+/**
+ * Type override
+ */
+export type ResponseViewState =
+  typeof ResponseViewState[keyof typeof ResponseViewState];
 
 /**
  * Consent Manager view states that can be navigated to after initial view state
@@ -71,6 +83,7 @@ export type DismissedViewState =
  */
 export const ViewState = makeEnum({
   ...InitialViewState,
+  ...ResponseViewState,
   ...DeepViewState,
   ...DismissedViewState,
 });
