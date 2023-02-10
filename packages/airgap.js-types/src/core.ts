@@ -358,8 +358,10 @@ export type TrackingConsentDetails = {
    * If this is false, the consent was resolved from defaults & is not yet confirmed
    */
   confirmed: boolean;
-  /** Consent last-modified timestamp (ISO 8601) */
+  /** Consent resolution/last-modified timestamp (ISO 8601) */
   timestamp: string;
+  /** Has the consent been updated (including no-change confirmation) since default resolution */
+  updated?: boolean;
   /** Whether or not the UI has been shown to the end-user (undefined in older versions of airgap.js) */
   prompted?: boolean;
 };
