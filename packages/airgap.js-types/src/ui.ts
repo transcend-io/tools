@@ -167,6 +167,8 @@ export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: PrivacyRegimeToInitialViewSta
     GDPR: InitialViewState.QuickOptions,
     // Brazil
     LGPD: InitialViewState.QuickOptions,
+    // Switzerland
+    nFADP: InitialViewState.QuickOptions,
     // US: California
     CPRA: InitialViewState.Hidden,
     // US: Virginia
