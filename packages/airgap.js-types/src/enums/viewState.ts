@@ -9,10 +9,14 @@ export const InitialViewState = makeEnum({
   QuickOptions: 'QuickOptions',
   /* three option UI: essential, functional/analytics, advertising */
   QuickOptions3: 'QuickOptions3',
-  /* accept all or more options */
+  /* accept all button call to action, with more options in the banner footer */
   AcceptAll: 'AcceptAll',
+  /* accept all or more options, both as calls to action */
+  AcceptAllOrMoreOptions: 'AcceptAllOrMoreOptions',
   /* accept all or reject all */
   AcceptOrRejectAll: 'AcceptOrRejectAll',
+  /* accept all or reject all or more options */
+  AcceptOrRejectAllOrMoreOptions: 'AcceptOrRejectAllOrMoreOptions',
   /* accept or reject the Analytics script tag */
   AcceptOrRejectAnalytics: 'AcceptOrRejectAnalytics',
   /* data collection notice with do not sell */
