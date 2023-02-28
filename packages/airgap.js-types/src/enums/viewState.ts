@@ -12,11 +12,11 @@ export const InitialViewState = makeEnum({
   /* accept all button call to action, with more options in the banner footer */
   AcceptAll: 'AcceptAll',
   /* accept all or more options, both as calls to action */
-  AcceptAllOrMoreOptions: 'AcceptAllOrMoreOptions',
+  AcceptAllOrMoreChoices: 'AcceptAllOrMoreChoices',
   /* accept all or reject all */
   AcceptOrRejectAll: 'AcceptOrRejectAll',
   /* accept all or reject all or more options */
-  AcceptOrRejectAllOrMoreOptions: 'AcceptOrRejectAllOrMoreOptions',
+  AcceptOrRejectAllOrMoreChoices: 'AcceptOrRejectAllOrMoreChoices',
   /* accept or reject the Analytics script tag */
   AcceptOrRejectAnalytics: 'AcceptOrRejectAnalytics',
   /* data collection notice with do not sell */
