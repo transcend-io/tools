@@ -304,6 +304,7 @@ __metadata:
   resolution: "@transcend-io/airgap.js-types@workspace:."
   dependencies:
     "@transcend-io/internationalization": ^1.4.1
+    "@transcend-io/privacy-types": ^4.23.1
     "@transcend-io/type-utils": ^1.0.5
     "@typescript-eslint/eslint-plugin": ^5.12.1
     "@typescript-eslint/parser": ^5.12.1
@@ -330,6 +331,15 @@ __metadata:
   dependencies:
     "@transcend-io/type-utils": ^1.0.5
   checksum: 4301c20b3d26208893c79a90440279b09586eb3028168d0596c738173be50d3c1c9c4e7f39082a1ac38eb159be47097730255f6211543f917e5a260c947ebba2
+  languageName: node
+  linkType: hard
+
+"@transcend-io/privacy-types@npm:^4.23.1":
+  version: 4.23.1
+  resolution: "@transcend-io/privacy-types@npm:4.23.1"
+  dependencies:
+    "@transcend-io/type-utils": ^1.0.5
+  checksum: 5bcb0625be58bd0f1d26a8be68e4ef2971ffb792fe2d8b8057e956857bdaa99fd47bf8d667af8d7ae426532500598bff854a3267432291d4c846130e961b75de
   languageName: node
   linkType: hard
 

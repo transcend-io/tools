@@ -34,6 +34,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./",\
           "packageDependencies": [\
             ["@transcend-io/internationalization", "npm:1.4.1"],\
+            ["@transcend-io/privacy-types", "npm:4.23.1"],\
             ["@transcend-io/type-utils", "npm:1.0.5"],\
             ["@typescript-eslint/eslint-plugin", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
             ["@typescript-eslint/parser", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
@@ -393,6 +394,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageDependencies": [\
             ["@transcend-io/airgap.js-types", "workspace:."],\
             ["@transcend-io/internationalization", "npm:1.4.1"],\
+            ["@transcend-io/privacy-types", "npm:4.23.1"],\
             ["@transcend-io/type-utils", "npm:1.0.5"],\
             ["@typescript-eslint/eslint-plugin", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
             ["@typescript-eslint/parser", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:5.12.1"],\
@@ -419,6 +421,16 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/@transcend-io-internationalization-npm-1.4.1-eb70c32e56-4301c20b3d.zip/node_modules/@transcend-io/internationalization/",\
           "packageDependencies": [\
             ["@transcend-io/internationalization", "npm:1.4.1"],\
+            ["@transcend-io/type-utils", "npm:1.0.5"]\
+          ],\
+          "linkType": "HARD"\
+        }]\
+      ]],\
+      ["@transcend-io/privacy-types", [\
+        ["npm:4.23.1", {\
+          "packageLocation": "./.yarn/cache/@transcend-io-privacy-types-npm-4.23.1-aea04cc56e-5bcb0625be.zip/node_modules/@transcend-io/privacy-types/",\
+          "packageDependencies": [\
+            ["@transcend-io/privacy-types", "npm:4.23.1"],\
             ["@transcend-io/type-utils", "npm:1.0.5"]\
           ],\
           "linkType": "HARD"\
