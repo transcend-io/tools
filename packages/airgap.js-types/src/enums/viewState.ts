@@ -45,6 +45,8 @@ export type InitialViewState =
 export const ResponseViewState = makeEnum({
   /* notice that do not sell has been acknowledged properly */
   DoNotSellDisclosure: 'DoNotSellDisclosure',
+  /* notice of a 1 click opt out for multiple consent purposes */
+  OptOutDisclosure: 'OptOutDisclosure',
 });
 
 /**
