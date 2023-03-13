@@ -51,6 +51,11 @@ export type ConsentManagerAPI = {
     auth: AirgapAuth,
     options?: ShowConsentManagerOptions,
   ): Promise<void>;
+  /** Opt out of all purposes */
+  optOutNotice(
+    auth: AirgapAuth,
+    options?: ShowConsentManagerOptions,
+  ): Promise<void>;
 };
 
 /** Transcend Smart Quarantine API (window.transcend) */
