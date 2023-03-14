@@ -31,7 +31,7 @@ export type RegimePurposeScopesConfig = [
 
 export const UNKNOWN_DEFAULT_EXPERIENCE = 'Unknown';
 
-const GDPR_PURPOSES: [PrivacyRegime[], TrackingPurpose[]] = [
+export const GDPR_PURPOSES: [PrivacyRegime[], TrackingPurpose[]] = [
   ['GDPR', 'LGPD', 'nFADP'],
   ['Advertising', 'Analytics', 'Functional', 'SaleOfInfo'],
 ];
@@ -73,13 +73,13 @@ export const RegionsOperator = makeEnum({
 export type RegionsOperator =
   typeof RegionsOperator[keyof typeof RegionsOperator];
 
-const DEFAULT_EXPERIENCE_PURPOSE_SCOPES = Object.fromEntries(
+export const DEFAULT_EXPERIENCE_PURPOSE_SCOPES = Object.fromEntries(
   DEFAULT_REGIME_TRACKING_PURPOSE_SCOPES.map(([regimes, purposes]) =>
     regimes.map((regime) => [regime, purposes]),
   ).flat(),
 );
 
-const DEFAULT_EXPERIENCE_PURPOSE_OPT_OUTS = Object.fromEntries(
+export const DEFAULT_EXPERIENCE_PURPOSE_OPT_OUTS = Object.fromEntries(
   DEFAULT_REGIME_PURPOSE_OPT_OUTS.map(([regimes, purposes]) =>
     regimes.map((regime) => [regime, purposes]),
   ).flat(),
@@ -158,7 +158,7 @@ export const REGIME_LANGUAGES: Record<PrivacyRegime, string[]> = {
 export const REGIME_TIMEZONES: Record<PrivacyRegime, string[]> = {};
 
 // default to 20
-const REGIME_DISPLAY_PRIORITY: Record<PrivacyRegime, number> = {
+export const REGIME_DISPLAY_PRIORITY: Record<PrivacyRegime, number> = {
   GDPR: 10,
   Unknown: 100,
 };
@@ -170,7 +170,7 @@ export interface ExperiencePurposeInput {
   defaultOptOut: boolean;
 }
 
-interface ExperienceInput {
+export interface ExperienceInput {
   /** The regime determining the default experience */
   name: PrivacyRegime;
   /** The display name of the experience */
