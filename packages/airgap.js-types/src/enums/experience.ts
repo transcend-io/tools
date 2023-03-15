@@ -1,12 +1,5 @@
-// external
-import * as t from 'io-ts';
-
 // main
-import {
-  applyEnum,
-  makeEnum,
-  FixedLengthArray,
-} from '@transcend-io/type-utils';
+import { applyEnum, makeEnum } from '@transcend-io/type-utils';
 import { IsoCountryCode } from '@transcend-io/privacy-types';
 
 // local
@@ -14,44 +7,12 @@ import { PrivacyRegimeEnum } from './privacyRegime';
 import { Purpose } from './purpose';
 import { InitialViewState } from './viewState';
 import { DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME } from '../ui';
-import { PrivacyRegime, TrackingPurpose } from '../core';
+import { PrivacyRegime } from '../core';
+import {
+  DEFAULT_EXPERIENCE_PURPOSE_SCOPES,
+  DEFAULT_EXPERIENCE_PURPOSE_OPT_OUTS,
+} from './constants';
 import { BrowserLanguage } from './browserLanguage';
-
-/** Regime purpose scopes configuration */
-export const RegimePurposeScopesConfig = t.array(
-  FixedLengthArray(2, 2, t.array(t.string)),
-);
-/** Type override */
-export type RegimePurposeScopesConfig = [
-  /** Regimes */
-  regimes: string[],
-  /** In-scope purposes */
-  purposes: TrackingPurpose[],
-][];
-
-export const UNKNOWN_DEFAULT_EXPERIENCE = 'Unknown';
-
-export const GDPR_PURPOSES: [PrivacyRegime[], TrackingPurpose[]] = [
-  ['GDPR', 'LGPD', 'nFADP'],
-  ['Advertising', 'Analytics', 'Functional', 'SaleOfInfo'],
-];
-
-export const DEFAULT_REGIME_TRACKING_PURPOSE_SCOPES: RegimePurposeScopesConfig =
-  [
-    GDPR_PURPOSES,
-    [['CPRA', 'CDPA', 'CPA', 'NEVADA_SB220'], ['SaleOfInfo']],
-    [
-      [
-        UNKNOWN_DEFAULT_EXPERIENCE,
-        // 'UCPA'
-      ],
-      [],
-    ],
-  ];
-
-export const DEFAULT_REGIME_PURPOSE_OPT_OUTS: RegimePurposeScopesConfig = [
-  GDPR_PURPOSES,
-];
 
 export interface Region {
   /** A country's ISO code */
@@ -60,30 +21,12 @@ export interface Region {
   countrySubDivision?: string;
 }
 
-/**
- * Describes whether listed countries/country subdivisions are included in an experience
- */
-export const RegionsOperator = makeEnum({
-  /** The listed countries/country subdivisions, time zones, and languages are included in this experience */
-  In: 'IN',
-  /** The listed countries/country subdivisions, time zones, and languages are NOT included in this experience */
-  NotIn: 'NOT_IN',
-});
-/** Override type */
-export type RegionsOperator =
-  typeof RegionsOperator[keyof typeof RegionsOperator];
-
-export const DEFAULT_EXPERIENCE_PURPOSE_SCOPES = Object.fromEntries(
-  DEFAULT_REGIME_TRACKING_PURPOSE_SCOPES.map(([regimes, purposes]) =>
-    regimes.map((regime) => [regime, purposes]),
-  ).flat(),
-);
-
-export const DEFAULT_EXPERIENCE_PURPOSE_OPT_OUTS = Object.fromEntries(
-  DEFAULT_REGIME_PURPOSE_OPT_OUTS.map(([regimes, purposes]) =>
-    regimes.map((regime) => [regime, purposes]),
-  ).flat(),
-);
+export interface ExperiencePurposeInput {
+  /** name of the purpose */
+  purpose: Purpose;
+  /** opt out by default */
+  defaultOptOut: boolean;
+}
 
 // default to []
 export const REGIME_REGIONS: Record<PrivacyRegime, Region[]> = {
@@ -163,12 +106,18 @@ export const REGIME_DISPLAY_PRIORITY: Record<PrivacyRegime, number> = {
   Unknown: 100,
 };
 
-export interface ExperiencePurposeInput {
-  /** name of the purpose */
-  purpose: Purpose;
-  /** opt out by default */
-  defaultOptOut: boolean;
-}
+/**
+ * Describes whether listed countries/country subdivisions are included in an experience
+ */
+export const RegionsOperator = makeEnum({
+  /** The listed countries/country subdivisions, time zones, and languages are included in this experience */
+  In: 'IN',
+  /** The listed countries/country subdivisions, time zones, and languages are NOT included in this experience */
+  NotIn: 'NOT_IN',
+});
+/** Override type */
+export type RegionsOperator =
+  typeof RegionsOperator[keyof typeof RegionsOperator];
 
 export interface ExperienceInput {
   /** The regime determining the default experience */
