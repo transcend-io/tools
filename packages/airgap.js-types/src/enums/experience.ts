@@ -11,7 +11,7 @@ import { PrivacyRegime } from '../core';
 import {
   DEFAULT_EXPERIENCE_PURPOSE_SCOPES,
   DEFAULT_EXPERIENCE_PURPOSE_OPT_OUTS,
-} from './constants';
+} from '../constants';
 import { BrowserLanguage } from './browserLanguage';
 
 export interface Region {

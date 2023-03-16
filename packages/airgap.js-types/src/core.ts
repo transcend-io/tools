@@ -2,7 +2,7 @@
 import * as t from 'io-ts';
 
 // main
-import { valuesOf } from '@transcend-io/type-utils';
+import { FixedLengthArray, valuesOf } from '@transcend-io/type-utils';
 
 // local
 import { ConfigurablePurpose, SpecialTrackingPurpose } from './enums';
@@ -384,4 +384,16 @@ export const ConsentChange = t.record(TrackingPurpose, t.boolean);
 /** type overload */
 export type ConsentChange = t.TypeOf<typeof ConsentChange>;
 
+/** Regime purpose scopes configuration */
+export const RegimePurposeScopesConfig = t.array(
+  FixedLengthArray(2, 2, t.array(t.string)),
+);
+
+/** Type override */
+export type RegimePurposeScopesConfig = [
+  /** Regimes */
+  regimes: string[],
+  /** In-scope purposes */
+  purposes: TrackingPurpose[],
+][];
 /* eslint-enable max-lines */
