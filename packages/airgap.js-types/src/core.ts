@@ -5,7 +5,11 @@ import * as t from 'io-ts';
 import { FixedLengthArray, valuesOf } from '@transcend-io/type-utils';
 
 // local
-import { ConfigurablePurpose, SpecialTrackingPurpose } from './enums';
+import {
+  ConfigurablePurpose,
+  SpecialTrackingPurpose,
+  ViewState,
+} from './enums';
 
 /* eslint-disable max-lines */
 
@@ -370,6 +374,10 @@ export type TrackingConsentDetails = {
   usp?: string;
   /** Global Privacy Platform (GPP) String */
   gpp?: string;
+  /** Consent Manager View State */
+  viewState?: ViewState;
+  /** Airgap Version */
+  airgapVersion?: string;
 };
 
 /** Tracking purpose */
