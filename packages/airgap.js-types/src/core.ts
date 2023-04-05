@@ -352,7 +352,7 @@ export type TrackingConsent = {
 /** Tracking purpose consent config with timestamp & auth metadata */
 export type TrackingConsentDetails = {
   /** Tracking consent config */
-  purposes: TrackingConsent;
+  purposes?: TrackingConsent;
   /**
    * Was tracking consent confirmed by the user?
    * If this is false, the consent was resolved from defaults & is not yet confirmed
@@ -364,6 +364,12 @@ export type TrackingConsentDetails = {
   updated?: boolean;
   /** Whether or not the UI has been shown to the end-user (undefined in older versions of airgap.js) */
   prompted?: boolean;
+  /** Transparency Consent (TCF) String */
+  tcf?: string;
+  /** US Privacy (USP) String */
+  usp?: string;
+  /** Global Privacy Platform (GPP) String */
+  gpp?: string;
 };
 
 /** Tracking purpose */
