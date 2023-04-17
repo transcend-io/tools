@@ -134,6 +134,8 @@ export interface ConsentOptions {
   confirmed?: boolean;
   /** Was the UI shown to the user? */
   prompted?: boolean;
+  /** Extra metadata to be synced along with consent */
+  metadata?: unknown;
 }
 
 /** airgap.js API */
@@ -356,7 +358,7 @@ export type TrackingConsent = {
 /** Tracking purpose consent config with timestamp & auth metadata */
 export type TrackingConsentDetails = {
   /** Tracking consent config */
-  purposes?: TrackingConsent;
+  purposes: TrackingConsent;
   /**
    * Was tracking consent confirmed by the user?
    * If this is false, the consent was resolved from defaults & is not yet confirmed
