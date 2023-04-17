@@ -380,6 +380,8 @@ export type TrackingConsentDetails = {
   viewState?: ViewState;
   /** Airgap Version */
   airgapVersion?: string;
+  /** Arbitrary metadata that customers want to be associated with consent state */
+  metadata?: unknown;
 };
 
 /** Tracking purpose */
