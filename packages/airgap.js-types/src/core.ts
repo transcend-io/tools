@@ -345,20 +345,22 @@ export type TrackingPurposesConfig = {
   defaultConsent?: DefaultConsentConfigValue | DefaultConsentConfig;
 };
 
-/** Tracking purpose consent config */
-export type TrackingConsent = {
-  /** Consent to tracking for essential purposes */
-  Essential?: true;
-  /** Unknown (unable to be directly consented) */
-  Unknown?: false;
-  /** Custom tracking purpose */
-  [purpose: string]: boolean | undefined;
-};
+export const TrackingConsent = t.intersection([
+  t.partial({
+    Essential: t.literal(true),
+    Unknown: t.literal(false),
+  }),
+  t.record(t.string, t.union([t.boolean, t.undefined])),
+]);
+/**
+ * Type override
+ */
+export type TrackingConsent = t.TypeOf<typeof TrackingConsent>;
 
 export const TrackingConsentDetails = t.intersection([
   t.type({
     /** Tracking consent config */
-    purposes: t.record(t.string, t.boolean),
+    purposes: TrackingConsent,
     /**
      * Was tracking consent confirmed by the user?
      * If this is false, the consent was resolved from defaults & is not yet confirmed
