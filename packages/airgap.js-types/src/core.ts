@@ -374,6 +374,19 @@ export const TrackingConsentDetails = t.intersection([
     updated: t.boolean,
     /** Whether or not the UI has been shown to the end-user (undefined in older versions of airgap.js) */
     prompted: t.boolean,
+    /** Arbitrary metadata that customers want to be associated with consent state */
+    metadata: t.unknown,
+    /** When the metadata was last updated */
+    metadataTimestamp: t.string,
+  }),
+]);
+
+/** Override types. */
+export type TrackingConsentDetails = t.TypeOf<typeof TrackingConsentDetails>;
+
+export const FullTrackingConsentDetails = t.intersection([
+  TrackingConsentDetails,
+  t.partial({
     /** Transparency Consent (TCF) String */
     tcf: t.string,
     /** US Privacy (USP) String */
@@ -384,15 +397,13 @@ export const TrackingConsentDetails = t.intersection([
     viewState: valuesOf(ViewState),
     /** Airgap Version */
     airgapVersion: t.string,
-    /** Arbitrary metadata that customers want to be associated with consent state */
-    metadata: t.unknown,
-    /** When the metadata was last updated */
-    metadataTimestamp: t.string,
   }),
 ]);
 
 /** Override types. */
-export type TrackingConsentDetails = t.TypeOf<typeof TrackingConsentDetails>;
+export type FullTrackingConsentDetails = t.TypeOf<
+  typeof FullTrackingConsentDetails
+>;
 
 export const ConsentPreferencesBody = t.type({
   /** token containing encrypted identifier */
