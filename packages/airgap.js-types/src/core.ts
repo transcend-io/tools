@@ -134,8 +134,10 @@ export interface ConsentOptions {
   confirmed?: boolean;
   /** Was the UI shown to the user? */
   prompted?: boolean;
-  /** Extra betadata to be synced along with consent */
+  /** Extra metadata to be synced along with consent */
   metadata?: unknown;
+  /** Whether or not to return a Promise so that the caller can wait for sync to complete. By default, we do not wait for sync */
+  waitForSync?: boolean;
 }
 
 /** airgap.js API */
@@ -158,7 +160,7 @@ export type AirgapAPI = Readonly<{
     consent: TrackingConsent,
     /** Consent options */
     options?: ConsentOptions,
-  ): boolean;
+  ): Promise<boolean> | boolean;
   /** Sets whether or not the Consent UI has been shown to the user */
   setPrompted(state: boolean): Promise<void>;
   /** Consents the user to all tracking purposes (requires recent UI interaction) */
