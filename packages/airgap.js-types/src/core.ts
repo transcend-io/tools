@@ -134,8 +134,14 @@ export interface ConsentOptions {
   confirmed?: boolean;
   /** Was the UI shown to the user? */
   prompted?: boolean;
-  /** Extra metadata to be synced along with consent */
-  metadata?: unknown;
+  /**
+   * Extra metadata to be synced along with consent
+   *
+   * Special values:
+   * - `null` - Do not change metadata
+   * - `false` - Clear metadata
+   */
+  metadata?: unknown | null | false;
   /** Whether or not to return a Promise so that the caller can wait for sync to complete. By default, we do not wait for sync */
   waitForSync?: boolean;
 }
