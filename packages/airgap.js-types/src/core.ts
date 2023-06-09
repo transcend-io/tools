@@ -383,7 +383,7 @@ export const TrackingConsentDetails = t.intersection([
     /** Whether or not the UI has been shown to the end-user (undefined in older versions of airgap.js) */
     prompted: t.boolean,
     /** Arbitrary metadata that customers want to be associated with consent state */
-    metadata: t.unknown,
+    metadata: t.UnknownRecord,
     /** When the metadata was last updated */
     metadataTimestamp: t.string,
   }),
