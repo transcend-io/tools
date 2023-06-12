@@ -141,7 +141,7 @@ export interface ConsentOptions {
    * - `null` - Do not change metadata
    * - `false` - Clear metadata
    */
-  metadata?: unknown | null | false;
+  metadata?: Record<string, unknown> | null | false;
   /** Whether or not to return a Promise so that the caller can wait for sync to complete. By default, we do not wait for sync */
   waitForSync?: boolean;
 }
