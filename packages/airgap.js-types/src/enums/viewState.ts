@@ -19,6 +19,8 @@ export const InitialViewState = makeEnum({
   AcceptOrRejectAllOrMoreChoices: 'AcceptOrRejectAllOrMoreChoices',
   /* accept or reject the Analytics script tag */
   AcceptOrRejectAnalytics: 'AcceptOrRejectAnalytics',
+  /* accept or reject the Advertising script tag */
+  AcceptOrRejectAdvertising: 'AcceptOrRejectAdvertising',
   /* data collection notice with do not sell */
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
   /* open a modal that allows for an explanation of do not sell/share, before opting out */
