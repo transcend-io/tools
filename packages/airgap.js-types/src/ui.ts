@@ -36,6 +36,8 @@ export interface ShowConsentManagerOptions {
 export type ConsentManagerAPI = {
   /** Possible ViewState values */
   viewStates: Set<ViewState>;
+  /** Expose an option to grab the current view state */
+  getViewState: () => ViewState;
   /** Show consent manager unless recently dismissed */
   autoShowConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Show consent manager */
