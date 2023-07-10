@@ -33,7 +33,7 @@ export interface ShowConsentManagerOptions {
 /**
  * Transcend Consent Manager external methods
  */
-export type ConsentManagerAPI = {
+export type ConsentManagerAPI = Readonly<{
   /** Possible ViewState values */
   viewStates: Set<ViewState>;
   /** Expose an option to grab the current view state */
@@ -58,6 +58,20 @@ export type ConsentManagerAPI = {
     auth: AirgapAuth,
     options?: ShowConsentManagerOptions,
   ): Promise<void>;
+}> &
+  EventTarget;
+
+/**
+ * `transcend` event types
+ */
+export type TranscendEventType = 'view-state-change';
+
+/** 'view-state-change' custom event details */
+export type ViewStateEventDetails = {
+  /** The new, now-current view state */
+  viewState: ViewState;
+  /** The previous view state */
+  previousViewState: ViewState | null;
 };
 
 /** Transcend Smart Quarantine API (window.transcend) */
