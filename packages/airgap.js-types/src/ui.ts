@@ -26,8 +26,6 @@ export type PreInitTranscendAPI = {
 export interface ShowConsentManagerOptions {
   /** View state */
   viewState?: ViewState;
-  /** The selected language (otherwise falls back to default) */
-  locale?: ConsentManagerLanguageKey;
 }
 
 /**
