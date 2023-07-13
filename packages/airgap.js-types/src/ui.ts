@@ -36,6 +36,10 @@ export type ConsentManagerAPI = Readonly<{
   viewStates: Set<ViewState>;
   /** Expose an option to grab the current view state */
   getViewState: () => ViewState;
+  /** Change the current privacy policy URL */
+  setPrivacyPolicy: (privacyPolicyLink: string) => void;
+  /** Change the current secondary policy URL */
+  setSecondaryPolicy: (privacyPolicyLink: string) => void;
   /** Show consent manager unless recently dismissed */
   autoShowConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Show consent manager */
