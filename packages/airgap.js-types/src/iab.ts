@@ -76,7 +76,7 @@ export const TcfVendorListVersion = t.type({
 export type TcfVendorListVersion = t.TypeOf<typeof TcfVendorListVersion>;
 
 /**
- * Contentful fields common between SaaSCategories and Catalogs
+ * TCF global vendor list version 2
  */
 export const TcfV2VendorList = t.intersection([
   TcfVendorListVersion,
@@ -91,6 +91,97 @@ export const TcfV2VendorList = t.intersection([
 ]);
 
 /**
- * Overload StoredContentfulEntry as a type
+ * Overload TcfV2VendorList as a type
  */
 export type TcfV2VendorList = t.TypeOf<typeof TcfV2VendorList>;
+
+/**
+ * TCF GVL v3 purpose configuration
+ */
+export const TcfGvlV3Purpose = t.type({
+  id: t.number,
+  name: t.string,
+  description: t.string,
+  illustrations: t.array(t.string),
+});
+
+/**
+ * Type override
+ */
+export type TcfGvlV3Purpose = t.TypeOf<typeof TcfGvlV3Purpose>;
+
+/**
+ * TCF GVL v3 data categories configuration
+ */
+export const TcfGvlV3DataCategory = t.type({
+  id: t.number,
+  name: t.string,
+  description: t.string,
+});
+
+/**
+ * Type override
+ */
+export type TcfGvlV3DataCategory = t.TypeOf<typeof TcfGvlV3DataCategory>;
+
+/**
+ * TCF GVL v3 stack configuration
+ */
+export const TcfGvlV3Vendor = t.intersection([
+  t.type({
+    id: t.number,
+    name: t.string,
+    purposes: t.array(t.number),
+    legIntPurposes: t.array(t.number),
+    flexiblePurposes: t.array(t.number),
+    specialPurposes: t.array(t.number),
+    features: t.array(t.number),
+    specialFeatures: t.array(t.number),
+    cookieMaxAgeSeconds: t.union([t.number, t.null]),
+    usesCookies: t.boolean,
+    cookieRefresh: t.boolean,
+    usesNonCookieAccess: t.boolean,
+    dataRetention: t.type({
+      stdRetention: t.number,
+      purposes: t.record(t.string, t.number),
+      specialPurposes: t.record(t.string, t.number),
+    }),
+    urls: t.array(
+      t.type({ langId: t.string, privacy: t.string, legIntClaim: t.string }),
+    ),
+    dataDeclaration: t.array(t.number),
+    deviceStorageDisclosureUrl: t.string,
+  }),
+  t.partial({
+    deletedDate: t.string,
+    overflow: t.type({
+      httpGetLimit: t.number,
+    }),
+  }),
+]);
+
+/**
+ * Type override
+ */
+export type TcfGvlV3Vendor = t.TypeOf<typeof TcfGvlV3Vendor>;
+
+/**
+ * TCF global vendor list version 3
+ */
+export const TcfV3VendorList = t.intersection([
+  TcfVendorListVersion,
+  t.type({
+    purposes: t.record(t.string, TcfGvlV3Purpose),
+    specialPurposes: t.record(t.string, TcfGvlV3Purpose),
+    features: t.record(t.string, TcfGvlV3Purpose),
+    specialFeatures: t.record(t.string, TcfGvlV3Purpose),
+    stacks: t.record(t.string, TcfStack),
+    dataCategories: t.record(t.string, TcfGvlV3DataCategory),
+    vendors: t.record(t.string, TcfGvlV3Vendor),
+  }),
+]);
+
+/**
+ * Type override
+ */
+export type TcfV3VendorList = t.TypeOf<typeof TcfV3VendorList>;
