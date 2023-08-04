@@ -11,6 +11,8 @@ export const InitialViewState = makeEnum({
   QuickOptions3: 'QuickOptions3',
   /* accept all button call to action, with more options in the banner footer */
   AcceptAll: 'AcceptAll',
+  /* toggle button that toggles on or off all active purposes in the current regime */
+  AcceptAllRejectAllToggle: 'AcceptAllRejectAllToggle',
   /* accept all or more options, both as calls to action */
   AcceptAllOrMoreChoices: 'AcceptAllOrMoreChoices',
   /* accept all or reject all */
