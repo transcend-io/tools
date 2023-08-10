@@ -3,7 +3,7 @@ import * as t from 'io-ts';
 
 // main
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
-import type { ConsentManagerLanguageKey } from '@transcend-io/internationalization';
+import { ConsentManagerLanguageKey } from '@transcend-io/internationalization';
 
 // local
 import {
@@ -127,8 +127,7 @@ export type PrivacyRegimeToInitialViewState = t.TypeOf<
   typeof PrivacyRegimeToInitialViewState
 >;
 
-/** Consent manager UI configuration */
-export const ConsentManagerConfig = t.type({
+export const RequiredConsentManagerConfig = t.type({
   /** Customer theming */
   theme: ConsentManagerTheme,
   /** A set of responsive breakpoints */
@@ -147,11 +146,35 @@ export const ConsentManagerConfig = t.type({
   dismissedViewState: valuesOf(DismissedViewState),
 });
 
+/** type overload */
+export type RequiredConsentManagerConfig = t.TypeOf<
+  typeof RequiredConsentManagerConfig
+>;
+
+export const OptionalConsentManagerConfig = t.partial({
+  /** The set of enabled languages */
+  allowedLanguages: t.array(valuesOf(ConsentManagerLanguageKey)),
+});
+
+/** type overload */
+export type OptionalConsentManagerConfig = t.TypeOf<
+  typeof OptionalConsentManagerConfig
+>;
+
+/** Consent manager UI configuration */
+export const ConsentManagerConfig = t.intersection([
+  RequiredConsentManagerConfig,
+  OptionalConsentManagerConfig,
+]);
+
 /** Type override */
 export type ConsentManagerConfig = t.TypeOf<typeof ConsentManagerConfig>;
 
 /** Input for Consent manager UI configuration */
-export const ConsentManagerConfigInput = t.partial(ConsentManagerConfig.props);
+export const ConsentManagerConfigInput = t.partial({
+  ...OptionalConsentManagerConfig.props,
+  ...RequiredConsentManagerConfig.props,
+});
 
 /** Type override */
 export type ConsentManagerConfigInput = t.TypeOf<
