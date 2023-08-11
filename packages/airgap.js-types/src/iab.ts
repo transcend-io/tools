@@ -158,7 +158,6 @@ export const TcfGvlV3Vendor = t.intersection([
         }),
       ]),
     ),
-    dataDeclaration: t.array(t.number),
     deviceStorageDisclosureUrl: t.string,
   }),
   t.partial({
@@ -166,6 +165,7 @@ export const TcfGvlV3Vendor = t.intersection([
     overflow: t.type({
       httpGetLimit: t.number,
     }),
+    dataDeclaration: t.array(t.number),
   }),
 ]);
 
