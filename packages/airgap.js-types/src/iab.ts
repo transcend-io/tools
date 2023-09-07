@@ -111,6 +111,20 @@ export const TcfGvlV3Purpose = t.type({
 export type TcfGvlV3Purpose = t.TypeOf<typeof TcfGvlV3Purpose>;
 
 /**
+ * TCF GVL v3 feature configuration
+ */
+export const TcfGvlV3Feature = t.type({
+  id: t.number,
+  name: t.string,
+  description: t.string,
+});
+
+/**
+ * Type override
+ */
+export type TcfGvlV3Feature = t.TypeOf<typeof TcfGvlV3Feature>;
+
+/**
  * TCF GVL v3 data categories configuration
  */
 export const TcfGvlV3DataCategory = t.type({
@@ -182,8 +196,8 @@ export const TcfV3VendorList = t.intersection([
   t.type({
     purposes: t.record(t.string, TcfGvlV3Purpose),
     specialPurposes: t.record(t.string, TcfGvlV3Purpose),
-    features: t.record(t.string, TcfGvlV3Purpose),
-    specialFeatures: t.record(t.string, TcfGvlV3Purpose),
+    features: t.record(t.string, TcfGvlV3Feature),
+    specialFeatures: t.record(t.string, TcfGvlV3Feature),
     stacks: t.record(t.string, TcfStack),
     dataCategories: t.record(t.string, TcfGvlV3DataCategory),
     vendors: t.record(t.string, TcfGvlV3Vendor),
