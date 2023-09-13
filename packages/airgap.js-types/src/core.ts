@@ -435,7 +435,6 @@ export const ConsentTokenPayload = t.intersection([
   }),
   t.partial({
     deprecatedEncryptedIdentifiers: t.array(t.string),
-    iat: t.string,
   }),
 ]);
 
