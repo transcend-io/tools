@@ -125,7 +125,40 @@ export const TcfGvlV3DataCategory = t.type({
 export type TcfGvlV3DataCategory = t.TypeOf<typeof TcfGvlV3DataCategory>;
 
 /**
- * TCF GVL v3 stack configuration
+ * TCF GVL v3 URL configuration
+ */
+export const TcfGvlV3Url = t.intersection([
+  t.type({ langId: t.string, privacy: t.string }),
+  t.partial({
+    legIntClaim: t.string,
+  }),
+]);
+
+/**
+ * Type override
+ */
+export type TcfGvlV3Url = t.TypeOf<typeof TcfGvlV3Url>;
+
+/**
+ * TCF GVL v3 data retention configuration
+ */
+export const TcfGvlV3DataRetention = t.intersection([
+  t.type({
+    purposes: t.record(t.string, t.number),
+    specialPurposes: t.record(t.string, t.number),
+  }),
+  t.partial({
+    stdRetention: t.number,
+  }),
+]);
+
+/**
+ * Type override
+ */
+export type TcfGvlV3DataRetention = t.TypeOf<typeof TcfGvlV3DataRetention>;
+
+/**
+ * TCF GVL v3 vendor configuration
  */
 export const TcfGvlV3Vendor = t.intersection([
   t.type({
@@ -141,23 +174,8 @@ export const TcfGvlV3Vendor = t.intersection([
     usesCookies: t.boolean,
     cookieRefresh: t.boolean,
     usesNonCookieAccess: t.boolean,
-    dataRetention: t.intersection([
-      t.type({
-        purposes: t.record(t.string, t.number),
-        specialPurposes: t.record(t.string, t.number),
-      }),
-      t.partial({
-        stdRetention: t.number,
-      }),
-    ]),
-    urls: t.array(
-      t.intersection([
-        t.type({ langId: t.string, privacy: t.string }),
-        t.partial({
-          legIntClaim: t.string,
-        }),
-      ]),
-    ),
+    dataRetention: TcfGvlV3DataRetention,
+    urls: t.array(TcfGvlV3Url),
     deviceStorageDisclosureUrl: t.string,
   }),
   t.partial({
