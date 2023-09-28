@@ -6,7 +6,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  */
 export const IABViewState = makeEnum({
   /* Transparency and Consent Framework for Europe */
-  TCFEU: 'TCFEU',
+  TCF_EU: 'TCF_EU',
 });
 
 /**
