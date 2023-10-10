@@ -183,6 +183,8 @@ export type RequiredConsentManagerConfig = t.TypeOf<
 export const OptionalConsentManagerConfig = t.partial({
   /** The set of enabled languages - CSV of ConsentManagerLanguageKey */
   languages: t.string,
+  /** The override value for the consent banner z-index */
+  uiZIndex: t.string,
 });
 
 /** type overload */
