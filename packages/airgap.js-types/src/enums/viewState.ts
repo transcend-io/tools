@@ -35,6 +35,8 @@ export const InitialTranscendViewState = makeEnum({
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
   /* open a modal that allows for an explanation of do not sell/share, before opting out */
   DoNotSellExplainer: 'DoNotSellExplainer',
+  /* open a modal that allows for complete options toggling */
+  CompleteOptionsToggles: 'CompleteOptionsToggles',
   /* open a modal that shows a notice that the privacy policy has changed, without any prompt to change consent */
   PrivacyPolicyNotice: 'PrivacyPolicyNotice',
   /* expanded and showing full checkbox options */
