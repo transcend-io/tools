@@ -5,11 +5,7 @@ import * as t from 'io-ts';
 import { FixedLengthArray, valuesOf } from '@transcend-io/type-utils';
 
 // local
-import {
-  ConfigurablePurpose,
-  SpecialTrackingPurpose,
-  ViewState,
-} from './enums';
+import { SpecialTrackingPurpose, ViewState } from './enums';
 
 /* eslint-disable max-lines */
 
@@ -314,7 +310,7 @@ export const TrackingPurposeDetails = t.intersection([
   }),
   t.partial({
     /** Tracking type */
-    trackingType: valuesOf(ConfigurablePurpose),
+    trackingType: t.string,
     /** Respected opt-out privacy signals */
     optOutSignals: t.array(UserPrivacySignal),
   }),
