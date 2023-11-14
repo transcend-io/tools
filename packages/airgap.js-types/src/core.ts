@@ -130,6 +130,11 @@ export interface ReservedMetadata {
   tcmp: null | Record<string, unknown>;
 }
 
+/**
+ * Extra metadata to be synced along with consent
+ */
+export type Metadata = Record<string, unknown>;
+
 /** setConsent() options */
 export interface ConsentOptions {
   /** Was consent confirmed by the user? */
@@ -143,7 +148,7 @@ export interface ConsentOptions {
    * - `null` - Do not change metadata
    * - `false` - Clear metadata
    */
-  metadata?: (Record<string, unknown> & ReservedMetadata) | null | false;
+  metadata?: (Metadata & ReservedMetadata) | null | false;
   /** Last updated for metadata */
   metadataTimestamp?: string;
   /** Whether or not to return a Promise so that the caller can wait for sync to complete. By default, we do not wait for sync */
@@ -208,22 +213,38 @@ export type AirgapAPI = Readonly<{
   getPrivacySignals(): Set<UserPrivacySignal>;
   /** airgap.js version number */
   version: string;
+  /** override the event listener signature for consent change events */
+  addEventListener: (
+    type: AirgapConsentEventType,
+    callback: ((evt: ConsentChangeEventDetails) => void) | null,
+    options?: boolean | AddEventListenerOptions | undefined,
+  ) => void;
 }> &
   EventTarget;
 
 /**
+ * Airgap event types that send the ConsentChangeEventDetails object with them
+ */
+export type AirgapConsentEventType =
+  | 'consent-change'
+  | 'sync'
+  | 'consent-resolution';
+
+/**
  * airgap.js event type
  */
-export type AirgapEventType = 'consent-change' | 'purpose-map-load';
+export type AirgapEventType = AirgapConsentEventType | 'purpose-map-load';
 
 /** 'consent-change' custom event details */
 export type ConsentChangeEventDetails = {
   /** The old tracking consent */
-  oldConsent: TrackingConsentDetails;
+  oldConsent: TrackingConsentDetails | null;
   /** The new tracking consent */
-  consent: TrackingConsentDetails;
+  consent: TrackingConsentDetails | null;
   /** The tracking consent diff (what's changed in the new consent) */
-  changes: ConsentChange | null;
+  changes: Record<string, boolean> | null;
+  /** Applicable privacy signals contributing to this consent change event */
+  signals?: Set<UserPrivacySignal> | null;
 };
 
 /** Removable process (can remove watchers, overrides, and protections) */
