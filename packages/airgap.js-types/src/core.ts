@@ -216,7 +216,7 @@ export type AirgapAPI = Readonly<{
   /** override the event listener signature for consent change events */
   addEventListener: (
     type: AirgapConsentEventType,
-    callback: ((evt: ConsentChangeEventDetails) => void) | null,
+    callback: ((evt: ConsentChangeEventPayload) => void) | null,
     options?: boolean | AddEventListenerOptions | undefined,
   ) => void;
 }> &
@@ -234,6 +234,11 @@ export type AirgapConsentEventType =
  * airgap.js event type
  */
 export type AirgapEventType = AirgapConsentEventType | 'purpose-map-load';
+
+export interface ConsentChangeEventPayload {
+  /** consent change event details */
+  detail: ConsentChangeEventDetails;
+}
 
 /** 'consent-change' custom event details */
 export type ConsentChangeEventDetails = {
