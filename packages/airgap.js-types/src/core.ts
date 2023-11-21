@@ -404,6 +404,16 @@ export const TrackingConsentWithNulls = t.record(
 /** Type override */
 export type TrackingConsentWithNulls = t.TypeOf<typeof TrackingConsent>;
 
+const TCFReservedMetadata = t.partial({
+  tcString: t.string,
+});
+
+const ReservedMetadata = t.partial({
+  tcmp: t.partial({
+    tcf: TCFReservedMetadata,
+  }),
+});
+
 const CoreTrackingConsentDetails = t.intersection([
   t.type({
     /**
@@ -420,7 +430,7 @@ const CoreTrackingConsentDetails = t.intersection([
     /** Whether or not the UI has been shown to the end-user (undefined in older versions of airgap.js) */
     prompted: t.boolean,
     /** Arbitrary metadata that customers want to be associated with consent state */
-    metadata: t.UnknownRecord,
+    metadata: t.intersection([ReservedMetadata, t.UnknownRecord]),
     /** When the metadata was last updated */
     metadataTimestamp: t.string,
   }),
