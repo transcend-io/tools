@@ -2,7 +2,7 @@
   "author": "Transcend Inc.",
   "name": "@transcend-io/airgap.js-types",
   "description": "TypeScript types for airgap.js interoperability with custom consent UIs",
-  "version": "10.7.9",
+  "version": "10.8.0",
   "homepage": "https://github.com/transcend-io/airgap.js-types",
   "repository": {
     "type": "git",
@@ -12,13 +12,14 @@
   "main": "build/index",
   "files": [
     "build/**/*",
+    "build-esm/**/*",
     "package.json"
   ],
   "scripts": {
     "update:sdks": "yarn set version from sources && yarn sdks base",
     "update:deps": "yarn upgrade-interactive && yarn update:sdks",
-    "build": "yarn pnpify tsc --build",
-    "clean": "yarn pnpify tsc --build --clean",
+    "build": "yarn pnpify tsc --build && yarn pnpify tsc --module es2022 --outDir build-esm",
+    "clean": "yarn pnpify tsc --build --clean && rm -rf build && rm -rf build-esm",
     "lint": "yarn pnpify eslint src --ext .ts",
     "prepublish": "yarn build",
     "test": "echo 'no tests'"
