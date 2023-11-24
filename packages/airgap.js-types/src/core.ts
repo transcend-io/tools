@@ -157,6 +157,27 @@ export interface ConsentOptions {
   timestamp?: string;
 }
 
+/** airgap.toggle() options */
+export type AirgapToggleOptions =
+  /** Protection state */
+  | boolean
+  | {
+      /** Protection state */
+      protection?: boolean;
+    };
+
+/** airgap.status format */
+export interface AirgapSystemStatus {
+  /** Protection system active state */
+  protection: boolean;
+  /** Have any CSPs been activated? */
+  csp: boolean;
+  /** Monitoring system active state */
+  monitoring: boolean;
+  /** Telemetry system active state */
+  telemetry: boolean;
+}
+
 /** airgap.js API */
 export type AirgapAPI = Readonly<{
   /** Airgap ready event subscriber */
@@ -211,6 +232,10 @@ export type AirgapAPI = Readonly<{
   getRegimes(): Set<PrivacyRegime>;
   /** Get a list of detected active user agent privacy signals */
   getPrivacySignals(): Set<UserPrivacySignal>;
+  /** Toggle all airgap.js protections. Auth must be a pre-airgap.js or airgap.js script 'load' event. Returns success status */
+  toggle(auth: AirgapAuth, options?: AirgapToggleOptions): boolean;
+  /** Current airgap.js system flags */
+  status: AirgapSystemStatus;
   /** airgap.js version number */
   version: string;
   /** override the event listener signature for consent change events */
