@@ -148,7 +148,7 @@ export const TcfGvlV3DataRetention = t.intersection([
     specialPurposes: t.record(t.string, t.number),
   }),
   t.partial({
-    stdRetention: t.number,
+    stdRetention: t.union([t.number, t.null]),
   }),
 ]);
 
