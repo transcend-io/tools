@@ -55,3 +55,6 @@ export const REGIME_DISPLAY_PRIORITY: Record<PrivacyRegime, number> = {
   GDPR: 10,
   Unknown: 100,
 };
+
+/** These TCF Purposes cannot be allowed to process under legitimate interest legal basis */
+export const DEFAULT_RESTRICT_LEGIT_INTEREST_PROCESSING = [1, 3, 4, 5, 6];
