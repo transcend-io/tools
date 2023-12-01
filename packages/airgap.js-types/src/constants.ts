@@ -56,5 +56,11 @@ export const REGIME_DISPLAY_PRIORITY: Record<PrivacyRegime, number> = {
   Unknown: 100,
 };
 
-/** These TCF Purposes cannot be allowed to process under legitimate interest legal basis */
+/* eslint-disable max-len */
+/**
+ * These TCF Purposes cannot be allowed to process under legitimate interest legal basis
+ * Source:
+ * https://iabeurope.eu/iab-europe-transparency-consent-framework-policies/#:~:text=Appendix%20A:%20Definitions%20Of%20Purposes,%20Features%20And%20Categories%20Of%20Data
+ */
 export const DEFAULT_RESTRICT_LEGIT_INTEREST_PROCESSING = [1, 3, 4, 5, 6];
+/* eslint-enable max-len */
