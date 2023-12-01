@@ -212,3 +212,21 @@ export const TcfV3VendorList = t.intersection([
  * Type override
  */
 export type TcfV3VendorList = t.TypeOf<typeof TcfV3VendorList>;
+
+export const NonTcfVendor = t.intersection([
+  t.type({
+    /** The vendor name */
+    name: t.string,
+    /** The transcend purposes associated with each vendor */
+    purposes: t.array(t.string),
+  }),
+  t.partial({
+    /** The vendor description */
+    description: t.string,
+  }),
+]);
+
+/**
+ * Type override
+ */
+export type NonTcfVendor = t.TypeOf<typeof NonTcfVendor>;

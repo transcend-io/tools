@@ -14,6 +14,7 @@ import {
   DismissedViewState,
 } from './enums';
 import { AirgapAuth } from './core';
+import { NonTcfVendor } from './iab';
 
 /** Transcend Smart Quarantine API (window.transcend) */
 export type PreInitTranscendAPI = {
@@ -232,6 +233,8 @@ const TCFBundledDataConfig = t.partial({
   purposeMap: t.array(t.tuple([t.number, t.array(t.string)])),
   /** These TCF purposes cannot be processed on the basis of legitimate interests */
   restrictLegitimateInterestPurposes: t.array(t.number),
+  /** Vendors that Transcend Consent regulates because they haven't registered with IAB TCF */
+  nonTcfVendors: t.array(NonTcfVendor),
 });
 
 /** Type override */
