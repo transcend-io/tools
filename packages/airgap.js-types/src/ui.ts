@@ -228,7 +228,7 @@ export const TCFConfig = t.type({
 export type TCFConfig = t.TypeOf<typeof TCFConfig>;
 
 /** Configuration that are passed directly to the TCF module, not via airgap.j */
-const TCFBundledDataConfig = t.partial({
+export const TCFBundledDataConfig = t.partial({
   /** Mapping of TCF Purpose ID to airgap tracking types */
   purposeMap: t.array(t.tuple([t.number, t.array(t.string)])),
   /** These TCF purposes cannot be processed on the basis of legitimate interests */
