@@ -114,7 +114,6 @@ export type ConsentManagerBreakpoints = t.TypeOf<
 
 /**
  * TODO: https://transcend.height.app/T-19149 - remove
- *
  * @deprecated
  */
 export const PrivacyRegimeToInitialViewStateInput = t.partial(
@@ -123,7 +122,6 @@ export const PrivacyRegimeToInitialViewStateInput = t.partial(
 
 /**
  * TODO: https://transcend.height.app/T-19149 - remove
- *
  * @deprecated
  */
 export type PrivacyRegimeToInitialViewStateInput = t.TypeOf<
@@ -132,7 +130,6 @@ export type PrivacyRegimeToInitialViewStateInput = t.TypeOf<
 
 /**
  * TODO: https://transcend.height.app/T-19149 - remove
- *
  * @deprecated
  */
 export const PrivacyRegimeToInitialViewState = t.record(
@@ -142,7 +139,6 @@ export const PrivacyRegimeToInitialViewState = t.record(
 
 /**
  * TODO: https://transcend.height.app/T-19149 - remove
- *
  * @deprecated
  */
 export type PrivacyRegimeToInitialViewState = t.TypeOf<

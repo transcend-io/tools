@@ -15,6 +15,7 @@
 
     /* Strict Type-Checking Options */
     "strict": true,
+    "skipLibCheck": true,
 
     /* Additional Checks */
     "noUnusedLocals": true,
@@ -24,7 +25,6 @@
     /* Module Resolution Options */
     "moduleResolution": "node",
     "baseUrl": ".",
-    "typeRoots": ["@types", "node_modules/@types"],
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,

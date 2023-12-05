@@ -124,7 +124,6 @@ export const REGIME_LANGUAGES: Record<PrivacyRegime, string[]> = {
 
 /**
  * construct default experience for regime
- *
  * @param regime - regime
  * @returns ExperienceInput
  */
