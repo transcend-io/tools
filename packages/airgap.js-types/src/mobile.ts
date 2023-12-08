@@ -18,6 +18,7 @@ export const ConsentService = t.intersection([
   }),
   t.partial({
     sdks: t.array(ConsentSDK),
+    tcfId: t.number,
   }),
 ]);
 
