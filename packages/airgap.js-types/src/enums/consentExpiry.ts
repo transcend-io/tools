@@ -5,11 +5,11 @@ import { makeEnum } from '@transcend-io/type-utils';
  */
 export const OnConsentExpiry = makeEnum({
   /** Reprompts the user to change or confirm their selection */
-  Prompt: 'prompt',
+  Prompt: 'Prompt',
   /** Resets the user's consent and reprompts them */
-  Reset: 'reset',
+  ResetAll: 'ResetAll',
   /** Resets the user's opted-in purposes and reprompts them */
-  ResetOptIns: 'reset-opt-ins',
+  ResetOptIns: 'ResetOptIns',
 });
 /** Override type */
 export type OnConsentExpiry =
