@@ -5,7 +5,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  * Consent Manager view state for the Interactive Advertising Bureau
  */
 export const IABViewState = makeEnum({
-  /* Transparency and Consent Framework for Europe */
+  /** Transparency and Consent Framework for Europe */
   TCF_EU: 'TCF_EU',
 });
 
@@ -13,37 +13,42 @@ export const IABViewState = makeEnum({
  * View States for Transcend's Consent Manager UI
  */
 export const InitialTranscendViewState = makeEnum({
-  /* expanded and showing quick select options */
+  /** expanded and showing quick select options */
   QuickOptions: 'QuickOptions',
-  /* three option UI: essential, functional/analytics, advertising */
+  /** three option UI: essential, functional/analytics, advertising */
   QuickOptions3: 'QuickOptions3',
-  /* accept all button call to action, with more options in the banner footer */
+  /** accept all button call to action, with more options in the banner footer */
   AcceptAll: 'AcceptAll',
-  /* toggle button that toggles on or off all active purposes in the current regime */
+  /** toggle button that toggles on or off all active purposes in the current regime */
   AcceptAllRejectAllToggle: 'AcceptAllRejectAllToggle',
-  /* accept all or more options, both as calls to action */
+  /** accept all or more options, both as calls to action */
   AcceptAllOrMoreChoices: 'AcceptAllOrMoreChoices',
-  /* accept all or reject all */
+  /** accept all or reject all */
   AcceptOrRejectAll: 'AcceptOrRejectAll',
-  /* accept all or reject all or more options */
+  /** accept all or reject all or more options */
   AcceptOrRejectAllOrMoreChoices: 'AcceptOrRejectAllOrMoreChoices',
-  /* accept or reject the Analytics script tag */
+  /** accept or reject the Analytics script tag */
   AcceptOrRejectAnalytics: 'AcceptOrRejectAnalytics',
-  /* accept or reject the Advertising script tag */
+  /** accept or reject the Advertising script tag */
   AcceptOrRejectAdvertising: 'AcceptOrRejectAdvertising',
-  /* data collection notice with do not sell */
+  /** data collection notice with do not sell */
   NoticeAndDoNotSell: 'NoticeAndDoNotSell',
-  /* open a modal that allows for an explanation of do not sell/share, before opting out */
+  /** open a modal that allows for an explanation of do not sell/share, before opting out */
   DoNotSellExplainer: 'DoNotSellExplainer',
-  /* open a modal that allows for complete options toggling */
+  /** open a modal that allows for complete options toggling */
   CompleteOptionsToggles: 'CompleteOptionsToggles',
-  /* open a modal that shows a notice that the privacy policy has changed, without any prompt to change consent */
+  /** open a modal that shows a notice that the privacy policy has changed, without any prompt to change consent */
   PrivacyPolicyNotice: 'PrivacyPolicyNotice',
-  /* expanded and showing full checkbox options */
+  /**
+   * open a modal that shows a notice that the privacy policy has changed, without any prompt to change consent
+   * and no button to close the modal. instead there is an X in the top right corner of the modal
+   */
+  PrivacyPolicyNoticeWithCloseButton: 'PrivacyPolicyNoticeWithCloseButton',
+  /** expanded and showing full checkbox options */
   CompleteOptions: 'CompleteOptions',
-  /* complete options, but selecting a checkbox means the user is opted out */
+  /** complete options, but selecting a checkbox means the user is opted out */
   CompleteOptionsInverted: 'CompleteOptionsInverted',
-  /* hidden */
+  /** hidden */
   Hidden: 'Hidden',
 });
 
@@ -73,9 +78,9 @@ export type InitialViewState =
  * View states that are displayed in response to a user request (e.g. transcend.doNotSell() or )
  */
 export const ResponseViewState = makeEnum({
-  /* notice that do not sell has been acknowledged properly */
+  /** notice that do not sell has been acknowledged properly */
   DoNotSellDisclosure: 'DoNotSellDisclosure',
-  /* notice of a 1 click opt out for multiple consent purposes */
+  /** notice of a 1 click opt out for multiple consent purposes */
   OptOutDisclosure: 'OptOutDisclosure',
 });
 
@@ -89,7 +94,7 @@ export type ResponseViewState =
  * Consent Manager view states that can be navigated to after initial view state
  */
 export const DeepViewState = makeEnum({
-  /* language options */
+  /** language options */
   LanguageOptions: 'LanguageOptions',
 });
 
@@ -102,9 +107,9 @@ export type DeepViewState = typeof DeepViewState[keyof typeof DeepViewState];
  * Consent Manager view states after it's been dismissed
  */
 export const DismissedViewState = makeEnum({
-  /* showing and collapsed */
+  /** showing and collapsed */
   Collapsed: 'Collapsed',
-  /* closed */
+  /** closed */
   Closed: 'Closed',
 });
 
