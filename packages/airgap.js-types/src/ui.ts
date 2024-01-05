@@ -231,6 +231,10 @@ export const TCFBundledDataConfig = t.partial({
   restrictLegitimateInterestPurposes: t.array(t.number),
   /** Vendors that Transcend Consent regulates because they haven't registered with IAB TCF */
   nonTcfVendors: t.array(NonTcfVendor),
+  /** Comma separated list of languages to support in the UI */
+  languages: t.string,
+  /** Default locale to use for the UI internationalization  */
+  locale: t.string,
 });
 
 /** Type override */
