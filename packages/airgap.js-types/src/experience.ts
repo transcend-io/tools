@@ -14,7 +14,7 @@ import {
   REGIME_DISPLAY_PRIORITY,
   REGIME_TIMEZONES,
 } from './constants';
-import { BrowserLanguage, RegionsOperator } from './enums';
+import { BrowserLanguage, OnConsentExpiry, RegionsOperator } from './enums';
 
 export interface Region {
   /** A country's ISO code */
@@ -49,6 +49,10 @@ export interface ExperienceInput {
   viewState: InitialViewState;
   /** experience purposes to be added */
   experiencePurposeInputs: ExperiencePurposeInput[];
+  /** Time in months after which a user's opt-in consent should expire */
+  consentExpiry: number;
+  /** Behavior to exhibit when the user's consent has expired */
+  onConsentExpiry: OnConsentExpiry;
 }
 
 // default to []
@@ -122,6 +126,17 @@ export const REGIME_LANGUAGES: Record<PrivacyRegime, string[]> = {
   ],
 };
 
+// default to 0
+export const REGIME_CONSENT_EXPIRY: Record<PrivacyRegime, number> = {
+  GDPR: 12,
+};
+
+// default to prompt
+export const REGIME_ON_CONSENT_EXPIRY: Record<PrivacyRegime, OnConsentExpiry> =
+  {
+    GDPR: OnConsentExpiry.ResetOptIns,
+  };
+
 /**
  * construct default experience for regime
  * @param regime - regime
@@ -150,6 +165,8 @@ export function defaultExperience(regime: PrivacyRegime): ExperienceInput {
           false,
       }),
     ),
+    consentExpiry: REGIME_CONSENT_EXPIRY[regime] ?? 0,
+    onConsentExpiry: REGIME_ON_CONSENT_EXPIRY[regime] ?? OnConsentExpiry.Prompt,
   };
 }
 
