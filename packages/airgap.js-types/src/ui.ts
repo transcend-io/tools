@@ -235,6 +235,11 @@ export const TCFBundledDataConfig = t.partial({
   languages: t.string,
   /** Default locale to use for the UI internationalization  */
   locale: t.string,
+  /**
+   * Whether or not to enable integration between Google Consent Mode and TCF.
+   * More docs here https://developers.google.com/tag-platform/security/guides/implement-TCF-strings#cmp-api
+   */
+  enableAdvertiserConsentMode: t.boolean,
 });
 
 /** Type override */
