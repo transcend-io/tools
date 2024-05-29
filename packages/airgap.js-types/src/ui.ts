@@ -64,6 +64,8 @@ export type ConsentManagerAPI = Readonly<{
   ): Promise<void>;
   /** Sets local tcf string (does not sync to xdi or preference store) */
   setTCFConsent?: (auth: AirgapAuth, tcString: string) => Promise<void>;
+  /** UI version */
+  version?: string;
 }> &
   EventTarget;
 
