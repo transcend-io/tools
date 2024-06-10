@@ -186,6 +186,12 @@ export const OptionalConsentManagerConfig = t.partial({
   languages: t.string,
   /** The override value for the consent banner z-index */
   uiZIndex: t.string,
+  /**
+   * The override value for the consent banner shadow root state
+   *
+   * Potential values: 'closed' (default) and 'open'
+   */
+  uiShadowRoot: t.string,
 });
 
 /** type overload */
