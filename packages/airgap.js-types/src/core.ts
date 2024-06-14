@@ -99,7 +99,9 @@ export type AirgapAuth =
   /** A user-initiated interaction event that was just dispatched. */
   | UIEvent
   /** A `load` event from a just-loaded airgap.js script element (which implies auth by being loaded before airgap.js) */
-  | Event;
+  | Event
+  /** Consent change authorization key automatically conferred by airgap via setAuth() API for UI modules */
+  | symbol;
 
 /** A boolean value represented as either `'on'` or `'off'` */
 export const BooleanString = t.keyof({
