@@ -90,6 +90,11 @@ export type AirgapAuthMap = {
   interaction?: UIEvent;
   /** Automatically reload the page if needed to remove CSP. `false` by default. */
   autoReload?: boolean;
+  /**
+   * Additional authorization key automatically conferred by airgap.js via setAuth() API for UI modules.
+   * Required when optional strict authorization mode is enabled.
+   */
+  key?: symbol;
 };
 
 /** Airgap authorization proof */
@@ -99,9 +104,7 @@ export type AirgapAuth =
   /** A user-initiated interaction event that was just dispatched. */
   | UIEvent
   /** A `load` event from a just-loaded airgap.js script element (which implies auth by being loaded before airgap.js) */
-  | Event
-  /** Consent change authorization key automatically conferred by airgap via setAuth() API for UI modules */
-  | symbol;
+  | Event;
 
 /** A boolean value represented as either `'on'` or `'off'` */
 export const BooleanString = t.keyof({
