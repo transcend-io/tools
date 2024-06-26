@@ -13,7 +13,7 @@ import {
   PrivacyRegimeEnum,
   DismissedViewState,
 } from './enums';
-import { AirgapAuth } from './core';
+import { AirgapAuth, AirgapAuthMap } from './core';
 import { NonTcfVendor } from './iab';
 
 /** Transcend Smart Quarantine API (window.transcend) */
@@ -39,7 +39,7 @@ export type ConsentManagerAPI = Readonly<{
   /** Expose an option to grab the current view state */
   getViewState: () => ViewState;
   /** Set consent change authorization key */
-  setAuth: (auth: AirgapAuth) => void;
+  setAuth?: (key: AirgapAuthMap['key']) => void;
   /** Change the current privacy policy URL */
   setPrivacyPolicy: (privacyPolicyLink: string) => void;
   /** Change the current secondary policy URL */
