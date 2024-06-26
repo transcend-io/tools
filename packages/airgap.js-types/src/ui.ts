@@ -287,4 +287,6 @@ export const DEFAULT_VIEW_STATE_BY_PRIVACY_REGIME: ExperienceToInitialViewState 
     NEVADA_SB220: InitialViewState.Hidden,
     // Other
     Unknown: InitialViewState.Hidden,
+    // US Do Not Sell/Share
+    US_DNSS: InitialViewState.Hidden,
   };

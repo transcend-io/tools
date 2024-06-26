@@ -72,6 +72,17 @@ export const REGIME_REGIONS: Record<PrivacyRegime, Region[]> = {
   UCPA: [{ country: 'US', countrySubDivision: 'US-UT' }],
   NEVADA_SB220: [{ country: 'US', countrySubDivision: 'US-NV' }],
   nFADP: [{ country: 'CH' }],
+  US_DNSS: [
+    { country: 'US', countrySubDivision: 'US-CA' },
+    { country: 'US', countrySubDivision: 'US-VA' },
+    { country: 'US', countrySubDivision: 'US-CO' },
+    { country: 'US', countrySubDivision: 'US-NV' },
+    { country: 'US', countrySubDivision: 'US-TX' },
+    { country: 'US', countrySubDivision: 'US-CT' },
+    { country: 'US', countrySubDivision: 'US-OR' },
+    { country: 'US', countrySubDivision: 'US-MT' },
+    { country: 'US', countrySubDivision: 'US-UT' },
+  ],
 };
 
 // default to []

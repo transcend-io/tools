@@ -21,7 +21,7 @@ export const GDPR_PURPOSES: [PrivacyRegime[], TrackingPurpose[]] = [
 export const DEFAULT_REGIME_TRACKING_PURPOSE_SCOPES: RegimePurposeScopesConfig =
   [
     GDPR_PURPOSES,
-    [['CPRA', 'CDPA', 'CPA', 'NEVADA_SB220'], ['SaleOfInfo']],
+    [['CPRA', 'CDPA', 'CPA', 'NEVADA_SB220', 'US_DNSS'], ['SaleOfInfo']],
     [
       [
         UNKNOWN_DEFAULT_EXPERIENCE,

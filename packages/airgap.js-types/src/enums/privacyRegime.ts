@@ -19,4 +19,6 @@ export enum PrivacyRegimeEnum {
   NEVADA_SB220 = 'NEVADA_SB220',
   /** Switzerland New Federal Act on Data Protection */
   nFADP = 'nFADP',
+  /** US Do Not Sell/Share */
+  US_DNSS = 'US_DNSS',
 }
