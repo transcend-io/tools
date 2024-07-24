@@ -183,16 +183,60 @@ export interface AirgapSystemStatus {
   telemetry: boolean;
 }
 
+/**
+ * Request override config
+ */
+export interface RequestOverride {
+  /** Optional tracking purposes to gate the override with lack of consent */
+  unconsented?: TrackingPurpose[];
+  /**
+   * Optional request matcher. This is a RegExp object (or string input
+   * for the RegExp constructor). Overrides apply to all requests
+   * when this is undefined.
+   */
+  matcher?: RegExp | string;
+  /** Override executor function or replacement string */
+  override: string | ((request: IPendingEvent, matcher?: RegExp) => void);
+  /** Name */
+  name?: string;
+  /** Note */
+  note?: string;
+  /** Description */
+  description?: string;
+}
+
+/** Airgap watcher */
+export type AirgapWatcher = (request: IPendingEvent) => void;
+
+/**
+ * Cookie override handler. This function can modify attempted cookie mutations.
+ */
+export type CookieOverride = (event: IPendingCookieMutation) => void;
+
+/**
+ * Passive cookie watcher. This function can view attempted cookie mutations in a read-only state.
+ */
+export type CookieWatcher = (event: IPendingCookieMutation) => void;
+
 /** airgap.js API */
 export type AirgapAPI = Readonly<{
+  /** Embedded request watchers */
+  watchers?: AirgapWatcher[];
+  /** Embedded request overrides (must specify pre-init) */
+  overrides?: RequestOverride[];
+  /** Embedded request overrides (must specify pre-init) */
+  cookieOverrides?: CookieOverride[];
   /** Airgap ready event subscriber */
   ready(callback: (airgap: AirgapAPI) => void): void;
   /** Queue of callbacks to dispatch once airgap is ready */
   readyQueue?: ((airgap: AirgapAPI) => void)[];
   /** Enqueue cross-domain data sync across all airgap bundle domains */
   sync(): Promise<void>;
-  /** Resolve airgap request overrides for a URL */
-  resolve(url: Stringifiable): Stringifiable;
+  /**
+   * Resolve URL input reserialization post-regulation.
+   * @param resolveOverrides - Resolve overrides. Defaults to true.
+   */
+  resolve(url: Stringifiable, resolveOverrides?: boolean): Stringifiable;
   /** Get tracking consent */
   getConsent(): TrackingConsentDetails;
   /** Set tracking consent */
@@ -224,6 +268,17 @@ export type AirgapAPI = Readonly<{
   getRegimePurposes(regimes?: Set<PrivacyRegime>): Set<TrackingPurpose>;
   /** Get initialized tracking purposes config */
   getPurposeTypes(): TrackingPurposesTypes;
+  /** Override pending requests */
+  override(auth: AirgapAuth, ...overrides: RequestOverride[]): Removable;
+  /** Override cookies */
+  overrideCookies(
+    auth: AirgapAuth,
+    handler: (event: IPendingCookieMutation) => void,
+  ): Removable;
+  /** Listen to pending requests passively */
+  watch(watcher: AirgapWatcher): Removable;
+  /** Listen to cookies passively */
+  watchCookies(watcher: CookieWatcher): Removable;
   /** Clear airgap queue & caches. Returns `true` on success. */
   clear(auth: AirgapAuth): boolean;
   /** Reset airgap queue and consent. Returns `true` on success. */
@@ -233,6 +288,50 @@ export type AirgapAPI = Readonly<{
     /** Automatically reload the page if needed to remove CSP. */
     autoReload?: boolean,
   ): boolean;
+  /** Check whether a URL is allowed to be loaded */
+  isAllowed(
+    /** URL to evaluate */
+    url: Stringifiable,
+    /** Should overrides be resolved? true by default */
+    resolveOverrides?: boolean,
+  ): Promise<boolean>;
+  /** Check whether a cookie is allowed to be set */
+  isCookieAllowed(
+    /** IPendingCookieMutation-like object to evaluate */
+    cookie: string | IPendingCookieMutation | PendingCookieMutationInit,
+    /** Should overrides be resolved? true by default */
+    resolveOverrides?: boolean,
+  ): Promise<boolean>;
+  /** Check whether a IPendingRequest is allowed to be loaded */
+  isRequestAllowed(
+    /** IPendingEvent to inspect */
+    request: IPendingEvent,
+    /** Should overrides be resolved? true by default */
+    resolveOverrides?: boolean,
+  ): Promise<boolean>;
+  /** Get purposes of URL */
+  getPurposes(
+    /** URL to evaluate */
+    url: Stringifiable,
+    /** Should overrides be resolved? true by default */
+    resolveOverrides?: boolean,
+  ): Promise<TrackingPurposes>;
+  /** Get purposes of IPendingRequest */
+  getRequestPurposes(
+    /** IPendingEvent-like object to inspect */
+    request: string | IPendingEvent | PendingRequestInit,
+    /** Should overrides be resolved? true by default */
+    resolveOverrides?: boolean,
+  ): Promise<TrackingPurposes>;
+  /** Get purposes of a cookie */
+  getCookiePurposes(
+    /** IPendingCookieMutation-like object to evaluate */
+    cookie: string | IPendingCookieMutation | PendingCookieMutationInit,
+    /** Should overrides be resolved? true by default */
+    resolveOverrides?: boolean,
+  ): Promise<TrackingPurposes>;
+  /** Export queues */
+  export(options?: AirgapExportOptions): AirgapQueues;
   /** Get a list of legal regimes that are potentially applicable to the user */
   getRegimes(): Set<PrivacyRegime>;
   /** Get a list of detected active user agent privacy signals */
@@ -251,6 +350,40 @@ export type AirgapAPI = Readonly<{
   ) => void;
 }> &
   EventTarget;
+
+/** airgap.export() options */
+export interface AirgapExportOptions {
+  /** Send output to web endpoint */
+  endpoint?: string;
+  /** JSON pretty-print indentation (default: 0) */
+  space?: number;
+  /** Save output to disk (default: off) */
+  save?: boolean;
+  /** Filename for saving to disk */
+  filename?: string;
+}
+
+/** Exported airgap queues & consent */
+export type AirgapQueues = Readonly<{
+  /** airgap.js version number */
+  version: string;
+  /** Current user consent details */
+  consent: TrackingConsentDetails;
+  /** Navigation page URL */
+  url: Stringifiable;
+  /** Pending requests */
+  requests: PendingRequestDescriptor[];
+  /** Pending mutations (same-session-only replay) */
+  mutations: PendingMutationDescriptor[];
+  /** Pending cookies */
+  cookies: PendingCookieMutationDescriptor[];
+  /** Pending cookies (same-session-only replay) */
+  cookieMutations: PendingCookieMutationDescriptor[];
+  /** Sent requests */
+  sentRequests?: PendingRequestDescriptor[];
+  /** Set cookies */
+  setCookies?: PendingCookieMutationDescriptor[];
+}>;
 
 /**
  * Airgap event types that send the ConsentChangeEventDetails object with them
@@ -573,4 +706,298 @@ export type RegimePurposeScopesConfig = [
   /** In-scope purposes */
   purposes: TrackingPurpose[],
 ][];
+
+/** Request source types */
+export type AirgapRequestSource =
+  | 'unknown'
+  | 'airgap.js' // emitted by airgap.isAllowed(), etc.
+  | 'fetch'
+  | 'xhr'
+  | 'websocket'
+  | 'webtransport'
+  | 'service-worker'
+  | 'shared-worker'
+  | 'worker'
+  | 'module-worker'
+  | 'shared-module-worker'
+  | 'eventsource'
+  | 'beacon'
+  | 'CSPV'
+  | 'navigation'
+  | 'open'
+  | 'script'
+  | AirgapDOMRequestSource;
+
+/** DOM-initiated request source types */
+export type AirgapDOMRequestSource =
+  | 'DOM:style'
+  | 'DOM:image'
+  | 'DOM:media'
+  | 'DOM:video'
+  | 'DOM:audio'
+  | 'DOM:track'
+  | 'DOM:link'
+  | 'DOM:form'
+  | 'DOM:form-action'
+  | 'DOM:view' // iframe {srcdoc, src}, object, embed
+  | 'DOM:ping'
+  | 'DOM:unknown';
+
+/**
+ * Airgap pending request descriptor init dictionary
+ */
+export interface PendingRequestInit {
+  /** Request initiator type */
+  type: AirgapRequestSource;
+  /** Request URL */
+  url: Stringifiable;
+  /** Persist request for cross-session replay (false by default) */
+  persist?: boolean;
+  /** Request initialization data */
+  requestInit?: RequestInit;
+  /** Request timestamp (ISO 8601) */
+  timestamp?: Stringifiable;
+  /** Request DOM target */
+  target?: Node | IDynamicNodeReference | null;
+  /** Mutator to apply changes associated with the request */
+  mutator?(): void;
+  /** Serialize request or mutation state back to DOM patcher parser input */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  serialize?(): any;
+  /** Prevent credentials from being included in request */
+  omitCredentials?(): boolean;
+}
+
+/** Properties that are added to instantiated PendingRequests */
+export interface InstantiatedPendingRequestProps {
+  /** Primary or first associated request URL input */
+  url: Stringifiable;
+  /** All associated request URL inputs */
+  urls: Stringifiable[];
+  /** Request timestamp (ISO 8601) */
+  timestamp: Stringifiable;
+  /** Serialize request or mutation state back to DOM patcher parser input */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  serialize(): any;
+
+  /** The following IPendingEvent APIs are only available to overrides: */
+
+  /**
+   * All associated resolved request URLs. null = invalid URL or data: URL (parsing
+   * skipped to optimize performance)
+   */
+  URLs: (URL | null)[];
+  /** Prevent credentials from being included in request */
+  omitCredentials(): boolean;
+  /** Whether or not request is currently allowed */
+  allowed: boolean;
+  /** Bypass our consent logic and force-allow request */
+  allow(): void;
+  /** Bypass our consent logic and force-deny request */
+  deny(): void;
+  /** Resolved tracking purposes associated with this pending mutation */
+  purposes: Set<TrackingPurpose>;
+}
+
+/**
+ * Airgap pending request descriptor with script annotation
+ */
+export type PendingRequestDescriptor = PendingRequestInit &
+  InstantiatedPendingRequestProps;
+
+/** Airgap pending request descriptor init with multiple URLs */
+export type PendingMutationInit = Omit<PendingRequestInit, 'url'> & {
+  /** Request URLs */
+  urls: Stringifiable[];
+};
+
+/** PendingEvent init input */
+export type PendingEventInit = PendingRequestInit | PendingMutationInit;
+
+/** Pending mutation descriptor */
+export type PendingMutationDescriptor = PendingMutationInit &
+  InstantiatedPendingRequestProps;
+
+/** Pending event props that can't or won't be serialized to JSON */
+type PendingEventUnserializableProps =
+  | 'persist'
+  | 'target'
+  | 'mutator'
+  | 'serialize'
+  | 'URLs'
+  | 'omitCredentials'
+  | 'allow'
+  | 'deny'
+  | 'purposes'
+  | 'allowed';
+
+/** JSON-safe representation of pending event tracking purposes */
+interface PendingEventPurposesJSON {
+  /** Tracking purposes list */
+  purposes?: TrackingPurpose[];
+}
+
+/** Pending request subset to JSON-safe properties */
+export type PendingRequestJSON = Omit<
+  PendingRequestDescriptor,
+  PendingEventUnserializableProps | 'urls'
+> &
+  PendingEventPurposesJSON;
+
+/** Pending mutation subset to JSON-safe properties */
+export type PendingMutationJSON = Omit<
+  PendingMutationDescriptor,
+  PendingEventUnserializableProps | 'url'
+> &
+  PendingEventPurposesJSON;
+
+/** Airgap pending request interface */
+export interface IPendingRequest extends PendingRequestDescriptor {
+  /** Convert PendingRequest to JSON-safe representation */
+  toJSON(): PendingRequestJSON;
+}
+
+/** Airgap pending mutation interface */
+export interface IPendingMutation extends PendingMutationDescriptor {
+  /** Convert PendingRequest to JSON-safe representation */
+  toJSON(): PendingMutationJSON;
+}
+
+/** Pending event descriptor */
+export type PendingEventDescriptor =
+  | PendingRequestDescriptor
+  | PendingMutationDescriptor;
+
+/** Pending request or mutation */
+export type IPendingEvent = IPendingMutation | IPendingRequest;
+
+/** Unapproved request queue */
+export type PendingRequestQueue = IPendingRequest[];
+
+/** Unapproved mutation queue */
+export type PendingMutationQueue = IPendingEvent[];
+
+/** Unapproved event queue */
+export type PendingEventQueue = IPendingEvent[];
+
+/** Cookie descriptor */
+export interface Cookie {
+  /** Cookie name */
+  name: Stringifiable;
+  /** Cookie value */
+  value?: Stringifiable;
+  /** Cookie change event timestamp (ISO 8601) */
+  timestamp?: string;
+  /** Expiry date (UTC date string or DOMTimeStamp) */
+  expires?: number | Stringifiable;
+  /** Max cookie age (seconds) */
+  maxAge?: number;
+  /** Optional cookie host scope */
+  domain?: Stringifiable;
+  /** Optional cookie path scope */
+  path?: Stringifiable;
+  /** Should cookie only be sent in secure contexts? */
+  secure?: boolean;
+  /**
+   * Should cookie be restricted to the same site?
+   * Values: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite
+   */
+  sameSite?: Stringifiable;
+  /**
+   * Is the cookie partitioned (e.g. by CHIPS)?
+   * See https://developer.mozilla.org/en-US/docs/Web/Privacy/Partitioned_cookies
+   * and https://developer.mozilla.org/en-US/docs/Web/API/CookieStore/get#:~:text=of%20the%20cookie.-,partitioned,-A%20boolean%20indicating
+   */
+  partitioned?: boolean;
+  /** Target document / node */
+  target?: Node | null;
+}
+
+/**
+ * PendingCookieMutation constructor input
+ */
+export interface PendingCookieMutationInit extends Cookie {
+  /** Persist cookie for cross-session replay if quarantined (true by default) */
+  persist?: boolean;
+  /** Mutator to apply cookie mutation */
+  mutator?(): void | Promise<void>;
+}
+
+/** Properties that are added to instantiated PendingCookieMutations */
+export interface InstantiatedPendingCookieMutationProps {
+  /** Expiry date (DOMTimeStamp) */
+  expires?: number;
+  /** Cookie change event timestamp (Date.now() format) */
+  timestamp: string;
+  /** Whether or not cookie is currently allowed */
+  allowed: boolean;
+  /** Bypass our consent logic and force-allow cookie */
+  allow(): void;
+  /** Bypass our consent logic and force-deny cookie */
+  deny(): void;
+  /** Resolved tracking purposes associated with this pending mutation */
+  purposes: Set<TrackingPurpose>;
+  /** Mutator to apply cookie mutation */
+  mutator(): void | Promise<void>;
+}
+
+/** Pending cookie mutation descriptor */
+export type PendingCookieMutationDescriptor = Omit<
+  PendingCookieMutationInit,
+  'expires'
+> &
+  InstantiatedPendingCookieMutationProps;
+
+/** Pending cookie mutation props that can't or won't be serialized to JSON */
+type PendingCookieMutationUnserializableProps =
+  | 'persist'
+  | 'mutator'
+  | 'allow'
+  | 'deny'
+  | 'purposes'
+  | 'allowed';
+
+/** JSON-safe representation of pending cookie mutation tracking purposes */
+interface PendingCookieMutationPurposesJSON {
+  /** Tracking purposes list */
+  purposes?: TrackingPurpose[];
+}
+
+/** Pending request subset to JSON-safe properties */
+export type PendingCookieMutationJSON = Omit<
+  PendingCookieMutationDescriptor,
+  PendingCookieMutationUnserializableProps
+> &
+  PendingCookieMutationPurposesJSON;
+
+/** Airgap pending cookie mutation interface */
+export interface IPendingCookieMutation
+  extends PendingCookieMutationDescriptor {
+  /** Convert PendingCookieMutation to JSON-safe representation */
+  toJSON(): PendingCookieMutationJSON;
+}
+
+/** Pending cookie mutation queue */
+export type PendingCookieQueue = IPendingCookieMutation[];
+
+/** Interface for dynamic node references */
+export interface IDynamicNodeReference {
+  /**
+   * Current node getter. This should always be used in `handleLiveMutation()`.
+   * @returns current node
+   */
+  getNode(): Element;
+  /**
+   * Live node getter. Use this to apply mutations in `quarantine()`
+   * and `quarantineMutation()` handlers.
+   *
+   * `release()` must always be called after completing
+   * mutations using `getLiveNode()`.
+   * @returns live node
+   */
+  getLiveNode(): Element;
+  /** Release & garbage-collect internal node reference */
+  release(): void;
+}
+
 /* eslint-enable max-lines */
