@@ -218,6 +218,9 @@ export type CookieOverride = (event: IPendingCookieMutation) => void;
  */
 export type CookieWatcher = (event: IPendingCookieMutation) => void;
 
+/** Event types (for purpose resolution) */
+export type TrackingEventType = 'request' | 'cookie';
+
 /** airgap.js API */
 export type AirgapAPI = Readonly<{
   /** Embedded request watchers */
@@ -237,6 +240,18 @@ export type AirgapAPI = Readonly<{
    * @param resolveOverrides - Resolve overrides. Defaults to true.
    */
   resolve(url: Stringifiable, resolveOverrides?: boolean): Stringifiable;
+  /**
+   * Resolve consent status for given tracking purposes. Essential purposes override opted out unessential purposes.
+   *
+   * If `use` is not provided, consent is resolved for both request and cookie tracking event types.
+   * @param trackingPurposes - Tracking purposes to resolve
+   * @param use - Optional event type to use for tracking purpose resolution
+   * @returns `true` if the applicable tracking purposes are consented.
+   */
+  isConsented(
+    trackingPurposes: TrackingPurposes,
+    use?: TrackingEventType,
+  ): boolean;
   /** Get tracking consent */
   getConsent(): TrackingConsentDetails;
   /** Set tracking consent */
