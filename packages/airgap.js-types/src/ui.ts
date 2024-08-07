@@ -97,6 +97,8 @@ export type ConsentManagerAPI = Readonly<{
   showConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Set the current active language */
   setActiveLocale(locale: ConsentManagerLanguageKey): Promise<void>;
+  /** Get the currently active locale */
+  getActiveLocale: () => ConsentManagerLanguageKey;
   /** Toggle consent manager */
   toggleConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Hide consent manager */
