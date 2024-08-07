@@ -2,8 +2,11 @@
 import * as t from 'io-ts';
 
 // main
-import { applyEnum, valuesOf } from '@transcend-io/type-utils';
-import { ConsentManagerLanguageKey } from '@transcend-io/internationalization';
+import { ObjByString, applyEnum, valuesOf } from '@transcend-io/type-utils';
+import {
+  ConsentManagerLanguageKey,
+  LanguageKey,
+} from '@transcend-io/internationalization';
 
 // local
 import {
@@ -31,6 +34,42 @@ export interface ShowConsentManagerOptions {
 }
 
 /**
+ * Input for fetching a policy from Transcend and inserting template variables
+ */
+export type GetTranscendPolicies = {
+  /** The language to fetch policy for - defaults to currently selected language key */
+  locale?: LanguageKey;
+  /** Template variables to dynamically inject into the policy */
+  variables?: ObjByString;
+  /**
+   * The UUID of the policies defined in Transcend to fetch
+   *
+   * This can be pulled from the URL
+   * @see https://app.transcend.io/privacy-center/policies
+   */
+  policyIds?: string[];
+  /**
+   * The titles of the policies defined in Transcend to fetch
+   *
+   * This can be pulled from the URL
+   * @see https://app.transcend.io/privacy-center/policies
+   */
+  policyTitles?: string[];
+};
+
+/**
+ * The returning Transcend policy
+ */
+export type TranscendPolicy = {
+  /** The policy UUID */
+  id: string;
+  /** The policy title */
+  title: string;
+  /** The policy content */
+  content: string;
+};
+
+/**
  * Transcend Consent Manager external methods
  */
 export type ConsentManagerAPI = Readonly<{
@@ -38,6 +77,14 @@ export type ConsentManagerAPI = Readonly<{
   viewStates: Set<ViewState>;
   /** Expose an option to grab the current view state */
   getViewState: () => ViewState;
+  /** Get the current active language */
+  getTranscendPolicies: (
+    input?: GetTranscendPolicies,
+  ) => Promise<TranscendPolicy[]>;
+  /** Callback that sets any dynamic variables that should be exposed to the consent UI messages */
+  setTranscendUiVariables: (variables: ObjByString) => Promise<void>;
+  /** Get the current value of Transcend UI variables */
+  getTranscendUiVariables: () => ObjByString;
   /** Set consent change authorization key */
   setAuth?: (key: AirgapAuthMap['key']) => void;
   /** Change the current privacy policy URL */
