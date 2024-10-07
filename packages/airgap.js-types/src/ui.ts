@@ -78,13 +78,11 @@ export type ConsentManagerAPI = Readonly<{
   /** Expose an option to grab the current view state */
   getViewState: () => ViewState;
   /** Get the current active language */
-  getTranscendPolicies: (
-    input?: GetTranscendPolicies,
-  ) => Promise<TranscendPolicy[]>;
+  getPolicies: (input?: GetTranscendPolicies) => Promise<TranscendPolicy[]>;
   /** Callback that sets any dynamic variables that should be exposed to the consent UI messages */
-  setTranscendUiVariables: (variables: ObjByString) => Promise<void>;
+  setUiVariables: (variables: ObjByString) => Promise<void>;
   /** Get the current value of Transcend UI variables */
-  getTranscendUiVariables: () => ObjByString;
+  getUiVariables: () => ObjByString;
   /** Set consent change authorization key */
   setAuth?: (key: AirgapAuthMap['key']) => void;
   /** Change the current privacy policy URL */
