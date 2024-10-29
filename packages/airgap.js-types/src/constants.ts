@@ -14,13 +14,19 @@ import type {
 export const UNKNOWN_DEFAULT_EXPERIENCE = 'Unknown';
 
 export const GDPR_PURPOSES: [PrivacyRegime[], TrackingPurpose[]] = [
-  ['GDPR', 'LGPD', 'nFADP'],
+  ['GDPR'],
+  ['Advertising', 'Analytics', 'Functional'],
+];
+
+export const LGPD_NFADP_PURPOSES: [PrivacyRegime[], TrackingPurpose[]] = [
+  ['LGPD', 'nFADP'],
   ['Advertising', 'Analytics', 'Functional', 'SaleOfInfo'],
 ];
 
 export const DEFAULT_REGIME_TRACKING_PURPOSE_SCOPES: RegimePurposeScopesConfig =
   [
     GDPR_PURPOSES,
+    LGPD_NFADP_PURPOSES,
     [['CPRA', 'CDPA', 'CPA', 'NEVADA_SB220', 'US_DNSS'], ['SaleOfInfo']],
     [
       [
@@ -33,6 +39,7 @@ export const DEFAULT_REGIME_TRACKING_PURPOSE_SCOPES: RegimePurposeScopesConfig =
 
 export const DEFAULT_REGIME_PURPOSE_OPT_OUTS: RegimePurposeScopesConfig = [
   GDPR_PURPOSES,
+  LGPD_NFADP_PURPOSES,
 ];
 
 export const DEFAULT_EXPERIENCE_PURPOSE_OPT_OUTS = Object.fromEntries(
