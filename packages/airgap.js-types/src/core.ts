@@ -580,7 +580,9 @@ export const TrackingConsentWithNulls = t.record(
   t.union([t.boolean, t.undefined, t.null]),
 );
 /** Type override */
-export type TrackingConsentWithNulls = t.TypeOf<typeof TrackingConsent>;
+export type TrackingConsentWithNulls = t.TypeOf<
+  typeof TrackingConsentWithNulls
+>;
 
 const TCFReservedMetadata = t.partial({
   tcString: t.string,
