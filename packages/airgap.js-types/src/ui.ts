@@ -16,7 +16,7 @@ import {
   PrivacyRegimeEnum,
   DismissedViewState,
 } from './enums';
-import { AirgapAuth, AirgapAuthMap } from './core';
+import { AirgapAuth, AirgapAuthMap, BooleanString } from './core';
 import { NonTcfVendor } from './iab';
 
 /** Transcend Smart Quarantine API (window.transcend) */
@@ -241,8 +241,12 @@ export const OptionalConsentManagerConfig = t.partial({
    * Potential values: 'closed' (default) and 'open'
    */
   uiShadowRoot: t.string,
-  /** The override value for whether to focus on the first descendant of the root arg w/data-initialFocus attribute */
-  autofocus: t.boolean,
+  /**
+   * The override value for whether to focus on the first descendant of the root arg w/data-initialFocus attribute
+   * Potential values: `'on'` (default) or `'off'`
+   *
+   */
+  autofocus: BooleanString,
 });
 
 /** type overload */
