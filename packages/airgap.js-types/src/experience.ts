@@ -82,6 +82,11 @@ export const REGIME_REGIONS: Record<PrivacyRegime, Region[]> = {
     { country: 'US', countrySubDivision: 'US-OR' },
     { country: 'US', countrySubDivision: 'US-MT' },
     { country: 'US', countrySubDivision: 'US-UT' },
+    { country: 'US', countrySubDivision: 'US-IA' },
+    { country: 'US', countrySubDivision: 'US-DE' },
+    { country: 'US', countrySubDivision: 'US-NH' },
+    { country: 'US', countrySubDivision: 'US-NE' },
+    { country: 'US', countrySubDivision: 'US-NJ' },
   ],
 };
 
