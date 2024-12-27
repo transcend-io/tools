@@ -51,6 +51,19 @@ export type ConfigurablePurpose =
   typeof ConfigurablePurpose[keyof typeof ConfigurablePurpose];
 
 /**
+ * Purposes that can be configured
+ */
+export const KnownDefaultPurpose = makeEnum({
+  /** The request is necessary for the essential features of the website */
+  Essential: 'Essential',
+  ...ConfigurablePurpose,
+});
+
+/** Type override */
+export type KnownDefaultPurpose =
+  typeof KnownDefaultPurpose[keyof typeof KnownDefaultPurpose];
+
+/**
  * Purposes used by the purpose map
  */
 export const Purpose = makeEnum({
