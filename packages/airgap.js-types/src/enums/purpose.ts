@@ -13,7 +13,7 @@ export const SpecialTrackingPurpose = makeEnum({
 
 /** Type override */
 export type SpecialTrackingPurpose =
-  typeof SpecialTrackingPurpose[keyof typeof SpecialTrackingPurpose];
+  (typeof SpecialTrackingPurpose)[keyof typeof SpecialTrackingPurpose];
 
 /**
  * Possible values for the default consent that can be given to a tracking purpose
@@ -30,7 +30,7 @@ export const DefaultConsentValue = makeEnum({
 
 /** Type override */
 export type DefaultConsentValue =
-  typeof DefaultConsentValue[keyof typeof DefaultConsentValue];
+  (typeof DefaultConsentValue)[keyof typeof DefaultConsentValue];
 
 /**
  * Purposes that can be configured
@@ -48,7 +48,7 @@ export const ConfigurablePurpose = makeEnum({
 
 /** Type override */
 export type ConfigurablePurpose =
-  typeof ConfigurablePurpose[keyof typeof ConfigurablePurpose];
+  (typeof ConfigurablePurpose)[keyof typeof ConfigurablePurpose];
 
 /**
  * Purposes that can be configured
@@ -61,7 +61,7 @@ export const KnownDefaultPurpose = makeEnum({
 
 /** Type override */
 export type KnownDefaultPurpose =
-  typeof KnownDefaultPurpose[keyof typeof KnownDefaultPurpose];
+  (typeof KnownDefaultPurpose)[keyof typeof KnownDefaultPurpose];
 
 /**
  * Purposes used by the purpose map
@@ -72,4 +72,4 @@ export const Purpose = makeEnum({
 });
 
 /** Type override */
-export type Purpose = typeof Purpose[keyof typeof Purpose];
+export type Purpose = (typeof Purpose)[keyof typeof Purpose];

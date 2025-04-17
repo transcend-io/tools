@@ -12,4 +12,4 @@ export const RegionsOperator = makeEnum({
 });
 /** Override type */
 export type RegionsOperator =
-  typeof RegionsOperator[keyof typeof RegionsOperator];
+  (typeof RegionsOperator)[keyof typeof RegionsOperator];

@@ -13,4 +13,4 @@ export const OnConsentExpiry = makeEnum({
 });
 /** Override type */
 export type OnConsentExpiry =
-  typeof OnConsentExpiry[keyof typeof OnConsentExpiry];
+  (typeof OnConsentExpiry)[keyof typeof OnConsentExpiry];

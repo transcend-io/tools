@@ -249,4 +249,4 @@ export const BrowserLanguage = makeEnum({
 
 /** Overrides type */
 export type BrowserLanguage =
-  typeof BrowserLanguage[keyof typeof BrowserLanguage];
+  (typeof BrowserLanguage)[keyof typeof BrowserLanguage];
