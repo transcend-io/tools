@@ -50,6 +50,8 @@ jobs:
         with:
           fetch-depth: 100 # need the history to do a changed files check below (source, origin)
       - uses: actions/setup-python@v2
+        with:
+          python-version: '3.11'
       - name: Use Node.js 20.x
         uses: actions/setup-node@v1
         with:

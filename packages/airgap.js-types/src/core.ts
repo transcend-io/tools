@@ -594,7 +594,7 @@ const ReservedMetadata = t.partial({
   }),
 });
 
-const CoreTrackingConsentDetails = t.intersection([
+export const CoreTrackingConsentDetails = t.intersection([
   t.type({
     /**
      * Was tracking consent confirmed by the user?
