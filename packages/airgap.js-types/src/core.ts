@@ -87,7 +87,7 @@ export type AirgapAuthMap = {
   /** A `load` event from a just-loaded airgap.js script element (which implies auth by being loaded before airgap.js) */
   load?: Event;
   /** A user-initiated interaction event that was just dispatched. */
-  interaction?: UIEvent;
+  interaction?: Event;
   /** Automatically reload the page if needed to remove CSP. `false` by default. */
   autoReload?: boolean;
   /**
