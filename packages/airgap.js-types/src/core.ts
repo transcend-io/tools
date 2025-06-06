@@ -101,9 +101,10 @@ export type AirgapAuthMap = {
 export type AirgapAuth =
   | null
   | AirgapAuthMap
-  /** A user-initiated interaction event that was just dispatched. */
-  | UIEvent
-  /** A `load` event from a just-loaded airgap.js script element (which implies auth by being loaded before airgap.js) */
+  /**
+   * A user-initiated interaction event that was just dispatched, or
+   * a `load` event from a just-loaded airgap.js script element (which implies auth by being loaded before airgap.js).
+   */
   | Event;
 
 /** A boolean value represented as either `'on'` or `'off'` */
