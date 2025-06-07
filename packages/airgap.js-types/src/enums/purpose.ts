@@ -73,3 +73,17 @@ export const Purpose = makeEnum({
 
 /** Type override */
 export type Purpose = (typeof Purpose)[keyof typeof Purpose];
+
+/** User-configurable user agent privacy signal */
+export const UserPrivacySignalEnum = makeEnum({
+  /** Global Privacy Control */
+  GPC: 'GPC',
+  /** Do Not Track */
+  DNT: 'DNT',
+});
+
+/**
+ * Type override
+ */
+export type UserPrivacySignalEnum =
+  typeof UserPrivacySignalEnum[keyof typeof UserPrivacySignalEnum];
