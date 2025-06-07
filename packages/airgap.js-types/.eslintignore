@@ -12,3 +12,4 @@
 *.testjs
 *.testts
 LICENSE
+*.cjs

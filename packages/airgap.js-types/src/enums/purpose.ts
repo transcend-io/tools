@@ -86,4 +86,4 @@ export const UserPrivacySignalEnum = makeEnum({
  * Type override
  */
 export type UserPrivacySignalEnum =
-  typeof UserPrivacySignalEnum[keyof typeof UserPrivacySignalEnum];
+  (typeof UserPrivacySignalEnum)[keyof typeof UserPrivacySignalEnum];
