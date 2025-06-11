@@ -2,7 +2,7 @@
   "author": "Transcend Inc.",
   "name": "@transcend-io/airgap.js-types",
   "description": "TypeScript types for airgap.js interoperability with custom consent UIs",
-  "version": "12.12.1",
+  "version": "12.12.2",
   "homepage": "https://github.com/transcend-io/airgap.js-types",
   "repository": {
     "type": "git",
@@ -30,7 +30,7 @@
     "io-ts": "^2.2.21"
   },
   "devDependencies": {
-    "@transcend-io/internationalization": "^1.6.0",
+    "@transcend-io/internationalization": "^1.7.1",
     "@transcend-io/privacy-types": "^4.58.0",
     "@typescript-eslint/eslint-plugin": "^6.13.2",
     "@typescript-eslint/parser": "^6.13.2",

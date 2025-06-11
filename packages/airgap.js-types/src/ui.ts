@@ -4,8 +4,8 @@ import * as t from 'io-ts';
 // main
 import { ObjByString, applyEnum, valuesOf } from '@transcend-io/type-utils';
 import {
-  ConsentManagerLanguageKey,
-  LanguageKey,
+  ConsentManagerSupportedTranslationValue,
+  LocaleValue,
 } from '@transcend-io/internationalization';
 
 // local
@@ -38,7 +38,7 @@ export interface ShowConsentManagerOptions {
  */
 export type GetTranscendPolicies = {
   /** The language to fetch policy for - defaults to currently selected language key */
-  locale?: LanguageKey;
+  locale?: LocaleValue;
   /** Template variables to dynamically inject into the policy */
   variables?: ObjByString;
   /**
@@ -94,9 +94,11 @@ export type ConsentManagerAPI = Readonly<{
   /** Show consent manager */
   showConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Set the current active language */
-  setActiveLocale(locale: ConsentManagerLanguageKey): Promise<void>;
+  setActiveLocale(
+    locale: ConsentManagerSupportedTranslationValue,
+  ): Promise<void>;
   /** Get the currently active locale */
-  getActiveLocale: () => ConsentManagerLanguageKey;
+  getActiveLocale: () => ConsentManagerSupportedTranslationValue;
   /** Toggle consent manager */
   toggleConsentManager(options?: ShowConsentManagerOptions): Promise<void>;
   /** Hide consent manager */
@@ -231,7 +233,7 @@ export type RequiredConsentManagerConfig = t.TypeOf<
 >;
 
 export const OptionalConsentManagerConfig = t.partial({
-  /** The set of enabled languages - CSV of ConsentManagerLanguageKey */
+  /** The set of enabled languages - CSV of ConsentManagerSupportedTranslationValue */
   languages: t.string,
   /** The override value for the consent banner z-index */
   uiZIndex: t.string,
