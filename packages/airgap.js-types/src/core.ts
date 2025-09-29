@@ -143,9 +143,16 @@ export type Metadata = Record<string, unknown>;
 
 /** setConsent() options */
 export interface ConsentOptions {
-  /** Was consent confirmed by the user? */
-  confirmed?: boolean;
-  /** Was the UI shown to the user? */
+  /**
+   * - `true` if consent has been confirmed by the user and has not expired
+   * - `0` if consent has been confirmed by the user and has expired
+   * - `false` if consent has not been confirmed by the user
+   */
+  confirmed?: boolean | 0;
+  /**
+   * Was the UI shown to the user?
+   * @deprecated It was discovered that this value was not being set reliably in some versions, and was not being used.
+   */
   prompted?: boolean;
   /**
    * Extra metadata to be synced along with consent
@@ -264,7 +271,10 @@ export type AirgapAPI = Readonly<{
     /** Consent options */
     options?: ConsentOptions,
   ): Promise<boolean> | boolean;
-  /** Sets whether or not the Consent UI has been shown to the user */
+  /**
+   * Sets whether or not the Consent UI has been shown to the user
+   * @deprecated It was discovered that this function was not working reliably in some versions, and that the value it set was not being used.
+   */
   setPrompted(state: boolean): Promise<void>;
   /** Consents the user to all tracking purposes (requires recent UI interaction) */
   optIn(
@@ -598,17 +608,21 @@ const ReservedMetadata = t.partial({
 export const CoreTrackingConsentDetails = t.intersection([
   t.type({
     /**
-     * Was tracking consent confirmed by the user?
-     * If this is false, the consent was resolved from defaults & is not yet confirmed
+     * - `true` if consent has been confirmed by the user and has not expired
+     * - `0` if consent has been confirmed by the user and has expired
+     * - `false` if consent has not been confirmed by the user
      */
-    confirmed: t.boolean,
+    confirmed: t.union([t.boolean, t.literal(0)]),
     /** Consent resolution/last-modified timestamp (ISO 8601) */
     timestamp: t.string,
   }),
   t.partial({
     /** Has the consent been updated (including no-change confirmation) since default resolution */
     updated: t.boolean,
-    /** Whether or not the UI has been shown to the end-user (undefined in older versions of airgap.js) */
+    /**
+     * Whether or not the UI has been shown to the end-user (undefined in older versions of airgap.js)
+     * @deprecated It was discovered that this value was not being set reliably in some versions, and was not being used.
+     */
     prompted: t.boolean,
     /** Arbitrary metadata that customers want to be associated with consent state */
     metadata: t.intersection([ReservedMetadata, t.UnknownRecord]),
