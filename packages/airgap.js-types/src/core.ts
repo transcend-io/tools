@@ -143,12 +143,8 @@ export type Metadata = Record<string, unknown>;
 
 /** setConsent() options */
 export interface ConsentOptions {
-  /**
-   * - `true` if consent has been confirmed by the user and has not expired
-   * - `0` if consent has been confirmed by the user and has expired
-   * - `false` if consent has not been confirmed by the user
-   */
-  confirmed?: boolean | 0;
+  /** Was consent confirmed by the user? */
+  confirmed?: boolean;
   /**
    * Was the UI shown to the user?
    * @deprecated It was discovered that this value was not being set reliably in some versions, and was not being used.
@@ -608,11 +604,10 @@ const ReservedMetadata = t.partial({
 export const CoreTrackingConsentDetails = t.intersection([
   t.type({
     /**
-     * - `true` if consent has been confirmed by the user and has not expired
-     * - `0` if consent has been confirmed by the user and has expired
-     * - `false` if consent has not been confirmed by the user
+     * Was tracking consent confirmed by the user?
+     * If this is false, the consent was resolved from defaults & is not yet confirmed
      */
-    confirmed: t.union([t.boolean, t.literal(0)]),
+    confirmed: t.boolean,
     /** Consent resolution/last-modified timestamp (ISO 8601) */
     timestamp: t.string,
   }),
