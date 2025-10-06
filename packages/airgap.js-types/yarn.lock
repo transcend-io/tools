@@ -338,9 +338,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@transcend-io/airgap.js-types@workspace:."
   dependencies:
-    "@transcend-io/internationalization": "npm:^1.7.1"
-    "@transcend-io/privacy-types": "npm:^4.58.0"
-    "@transcend-io/type-utils": "npm:^1.2.0"
+    "@transcend-io/internationalization": "npm:^2.0.0"
+    "@transcend-io/privacy-types": "npm:^4.138.0"
+    "@transcend-io/type-utils": "npm:^1.8.4"
     "@typescript-eslint/eslint-plugin": "npm:^6.13.2"
     "@typescript-eslint/parser": "npm:^6.13.2"
     "@yarnpkg/pnpify": "npm:^4.1.3"
@@ -360,31 +360,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@transcend-io/internationalization@npm:^1.7.1":
-  version: 1.7.2
-  resolution: "@transcend-io/internationalization@npm:1.7.2"
-  checksum: 10c0/c4a7c6c3a990ee0053cafc02d82fd21a3893cc2e0bb7a74d1128fc3a681b01da504a9263358d6c0a547cbff94c0bca0ce99baeafc0e35d07aec0edb875201c1a
+"@transcend-io/internationalization@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "@transcend-io/internationalization@npm:2.0.0"
+  checksum: 10c0/80de69b61bab6f2e385e333c21140fefadf19389b52f7bc1fd575f2f1ec1d176eb059fcf909f35ca6538e139307e288bf95e2e93dc5993bba1e2a74d1340a052
   languageName: node
   linkType: hard
 
-"@transcend-io/privacy-types@npm:^4.58.0":
-  version: 4.58.0
-  resolution: "@transcend-io/privacy-types@npm:4.58.0"
+"@transcend-io/privacy-types@npm:^4.138.0":
+  version: 4.138.0
+  resolution: "@transcend-io/privacy-types@npm:4.138.0"
   dependencies:
-    "@transcend-io/type-utils": "npm:^1.0.5"
+    "@transcend-io/internationalization": "npm:^2.0.0"
+    "@transcend-io/type-utils": "npm:^1.8.4"
     fp-ts: "npm:^2.16.1"
     io-ts: "npm:^2.2.21"
-  checksum: 10c0/fd8e21db86f209c9fb45a606a880634766aaa9f6c9e1df1dba78f696de2ab7112a9a46b33f918eb6992293ba9b915a1f06686b45f73954345493290a9ba4fce2
+  checksum: 10c0/4249db87edfc3dc4fa70a9d2b4c64a47a23028c8e5870dcb03015e75c30d607be29f948149d6ec7df98b0aa004f750dd82badafca3c70773daa60e76dd39f944
   languageName: node
   linkType: hard
 
-"@transcend-io/type-utils@npm:^1.0.5, @transcend-io/type-utils@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "@transcend-io/type-utils@npm:1.2.0"
+"@transcend-io/type-utils@npm:^1.8.4":
+  version: 1.8.4
+  resolution: "@transcend-io/type-utils@npm:1.8.4"
   dependencies:
     fp-ts: "npm:^2.16.1"
     io-ts: "npm:^2.2.21"
-  checksum: 10c0/79451c648d158b3dcd8b761615c611ef6403454f2cd484e7f1fc194e8b30580afb9d848018e604653497b853f311e2c34c68f4eea9602cee9824f7c241af9e00
+  checksum: 10c0/6da035c1972772f1d1188ce4444c12bb434be925ebf0654f4cb79056cc09fbe5f883600148548fd80bceb4ec65291c5cc17372a91816442d82daf6e1b3c49fed
   languageName: node
   linkType: hard
 
