@@ -27,8 +27,8 @@ const RAW_RUNTIME_STATE =
       [null, {\
         "packageLocation": "./",\
         "packageDependencies": [\
-          ["@transcend-io/internationalization", "npm:2.0.0"],\
-          ["@transcend-io/privacy-types", "npm:4.138.0"],\
+          ["@transcend-io/internationalization", "npm:2.2.0"],\
+          ["@transcend-io/privacy-types", "npm:4.139.1"],\
           ["@transcend-io/type-utils", "npm:1.8.4"],\
           ["@typescript-eslint/eslint-plugin", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:6.13.2"],\
           ["@typescript-eslint/parser", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:6.13.2"],\
@@ -441,8 +441,8 @@ const RAW_RUNTIME_STATE =
         "packageLocation": "./",\
         "packageDependencies": [\
           ["@transcend-io/airgap.js-types", "workspace:."],\
-          ["@transcend-io/internationalization", "npm:2.0.0"],\
-          ["@transcend-io/privacy-types", "npm:4.138.0"],\
+          ["@transcend-io/internationalization", "npm:2.2.0"],\
+          ["@transcend-io/privacy-types", "npm:4.139.1"],\
           ["@transcend-io/type-utils", "npm:1.8.4"],\
           ["@typescript-eslint/eslint-plugin", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:6.13.2"],\
           ["@typescript-eslint/parser", "virtual:d262a2542c3ed3ed86c11b9ff398f7194c0f4f174cdc58addabf550f1f32ecdd3b75fbb2147b0315aab4620df498ccccbb7a830e24e6351590360415ce86dd82#npm:6.13.2"],\
@@ -465,20 +465,20 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["@transcend-io/internationalization", [\
-      ["npm:2.0.0", {\
-        "packageLocation": "../../.yarn/berry/cache/@transcend-io-internationalization-npm-2.0.0-5b73c39b5b-10c0.zip/node_modules/@transcend-io/internationalization/",\
+      ["npm:2.2.0", {\
+        "packageLocation": "../../.yarn/berry/cache/@transcend-io-internationalization-npm-2.2.0-1531a773c1-10c0.zip/node_modules/@transcend-io/internationalization/",\
         "packageDependencies": [\
-          ["@transcend-io/internationalization", "npm:2.0.0"]\
+          ["@transcend-io/internationalization", "npm:2.2.0"]\
         ],\
         "linkType": "HARD"\
       }]\
     ]],\
     ["@transcend-io/privacy-types", [\
-      ["npm:4.138.0", {\
-        "packageLocation": "../../.yarn/berry/cache/@transcend-io-privacy-types-npm-4.138.0-194cb5ce72-10c0.zip/node_modules/@transcend-io/privacy-types/",\
+      ["npm:4.139.1", {\
+        "packageLocation": "../../.yarn/berry/cache/@transcend-io-privacy-types-npm-4.139.1-0ffa5777d9-10c0.zip/node_modules/@transcend-io/privacy-types/",\
         "packageDependencies": [\
-          ["@transcend-io/privacy-types", "npm:4.138.0"],\
-          ["@transcend-io/internationalization", "npm:2.0.0"],\
+          ["@transcend-io/privacy-types", "npm:4.139.1"],\
+          ["@transcend-io/internationalization", "npm:2.2.0"],\
           ["@transcend-io/type-utils", "npm:1.8.4"],\
           ["fp-ts", "npm:2.16.1"],\
           ["io-ts", "virtual:cf70873fba693c45e12eaa2d75c95b8f826f7c6ecae22c907dd641a734cc988a6f014d29b42deaa1743aa40d0580245d37ded40b27610597f1c48d1b1650eed5#npm:2.2.21"]\

@@ -338,8 +338,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@transcend-io/airgap.js-types@workspace:."
   dependencies:
-    "@transcend-io/internationalization": "npm:^2.0.0"
-    "@transcend-io/privacy-types": "npm:^4.138.0"
+    "@transcend-io/internationalization": "npm:^2.2.0"
+    "@transcend-io/privacy-types": "npm:^4.139.1"
     "@transcend-io/type-utils": "npm:^1.8.4"
     "@typescript-eslint/eslint-plugin": "npm:^6.13.2"
     "@typescript-eslint/parser": "npm:^6.13.2"
@@ -360,22 +360,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@transcend-io/internationalization@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "@transcend-io/internationalization@npm:2.0.0"
-  checksum: 10c0/80de69b61bab6f2e385e333c21140fefadf19389b52f7bc1fd575f2f1ec1d176eb059fcf909f35ca6538e139307e288bf95e2e93dc5993bba1e2a74d1340a052
+"@transcend-io/internationalization@npm:^2.2.0":
+  version: 2.2.0
+  resolution: "@transcend-io/internationalization@npm:2.2.0"
+  checksum: 10c0/224762ce0f2596586ab1c51fa2e85062c794040e946c72df6e84e2e507f6ea09a446ef3f18c39c468824aec599f24fc4324f9c44321659b9b0558516073498d5
   languageName: node
   linkType: hard
 
-"@transcend-io/privacy-types@npm:^4.138.0":
-  version: 4.138.0
-  resolution: "@transcend-io/privacy-types@npm:4.138.0"
+"@transcend-io/privacy-types@npm:^4.139.1":
+  version: 4.139.1
+  resolution: "@transcend-io/privacy-types@npm:4.139.1"
   dependencies:
-    "@transcend-io/internationalization": "npm:^2.0.0"
+    "@transcend-io/internationalization": "npm:^2.2.0"
     "@transcend-io/type-utils": "npm:^1.8.4"
     fp-ts: "npm:^2.16.1"
     io-ts: "npm:^2.2.21"
-  checksum: 10c0/4249db87edfc3dc4fa70a9d2b4c64a47a23028c8e5870dcb03015e75c30d607be29f948149d6ec7df98b0aa004f750dd82badafca3c70773daa60e76dd39f944
+  checksum: 10c0/8235178786ce4f6a7ea07ad8c57c78cf7bfa99a7b6cb75bd6281cb7607f76293b16bbe0fb6c0711b4db87b4861845e026cc354c5ab7804a5bf03cebe50cd0628
   languageName: node
   linkType: hard
 
