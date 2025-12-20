@@ -82,7 +82,7 @@ jobs:
         shell: bash
       - run: yarn
       - name: Publish to yarn/npm
-        run: yarn npm publish
+        run: yarn npm publish --provenance
 
   build-to-github-packages:
     if: github.ref == 'refs/heads/main'
