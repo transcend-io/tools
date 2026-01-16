@@ -225,6 +225,23 @@ export type CookieWatcher = (event: IPendingCookieMutation) => void;
 /** Event types (for purpose resolution) */
 export type TrackingEventType = 'request' | 'cookie';
 
+/** Airgap sync types */
+export type AirgapSyncType = 'consent' | 'quarantine';
+
+/** airgap.sync() options */
+export interface SyncOptions {
+  /** types of data to sync */
+  sync?: AirgapSyncType[];
+  /** reset synchronized data (default: false) */
+  reset?: boolean;
+  /** sync locally (i.e. XDI) */
+  local?: boolean;
+  /** sync with remote endpoint */
+  backend?: boolean;
+  /** signed authentication token to link consent with encrypted identifier */
+  auth?: string;
+}
+
 /** airgap.js API */
 export type AirgapAPI = Readonly<{
   /** Embedded request watchers */
@@ -238,7 +255,7 @@ export type AirgapAPI = Readonly<{
   /** Queue of callbacks to dispatch once airgap is ready */
   readyQueue?: ((airgap: AirgapAPI) => void)[];
   /** Enqueue cross-domain data sync across all airgap bundle domains */
-  sync(): Promise<void>;
+  sync(options?: SyncOptions): Promise<void>;
   /**
    * Resolve URL input reserialization post-regulation.
    * @param resolveOverrides - Resolve overrides. Defaults to true.
