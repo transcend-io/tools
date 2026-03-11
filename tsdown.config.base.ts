@@ -1,8 +1,10 @@
-const sharedLibraryConfig = {
+import type { UserConfig } from 'tsdown';
+
+const sharedLibraryConfig: UserConfig = {
   clean: true,
   dts: true,
   format: ['esm'],
   sourcemap: true,
-} as const;
+};
 
 export default sharedLibraryConfig;
