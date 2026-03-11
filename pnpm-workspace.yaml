@@ -1,0 +1,15 @@
+packages:
+  - 'packages/*'
+  - 'apps/*'
+
+catalog:
+  '@arethetypeswrong/cli': ^0.18.2
+  '@changesets/cli': ^2.30.0
+  '@types/node': ^25.4.0
+  oxfmt: ^0.38.0
+  oxlint: ^1.53.0
+  syncpack: ^14.2.0
+  tsdown: ^0.21.2
+  turbo: ^2.8.16
+  typescript: ^5.9.3
+  vitest: ^4.0.18

@@ -1,1 +1,7 @@
 .DS_Store
+.pnpm-store
+.turbo
+coverage
+dist
+node_modules
+*.tsbuildinfo

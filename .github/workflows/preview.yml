@@ -1,0 +1,50 @@
+name: Preview Release
+
+on:
+  pull_request:
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: corepack enable
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Publish PR previews
+        shell: bash
+        run: |
+          set +e
+          output="$(pnpx pkg-pr-new publish "./packages/*" 2>&1)"
+          status=$?
+          set -e
+
+          printf '%s\n' "$output"
+
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+
+          if [[ "$output" == *"is not installed on ${GITHUB_REPOSITORY}"* ]]; then
+            echo "::warning::pkg.pr.new is not installed for ${GITHUB_REPOSITORY}. Skipping preview publish."
+            exit 0
+          fi
+
+          exit "$status"
