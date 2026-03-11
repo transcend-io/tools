@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/utils",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Starter shared utilities for the Transcend developer tools monorepo.",
   "license": "MIT",
   "files": [
