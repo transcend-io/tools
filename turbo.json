@@ -2,7 +2,9 @@
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [
     "pnpm-lock.yaml",
+    ".node-version",
     "tsconfig.base.json",
+    "tsdown.config.base.ts",
     "vitest.config.ts",
     "oxlint.json",
     ".oxfmtrc.jsonc"
@@ -12,12 +14,37 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "lint": {},
+    "lint:fix": {
+      "cache": false
+    },
+    "format": {
+      "cache": false
+    },
+    "format:check": {},
+    "syncpack:lint": {},
+    "quality": {
+      "dependsOn": [
+        "lint",
+        "//#lint:root",
+        "format:check",
+        "//#format:check:root",
+        "syncpack:lint",
+        "//#syncpack:lint:root"
+      ]
+    },
+    "quality:fix": {
+      "dependsOn": ["lint:fix", "//#lint:fix:root", "format", "//#format:root"]
+    },
     "test": {
-      "dependsOn": ["build"],
+      "dependsOn": ["transit"],
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["transit"],
       "outputs": []
     },
     "check-exports": {
@@ -27,6 +54,15 @@
     "dev": {
       "cache": false,
       "persistent": true
-    }
+    },
+    "//#lint:root": {},
+    "//#lint:fix:root": {
+      "cache": false
+    },
+    "//#format:root": {
+      "cache": false
+    },
+    "//#format:check:root": {},
+    "//#syncpack:lint:root": {}
   }
 }

@@ -9,15 +9,25 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version-file: '.node-version'
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
+      - if: github.event_name == 'pull_request'
+        env:
+          CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: pnpm check:changeset
       - run: pnpm install --frozen-lockfile
+      - run: pnpm syncpack:lint
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
