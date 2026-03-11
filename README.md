@@ -1,10 +1,38 @@
 # Transcend Developer Tools Monorepo
 
-Modern pnpm/Turborepo workspace for consolidating Transcend's public TypeScript packages under
+Monorepo for Transcend's public TypeScript developer tools and client-facing npm packages under
 `@transcend-io/*`.
 
-This scaffold follows the stack in `monorepo-plan.md`: pnpm catalogs, Turborepo, tsdown,
-Vitest, Oxlint, Oxfmt, Changesets, attw, and GitHub Actions wired for npm trusted publishing.
+This repo is built on modern TypeScript library tooling:
+
+- `pnpm` workspaces and catalogs
+- `turbo` for orchestration and caching
+- `tsdown` for package builds
+- `vitest` for tests
+- `oxlint` and `oxfmt` for linting and formatting
+- `changesets` for versioning and releases
+- `attw` for export validation
+
+The architecture and tool choices are documented in `monorepo-plan.md`.
+
+## Getting Started
+
+```bash
+corepack enable
+pnpm install
+pnpm quality
+pnpm build
+pnpm test
+```
+
+The expected Node version is pinned in `.node-version`.
+
+## Workspace Layout
+
+- `packages/*`: publishable libraries
+- `apps/*`: non-publishable apps if we add them later
+- `.changeset/*`: release intent files
+- `.github/workflows/*`: CI, preview, and release automation
 
 ## Included Starter Packages
 
@@ -14,13 +42,15 @@ Vitest, Oxlint, Oxfmt, Changesets, attw, and GitHub Actions wired for npm truste
 `@transcend-io/core` depends on `@transcend-io/utils`, so the workspace exercises internal
 package linking, build ordering, and export validation out of the box.
 
-## Commands
+## Common Commands
 
 ```bash
-pnpm install
 pnpm quality
+pnpm quality:fix
 pnpm format
+pnpm format:check
 pnpm lint
+pnpm lint:fix
 pnpm syncpack:lint
 pnpm typecheck
 pnpm build
@@ -29,19 +59,10 @@ pnpm check-exports
 pnpm changeset
 ```
 
-## Notes
+Use `pnpm --filter <package-name> <script>` to run commands against a single package.
 
-- Packages use the `@transcend-io/source` custom export condition for live TypeScript resolution
-  inside the monorepo.
-- `test` and `typecheck` use a shared Turbo `transit` node so dependency changes invalidate
-  downstream tasks without forcing build-first execution.
-- This repo intentionally keeps `tsconfig.base.json` plus a root `tsconfig.json` with project
-  references. That is a deliberate divergence from Turborepo's package-local default because these
-  packages optimize for `isolatedDeclarations`, declaration maps, and editor navigation during
-  library migration.
-- CI and release workflows are ready to use Turbo Remote Cache when `TURBO_TOKEN` and
-  `TURBO_TEAM` are configured in GitHub Actions.
-- Pull requests that change publishable packages under `packages/` are expected to include a
-  changeset file.
-- Publishing is ESM-only and wired for Changesets plus npm trusted publishing via GitHub Actions.
-- Replace the starter packages in `packages/` as you migrate the existing repositories.
+## Documentation
+
+- `CONTRIBUTING.md`: day-to-day development, package conventions, changesets, previews, and
+  stable releases
+- `monorepo-plan.md`: stack rationale and original implementation plan
