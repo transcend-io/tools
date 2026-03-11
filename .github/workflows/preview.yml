@@ -2,9 +2,10 @@ name: Preview Release
 
 on:
   pull_request:
-  push:
-    branches-ignore:
-      - main
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   preview:
