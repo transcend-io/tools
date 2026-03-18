@@ -3,5 +3,7 @@
 .turbo
 coverage
 dist
+mise.local.lock
+mise.local.toml
 node_modules
 *.tsbuildinfo

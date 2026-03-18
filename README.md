@@ -14,18 +14,30 @@ This repo is built on modern TypeScript library tooling:
 - `attw` for export validation
 
 The architecture and tool choices are documented in `monorepo-plan.md`.
+`mise.toml` is the source of truth for the pinned Node runtime, while `package.json` keeps owning
+the exact `pnpm` version via `packageManager`.
 
 ## Getting Started
 
+Install [`mise`](https://mise.jdx.dev/) first, then bootstrap the repo:
+
 ```bash
-corepack enable
-pnpm install
+mise trust mise.toml
+mise install
+mise run bootstrap
 pnpm quality
 pnpm build
 pnpm test
 ```
 
-The expected Node version is pinned in `.node-version`.
+`mise run bootstrap` enables Corepack when needed and installs workspace dependencies with the
+repo-pinned `pnpm` version.
+
+## Dev Container
+
+The repo includes a `.devcontainer/devcontainer.json` that installs `mise`, uses the same
+`mise.toml`, and caches the `mise` data directory in a named volume. Reopen the workspace in the
+devcontainer if you want the same toolchain inside a container.
 
 ## Workspace Layout
 
@@ -66,3 +78,10 @@ Use `pnpm --filter <package-name> <script>` to run commands against a single pac
 - `CONTRIBUTING.md`: day-to-day development, package conventions, changesets, previews, and
   stable releases
 - `monorepo-plan.md`: stack rationale and original implementation plan
+
+## Notes
+
+- CI, preview, and release workflows resolve Node from `mise.toml`, so local development and
+  GitHub Actions share the same runtime source of truth.
+- `.vscode/settings.json` and `.vscode/extensions.json` keep editor integration minimal and aligned
+  with `oxfmt`/`oxlint`.

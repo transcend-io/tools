@@ -9,16 +9,16 @@ The root package is private. The publishable packages live under `packages/`.
 
 ## Prerequisites
 
-- Node.js 22
-- pnpm 10
-- Corepack enabled
+- `mise`
 
 ```bash
-corepack enable
-pnpm install
+mise trust mise.toml
+mise install
+mise run bootstrap
 ```
 
-The expected Node version is pinned in `.node-version`.
+`mise.toml` pins the Node runtime for local development, devcontainers, and CI. `package.json`
+remains the source of truth for the exact `pnpm` version.
 
 ## Repository Layout
 
@@ -32,7 +32,7 @@ The expected Node version is pinned in `.node-version`.
 
 For most changes, the basic loop is:
 
-1. Install dependencies with `pnpm install`.
+1. Install dependencies with `mise run bootstrap`.
 2. Make your code changes in the relevant workspace package.
 3. Run targeted package commands while iterating.
 4. Run repo-level checks before opening a PR.
