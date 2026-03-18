@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["monorepo-plan.md"],
+  "ignorePatterns": [".changeset/*.md"],
   "printWidth": 100,
   "tabWidth": 2,
   "semi": true,
