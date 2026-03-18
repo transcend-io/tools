@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@types/sequelize": "^4.28.20",
-    "typescript": "^5.0.4"
+    "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.24.0"
 }
