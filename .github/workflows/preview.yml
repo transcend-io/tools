@@ -28,12 +28,12 @@ jobs:
       - run: mise trust --yes mise.toml
       - run: mise install --locked
       - run: mise run bootstrap
-      - run: pnpm build
+      - run: mise exec -- pnpm build
       - name: Publish PR previews
         shell: bash
         run: |
           set +e
-          output="$(pnpx pkg-pr-new publish "./packages/*" 2>&1)"
+          output="$(mise exec -- pnpx pkg-pr-new publish "./packages/*" 2>&1)"
           status=$?
           set -e
 
