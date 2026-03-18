@@ -33,11 +33,11 @@ jobs:
       - if: github.event_name == 'pull_request'
         env:
           CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: pnpm check:changeset
-      - run: pnpm syncpack:lint
-      - run: pnpm lint
-      - run: pnpm format:check
-      - run: pnpm typecheck
-      - run: pnpm build
-      - run: pnpm test
-      - run: pnpm check-exports
+        run: mise exec -- pnpm check:changeset
+      - run: mise exec -- pnpm syncpack:lint
+      - run: mise exec -- pnpm lint
+      - run: mise exec -- pnpm format:check
+      - run: mise exec -- pnpm typecheck
+      - run: mise exec -- pnpm build
+      - run: mise exec -- pnpm test
+      - run: mise exec -- pnpm check-exports

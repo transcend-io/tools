@@ -30,8 +30,8 @@ pnpm build
 pnpm test
 ```
 
-`mise run bootstrap` enables Corepack when needed and installs workspace dependencies with the
-repo-pinned `pnpm` version.
+`mise install` enables Corepack via a `mise` hook, and `mise run bootstrap` installs workspace
+dependencies with the repo-pinned `pnpm` version.
 
 ## Dev Container
 

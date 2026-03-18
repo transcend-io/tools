@@ -28,16 +28,16 @@ jobs:
       - run: mise trust --yes mise.toml
       - run: mise install --locked
       - run: mise run bootstrap
-      - run: pnpm syncpack:lint
-      - run: pnpm lint
-      - run: pnpm format:check
-      - run: pnpm typecheck
-      - run: pnpm build
-      - run: pnpm test
-      - run: pnpm check-exports
+      - run: mise exec -- pnpm syncpack:lint
+      - run: mise exec -- pnpm lint
+      - run: mise exec -- pnpm format:check
+      - run: mise exec -- pnpm typecheck
+      - run: mise exec -- pnpm build
+      - run: mise exec -- pnpm test
+      - run: mise exec -- pnpm check-exports
       - uses: changesets/action@v1
         with:
-          publish: pnpm release
-          version: pnpm version-packages
+          publish: mise exec -- pnpm release
+          version: mise exec -- pnpm version-packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
