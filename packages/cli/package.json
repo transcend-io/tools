@@ -76,8 +76,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
-    "script:transcend-json-schema": "tsx scripts/buildTranscendJsonSchema.ts && oxfmt --write ./transcend-yml-schema-*.json",
-    "script:pathfinder-json-schema": "tsx scripts/buildPathfinderJsonSchema.ts && oxfmt --write ./pathfinder-policy-yml-schema.json",
+    "script:transcend-json-schema": "tsx scripts/buildTranscendJsonSchema.ts && oxfmt --write ./schema/transcend-yml-schema-*.json",
+    "script:pathfinder-json-schema": "tsx scripts/buildPathfinderJsonSchema.ts && oxfmt --write ./schema/pathfinder-policy-yml-schema.json",
     "docgen": "tsx scripts/buildReadmeDocs.ts",
     "genfiles": "pnpm script:transcend-json-schema && pnpm script:pathfinder-json-schema && pnpm docgen"
   },

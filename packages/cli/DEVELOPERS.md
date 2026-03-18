@@ -89,10 +89,11 @@ This will generate the README.md file from the command documentation and the `sr
 ### transcend.yml and pathfinder.yml JSON schemas
 
 ```bash
-pnpm script:build-transcend-json-schema
+pnpm script:transcend-json-schema
+pnpm script:pathfinder-json-schema
 ```
 
-This will generate the transcend-yml-schema.json file from the command documentation. These are published to [schemastore](https://github.com/SchemaStore/schemastore) which powers linting / JSON schema support in VSCode and other IDEs.
+These commands generate the `transcend.yml` and `pathfinder.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
 
 ## Testing
 
