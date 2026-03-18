@@ -28,6 +28,7 @@ jobs:
       - run: mise trust --yes mise.toml
       - run: mise install --locked
       - run: mise run bootstrap
+      - run: mise reshim
       - run: pnpm syncpack:lint
       - run: pnpm lint
       - run: pnpm format:check
