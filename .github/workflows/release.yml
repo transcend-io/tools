@@ -27,7 +27,11 @@ jobs:
           cache: true
       - run: mise trust --yes mise.toml
       - run: mise install --locked
-      - run: mise run bootstrap
+      - name: Enable corepack
+        run: |
+          corepack enable
+          echo "$(mise where node)/bin" >> "$GITHUB_PATH"
+      - run: pnpm install --frozen-lockfile
       - run: pnpm syncpack:lint
       - run: pnpm lint
       - run: pnpm format:check

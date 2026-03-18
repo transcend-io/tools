@@ -29,11 +29,15 @@ jobs:
           cache: true
       - run: mise trust --yes mise.toml
       - run: mise install --locked
+      - name: Enable corepack
+        run: |
+          corepack enable
+          echo "$(mise where node)/bin" >> "$GITHUB_PATH"
+      - run: pnpm install --frozen-lockfile
       - if: github.event_name == 'pull_request'
         env:
           CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: pnpm check:changeset
-      - run: mise run bootstrap
       - run: pnpm syncpack:lint
       - run: pnpm lint
       - run: pnpm format:check
