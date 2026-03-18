@@ -1,87 +1,28 @@
 # Transcend Developer Tools Monorepo
 
-Monorepo for Transcend's public TypeScript developer tools and client-facing npm packages under
-`@transcend-io/*`.
+Public TypeScript monorepo for future `@transcend-io/*` developer tools.
 
-This repo is built on modern TypeScript library tooling:
+For setup, day-to-day commands, package conventions, changesets, and releases, start with
+`CONTRIBUTING.md`.
 
-- `pnpm` workspaces and catalogs
-- `turbo` for orchestration and caching
-- `tsdown` for package builds
-- `vitest` for tests
-- `oxlint` and `oxfmt` for linting and formatting
-- `changesets` for versioning and releases
-- `attw` for export validation
+## Packages
 
-The architecture and tool choices are documented in `monorepo-plan.md`.
-`mise.toml` is the source of truth for the pinned Node runtime, while `package.json` keeps owning
-the exact `pnpm` version via `packageManager`.
+The packages in `packages/` are placeholders today. They exist to exercise workspace linking,
+builds, tests, and release automation while the real package surface area takes shape.
 
-## Getting Started
-
-Install [`mise`](https://mise.jdx.dev/) first, then bootstrap the repo:
-
-```bash
-mise trust mise.toml
-mise install
-mise run bootstrap
-pnpm quality
-pnpm build
-pnpm test
-```
-
-`mise install` enables Corepack via a `mise` hook, and `mise run bootstrap` installs workspace
-dependencies with the repo-pinned `pnpm` version.
-
-## Dev Container
-
-The repo includes a `.devcontainer/devcontainer.json` that installs `mise`, uses the same
-`mise.toml`, and caches the `mise` data directory in a named volume. Reopen the workspace in the
-devcontainer if you want the same toolchain inside a container.
+- `packages/utils` (`@transcend-io/utils`): shared naming helpers that normalize human-readable
+  names into display names and npm-friendly slugs.
+- `packages/core` (`@transcend-io/core`): higher-level monorepo helpers built on `utils`; today it
+  creates simple package metadata from a name and directory.
 
 ## Workspace Layout
 
 - `packages/*`: publishable libraries
-- `apps/*`: non-publishable apps if we add them later
+- `apps/*`: reserved for non-publishable apps; empty today
 - `.changeset/*`: release intent files
 - `.github/workflows/*`: CI, preview, and release automation
 
-## Included Starter Packages
+## More Reading
 
-- `@transcend-io/utils`
-- `@transcend-io/core`
-
-`@transcend-io/core` depends on `@transcend-io/utils`, so the workspace exercises internal
-package linking, build ordering, and export validation out of the box.
-
-## Common Commands
-
-```bash
-pnpm quality
-pnpm quality:fix
-pnpm format
-pnpm format:check
-pnpm lint
-pnpm lint:fix
-pnpm syncpack:lint
-pnpm typecheck
-pnpm build
-pnpm test
-pnpm check-exports
-pnpm changeset
-```
-
-Use `pnpm --filter <package-name> <script>` to run commands against a single package.
-
-## Documentation
-
-- `CONTRIBUTING.md`: day-to-day development, package conventions, changesets, previews, and
-  stable releases
-- `monorepo-plan.md`: stack rationale and original implementation plan
-
-## Notes
-
-- CI, preview, and release workflows resolve Node from `mise.toml`, so local development and
-  GitHub Actions share the same runtime source of truth.
-- `.vscode/settings.json` and `.vscode/extensions.json` keep editor integration minimal and aligned
-  with `oxfmt`/`oxlint`.
+- `CONTRIBUTING.md`: setup, workflow, commands, package conventions, and releases
+- `monorepo-plan.md`: rationale behind the stack and original monorepo plan

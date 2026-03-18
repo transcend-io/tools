@@ -1,15 +1,17 @@
 # Contributing
 
-## Overview
+## What This Repo Is
 
-This repository is a `pnpm` + Turborepo monorepo for publishable `@transcend-io/*` TypeScript
+This repository is a `pnpm` + Turborepo monorepo for public `@transcend-io/*` TypeScript
 packages.
 
-The root package is private. The publishable packages live under `packages/`.
+The root package is private. Publishable packages live in `packages/`. The current `core` and
+`utils` packages are starter packages meant to exercise the toolchain, so treat them as examples
+more than mature product libraries.
 
-## Prerequisites
+## Setup
 
-- `mise`
+Install `mise`, then run:
 
 ```bash
 mise trust mise.toml
@@ -17,26 +19,24 @@ mise install
 mise run bootstrap
 ```
 
-`mise.toml` pins the Node runtime for local development, devcontainers, and CI. `package.json`
-remains the source of truth for the exact `pnpm` version.
+`mise.toml` pins the Node version for local development, devcontainers, and CI. `package.json`
+pins the exact `pnpm` version.
 
-## Repository Layout
+## Repo Layout
 
 - `packages/*`: publishable libraries
-- `apps/*`: non-publishable apps if we add them later
+- `apps/*`: reserved for non-publishable apps; empty today
 - `.changeset/*`: release intent files for Changesets
 - `.github/workflows/*`: CI, preview, and release automation
-- `scripts/check-changeset.mjs`: PR-time enforcement for missing changesets
+- `scripts/check-changeset.mjs`: PR check for missing changesets
 
-## Daily Development
+## Daily Workflow
 
-For most changes, the basic loop is:
-
-1. Install dependencies with `mise run bootstrap`.
-2. Make your code changes in the relevant workspace package.
-3. Run targeted package commands while iterating.
-4. Run repo-level checks before opening a PR.
-5. Add a changeset if you changed a publishable package.
+1. Run `mise run bootstrap` after cloning and whenever dependencies change.
+2. Make your change in the relevant package.
+3. While iterating, run targeted commands with `pnpm --filter`.
+4. Before opening a PR, run the repo-level checks affected by your change.
+5. Add a changeset if the change should publish a package release.
 
 ## Common Commands
 
@@ -59,14 +59,20 @@ pnpm changeset
 
 What they do:
 
-- `pnpm quality`: formatting, lint, and dependency-policy checks
+- `pnpm quality`: run formatting, lint, and dependency-policy checks
 - `pnpm quality:fix`: auto-fix formatting and lint issues where possible
+- `pnpm lint`: run `oxlint` across the repo
+- `pnpm lint:fix`: run `oxlint --fix` across the repo
+- `pnpm format`: format the repo with `oxfmt`
+- `pnpm format:check`: verify formatting with `oxfmt --check`
+- `pnpm syncpack:lint`: enforce dependency version policy
 - `pnpm typecheck`: run TypeScript checks across workspace packages
 - `pnpm build`: build publishable packages with `tsdown`
 - `pnpm test`: run package tests with Vitest
 - `pnpm check-exports`: validate published package shape with `attw`
+- `pnpm changeset`: create a changeset file
 
-## Running Commands For One Package
+## Run One Package
 
 Use `pnpm --filter` when you only need to work on one package:
 
@@ -74,45 +80,44 @@ Use `pnpm --filter` when you only need to work on one package:
 pnpm --filter @transcend-io/core build
 pnpm --filter @transcend-io/core test
 pnpm --filter @transcend-io/core typecheck
+pnpm --filter @transcend-io/core check-exports
 ```
 
-This is the fastest way to iterate on a single workspace package before running the full repo
-checks.
+This is the fastest way to iterate on a single package before running the full repo checks.
 
-## Adding Or Updating A Package
+## Add Or Update A Package
 
-New publishable packages should follow the same shape as the starter packages in `packages/core`
-and `packages/utils`.
+New publishable packages should match the shape used in `packages/core` and `packages/utils`.
 
 For a new package:
 
 1. Create `packages/<name>/package.json`.
 2. Add `tsconfig.json`, `tsdown.config.ts`, and `src/index.ts`.
-3. Add tests if the package has behavior worth validating.
-4. Add the package path to the root `tsconfig.json` references list.
-5. If the package depends on another workspace package, use `workspace:*`.
-6. Use shared tool dependencies via `catalog:` instead of hardcoding versions.
+3. Add tests when the package has behavior worth validating.
+4. Add the package to the root `tsconfig.json` references list.
+5. Use `workspace:*` for dependencies on other local packages.
+6. Use `catalog:` for shared tool dependencies.
 
 Current package conventions:
 
 - ESM-only packages with `"type": "module"`
-- Published entrypoints served from `dist/`
-- Live source resolution inside the monorepo via the `@transcend-io/source` export condition
+- published entrypoints served from `dist/`
+- `@transcend-io/source` export condition for live source resolution inside the monorepo
 - `build`, `typecheck`, `test`, and `check-exports` scripts in each publishable package
 
 ## Dependency Management
 
-This repo uses pnpm catalogs from `pnpm-workspace.yaml` for shared dependency versions.
+Shared dependency versions live in `pnpm-workspace.yaml` catalogs.
 
 Guidelines:
 
-- Prefer `catalog:` for shared toolchain dependencies
-- Prefer `workspace:*` for dependencies between local packages
-- Keep dependency additions consistent with the single-version policy enforced by `syncpack`
+- prefer `catalog:` for shared toolchain dependencies
+- prefer `workspace:*` for dependencies between local packages
+- keep additions consistent with the single-version policy enforced by `syncpack`
 
 ## Changesets
 
-Changesets are how this repo records release intent.
+Changesets record release intent.
 
 Create one with:
 
@@ -120,96 +125,72 @@ Create one with:
 pnpm changeset
 ```
 
-You should add a changeset when a PR changes a publishable package under `packages/` in a way that
-should result in a release.
+Add a changeset when you change a publishable package under `packages/` and that change should
+ship to npm.
 
-The CI helper script at `scripts/check-changeset.mjs` enforces this on pull requests. It ignores:
+`scripts/check-changeset.mjs` enforces this on pull requests. It ignores:
 
 - package `README.md` changes
-- test-only changes
+- test files
 - generated `dist/` output
 - `node_modules/` and `.turbo/`
 
-If a PR changes a publishable package and does not include a changeset, CI will fail.
+If a PR changes a publishable package and does not include a changeset, CI fails.
 
 ## Pull Requests
 
-For a normal package change:
+Before you open a PR:
 
 1. Make the code change.
-2. Run targeted checks while iterating.
-3. Run the repo-level checks you expect to be affected.
+2. Run targeted package checks while iterating.
+3. Run the repo-level checks affected by your change.
 4. Add a changeset if the package should be released.
-5. Open a PR.
 
 On pull requests, GitHub Actions runs:
 
-- `CI`: dependency policy, lint, format check, typecheck, build, test, and export validation
-- `Preview Release`: build plus `pkg.pr.new` preview publishing
+- `CI`: the changeset check, `syncpack:lint`, `lint`, `format:check`, `typecheck`, `build`,
+  `test`, and `check-exports`
+- `Preview Release`: `build` plus `pkg.pr.new` preview publishing
 
 `pkg.pr.new` gives us installable preview packages for a PR without publishing to npm.
 
-## Releasing
+## Releases
 
-Stable releases are driven by Changesets plus GitHub Actions.
+Stable releases are driven by Changesets and the `Release` workflow.
 
-### How stable releases work
+Normal flow:
 
-1. A PR lands on `main` with one or more changeset files in `.changeset/`.
-2. The `Release` workflow runs on pushes to `main`.
-3. That workflow reruns the release safety checks:
-   `syncpack:lint`, `lint`, `format:check`, `typecheck`, `build`, `test`, and `check-exports`.
-4. After those pass, `changesets/action` runs:
-   - `pnpm version-packages` to create or update the release PR
-   - `pnpm release` when the repo is already versioned and ready to publish
-5. `pnpm release` currently runs `turbo run build && changeset publish`.
+1. Merge feature PRs with changesets into `main`.
+2. The `Release` workflow reruns `syncpack:lint`, `lint`, `format:check`, `typecheck`, `build`,
+   `test`, and `check-exports`.
+3. `changesets/action` either opens or updates the release PR with `pnpm version-packages`, or
+   publishes with `pnpm release` when the repo is already versioned and ready.
+4. `pnpm release` runs `turbo run build && changeset publish`.
+5. Merging the release PR triggers the npm publish.
 
-In practice, this usually means:
+### Preview Releases
 
-1. Feature PRs add changesets.
-2. Merging those PRs to `main` causes Changesets to open or update a release PR with version bumps
-   and changelog updates.
-3. Merging the release PR triggers the actual npm publish.
+Pull requests also get preview packages via `pkg.pr.new`. Use those when another repo or
+environment needs to test package changes before a stable release.
 
-### Preview releases
+### Trusted Publishing
 
-Pull requests also get preview packages via `pkg.pr.new`.
-
-Those previews are useful when you want another repo or integration environment to test a package
-before a stable npm release.
-
-### Trusted publishing
-
-This repo is set up for npm trusted publishing via GitHub OIDC.
-
-That means:
-
-- the GitHub workflow has `id-token: write`
-- we do not rely on a long-lived `NPM_TOKEN` for normal publishing
-- each published package still needs to be configured in npm to trust this repository/workflow
+This repo is set up for npm trusted publishing via GitHub OIDC. The workflow has `id-token: write`,
+and normal publishing should not require a long-lived `NPM_TOKEN`. Each published package still has
+to be configured in npm to trust this repository and workflow.
 
 If npm trusted publishing is not configured for a package, the release workflow will build and
 version correctly but fail at publish time.
 
-### Manual releases
+### Manual Releases
 
-`release.yml` also supports `workflow_dispatch`.
-
-Use that for reruns or recovery when necessary, not as the normal release path. The normal flow is
-still:
-
-1. merge package PRs with changesets
-2. merge the release PR
-3. let GitHub Actions publish
+`release.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
+release path.
 
 ## Remote Cache
 
-CI and release workflows are ready for Turbo remote caching when these GitHub settings are present:
-
-- `secrets.TURBO_TOKEN`
-- `vars.TURBO_TEAM`
-
-Local development does not require remote cache.
+CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN` and
+`vars.TURBO_TEAM` are configured. Local development does not require remote cache.
 
 ## Before You Merge
 
@@ -217,5 +198,5 @@ Before merging a package-affecting PR, make sure:
 
 - the relevant tests pass
 - `pnpm typecheck` is clean for the affected packages
-- `pnpm check-exports` passes if you changed package entrypoints or manifest exports
+- `pnpm check-exports` passes if you changed entrypoints or manifest exports
 - a changeset is included when the change should ship to npm
