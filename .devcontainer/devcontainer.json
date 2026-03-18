@@ -1,0 +1,12 @@
+{
+  "name": "developer-tools",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers-extra/features/mise:1": {}
+  },
+  "containerEnv": {
+    "MISE_DATA_DIR": "/mise-data"
+  },
+  "mounts": ["source=developer-tools-mise-data,target=/mise-data,type=volume"],
+  "postCreateCommand": "mise trust --yes mise.toml && mise install --locked && mise run bootstrap"
+}

@@ -1,0 +1,24 @@
+min_version = "2026.2.17"
+
+[settings]
+lockfile = true
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+[tools]
+node = "22.22.0"
+
+[tasks.bootstrap]
+description = "Enable pnpm via Corepack and install workspace dependencies"
+run = '''
+if ! command -v corepack >/dev/null 2>&1; then
+  npm install --global corepack@latest
+fi
+corepack enable
+if [ "${CI:-}" = "true" ]; then
+  pnpm install --frozen-lockfile
+else
+  pnpm install
+fi
+'''
