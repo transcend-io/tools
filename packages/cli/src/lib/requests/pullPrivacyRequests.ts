@@ -5,39 +5,14 @@ import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { map } from '../bluebird.js';
 import {
-  RequestIdentifier,
   buildTranscendGraphQLClient,
   createSombraGotInstance,
-  fetchAllRequestIdentifiers,
+  fetchRequestIdentifiersBatch,
   fetchAllRequests,
   validateSombraVersion,
 } from '../graphql/index.js';
 import { formatRequestForCsv, CsvRow, ExportedPrivacyRequest } from './formatRequestForCsv.js';
-
-/**
- * Split a date range into N evenly-spaced chunks.
- *
- * @param after - Start of the date range
- * @param before - End of the date range
- * @param chunks - Number of chunks to split into
- * @returns Array of date range bounds
- */
-function splitDateRange(
-  after: Date,
-  before: Date,
-  chunks: number,
-): {
-  /** Chunk start */ createdAtAfter: Date;
-  /** Chunk end */ createdAtBefore: Date;
-}[] {
-  const /** Range start ms */ start = after.getTime();
-  const /** Range end ms */ end = before.getTime();
-  const /** Ms per chunk */ chunkSize = (end - start) / chunks;
-  return Array.from({ length: chunks }, (_, i) => ({
-    createdAtAfter: new Date(start + chunkSize * i),
-    createdAtBefore: new Date(i === chunks - 1 ? end : start + chunkSize * (i + 1)),
-  }));
-}
+import { splitDateRange } from './splitDateRange.js';
 
 /**
  * Pull down a list of privacy requests
@@ -51,7 +26,6 @@ export async function pullPrivacyRequests({
   actions = [],
   statuses = [],
   identifierSearch,
-  pageLimit = 100,
   concurrency = 1,
   transcendUrl = DEFAULT_TRANSCEND_API,
   createdAtBefore,
@@ -150,27 +124,16 @@ export async function pullPrivacyRequests({
   }
 
   // Fetch the request identifiers for those requests
-  const requestsWithRequestIdentifiers = skipRequestIdentifiers
-    ? requests.map((request) => ({
-        ...request,
-        requestIdentifiers: [] as RequestIdentifier[],
-      }))
-    : await map(
-        requests,
-        async (request) => {
-          const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
-            requestId: request.id,
-            skipSombraCheck: true,
-          });
-          return {
-            ...request,
-            requestIdentifiers,
-          };
-        },
-        {
-          concurrency: pageLimit,
-        },
-      );
+  const identifiersByRequest = skipRequestIdentifiers
+    ? new Map()
+    : await fetchRequestIdentifiersBatch(sombra, {
+        requestIds: requests.map((r) => r.id),
+      });
+
+  const requestsWithRequestIdentifiers = requests.map((request) => ({
+    ...request,
+    requestIdentifiers: identifiersByRequest.get(request.id) ?? [],
+  }));
 
   logger.info(colors.magenta(`Pulled ${requestsWithRequestIdentifiers.length} requests`));
 

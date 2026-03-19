@@ -9,38 +9,14 @@ import { map } from '../bluebird.js';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
-  fetchAllRequestIdentifiers,
+  fetchRequestIdentifiersBatch,
   fetchAllRequests,
   fetchRequestsTotalCount,
   validateSombraVersion,
 } from '../graphql/index.js';
 import { initCsvFile, appendCsvRowsOrdered, parseFilePath } from '../helpers/index.js';
 import { formatRequestForCsv, ExportedPrivacyRequest } from './formatRequestForCsv.js';
-
-interface ChunkedDateRange {
-  /** Chunk start */
-  createdAtAfter: Date;
-  /** Chunk end */
-  createdAtBefore: Date;
-}
-
-/**
- * Split a date range into N evenly-spaced chunks.
- *
- * @param after - Start of the date range
- * @param before - End of the date range
- * @param chunks - Number of chunks to split into
- * @returns Array of date range bounds
- */
-function splitDateRange(after: Date, before: Date, chunks: number): ChunkedDateRange[] {
-  const startMs = after.getTime();
-  const endMs = before.getTime();
-  const chunkSize = (endMs - startMs) / chunks;
-  return Array.from({ length: chunks }, (_, i) => ({
-    createdAtAfter: new Date(startMs + chunkSize * i),
-    createdAtBefore: new Date(i === chunks - 1 ? endMs : startMs + chunkSize * (i + 1)),
-  }));
-}
+import { splitDateRange } from './splitDateRange.js';
 
 /**
  * Stream privacy requests directly to CSV files, one file per date-range chunk.
@@ -57,7 +33,6 @@ export async function streamPrivacyRequestsToCsv({
   statuses = [],
   identifierSearch,
   concurrency = 1,
-  pageLimit = 100,
   transcendUrl = DEFAULT_TRANSCEND_API,
   createdAtBefore,
   createdAtAfter,
@@ -202,19 +177,15 @@ export async function streamPrivacyRequestsToCsv({
             if (nodes.length === 0) return;
 
             // Optionally enrich each request with its identifiers
-            const enriched: ExportedPrivacyRequest[] = skipRequestIdentifiers
-              ? nodes.map((n) => ({ ...n, requestIdentifiers: [] }))
-              : await map(
-                  nodes,
-                  async (n) => ({
-                    ...n,
-                    requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
-                      requestId: n.id,
-                      skipSombraCheck: true,
-                    }),
-                  }),
-                  { concurrency: pageLimit },
-                );
+            const identifiersByRequest = skipRequestIdentifiers
+              ? new Map()
+              : await fetchRequestIdentifiersBatch(sombra!, {
+                  requestIds: nodes.map((n) => n.id),
+                });
+            const enriched: ExportedPrivacyRequest[] = nodes.map((n) => ({
+              ...n,
+              requestIdentifiers: identifiersByRequest.get(n.id) ?? [],
+            }));
 
             const rows: Record<string, string | null | number | boolean>[] =
               enriched.map(formatRequestForCsv);
