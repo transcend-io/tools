@@ -22,6 +22,13 @@ mise run bootstrap
 `mise.toml` pins the Node version for local development, devcontainers, and CI. `package.json`
 pins the exact `pnpm` version.
 
+## Linter and Formatter
+
+The repo uses `oxc` for linting and `oxfmt` for formatting.
+
+- You should install the [`oxc.oxc-vscode`](https://open-vsx.org/extension/oxc/oxc-vscode) extension to get the best experience.
+- You should disable ESLint and Prettier extensions, if you have them installed. You can disable them for this repository only by right-clicking the extension and selecting "Disable (Workspace)".
+
 ## Repo Layout
 
 - `packages/*`: publishable libraries
@@ -71,6 +78,19 @@ What they do:
 - `pnpm test`: run package tests with Vitest
 - `pnpm check-exports`: validate published package shape with `attw`
 - `pnpm changeset`: create a changeset file
+
+## Git Hooks
+
+After a normal install from the repo root, Husky configures local Git hooks automatically.
+
+- `pre-commit`: runs `pnpm quality`
+- `pre-push`: runs `pnpm typecheck`, `pnpm test`, and `pnpm check-exports`
+
+These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
+releases.
+
+If you install dependencies with scripts disabled, rerun `pnpm run prepare` from the repo root
+before committing.
 
 ## Run One Package
 

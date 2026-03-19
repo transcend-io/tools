@@ -8,4 +8,19 @@
   "trailingComma": "all",
   "sortImports": {},
   "sortPackageJson": {},
+  /**
+   * JSONC has trailing commas by default, and JSON does not.
+   * Unfortunately, many config files use JSONC, yet have .json extensions (such as .vscode/settings.json)
+   * This creates a mismatch between the rules applied by the oxfmt extension and the CLI.
+   *
+   * https://github.com/oxc-project/oxc-vscode/issues/140#issuecomment-4046299795
+   */
+  "overrides": [
+    {
+      "files": ["**/*.json", "**/*.jsonc"],
+      "options": {
+        "trailingComma": "none"
+      }
+    }
+  ]
 }
