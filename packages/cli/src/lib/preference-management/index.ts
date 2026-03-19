@@ -1,4 +1,3 @@
-export * from './uploadPreferenceManagementPreferencesInteractive.js';
 export * from './codecs.js';
 export * from './getPreferencesForIdentifiers.js';
 export * from './parsePreferenceManagementCsv.js';
@@ -6,7 +5,7 @@ export * from './getPreferenceUpdatesFromRow.js';
 export * from './getPreferenceMetadataFromRow.js';
 export * from './parsePreferenceManagementCsv.js';
 export * from './parsePreferenceIdentifiersFromCsv.js';
-export * from './parsePreferenceTimestampsFromCsv.js';
+export * from './parsePreferenceFileFormatFromCsv.js';
 export * from './parsePreferenceAndPurposeValuesFromCsv.js';
 export * from './checkIfPendingPreferenceUpdatesAreNoOp.js';
 export * from './checkIfPendingPreferenceUpdatesCauseConflict.js';

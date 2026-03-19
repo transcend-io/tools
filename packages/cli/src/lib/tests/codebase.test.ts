@@ -204,7 +204,15 @@ describe('CLI Command Structure', () => {
     test('No unexpected files in command directories', () => {
       // Required + optional files in leaf command dirs
       const requiredFiles = ['command.ts', 'impl.ts'];
-      const optionalFiles = ['readme.ts', 'helpers.ts', 'types.ts', 'worker.ts', 'constants.ts'];
+      const optionalFiles = [
+        'readme.ts',
+        'helpers.ts',
+        'types.ts',
+        'worker.ts',
+        'constants.ts',
+        'buildTaskOptions.ts',
+        'schemaState.ts',
+      ];
 
       // Allowed subdirectories in leaf command dirs
       const allowedDirs = ['artifacts', 'ui', 'upload', 'tests', '__mocks__', '__snapshots__'];
