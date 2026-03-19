@@ -8,7 +8,7 @@
    * Since we use oxc for linting and oxfmt for formatting, we disable ESLint and Prettier extensions.
    * You should disable the extensions for this repository:
    *   - Right-click the extension in the Extensions view and select "Disable (Workspace)".
-   * If formatOnSave is not working, delete any "[typescript]" section in your user settings.json like this:
+   * If formatOnSave is not working, delete any "defaultFormatter" selections in your user settings.json like this:
    *   ```json
    *   "[typescript]": {
    *     "editor.defaultFormatter": "esbenp.prettier-vscode",
