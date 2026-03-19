@@ -1,1 +1,1 @@
-pnpm typecheck && pnpm test && pnpm check-exports
+pnpm exec turbo run typecheck test check-exports --output-logs=errors-only --no-update-notifier
