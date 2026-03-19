@@ -48,7 +48,6 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/commands/dependencies/install_deps
       - run: pnpm script:transcend-json-schema
       - run: pnpm script:pathfinder-json-schema
       - run: pnpm docgen
