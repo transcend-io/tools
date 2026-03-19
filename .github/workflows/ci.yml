@@ -48,8 +48,14 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - run: mise exec -- pnpm script:transcend-json-schema
-      - run: mise exec -- pnpm script:pathfinder-json-schema
-      - run: mise exec -- pnpm docgen
+      - uses: jdx/mise-action@v3
+        with:
+          version: 2026.2.17
+          install: false
+          cache: true
+      - run: mise trust --yes mise.toml
+      - run: mise install --locked
+      - run: mise run bootstrap
+      - run: mise exec -- pnpm genfiles
       - name: Ensure no files changed
         run: git diff --quiet HEAD || (git diff --raw && echo "Detected untracked changes in git after running command '${{ matrix.command }}'" && exit 1)
