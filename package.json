@@ -23,10 +23,12 @@
     "lint:fix:root": "oxlint --fix .",
     "format:root": "oxfmt --write .",
     "format:check:root": "oxfmt --check .",
-    "syncpack:lint:root": "syncpack lint"
+    "syncpack:lint:root": "syncpack lint",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
+    "husky": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "syncpack": "catalog:",
