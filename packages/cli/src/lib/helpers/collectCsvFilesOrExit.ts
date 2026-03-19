@@ -1,10 +1,10 @@
-import { readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
-import colors from "colors";
+import colors from 'colors';
 
-import type { LocalContext } from "../../context.js";
-import { logger } from "../../logger.js";
+import type { LocalContext } from '../../context.js';
+import { logger } from '../../logger.js';
 
 /**
  * Validate flags and collect CSV file paths from a directory.
@@ -19,7 +19,7 @@ export function collectCsvFilesOrExit(
   localContext: LocalContext,
 ): string[] {
   if (!directory) {
-    logger.error(colors.red("A --directory must be provided."));
+    logger.error(colors.red('A --directory must be provided.'));
     localContext.process.exit(1);
   }
 
@@ -27,7 +27,7 @@ export function collectCsvFilesOrExit(
   try {
     const entries = readdirSync(directory);
     files = entries
-      .filter((f) => f.endsWith(".csv"))
+      .filter((f) => f.endsWith('.csv'))
       .map((f) => join(directory, f))
       .filter((p) => {
         try {
