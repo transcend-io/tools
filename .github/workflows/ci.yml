@@ -48,8 +48,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v6
-      - run: pnpm script:transcend-json-schema
-      - run: pnpm script:pathfinder-json-schema
-      - run: pnpm docgen
+      - run: mise exec -- pnpm script:transcend-json-schema
+      - run: mise exec -- pnpm script:pathfinder-json-schema
+      - run: mise exec -- pnpm docgen
       - name: Ensure no files changed
         run: git diff --quiet HEAD || (git diff --raw && echo "Detected untracked changes in git after running command '${{ matrix.command }}'" && exit 1)
