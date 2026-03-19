@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
+  global:
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
     env:
@@ -41,3 +41,16 @@ jobs:
       - run: mise exec -- pnpm build
       - run: mise exec -- pnpm test
       - run: mise exec -- pnpm check-exports
+
+  cli:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/commands/dependencies/install_deps
+      - run: pnpm script:transcend-json-schema
+      - run: pnpm script:pathfinder-json-schema
+      - run: pnpm docgen
+      - name: Ensure no files changed
+        run: git diff --quiet HEAD || (git diff --raw && echo "Detected untracked changes in git after running command '${{ matrix.command }}'" && exit 1)
