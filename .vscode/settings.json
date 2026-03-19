@@ -3,5 +3,8 @@
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
   "oxc.fmt.configPath": ".oxfmtrc.jsonc",
+  "oxc.enable": true,
+  "prettier.enable": false,
+  "eslint.enable": false,
   "typescript.tsdk": "node_modules/typescript/lib"
 }
