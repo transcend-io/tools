@@ -19,6 +19,7 @@ import { syncAgents } from './syncAgents.js';
 import { syncAttribute } from './syncAttribute.js';
 import { syncBusinessEntities } from './syncBusinessEntities.js';
 import { syncConsentManager } from './syncConsentManager.js';
+import { syncConsentWorkflowTriggers } from './syncConsentWorkflowTriggers.js';
 import { syncCookies } from './syncCookies.js';
 import { syncDataCategories } from './syncDataCategories.js';
 import { syncDataFlows } from './syncDataFlows.js';
@@ -29,12 +30,14 @@ import { syncIdentifier } from './syncIdentifier.js';
 import { syncIntlMessages } from './syncIntlMessages.js';
 import { syncPartitions } from './syncPartitions.js';
 import { syncPolicies } from './syncPolicies.js';
+import { syncPreferenceOptionValues } from './syncPreferenceOptionValues.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
 import { syncProcessingActivities } from './syncProcessingActivities.js';
 import { syncProcessingPurposes } from './syncProcessingPurposes.js';
 import { syncPromptGroups } from './syncPromptGroups.js';
 import { syncPromptPartials } from './syncPromptPartials.js';
 import { syncPrompts } from './syncPrompts.js';
+import { syncPurposes } from './syncPurposes.js';
 import { syncTeams } from './syncTeams.js';
 import { syncTemplate } from './syncTemplates.js';
 import { syncVendors } from './syncVendors.js';
@@ -102,6 +105,8 @@ export async function syncConfigurationToTranscend(
     messages,
     policies,
     partitions,
+    'consent-workflow-triggers': consentWorkflowTriggers,
+    purposes,
   } = input;
 
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
@@ -132,6 +137,30 @@ export async function syncConfigurationToTranscend(
       encounteredError = true;
       logger.info(colors.red(`Failed to sync consent manager! - ${err.message}`));
     }
+  }
+
+  // Sync preference option values (before purposes, since purposes may reference them)
+  if (input['preference-options']) {
+    const preferenceOptionsSuccess = await syncPreferenceOptionValues(
+      client,
+      input['preference-options'],
+    );
+    encounteredError = encounteredError || !preferenceOptionsSuccess;
+  }
+
+  // Sync purposes (and nested preference topics)
+  if (purposes) {
+    const purposesSuccess = await syncPurposes(client, purposes);
+    encounteredError = encounteredError || !purposesSuccess;
+  }
+
+  // Sync consent workflow triggers
+  if (consentWorkflowTriggers) {
+    const consentWorkflowTriggersSuccess = await syncConsentWorkflowTriggers(
+      client,
+      consentWorkflowTriggers,
+    );
+    encounteredError = encounteredError || !consentWorkflowTriggersSuccess;
   }
 
   // Sync prompts

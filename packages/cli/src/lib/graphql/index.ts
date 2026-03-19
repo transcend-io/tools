@@ -89,3 +89,8 @@ export * from './syncTemplates.js';
 export * from './syncVendors.js';
 export * from './uploadSiloDiscoveryResults.js';
 export * from './fetchAllSiloDiscoveryResults.js';
+export * from './fetchAllConsentWorkflowTriggers.js';
+export * from './fetchAllPreferenceOptionValues.js';
+export * from './syncConsentWorkflowTriggers.js';
+export * from './syncPreferenceOptionValues.js';
+export * from './syncPurposes.js';

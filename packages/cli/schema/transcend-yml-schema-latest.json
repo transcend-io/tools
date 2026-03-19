@@ -59585,6 +59585,81 @@
           }
         ]
       }
+    },
+    "consent-workflow-triggers": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "trigger-condition": {
+                "type": "string"
+              },
+              "action-type": {
+                "type": "string"
+              },
+              "data-subject-type": {
+                "type": "string"
+              },
+              "is-silent": {
+                "type": "boolean"
+              },
+              "allow-unauthenticated": {
+                "type": "boolean"
+              },
+              "is-active": {
+                "type": "boolean"
+              },
+              "data-silo-titles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "purposes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["tracking-type", "matching-state"],
+                  "properties": {
+                    "tracking-type": {
+                      "type": "string"
+                    },
+                    "matching-state": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "preference-options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "slug"],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

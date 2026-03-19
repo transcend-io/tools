@@ -45,7 +45,9 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  type ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
+  type ConsentWorkflowTriggerInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
@@ -59,11 +61,13 @@ import { fetchAllAssessments } from './fetchAllAssessments.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 import { fetchAllAttributes } from './fetchAllAttributes.js';
 import { fetchAllBusinessEntities } from './fetchAllBusinessEntities.js';
+import { fetchAllConsentWorkflowTriggers } from './fetchAllConsentWorkflowTriggers.js';
 import { fetchAllCookies } from './fetchAllCookies.js';
 import { fetchAllDataCategories } from './fetchAllDataCategories.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchAllMessages } from './fetchAllMessages.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
+import { fetchAllPreferenceOptionValues } from './fetchAllPreferenceOptionValues.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingActivities } from './fetchAllProcessingActivities.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
@@ -181,7 +185,9 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
+    preferenceOptionValues,
     siloDiscoveryResults,
+    consentWorkflowTriggers,
   ] = await Promise.all([
     // Grab all data subjects in the organization
     resources.includes(TranscendPullResource.DataSilos) ||
@@ -298,9 +304,17 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client)
       : [],
+    // Fetch preference option values
+    resources.includes(TranscendPullResource.PreferenceOptions)
+      ? fetchAllPreferenceOptionValues(client)
+      : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
       ? fetchAllSiloDiscoveryResults(client)
+      : [],
+    // Fetch consent workflow triggers
+    resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
+      ? fetchAllConsentWorkflowTriggers(client)
       : [],
   ]);
 
@@ -1329,6 +1343,39 @@ export async function pullTranscendConfiguration(
               : {}),
           }),
         ),
+      }),
+    );
+  }
+
+  // Save preference options
+  if (
+    preferenceOptionValues.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceOptions)
+  ) {
+    result['preference-options'] = preferenceOptionValues.map(
+      ({ slug, title }): ConsentPreferenceTopicOptionValue => ({
+        slug,
+        title: title.defaultMessage,
+      }),
+    );
+  }
+
+  // Save consent workflow triggers
+  if (
+    consentWorkflowTriggers.length > 0 &&
+    resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
+  ) {
+    result['consent-workflow-triggers'] = consentWorkflowTriggers.map(
+      (trigger): ConsentWorkflowTriggerInput => ({
+        name: trigger.name,
+        'trigger-condition': trigger.triggerCondition || undefined,
+        'action-type': trigger.action.type,
+        'data-subject-type': trigger.subject.type,
+        'is-silent': trigger.isSilent,
+        'allow-unauthenticated': trigger.allowUnauthenticated,
+        'is-active': trigger.isActive,
+        'data-silo-titles':
+          trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
       }),
     );
   }

@@ -72,7 +72,13 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
     ScopeName.ManageConsentManager,
     ScopeName.ManagePreferenceStoreSettings,
   ],
+  [TranscendPullResource.PreferenceOptions]: [ScopeName.ManagePreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ManageDataMap],
+  [TranscendPullResource.ConsentWorkflowTriggers]: [
+    ScopeName.ManageConsentManager,
+    ScopeName.ViewDataSubjectRequestSettings,
+    ScopeName.ViewConsentManager,
+  ],
 };
 
 /**
@@ -119,7 +125,9 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewConsentManager,
     ScopeName.ViewPreferenceStoreSettings,
   ],
+  [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
+  [TranscendPullResource.ConsentWorkflowTriggers]: [ScopeName.ViewConsentManager],
 };
 
 export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof TranscendInput> = {
@@ -155,7 +163,9 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.Assessments]: 'assessments',
   [TranscendPullResource.AssessmentTemplates]: 'assessment-templates',
   [TranscendPullResource.Purposes]: 'purposes',
+  [TranscendPullResource.PreferenceOptions]: 'preference-options',
   [TranscendPullResource.SystemDiscovery]: 'system-discovery',
+  [TranscendPullResource.ConsentWorkflowTriggers]: 'consent-workflow-triggers',
 };
 
 export const SCOPES_BY_TITLE = keyBy(
