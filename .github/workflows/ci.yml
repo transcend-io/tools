@@ -11,15 +11,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
-    runs-on: ubuntu-latest
+  global:
+    runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: jdx/mise-action@v3
@@ -41,3 +41,21 @@ jobs:
       - run: mise exec -- pnpm build
       - run: mise exec -- pnpm test
       - run: mise exec -- pnpm check-exports
+
+  cli:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+      - uses: jdx/mise-action@v3
+        with:
+          version: 2026.2.17
+          install: false
+          cache: true
+      - run: mise trust --yes mise.toml
+      - run: mise install --locked
+      - run: mise run bootstrap
+      - run: mise exec -- pnpm --dir packages/cli genfiles
+      - name: Ensure no files changed
+        run: git diff --quiet HEAD || (git diff --raw && echo "Detected untracked changes in git after running command '${{ matrix.command }}'" && exit 1)
