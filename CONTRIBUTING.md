@@ -5,7 +5,7 @@
 This repository is a `pnpm` + Turborepo monorepo for public `@transcend-io/*` TypeScript
 packages.
 
-The root package is private. Publishable packages live in `packages/`. The current `core` and
+The root package is private. Publishable packages live in `packages/`. The `core` and
 `utils` packages are starter packages meant to exercise the toolchain, so treat them as examples
 more than mature product libraries.
 

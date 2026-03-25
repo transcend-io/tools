@@ -1,6 +1,7 @@
 {
   "name": "@test-example/test",
   "version": "4.120.1",
+  "private": true,
   "description": "Example npm package.",
   "homepage": "https://github.com/test-example/test",
   "license": "UNLICENSED",
