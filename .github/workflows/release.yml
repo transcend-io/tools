@@ -26,6 +26,7 @@ jobs:
           cache: true
       - run: mise trust --yes mise.toml
       - run: mise install --locked
+      - run: mise exec -- npm install -g npm@^11.5.1
       - run: mise run bootstrap
       - run: mise exec -- pnpm syncpack:lint
       - run: mise exec -- pnpm lint
