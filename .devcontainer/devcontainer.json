@@ -1,5 +1,5 @@
 {
-  "name": "developer-tools",
+  "name": "tools",
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
   "features": {
     "ghcr.io/devcontainers-extra/features/mise:1": {}
@@ -10,8 +10,6 @@
   "containerEnv": {
     "MISE_DATA_DIR": "/mnt/mise-data"
   },
-  "mounts": [
-    { "source": "developer-tools-mise-data", "target": "/mnt/mise-data", "type": "volume" }
-  ],
+  "mounts": [{ "source": "tools-mise-data", "target": "/mnt/mise-data", "type": "volume" }],
   "postCreateCommand": "sudo chown -R vscode:vscode /mnt/mise-data && mise trust --yes mise.toml && mise install --locked && mise run bootstrap"
 }

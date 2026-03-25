@@ -1,5 +1,5 @@
 {
-  "name": "@transcend-io/developer-tools-monorepo",
+  "name": "@transcend-io/tools-monorepo",
   "private": true,
   "license": "MIT",
   "type": "module",

@@ -5,7 +5,7 @@
  * Most IDEs will thus autodetect `transcend.yml` and apply linting/autocomplete/intellisense.
  *
  * ... or, if the YAML file is differently named, users can add this comment to the top of the YAML file:
- * `# yaml-language-server: $schema=https://raw.githubusercontent.com/transcend-io/developer-tools/main/packages/cli/schema/transcend-yml-schema-latest.json`
+ * `# yaml-language-server: $schema=https://raw.githubusercontent.com/transcend-io/tools/main/packages/cli/schema/transcend-yml-schema-latest.json`
  *
  * @see https://github.com/redhat-developer/yaml-language-server#using-inlined-schema
  * @see https://json-schema.org/understanding-json-schema/basics.html
@@ -23,7 +23,7 @@ import { TranscendInput } from '../src/codecs';
 const packageRoot = join(import.meta.dirname, '..');
 const schemaRoot = join(packageRoot, 'schema');
 const rawSchemaBaseUrl =
-  'https://raw.githubusercontent.com/transcend-io/developer-tools/main/packages/cli/schema';
+  'https://raw.githubusercontent.com/transcend-io/tools/main/packages/cli/schema';
 const majorVersion = packageJson.version.split('.')[0];
 
 // Create a major version JSON schema definition, and update the latest JSON schema definition.

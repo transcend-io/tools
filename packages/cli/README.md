@@ -96,7 +96,7 @@ By default, your editor or IDE should recognize `transcend.yml` and validate it 
 Your editor will use the latest version's schema. To pin the `transcend.yml` schema to a previous major version, include this at the top of your file (and change `v4` to your target major version):
 
 ```yml
-# yaml-language-server: $schema=https://raw.githubusercontent.com/transcend-io/developer-tools/main/packages/cli/schema/transcend-yml-schema-v4.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/transcend-io/tools/main/packages/cli/schema/transcend-yml-schema-v4.json
 ```
 
 The structure of `transcend.yml` looks something like the following:
