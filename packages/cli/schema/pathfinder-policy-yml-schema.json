@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/transcend-io/developer-tools/main/packages/cli/schema/pathfinder-policy-yml-schema.json",
+  "$id": "https://raw.githubusercontent.com/transcend-io/tools/main/packages/cli/schema/pathfinder-policy-yml-schema.json",
   "title": "pathfinder.yml",
   "description": "Policies for the Transcend Pathfinder AI governance proxy.",
   "type": "object",

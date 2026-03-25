@@ -59,7 +59,7 @@ If you have the appropriate permissions, you can generate your own API key at ht
 
 ## Repo Structure
 
-The `src/commands/` directory contains the CLI commands and has a strict structure which is [tested](https://github.com/transcend-io/developer-tools/blob/main/packages/cli/src/lib/tests/codebase.test.ts).
+The `src/commands/` directory contains the CLI commands and has a strict structure which is [tested](https://github.com/transcend-io/tools/blob/main/packages/cli/src/lib/tests/codebase.test.ts).
 
 The folders are the namespace of the CLI, so `src/commands/request/cron/pull-identifiers/command.ts` is the command for `transcend request cron pull-identifiers`. The _route_ portion of the file path is `/request/cron` and the _command_ portion of the file path is `/pull-identifiers`.
 
