@@ -2786,12 +2786,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '16'
+        uses: actions/setup-node@v6
 
       - name: Install Transcend CLI
         run: npm install --global @transcend-io/cli
