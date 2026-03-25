@@ -1,6 +1,7 @@
 {
   "name": "@transcend-io/utils",
   "version": "0.0.0",
+  "private": true,
   "description": "Starter shared utilities for the Transcend developer tools monorepo.",
   "license": "Apache-2.0",
   "files": [
