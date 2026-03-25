@@ -8,7 +8,7 @@
     "autoload"
   ],
   "homepage": "https://getcomposer.org/",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "authors": [],
   "require": {
     "php": "^7.2.5 || ^8.0",

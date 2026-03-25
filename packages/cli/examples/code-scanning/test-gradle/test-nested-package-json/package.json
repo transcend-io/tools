@@ -3,7 +3,7 @@
   "version": "4.120.1",
   "description": "Example npm nested package.",
   "homepage": "https://github.com/test-example/nested-test",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
