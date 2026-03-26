@@ -90,8 +90,8 @@ importers:
         specifier: ^1.0.6
         version: 1.0.6
       '@transcend-io/privacy-types':
-        specifier: ^4.152.0
-        version: 4.154.0
+        specifier: workspace:*
+        version: link:../privacy-types
       '@transcend-io/secret-value':
         specifier: ^1.2.3
         version: 1.2.3
@@ -258,6 +258,37 @@ importers:
       '@transcend-io/utils':
         specifier: workspace:*
         version: link:../utils
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: 'catalog:'
+        version: 0.18.2
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.4.0
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.2(@arethetypeswrong/core@0.18.2)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@25.4.0)(tsx@4.21.0)
+
+  packages/privacy-types:
+    dependencies:
+      '@transcend-io/internationalization':
+        specifier: ^2.3.2
+        version: 2.3.2
+      '@transcend-io/type-utils':
+        specifier: ^1.8.9
+        version: 1.8.9
+      fp-ts:
+        specifier: ^2.16.1
+        version: 2.16.11
+      io-ts:
+        specifier: ^2.2.21
+        version: 2.2.22(fp-ts@2.16.11)
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
@@ -1137,9 +1168,6 @@ packages:
 
   '@transcend-io/persisted-state@1.0.6':
     resolution: {integrity: sha512-yqexuEznCnQaHAUjL6ktK+wYi5g5+NFKb4qoezf37uTJzBEP40FhNZTIiMBE1HG0ZgWghqyocAFz0UuVrBq6nw==}
-
-  '@transcend-io/privacy-types@4.154.0':
-    resolution: {integrity: sha512-QzebQJswTH9MvFhRf23Jl7tyLzjZllG8n10paqwHZKWC8lBoR9v9hfSxo3osGYeLs+x71uwU+3cJCdt1heF/dg==}
 
   '@transcend-io/secret-value@1.2.3':
     resolution: {integrity: sha512-or73sJzWCJ3bvBGelL+LY/Ea/+SEvTTGVt6ZX4K5bYAfepIhNfbLbO92sQZ2O0rTakYEYEWOa35HZ/LP+XcEXQ==}
@@ -4094,13 +4122,6 @@ snapshots:
       fp-ts: 2.16.11
       io-ts: 2.2.22(fp-ts@2.16.11)
       mkdirp: 1.0.4
-
-  '@transcend-io/privacy-types@4.154.0':
-    dependencies:
-      '@transcend-io/internationalization': 2.3.2
-      '@transcend-io/type-utils': 1.8.9
-      fp-ts: 2.16.11
-      io-ts: 2.2.22(fp-ts@2.16.11)
 
   '@transcend-io/secret-value@1.2.3':
     dependencies:
