@@ -44,8 +44,8 @@ export function fileContainsExactBytes(
     const n = needle.length;
     let seen = 0;
 
-    stream.on('data', (raw: Buffer) => {
-      let chunk = raw;
+    stream.on('data', (raw) => {
+      let chunk = typeof raw === 'string' ? Buffer.from(raw) : raw;
 
       if (maxBytes) {
         const remaining = maxBytes - seen;
