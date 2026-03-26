@@ -31,7 +31,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          output="$(mise exec -- pnpx pkg-pr-new publish --packageManager=yarn,pnpm "./packages/*" 2>&1)"
+          output="$(mise exec -- pnpx pkg-pr-new publish --packageManager=pnpm "./packages/*" 2>&1)"
           status=$?
           set -e
 
