@@ -63,9 +63,14 @@ vi.mock('../../bluebird.js', () => ({
 }));
 
 // decodeCodec should just return what we expect to consume
-vi.mock('@transcend-io/type-utils', () => ({
-  decodeCodec: vi.fn((_codec, raw) => raw),
-}));
+vi.mock('@transcend-io/type-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@transcend-io/type-utils')>();
+
+  return {
+    ...actual,
+    decodeCodec: vi.fn((_codec, raw) => raw),
+  };
+});
 
 // withPreferenceRetry should invoke the provided fn and return its result,
 // but we still want to see that it's being called.

@@ -1,6 +1,5 @@
 packages:
   - packages/*
-  - apps/*
 
 catalog:
   '@arethetypeswrong/cli': ^0.18.2

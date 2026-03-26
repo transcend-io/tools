@@ -32,7 +32,6 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 ## Repo Layout
 
 - `packages/*`: publishable libraries
-- `apps/*`: reserved for non-publishable apps; empty today
 - `.changeset/*`: release intent files for Changesets
 - `.github/workflows/*`: CI, preview, and release automation
 - `scripts/check-changeset.mjs`: PR check for missing changesets

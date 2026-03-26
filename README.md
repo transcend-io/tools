@@ -11,3 +11,5 @@ The packages in `packages/` are the public developer tools for Transcend.
 
 - [`packages/cli`](./packages/cli/) (`@transcend-io/cli`): the Transcend CLI, used to programmatically manage your Transcend
   infrastructure and data.
+- [`packages/privacy-types`](./packages/privacy-types/) (`@transcend-io/privacy-types`): shared enums, codecs, and type
+  definitions for Transcend APIs and product surfaces.
