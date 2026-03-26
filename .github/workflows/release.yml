@@ -45,6 +45,6 @@ jobs:
       - uses: changesets/action@v1
         with:
           publish: mise exec -- pnpm release
-          version: mise exec -- pnpm version-packages && mise exec -- pnpm format:root
+          version: mise exec -- pnpm version-packages:release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
