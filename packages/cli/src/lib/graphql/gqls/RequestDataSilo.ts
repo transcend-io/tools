@@ -20,6 +20,9 @@ export const REQUEST_DATA_SILOS = gql`
     ) {
       nodes {
         id
+        request {
+          type
+        }
       }
       totalCount
     }
