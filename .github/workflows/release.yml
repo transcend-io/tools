@@ -24,17 +24,26 @@ jobs:
           version: 2026.2.17
           install: false
           cache: true
-      - run: mise trust --yes mise.toml
-      - run: mise install --locked
-      - run: mise exec -- npm install -g npm@^11.5.1
-      - run: mise run bootstrap
-      - run: mise exec -- pnpm syncpack:lint
-      - run: mise exec -- pnpm lint
-      - run: mise exec -- pnpm format:check
-      - run: mise exec -- pnpm typecheck
-      - run: mise exec -- pnpm build
-      - run: mise exec -- pnpm test
-      - run: mise exec -- pnpm check-exports
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise exec -- npm install -g npm@^11.5.1
+          mise run bootstrap
+      - name: Check dependency versions
+        run: mise exec -- pnpm syncpack:lint
+      - name: Lint
+        run: mise exec -- pnpm lint
+      - name: Check formatting
+        run: mise exec -- pnpm format:check
+      - name: Typecheck
+        run: mise exec -- pnpm typecheck
+      - name: Build
+        run: mise exec -- pnpm build
+      - name: Test
+        run: mise exec -- pnpm test
+      - name: Check exports
+        run: mise exec -- pnpm check-exports
       - uses: actions/create-github-app-token@v3
         id: release_app
         with:
