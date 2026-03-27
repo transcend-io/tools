@@ -1,5 +1,13 @@
 # @transcend-io/cli
 
+## 10.0.1
+
+### Patch Changes
+
+- eb10d45: Improve CLI compatibility with the current Node type definitions.
+- Updated dependencies [20d052a]
+  - @transcend-io/privacy-types@5.0.0
+
 ## 10.0.0
 
 ### Major Changes
