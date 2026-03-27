@@ -23,10 +23,13 @@ jobs:
           version: 2026.2.17
           install: false
           cache: true
-      - run: mise trust --yes mise.toml
-      - run: mise install --locked
-      - run: mise run bootstrap
-      - run: mise exec -- pnpm build
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise run bootstrap
+      - name: Build
+        run: mise exec -- pnpm build
       - name: Publish PR previews
         shell: bash
         run: |
