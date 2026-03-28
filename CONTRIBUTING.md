@@ -38,11 +38,12 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 
 ## Common Commands
 
-Run these from the repo root:
-
 - `pnpm build`: build workspace packages with `tsdown`
-- `pnpm test`: run package tests with Vitest
 - `pnpm changeset`: create a changeset file
+
+Test/lint/format commands:
+
+- `pnpm test`: run package tests with Vitest
 - `pnpm quality`: run formatting, lint, and dependency-policy checks
 - `pnpm quality:fix`: auto-fix formatting and lint issues where possible
 - `pnpm lint`: run `oxlint` across the repo
@@ -60,66 +61,6 @@ Use `pnpm --filter` or (`pnpm -F` for short) when you only need to work on one p
 ```bash
 pnpm -F @transcend-io/cli start
 ```
-
-## Git Hooks
-
-After a normal install from the repo root, Husky configures local Git hooks automatically.
-
-- `pre-commit`: runs `pnpm quality`
-- `pre-push`: runs `pnpm typecheck`, `pnpm test`, and `pnpm check-exports`
-
-These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
-releases.
-
-If you install dependencies with scripts disabled, rerun `pnpm run prepare` from the repo root
-before committing.
-
-## Add Or Update A Package
-
-New packages should match the shape used in `packages/core` and `packages/utils` (private
-starters that model the layout).
-
-For a new package:
-
-1. Create `packages/<name>/package.json`.
-2. Add `tsconfig.json`, `tsdown.config.ts`, and `src/index.ts`.
-3. Add tests when the package has behavior worth validating.
-4. Add the package to the root `tsconfig.json` references list.
-5. Use `workspace:*` for dependencies on other local packages.
-6. Use `catalog:` for shared tool dependencies.
-
-Current package conventions:
-
-- ESM-only packages with `"type": "module"`
-- published entrypoints served from `dist/`
-- `@transcend-io/source` export condition for live source resolution inside the monorepo
-- `build`, `typecheck`, `test`, and `check-exports` scripts in each package
-
-## Dependency Management
-
-Shared dependency versions live in `pnpm-workspace.yaml` catalogs.
-
-Guidelines:
-
-- prefer `catalog:` for shared toolchain dependencies
-- prefer `workspace:*` for dependencies between local packages
-- keep additions consistent with the single-version policy enforced by `syncpack`
-
-## Pull Requests
-
-Before you open a PR:
-
-1. Make the code change.
-2. Run targeted package checks while iterating.
-3. Run the repo-level checks affected by your change.
-4. Add a changeset when required (see **Changesets**).
-
-On pull requests, GitHub Actions runs:
-
-- **`CI`**:
-  - `CI / global` job: runs all the standard commands across each package such as `build` and `test` commands.
-  - Some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
-- **`Preview Release`** see [Preview Releases](#preview-releases) for more.
 
 ## Releases and Versioning
 
@@ -197,3 +138,63 @@ This repo uses Turborepo, which caches package.json script outputs. Try running 
 
 CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN` and
 `vars.TURBO_TEAM` are configured. This is not yet configured. Local development does not require remote cache.
+
+## Git Hooks
+
+After a normal install from the repo root, Husky configures local Git hooks automatically.
+
+- `pre-commit`: runs `pnpm quality`
+- `pre-push`: runs `pnpm typecheck`, `pnpm test`, and `pnpm check-exports`
+
+These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
+releases.
+
+If you install dependencies with scripts disabled, rerun `pnpm run prepare` from the repo root
+before committing.
+
+## Add Or Update A Package
+
+New packages should match the shape used in `packages/core` and `packages/utils` (private
+starters that model the layout).
+
+For a new package:
+
+1. Create `packages/<name>/package.json`.
+2. Add `tsconfig.json`, `tsdown.config.ts`, and `src/index.ts`.
+3. Add tests when the package has behavior worth validating.
+4. Add the package to the root `tsconfig.json` references list.
+5. Use `workspace:*` for dependencies on other local packages.
+6. Use `catalog:` for shared tool dependencies.
+
+Current package conventions:
+
+- ESM-only packages with `"type": "module"`
+- published entrypoints served from `dist/`
+- `@transcend-io/source` export condition for live source resolution inside the monorepo
+- `build`, `typecheck`, `test`, and `check-exports` scripts in each package
+
+## Dependency Management
+
+Shared dependency versions live in `pnpm-workspace.yaml` catalogs.
+
+Guidelines:
+
+- prefer `catalog:` for shared toolchain dependencies
+- prefer `workspace:*` for dependencies between local packages
+- keep additions consistent with the single-version policy enforced by `syncpack`
+
+## Pull Requests
+
+Before you open a PR:
+
+1. Make the code change.
+2. Run targeted package checks while iterating.
+3. Run the repo-level checks affected by your change.
+4. Add a changeset when required (see **Changesets**).
+
+On pull requests, GitHub Actions runs:
+
+- **`CI`**:
+  - `CI / global` job: runs all the standard commands across each package such as `build` and `test` commands.
+  - Some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
+- **`Preview Release`** see [Preview Releases](#preview-releases) for more.
