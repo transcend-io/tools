@@ -29,7 +29,7 @@ jobs:
           mise trust --yes mise.toml
           mise install --locked
           mise exec -- npm install -g npm@^11.5.1
-          mise run bootstrap
+          mise run bootstrap-ci
       - name: Check dependency versions
         run: mise exec -- pnpm check:deps
       - name: Lint

@@ -27,7 +27,7 @@ jobs:
         run: |
           mise trust --yes mise.toml
           mise install --locked
-          mise run bootstrap
+          mise run bootstrap-ci
       - name: Build
         run: mise exec -- pnpm build
       - name: Publish PR previews

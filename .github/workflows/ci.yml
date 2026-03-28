@@ -32,7 +32,7 @@ jobs:
         run: |
           mise trust --yes mise.toml
           mise install --locked
-          mise run bootstrap
+          mise run bootstrap-ci
       - if: github.event_name == 'pull_request'
         name: Check changeset
         env:
@@ -72,7 +72,7 @@ jobs:
         run: |
           mise trust --yes mise.toml
           mise install --locked
-          mise run bootstrap
+          mise run bootstrap-ci
       - name: Verify generated CLI files are up to date
         run: |
           mise exec -- pnpm --dir packages/cli genfiles
