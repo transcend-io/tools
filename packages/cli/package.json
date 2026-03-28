@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/cli",
-  "version": "10.0.1",
+  "version": "10.0.2",
   "description": "A command line interface for programmatic operations across Transcend.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/cli",
   "license": "Apache-2.0",
