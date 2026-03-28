@@ -51,6 +51,7 @@ Test/lint/format commands:
 - `pnpm format`: format the repo with `oxfmt`
 - `pnpm format:check`: verify formatting with `oxfmt --check`
 - `pnpm syncpack:lint`: enforce dependency version policy
+- `pnpm check:packages`: validate shared package metadata and layout conventions
 - `pnpm typecheck`: run TypeScript checks across workspace packages
 - `pnpm check-exports`: validate published package shape with `attw`
 
@@ -104,7 +105,7 @@ pnpm changeset
 
 Add a changeset when changes to a package under `packages/` would require a new version to be published to npm.
 
-[`scripts/check-changeset.ts`](scripts/check-changeset.ts) enforces this on pull requests. It ignores:
+[`scripts/check-changeset.ts`](scripts/check-changeset.ts) enforces this on pull requests. It only requires coverage for changed publishable packages, and it ignores:
 
 - private packages (i.e. packages with `"private": true` in their `package.json`)
 - package `README.md` changes
@@ -209,3 +210,7 @@ Current package conventions:
 - published entrypoints served from `dist/`
 - `@transcend-io/source` export condition for live source resolution inside the monorepo
 - `build`, `typecheck`, `test`, and `check-exports` scripts in each package
+- `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
+- publishable packages include `homepage`, `repository`, and `author` metadata
+- released publishable packages keep a `CHANGELOG.md`
+- `packages/cli` keeps a `DEVELOPERS.md` and local `vitest.config.ts` because it has extra CLI-specific workflows

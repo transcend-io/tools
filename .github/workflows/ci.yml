@@ -38,6 +38,8 @@ jobs:
         env:
           CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: mise exec -- pnpm check:changeset
+      - name: Check package consistency
+        run: mise exec -- pnpm check:packages
       - name: Check dependency versions
         run: mise exec -- pnpm syncpack:lint
       - name: Lint
