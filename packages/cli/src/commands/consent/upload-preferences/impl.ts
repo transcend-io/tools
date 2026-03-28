@@ -1,11 +1,11 @@
 import { statSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { chunkOneCsvFile } from '@transcend-io/utils';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { chunkOneCsvFile } from '../../../lib/helpers/chunkOneCsvFile.js';
 import { collectCsvFilesOrExit } from '../../../lib/helpers/collectCsvFilesOrExit.js';
 import {
   computePoolSize,
@@ -187,6 +187,7 @@ export async function uploadPreferences(
           outputDir: directory,
           clearOutputDir: false,
           chunkSizeMB,
+          logger,
           // eslint-disable-next-line @typescript-eslint/no-empty-function
           onProgress: () => {},
         });

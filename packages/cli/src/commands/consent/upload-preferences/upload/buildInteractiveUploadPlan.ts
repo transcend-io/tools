@@ -1,10 +1,10 @@
+import { limitRecords } from '@transcend-io/utils';
 import colors from 'colors';
 import type { Got } from 'got';
 import type { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 
 import type { FormattedAttribute } from '../../../../lib/graphql/formatAttributeValues.js';
-import { limitRecords } from '../../../../lib/helpers/index.js';
 import type {
   FileFormatState,
   PendingSafePreferenceUpdates,

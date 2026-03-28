@@ -1,6 +1,6 @@
 import { PersistedState } from '@transcend-io/persisted-state';
+import { retrySamePromise, type RetryPolicy } from '@transcend-io/utils';
 
-import { retrySamePromise, type RetryPolicy } from '../../../../../lib/helpers/retrySamePromise.js';
 import {
   RequestUploadReceipts,
   type FailingPreferenceUpdates,
