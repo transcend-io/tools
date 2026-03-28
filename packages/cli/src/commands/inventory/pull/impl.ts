@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
@@ -10,10 +11,7 @@ import type { LocalContext } from '../../../context.js';
 import { TranscendPullResource } from '../../../enums.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import {
-  buildTranscendGraphQLClient,
-  pullTranscendConfiguration,
-} from '../../../lib/graphql/index.js';
+import { pullTranscendConfiguration } from '../../../lib/graphql/index.js';
 import { writeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 import { logger } from '../../../logger.js';
 import { DEFAULT_CONSENT_TRACKER_STATUSES, DEFAULT_TRANSCEND_PULL_RESOURCES } from './command.js';

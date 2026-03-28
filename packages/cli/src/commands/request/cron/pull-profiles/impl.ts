@@ -1,4 +1,5 @@
 import type { RequestAction } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { uniq, chunk } from 'lodash-es';
@@ -9,10 +10,7 @@ import {
   pullChunkedCustomSiloOutstandingIdentifiers,
   type CsvFormattedIdentifier,
 } from '../../../../lib/cron/index.js';
-import {
-  buildTranscendGraphQLClient,
-  fetchRequestFilesForRequest,
-} from '../../../../lib/graphql/index.js';
+import { fetchRequestFilesForRequest } from '../../../../lib/graphql/index.js';
 import { parseFilePath, writeLargeCsv } from '../../../../lib/helpers/index.js';
 import { logger } from '../../../../logger.js';
 

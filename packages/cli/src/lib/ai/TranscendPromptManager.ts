@@ -7,6 +7,7 @@ import {
   QueueStatus,
   LargeLanguageModelClient,
 } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { Secret } from '@transcend-io/secret-value';
 /* eslint-disable max-lines */
 import { Optionalize, Requirize, apply, decodeCodec, getValues } from '@transcend-io/type-utils';
@@ -31,7 +32,6 @@ import {
   AgentFile,
   AgentFileFilterBy,
   ReportPromptRunInput,
-  buildTranscendGraphQLClient,
   fetchAllAgentFiles,
   fetchAllAgents,
   reportPromptRun,

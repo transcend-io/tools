@@ -1,4 +1,5 @@
 import { RequestEnricherStatus, RequestStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { mapSeries, map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -7,7 +8,6 @@ import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import {
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
   fetchAllRequestEnrichers,
   fetchAllRequests,
   SKIP_REQUEST_ENRICHER,

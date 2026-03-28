@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 /* eslint-disable max-lines */
@@ -10,11 +11,7 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  createSombraGotInstance,
-  buildTranscendGraphQLClient,
-  fetchAllRequestAttributeKeys,
-} from '../graphql/index.js';
+import { createSombraGotInstance, fetchAllRequestAttributeKeys } from '../graphql/index.js';
 import { CachedRequestState, CachedFileState } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { filterRows } from './filterRows.js';

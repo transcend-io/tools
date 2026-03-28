@@ -1,3 +1,4 @@
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 
@@ -5,7 +6,6 @@ import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import {
   UPDATE_PRIVACY_REQUEST,
-  buildTranscendGraphQLClient,
   createSombraGotInstance,
   makeGraphQLRequest,
 } from '../graphql/index.js';

@@ -1,5 +1,6 @@
 import { PersistedState } from '@transcend-io/persisted-state';
 import { PreferenceUpdateItem } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -8,7 +9,6 @@ import { chunk } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import {
-  buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllPurposes,
   fetchAllPreferenceTopics,

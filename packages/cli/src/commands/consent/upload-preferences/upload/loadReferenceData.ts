@@ -1,7 +1,7 @@
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 
 import {
-  buildTranscendGraphQLClient,
   fetchAllPurposes,
   fetchAllPreferenceTopics,
   fetchAllIdentifiers,

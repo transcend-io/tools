@@ -1,3 +1,4 @@
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { difference } from 'lodash-es';
@@ -5,7 +6,7 @@ import { difference } from 'lodash-es';
 import { StoredApiKey } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { buildTranscendGraphQLClient, fetchConsentManager } from '../graphql/index.js';
+import { fetchConsentManager } from '../graphql/index.js';
 import { domainToHost } from './domainToHost.js';
 
 /**

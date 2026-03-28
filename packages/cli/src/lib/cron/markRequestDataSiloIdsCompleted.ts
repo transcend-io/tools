@@ -1,4 +1,5 @@
 import { RequestDataSiloStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -9,7 +10,6 @@ import {
   CHANGE_REQUEST_DATA_SILO_STATUS,
   fetchRequestDataSilo,
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
 } from '../graphql/index.js';
 
 /**

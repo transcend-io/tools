@@ -1,12 +1,13 @@
 import { execSync } from 'child_process';
 
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import colors from 'colors';
 
 import { ADMIN_DASH } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { findCodePackagesInFolder } from '../../../lib/code-scanning/index.js';
-import { buildTranscendGraphQLClient, syncCodePackages } from '../../../lib/graphql/index.js';
+import { syncCodePackages } from '../../../lib/graphql/index.js';
 import { logger } from '../../../logger.js';
 
 const REPO_ERROR =

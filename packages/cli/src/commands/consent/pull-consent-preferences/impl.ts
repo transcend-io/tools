@@ -1,10 +1,10 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
-  buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllIdentifiers,
   fetchAllPurposesAndPreferences,
