@@ -14,7 +14,9 @@ if (!hasRelevantPackageChange || hasChangeset) {
 
 const changedPackageFiles = changedFiles.filter(isRelevantPublishablePackageChange);
 
-console.error('Publishable package changes were detected without a changeset.');
+console.error(
+  'Publishable package changes were detected without a changeset. See CONTRIBUTING.md for more information.',
+);
 console.error('Run `pnpm changeset` and commit the generated file before merging.');
 console.error('');
 console.error('Relevant changed files:');
