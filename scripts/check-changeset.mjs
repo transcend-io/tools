@@ -106,14 +106,15 @@ function isRelevantPublishablePackageChange(filePath) {
   }
 
   if (
-    relativePath === 'README.md' ||
     relativePath.startsWith('.turbo/') ||
     relativePath.startsWith('dist/') ||
     relativePath.startsWith('node_modules/') ||
     relativePath.endsWith('.test.ts') ||
     relativePath.endsWith('.test.tsx') ||
     relativePath.endsWith('.spec.ts') ||
-    relativePath.endsWith('.spec.tsx')
+    relativePath.endsWith('.spec.tsx') ||
+    // *.md files on package roots (e.g. README.md files)
+    relativePath.split('/')[0].endsWith('.md')
   ) {
     return false;
   }
