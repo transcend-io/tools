@@ -2,6 +2,7 @@ import {
   type DataCategoryType,
   SubDataPointDataSubCategoryGuessStatus,
 } from '@transcend-io/privacy-types';
+import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { gql } from 'graphql-request';
@@ -11,7 +12,6 @@ import { keyBy, uniq, chunk, sortBy } from 'lodash-es';
 
 import type { DataCategoryInput, ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import {
   DATAPOINT_EXPORT,
   DATA_SILO_EXPORT,

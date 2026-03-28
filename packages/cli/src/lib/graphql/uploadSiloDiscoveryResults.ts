@@ -1,7 +1,7 @@
+import { mapSeries } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { mapSeries } from '../bluebird.js';
 import { SiloDiscoveryRawResults } from '../code-scanning/findFilesToScan.js';
 import { ADD_SILO_DISCOVERY_RESULTS } from './gqls/index.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';

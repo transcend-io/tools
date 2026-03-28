@@ -2,13 +2,13 @@ import fs from 'node:fs';
 import { join } from 'node:path';
 
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { TranscendPullResource } from '../../../enums.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
-import { mapSeries } from '../../../lib/bluebird.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
   buildTranscendGraphQLClient,

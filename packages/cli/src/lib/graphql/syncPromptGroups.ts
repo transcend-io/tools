@@ -1,10 +1,10 @@
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { PromptGroupInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { fetchAllPromptGroups } from './fetchPromptGroups.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
 import { UPDATE_PROMPT_GROUPS, CREATE_PROMPT_GROUP } from './gqls/index.js';

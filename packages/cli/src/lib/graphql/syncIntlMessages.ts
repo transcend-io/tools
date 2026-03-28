@@ -1,10 +1,10 @@
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { IntlMessageInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/index.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 

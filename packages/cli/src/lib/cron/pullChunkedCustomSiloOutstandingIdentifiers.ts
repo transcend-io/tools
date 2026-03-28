@@ -1,10 +1,10 @@
 import { RequestAction } from '@transcend-io/privacy-types';
+import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,

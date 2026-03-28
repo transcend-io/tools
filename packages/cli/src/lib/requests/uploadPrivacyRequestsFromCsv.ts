@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 /* eslint-disable max-lines */
 import colors from 'colors';
@@ -9,7 +10,6 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   createSombraGotInstance,
   buildTranscendGraphQLClient,

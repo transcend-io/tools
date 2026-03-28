@@ -1,11 +1,11 @@
 import { RequestAction, RequestEnricherStatus, RequestStatus } from '@transcend-io/privacy-types';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   buildTranscendGraphQLClient,
   fetchAllRequestEnrichers,

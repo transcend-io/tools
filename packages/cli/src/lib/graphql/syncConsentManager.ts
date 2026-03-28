@@ -1,11 +1,11 @@
 import { InitialViewState, OnConsentExpiry } from '@transcend-io/airgap.js-types';
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { ConsentManageExperienceInput, ConsentManagerInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
 import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';

@@ -1,11 +1,11 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
-import { map } from '../../../lib/bluebird.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { createSombraGotInstance } from '../../../lib/graphql/index.js';
 import { writeCsv } from '../../../lib/helpers/index.js';

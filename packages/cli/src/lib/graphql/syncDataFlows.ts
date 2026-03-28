@@ -1,11 +1,11 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { DataFlowInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/index.js';

@@ -1,10 +1,10 @@
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { AgentFunctionInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllAgentFunctions, AgentFunction } from './fetchAllAgentFunctions.js';
 import { UPDATE_AGENT_FUNCTIONS, CREATE_AGENT_FUNCTION } from './gqls/index.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';

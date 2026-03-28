@@ -1,10 +1,10 @@
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, difference, groupBy } from 'lodash-es';
 
 import { AttributeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { Attribute } from './fetchAllAttributes.js';
 import {
   CREATE_ATTRIBUTE,

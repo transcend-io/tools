@@ -1,8 +1,8 @@
 import type { SombraStandardScope } from '@transcend-io/privacy-types';
+import { map } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { map } from '../bluebird.js';
 import { CREATE_PREFERENCE_ACCESS_TOKENS } from './gqls/index.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 

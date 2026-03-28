@@ -1,10 +1,10 @@
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { PromptPartialInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { fetchAllPromptPartials } from './fetchPromptPartials.js';
 import { UPDATE_PROMPT_PARTIALS, CREATE_PROMPT_PARTIAL } from './gqls/index.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';

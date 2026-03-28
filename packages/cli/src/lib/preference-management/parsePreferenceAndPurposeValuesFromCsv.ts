@@ -1,10 +1,10 @@
 import { PreferenceTopicType } from '@transcend-io/privacy-types';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { PreferenceTopic } from '../graphql/index.js';
 import { splitCsvToList } from '../requests/index.js';
 import { FileMetadataState } from './codecs.js';

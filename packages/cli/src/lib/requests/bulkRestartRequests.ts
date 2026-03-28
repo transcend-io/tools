@@ -2,6 +2,7 @@ import { join, resolve } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import * as t from 'io-ts';
@@ -9,7 +10,6 @@ import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,

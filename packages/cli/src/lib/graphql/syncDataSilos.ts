@@ -8,6 +8,7 @@ import {
   SubDataPointDataSubCategoryGuessStatus,
 } from '@transcend-io/privacy-types';
 import { apply } from '@transcend-io/type-utils';
+import { mapSeries, map } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -16,7 +17,6 @@ import { sortBy, chunk, keyBy } from 'lodash-es';
 
 import { DataCategoryInput, DataSiloInput, ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries, map } from '../bluebird.js';
 import { ApiKey } from './fetchApiKeys.js';
 import { convertToDataSubjectBlockList, DataSubject } from './fetchDataSubjects.js';
 import {

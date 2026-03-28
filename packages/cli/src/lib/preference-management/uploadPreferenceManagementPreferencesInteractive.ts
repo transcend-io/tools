@@ -1,12 +1,12 @@
 import { PersistedState } from '@transcend-io/persisted-state';
 import { PreferenceUpdateItem } from '@transcend-io/privacy-types';
 import { apply } from '@transcend-io/type-utils';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { chunk } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,

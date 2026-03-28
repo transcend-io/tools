@@ -1,11 +1,11 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
+import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, uniq, keyBy, uniqBy } from 'lodash-es';
 
 import { CodePackageInput, RepositoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map, mapSeries } from '../bluebird.js';
 import { CodePackage, fetchAllCodePackages } from './fetchAllCodePackages.js';
 import { CREATE_CODE_PACKAGE, UPDATE_CODE_PACKAGES } from './gqls/index.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';

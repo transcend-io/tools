@@ -18,3 +18,6 @@ export function createMonorepoPackageDefinition(
     packageName: `@transcend-io/${packageNameParts.slug}`,
   };
 }
+
+export * from './api/index.js';
+export * from './preference-management/index.js';

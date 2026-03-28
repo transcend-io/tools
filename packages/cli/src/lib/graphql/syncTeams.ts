@@ -1,10 +1,10 @@
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { TeamInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllTeams, Team } from './fetchAllTeams.js';
 import { UPDATE_TEAM, CREATE_TEAM } from './gqls/index.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';

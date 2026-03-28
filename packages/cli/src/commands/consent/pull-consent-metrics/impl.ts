@@ -1,12 +1,12 @@
 import fs, { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
-import { map, mapSeries } from '../../../lib/bluebird.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullConsentManagerMetrics } from '../../../lib/consent-manager/index.js';
 import {

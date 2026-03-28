@@ -1,10 +1,10 @@
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { CookieInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { UPDATE_OR_CREATE_COOKIES } from './gqls/index.js';
 // import { keyBy } from 'lodash-es';

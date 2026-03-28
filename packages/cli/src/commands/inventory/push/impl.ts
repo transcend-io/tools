@@ -1,13 +1,13 @@
 import { existsSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { TranscendInput } from '../../../codecs.js';
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth, listFiles } from '../../../lib/api-keys/index.js';
-import { mapSeries } from '../../../lib/bluebird.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
   buildTranscendGraphQLClient,
