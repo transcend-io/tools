@@ -19,18 +19,6 @@
       "dependsOn": ["transit"],
       "outputs": []
     },
-    "typecheck": {
-      "dependsOn": ["transit"],
-      "outputs": []
-    },
-    "lint": {},
-    "lint:fix": {
-      "cache": false
-    },
-    "format": {
-      "cache": false
-    },
-    "format:check": {},
     "quality": {
       "dependsOn": [
         "lint",
@@ -49,6 +37,18 @@
     "quality:fix": {
       "dependsOn": ["lint:fix", "//#lint:fix:root", "format", "//#format:root"]
     },
+    "typecheck": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "lint": {},
+    "lint:fix": {
+      "cache": false
+    },
+    "format": {
+      "cache": false
+    },
+    "format:check": {},
     "check:exports": {
       "dependsOn": ["build"],
       "outputs": []
@@ -71,7 +71,6 @@
     "//#typecheck:root": {
       "outputs": []
     },
-    "//#check:packages": {},
     "//#lint:root": {},
     "//#lint:fix:root": {
       "cache": false
@@ -80,6 +79,7 @@
       "cache": false
     },
     "//#format:check:root": {},
+    "//#check:packages": {},
     "//#check:deps:root": {}
   }
 }
