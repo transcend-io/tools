@@ -51,6 +51,10 @@ export const AssessmentQuestionType = makeEnum({
   LongAnswer: 'LONG_ANSWER_TEXT',
   /** A short-answer text question */
   ShortAnswer: 'SHORT_ANSWER_TEXT',
+  /** A text question that accepts well-formatted URLs */
+  Url: 'URL',
+  /** A question that accepts one or more email addresses */
+  Email: 'EMAIL',
   /** A single-select question */
   SingleSelect: 'SINGLE_SELECT',
   /** A multi-select question */
