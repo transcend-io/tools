@@ -187,7 +187,7 @@ importers:
         version: 21.1.1
     devDependencies:
       '@arethetypeswrong/cli':
-        specifier: 'catalog:'
+        specifier: ' ^0.18.2'
         version: 0.18.2
       '@types/JSONStream':
         specifier: npm:@types/jsonstream@^0.8.33
