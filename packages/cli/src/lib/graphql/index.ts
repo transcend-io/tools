@@ -1,5 +1,5 @@
 export * from './addMessagesToPromptRun.js';
-export * from './buildTranscendGraphQLClient.js';
+export { buildTranscendGraphQLClient, buildTranscendGraphQLClientGeneric } from '@transcend-io/sdk';
 export * from './createSombraGotInstance.js';
 export * from './createTranscendConsentGotInstance.js';
 export * from './deployConsentManager.js';
