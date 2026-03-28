@@ -1,5 +1,18 @@
 import { execFileSync } from 'node:child_process';
 
+/** Prominent failure output: GitHub Actions annotations (::error::) or ANSI red locally. */
+function prominentError(title, bodyLines) {
+  const body = bodyLines.join('\n');
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    const escaped = body.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+    console.error(`::error title=${title}::${escaped}`);
+  } else {
+    const boldRed = '\x1b[1;31m';
+    const reset = '\x1b[0m';
+    console.error(`${boldRed}${body}${reset}`);
+  }
+}
+
 const baseRef =
   process.env.CHANGESET_BASE_SHA ??
   (process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main');
@@ -14,10 +27,10 @@ if (!hasRelevantPackageChange || hasChangeset) {
 
 const changedPackageFiles = changedFiles.filter(isRelevantPublishablePackageChange);
 
-console.error(
+prominentError('Missing changeset', [
   'Publishable package changes were detected without a changeset. See CONTRIBUTING.md for more information.',
-);
-console.error('Run `pnpm changeset` and commit the generated file before merging.');
+  'Run `pnpm changeset` and commit the generated file before merging.',
+]);
 console.error('');
 console.error('Relevant changed files:');
 
