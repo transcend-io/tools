@@ -59,8 +59,10 @@ Test/lint/format commands:
 Use `pnpm --filter` or (`pnpm -F` for short) when you only need to work on one package:
 
 ```bash
-pnpm -F @transcend-io/cli start
+pnpm -F cli start
 ```
+
+See [pnpm Filtering](https://pnpm.io/filtering) for more examples.
 
 ## Releases and Versioning
 
