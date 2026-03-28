@@ -1,5 +1,46 @@
 import { execFileSync } from 'node:child_process';
 
+const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
+
+/** Prominent failure output: GitHub Actions annotations (::error::) or ANSI red locally. */
+function prominentError(title, message) {
+  if (isGithubActions) {
+    // GitHub's raw step logs only style the first line of multiline annotations.
+    const summary = message.replace(/\s*\n\s*/g, ' ');
+    const escaped = escapeGithubActionsValue(summary);
+    console.error(`::error title=${title}::${escaped}`);
+    return;
+  }
+
+  const boldRed = '\x1b[1;31m';
+  const reset = '\x1b[0m';
+  console.error(`${boldRed}${message}${reset}`);
+}
+
+function logGroup(title, lines) {
+  if (isGithubActions) {
+    console.error(`::group::${escapeGithubActionsValue(title)}`);
+
+    for (const line of lines) {
+      console.error(line);
+    }
+
+    console.error('::endgroup::');
+    return;
+  }
+
+  console.error('');
+  console.error(`${title}:`);
+
+  for (const line of lines) {
+    console.error(line);
+  }
+}
+
+function escapeGithubActionsValue(value) {
+  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+
 const baseRef =
   process.env.CHANGESET_BASE_SHA ??
   (process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main');
@@ -14,14 +55,14 @@ if (!hasRelevantPackageChange || hasChangeset) {
 
 const changedPackageFiles = changedFiles.filter(isRelevantPublishablePackageChange);
 
-console.error('Publishable package changes were detected without a changeset.');
-console.error('Run `pnpm changeset` and commit the generated file before merging.');
-console.error('');
-console.error('Relevant changed files:');
-
-for (const filePath of changedPackageFiles) {
-  console.error(`- ${filePath}`);
-}
+prominentError(
+  'Missing changeset',
+  'No changeset was found for this change. Changes to packages require a changeset.\nRun `pnpm changeset` and commit the generated file before merging. See CONTRIBUTING.md for more information.',
+);
+logGroup(
+  'Relevant changed files',
+  changedPackageFiles.map((filePath) => `- ${filePath}`),
+);
 
 process.exit(1);
 
@@ -65,14 +106,15 @@ function isRelevantPublishablePackageChange(filePath) {
   }
 
   if (
-    relativePath === 'README.md' ||
     relativePath.startsWith('.turbo/') ||
     relativePath.startsWith('dist/') ||
     relativePath.startsWith('node_modules/') ||
     relativePath.endsWith('.test.ts') ||
     relativePath.endsWith('.test.tsx') ||
     relativePath.endsWith('.spec.ts') ||
-    relativePath.endsWith('.spec.tsx')
+    relativePath.endsWith('.spec.tsx') ||
+    // *.md files on package roots (e.g. README.md files)
+    relativePath.split('/')[0].endsWith('.md')
   ) {
     return false;
   }
