@@ -64,6 +64,12 @@
       "cache": false
     },
     "//#format:check:root": {},
+    "//#test:root": {
+      "outputs": []
+    },
+    "//#typecheck:root": {
+      "outputs": []
+    },
     "//#syncpack:lint:root": {}
   }
 }

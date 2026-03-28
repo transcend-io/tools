@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "test": "turbo run test && pnpm test:root",
+    "test": "turbo run test test:root",
     "lint": "turbo run lint lint:root",
     "lint:fix": "turbo run lint:fix lint:fix:root",
-    "typecheck": "turbo run typecheck && pnpm typecheck:root",
+    "typecheck": "turbo run typecheck typecheck:root",
     "format": "turbo run format format:root",
     "format:check": "turbo run format:check format:check:root",
     "quality": "turbo run quality",

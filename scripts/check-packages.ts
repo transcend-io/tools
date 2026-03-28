@@ -1,5 +1,8 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
+
+import { fileExists, readJsonFile, readRepoFile, repoRoot } from './lib/repo-files.ts';
+import { logGroup, prominentError } from './lib/reporting.ts';
 
 type PackageManifest = {
   author?: unknown;
@@ -37,8 +40,6 @@ type ValidationProblem = {
   message: string;
 };
 
-const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
-const repoRoot = process.cwd();
 const packagesRoot = join(repoRoot, 'packages');
 const requiredPackageScripts = {
   build: 'tsdown',
@@ -516,18 +517,6 @@ function getExpectedPackageName(packageDirectory: string): string {
   return `@transcend-io/${packageDirectory.replace(/^packages\//, '')}`;
 }
 
-function readRepoFile(filePath: string): string {
-  return readFileSync(join(repoRoot, filePath), 'utf8');
-}
-
-function readJsonFile<T>(filePath: string): T {
-  return JSON.parse(readRepoFile(filePath)) as T;
-}
-
-function fileExists(filePath: string): boolean {
-  return existsSync(join(repoRoot, filePath));
-}
-
 function expectFile(
   packageDirectory: string,
   relativePath: string,
@@ -649,39 +638,3 @@ function formatValue(value: unknown): string {
 }
 
 /** Prominent failure output: GitHub Actions annotations (::error::) or ANSI red locally. */
-function prominentError(title: string, message: string): void {
-  if (isGithubActions) {
-    const summary = message.replace(/\s*\n\s*/g, ' ');
-    const escaped = escapeGithubActionsValue(summary);
-    console.error(`::error title=${title}::${escaped}`);
-    return;
-  }
-
-  const boldRed = '\x1b[1;31m';
-  const reset = '\x1b[0m';
-  console.error(`${boldRed}${message}${reset}`);
-}
-
-function logGroup(title: string, lines: string[]): void {
-  if (isGithubActions) {
-    console.error(`::group::${escapeGithubActionsValue(title)}`);
-
-    for (const line of lines) {
-      console.error(line);
-    }
-
-    console.error('::endgroup::');
-    return;
-  }
-
-  console.error('');
-  console.error(`${title}:`);
-
-  for (const line of lines) {
-    console.error(line);
-  }
-}
-
-function escapeGithubActionsValue(value: string): string {
-  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
-}

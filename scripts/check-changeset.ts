@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+
+import { fileExists, readJsonFile, readRepoFile } from './lib/repo-files.ts';
+import { logGroup, prominentError } from './lib/reporting.ts';
 
 type ChangesetConfig = {
   ignore?: unknown;
@@ -17,8 +18,6 @@ type PackageMetadata = {
   private: boolean;
 };
 
-const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
-const repoRoot = process.cwd();
 const changesetConfig = readJsonFile<ChangesetConfig>('.changeset/config.json');
 const ignoredPackages = new Set(
   (Array.isArray(changesetConfig.ignore) ? changesetConfig.ignore : []).filter(
@@ -26,45 +25,6 @@ const ignoredPackages = new Set(
   ),
 );
 const packageMetadataCache = new Map<string, PackageMetadata>();
-
-/** Prominent failure output: GitHub Actions annotations (::error::) or ANSI red locally. */
-function prominentError(title: string, message: string): void {
-  if (isGithubActions) {
-    // GitHub's raw step logs only style the first line of multiline annotations.
-    const summary = message.replace(/\s*\n\s*/g, ' ');
-    const escaped = escapeGithubActionsValue(summary);
-    console.error(`::error title=${title}::${escaped}`);
-    return;
-  }
-
-  const boldRed = '\x1b[1;31m';
-  const reset = '\x1b[0m';
-  console.error(`${boldRed}${message}${reset}`);
-}
-
-function logGroup(title: string, lines: string[]): void {
-  if (isGithubActions) {
-    console.error(`::group::${escapeGithubActionsValue(title)}`);
-
-    for (const line of lines) {
-      console.error(line);
-    }
-
-    console.error('::endgroup::');
-    return;
-  }
-
-  console.error('');
-  console.error(`${title}:`);
-
-  for (const line of lines) {
-    console.error(line);
-  }
-}
-
-function escapeGithubActionsValue(value: string): string {
-  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
-}
 
 const baseRef =
   process.env.CHANGESET_BASE_SHA ??
@@ -154,18 +114,6 @@ function getChangedFiles(base: string): string[] {
     console.error(details);
     process.exit(1);
   }
-}
-
-function fileExists(filePath: string): boolean {
-  return existsSync(join(repoRoot, filePath));
-}
-
-function readRepoFile(filePath: string): string {
-  return readFileSync(join(repoRoot, filePath), 'utf8');
-}
-
-function readJsonFile<T>(filePath: string): T {
-  return JSON.parse(readRepoFile(filePath)) as T;
 }
 
 function isChangesetFile(filePath: string): boolean {
