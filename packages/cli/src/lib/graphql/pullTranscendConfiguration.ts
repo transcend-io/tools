@@ -5,8 +5,7 @@ import {
   ActionItemCode,
   RetentionType,
 } from '@transcend-io/privacy-types';
-import { fetchAllPurposesAndPreferences } from '@transcend-io/sdk';
-import { fetchAllIdentifiers } from '@transcend-io/sdk';
+import { fetchAllIdentifiers, fetchAllPurposesAndPreferences } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { flatten, keyBy, mapValues } from 'lodash-es';
