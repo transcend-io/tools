@@ -85,7 +85,7 @@ vi.mock('../../bluebird.js', () => ({
   map: (arr: any[], fn: (x: any) => Promise<unknown>, _opts?: any) => Promise.all(arr.map(fn)),
 }));
 
-vi.mock('../../helpers/index.js', () => ({
+vi.mock('@transcend-io/utils', () => ({
   clampPageSize: (n: number) => H.clampPageSize(n),
   addDaysUtc: (d: Date, n: number) => H.addDaysUtc(d, n),
 }));

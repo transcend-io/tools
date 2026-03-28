@@ -8,7 +8,7 @@ import {
   startOfHour,
   addMs,
   addDaysUtc,
-} from '../time.js';
+} from './time.js';
 
 describe('helpers', () => {
   describe('constants', () => {
@@ -104,7 +104,7 @@ describe('helpers', () => {
 
   describe('addDaysUtc', () => {
     it('adds whole days in UTC (no local DST surprises)', () => {
-      const d = new Date('2025-03-09T08:00:00.000Z'); // US DST boundary day; UTC-safe
+      const d = new Date('2025-03-09T08:00:00.000Z');
       const out1 = addDaysUtc(d, 1);
       const out2 = addDaysUtc(d, -1);
       expect(out1.toISOString()).toBe('2025-03-10T08:00:00.000Z');

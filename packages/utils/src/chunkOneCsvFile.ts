@@ -5,11 +5,10 @@ import { basename, dirname, join } from 'node:path';
 import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 
-import colors from 'colors';
 import { Parser } from 'csv-parse';
 import * as fastcsv from 'fast-csv';
 
-import { logger } from '../../logger.js';
+import type { Logger } from './logger.js';
 
 /**
  * Options for chunking a single CSV file
@@ -27,6 +26,8 @@ export type ChunkOpts = {
   reportEveryMs?: number;
   /** Callback for progress updates */
   onProgress: (processed: number, total?: number) => void;
+  /** Logger instance (required — no default; callers must inject) */
+  logger: Logger;
 };
 
 /**
@@ -78,7 +79,7 @@ function createCsvChunkWriter(
 }
 
 /**
- * Zero-pad chunk numbers to four digits (e.g., 1 → "0001").
+ * Zero-pad chunk numbers to four digits (e.g., 1 -> "0001").
  *
  * @param n - The chunk number to pad
  * @returns The padded chunk number as a string
@@ -119,21 +120,22 @@ export async function chunkOneCsvFile(opts: ChunkOpts): Promise<void> {
     chunkSizeMB,
     onProgress,
     reportEveryMs = 500,
+    logger,
   } = opts;
   const { size: fileBytes } = await stat(filePath); // total bytes on disk
   let lastTick = 0;
 
-  logger.info(colors.magenta(`Chunking ${filePath} into ~${chunkSizeMB}MB files...`));
+  logger.info(`Chunking ${filePath} into ~${chunkSizeMB}MB files...`);
 
   const chunkSizeBytes = Math.floor(chunkSizeMB * 1024 * 1024);
   const baseName = basename(filePath, '.csv');
   const outDir = outputDir || dirname(filePath);
-  logger.info(colors.magenta(`Output directory: ${outDir}`));
+  logger.info(`Output directory: ${outDir}`);
   await mkdir(outDir, { recursive: true });
 
   // Clear previous chunk files for this base
   if (clearOutputDir) {
-    logger.warn(colors.yellow(`Clearing output directory: ${outDir}`));
+    logger.warn(`Clearing output directory: ${outDir}`);
     const files = await readdir(outDir);
     await Promise.all(
       files
@@ -160,7 +162,7 @@ export async function chunkOneCsvFile(opts: ChunkOpts): Promise<void> {
   const emit = (): void => {
     const avg = sampleRows > 0 ? sampleBytes / sampleRows : 0;
     const estTotal = avg > 0 ? Math.max(totalLines, Math.ceil(fileBytes / avg)) : undefined;
-    onProgress(totalLines, estTotal); // <-- now has total
+    onProgress(totalLines, estTotal);
     lastTick = Date.now();
   };
 
@@ -175,7 +177,7 @@ export async function chunkOneCsvFile(opts: ChunkOpts): Promise<void> {
     end: () => Promise<void>;
   } | null = null;
 
-  // Returns current chunk file path — chunk number is always 4-digit padded
+  // Returns current chunk file path -- chunk number is always 4-digit padded
   const currentChunkPath = (): string =>
     join(outDir, `${baseName}_chunk_${pad4(currentChunk)}.csv`);
 
@@ -203,8 +205,7 @@ export async function chunkOneCsvFile(opts: ChunkOpts): Promise<void> {
 
         // sanity check rows (non-fatal)
         if (expectedCols !== null && row.length !== expectedCols) {
-          // optionally log a warning or collect metrics
-          logger.warn(colors.yellow(`Row has ${row.length} cols; expected ${expectedCols}`));
+          logger.warn(`Row has ${row.length} cols; expected ${expectedCols}`);
         }
 
         totalLines += 1;
@@ -230,9 +231,7 @@ export async function chunkOneCsvFile(opts: ChunkOpts): Promise<void> {
           currentChunk += 1;
           currentSize = 0;
           logger.info(
-            colors.green(
-              `Rolling to chunk ${currentChunk} after ${totalLines.toLocaleString()} rows.`,
-            ),
+            `Rolling to chunk ${currentChunk} after ${totalLines.toLocaleString()} rows.`,
           );
           writer = createCsvChunkWriter(currentChunkPath(), headerRow!);
         }
@@ -278,8 +277,6 @@ export async function chunkOneCsvFile(opts: ChunkOpts): Promise<void> {
   // Final progress tick
   onProgress(totalLines);
   logger.info(
-    colors.green(
-      `Chunked ${filePath} into ${currentChunk} file(s); processed ${totalLines.toLocaleString()} rows.`,
-    ),
+    `Chunked ${filePath} into ${currentChunk} file(s); processed ${totalLines.toLocaleString()} rows.`,
   );
 }

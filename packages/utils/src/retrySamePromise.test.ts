@@ -1,18 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { retrySamePromise, type RetryPolicy } from '../retrySamePromise.js';
-import { sleepPromise } from '../sleepPromise.js';
+import { retrySamePromise, type RetryPolicy } from './retrySamePromise.js';
+import { sleepPromise } from './sleepPromise.js';
 
-// Mock the sleep helper so we don't actually wait during tests
-vi.mock('../sleepPromise.js', () => ({
+vi.mock('./sleepPromise.js', () => ({
   sleepPromise: vi.fn(() => Promise.resolve()),
 }));
 
 /**
  * Helper to make got-like errors
  *
- * @param options -  Option
- * @returns - Error object with response structure
+ * @param options - Options
+ * @returns Error object with response structure
  */
 function makeErr({
   statusCode,
@@ -36,7 +35,6 @@ function makeErr({
   if (status !== undefined) e.response.status = status;
   if (body !== undefined) e.response.body = body;
   if (!statusCode && !status && body === undefined && !message) {
-    // leave it mostly empty to exercise "Unknown error"
     delete e.message;
     delete e.response;
   }
@@ -88,7 +86,6 @@ describe('retrySamePromise', () => {
     expect(op).toHaveBeenCalledTimes(3);
     expect(onBackoff).toHaveBeenCalledTimes(2);
 
-    // ✅ Check substrings on the single note argument for each call
     expect(onBackoff).toHaveBeenNthCalledWith(1, expect.stringContaining('status=429'));
     expect(onBackoff).toHaveBeenNthCalledWith(1, expect.stringContaining('attempt=1/3'));
     expect(onBackoff).toHaveBeenNthCalledWith(2, expect.stringContaining('status=429'));
@@ -117,7 +114,6 @@ describe('retrySamePromise', () => {
   });
 
   it('throws after exceeding maxAttempts for retryable errors', async () => {
-    // 429 three times; maxAttempts = 2 -> still fails on 3rd rejection
     const err = makeErr({ statusCode: 429, body: 'Rate limited' });
     const op = vi
       .fn()
@@ -134,7 +130,6 @@ describe('retrySamePromise', () => {
 
     await expect(retrySamePromise(op, policy, onBackoff)).rejects.to.equal(err);
 
-    // initial try + 2 retries = 3 calls; backoff twice
     expect(op).toHaveBeenCalledTimes(3);
     expect(onBackoff).toHaveBeenCalledTimes(2);
     expect(sleepPromise).toHaveBeenCalledTimes(2);
@@ -159,7 +154,7 @@ describe('retrySamePromise', () => {
   });
 
   it('emits "Unknown error" in backoff note when error has no message/body/status', async () => {
-    const err = makeErr({}); // stripped of message/response above
+    const err = makeErr({});
     const op = vi.fn().mockRejectedValueOnce(err).mockResolvedValue('ok');
 
     const policy: RetryPolicy = {

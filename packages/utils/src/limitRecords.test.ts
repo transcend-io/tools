@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { limitRecords } from '../limitRecords.js';
+import { limitRecords } from './limitRecords.js';
 
 describe('limitRecords', () => {
   it('returns empty object for empty input', () => {
@@ -37,7 +37,6 @@ describe('limitRecords', () => {
   });
 
   it('preserves key insertion order for retained entries', () => {
-    // Use non-integer-like keys to avoid numeric reordering semantics.
     const input = { alpha: 1, beta: 2, gamma: 3, delta: 4 };
     const out = limitRecords(input, 3);
 

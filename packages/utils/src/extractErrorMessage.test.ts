@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { extractErrorMessage } from '../extractErrorMessage.js';
+import { extractErrorMessage } from './extractErrorMessage.js';
 
 describe('extractErrorMessage', () => {
   it('returns "Unknown error" when given undefined', () => {
@@ -75,8 +75,6 @@ describe('extractErrorMessage', () => {
         }),
       },
     };
-    // NOTE: Current implementation does not unwrap .message from objects,
-    // so it will stringify to "[object Object], [object Object]".
     expect(extractErrorMessage(err)).to.equal('[object Object], [object Object]');
   });
 });

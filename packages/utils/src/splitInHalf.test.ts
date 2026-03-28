@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { splitInHalf } from '../splitInHalf.js';
+import { splitInHalf } from './splitInHalf.js';
 
 describe('splitInHalf', () => {
   it('returns two empty arrays for empty input', () => {
@@ -35,10 +35,7 @@ describe('splitInHalf', () => {
     const clone = input.slice();
     const [left, right] = splitInHalf(input);
 
-    // Original unchanged
     expect(input).to.deep.equal(clone);
-
-    // Order preserved in both halves
     expect(left).to.deep.equal(['alpha', 'beta']);
     expect(right).to.deep.equal(['gamma', 'delta']);
   });
