@@ -50,3 +50,4 @@ export * from './processingPurpose.js';
 export * from './processingActivity.js';
 export * from './sombraVersion.js';
 export * from './siloDiscoveryResult.js';
+export * from './consentWorkflowTrigger.js';

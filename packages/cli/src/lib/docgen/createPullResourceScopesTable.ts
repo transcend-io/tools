@@ -202,11 +202,26 @@ const RESOURCE_DOCUMENTATION: Record<
 (https://app.transcend.io/consent-manager/regional-experiences/purposes)',
     ],
   },
+  [TranscendPullResource.PreferenceOptions]: {
+    description: 'Preference management options for multi and single select preference topics.',
+    markdownLinks: [
+      '[Preference Management -> Preference Topics -> Options]\
+(https://app.transcend.io/preference-store/preference-topics/preference-options)',
+    ],
+  },
   [TranscendPullResource.SystemDiscovery]: {
     description: 'System discovery results',
     markdownLinks: [
       '[System Discovery]\
 (https://app.transcend.io/data-map/data-inventory/silo-discovery)',
+    ],
+  },
+  [TranscendPullResource.ConsentWorkflowTriggers]: {
+    description:
+      'Consent workflow trigger definitions that automate privacy request workflows based on consent state changes.',
+    markdownLinks: [
+      '[Consent Management -> Consent Workflows]\
+(https://app.transcend.io/consent-manager/consent-workflows)',
     ],
   },
 };
