@@ -57,7 +57,7 @@ const changedPackageFiles = changedFiles.filter(isRelevantPublishablePackageChan
 
 prominentError(
   'Missing changeset',
-  'Publishable package changes were detected without a changeset. See CONTRIBUTING.md for more information.\nRun `pnpm changeset` and commit the generated file before merging.',
+  'No changeset was found for this change. Changes to packages require a changeset  .\nRun `pnpm changeset` and commit the generated file before merging. See CONTRIBUTING.md for more information.',
 );
 logGroup(
   'Relevant changed files',
