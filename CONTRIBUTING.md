@@ -31,9 +31,10 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 
 1. Run `mise run bootstrap` after cloning and whenever dependencies change.
 2. Make your change in the relevant package.
-3. While iterating, run targeted commands with `pnpm --filter`.
-4. Before opening a PR, run the repo-level checks affected by your change.
-5. Add a changeset when your change touches package code under `packages/`.
+3. Add a changeset when your change touches package code under `packages/`.
+4. Merge your feature PR into `main`.
+5. CI will automatically open a release PR.
+6. If you wish to release immediately, merge the release PR to publish to npm.
 
 ## Common Commands
 
@@ -116,7 +117,7 @@ Before you open a PR:
 On pull requests, GitHub Actions runs:
 
 - **`CI`**:
-  - `CI / global` job: runs all the standard commands across all packages, such as `test` and `typecheck` commands.
+  - `CI / global` job: runs all the standard commands across each package such as `build` and `test` commands.
   - Some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
 - **`Preview Release`** see [Preview Releases](#preview-releases) for more.
 
@@ -158,13 +159,9 @@ Create one with:
 pnpm changeset
 ```
 
-On pull requests, [`scripts/check-changeset.mjs`](scripts/check-changeset.mjs) requires a changeset
-whenever a PR changes **any** package source under `packages/<name>/…` except paths it ignores. That
-includes **private** workspace packages such as `core` and `utils`, not only packages published to
-npm. Add a changeset that names the packages whose version should move when the release PR lands;
-`changeset publish` still publishes only **public** packages.
+Add a changeset when changes to a package under `packages/` would require a new version to be published to npm.
 
-It ignores:
+[`scripts/check-changeset.mjs`](scripts/check-changeset.mjs) enforces this on pull requests. It ignores:
 
 - package `README.md` changes
 - test files
@@ -172,7 +169,7 @@ It ignores:
 - `node_modules/` and `.turbo/`
 - _See [`scripts/check-changeset.mjs`](scripts/check-changeset.mjs) for the full list of ignored files._
 
-If a PR has relevant `packages/` changes and does not include a changeset, CI fails.
+If a PR changes a package and does not include a changeset, CI fails.
 
 ### Preview Releases
 
