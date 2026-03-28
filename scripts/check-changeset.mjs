@@ -1,16 +1,44 @@
 import { execFileSync } from 'node:child_process';
 
+const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
+
 /** Prominent failure output: GitHub Actions annotations (::error::) or ANSI red locally. */
-function prominentError(title, bodyLines) {
-  const body = bodyLines.join('\n');
-  if (process.env.GITHUB_ACTIONS === 'true') {
-    const escaped = body.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+function prominentError(title, message) {
+  if (isGithubActions) {
+    // GitHub's raw step logs only style the first line of multiline annotations.
+    const summary = message.replace(/\s*\n\s*/g, ' ');
+    const escaped = escapeGithubActionsValue(summary);
     console.error(`::error title=${title}::${escaped}`);
-  } else {
-    const boldRed = '\x1b[1;31m';
-    const reset = '\x1b[0m';
-    console.error(`${boldRed}${body}${reset}`);
+    return;
   }
+
+  const boldRed = '\x1b[1;31m';
+  const reset = '\x1b[0m';
+  console.error(`${boldRed}${message}${reset}`);
+}
+
+function logGroup(title, lines) {
+  if (isGithubActions) {
+    console.error(`::group::${escapeGithubActionsValue(title)}`);
+
+    for (const line of lines) {
+      console.error(line);
+    }
+
+    console.error('::endgroup::');
+    return;
+  }
+
+  console.error('');
+  console.error(`${title}:`);
+
+  for (const line of lines) {
+    console.error(line);
+  }
+}
+
+function escapeGithubActionsValue(value) {
+  return value.replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
 }
 
 const baseRef =
@@ -27,16 +55,14 @@ if (!hasRelevantPackageChange || hasChangeset) {
 
 const changedPackageFiles = changedFiles.filter(isRelevantPublishablePackageChange);
 
-prominentError('Missing changeset', [
-  'Publishable package changes were detected without a changeset. See CONTRIBUTING.md for more information.',
-  'Run `pnpm changeset` and commit the generated file before merging.',
-]);
-console.error('');
-console.error('Relevant changed files:');
-
-for (const filePath of changedPackageFiles) {
-  console.error(`- ${filePath}`);
-}
+prominentError(
+  'Missing changeset',
+  'Publishable package changes were detected without a changeset. See CONTRIBUTING.md for more information.\nRun `pnpm changeset` and commit the generated file before merging.',
+);
+logGroup(
+  'Relevant changed files',
+  changedPackageFiles.map((filePath) => `- ${filePath}`),
+);
 
 process.exit(1);
 
