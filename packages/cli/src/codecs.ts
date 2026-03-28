@@ -75,7 +75,7 @@ import { buildEnabledRouteType } from './lib/helpers/buildEnabledRouteType.js';
  * @see https://docs.transcend.io/docs/privacy-requests/configuring-requests/email-templates
  */
 export const TemplateInput = t.type({
-  /** The title of the template */
+  /** The title of the templatef */
   title: t.string,
 });
 
