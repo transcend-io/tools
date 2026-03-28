@@ -12,7 +12,7 @@ import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllRequestEnrichers,
-  fetchAllRequestIdentifiers,
+  fetchRequestIdentifiersBatch,
   fetchAllRequests,
   validateSombraVersion,
 } from '../graphql/index.js';
@@ -70,39 +70,35 @@ export async function pullManualEnrichmentIdentifiersToCsv({
 
   await validateSombraVersion(client);
 
-  // Requests to save
-  const savedRequests: PrivacyRequestWithIdentifiers[] = [];
-
-  // Filter down requests to what is needed
-  await map(
+  // Fetch enrichers for all requests in parallel
+  const requestsWithEnrichers = await map(
     allRequests,
-    async (request) => {
-      // Fetch enrichers
-      const requestEnrichers = await fetchAllRequestEnrichers(client, {
+    async (request) => ({
+      request,
+      requestEnrichers: await fetchAllRequestEnrichers(client, {
         requestId: request.id,
-      });
+      }),
+    }),
+    { concurrency },
+  );
 
-      // Check if manual enrichment exists for that request
-      const hasManualEnrichment = requestEnrichers.filter(
-        ({ status }) => status === 'ACTION_REQUIRED',
-      );
+  // Filter to requests that have manual enrichment
+  const manualEnrichmentRequests = requestsWithEnrichers.filter(
+    ({ requestEnrichers }) =>
+      requestEnrichers.filter(({ status }) => status === 'ACTION_REQUIRED').length > 0,
+  );
 
-      // Save request to queue
-      if (hasManualEnrichment) {
-        const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
-          requestId: request.id,
-          skipSombraCheck: true,
-        });
-        savedRequests.push({
-          ...request,
-          requestIdentifiers,
-          requestEnrichers,
-        });
-      }
-    },
-    {
-      concurrency,
-    },
+  // Batch-fetch identifiers for all qualifying requests at once
+  const identifiersByRequest = await fetchRequestIdentifiersBatch(sombra, {
+    requestIds: manualEnrichmentRequests.map(({ request }) => request.id),
+  });
+
+  const savedRequests: PrivacyRequestWithIdentifiers[] = manualEnrichmentRequests.map(
+    ({ request, requestEnrichers }) => ({
+      ...request,
+      requestIdentifiers: identifiersByRequest.get(request.id) ?? [],
+      requestEnrichers,
+    }),
   );
 
   const data = savedRequests.map(

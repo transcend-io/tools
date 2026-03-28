@@ -11,9 +11,10 @@ import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { map } from '../bluebird.js';
 import {
+  RequestIdentifier,
   buildTranscendGraphQLClient,
   createSombraGotInstance,
-  fetchAllRequestIdentifiers,
+  fetchRequestIdentifiersBatch,
   fetchAllRequests,
   validateSombraVersion,
 } from '../graphql/index.js';
@@ -156,8 +157,12 @@ export async function bulkRestartRequests({
     }
   }
 
+  let identifiersByRequest: Map<string, RequestIdentifier[]> | undefined;
   if (copyIdentifiers) {
     await validateSombraVersion(client);
+    identifiersByRequest = await fetchRequestIdentifiersBatch(sombra, {
+      requestIds: requests.map((r) => r.id),
+    });
   }
 
   // Map over the requests
@@ -167,12 +172,8 @@ export async function bulkRestartRequests({
     requests,
     async (request, ind) => {
       try {
-        // Pull the request identifiers
         const requestIdentifiers = copyIdentifiers
-          ? await fetchAllRequestIdentifiers(client, sombra, {
-              requestId: request.id,
-              skipSombraCheck: true,
-            })
+          ? (identifiersByRequest!.get(request.id) ?? [])
           : [];
 
         // Make the GraphQL request to restart the request
