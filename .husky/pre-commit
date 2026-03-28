@@ -1,1 +1,1 @@
-pnpm exec turbo run quality --output-logs=new-only --no-update-notifier
+pnpm exec turbo run quality:fix --output-logs=new-only --no-update-notifier

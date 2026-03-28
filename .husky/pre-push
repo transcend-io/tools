@@ -1,1 +1,1 @@
-pnpm exec turbo run test typecheck check:exports check:publint --output-logs=errors-only --no-update-notifier
+pnpm exec turbo run quality test --output-logs=errors-only --no-update-notifier

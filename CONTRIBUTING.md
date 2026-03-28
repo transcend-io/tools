@@ -40,22 +40,24 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 
 - `pnpm build`: build workspace packages with `tsdown`
 - `pnpm test`: run package tests with Vitest
-- `pnpm typecheck`: run TypeScript checks across workspace packages
-- `pnpm lint`: run `oxlint` across the repo
-- `pnpm lint:fix`: run `oxlint --fix` across the repo
-- `pnpm format`: format the repo with `oxfmt`
-- `pnpm format:check`: verify formatting with `oxfmt --check`
-- `pnpm quality`: run formatting, lint, and dependency-policy checks
+- `pnpm quality`: run repo-wide verification checks and typecheck
 - `pnpm quality:fix`: auto-fix formatting and lint issues where possible
 - `pnpm changeset`: create a changeset file
 
 Additional checks:
 
+- `pnpm typecheck`: run TypeScript checks across workspace packages
+- `pnpm lint`: run `oxlint` across the repo
+- `pnpm lint:fix`: run `oxlint --fix` across the repo
+- `pnpm format`: format the repo with `oxfmt`
+- `pnpm format:check`: verify formatting with `oxfmt --check`
 - `pnpm check:changeset`: validate changeset coverage for publishable package changes
 - `pnpm check:packages`: validate shared package metadata and layout conventions
 - `pnpm check:exports`: validate published package shape with `attw`
 - `pnpm check:publint`: validate published package compatibility and packaging metadata
 - `pnpm check:deps`: enforce dependency version policy
+
+`pnpm quality` intentionally excludes `pnpm check:changeset`, since that check compares the current branch to its base and is mainly useful in pull request workflows.
 
 Release and maintenance:
 
@@ -158,8 +160,8 @@ CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN`
 
 After a normal install from the repo root, Husky configures local Git hooks automatically.
 
-- `pre-commit`: runs `pnpm quality`
-- `pre-push`: runs `pnpm test`, `pnpm typecheck`, `pnpm check:exports`, and `pnpm check:publint`
+- `pre-commit`: runs `pnpm quality:fix`
+- `pre-push`: runs `pnpm quality` and `pnpm test`
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
 releases.

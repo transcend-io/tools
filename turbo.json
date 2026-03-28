@@ -37,8 +37,13 @@
         "//#lint:root",
         "format:check",
         "//#format:check:root",
+        "typecheck",
+        "//#typecheck:root",
+        "//#check:packages",
         "check:deps",
-        "//#check:deps:root"
+        "//#check:deps:root",
+        "check:exports",
+        "check:publint"
       ]
     },
     "quality:fix": {
@@ -66,6 +71,7 @@
     "//#typecheck:root": {
       "outputs": []
     },
+    "//#check:packages": {},
     "//#lint:root": {},
     "//#lint:fix:root": {
       "cache": false
