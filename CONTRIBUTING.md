@@ -104,15 +104,16 @@ pnpm changeset
 
 Add a changeset when changes to a package under `packages/` would require a new version to be published to npm.
 
-[`scripts/check-changeset.mjs`](scripts/check-changeset.mjs) enforces this on pull requests. It ignores:
+[`scripts/check-changeset.ts`](scripts/check-changeset.ts) enforces this on pull requests. It ignores:
 
+- private packages (i.e. packages with `"private": true` in their `package.json`)
 - package `README.md` changes
 - test files
 - generated `dist/` output
 - `node_modules/` and `.turbo/`
-- _See [`scripts/check-changeset.mjs`](scripts/check-changeset.mjs) for the full list of ignored files._
+- _See [`scripts/check-changeset.ts`](scripts/check-changeset.ts) for the full list of ignored files._
 
-If a PR changes a package and does not include a changeset, CI fails.
+If a PR changes a package without an associated changeset, CI fails.
 
 ### Preview Releases
 
