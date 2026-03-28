@@ -30,7 +30,7 @@ export class RateCounter {
     this.buckets.push({ t: now, n });
     // keep last 2 minutes of buckets
     const cutoff = now - 120_000;
-    while (this.buckets.length && this.buckets[0].t < cutoff) {
+    while (this.buckets.length > 0 && this.buckets[0]!.t < cutoff) {
       this.buckets.shift();
     }
   }
@@ -46,7 +46,7 @@ export class RateCounter {
     const cutoff = now - windowMs;
     let sum = 0;
     for (let i = this.buckets.length - 1; i >= 0; i -= 1) {
-      const b = this.buckets[i];
+      const b = this.buckets[i]!;
       if (b.t < cutoff) break;
       sum += b.n;
     }

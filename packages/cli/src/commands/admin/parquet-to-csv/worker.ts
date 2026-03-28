@@ -1,4 +1,6 @@
-import { parquetToCsvOneFile, extractErrorMessage } from '../../../lib/helpers/index.js';
+import { extractErrorMessage } from '@transcend-io/utils';
+
+import { parquetToCsvOneFile } from '../../../lib/helpers/index.js';
 import type { ToWorker } from '../../../lib/pooling/index.js';
 import { logger } from '../../../logger.js';
 

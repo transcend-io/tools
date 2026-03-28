@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { getErrorStatus } from '../getErrorStatus.js';
+import { getErrorStatus } from './getErrorStatus.js';
 
 describe('getErrorStatus', () => {
   it('returns undefined when given undefined', () => {

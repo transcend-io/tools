@@ -1,10 +1,10 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import { startOfUtcDay, DAY_MS } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import colors from 'colors';
 import type { Got } from 'got';
 
 import { logger } from '../../logger.js';
-import { startOfUtcDay, DAY_MS } from '../helpers/index.js';
 import { getComparisonTimeForRecord } from './getComparisonTimeForRecord.js';
 import { iterateConsentPages } from './iterateConsentPages.js';
 import { pickConsentChunkMode } from './pickConsentChunkMode.js';
