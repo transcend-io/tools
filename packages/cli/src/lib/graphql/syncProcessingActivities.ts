@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -10,7 +11,6 @@ import {
   ProcessingActivity,
 } from './fetchAllProcessingActivities.js';
 import { UPDATE_PROCESSING_ACTIVITIES, CREATE_PROCESSING_ACTIVITY } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Create a new processing activity, setting only title and description
@@ -35,7 +35,8 @@ async function createProcessingActivity(
       processingActivity: ProcessingActivity;
     };
   }>(client, CREATE_PROCESSING_ACTIVITY, {
-    input,
+    variables: { input },
+    logger,
   });
   return createProcessingActivity.processingActivity;
 }
@@ -65,26 +66,29 @@ async function updateProcessingActivities(
     );
   }
   await makeGraphQLRequest(client, UPDATE_PROCESSING_ACTIVITIES, {
-    input: {
-      processingActivities: processingActivityIdPairs.map(
-        ([
-          { processingSubPurposes, dataSubCategories, saaSCategories, ...processingActivity },
-          id,
-        ]) => ({
-          dataSubCategoryInputs: dataSubCategories?.map(({ category, name }) => ({
-            category,
-            name: name ?? '',
-          })),
-          processingPurposeSubCategoryInputs: processingSubPurposes?.map(({ purpose, name }) => ({
-            purpose,
-            name: name ?? 'Other',
-          })),
-          saaSCategoryTitles: saaSCategories,
-          ...processingActivity,
-          id,
-        }),
-      ),
+    variables: {
+      input: {
+        processingActivities: processingActivityIdPairs.map(
+          ([
+            { processingSubPurposes, dataSubCategories, saaSCategories, ...processingActivity },
+            id,
+          ]) => ({
+            dataSubCategoryInputs: dataSubCategories?.map(({ category, name }) => ({
+              category,
+              name: name ?? '',
+            })),
+            processingPurposeSubCategoryInputs: processingSubPurposes?.map(({ purpose, name }) => ({
+              purpose,
+              name: name ?? 'Other',
+            })),
+            saaSCategoryTitles: saaSCategories,
+            ...processingActivity,
+            id,
+          }),
+        ),
+      },
     },
+    logger,
   });
 }
 

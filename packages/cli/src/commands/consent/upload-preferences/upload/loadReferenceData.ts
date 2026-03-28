@@ -1,14 +1,14 @@
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
-import type { GraphQLClient } from 'graphql-request';
-
 import {
+  buildTranscendGraphQLClient,
   fetchAllPurposes,
   fetchAllPreferenceTopics,
-  fetchAllIdentifiers,
   type PreferenceTopic,
   type Purpose,
-  type Identifier,
-} from '../../../../lib/graphql/index.js';
+} from '@transcend-io/sdk';
+import type { GraphQLClient } from 'graphql-request';
+
+import { fetchAllIdentifiers, type Identifier } from '../../../../lib/graphql/index.js';
+import { logger } from '../../../../logger.js';
 
 export type PreferenceUploadReferenceData = {
   /**
@@ -40,9 +40,9 @@ export async function loadReferenceData(client: GraphQLClient): Promise<
   } & PreferenceUploadReferenceData
 > {
   const [purposes, preferenceTopics, identifiers] = await Promise.all([
-    fetchAllPurposes(client),
-    fetchAllPreferenceTopics(client),
-    fetchAllIdentifiers(client),
+    fetchAllPurposes(client, { logger }),
+    fetchAllPreferenceTopics(client, { logger }),
+    fetchAllIdentifiers(client, { logger }),
   ]);
   return { client, purposes, preferenceTopics, identifiers };
 }

@@ -1,11 +1,11 @@
 import { PersistedState } from '@transcend-io/persisted-state';
+import type { PreferenceTopic } from '@transcend-io/sdk';
 import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 import { keyBy } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { PreferenceTopic } from '../graphql/index.js';
 import { readCsv } from '../requests/index.js';
 import { checkIfPendingPreferenceUpdatesAreNoOp } from './checkIfPendingPreferenceUpdatesAreNoOp.js';
 import { checkIfPendingPreferenceUpdatesCauseConflict } from './checkIfPendingPreferenceUpdatesCauseConflict.js';

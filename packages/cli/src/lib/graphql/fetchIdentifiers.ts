@@ -1,4 +1,5 @@
 import { fetchAllIdentifiers as sdkFetchAllIdentifiers, type Identifier } from '@transcend-io/sdk';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,20 +8,9 @@ import { keyBy, uniq, flatten, difference } from 'lodash-es';
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { CREATE_IDENTIFIER, NEW_IDENTIFIER_TYPES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
+export { fetchAllIdentifiers } from '@transcend-io/sdk';
 export type { Identifier } from '@transcend-io/sdk';
-
-/**
- * Fetch all identifiers in the organization.
- * CLI wrapper — injects logger.
- *
- * @param client - GraphQL client
- * @returns All identifiers in the organization
- */
-export async function fetchAllIdentifiers(client: GraphQLClient): Promise<Identifier[]> {
-  return sdkFetchAllIdentifiers(client, { logger });
-}
 
 /**
  * Fetch all identifiers and if any are found in the config that are
@@ -36,7 +26,7 @@ export async function fetchIdentifiersAndCreateMissing(
   client: GraphQLClient,
   skipPublish = false,
 ): Promise<{ [k in string]: Identifier }> {
-  const allIdentifiers = await fetchAllIdentifiers(client);
+  const allIdentifiers = await sdkFetchAllIdentifiers(client, { logger });
   const identifiersByName = keyBy(allIdentifiers, 'name');
 
   const expectedIdentifiers = uniq([
@@ -62,7 +52,7 @@ export async function fetchIdentifiersAndCreateMissing(
         /** Name of identifier type remaining */
         name: string;
       }[];
-    }>(client, NEW_IDENTIFIER_TYPES);
+    }>(client, NEW_IDENTIFIER_TYPES, { logger });
     const nativeTypesRemaining = newIdentifierTypes.map(({ name }) => name);
     await mapSeries(missingIdentifiers, async (identifier) => {
       logger.info(colors.magenta(`Creating identifier ${identifier}...`));
@@ -73,11 +63,14 @@ export async function fetchIdentifiersAndCreateMissing(
           identifier: Identifier;
         };
       }>(client, CREATE_IDENTIFIER, {
-        input: {
-          name: identifier,
-          type: nativeTypesRemaining.includes(identifier!) ? identifier : 'custom',
-          skipPublish,
+        variables: {
+          input: {
+            name: identifier,
+            type: nativeTypesRemaining.includes(identifier!) ? identifier : 'custom',
+            skipPublish,
+          },
         },
+        logger,
       });
       logger.info(colors.green(`Created identifier ${identifier}!`));
 

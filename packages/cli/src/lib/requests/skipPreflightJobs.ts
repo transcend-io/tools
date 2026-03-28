@@ -87,7 +87,8 @@ export async function skipPreflightJobs({
               /** Whether we successfully uploaded the results */
               success: boolean;
             }>(client, SKIP_REQUEST_ENRICHER, {
-              requestEnricherId: requestEnricher.id,
+              variables: { requestEnricherId: requestEnricher.id },
+              logger,
             });
             totalSkipped += 1;
           } catch (err) {

@@ -85,8 +85,8 @@ export async function skipRequestDataSilos({
             /** Whether we successfully uploaded the results */
             success: boolean;
           }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
-            requestDataSiloId: requestDataSilo.id,
-            status,
+            variables: { requestDataSiloId: requestDataSilo.id, status },
+            logger,
           });
         } catch (err) {
           if (!err.message.includes('Client error: Request must be active:')) {

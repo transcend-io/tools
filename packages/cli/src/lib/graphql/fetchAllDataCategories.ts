@@ -1,8 +1,9 @@
 import { DataCategoryType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { DATA_SUB_CATEGORIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface DataSubCategory {
   /** ID of data category */
@@ -61,8 +62,8 @@ export async function fetchAllDataCategories(client: GraphQLClient): Promise<Dat
         nodes: DataSubCategory[];
       };
     }>(client, DATA_SUB_CATEGORIES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     dataSubCategories.push(...nodes);
     offset += PAGE_SIZE;

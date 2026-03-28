@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries, map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,7 +8,6 @@ import { RepositoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllRepositories, Repository } from './fetchAllRepositories.js';
 import { UPDATE_REPOSITORIES, CREATE_REPOSITORY } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const CHUNK_SIZE = 100;
 
@@ -46,7 +46,8 @@ export async function createRepository(
       repository: Repository;
     };
   }>(client, CREATE_REPOSITORY, {
-    input,
+    variables: { input },
+    logger,
   });
   logger.info(colors.green(`Successfully created repository "${input.name}"!`));
   return repository;
@@ -89,9 +90,12 @@ export async function updateRepositories(
       repositories: Repository[];
     };
   }>(client, UPDATE_REPOSITORIES, {
-    input: {
-      repositories: inputs,
+    variables: {
+      input: {
+        repositories: inputs,
+      },
     },
+    logger,
   });
   logger.info(colors.green(`Successfully updated ${inputs.length} repositories!`));
   return repositories;

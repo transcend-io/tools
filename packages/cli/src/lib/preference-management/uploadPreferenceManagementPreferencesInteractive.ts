@@ -1,6 +1,11 @@
 import { PersistedState } from '@transcend-io/persisted-state';
 import { PreferenceUpdateItem } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllPurposes,
+  fetchAllPreferenceTopics,
+} from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -8,11 +13,6 @@ import colors from 'colors';
 import { chunk } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import {
-  createSombraGotInstance,
-  fetchAllPurposes,
-  fetchAllPreferenceTopics,
-} from '../graphql/index.js';
 import { parseAttributesFromString } from '../requests/index.js';
 import { PreferenceState } from './codecs.js';
 import { getPreferenceUpdatesFromRow } from './getPreferenceUpdatesFromRow.js';
@@ -99,10 +99,14 @@ export async function uploadPreferenceManagementPreferencesInteractive({
 
   const [sombra, purposes, preferenceTopics] = await Promise.all([
     // Create sombra instance to communicate with
-    createSombraGotInstance(transcendUrl, auth, sombraAuth),
+    createSombraGotInstance(transcendUrl, auth, {
+      logger,
+      sombraApiKey: sombraAuth,
+      sombraUrl: process.env.SOMBRA_URL,
+    }),
     // get all purposes and topics
-    fetchAllPurposes(client),
-    fetchAllPreferenceTopics(client),
+    fetchAllPurposes(client, { logger }),
+    fetchAllPreferenceTopics(client, { logger }),
   ]);
 
   // Process the file

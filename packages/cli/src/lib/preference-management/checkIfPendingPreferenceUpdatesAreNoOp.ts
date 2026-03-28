@@ -3,8 +3,7 @@ import {
   PreferenceStorePurposeResponse,
   PreferenceTopicType,
 } from '@transcend-io/privacy-types';
-
-import { PreferenceTopic } from '../graphql/index.js';
+import type { PreferenceTopic } from '@transcend-io/sdk';
 
 /**
  * Check if the pending set of updates are exactly the same as the current consent record.

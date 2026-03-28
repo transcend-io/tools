@@ -1,10 +1,11 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
+import { logger } from '../../logger.js';
 import { SiloDiscoveryRawResults } from '../code-scanning/findFilesToScan.js';
 import { ADD_SILO_DISCOVERY_RESULTS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const CHUNK_SIZE = 1000;
 
@@ -27,8 +28,8 @@ export async function uploadSiloDiscoveryResults(
       /** Whether we successfully uploaded the results */
       success: boolean;
     }>(client, ADD_SILO_DISCOVERY_RESULTS, {
-      pluginId,
-      rawResults,
+      variables: { pluginId, rawResults },
+      logger,
     });
   });
 }

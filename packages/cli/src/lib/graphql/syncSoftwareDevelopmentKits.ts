@@ -1,4 +1,5 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries, map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -11,7 +12,6 @@ import {
   SoftwareDevelopmentKit,
 } from './fetchAllSoftwareDevelopmentKits.js';
 import { UPDATE_SOFTWARE_DEVELOPMENT_KITS, CREATE_SOFTWARE_DEVELOPMENT_KIT } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const CHUNK_SIZE = 100;
 
@@ -60,7 +60,8 @@ export async function createSoftwareDevelopmentKit(
       softwareDevelopmentKit: SoftwareDevelopmentKit;
     };
   }>(client, CREATE_SOFTWARE_DEVELOPMENT_KIT, {
-    input,
+    variables: { input },
+    logger,
   });
   logger.info(colors.green(`Successfully created software development kit "${input.name}"!`));
   return softwareDevelopmentKit;
@@ -111,9 +112,12 @@ export async function updateSoftwareDevelopmentKits(
       softwareDevelopmentKits: SoftwareDevelopmentKit[];
     };
   }>(client, UPDATE_SOFTWARE_DEVELOPMENT_KITS, {
-    input: {
-      softwareDevelopmentKits: inputs,
+    variables: {
+      input: {
+        softwareDevelopmentKits: inputs,
+      },
     },
+    logger,
   });
   logger.info(colors.green(`Successfully updated ${inputs.length} software development kits!`));
   return softwareDevelopmentKits;

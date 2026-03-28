@@ -74,7 +74,8 @@ export async function retryRequestDataSilos({
           /** Whether we successfully uploaded the results */
           success: boolean;
         }>(client, RETRY_REQUEST_DATA_SILO, {
-          requestDataSiloId: requestDataSilo.id,
+          variables: { requestDataSiloId: requestDataSilo.id },
+          logger,
         });
       } catch (err) {
         // some requests may not have this data silo connected

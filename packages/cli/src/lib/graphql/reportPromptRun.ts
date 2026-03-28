@@ -4,10 +4,11 @@ import {
   PromptRunProductArea,
   LargeLanguageModelClient,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { REPORT_PROMPT_RUN } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface ReportPromptRunInput {
   /** Name of run */
@@ -92,13 +93,16 @@ export async function reportPromptRun(
       };
     };
   }>(client, REPORT_PROMPT_RUN, {
-    input: {
-      ...input,
-      promptRunMessages: input.promptRunMessages.map(({ content, ...rest }) => ({
-        ...rest,
-        message: content,
-      })),
+    variables: {
+      input: {
+        ...input,
+        promptRunMessages: input.promptRunMessages.map(({ content, ...rest }) => ({
+          ...rest,
+          message: content,
+        })),
+      },
     },
+    logger,
   });
   return promptRun.id;
 }

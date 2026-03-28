@@ -69,8 +69,11 @@ export async function markRequestDataSiloIdsCompleted({
           /** Whether we successfully uploaded the results */
           success: boolean;
         }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
-          requestDataSiloId: requestDataSilo.id,
-          status,
+          variables: {
+            requestDataSiloId: requestDataSilo.id,
+            status,
+          },
+          logger,
         });
       } catch (err) {
         if (

@@ -75,10 +75,13 @@ export async function removeUnverifiedRequestIdentifiers({
           /** Whether we successfully uploaded the results */
           success: boolean;
         }>(client, REMOVE_REQUEST_IDENTIFIERS, {
-          input: {
-            requestId: requestToRestart.id,
-            requestIdentifierIds: clearOut,
+          variables: {
+            input: {
+              requestId: requestToRestart.id,
+              requestIdentifierIds: clearOut,
+            },
           },
+          logger,
         });
         processed += clearOut.length;
       }

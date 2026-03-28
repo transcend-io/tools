@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { PROMPT_PARTIALS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface PromptPartial {
   /** ID of prompts */
@@ -36,8 +37,8 @@ export async function fetchAllPromptPartials(client: GraphQLClient): Promise<Pro
         nodes: PromptPartial[];
       };
     }>(client, PROMPT_PARTIALS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     promptPartials.push(...nodes);
     offset += PAGE_SIZE;

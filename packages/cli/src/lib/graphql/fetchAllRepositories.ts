@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { REPOSITORIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Repository {
   /** ID of repository */
@@ -52,8 +53,8 @@ export async function fetchAllRepositories(client: GraphQLClient): Promise<Repos
         nodes: Repository[];
       };
     }>(client, REPOSITORIES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     repositories.push(...nodes);
     offset += PAGE_SIZE;

@@ -1,10 +1,11 @@
 import { OneTrustEnrichedAssessment } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
 import { ImportOnetrustAssessmentsInput } from '../../../codecs.js';
 import { logger } from '../../../logger.js';
-import { IMPORT_ONE_TRUST_ASSESSMENT_FORMS, makeGraphQLRequest } from '../../graphql/index.js';
+import { IMPORT_ONE_TRUST_ASSESSMENT_FORMS } from '../../graphql/index.js';
 import { oneTrustAssessmentToJson } from './oneTrustAssessmentToJson.js';
 
 export interface AssessmentForm {
@@ -61,7 +62,8 @@ export const syncOneTrustAssessmentToTranscend = async ({
         assessmentForms: AssessmentForm[];
       };
     }>(transcend, IMPORT_ONE_TRUST_ASSESSMENT_FORMS, {
-      input,
+      variables: { input },
+      logger,
     });
   } catch (e) {
     logger.error(

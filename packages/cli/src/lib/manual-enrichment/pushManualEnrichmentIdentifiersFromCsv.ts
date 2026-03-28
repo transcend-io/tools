@@ -1,14 +1,10 @@
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  UPDATE_PRIVACY_REQUEST,
-  createSombraGotInstance,
-  makeGraphQLRequest,
-} from '../graphql/index.js';
+import { UPDATE_PRIVACY_REQUEST, makeGraphQLRequest } from '../graphql/index.js';
 import { readCsv } from '../requests/index.js';
 import { enrichPrivacyRequest, EnrichPrivacyRequest } from './enrichPrivacyRequest.js';
 
@@ -43,7 +39,11 @@ export async function pushManualEnrichmentIdentifiersFromCsv({
   markSilent?: boolean;
 }): Promise<number> {
   // Create sombra instance to communicate with
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Read from CSV
@@ -64,10 +64,13 @@ export async function pushManualEnrichmentIdentifiersFromCsv({
         // Mark requests in silent mode before a certain date
         if (markSilent) {
           await makeGraphQLRequest(client, UPDATE_PRIVACY_REQUEST, {
-            input: {
-              id: request.id,
-              isSilent: true,
+            variables: {
+              input: {
+                id: request.id,
+                isSilent: true,
+              },
             },
+            logger,
           });
 
           logger.info(colors.magenta(`Mark request as silent mode - ${request.id}`));

@@ -2,19 +2,14 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequests,
-  createSombraGotInstance,
-  makeGraphQLRequest,
-  APPROVE_PRIVACY_REQUEST,
-} from '../graphql/index.js';
+import { fetchAllRequests, makeGraphQLRequest, APPROVE_PRIVACY_REQUEST } from '../graphql/index.js';
 import { getFileMetadataForPrivacyRequests } from './getFileMetadataForPrivacyRequests.js';
 import { streamPrivacyRequestFiles } from './streamPrivacyRequestFiles.js';
 
@@ -67,7 +62,11 @@ export async function downloadPrivacyRequestFiles({
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Create sombra instance to communicate with
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
 
   // Create the folder if it does not exist
   if (!existsSync(folderPath)) {
@@ -129,7 +128,8 @@ export async function downloadPrivacyRequestFiles({
       // Approve the request if requested
       if (approveAfterDownload && request.status === RequestStatus.Approving) {
         await makeGraphQLRequest(client, APPROVE_PRIVACY_REQUEST, {
-          input: { requestId: request.id },
+          variables: { input: { requestId: request.id } },
+          logger,
         });
         totalApproved += 1;
       }

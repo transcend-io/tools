@@ -119,24 +119,30 @@ export async function cancelPrivacyRequests({
       // and the request was created before silentModeBefore
       if (silentModeBefore && new Date(silentModeBefore) > new Date(requestToCancel.createdAt)) {
         await makeGraphQLRequest(client, UPDATE_PRIVACY_REQUEST, {
-          input: {
-            id: requestToCancel.id,
-            isSilent: true,
+          variables: {
+            input: {
+              id: requestToCancel.id,
+              isSilent: true,
+            },
           },
+          logger,
         });
       }
 
       // cancel the request
       await makeGraphQLRequest(client, CANCEL_PRIVACY_REQUEST, {
-        input: {
-          requestId: requestToCancel.id,
-          ...(cancelationTemplate
-            ? {
-                subject: `Re: ${cancelationTemplate.subject.defaultMessage}`,
-                template: cancelationTemplate.template.defaultMessage,
-              }
-            : {}),
+        variables: {
+          input: {
+            requestId: requestToCancel.id,
+            ...(cancelationTemplate
+              ? {
+                  subject: `Re: ${cancelationTemplate.subject.defaultMessage}`,
+                  template: cancelationTemplate.template.defaultMessage,
+                }
+              : {}),
+          },
         },
+        logger,
       });
 
       total += 1;

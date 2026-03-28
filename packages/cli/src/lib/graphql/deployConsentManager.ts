@@ -1,8 +1,9 @@
 import { ConsentBundleType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { UPDATE_CONSENT_MANAGER_TO_LATEST, DEPLOY_CONSENT_MANAGER } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Deploy the Consent Manager
@@ -23,8 +24,8 @@ export async function deployConsentManager(
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, DEPLOY_CONSENT_MANAGER, {
-    airgapBundleId: id,
-    bundleType,
+    variables: { airgapBundleId: id, bundleType },
+    logger,
   });
 }
 
@@ -47,7 +48,7 @@ export async function updateConsentManagerToLatest(
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_TO_LATEST, {
-    airgapBundleId: id,
-    bundleType,
+    variables: { airgapBundleId: id, bundleType },
+    logger,
   });
 }

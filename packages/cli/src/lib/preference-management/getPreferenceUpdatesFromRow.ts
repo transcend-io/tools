@@ -1,7 +1,7 @@
 import { PreferenceStorePurposeResponse, PreferenceTopicType } from '@transcend-io/privacy-types';
+import type { PreferenceTopic } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 
-import { PreferenceTopic } from '../graphql/index.js';
 import { splitCsvToList } from '../requests/index.js';
 import { PurposeRowMapping } from './codecs.js';
 

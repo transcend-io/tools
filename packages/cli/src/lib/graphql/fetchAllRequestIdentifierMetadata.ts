@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { REQUEST_IDENTIFIERS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface RequestIdentifierMetadata {
   /** ID of request identifier */
@@ -55,11 +56,14 @@ export async function fetchAllRequestIdentifierMetadata(
         nodes: RequestIdentifierMetadata[];
       };
     }>(client, REQUEST_IDENTIFIERS, {
-      first: PAGE_SIZE,
-      offset,
-      requestIds: resolvedRequestIds,
-      updatedAtBefore: updatedAtBefore ? updatedAtBefore.toISOString() : undefined,
-      updatedAtAfter: updatedAtAfter ? updatedAtAfter.toISOString() : undefined,
+      variables: {
+        first: PAGE_SIZE,
+        offset,
+        requestIds: resolvedRequestIds,
+        updatedAtBefore: updatedAtBefore ? updatedAtBefore.toISOString() : undefined,
+        updatedAtAfter: updatedAtAfter ? updatedAtAfter.toISOString() : undefined,
+      },
+      logger,
     });
     requestIdentifiers.push(...nodes);
     offset += PAGE_SIZE;

@@ -84,17 +84,21 @@ export async function approvePrivacyRequests({
       // and the request was created before silentModeBefore
       if (silentModeBefore && new Date(silentModeBefore) > new Date(requestToApprove.createdAt)) {
         await makeGraphQLRequest(client, UPDATE_PRIVACY_REQUEST, {
-          input: {
-            id: requestToApprove.id,
-            isSilent: true,
+          variables: {
+            input: {
+              id: requestToApprove.id,
+              isSilent: true,
+            },
           },
+          logger,
         });
       }
 
       try {
         // approve the request
         await makeGraphQLRequest(client, APPROVE_PRIVACY_REQUEST, {
-          input: { requestId: requestToApprove.id },
+          variables: { input: { requestId: requestToApprove.id } },
+          logger,
         });
       } catch (err) {
         if (err.message.includes('Request must be in an approving state,')) {

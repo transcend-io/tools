@@ -93,36 +93,21 @@ vi.mock('../../../../lib/cli/done-input-validation.js', () => ({
   doneInputValidation: H.doneInputValidation,
 }));
 
-// Mock the concrete creator…
-vi.mock('../../../../lib/graphql/createSombraGotInstance.js', () => ({
-  __esModule: true,
-  // eslint-disable-next-line require-await
-  createSombraGotInstance: vi.fn(async () => H.sombra),
-}));
-
-// …and the barrel that re-exports it
-vi.mock('../../../../lib/graphql/index.js', () => ({
+vi.mock('@transcend-io/sdk', () => ({
   __esModule: true,
   // eslint-disable-next-line require-await
   createSombraGotInstance: vi.fn(async () => H.sombra),
   buildTranscendGraphQLClient: vi.fn(() => H.gqlClient),
-
-  // NEW: add these so impl.ts can import from the barrel
   fetchAllPurposesAndPreferences: vi.fn(
     // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
     async (_client) => H.purposesWithTopics,
   ),
-  // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
-  fetchAllIdentifiers: vi.fn(async (_client) => H.identifiers),
 }));
 
-// Safety net for any GraphQL calls
-vi.mock('../../../../lib/graphql/makeGraphQLRequest.js', () => ({
+vi.mock('../../../../lib/graphql/index.js', () => ({
   __esModule: true,
-  // eslint-disable-next-line require-await
-  makeGraphQLRequest: vi.fn(async () => ({
-    organization: { sombra: { customerUrl: 'https://mocked' } },
-  })),
+  // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
+  fetchAllIdentifiers: vi.fn(async (_client) => H.identifiers),
 }));
 
 // New CSV helpers used by impl after your refactor

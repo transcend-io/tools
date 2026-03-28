@@ -103,12 +103,15 @@ export async function notifyPrivacyRequestsAdditionalTime({
     allRequests,
     async (requestToNotify) => {
       await makeGraphQLRequest(client, NOTIFY_ADDITIONAL_TIME, {
-        input: {
-          requestId: requestToNotify.id,
-          template: exactTemplateMatch.template.defaultMessage,
-          subject: exactTemplateMatch.subject.defaultMessage,
-          additionalTime: days,
+        variables: {
+          input: {
+            requestId: requestToNotify.id,
+            template: exactTemplateMatch.template.defaultMessage,
+            subject: exactTemplateMatch.subject.defaultMessage,
+            additionalTime: days,
+          },
         },
+        logger,
       });
 
       total += 1;

@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,7 +8,6 @@ import { TeamInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllTeams, Team } from './fetchAllTeams.js';
 import { UPDATE_TEAM, CREATE_TEAM } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new team
@@ -37,7 +37,8 @@ export async function createTeam(
       team: Team;
     };
   }>(client, CREATE_TEAM, {
-    input,
+    variables: { input },
+    logger,
   });
   return createTeam.team;
 }
@@ -62,16 +63,19 @@ export async function updateTeam(
       team: Team;
     };
   }>(client, UPDATE_TEAM, {
-    input: {
-      id: teamId,
-      name: input.name,
-      description: input.description,
-      ssoTitle: input['sso-title'],
-      ssoDepartment: input['sso-department'],
-      ssoGroup: input['sso-group'],
-      scopes: input.scopes,
-      userEmails: input.users,
+    variables: {
+      input: {
+        id: teamId,
+        name: input.name,
+        description: input.description,
+        ssoTitle: input['sso-title'],
+        ssoDepartment: input['sso-department'],
+        ssoGroup: input['sso-group'],
+        scopes: input.scopes,
+        userEmails: input.users,
+      },
     },
+    logger,
   });
   return updateTeam.team;
 }

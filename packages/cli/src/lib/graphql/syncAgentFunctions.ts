@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,7 +8,6 @@ import { AgentFunctionInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllAgentFunctions, AgentFunction } from './fetchAllAgentFunctions.js';
 import { UPDATE_AGENT_FUNCTIONS, CREATE_AGENT_FUNCTION } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new agent function
@@ -35,7 +35,8 @@ export async function createAgentFunction(
       agentFunction: AgentFunction;
     };
   }>(client, CREATE_AGENT_FUNCTION, {
-    input,
+    variables: { input },
+    logger,
   });
   return createAgentFunction.agentFunction;
 }
@@ -51,14 +52,17 @@ export async function updateAgentFunctions(
   agentFunctionIdPairs: [AgentFunctionInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_AGENT_FUNCTIONS, {
-    input: {
-      agentFunctions: agentFunctionIdPairs.map(([agentFunction, id]) => ({
-        id,
-        name: agentFunction.name,
-        description: agentFunction.description,
-        parameters: agentFunction.parameters,
-      })),
+    variables: {
+      input: {
+        agentFunctions: agentFunctionIdPairs.map(([agentFunction, id]) => ({
+          id,
+          name: agentFunction.name,
+          description: agentFunction.description,
+          parameters: agentFunction.parameters,
+        })),
+      },
     },
+    logger,
   });
 }
 

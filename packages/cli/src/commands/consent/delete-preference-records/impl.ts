@@ -1,13 +1,13 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { createSombraGotInstance } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { createSombraGotInstance } from '../../../lib/graphql/index.js';
 import { writeCsv } from '../../../lib/helpers/index.js';
 import { bulkDeletePreferenceRecords } from '../../../lib/preference-management/index.js';
 import { logger } from '../../../logger.js';
@@ -112,7 +112,11 @@ export async function deletePreferenceRecords(
   logger.debug(`\nFiles to process: ${files.join(', ')}\n`);
 
   // Create sombra instance to communicate with
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
   const globalProgressBar = new cliProgress.SingleBar(
     {
       format: `Deletion Progress |${colors.cyan('[{bar}]')}| Duration: ${colors.red(

@@ -3,11 +3,12 @@ import {
   ConsentTrackerSource,
   ConsentTrackerStatus,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { DATA_FLOWS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface DataFlow {
   /** ID of data flow */
@@ -81,11 +82,14 @@ export async function fetchAllDataFlows(
         nodes: DataFlow[];
       };
     }>(client, DATA_FLOWS, {
-      first: PAGE_SIZE,
-      offset,
-      airgapBundleId,
-      status,
-      ...(status === ConsentTrackerStatus.NeedsReview ? { showZeroActivity: true } : {}),
+      variables: {
+        first: PAGE_SIZE,
+        offset,
+        airgapBundleId,
+        status,
+        ...(status === ConsentTrackerStatus.NeedsReview ? { showZeroActivity: true } : {}),
+      },
+      logger,
     });
     dataFlows.push(...nodes);
     offset += PAGE_SIZE;

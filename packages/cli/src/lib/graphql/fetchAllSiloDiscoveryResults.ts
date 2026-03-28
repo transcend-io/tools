@@ -1,8 +1,9 @@
 import type { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { SILO_DISCOVERY_RESULTS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface SiloDiscoveryResult {
   /** Title of silo discovery result */
@@ -60,10 +61,8 @@ export async function fetchAllSiloDiscoveryResults(
         nodes: SiloDiscoveryResult[];
       };
     }>(client, SILO_DISCOVERY_RESULTS, {
-      first: PAGE_SIZE,
-      offset,
-      input: {},
-      filterBy: {},
+      variables: { first: PAGE_SIZE, offset, input: {}, filterBy: {} },
+      logger,
     });
 
     const titledNodes = nodes.map((node) =>

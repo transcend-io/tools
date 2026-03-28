@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,7 +8,6 @@ import { DataCategoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllDataCategories, DataSubCategory } from './fetchAllDataCategories.js';
 import { UPDATE_DATA_SUB_CATEGORIES, CREATE_DATA_SUB_CATEGORY } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new data category
@@ -34,7 +34,8 @@ export async function createDataCategory(
       dataCategory: DataSubCategory;
     };
   }>(client, CREATE_DATA_SUB_CATEGORY, {
-    input,
+    variables: { input },
+    logger,
   });
   return createDataCategory.dataCategory;
 }
@@ -50,14 +51,17 @@ export async function updateDataCategories(
   dataCategoryIdPairs: [DataCategoryInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_DATA_SUB_CATEGORIES, {
-    input: {
-      dataSubCategories: dataCategoryIdPairs.map(([dataCategory, id]) => ({
-        id,
-        description: dataCategory.description,
-        // TODO: https://transcend.height.app/T-31994 - add  teams, owners
-        attributes: dataCategory.attributes,
-      })),
+    variables: {
+      input: {
+        dataSubCategories: dataCategoryIdPairs.map(([dataCategory, id]) => ({
+          id,
+          description: dataCategory.description,
+          // TODO: https://transcend.height.app/T-31994 - add  teams, owners
+          attributes: dataCategory.attributes,
+        })),
+      },
     },
+    logger,
   });
 }
 

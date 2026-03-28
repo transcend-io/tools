@@ -1,4 +1,5 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -8,7 +9,6 @@ import { CodePackageInput, RepositoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { CodePackage, fetchAllCodePackages } from './fetchAllCodePackages.js';
 import { CREATE_CODE_PACKAGE, UPDATE_CODE_PACKAGES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 import { syncRepositories } from './syncRepositories.js';
 import { syncSoftwareDevelopmentKits } from './syncSoftwareDevelopmentKits.js';
 
@@ -59,7 +59,8 @@ export async function createCodePackage(
       codePackage: CodePackage;
     };
   }>(client, CREATE_CODE_PACKAGE, {
-    input,
+    variables: { input },
+    logger,
   });
   logger.info(colors.green(`Successfully created code package "${input.name}"!`));
   return codePackage;
@@ -110,9 +111,12 @@ export async function updateCodePackages(
       codePackages: CodePackage[];
     };
   }>(client, UPDATE_CODE_PACKAGES, {
-    input: {
-      codePackages: inputs,
+    variables: {
+      input: {
+        codePackages: inputs,
+      },
     },
+    logger,
   });
   logger.info(colors.green(`Successfully updated ${inputs.length} code packages!`));
   return codePackages;

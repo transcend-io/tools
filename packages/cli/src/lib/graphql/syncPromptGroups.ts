@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -8,7 +9,6 @@ import { logger } from '../../logger.js';
 import { fetchAllPromptGroups } from './fetchPromptGroups.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
 import { UPDATE_PROMPT_GROUPS, CREATE_PROMPT_GROUP } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface EditPromptGroupInput {
   /** Title of prompt group */
@@ -42,7 +42,8 @@ export async function createPromptGroup(
       };
     };
   }>(client, CREATE_PROMPT_GROUP, {
-    input,
+    variables: { input },
+    logger,
   });
   logger.info(colors.green(`Successfully created prompt group "${input.title}"!`));
   return promptGroup.id;
@@ -59,12 +60,15 @@ export async function updatePromptGroups(
   input: [EditPromptGroupInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_PROMPT_GROUPS, {
-    input: {
-      promptGroups: input.map(([input, id]) => ({
-        ...input,
-        id,
-      })),
+    variables: {
+      input: {
+        promptGroups: input.map(([input, id]) => ({
+          ...input,
+          id,
+        })),
+      },
     },
+    logger,
   });
   logger.info(colors.green(`Successfully updated ${input.length} prompt groups!`));
 }

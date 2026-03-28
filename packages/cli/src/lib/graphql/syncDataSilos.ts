@@ -7,6 +7,7 @@ import {
   RequestActionObjectResolver,
   SubDataPointDataSubCategoryGuessStatus,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { mapSeries, map } from '@transcend-io/utils';
 /* eslint-disable max-lines */
@@ -29,7 +30,6 @@ import {
   DATA_SILOS_ENRICHED,
   SUB_DATA_POINTS_WITH_GUESSES,
 } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface DataSiloAttributeValue {
   /** Key associated to value */
@@ -107,13 +107,16 @@ export async function fetchAllDataSilos<TDataSilo extends DataSilo>(
         nodes: TDataSilo[];
       };
     }>(client, gql, {
-      filterBy: {
-        ids: ids.length > 0 ? ids : undefined,
-        type: integrationNames.length > 0 ? integrationNames : undefined,
-        titles,
+      variables: {
+        filterBy: {
+          ids: ids.length > 0 ? ids : undefined,
+          type: integrationNames.length > 0 ? integrationNames : undefined,
+          titles,
+        },
+        first: pageSize,
+        offset,
       },
-      first: pageSize,
-      offset,
+      logger,
     });
     dataSilos.push(...nodes);
     offset += pageSize;
@@ -278,11 +281,14 @@ export async function fetchAllSubDataPoints(
           nodes: SubDataPoint[];
         };
       }>(client, includeGuessedCategories ? SUB_DATA_POINTS_WITH_GUESSES : SUB_DATA_POINTS, {
-        first: pageSize,
-        filterBy: {
-          dataPoints: [dataPointId],
+        variables: {
+          first: pageSize,
+          filterBy: {
+            dataPoints: [dataPointId],
+          },
+          offset,
         },
-        offset,
+        logger,
       });
 
       subDataPoints.push(...nodes);
@@ -356,11 +362,14 @@ export async function fetchAllDataPoints(
         nodes: DataPoint[];
       };
     }>(client, DATA_POINTS, {
-      first: pageSize,
-      filterBy: {
-        dataSilos: [dataSiloId],
+      variables: {
+        first: pageSize,
+        filterBy: {
+          dataSilos: [dataSiloId],
+        },
+        offset,
       },
-      offset,
+      logger,
     });
 
     if (debug) {
@@ -665,12 +674,15 @@ export async function syncDataSilos(
           dataSilos: Pick<DataSilo, 'id' | 'title'>[];
         };
       }>(client, CREATE_DATA_SILOS, {
-        input: dependencyUpdateChunk.map((input) => ({
-          name: input['outer-type'] || input.integrationName,
-          title: input.title,
-          country: input.country,
-          countrySubDivision: input.countrySubDivision,
-        })),
+        variables: {
+          input: dependencyUpdateChunk.map((input) => ({
+            name: input['outer-type'] || input.integrationName,
+            title: input.title,
+            country: input.country,
+            countrySubDivision: input.countrySubDivision,
+          })),
+        },
+        logger,
       });
 
       // save mapping of title and id
@@ -699,37 +711,42 @@ export async function syncDataSilos(
         dataSilos: Pick<DataSilo, 'id' | 'title'>[];
       };
     }>(client, UPDATE_DATA_SILOS, {
-      input: {
-        dataSilos: dataSiloUpdateChunk.map((input) => ({
-          id: existingDataSiloByTitle[input.title].id,
-          country: input.country,
-          countrySubDivision: input.countrySubDivision,
-          url: input.url,
-          headers: input.headers,
-          description: input.description,
-          identifiers: input['identity-keys'],
-          isLive: !input.disabled,
-          ownerEmails: input.owners,
-          teamNames: input.teams,
-          // clear out if not specified, otherwise the update needs to be applied after
-          // all data silos are created
-          dependedOnDataSiloTitles: input['deletion-dependencies'] ? undefined : [],
-          apiKeyId: input['api-key-title'] ? apiKeysByTitle[input['api-key-title']].id : undefined,
-          dataSubjectBlockListIds: input['data-subjects']
-            ? convertToDataSubjectBlockList(input['data-subjects'], dataSubjectsByName)
-            : undefined,
-          attributes: input.attributes,
-          businessEntityTitles: input.businessEntityTitles,
-          // AVC settings
-          notifyEmailAddress: input['email-settings']?.['notify-email-address'],
-          promptAVendorEmailSendFrequency: input['email-settings']?.['send-frequency'],
-          promptAVendorEmailSendType: input['email-settings']?.['send-type'],
-          promptAVendorEmailIncludeIdentifiersAttachment:
-            input['email-settings']?.['include-identifiers-attachment'],
-          promptAVendorEmailCompletionLinkType: input['email-settings']?.['completion-link-type'],
-          manualWorkRetryFrequency: input['email-settings']?.['manual-work-retry-frequency'],
-        })),
+      variables: {
+        input: {
+          dataSilos: dataSiloUpdateChunk.map((input) => ({
+            id: existingDataSiloByTitle[input.title].id,
+            country: input.country,
+            countrySubDivision: input.countrySubDivision,
+            url: input.url,
+            headers: input.headers,
+            description: input.description,
+            identifiers: input['identity-keys'],
+            isLive: !input.disabled,
+            ownerEmails: input.owners,
+            teamNames: input.teams,
+            // clear out if not specified, otherwise the update needs to be applied after
+            // all data silos are created
+            dependedOnDataSiloTitles: input['deletion-dependencies'] ? undefined : [],
+            apiKeyId: input['api-key-title']
+              ? apiKeysByTitle[input['api-key-title']].id
+              : undefined,
+            dataSubjectBlockListIds: input['data-subjects']
+              ? convertToDataSubjectBlockList(input['data-subjects'], dataSubjectsByName)
+              : undefined,
+            attributes: input.attributes,
+            businessEntityTitles: input.businessEntityTitles,
+            // AVC settings
+            notifyEmailAddress: input['email-settings']?.['notify-email-address'],
+            promptAVendorEmailSendFrequency: input['email-settings']?.['send-frequency'],
+            promptAVendorEmailSendType: input['email-settings']?.['send-type'],
+            promptAVendorEmailIncludeIdentifiersAttachment:
+              input['email-settings']?.['include-identifiers-attachment'],
+            promptAVendorEmailCompletionLinkType: input['email-settings']?.['completion-link-type'],
+            manualWorkRetryFrequency: input['email-settings']?.['manual-work-retry-frequency'],
+          })),
+        },
       },
+      logger,
     });
     logger.info(
       colors.green(
@@ -834,7 +851,10 @@ export async function syncDataSilos(
             encounteredError = true;
           } else {
             try {
-              await makeGraphQLRequest(client, UPDATE_OR_CREATE_DATA_POINT, payload);
+              await makeGraphQLRequest(client, UPDATE_OR_CREATE_DATA_POINT, {
+                variables: payload,
+                logger,
+              });
             } catch (err) {
               logger.info(
                 colors.red(
@@ -901,12 +921,15 @@ export async function syncDataSiloDependencies(
           dataSilos: Pick<DataSilo, 'id' | 'title'>[];
         };
       }>(client, UPDATE_DATA_SILOS, {
-        input: {
-          dataSilos: dependencyUpdateChunk.map(([id, dependedOnDataSiloTitles]) => ({
-            id,
-            dependedOnDataSiloTitles,
-          })),
+        variables: {
+          input: {
+            dataSilos: dependencyUpdateChunk.map(([id, dependedOnDataSiloTitles]) => ({
+              id,
+              dependedOnDataSiloTitles,
+            })),
+          },
         },
+        logger,
       });
       logger.info(
         colors.green(

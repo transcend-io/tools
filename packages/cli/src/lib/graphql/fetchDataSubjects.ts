@@ -1,4 +1,5 @@
 import { RequestActionObjectResolver } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,7 +8,6 @@ import { keyBy, flatten, uniq, difference } from 'lodash-es';
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { CREATE_DATA_SUBJECT, DATA_SUBJECTS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface DataSubject {
   /** ID of data subject */
@@ -41,7 +41,7 @@ export async function fetchAllDataSubjects(client: GraphQLClient): Promise<DataS
   const { internalSubjects } = await makeGraphQLRequest<{
     /** Query response */
     internalSubjects: DataSubject[];
-  }>(client, DATA_SUBJECTS);
+  }>(client, DATA_SUBJECTS, { logger });
   return internalSubjects;
 }
 
@@ -96,8 +96,8 @@ export async function ensureAllDataSubjectsExist(
           subject: DataSubject;
         };
       }>(client, CREATE_DATA_SUBJECT, {
-        type: dataSubject,
-        skipPublish: true,
+        variables: { type: dataSubject, skipPublish: true },
+        logger,
       });
       logger.info(colors.green(`Created data subject ${dataSubject}!`));
 
