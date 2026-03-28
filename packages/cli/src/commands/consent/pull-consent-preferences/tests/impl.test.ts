@@ -102,10 +102,6 @@ vi.mock('@transcend-io/sdk', () => ({
     // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
     async (_client) => H.purposesWithTopics,
   ),
-}));
-
-vi.mock('../../../../lib/graphql/index.js', () => ({
-  __esModule: true,
   // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
   fetchAllIdentifiers: vi.fn(async (_client) => H.identifiers),
 }));

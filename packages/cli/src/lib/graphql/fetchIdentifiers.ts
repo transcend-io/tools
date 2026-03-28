@@ -9,9 +9,6 @@ import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { CREATE_IDENTIFIER, NEW_IDENTIFIER_TYPES } from './gqls/index.js';
 
-export { fetchAllIdentifiers } from '@transcend-io/sdk';
-export type { Identifier } from '@transcend-io/sdk';
-
 /**
  * Fetch all identifiers and if any are found in the config that are
  * missing, create those identifiers.

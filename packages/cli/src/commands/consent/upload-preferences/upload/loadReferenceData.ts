@@ -1,13 +1,14 @@
 import {
   buildTranscendGraphQLClient,
+  fetchAllIdentifiers,
   fetchAllPurposes,
   fetchAllPreferenceTopics,
+  type Identifier,
   type PreferenceTopic,
   type Purpose,
 } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 
-import { fetchAllIdentifiers, type Identifier } from '../../../../lib/graphql/index.js';
 import { logger } from '../../../../logger.js';
 
 export type PreferenceUploadReferenceData = {

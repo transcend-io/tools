@@ -1,8 +1,6 @@
-import type { PreferenceTopic, Purpose } from '@transcend-io/sdk';
+import type { Identifier, PreferenceTopic, Purpose } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-import type { Identifier } from '../../../../../lib/graphql/index.js';
 
 // Shared mocks (we’ll reset them each test)
 const mFetchAllPurposes = vi.fn();
@@ -17,9 +15,6 @@ async function importSut(): Promise<{
   vi.mock('@transcend-io/sdk', () => ({
     fetchAllPurposes: mFetchAllPurposes,
     fetchAllPreferenceTopics: mFetchAllPreferenceTopics,
-  }));
-
-  vi.mock('../../../../../lib/graphql/index.js', () => ({
     fetchAllIdentifiers: mFetchAllIdentifiers,
   }));
 
