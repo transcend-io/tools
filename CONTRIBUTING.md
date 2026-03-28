@@ -130,14 +130,17 @@ version correctly but fail at publish time.
 `release.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
 release path.
 
-## Turbo Cache
+## Turborepo
 
-This repo uses Turborepo, which caches package.json script outputs. Try running `pnpm build` twice to see the cache in action.
+This repo uses [Turborepo](https://turborepo.dev/docs), which caches package.json script outputs. Try running `pnpm build` twice to see the cache in action.
 
 ### Remote Cache
 
+> [!Note]
+> Remote caching is not yet configured.
+
 CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN` and
-`vars.TURBO_TEAM` are configured. This is not yet configured. Local development does not require remote cache.
+`vars.TURBO_TEAM` are configured. Local development does not require remote cache.
 
 ## Git Hooks
 
@@ -152,7 +155,38 @@ releases.
 If you install dependencies with scripts disabled, rerun `pnpm run prepare` from the repo root
 before committing.
 
-## Add Or Update A Package
+## Dependency Management
+
+Shared dependency versions live in `pnpm-workspace.yaml` catalogs.
+
+Guidelines:
+
+- prefer `catalog:` for shared toolchain dependencies
+- prefer `workspace:*` for dependencies between local packages
+- keep additions consistent with the single-version policy enforced by `syncpack`
+
+## Pull Requests
+
+### Pull Request GitHub Actions Workflows
+
+On pull requests, GitHub Actions runs:
+
+- **`CI`**:
+  - `CI / global` job: runs all the standard commands across each package such as `build` and `test` commands.
+  - `CI / <package-name>` jobs: some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
+- **`Preview Release`** see [Preview Releases](#preview-releases) for more.
+
+### Fresh Approvals Are Required
+
+New, reviewable commits pushed will dismiss previous pull request review approvals. As a public repository, we want to ensure that all changes are reviewed and approved by at least one team member.
+
+### Merge Queue
+
+This repo uses the GitHub [Merge Queue](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue) feature to automatically merge pull requests when CI passes.
+
+## Add A New Package
+
+Transcend Team: see our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
 
 New packages should match the shape used in `packages/core` and `packages/utils` (private
 starters that model the layout).
@@ -172,29 +206,3 @@ Current package conventions:
 - published entrypoints served from `dist/`
 - `@transcend-io/source` export condition for live source resolution inside the monorepo
 - `build`, `typecheck`, `test`, and `check-exports` scripts in each package
-
-## Dependency Management
-
-Shared dependency versions live in `pnpm-workspace.yaml` catalogs.
-
-Guidelines:
-
-- prefer `catalog:` for shared toolchain dependencies
-- prefer `workspace:*` for dependencies between local packages
-- keep additions consistent with the single-version policy enforced by `syncpack`
-
-## Pull Requests
-
-Before you open a PR:
-
-1. Make the code change.
-2. Run targeted package checks while iterating.
-3. Run the repo-level checks affected by your change.
-4. Add a changeset when required (see **Changesets**).
-
-On pull requests, GitHub Actions runs:
-
-- **`CI`**:
-  - `CI / global` job: runs all the standard commands across each package such as `build` and `test` commands.
-  - Some packages may have their own jobs to add unique checks, such as the `CI / cli`, which ensures that generated CLI files are up to date.
-- **`Preview Release`** see [Preview Releases](#preview-releases) for more.
