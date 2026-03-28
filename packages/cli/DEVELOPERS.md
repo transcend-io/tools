@@ -18,48 +18,38 @@
 
 ## Getting started
 
-1. Make sure you are on Node 22 or above
+1. See [CONTRIBUTING.md](../../CONTRIBUTING.md) for repository setup instructions.
 
-```bash
-node --version
-nvm install 22 && nvm use 22 && nvm alias default 22
-```
+2. From the repo root:
+   1. Run `pnpm build` to build all packages in the monorepo.
 
-2. Use the `pnpm` package manager.
+      > [!Note]
+      > This package depends on other packages inside this monorepo's workspace, so you must build those packages before you can use this one, and any time you make changes to those packages.
 
-```bash
-npm i -g corepack@latest
-corepack enable
-corepack install
-```
+   2. Run the `"start"` script to call the CLI in dev mode:
 
-3. Install dependencies
+      From the repo root:
 
-```bash
-pnpm install
-```
+      ```bash
+      # This is the dev environment equivalent to `transcend --help`
+      pnpm -F cli start --help
 
-4. Build the project in watch mode in a separate terminal
+      # This is the dev environment equivalent to `transcend inventory pull --auth=my-api-key`
+      pnpm -F cli start inventory pull --auth=my-api-key
+      ```
 
-```bash
-pnpm build:watch
-```
+      If you are in the `packages/cli` directory, you can run the `start` script directly:
 
-5. To run a CLI command in dev mode:
+      ```bash
+      pnpm start --help
+      pnpm start inventory pull --auth=my-api-key
+      ```
 
-```bash
-# This is the dev environment equivalent to `transcend --help`
-pnpm start --help
-
-# This is the dev environment equivalent to `transcend inventory pull --auth=my-api-key`
-pnpm start inventory pull --auth=my-api-key
-```
-
-If you have the appropriate permissions, you can generate your own API key at https://app.transcend.io/infrastructure/api-keys (or the equivalent page in whichever backend you're testing against) with the necessary scopes.
+You can generate an API key with the necessary scopes at [https://app.transcend.io/infrastructure/api-keys](https://app.transcend.io/infrastructure/api-keys) (or the equivalent page in whichever backend you're testing against).
 
 ## Repo Structure
 
-The `src/commands/` directory contains the CLI commands and has a strict structure which is [tested](https://github.com/transcend-io/developer-tools/blob/main/packages/cli/src/lib/tests/codebase.test.ts).
+The `src/commands/` directory contains the CLI commands and has a strict structure which is [tested](https://github.com/transcend-io/tools/blob/main/packages/cli/src/lib/tests/codebase.test.ts).
 
 The folders are the namespace of the CLI, so `src/commands/request/cron/pull-identifiers/command.ts` is the command for `transcend request cron pull-identifiers`. The _route_ portion of the file path is `/request/cron` and the _command_ portion of the file path is `/pull-identifiers`.
 
@@ -75,13 +65,13 @@ For more information on the commands and routings, see [the Stricli documentatio
 To just regenerate them all:
 
 ```bash
-pnpm genfiles
+pnpm -F cli genfiles
 ```
 
 ### README.md
 
 ```bash
-pnpm docgen
+pnpm -F cli docgen
 ```
 
 This will generate the README.md file from the command documentation and the `src/commands/**/readme.ts` files. To add examples, use the `buildExamples` command to generate type-safe examples. For complex or multi-line bash scripts, use `buildExampleCommand` directly (search for examples in the codebase).
@@ -89,26 +79,16 @@ This will generate the README.md file from the command documentation and the `sr
 ### transcend.yml and pathfinder.yml JSON schemas
 
 ```bash
-pnpm script:transcend-json-schema
-pnpm script:pathfinder-json-schema
+pnpm -F cli script:transcend-json-schema
+pnpm -F cli script:pathfinder-json-schema
 ```
 
 These commands generate the `transcend.yml` and `pathfinder.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
 
 ## Testing
 
-Uses vitest (same test syntax as Jest/Mocha/Chai).
+Uses [Vitest](https://vitest.dev/) (same test syntax as Jest/Mocha/Chai).
 
 ```bash
-pnpm test
-```
-
-## Publishing
-
-CI will automatically publish a new version to npm.
-
-To manually publish an alpha version:
-
-```bash
-npm publish --tag alpha
+pnpm -F cli test
 ```

@@ -27,9 +27,14 @@ vi.mock('../../../logger.js', () => ({
   logger: H.loggerSpies,
 }));
 
-vi.mock('@transcend-io/type-utils', () => ({
-  decodeCodec: (codec: unknown, raw: unknown) => H.decodeCodec(codec, raw),
-}));
+vi.mock('@transcend-io/type-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@transcend-io/type-utils')>();
+
+  return {
+    ...actual,
+    decodeCodec: (codec: unknown, raw: unknown) => H.decodeCodec(codec, raw),
+  };
+});
 
 vi.mock('colors', () => ({
   default: H.colors,

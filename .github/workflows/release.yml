@@ -10,32 +10,50 @@ jobs:
   release:
     runs-on: ubuntu-24.04-arm
     permissions:
-      contents: write
+      contents: read
       id-token: write
-      pull-requests: write
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: jdx/mise-action@v3
         with:
           version: 2026.2.17
           install: false
           cache: true
-      - run: mise trust --yes mise.toml
-      - run: mise install --locked
-      - run: mise run bootstrap
-      - run: mise exec -- pnpm syncpack:lint
-      - run: mise exec -- pnpm lint
-      - run: mise exec -- pnpm format:check
-      - run: mise exec -- pnpm typecheck
-      - run: mise exec -- pnpm build
-      - run: mise exec -- pnpm test
-      - run: mise exec -- pnpm check-exports
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise exec -- npm install -g npm@^11.5.1
+          mise run bootstrap
+      - name: Check dependency versions
+        run: mise exec -- pnpm syncpack:lint
+      - name: Lint
+        run: mise exec -- pnpm lint
+      - name: Check formatting
+        run: mise exec -- pnpm format:check
+      - name: Typecheck
+        run: mise exec -- pnpm typecheck
+      - name: Build
+        run: mise exec -- pnpm build
+      - name: Test
+        run: mise exec -- pnpm test
+      - name: Check exports
+        run: mise exec -- pnpm check-exports
+      - uses: actions/create-github-app-token@v3
+        id: release_app
+        with:
+          app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
+          private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
       - uses: changesets/action@v1
         with:
           publish: mise exec -- pnpm release
-          version: mise exec -- pnpm version-packages
+          version: mise exec -- pnpm version-packages:release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}

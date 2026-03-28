@@ -16,7 +16,7 @@ vi.mock('../../../logger.js', () => ({
   logger: H.loggerSpies,
 }));
 
-vi.mock('../../helpers/index.js', () => ({
+vi.mock('@transcend-io/utils', () => ({
   sleepPromise: H.sleepSpy,
   extractErrorMessage: (err: unknown) =>
     err instanceof Error ? err.message : String(err ?? 'Unknown error'),

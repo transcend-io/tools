@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://raw.githubusercontent.com/transcend-io/developer-tools/main/packages/cli/schema/transcend-yml-schema-latest.json
+# yaml-language-server: $schema=https://raw.githubusercontent.com/transcend-io/tools/main/packages/cli/schema/transcend-yml-schema-latest.json
 
 api-keys:
   - title: Transcend Prod Server Silo Key

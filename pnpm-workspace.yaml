@@ -1,11 +1,10 @@
 packages:
   - packages/*
-  - apps/*
 
 catalog:
   '@arethetypeswrong/cli': ^0.18.2
   '@changesets/cli': ^2.30.0
-  '@types/node': ^25.4.0
+  '@types/node': ^22.19.15
   husky: ^9.1.7
   oxfmt: ^0.38.0
   oxlint: ^1.53.0

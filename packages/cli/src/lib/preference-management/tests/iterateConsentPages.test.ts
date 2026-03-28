@@ -110,11 +110,15 @@ vi.mock('../withPreferenceRetry.js', () => ({
 }));
 
 // decodeCodec returns the next page from our queue each time SUT calls it
-vi.mock('@transcend-io/type-utils', () => ({
-  __esModule: true,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  decodeCodec: vi.fn((_codec: unknown, _resp: unknown) => H.shiftPage()),
-}));
+vi.mock('@transcend-io/type-utils', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@transcend-io/type-utils')>();
+
+  return {
+    ...actual,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    decodeCodec: vi.fn((_codec: unknown, _resp: unknown) => H.shiftPage()),
+  };
+});
 
 describe('iterateConsentPages', () => {
   beforeEach(() => {

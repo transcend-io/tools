@@ -1,5 +1,5 @@
-import { chunkOneCsvFile } from '../../../lib/helpers/chunkOneCsvFile.js';
-import { extractErrorMessage } from '../../../lib/helpers/index.js';
+import { chunkOneCsvFile, extractErrorMessage } from '@transcend-io/utils';
+
 import type { ToWorker } from '../../../lib/pooling/index.js';
 import { logger } from '../../../logger.js';
 
@@ -89,7 +89,7 @@ export async function runChild(): Promise<void> {
         outputDir,
         clearOutputDir,
         chunkSizeMB,
-        // Propagate incremental progress to the parent.
+        logger,
         onProgress: (processed, total) =>
           process.send?.({
             type: 'progress',

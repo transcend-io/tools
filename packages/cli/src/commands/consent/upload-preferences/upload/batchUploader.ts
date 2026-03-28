@@ -1,13 +1,13 @@
 import type { PreferenceUpdateItem } from '@transcend-io/privacy-types';
-import colors from 'colors';
-
 import {
   extractErrorMessage,
   getErrorStatus,
   retrySamePromise,
   splitInHalf,
   type RetryPolicy,
-} from '../../../../lib/helpers/index.js';
+} from '@transcend-io/utils';
+import colors from 'colors';
+
 import { logger } from '../../../../logger.js';
 
 type Entry = [string, PreferenceUpdateItem];

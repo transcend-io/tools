@@ -1,5 +1,5 @@
 {
-  "name": "@transcend-io/developer-tools-monorepo",
+  "name": "@transcend-io/tools-monorepo",
   "private": true,
   "license": "MIT",
   "type": "module",
@@ -16,6 +16,7 @@
     "changeset": "changeset",
     "check:changeset": "node ./scripts/check-changeset.mjs",
     "version-packages": "changeset version",
+    "version-packages:release": "changeset version && pnpm format:root",
     "release": "turbo run build && changeset publish",
     "check-exports": "turbo run check-exports",
     "syncpack:lint": "turbo run syncpack:lint syncpack:lint:root",
@@ -23,7 +24,7 @@
     "lint:fix:root": "oxlint --fix .",
     "format:root": "oxfmt --write .",
     "format:check:root": "oxfmt --check .",
-    "syncpack:lint:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\" --source \"apps/*/package.json\"",
+    "syncpack:lint:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\"",
     "prepare": "husky"
   },
   "devDependencies": {

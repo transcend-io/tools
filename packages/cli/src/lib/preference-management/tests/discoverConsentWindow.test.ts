@@ -1,9 +1,9 @@
+import { startOfUtcDay } from '@transcend-io/utils';
 import { addDays } from 'date-fns';
 import type { Got } from 'got';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-import { startOfUtcDay } from '../../helpers/index.js';
 // ---- Imports under test (after mocks) --------------------------------------
 import {
   getBoundsFromConsentFilter,

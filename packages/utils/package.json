@@ -1,8 +1,9 @@
 {
   "name": "@transcend-io/utils",
   "version": "0.0.0",
-  "description": "Starter shared utilities for the Transcend developer tools monorepo.",
-  "license": "MIT",
+  "private": true,
+  "description": "Shared utilities for the Transcend developer tools monorepo.",
+  "license": "Apache-2.0",
   "files": [
     "dist"
   ],
@@ -24,6 +25,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm"
+  },
+  "dependencies": {
+    "csv-parse": "^5.6.0",
+    "fast-csv": "^4.3.6"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",

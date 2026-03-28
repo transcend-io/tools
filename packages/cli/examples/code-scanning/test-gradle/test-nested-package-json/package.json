@@ -1,9 +1,10 @@
 {
   "name": "@test-example/nested-test",
   "version": "4.120.1",
+  "private": true,
   "description": "Example npm nested package.",
   "homepage": "https://github.com/test-example/nested-test",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",

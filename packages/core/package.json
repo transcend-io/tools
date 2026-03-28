@@ -1,8 +1,9 @@
 {
   "name": "@transcend-io/core",
   "version": "0.0.0",
+  "private": true,
   "description": "Starter core package for the Transcend developer tools monorepo.",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "files": [
     "dist"
   ],

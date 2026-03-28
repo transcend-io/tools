@@ -1,8 +1,15 @@
 import { defineConfig } from 'vitest/config';
 
+const sourceConditions = ['@transcend-io/source'];
+
 export default defineConfig({
   resolve: {
-    conditions: ['@transcend-io/source'],
+    conditions: sourceConditions,
+  },
+  ssr: {
+    resolve: {
+      conditions: sourceConditions,
+    },
   },
   test: {
     coverage: {

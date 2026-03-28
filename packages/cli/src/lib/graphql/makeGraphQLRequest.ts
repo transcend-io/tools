@@ -1,8 +1,8 @@
+import { sleepPromise } from '@transcend-io/utils';
 import colors from 'colors';
 import type { GraphQLClient, RequestDocument, Variables } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { sleepPromise } from '../helpers/index.js';
 
 const MAX_RETRIES = 4;
 

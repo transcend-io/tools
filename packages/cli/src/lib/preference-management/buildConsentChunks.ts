@@ -1,4 +1,5 @@
-import { FIVE_MIN_MS } from '../helpers/index.js';
+import { FIVE_MIN_MS } from '@transcend-io/utils';
+
 import type { ChunkMode, PreferencesQueryFilter } from './types.js';
 
 /**

@@ -1,18 +1,18 @@
 import type { PreferenceUpdateItem } from '@transcend-io/privacy-types';
-import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
-
 import {
   getErrorStatus,
   extractErrorMessage,
   retrySamePromise,
   splitInHalf,
-} from '../../../../../lib/helpers/index.js';
+} from '@transcend-io/utils';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
+
 import { logger } from '../../../../../logger.js';
 // --- Import SUT & mocked symbols ---
 import { uploadChunkWithSplit, type BatchUploaderDeps } from '../batchUploader.js';
 
 // --- Mocks (declare BEFORE importing the SUT) ---
-vi.mock('../../../../../lib/helpers/index.js', () => ({
+vi.mock('@transcend-io/utils', () => ({
   // Read status/message properties off the error object by default; override per test as needed.
   getErrorStatus: vi.fn(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

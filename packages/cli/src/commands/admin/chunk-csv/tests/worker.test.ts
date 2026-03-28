@@ -1,6 +1,6 @@
+import type { ChunkOpts } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import type { ChunkOpts } from '../../../../lib/helpers/chunkOneCsvFile.js';
 import { runChild } from '../worker.js';
 
 const h = vi.hoisted(() => ({
@@ -13,12 +13,10 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../logger.js', () => ({ logger: h.mLogger }));
-vi.mock('../../../../lib/helpers/index.js', () => ({
+vi.mock('@transcend-io/utils', () => ({
+  chunkOneCsvFile: (...a: Parameters<typeof h.mChunkOneCsvFile>) => h.mChunkOneCsvFile(...a),
   extractErrorMessage: (...a: Parameters<typeof h.mExtractErrorMessage>) =>
     h.mExtractErrorMessage(...a),
-}));
-vi.mock('../../../../lib/helpers/chunkOneCsvFile.js', () => ({
-  chunkOneCsvFile: (...a: Parameters<typeof h.mChunkOneCsvFile>) => h.mChunkOneCsvFile(...a),
 }));
 
 // Local aliases for convenience

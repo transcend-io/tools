@@ -23,15 +23,18 @@ jobs:
           version: 2026.2.17
           install: false
           cache: true
-      - run: mise trust --yes mise.toml
-      - run: mise install --locked
-      - run: mise run bootstrap
-      - run: mise exec -- pnpm build
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise run bootstrap
+      - name: Build
+        run: mise exec -- pnpm build
       - name: Publish PR previews
         shell: bash
         run: |
           set +e
-          output="$(mise exec -- pnpx pkg-pr-new publish "./packages/*" 2>&1)"
+          output="$(mise exec -- pnpx pkg-pr-new publish --packageManager=pnpm "./packages/*" 2>&1)"
           status=$?
           set -e
 

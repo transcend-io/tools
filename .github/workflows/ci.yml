@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+  merge_group:
   push:
     branches:
       - main
@@ -27,20 +28,30 @@ jobs:
           version: 2026.2.17
           install: false
           cache: true
-      - run: mise trust --yes mise.toml
-      - run: mise install --locked
-      - run: mise run bootstrap
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise run bootstrap
       - if: github.event_name == 'pull_request'
+        name: Check changeset
         env:
           CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: mise exec -- pnpm check:changeset
-      - run: mise exec -- pnpm syncpack:lint
-      - run: mise exec -- pnpm lint
-      - run: mise exec -- pnpm format:check
-      - run: mise exec -- pnpm typecheck
-      - run: mise exec -- pnpm build
-      - run: mise exec -- pnpm test
-      - run: mise exec -- pnpm check-exports
+      - name: Check dependency versions
+        run: mise exec -- pnpm syncpack:lint
+      - name: Lint
+        run: mise exec -- pnpm lint
+      - name: Check formatting
+        run: mise exec -- pnpm format:check
+      - name: Typecheck
+        run: mise exec -- pnpm typecheck
+      - name: Build
+        run: mise exec -- pnpm build
+      - name: Test
+        run: mise exec -- pnpm test
+      - name: Check exports
+        run: mise exec -- pnpm check-exports
 
   cli:
     runs-on: ubuntu-24.04-arm
@@ -53,9 +64,12 @@ jobs:
           version: 2026.2.17
           install: false
           cache: true
-      - run: mise trust --yes mise.toml
-      - run: mise install --locked
-      - run: mise run bootstrap
-      - run: mise exec -- pnpm --dir packages/cli genfiles
-      - name: Ensure no files changed
-        run: git diff --quiet HEAD || (git diff --raw && echo "Detected untracked changes in git after running command '${{ matrix.command }}'" && exit 1)
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise run bootstrap
+      - name: Verify generated CLI files are up to date
+        run: |
+          mise exec -- pnpm --dir packages/cli genfiles
+          git diff --quiet HEAD || (git diff --raw && echo "Detected git changes after regenerating CLI files" && exit 1)
