@@ -1,34 +1,16 @@
-import { GraphQLClient } from 'graphql-request';
+import { fetchAllPurposesAndPreferences as sdkFetchAllPurposesAndPreferences } from '@transcend-io/sdk';
+import type { GraphQLClient } from 'graphql-request';
 
-import { PreferenceTopic, fetchAllPreferenceTopics } from './fetchAllPreferenceTopics.js';
-import { Purpose, fetchAllPurposes } from './fetchAllPurposes.js';
+import { logger } from '../../logger.js';
 
-export interface PurposeWithPreferences extends Purpose {
-  /** Topics */
-  topics: PreferenceTopic[];
-}
+export type { PurposeWithPreferences } from '@transcend-io/sdk';
 
 /**
- * Fetch all purposes and preferences for a request]
+ * CLI wrapper — injects logger and preserves the legacy signature.
  *
  * @param client - GraphQL client
- * @returns List of request enrichers
+ * @returns List of purposes with preference topics
  */
-export async function fetchAllPurposesAndPreferences(
-  client: GraphQLClient,
-): Promise<PurposeWithPreferences[]> {
-  const [purposes, topics] = await Promise.all([
-    fetchAllPurposes(client),
-    fetchAllPreferenceTopics(client),
-  ]);
-
-  return purposes.map((purpose) => {
-    const purposeTopics = topics.filter(
-      (topic) => topic.purpose.trackingType === purpose.trackingType,
-    );
-    return {
-      ...purpose,
-      topics: purposeTopics,
-    };
-  });
+export async function fetchAllPurposesAndPreferences(client: GraphQLClient) {
+  return sdkFetchAllPurposesAndPreferences(client, { logger });
 }

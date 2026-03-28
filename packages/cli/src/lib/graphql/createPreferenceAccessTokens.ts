@@ -1,64 +1,18 @@
-import type { SombraStandardScope } from '@transcend-io/privacy-types';
-import { map } from '@transcend-io/utils';
+import {
+  createPreferenceAccessTokens as sdkCreatePreferenceAccessTokens,
+  type PreferenceAccessTokenInputWithIndex,
+} from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
-import { chunk } from 'lodash-es';
 
-import { CREATE_PREFERENCE_ACCESS_TOKENS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
+import { logger } from '../../logger.js';
 
-export interface PreferenceAccessTokenInput {
-  /** Slug of data subject to authenticate as */
-  subjectType: string;
-  /** Scopes to grant */
-  scopes: SombraStandardScope[];
-  /** Expiration time in seconds */
-  expiresIn?: number;
-  /** Email address of user */
-  email: string;
-  /** Core identifier for the user */
-  coreIdentifier?: string;
-}
-
-const MAX_BATCH_SIZE = 50;
+export type {
+  PreferenceAccessTokenInput,
+  PreferenceAccessTokenInputWithIndex,
+} from '@transcend-io/sdk';
 
 /**
- * Create preference access tokens for the given identifiers.
- *
- * @see https://docs.transcend.io/docs/articles/preference-management/access-links
- * @param client - GraphQL
- * @param records - Inputs to sign
- * @returns list of access tokens
- */
-async function createPreferenceAccessTokensPage(
-  client: GraphQLClient,
-  records: PreferenceAccessTokenInput[],
-): Promise<string[]> {
-  const {
-    createPrivacyCenterAccessTokens: { nodes },
-  } = await makeGraphQLRequest<{
-    /** createPrivacyCenterAccessTokens mutation */
-    createPrivacyCenterAccessTokens: {
-      /** Nodes */
-      nodes: {
-        /** Token */
-        token: string;
-      }[];
-    };
-  }>(client, CREATE_PREFERENCE_ACCESS_TOKENS, {
-    input: {
-      records,
-    },
-  });
-  return nodes.map((node) => node.token);
-}
-
-export interface PreferenceAccessTokenInputWithIndex extends PreferenceAccessTokenInput {
-  /** Index of the input record */
-  index?: number;
-}
-
-/**
- * Create preference access tokens for the given identifiers.
+ * CLI wrapper — injects logger and preserves the legacy signature.
  *
  * @see https://docs.transcend.io/docs/articles/preference-management/access-links
  * @param client - GraphQL
@@ -72,46 +26,11 @@ export async function createPreferenceAccessTokens(
   records: PreferenceAccessTokenInputWithIndex[],
   emitProgress?: (progress: number) => void,
   concurrency = 10,
-): Promise<
-  {
-    /** Identifier for the record */
-    input: PreferenceAccessTokenInputWithIndex;
-    /** Access token */
-    accessToken: string;
-  }[]
-> {
-  let completed = 0;
-  if (emitProgress) {
-    emitProgress(0);
-  }
-  const results: {
-    /** Identifier for the record */
-    input: PreferenceAccessTokenInput;
-    /** Access token */
-    accessToken: string;
-  }[] = [];
-
-  // Then replace the selection with:
-  await map(
-    chunk(records, MAX_BATCH_SIZE),
-    async (chunkedRecords) => {
-      const tokens = await createPreferenceAccessTokensPage(
-        client,
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        chunkedRecords.map(({ index, ...rest }) => rest),
-      );
-      const mappedResults = tokens.map((token, index) => ({
-        input: chunkedRecords[index],
-        accessToken: token,
-      }));
-      results.push(...mappedResults);
-      completed += chunkedRecords.length;
-      if (emitProgress) {
-        emitProgress(completed);
-      }
-    },
-    { concurrency },
-  );
-
-  return results;
+) {
+  return sdkCreatePreferenceAccessTokens(client, {
+    records,
+    logger,
+    emitProgress,
+    concurrency,
+  });
 }
