@@ -28,10 +28,10 @@
   },
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
-    "publint": "publint --level warning --strict --pack pnpm"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
     "@transcend-io/internationalization": "^2.3.2",

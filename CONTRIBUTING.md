@@ -39,22 +39,29 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 ## Common Commands
 
 - `pnpm build`: build workspace packages with `tsdown`
-- `pnpm changeset`: create a changeset file
-
-Test/lint/format commands:
-
 - `pnpm test`: run package tests with Vitest
-- `pnpm quality`: run formatting, lint, and dependency-policy checks
-- `pnpm quality:fix`: auto-fix formatting and lint issues where possible
+- `pnpm typecheck`: run TypeScript checks across workspace packages
 - `pnpm lint`: run `oxlint` across the repo
 - `pnpm lint:fix`: run `oxlint --fix` across the repo
 - `pnpm format`: format the repo with `oxfmt`
 - `pnpm format:check`: verify formatting with `oxfmt --check`
-- `pnpm syncpack:lint`: enforce dependency version policy
-- `pnpm publint`: validate published package compatibility and packaging metadata
+- `pnpm quality`: run formatting, lint, and dependency-policy checks
+- `pnpm quality:fix`: auto-fix formatting and lint issues where possible
+- `pnpm changeset`: create a changeset file
+
+Additional checks:
+
+- `pnpm check:changeset`: validate changeset coverage for publishable package changes
 - `pnpm check:packages`: validate shared package metadata and layout conventions
-- `pnpm typecheck`: run TypeScript checks across workspace packages
-- `pnpm check-exports`: validate published package shape with `attw`
+- `pnpm check:exports`: validate published package shape with `attw`
+- `pnpm check:publint`: validate published package compatibility and packaging metadata
+- `pnpm check:deps`: enforce dependency version policy
+
+Release and maintenance:
+
+- `pnpm changeset:version`: apply pending changesets to versions and changelogs
+- `pnpm changeset:version:release`: apply pending changesets and reformat the repo
+- `pnpm release`: build and publish packages
 
 ### Run Commands in a Single Package
 
@@ -115,7 +122,7 @@ Add a changeset when changes to a package under `packages/` would require a new 
 - `node_modules/` and `.turbo/`
 - _See [`scripts/check-changeset.ts`](scripts/check-changeset.ts) for the full list of ignored files._
 
-If a PR changes a package without an associated changeset, CI fails.
+If a PR changes a publishable package, each changed publishable package must be mentioned in at least one changeset frontmatter block. Otherwise, CI fails.
 
 ### Preview Releases
 
@@ -152,7 +159,7 @@ CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN`
 After a normal install from the repo root, Husky configures local Git hooks automatically.
 
 - `pre-commit`: runs `pnpm quality`
-- `pre-push`: runs `pnpm typecheck`, `pnpm test`, `pnpm check-exports`, and `pnpm publint`
+- `pre-push`: runs `pnpm test`, `pnpm typecheck`, `pnpm check:exports`, and `pnpm check:publint`
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
 releases.
@@ -210,8 +217,8 @@ Current package conventions:
 - ESM-only packages with `"type": "module"`
 - published entrypoints served from `dist/`
 - `@transcend-io/source` export condition for live source resolution inside the monorepo
-- `build`, `typecheck`, `test`, and `check-exports` scripts in each package
-- publishable packages also provide a `publint` script
+- `build`, `test`, `typecheck`, and `check:exports` scripts in each package
+- publishable packages also provide a `check:publint` script
 - `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
 - publishable packages include `homepage`, `repository`, and `author` metadata
 - released publishable packages keep a `CHANGELOG.md`

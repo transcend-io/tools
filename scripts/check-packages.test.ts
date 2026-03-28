@@ -79,7 +79,7 @@ describe('check-packages', () => {
     expect(result.stderr).toContain('packages/privacy-types: author should be "Transcend Inc."');
     expect(result.stderr).toContain('packages/privacy-types: missing required file CHANGELOG.md');
     expect(result.stderr).toContain(
-      'packages/privacy-types: scripts.publint should be "publint --level warning --strict --pack pnpm"',
+      'packages/privacy-types: scripts.check:publint should be "publint --level warning --strict --pack pnpm"',
     );
     expect(result.stderr).toContain(
       'packages/privacy-types: devDependencies.publint should be "catalog:"',
@@ -242,12 +242,12 @@ function writePackageJson(
     },
     scripts: {
       build: 'tsdown',
-      typecheck: 'tsc -p tsconfig.json --noEmit',
       test: 'vitest run',
-      'check-exports': 'attw --pack . --ignore-rules cjs-resolves-to-esm',
+      typecheck: 'tsc -p tsconfig.json --noEmit',
+      'check:exports': 'attw --pack . --ignore-rules cjs-resolves-to-esm',
       ...(overrides.private === true || overrides.publint === false
         ? {}
-        : { publint: 'publint --level warning --strict --pack pnpm' }),
+        : { 'check:publint': 'publint --level warning --strict --pack pnpm' }),
     },
     devDependencies: {
       '@arethetypeswrong/cli': 'catalog:',

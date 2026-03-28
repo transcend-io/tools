@@ -43,12 +43,12 @@ type ValidationProblem = {
 const packagesRoot = join(repoRoot, 'packages');
 const requiredPackageScripts = {
   build: 'tsdown',
-  'check-exports': 'attw --pack . --ignore-rules cjs-resolves-to-esm',
   test: 'vitest run',
   typecheck: 'tsc -p tsconfig.json --noEmit',
+  'check:exports': 'attw --pack . --ignore-rules cjs-resolves-to-esm',
 } as const;
 const requiredPublishablePackageScripts = {
-  publint: 'publint --level warning --strict --pack pnpm',
+  'check:publint': 'publint --level warning --strict --pack pnpm',
 } as const;
 const requiredDevDependencies = [
   '@arethetypeswrong/cli',

@@ -41,7 +41,7 @@ jobs:
       - name: Check package consistency
         run: mise exec -- pnpm check:packages
       - name: Check dependency versions
-        run: mise exec -- pnpm syncpack:lint
+        run: mise exec -- pnpm check:deps
       - name: Lint
         run: mise exec -- pnpm lint
       - name: Check formatting
@@ -53,9 +53,9 @@ jobs:
       - name: Test
         run: mise exec -- pnpm test
       - name: Check exports
-        run: mise exec -- pnpm check-exports
-      - name: Publint
-        run: mise exec -- pnpm publint
+        run: mise exec -- pnpm check:exports
+      - name: Check publish compatibility
+        run: mise exec -- pnpm check:publint
 
   cli:
     runs-on: ubuntu-24.04-arm

@@ -15,8 +15,13 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "transit": {
-      "dependsOn": ["^transit"]
+    "test": {
+      "dependsOn": ["transit"],
+      "outputs": []
+    },
+    "typecheck": {
+      "dependsOn": ["transit"],
+      "outputs": []
     },
     "lint": {},
     "lint:fix": {
@@ -26,39 +31,40 @@
       "cache": false
     },
     "format:check": {},
-    "syncpack:lint": {},
     "quality": {
       "dependsOn": [
         "lint",
         "//#lint:root",
         "format:check",
         "//#format:check:root",
-        "syncpack:lint",
-        "//#syncpack:lint:root"
+        "check:deps",
+        "//#check:deps:root"
       ]
     },
     "quality:fix": {
       "dependsOn": ["lint:fix", "//#lint:fix:root", "format", "//#format:root"]
     },
-    "test": {
-      "dependsOn": ["transit"],
-      "outputs": []
-    },
-    "typecheck": {
-      "dependsOn": ["transit"],
-      "outputs": []
-    },
-    "check-exports": {
+    "check:exports": {
       "dependsOn": ["build"],
       "outputs": []
     },
-    "publint": {
+    "check:publint": {
       "dependsOn": ["build"],
       "outputs": []
+    },
+    "check:deps": {},
+    "transit": {
+      "dependsOn": ["^transit"]
     },
     "dev": {
       "cache": false,
       "persistent": true
+    },
+    "//#test:root": {
+      "outputs": []
+    },
+    "//#typecheck:root": {
+      "outputs": []
     },
     "//#lint:root": {},
     "//#lint:fix:root": {
@@ -68,12 +74,6 @@
       "cache": false
     },
     "//#format:check:root": {},
-    "//#test:root": {
-      "outputs": []
-    },
-    "//#typecheck:root": {
-      "outputs": []
-    },
-    "//#syncpack:lint:root": {}
+    "//#check:deps:root": {}
   }
 }
