@@ -93,7 +93,11 @@ function getCurrentModulePath(): string {
   if (typeof __filename !== 'undefined') {
     return __filename as unknown as string;
   }
-  return process.argv[1];
+  try {
+    return new URL(import.meta.url).pathname;
+  } catch {
+    return process.argv[1];
+  }
 }
 
 export interface UploadPreferencesCommandFlags {
