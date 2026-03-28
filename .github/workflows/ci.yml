@@ -54,6 +54,8 @@ jobs:
         run: mise exec -- pnpm test
       - name: Check exports
         run: mise exec -- pnpm check-exports
+      - name: Publint
+        run: mise exec -- pnpm publint
 
   cli:
     runs-on: ubuntu-24.04-arm

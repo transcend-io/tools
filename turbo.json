@@ -52,6 +52,10 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "publint": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "dev": {
       "cache": false,
       "persistent": true

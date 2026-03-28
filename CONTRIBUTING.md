@@ -51,6 +51,7 @@ Test/lint/format commands:
 - `pnpm format`: format the repo with `oxfmt`
 - `pnpm format:check`: verify formatting with `oxfmt --check`
 - `pnpm syncpack:lint`: enforce dependency version policy
+- `pnpm publint`: validate published package compatibility and packaging metadata
 - `pnpm check:packages`: validate shared package metadata and layout conventions
 - `pnpm typecheck`: run TypeScript checks across workspace packages
 - `pnpm check-exports`: validate published package shape with `attw`
@@ -151,7 +152,7 @@ CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN`
 After a normal install from the repo root, Husky configures local Git hooks automatically.
 
 - `pre-commit`: runs `pnpm quality`
-- `pre-push`: runs `pnpm typecheck`, `pnpm test`, and `pnpm check-exports`
+- `pre-push`: runs `pnpm typecheck`, `pnpm test`, `pnpm check-exports`, and `pnpm publint`
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
 releases.
@@ -210,6 +211,7 @@ Current package conventions:
 - published entrypoints served from `dist/`
 - `@transcend-io/source` export condition for live source resolution inside the monorepo
 - `build`, `typecheck`, `test`, and `check-exports` scripts in each package
+- publishable packages also provide a `publint` script
 - `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
 - publishable packages include `homepage`, `repository`, and `author` metadata
 - released publishable packages keep a `CHANGELOG.md`

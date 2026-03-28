@@ -16,6 +16,7 @@
     "changeset": "changeset",
     "check:changeset": "node ./scripts/check-changeset.ts",
     "check:packages": "node ./scripts/check-packages.ts",
+    "publint": "turbo run publint",
     "version-packages": "changeset version",
     "version-packages:release": "changeset version && pnpm format:root",
     "release": "turbo run build && changeset publish",

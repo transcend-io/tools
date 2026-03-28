@@ -47,6 +47,9 @@ const requiredPackageScripts = {
   test: 'vitest run',
   typecheck: 'tsc -p tsconfig.json --noEmit',
 } as const;
+const requiredPublishablePackageScripts = {
+  publint: 'publint --level warning --strict --pack pnpm',
+} as const;
 const requiredDevDependencies = [
   '@arethetypeswrong/cli',
   '@types/node',
@@ -54,6 +57,7 @@ const requiredDevDependencies = [
   'typescript',
   'vitest',
 ] as const;
+const requiredPublishableDevDependencies = ['publint'] as const;
 
 try {
   run();
@@ -153,6 +157,7 @@ function validatePackage(packageDirectory: string, problems: ValidationProblem[]
   validateTsdownConfig(packageDirectory, isCliPackage, problems);
 
   if (!isPrivatePackage) {
+    validatePublishableTooling(packageDirectory, manifest, problems);
     validatePublishableMetadata(packageDirectory, manifest, problems);
   }
 
@@ -268,6 +273,32 @@ function validatePublishableMetadata(
     `packages/${packagePath}`,
     problems,
   );
+}
+
+function validatePublishableTooling(
+  packageDirectory: string,
+  manifest: PackageManifest,
+  problems: ValidationProblem[],
+): void {
+  for (const [scriptName, expectedCommand] of Object.entries(requiredPublishablePackageScripts)) {
+    expectEqual(
+      packageDirectory,
+      `scripts.${scriptName}`,
+      getNestedValue(manifest, 'scripts', scriptName),
+      expectedCommand,
+      problems,
+    );
+  }
+
+  for (const dependencyName of requiredPublishableDevDependencies) {
+    expectEqual(
+      packageDirectory,
+      `devDependencies.${dependencyName}`,
+      getNestedValue(manifest, 'devDependencies', dependencyName),
+      'catalog:',
+      problems,
+    );
+  }
 }
 
 function validateTsconfig(

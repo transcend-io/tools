@@ -61,6 +61,7 @@ describe('check-packages', () => {
     writePackageJson(repositoryPath, 'privacy-types', {
       author: undefined,
       homepage: undefined,
+      publint: false,
       repository: undefined,
       version: '5.0.0',
     });
@@ -77,6 +78,12 @@ describe('check-packages', () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain('packages/privacy-types: author should be "Transcend Inc."');
     expect(result.stderr).toContain('packages/privacy-types: missing required file CHANGELOG.md');
+    expect(result.stderr).toContain(
+      'packages/privacy-types: scripts.publint should be "publint --level warning --strict --pack pnpm"',
+    );
+    expect(result.stderr).toContain(
+      'packages/privacy-types: devDependencies.publint should be "catalog:"',
+    );
     expect(result.stderr).toContain('packages/cli: missing required file DEVELOPERS.md');
     expect(result.stderr).toContain(
       'packages/cli: vitest.config.ts should re-export the root Vitest config',
@@ -203,6 +210,7 @@ function writePackageJson(
     homepage?: string | undefined;
     main?: string;
     private?: boolean;
+    publint?: boolean;
     repository?: Record<string, string> | undefined;
     version?: string;
   },
@@ -237,10 +245,14 @@ function writePackageJson(
       typecheck: 'tsc -p tsconfig.json --noEmit',
       test: 'vitest run',
       'check-exports': 'attw --pack . --ignore-rules cjs-resolves-to-esm',
+      ...(overrides.private === true || overrides.publint === false
+        ? {}
+        : { publint: 'publint --level warning --strict --pack pnpm' }),
     },
     devDependencies: {
       '@arethetypeswrong/cli': 'catalog:',
       '@types/node': 'catalog:',
+      ...(overrides.private === true || overrides.publint === false ? {} : { publint: 'catalog:' }),
       tsdown: 'catalog:',
       typescript: 'catalog:',
       vitest: 'catalog:',
