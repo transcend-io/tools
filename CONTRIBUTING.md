@@ -188,7 +188,9 @@ This repo uses the GitHub [Merge Queue](https://docs.github.com/en/repositories/
 
 ## Add A New Package
 
-Transcend Team: see our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
+Transcend Team: 
+- See our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
+- If this is a net-new npm package, it needs to first be created [here](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10), and it needs trusted publishing set up (see the HOWTO guide above for more on that). Once that is done, it should publish successfully the next time a release PR merges with a changeset for that package.
 
 New packages should match the shape used in `packages/core` and `packages/utils` (private
 starters that model the layout).
