@@ -38,14 +38,20 @@ type PackageManifest = {
   version?: string;
 };
 
+type CompilerOptions = Record<string, unknown> & {
+  outDir?: string;
+  rootDir?: string;
+  types?: string[];
+};
+
 type PackageTsconfig = {
-  compilerOptions?: {
-    outDir?: string;
-    rootDir?: string;
-    types?: string[];
-  };
+  compilerOptions?: CompilerOptions;
   extends?: string;
   include?: string[];
+};
+
+type BaseTsconfig = {
+  compilerOptions?: Record<string, unknown>;
 };
 
 type RootTsconfig = {
@@ -89,6 +95,8 @@ const publishablePackages = workspacePackages.filter(({ manifest }) => manifest.
 const releasedPackages = publishablePackages.filter(
   ({ manifest }) => typeof manifest.version === 'string' && manifest.version !== '0.0.0',
 );
+const baseCompilerOptions = readJsonFile<BaseTsconfig>('tsconfig.base.json').compilerOptions ?? {};
+const sharedCompilerOptionKeys = sortStrings(Object.keys(baseCompilerOptions));
 
 describe('package conventions', () => {
   test('root tsconfig references every workspace package', () => {
@@ -178,6 +186,17 @@ describe('package conventions', () => {
     );
     expect(tsconfig.include ?? []).toEqual(expect.arrayContaining(['src/**/*.ts']));
   });
+
+  test.skip.each(workspacePackages)(
+    '$directory relies on tsconfig.base.json for shared compilerOptions',
+    ({ tsconfig }) => {
+      const packageCompilerOptions = tsconfig.compilerOptions ?? {};
+
+      for (const compilerOptionKey of sharedCompilerOptionKeys) {
+        expect(packageCompilerOptions).not.toHaveProperty(compilerOptionKey);
+      }
+    },
+  );
 
   test.each(workspacePackages)('$directory uses the shared tsdown baseline', ({ tsdownConfig }) => {
     expect(tsdownConfig).toContain("import sharedConfig from '../../tsdown.config.base.ts';");
