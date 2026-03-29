@@ -159,7 +159,7 @@ CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN`
 
 After a normal install from the repo root, Husky configures local Git hooks automatically.
 
-- `pre-commit`: runs `pnpm quality`
+- `pre-commit`: runs `pnpm quality:fix`, aborts if it updates tracked files, then runs `pnpm quality`
 - `pre-push`: runs `pnpm test`
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and

@@ -61,7 +61,7 @@ function withBeforeBound(
   return {
     ...base,
     system: {
-      ...(base.system || {}),
+      ...base.system,
       ...(beforeISO ? { updatedBefore: beforeISO } : {}),
     },
     // ensure we don't mix dimensions

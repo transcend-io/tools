@@ -1,1 +1,26 @@
+before_staged_diff="$(mktemp)"
+before_unstaged_diff="$(mktemp)"
+after_staged_diff="$(mktemp)"
+after_unstaged_diff="$(mktemp)"
+
+cleanup() {
+  rm -f "$before_staged_diff" "$before_unstaged_diff" "$after_staged_diff" "$after_unstaged_diff"
+}
+
+trap cleanup EXIT
+
+git diff --cached --binary -- >"$before_staged_diff"
+git diff --binary -- >"$before_unstaged_diff"
+
+pnpm exec turbo run quality:fix --output-logs=new-only --no-update-notifier
+
+git diff --cached --binary -- >"$after_staged_diff"
+git diff --binary -- >"$after_unstaged_diff"
+
+if ! cmp -s "$before_staged_diff" "$after_staged_diff" || ! cmp -s "$before_unstaged_diff" "$after_unstaged_diff"; then
+  echo
+  echo "quality:fix made changes. Review and stage them, then commit again."
+  exit 1
+fi
+
 pnpm exec turbo run quality --output-logs=new-only --no-update-notifier
