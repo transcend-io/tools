@@ -1,4 +1,4 @@
-import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import { RequestStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -11,16 +11,10 @@ import {
   makeGraphQLRequest,
   fetchRequestDataSilos,
   fetchRequestDataSilosCount,
-  fetchRequestDataSilo,
-  fetchAllRequests,
 } from '../graphql/index.js';
 
 /**
- * Given a data silo ID, mark all open request data silos as skipped.
- *
- * When requestActions are provided, only requests matching those actions
- * will have their data silo jobs skipped (follows the per-request lookup
- * pattern used by retryRequestDataSilos).
+ * Given a data silo ID, mark all open request data silos as skipped
  *
  * @param options - Options
  * @returns Number of items skipped
@@ -33,7 +27,6 @@ export async function skipRequestDataSilos({
   status = 'SKIPPED',
   transcendUrl = DEFAULT_TRANSCEND_API,
   requestStatuses = [RequestStatus.Compiling, RequestStatus.Secondary],
-  requestActions,
 }: {
   /** Transcend API key authentication */
   auth: string;
@@ -49,23 +42,12 @@ export async function skipRequestDataSilos({
   requestStatuses?: RequestStatus[];
   /** Maximum number of items to mark skipped per go */
   maxUploadPerChunk?: number;
-  /** When provided, only skip data silo jobs for requests matching these actions */
-  requestActions?: RequestAction[];
 }): Promise<number> {
+  // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const t0 = new Date().getTime();
 
-  if (requestActions && requestActions.length > 0) {
-    return skipRequestDataSilosByAction({
-      client,
-      dataSiloId,
-      status,
-      concurrency,
-      requestActions,
-      requestStatuses,
-      t0,
-    });
-  }
+  // Time duration
+  const t0 = new Date().getTime();
 
   // Determine total number of request data silos
   const requestDataSiloCount = await fetchRequestDataSilosCount(client, {
@@ -75,6 +57,7 @@ export async function skipRequestDataSilos({
 
   logger.info(colors.magenta(`Marking ${requestDataSiloCount} request data silos as completed`));
 
+  // create a new progress bar instance and use shades_classic theme
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   let total = 0;
@@ -124,97 +107,8 @@ export async function skipRequestDataSilos({
 
   logger.info(
     colors.green(
-      `Successfully skipped "${requestDataSiloCount}" requests in "${totalTime / 1000}" seconds!`,
+      `Successfully skipped  "${requestDataSiloCount}" requests in "${totalTime / 1000}" seconds!`,
     ),
   );
   return requestDataSiloCount;
-}
-
-/**
- * Skip request data silos filtered by request action. Fetches all requests
- * matching the given actions/statuses, then looks up and skips the
- * corresponding RequestDataSilo for each.
- */
-async function skipRequestDataSilosByAction({
-  client,
-  dataSiloId,
-  status,
-  concurrency,
-  requestActions,
-  requestStatuses,
-  t0,
-}: {
-  /** GraphQL client */
-  client: import('graphql-request').GraphQLClient;
-  /** Data Silo ID */
-  dataSiloId: string;
-  /** Status to set */
-  status: 'SKIPPED' | 'RESOLVED';
-  /** Concurrency */
-  concurrency: number;
-  /** Request actions to filter on */
-  requestActions: RequestAction[];
-  /** Request statuses to filter on */
-  requestStatuses: RequestStatus[];
-  /** Start timestamp for timing */
-  t0: number;
-}): Promise<number> {
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: requestStatuses,
-  });
-
-  logger.info(
-    colors.magenta(
-      `Skipping data silo jobs for "${dataSiloId}" across ${allRequests.length} ` +
-        `requests matching actions: ${requestActions.join(', ')}`,
-    ),
-  );
-
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-  let total = 0;
-  let skipped = 0;
-  progressBar.start(allRequests.length, 0);
-
-  await map(
-    allRequests,
-    async (request) => {
-      try {
-        const requestDataSilo = await fetchRequestDataSilo(client, {
-          requestId: request.id,
-          dataSiloId,
-        });
-
-        await makeGraphQLRequest<{
-          /** Whether we successfully uploaded the results */
-          success: boolean;
-        }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
-          variables: { requestDataSiloId: requestDataSilo.id, status },
-          logger,
-        });
-      } catch (err) {
-        if (err.message.includes('Failed to find RequestDataSilo')) {
-          skipped += 1;
-        } else if (!err.message.includes('Client error: Request must be active:')) {
-          throw err;
-        }
-      }
-
-      total += 1;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
-
-  progressBar.stop();
-  const t1 = new Date().getTime();
-  const totalTime = t1 - t0;
-
-  logger.info(
-    colors.green(
-      `Successfully skipped data silo jobs for ${total} requests in "${totalTime / 1000}" seconds` +
-        `${skipped > 0 ? `, ${skipped} requests skipped (data silo not attached)` : ''}!`,
-    ),
-  );
-  return allRequests.length;
 }
