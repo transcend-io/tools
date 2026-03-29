@@ -40,7 +40,7 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 - `pnpm build`: build workspace packages with `tsdown`
 - `pnpm test`: run package tests with Vitest
 - `pnpm quality`: run repo-wide verification checks and typecheck
-- `pnpm quality:fix`: auto-fix formatting and lint issues where possible
+- `pnpm quality:fix`: auto-fix formatting and lint issues where possible, then run the remaining quality checks
 - `pnpm changeset`: create a changeset file
 
 Additional checks:
@@ -159,7 +159,7 @@ CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN`
 
 After a normal install from the repo root, Husky configures local Git hooks automatically.
 
-- `pre-commit`: runs `pnpm quality:fix`, aborts if it updates tracked files, then runs `pnpm quality`
+- `pre-commit`: runs `pnpm quality:fix` and aborts if it updates tracked files
 - `pre-push`: runs `pnpm test`
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and

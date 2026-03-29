@@ -25,6 +25,11 @@
         "//#lint:root",
         "format:check",
         "//#format:check:root",
+        "quality:checks"
+      ]
+    },
+    "quality:checks": {
+      "dependsOn": [
         "typecheck",
         "//#typecheck:root",
         "//#check:packages",
@@ -35,7 +40,7 @@
       ]
     },
     "quality:fix": {
-      "dependsOn": ["lint:fix", "//#lint:fix:root", "format", "//#format:root"]
+      "dependsOn": ["lint:fix", "//#lint:fix:root", "format", "//#format:root", "quality:checks"]
     },
     "typecheck": {
       "dependsOn": ["transit"],

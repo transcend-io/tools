@@ -12,15 +12,20 @@ trap cleanup EXIT
 git diff --cached --binary -- >"$before_staged_diff"
 git diff --binary -- >"$before_unstaged_diff"
 
-pnpm exec turbo run quality:fix --output-logs=new-only --no-update-notifier
+quality_status=0
+pnpm exec turbo run quality:fix --output-logs=new-only --no-update-notifier || quality_status=$?
 
 git diff --cached --binary -- >"$after_staged_diff"
 git diff --binary -- >"$after_unstaged_diff"
 
 if ! cmp -s "$before_staged_diff" "$after_staged_diff" || ! cmp -s "$before_unstaged_diff" "$after_unstaged_diff"; then
   echo
-  echo "quality:fix made changes. Review and stage them, then commit again."
+  if [ "$quality_status" -ne 0 ]; then
+    echo "quality:fix failed and made changes. Review and stage them, then commit again after fixing remaining issues."
+  else
+    echo "quality:fix made changes. Review and stage them, then commit again."
+  fi
   exit 1
 fi
 
-pnpm exec turbo run quality --output-logs=new-only --no-update-notifier
+exit "$quality_status"
