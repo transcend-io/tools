@@ -181,7 +181,7 @@ function validateManifest(
     packageDirectory,
     'engines.node',
     getNestedValue(manifest, 'engines', 'node'),
-    '>=22.0.0',
+    '>=22.12.0',
     problems,
   );
   expectEqual(

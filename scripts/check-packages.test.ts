@@ -267,7 +267,7 @@ function writePackageJson(
       vitest: 'catalog:',
     },
     engines: {
-      node: '>=22.0.0',
+      node: '>=22.12.0',
     },
   };
 
