@@ -1,6 +1,7 @@
 ---
 '@transcend-io/sdk': minor
 '@transcend-io/cli': minor
+'@transcend-io/utils': minor
 ---
 
 Move preference-management domain logic from CLI to SDK
