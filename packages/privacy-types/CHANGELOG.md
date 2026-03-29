@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.0.1
+
+### Patch Changes
+
+- cac80a5: Add publint
+
 ## 5.0.0
 
 ### Major Changes
