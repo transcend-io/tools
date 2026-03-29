@@ -7,9 +7,27 @@ type ChangesetConfig = {
   ignore?: unknown;
 };
 
+type PackageJsonScripts = Record<string, unknown>;
+
 type PackageJson = {
+  bin?: unknown;
+  bundleDependencies?: unknown;
+  bundledDependencies?: unknown;
+  dependencies?: unknown;
+  engines?: unknown;
+  exports?: unknown;
+  files?: unknown;
+  main?: unknown;
+  module?: unknown;
   name?: unknown;
+  optionalDependencies?: unknown;
+  peerDependencies?: unknown;
+  peerDependenciesMeta?: unknown;
   private?: unknown;
+  scripts?: PackageJsonScripts;
+  sideEffects?: unknown;
+  type?: unknown;
+  types?: unknown;
 };
 
 type PackageMetadata = {
@@ -25,6 +43,28 @@ const ignoredPackages = new Set(
   ),
 );
 const packageMetadataCache = new Map<string, PackageMetadata>();
+// Only `package.json` keys that affect the published/runtime surface should require
+// a changeset. Descriptive metadata and tool-only changes stay ignored.
+const releaseRelevantPackageJsonKeys = [
+  'bin',
+  'bundleDependencies',
+  'bundledDependencies',
+  'dependencies',
+  'engines',
+  'exports',
+  'files',
+  'main',
+  'module',
+  'name',
+  'optionalDependencies',
+  'peerDependencies',
+  'peerDependenciesMeta',
+  'private',
+  'sideEffects',
+  'type',
+  'types',
+] as const;
+const releaseRelevantPackageJsonScriptKeys = ['build', 'start'] as const;
 
 const baseRef =
   process.env.CHANGESET_BASE_SHA ??
@@ -40,7 +80,9 @@ try {
 
 function run(): void {
   const changedFiles = getChangedFiles(baseRef);
-  const changedPackageFiles = changedFiles.filter(isRelevantPackageChange);
+  const changedPackageFiles = changedFiles.filter((filePath) =>
+    isRelevantPackageChange(filePath, baseRef),
+  );
   const changedPublishablePackages = getChangedPublishablePackages(changedPackageFiles);
 
   if (changedPublishablePackages.length === 0) {
@@ -124,7 +166,7 @@ function isChangesetFile(filePath: string): boolean {
   );
 }
 
-function isRelevantPackageChange(filePath: string): boolean {
+function isRelevantPackageChange(filePath: string, base: string): boolean {
   if (!filePath.startsWith('packages/')) {
     return false;
   }
@@ -134,6 +176,10 @@ function isRelevantPackageChange(filePath: string): boolean {
 
   if (!packageName || !relativePath) {
     return false;
+  }
+
+  if (relativePath === 'package.json') {
+    return hasRelevantPackageJsonChange(filePath, base);
   }
 
   if (
@@ -151,6 +197,103 @@ function isRelevantPackageChange(filePath: string): boolean {
   }
 
   return true;
+}
+
+function hasRelevantPackageJsonChange(filePath: string, base: string): boolean {
+  const currentPackageJson = fileExists(filePath) ? readJsonFile<PackageJson>(filePath) : null;
+  const basePackageJson = readJsonFileAtRevision<PackageJson>(base, filePath);
+
+  if (currentPackageJson === null || basePackageJson === null) {
+    return true;
+  }
+
+  return (
+    serializeRelevantPackageJson(currentPackageJson) !==
+    serializeRelevantPackageJson(basePackageJson)
+  );
+}
+
+function readJsonFileAtRevision<T>(revision: string, filePath: string): T | null {
+  if (!fileExistsAtRevision(revision, filePath)) {
+    return null;
+  }
+
+  return JSON.parse(
+    execFileSync('git', ['show', `${revision}:${filePath}`], {
+      encoding: 'utf8',
+    }),
+  ) as T;
+}
+
+function fileExistsAtRevision(revision: string, filePath: string): boolean {
+  try {
+    execFileSync('git', ['cat-file', '-e', `${revision}:${filePath}`], {
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function serializeRelevantPackageJson(packageJson: PackageJson): string {
+  return JSON.stringify(sortJsonValue(getRelevantPackageJsonSnapshot(packageJson)));
+}
+
+function getRelevantPackageJsonSnapshot(packageJson: PackageJson): Record<string, unknown> {
+  const relevantPackageJson: Record<string, unknown> = {};
+
+  for (const key of releaseRelevantPackageJsonKeys) {
+    const value = packageJson[key];
+
+    if (value !== undefined) {
+      relevantPackageJson[key] = value;
+    }
+  }
+
+  const relevantScripts = getRelevantPackageJsonScripts(packageJson.scripts);
+
+  if (Object.keys(relevantScripts).length > 0) {
+    relevantPackageJson.scripts = relevantScripts;
+  }
+
+  return relevantPackageJson;
+}
+
+function getRelevantPackageJsonScripts(
+  scripts: PackageJsonScripts | undefined,
+): Record<string, unknown> {
+  if (!scripts) {
+    return {};
+  }
+
+  const relevantScripts: Record<string, unknown> = {};
+
+  for (const key of releaseRelevantPackageJsonScriptKeys) {
+    const value = scripts[key];
+
+    if (value !== undefined) {
+      relevantScripts[key] = value;
+    }
+  }
+
+  return relevantScripts;
+}
+
+function sortJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => sortJsonValue(entry));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
+        .map(([key, nestedValue]) => [key, sortJsonValue(nestedValue)]),
+    );
+  }
+
+  return value;
 }
 
 function getPackageDirectory(filePath: string): string | null {
