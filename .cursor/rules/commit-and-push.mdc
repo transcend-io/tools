@@ -1,0 +1,39 @@
+---
+description: How to commit and push changes in this repo — always run hooks, use correct permissions
+globs: "**/*"
+alwaysApply: true
+---
+
+# Committing and Pushing Changes
+
+## Pre-commit hooks
+
+This repo uses husky pre-commit and pre-push hooks that run formatting, linting, typechecking, and tests via turbo. **Always let hooks run** — do not use `--no-verify` unless explicitly asked.
+
+## Cursor sandbox permissions
+
+The pre-commit hook requires `npm pack` (for `attw` export checking) which is blocked by the default Cursor sandbox. When committing from Cursor, **always use `required_permissions: ["all"]`** on the Shell tool call:
+
+```
+git add -A && git commit -m "message"
+# with required_permissions: ["all"]
+```
+
+## Before committing
+
+1. **Run the formatter** before committing to avoid CI formatting failures:
+   ```
+   pnpm run format
+   ```
+2. Stage the formatted files, then commit.
+
+## Before pushing
+
+The pre-push hook runs full typechecking and tests. This takes ~10s. Let it run — if it fails, fix the issue before pushing.
+
+## Build order
+
+When changes span multiple packages, build in dependency order:
+1. `pnpm run --dir packages/utils build`
+2. `pnpm run --dir packages/sdk build` (depends on utils)
+3. `pnpm run --dir packages/cli build` (depends on sdk + utils)

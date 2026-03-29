@@ -2,8 +2,6 @@
 import { readdirSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import colors from 'colors';
-
 /**
  * Reset worker logs in the given directory.
  * mode:
@@ -20,6 +18,7 @@ function resetWorkerLogs(dir: string, mode: 'truncate' | 'delete'): void {
     /worker-\d+\.err\.log$/,
     /worker-\d+\.warn\.log$/,
     /worker-\d+\.info\.log$/,
+    /worker-\d+\.error\.log$/,
   ];
   for (const name of readdirSync(dir)) {
     // eslint-disable-next-line no-continue
@@ -32,9 +31,6 @@ function resetWorkerLogs(dir: string, mode: 'truncate' | 'delete'): void {
       /* ignore */
     }
   }
-  process.stdout.write(
-    colors.dim(`Logs have been ${mode === 'delete' ? 'deleted' : 'truncated'} in ${dir}\n`),
-  );
 }
 
 /**
@@ -51,7 +47,7 @@ export function classifyLogLevel(line: string): 'warn' | 'error' | null {
 
   // 1) Explicit worker tag: "[w12] WARN ..." or "[w2] ERROR ..."
   const mTag = /\[w\d+\]\s+(ERROR|WARN)\b/i.exec(s);
-  if (mTag) return mTag[1].toLowerCase() as 'warn' | 'error';
+  if (mTag) return mTag[1]!.toLowerCase() as 'warn' | 'error';
 
   // 2) Common plain prefixes
   if (/^\s*(ERROR|ERR|FATAL)\b/i.test(s)) return 'error';
@@ -83,7 +79,7 @@ export function classifyLogLevel(line: string): 'warn' | 'error' | null {
   // e.g. "[w3] something WARNING xyz"
   const mInline = /\[w\d+\].*\b(WARN|WARNING|ERROR|FATAL)\b/i.exec(s);
   if (mInline) {
-    const L = mInline[1].toUpperCase();
+    const L = mInline[1]!.toUpperCase();
     return L === 'ERROR' || L === 'FATAL' ? 'error' : 'warn';
   }
 
@@ -198,18 +194,19 @@ export function extractBlocks(text: string, starts: (cleanLine: string) => boole
 export type LogExportKind = 'error' | 'warn' | 'info' | 'all';
 
 /**
- * Ensure log directory exists
+ * Ensure log directory exists and reset any existing worker logs.
  *
- * @param rootDir - Root directory
- * @returns log dir
+ * @param rootDir - Root directory containing the pool's working state
+ * @param options - Options
+ * @returns Absolute path to the log directory
  */
-export function initLogDir(rootDir: string): string {
+export function initLogDir(
+  rootDir: string,
+  { resetMode = 'truncate' }: { resetMode?: 'truncate' | 'delete' } = {},
+): string {
   const logDir = join(rootDir, 'logs');
   mkdirSync(logDir, { recursive: true });
-
-  const RESET_MODE = (process.env.RESET_LOGS as 'truncate' | 'delete') ?? 'truncate';
-  resetWorkerLogs(logDir, RESET_MODE);
-
+  resetWorkerLogs(logDir, resetMode);
   return logDir;
 }
 
@@ -241,17 +238,19 @@ export type ExportStatusMap = {
 };
 
 /**
- * Return export statuses
+ * Build a map of canonical export artifact paths for a receipts/logs folder.
+ * Used by dashboard renderers and post-processing hooks to locate combined
+ * log files and failure CSVs.
  *
- * @param logDir - Log directory
- * @returns Export map
+ * @param receiptsFolder - Directory where combined logs and failure artifacts are written
+ * @returns Map of artifact kind to path info
  */
-export function buildExportStatus(logDir: string): ExportStatusMap {
+export function buildExportStatus(receiptsFolder: string): ExportStatusMap {
   return {
-    error: { path: join(logDir, 'combined-errors.log') },
-    warn: { path: join(logDir, 'combined-warns.log') },
-    info: { path: join(logDir, 'combined-info.log') },
-    all: { path: join(logDir, 'combined-all.log') },
-    failuresCsv: { path: join(logDir, 'failing-updates.csv') },
+    error: { path: join(receiptsFolder, 'combined-errors.log') },
+    warn: { path: join(receiptsFolder, 'combined-warns.log') },
+    info: { path: join(receiptsFolder, 'combined-info.log') },
+    all: { path: join(receiptsFolder, 'combined-all.log') },
+    failuresCsv: { path: join(receiptsFolder, 'failing-updates.csv') },
   };
 }

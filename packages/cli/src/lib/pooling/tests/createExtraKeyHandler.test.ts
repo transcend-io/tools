@@ -1,8 +1,6 @@
+import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
-
-import type { ExportStatusMap } from '../logRotation.js';
-import type { SlotPaths } from '../spawnWorkerProcess.js';
 
 /**
  * Mock the combined logs viewer. We assert calls and control resolution/rejection.

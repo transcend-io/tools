@@ -1,3 +1,4 @@
+import { PoolHooks } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import type { LocalContext } from '../../../../context.js';
@@ -23,12 +24,7 @@ const H = vi.hoisted(() => {
     poolSize?: number;
     cpuCount?: number;
     filesTotal?: number;
-    hooks?: import('../../../../lib/pooling/index.js').PoolHooks<
-      ChunkTask,
-      ChunkProgress,
-      ChunkResult,
-      Record<string, never>
-    >;
+    hooks?: PoolHooks<ChunkTask, ChunkProgress, ChunkResult, Record<string, never>>;
     viewerMode?: boolean;
     render?: (input: unknown) => unknown;
     extraKeyHandler?: (args: {
@@ -45,7 +41,7 @@ const H = vi.hoisted(() => {
       cpuCount: 10,
     })),
     // runPool will just record its args for later inspection
-    runPool: vi.fn((args: typeof lastRunPoolArgs): void => {
+    runPool: vi.fn(async (args: typeof lastRunPoolArgs): Promise<void> => {
       Object.assign(lastRunPoolArgs, args);
     }),
     dashboardPlugin: vi.fn((input: unknown, plugin: unknown, viewerMode: boolean) => ({
@@ -101,6 +97,16 @@ vi.mock('../../../../lib/helpers/collectCsvFilesOrExit.js', () => ({
  * IMPORTANT: mock the exact module id after resolution. Using the absolute path
  * to the actual file from *this test file* is reliable for Vitest.
  */
+vi.mock('@transcend-io/utils', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
+  return {
+    ...actual,
+    CHILD_FLAG: H.pooling.CHILD_FLAG,
+    computePoolSize: H.pooling.computePoolSize,
+    runPool: H.pooling.runPool,
+  };
+});
+
 vi.mock('../../../../lib/pooling/index.js', async () => {
   const actual =
     await vi.importActual<typeof import('../../../../lib/pooling/index.js')>(
@@ -108,9 +114,6 @@ vi.mock('../../../../lib/pooling/index.js', async () => {
     );
   return {
     ...actual,
-    CHILD_FLAG: H.pooling.CHILD_FLAG,
-    computePoolSize: H.pooling.computePoolSize,
-    runPool: H.pooling.runPool,
     dashboardPlugin: H.pooling.dashboardPlugin,
     createExtraKeyHandler: H.pooling.createExtraKeyHandler,
   };

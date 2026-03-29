@@ -18,7 +18,7 @@ vi.mock('colors', () => ({
 }));
 
 /* RateCounter → deterministic */
-vi.mock('../../helpers/index.js', () => ({
+vi.mock('../../RateCounter.js', () => ({
   RateCounter: vi.fn(function MockRateCounter() {
     return {
       add: vi.fn(),
@@ -27,7 +27,7 @@ vi.mock('../../helpers/index.js', () => ({
   }),
 }));
 
-/* spawnWorkerProcess + friends (IMPORTANT: path is ../ from this test) */
+/* spawnWorkerProcess + friends — now in @transcend-io/utils */
 const mSafeSend = vi.fn();
 const mIsIpcOpen = vi.fn().mockReturnValue(true);
 const mGetWorkerLogPaths = vi.fn().mockReturnValue({
@@ -38,30 +38,33 @@ const mGetWorkerLogPaths = vi.fn().mockReturnValue({
 });
 const mSpawnWorkerProcess = vi.fn();
 
-vi.mock('../spawnWorkerProcess.js', () => ({
-  safeSend: (...a: unknown[]) => mSafeSend(...a),
-  isIpcOpen: (...a: unknown[]) => mIsIpcOpen(...a),
-  getWorkerLogPaths: (...a: unknown[]) => mGetWorkerLogPaths(...a),
-  spawnWorkerProcess: (...a: unknown[]) => mSpawnWorkerProcess(...a),
-}));
-
-/* logRotation bits the runner uses */
-vi.mock('../logRotation.js', () => ({
-  initLogDir: vi.fn(() => '/exp'), // avoid real FS
-  makeLineSplitter: (fn: (line: string) => void) => (buf: unknown) => fn(String(buf)),
-  classifyLogLevel: (line: string) =>
-    /ERROR/.test(line) ? 'error' : /WARN/.test(line) ? 'warn' : undefined,
-}));
-
-/* interactive switcher → cleanup fn */
+/* interactive switcher → injected via runPool options (implementation stays in CLI) */
 const mInstallInteractiveSwitcher = vi.fn().mockReturnValue(() => {
   // noop
 });
-vi.mock('../installInteractiveSwitcher.js', () => ({
-  installInteractiveSwitcher: (...a: unknown[]) => mInstallInteractiveSwitcher(...a),
-}));
 
-/* safeGetLogPathsForSlot — simple stub */
+vi.mock('../spawnWorkerProcess.js', async () => {
+  const actual = await vi.importActual<typeof import('../spawnWorkerProcess.js')>(
+    '../spawnWorkerProcess.js',
+  );
+  return {
+    ...actual,
+    safeSend: (...a: unknown[]) => mSafeSend(...a),
+    isIpcOpen: (...a: unknown[]) => mIsIpcOpen(...a),
+    getWorkerLogPaths: (...a: unknown[]) => mGetWorkerLogPaths(...a),
+    spawnWorkerProcess: (...a: unknown[]) => mSpawnWorkerProcess(...a),
+  };
+});
+vi.mock('../logRotation.js', async () => {
+  const actual = await vi.importActual<typeof import('../logRotation.js')>('../logRotation.js');
+  return {
+    ...actual,
+    initLogDir: vi.fn(() => '/exp'),
+    makeLineSplitter: (fn: (line: string) => void) => (buf: unknown) => fn(String(buf)),
+    classifyLogLevel: (line: string) =>
+      /ERROR/.test(line) ? 'error' : /WARN/.test(line) ? 'warn' : undefined,
+  };
+});
 vi.mock('../safeGetLogPathsForSlot.js', () => ({
   safeGetLogPathsForSlot: vi.fn(() => ({
     out: '/tmp/out.log',
@@ -173,6 +176,7 @@ describe('runPool', () => {
       cpuCount: 8,
       filesTotal: 1,
       childFlag: '--as-child',
+      installInteractiveSwitcher: mInstallInteractiveSwitcher,
       hooks: hooks as unknown as import('../runPool.js').PoolHooks<Task, Prog, Res, Totals>,
       render: (snap) => {
         renders.push({
@@ -188,7 +192,7 @@ describe('runPool', () => {
     });
 
     /* Drive the fake worker */
-    const child = spawned[0];
+    const child = spawned[0]!;
     child.emit('message', { type: 'ready' });
     await vi.advanceTimersByTimeAsync(400);
 
@@ -282,7 +286,7 @@ describe('runPool', () => {
       render: (snap) => flags.push(snap.final),
     });
 
-    const child = spawned[0];
+    const child = spawned[0]!;
     child.emit('message', { type: 'ready' });
     await vi.advanceTimersByTimeAsync(50);
     child.emit('message', { type: 'result', payload: {} as Res });
@@ -290,9 +294,9 @@ describe('runPool', () => {
     await vi.advanceTimersByTimeAsync(400);
     await prom;
 
-    /* viewerMode forces openLogWindows=false */
+    /* viewerMode: no log-window callback unless caller passes onLogFilesCreated */
     expect(mSpawnWorkerProcess).toHaveBeenCalledWith(
-      expect.objectContaining({ openLogWindows: false }),
+      expect.objectContaining({ onLogFilesCreated: undefined }),
     );
     /* No interactive switcher installed */
     expect(mInstallInteractiveSwitcher).not.toHaveBeenCalled();

@@ -356,6 +356,9 @@ importers:
 
   packages/utils:
     dependencies:
+      '@transcend-io/type-utils':
+        specifier: ^1.8.9
+        version: 1.8.9
       bluebird:
         specifier: ^3.7.2
         version: 3.7.2

@@ -4,7 +4,6 @@ import { join } from 'node:path';
 
 import { ensureLogFile } from './ensureLogFile.js';
 import { classifyLogLevel, makeLineSplitter } from './logRotation.js';
-import { openLogTailWindowMulti } from './openTerminal.js';
 
 /** Default child-flag used if a caller doesn’t provide one. */
 export const CHILD_FLAG = '--as-child';
@@ -82,12 +81,14 @@ export interface SpawnWorkerOptions {
   modulePath: string;
   /** Directory where log files will be written */
   logDir: string;
-  /** If true, open tail windows for the log files */
-  openLogWindows: boolean;
   /** If true, spawn with silent stdio (respect your existing setting) */
   isSilent: boolean;
   /** Optional override for the child flag (defaults to CHILD_FLAG) */
   childFlag?: string;
+  /** Optional callback to open log tail windows (CLI-specific) */
+  onLogFilesCreated?: (paths: string[], label: string, isSilent: boolean) => void;
+  /** Override execArgv passed to the forked child (default: process.execArgv). Pass [] to avoid inheriting debug/loader flags. */
+  execArgv?: string[];
 }
 
 /**
@@ -105,7 +106,15 @@ export interface SpawnWorkerOptions {
  * @returns The spawned ChildProcess instance.
  */
 export function spawnWorkerProcess(opts: SpawnWorkerOptions): ChildProcess {
-  const { id, modulePath, logDir, openLogWindows, isSilent, childFlag = CHILD_FLAG } = opts;
+  const {
+    id,
+    modulePath,
+    logDir,
+    isSilent,
+    childFlag = CHILD_FLAG,
+    onLogFilesCreated,
+    execArgv = process.execArgv,
+  } = opts;
 
   const structuredPath = join(logDir, `worker-${id}.log`);
   const outPath = join(logDir, `worker-${id}.out.log`);
@@ -119,7 +128,7 @@ export function spawnWorkerProcess(opts: SpawnWorkerOptions): ChildProcess {
   const child = fork(modulePath, [childFlag], {
     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
     env: { ...process.env, WORKER_ID: String(id), WORKER_LOG: structuredPath },
-    execArgv: process.execArgv,
+    execArgv,
     silent: isSilent,
   });
 
@@ -189,13 +198,11 @@ export function spawnWorkerProcess(opts: SpawnWorkerOptions): ChildProcess {
     errorPath,
   } as WorkerLogPaths;
 
-  if (openLogWindows) {
-    openLogTailWindowMulti(
-      [structuredPath, outPath, errPath, infoPath, warnPath, errorPath],
-      `worker-${id}`,
-      isSilent,
-    );
-  }
+  onLogFilesCreated?.(
+    [structuredPath, outPath, errPath, infoPath, warnPath, errorPath],
+    `worker-${id}`,
+    isSilent,
+  );
 
   // Best-effort error suppression on file streams
   outStream.on('error', () => {

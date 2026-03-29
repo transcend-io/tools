@@ -4,7 +4,6 @@ import { createWriteStream, type WriteStream } from 'node:fs';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { ensureLogFile } from '../ensureLogFile.js';
-import { openLogTailWindowMulti } from '../openTerminal.js';
 import { getWorkerLogPaths, spawnWorkerProcess } from '../spawnWorkerProcess.js';
 
 /**
@@ -16,17 +15,16 @@ vi.mock('node:child_process', () => ({
 vi.mock('node:fs', () => ({
   createWriteStream: vi.fn(),
 }));
-vi.mock('../openTerminal.js', () => ({
-  openLogTailWindowMulti: vi.fn(),
-}));
 vi.mock('../ensureLogFile.js', () => ({
   ensureLogFile: vi.fn(),
 }));
-vi.mock('../logRotation.js', () => {
+vi.mock('../logRotation.js', async () => {
+  const actual = await vi.importActual<typeof import('../logRotation.js')>('../logRotation.js');
   const makeLineSplitter = vi.fn(
     (cb: (line: string) => void) => (chunk: unknown) => cb(String(chunk)),
   );
   return {
+    ...actual,
     classifyLogLevel: vi.fn(),
     makeLineSplitter,
   };
@@ -35,7 +33,6 @@ vi.mock('../logRotation.js', () => {
 const mFork = vi.mocked(fork);
 const mCws = vi.mocked(createWriteStream);
 const mEnsure = vi.mocked(ensureLogFile);
-const mOpen = vi.mocked(openLogTailWindowMulti);
 
 /**
  * Create a fake child process with readable-like stdout/stderr.
@@ -113,7 +110,6 @@ describe('getWorkerLogPaths', () => {
       id: 7,
       modulePath: '/mod.js',
       logDir: '/logs',
-      openLogWindows: false,
       isSilent: true,
     });
 
@@ -130,7 +126,5 @@ describe('getWorkerLogPaths', () => {
       warnPath: '/logs/worker-7.warn.log',
       errorPath: '/logs/worker-7.error.log',
     });
-
-    expect(mOpen).not.toHaveBeenCalled(); // openLogWindows=false
   });
 });

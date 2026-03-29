@@ -9,6 +9,8 @@ export default defineConfig({
     'src/bin/bash-complete.ts',
     'src/bin/deprecated-command.ts',
     'src/index.ts',
+    'src/commands/admin/chunk-csv/worker.ts',
+    'src/commands/admin/parquet-to-csv/worker.ts',
   ],
   minify: true,
   splitting: true,
