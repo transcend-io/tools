@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +23,8 @@ type Repository = {
   baseSha: string;
   path: string;
 };
+
+type PackageJson = Record<string, unknown>;
 
 afterEach(() => {
   while (temporaryRepositories.length > 0) {
@@ -104,6 +106,89 @@ Update privacy types.
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
   });
+
+  it('ignores package.json metadata-only changes', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+    });
+
+    updatePackageJson(repository.path, 'packages/cli/package.json', (packageJson) => ({
+      ...packageJson,
+      description: 'Updated CLI description.',
+      homepage: 'https://example.com/cli',
+    }));
+    commitAll(repository.path, 'update package metadata');
+
+    const result = runCheckChangeset(repository.path, repository.baseSha);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+
+  it('fails when package.json dependencies change without a changeset', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+    });
+
+    updatePackageJson(repository.path, 'packages/cli/package.json', (packageJson) => ({
+      ...packageJson,
+      dependencies: {
+        lodash: '^4.17.21',
+      },
+    }));
+    commitAll(repository.path, 'update package dependencies');
+
+    const result = runCheckChangeset(repository.path, repository.baseSha);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('No changeset was found');
+    expect(result.stderr).toContain('@transcend-io/cli');
+  });
+
+  it.each([
+    ['build', 'tsdown --watch'],
+    ['start', './dist/bin/alt-cli.mjs'],
+  ])(
+    'fails when package.json scripts.%s changes without a changeset',
+    (scriptName, scriptCommand) => {
+      const repository = createRepository({
+        packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+      });
+
+      updatePackageJson(repository.path, 'packages/cli/package.json', (packageJson) => ({
+        ...packageJson,
+        scripts: {
+          [scriptName]: scriptCommand,
+        },
+      }));
+      commitAll(repository.path, `update package script ${scriptName}`);
+
+      const result = runCheckChangeset(repository.path, repository.baseSha);
+
+      expect(result.status).toBe(1);
+      expect(result.stderr).toContain('No changeset was found');
+      expect(result.stderr).toContain('@transcend-io/cli');
+    },
+  );
+
+  it('ignores package.json scripts.test changes', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+    });
+
+    updatePackageJson(repository.path, 'packages/cli/package.json', (packageJson) => ({
+      ...packageJson,
+      scripts: {
+        test: 'vitest --watch=false',
+      },
+    }));
+    commitAll(repository.path, 'update package test script');
+
+    const result = runCheckChangeset(repository.path, repository.baseSha);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
 });
 
 function createRepository({ packages }: RepositoryDefinition): Repository {
@@ -152,6 +237,17 @@ function writeRepositoryFile(repositoryPath: string, filePath: string, contents:
 
   mkdirSync(directoryPath, { recursive: true });
   writeFileSync(absoluteFilePath, contents);
+}
+
+function updatePackageJson(
+  repositoryPath: string,
+  filePath: string,
+  update: (packageJson: PackageJson) => PackageJson,
+) {
+  const absoluteFilePath = join(repositoryPath, filePath);
+  const packageJson = JSON.parse(readFileSync(absoluteFilePath, 'utf8')) as PackageJson;
+
+  writeFileSync(absoluteFilePath, `${JSON.stringify(update(packageJson), null, 2)}\n`);
 }
 
 function commitAll(repositoryPath: string, message: string) {
