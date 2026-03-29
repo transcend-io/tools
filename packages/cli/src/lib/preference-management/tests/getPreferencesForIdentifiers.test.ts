@@ -3,7 +3,7 @@ import type { Got } from 'got';
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars,require-await */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { getPreferencesForIdentifiers } from '../getPreferencesForIdentifiers.js';
+import { getPreferencesForIdentifiers } from '@transcend-io/sdk';
 
 // Hoisted shared spies / fakes
 const H = vi.hoisted(() => ({
@@ -72,15 +72,6 @@ vi.mock('@transcend-io/type-utils', async (importOriginal) => {
   };
 });
 
-// withPreferenceRetry should invoke the provided fn and return its result,
-// but we still want to see that it's being called.
-const withRetrySpy = vi.fn(async (name: string, fn: () => Promise<any>, _opts?: any) => fn());
-
-vi.mock('../withPreferenceRetry.js', () => ({
-  withPreferenceRetry: (name: string, fn: unknown, opts?: unknown) =>
-    // @ts-expect-error test-only
-    withRetrySpy(name, fn, opts),
-}));
 
 describe('getPreferencesForIdentifiers', () => {
   beforeEach(() => {
@@ -147,8 +138,9 @@ describe('getPreferencesForIdentifiers', () => {
       const out = await getPreferencesForIdentifiers(sombra, {
         identifiers,
         partitionKey: 'p0',
-        skipLogging: true, // avoid logger.info + progress start
+        skipLogging: true,
         concurrency: 7,
+        logger: H.loggerSpies as any,
       });
 
       // Expect 3 calls (100 + 100 + 50)
@@ -187,8 +179,8 @@ describe('getPreferencesForIdentifiers', () => {
       // @ts-expect-error test-only capture
       expect(H.mapOpts.current?.concurrency).toBe(7);
 
-      // Ensure wrapper was used for each group
-      expect(withRetrySpy).toHaveBeenCalledTimes(3);
+      // withPreferenceRetry is used internally by the SDK — verified via sombra.post calls
+      expect(sombra.post).toHaveBeenCalledTimes(3);
     },
   );
 
@@ -240,8 +232,9 @@ describe('getPreferencesForIdentifiers', () => {
     const out = await getPreferencesForIdentifiers(sombra, {
       identifiers,
       partitionKey: 'pA',
-      skipLogging: false, // enable start+info logs
+      skipLogging: false,
       concurrency: 2,
+      logger: H.loggerSpies as any,
     });
 
     expect(out).toHaveLength(5);

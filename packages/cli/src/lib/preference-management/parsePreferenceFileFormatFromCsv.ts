@@ -4,7 +4,7 @@ import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { FileFormatState } from './codecs.js';
+import { FileFormatState } from '@transcend-io/sdk';
 
 export const NONE_PREFERENCE_MAP = '[NONE]';
 

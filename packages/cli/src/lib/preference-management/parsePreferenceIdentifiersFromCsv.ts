@@ -9,7 +9,7 @@ import { uniq, keyBy } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import { inquirerConfirmBoolean } from '../helpers/index.js';
-import type { FileFormatState, IdentifierMetadataForPreference } from './codecs.js';
+import type { FileFormatState, IdentifierMetadataForPreference } from '@transcend-io/sdk';
 
 const { mapSeries } = Bluebird;
 

@@ -6,7 +6,7 @@ import {
   type ColumnIdentifierMap,
   type ColumnMetadataMap,
   type ColumnPurposeMap,
-} from '../../../lib/preference-management/index.js';
+} from '@transcend-io/sdk';
 
 export interface PreferenceSchemaInterface {
   /** Name of the column used as timestamp, if any */

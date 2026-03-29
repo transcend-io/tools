@@ -10,8 +10,8 @@ import * as t from 'io-ts';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { collectCsvFilesOrExit } from '../../../lib/helpers/collectCsvFilesOrExit.js';
+import { FileFormatState } from '@transcend-io/sdk';
 import {
-  FileFormatState,
   parsePreferenceIdentifiersFromCsv,
   parsePreferenceFileFormatFromCsv,
   parsePreferenceAndPurposeValuesFromCsv,

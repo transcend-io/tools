@@ -8,7 +8,7 @@ import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import { splitCsvToList } from '@transcend-io/utils';
-import { FileFormatState } from './codecs.js';
+import { FileFormatState } from '@transcend-io/sdk';
 
 /** Values that clearly mean "no preference recorded" and should map to null. */
 const NULL_VALUES = new Set(['', 'undefined', 'null', 'none', 'n/a', 'na']);

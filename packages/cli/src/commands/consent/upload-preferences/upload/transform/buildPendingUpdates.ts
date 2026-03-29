@@ -5,19 +5,22 @@
  * PreferenceUpdateItem payloads, ready for upload.
  */
 import type { PreferenceUpdateItem } from '@transcend-io/privacy-types';
-import type { PreferenceTopic, Purpose } from '@transcend-io/sdk';
-
-import type { FormattedAttribute } from '../../../../../lib/graphql/index.js';
 import {
-  getPreferenceIdentifiersFromRow,
   getPreferenceUpdatesFromRow,
   getPreferenceMetadataFromRow,
-  NONE_PREFERENCE_MAP,
   type ColumnIdentifierMap,
   type ColumnMetadataMap,
   type ColumnPurposeMap,
   type PendingSafePreferenceUpdates,
   type PendingWithConflictPreferenceUpdates,
+  type PreferenceTopic,
+  type Purpose,
+} from '@transcend-io/sdk';
+
+import type { FormattedAttribute } from '../../../../../lib/graphql/index.js';
+import {
+  getPreferenceIdentifiersFromRow,
+  NONE_PREFERENCE_MAP,
 } from '../../../../../lib/preference-management/index.js';
 
 export interface BuildPendingParams {

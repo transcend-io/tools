@@ -1,24 +1,25 @@
 import { PersistedState } from '@transcend-io/persisted-state';
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
-import type { Identifier, PreferenceTopic } from '@transcend-io/sdk';
+import {
+  checkIfPendingPreferenceUpdatesAreNoOp,
+  checkIfPendingPreferenceUpdatesCauseConflict,
+  getPreferencesForIdentifiers,
+  getPreferenceUpdatesFromRow,
+  type FileFormatState,
+  type Identifier,
+  type PendingSafePreferenceUpdates,
+  type PendingWithConflictPreferenceUpdates,
+  type PreferenceTopic,
+  type PreferenceUploadProgress,
+  type RequestUploadReceipts,
+  type SkippedPreferenceUpdates,
+} from '@transcend-io/sdk';
 import type { ObjByString } from '@transcend-io/type-utils';
 import colors from 'colors';
 import type { Got } from 'got';
 import { keyBy } from 'lodash-es';
 
-import type { PreferenceUploadProgress } from '../../commands/consent/upload-preferences/upload/index.js';
 import { logger } from '../../logger.js';
-import { checkIfPendingPreferenceUpdatesAreNoOp } from './checkIfPendingPreferenceUpdatesAreNoOp.js';
-import { checkIfPendingPreferenceUpdatesCauseConflict } from './checkIfPendingPreferenceUpdatesCauseConflict.js';
-import {
-  type FileFormatState,
-  type PendingSafePreferenceUpdates,
-  type PendingWithConflictPreferenceUpdates,
-  type RequestUploadReceipts,
-  type SkippedPreferenceUpdates,
-} from './codecs.js';
-import { getPreferencesForIdentifiers } from './getPreferencesForIdentifiers.js';
-import { getPreferenceUpdatesFromRow } from './getPreferenceUpdatesFromRow.js';
 import { parsePreferenceAndPurposeValuesFromCsv } from './parsePreferenceAndPurposeValuesFromCsv.js';
 import { parsePreferenceFileFormatFromCsv } from './parsePreferenceFileFormatFromCsv.js';
 import {
@@ -138,6 +139,7 @@ export async function parsePreferenceManagementCsvWithCache(
         logInterval: identifierDownloadLogInterval,
         partitionKey,
         concurrency: downloadIdentifierConcurrency,
+        logger,
         onProgress,
       });
 
@@ -250,7 +252,6 @@ export async function parsePreferenceManagementCsvWithCache(
         currentConsentRecord,
         pendingUpdates,
         preferenceTopics,
-        log: false, // update this to log for debugging purposes
       })
     ) {
       pendingConflictUpdates[primaryKey] = {

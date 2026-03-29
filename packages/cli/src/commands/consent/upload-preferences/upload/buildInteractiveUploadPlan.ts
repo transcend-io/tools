@@ -10,7 +10,7 @@ import type {
   PendingSafePreferenceUpdates,
   PendingWithConflictPreferenceUpdates,
   SkippedPreferenceUpdates,
-} from '../../../../lib/preference-management/codecs.js';
+} from '@transcend-io/sdk';
 import { parsePreferenceManagementCsvWithCache } from '../../../../lib/preference-management/index.js';
 import { parseAttributesFromString, readCsv } from '../../../../lib/requests/index.js';
 import { logger } from '../../../../logger.js';

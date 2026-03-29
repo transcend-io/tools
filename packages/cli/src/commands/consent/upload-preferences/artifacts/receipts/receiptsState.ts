@@ -8,7 +8,7 @@ import {
   type PendingWithConflictPreferenceUpdates,
   type PreferenceUpdateMap,
   type SkippedPreferenceUpdates,
-} from '../../../../../lib/preference-management/index.js';
+} from '@transcend-io/sdk';
 
 export type PreferenceReceiptsInterface = {
   /** Path to file */
