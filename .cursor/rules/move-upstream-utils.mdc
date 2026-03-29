@@ -1,0 +1,32 @@
+---
+description: When moving functions between packages, always move upstream utility dependencies too
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# Move Upstream Utilities When Extracting Code
+
+When moving a function from one package to another, **always check for upstream utility functions** it depends on that should also be moved. Don't inline or duplicate small helpers — move them to the appropriate shared package (usually `packages/utils`).
+
+Before deciding where a utility should live, **consult with the developer** unless the placement is obvious (e.g., a pure string/array helper clearly belongs in `utils`). The goal is to avoid creating duplicates or inlining code that other consumers also need.
+
+## Checklist when moving a function
+
+1. Identify all imports the function uses from its current package
+2. For each import, ask: does this belong in a shared package?
+3. If yes, move the utility **first** (to `utils` for generic helpers, to `sdk` for domain-specific API helpers)
+4. Update **all** existing consumers of that utility to import from the new location
+5. Delete the original file — don't leave re-export wrappers (see `no-reexport-wrappers` rule)
+6. Move associated tests alongside the utility
+
+## Example
+
+```typescript
+// BAD — inlining a utility that already exists elsewhere
+function splitCsvToList(value: string): string[] {
+  return value.split(',').map((x) => x.trim()).filter((x) => x);
+}
+
+// GOOD — import from the shared package where it was moved
+import { splitCsvToList } from '@transcend-io/utils';
+```

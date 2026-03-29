@@ -1,9 +1,7 @@
 import { PreferenceTopicType } from '@transcend-io/privacy-types';
-import { PreferenceTopic } from '@transcend-io/sdk';
+import { PreferenceTopic, checkIfPendingPreferenceUpdatesCauseConflict } from '@transcend-io/sdk';
 /* eslint-disable max-lines */
 import { expect, describe, it } from 'vitest';
-
-import { checkIfPendingPreferenceUpdatesCauseConflict } from '../index.js';
 
 const DEFAULT_VALUES = {
   userId: 'test@transcend.io',

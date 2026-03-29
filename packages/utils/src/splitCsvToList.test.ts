@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 
-import { splitCsvToList } from '../index.js';
+import { splitCsvToList } from './splitCsvToList.js';
 
 describe('splitCsvToList', () => {
   it('should successfully split a single string to length 1', () => {

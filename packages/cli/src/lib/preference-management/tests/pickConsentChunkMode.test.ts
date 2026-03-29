@@ -1,7 +1,9 @@
+import {
+  pickConsentChunkMode,
+  type PreferencesQueryFilter,
+  type ChunkMode,
+} from '@transcend-io/sdk';
 import { describe, it, expect } from 'vitest';
-
-import { pickConsentChunkMode } from '../pickConsentChunkMode.js';
-import type { PreferencesQueryFilter, ChunkMode } from '../types.js';
 
 describe('pickConsentChunkMode', () => {
   const M = (f: PreferencesQueryFilter): ChunkMode => pickConsentChunkMode(f);

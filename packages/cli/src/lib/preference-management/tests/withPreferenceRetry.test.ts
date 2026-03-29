@@ -1,12 +1,14 @@
+import { withPreferenceRetry, RETRY_PREFERENCE_MSGS } from '@transcend-io/sdk';
 /* eslint-disable require-await */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-import { withPreferenceRetry, RETRY_PREFERENCE_MSGS } from '../withPreferenceRetry.js';
 
 // Hoist shared spies so the mock factory can capture them
 const H = vi.hoisted(() => ({
   loggerSpies: {
+    info: vi.fn(),
     warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
   sleepSpy: vi.fn().mockResolvedValue(undefined),
 }));
@@ -44,7 +46,7 @@ describe('withPreferenceRetry', () => {
   it('returns immediately on first success (no retries)', async () => {
     const fn = vi.fn(async (): Promise<string> => 'ok');
 
-    const out = await withPreferenceRetry('Preference Query', fn);
+    const out = await withPreferenceRetry('Preference Query', fn, { logger: H.loggerSpies });
     expect(out).toEqual('ok');
 
     expect(fn).toHaveBeenCalledTimes(1);
@@ -59,6 +61,7 @@ describe('withPreferenceRetry', () => {
 
     const onRetry = vi.fn();
     const out = await withPreferenceRetry('Preference Query', fn, {
+      logger: H.loggerSpies,
       baseDelayMs: 200, // backoff = 200 * 2^(attempt-1)
       onRetry,
     });
@@ -82,6 +85,7 @@ describe('withPreferenceRetry', () => {
 
     await expect(
       withPreferenceRetry('Preference Query', fn, {
+        logger: H.loggerSpies,
         maxAttempts: 5,
       }),
     ).rejects.toThrow('Preference Query failed after 1 attempt(s):');
@@ -98,6 +102,7 @@ describe('withPreferenceRetry', () => {
 
     await expect(
       withPreferenceRetry('Preference Query', fn, {
+        logger: H.loggerSpies,
         maxAttempts: 3,
         baseDelayMs: 100,
       }),
@@ -118,6 +123,7 @@ describe('withPreferenceRetry', () => {
 
     await expect(
       withPreferenceRetry('Preference Query', fn, {
+        logger: H.loggerSpies,
         baseDelayMs: 10,
       }),
     ).rejects.toThrow('Preference Query failed after 12 attempt(s):');
@@ -137,6 +143,7 @@ describe('withPreferenceRetry', () => {
     });
 
     const out = await withPreferenceRetry('Preference Query', fn, {
+      logger: H.loggerSpies,
       isRetryable: (_err, msg) => msg.includes('custom-transient'),
       baseDelayMs: 10,
     });
