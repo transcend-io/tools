@@ -9,6 +9,7 @@ import {
   IsoCountrySubdivisionCode,
 } from '@transcend-io/privacy-types';
 import { ObjByString, valuesOf } from '@transcend-io/type-utils';
+import { splitCsvToList } from '@transcend-io/utils';
 import * as t from 'io-ts';
 import { DateFromISOString } from 'io-ts-types';
 
@@ -18,7 +19,6 @@ import { AttributeNameMap } from './mapColumnsToAttributes.js';
 import { IdentifierNameMap } from './mapColumnsToIdentifiers.js';
 import { ColumnNameMap } from './mapCsvColumnsToApi.js';
 import { ParsedAttributeInput } from './parseAttributesFromString.js';
-import { splitCsvToList } from '@transcend-io/utils';
 
 /**
  * Shape of additional identifiers
