@@ -137,7 +137,7 @@ export interface ReportPromptRunOptions extends Optionalize<
 const jsonParseSafe = (obj: string): unknown => {
   try {
     return JSON.parse(obj);
-  } catch (e) {
+  } catch {
     return obj;
   }
 };

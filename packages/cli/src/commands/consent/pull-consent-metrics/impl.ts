@@ -181,7 +181,7 @@ export async function pullConsentMetrics(
 
         logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
       } catch (err) {
-        logger.error(colors.red(`${prefix}Failed to sync configuration.`));
+        logger.error(colors.red(`${prefix}Failed to sync configuration.`), err);
         encounteredErrors.push(apiKey.organizationName);
       }
     });
