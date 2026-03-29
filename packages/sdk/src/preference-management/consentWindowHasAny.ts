@@ -1,8 +1,7 @@
 import { decodeCodec } from '@transcend-io/type-utils';
-import colors from 'colors';
+import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
-import { logger } from '../../logger.js';
 import { ConsentPreferenceResponse, PreferencesQueryFilter, ChunkMode } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
@@ -21,6 +20,7 @@ export async function consentWindowHasAny(
     baseFilter,
     afterISO,
     beforeISO,
+    logger,
   }: {
     /** Partition */
     partition: string;
@@ -32,6 +32,7 @@ export async function consentWindowHasAny(
     afterISO: string;
     /** Before ISO date */
     beforeISO: string;
+    logger: Logger;
   },
 ): Promise<boolean> {
   const filter: PreferencesQueryFilter =
@@ -47,7 +48,7 @@ export async function consentWindowHasAny(
           timestampAfter: undefined,
           timestampBefore: undefined,
           system: {
-            ...(baseFilter.system || {}),
+            ...baseFilter.system,
             updatedAfter: afterISO,
             updatedBefore: beforeISO,
           },
@@ -61,12 +62,9 @@ export async function consentWindowHasAny(
         })
         .json(),
     {
+      logger,
       onRetry: (attempt, error, message) => {
-        logger.warn(
-          colors.yellow(
-            `Retry attempt ${attempt} for consentWindowHasAny due to error: ${message}`,
-          ),
-        );
+        logger.warn(`Retry attempt ${attempt} for consentWindowHasAny due to error: ${message}`);
       },
     },
   );

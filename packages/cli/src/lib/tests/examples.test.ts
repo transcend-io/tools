@@ -1,10 +1,10 @@
 import { mkdtemp, writeFile } from 'fs/promises';
+import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'os';
 
 import { run } from '@stricli/core';
 import { fdir } from 'fdir';
-import { shellcheck } from 'shellcheck';
 import { describe, expect, test, vi } from 'vitest';
 
 import { app } from '../../app.js';
@@ -114,6 +114,57 @@ async function createTempFile(contents: string): Promise<string> {
   return filePath;
 }
 
+/**
+ * Runs shellcheck against a temp script file.
+ *
+ * @param filePath - Path to the script file to lint.
+ * @returns The shellcheck process output.
+ */
+async function runShellcheck(filePath: string): Promise<{ stdout: string; stderr: string }> {
+  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    const child = spawn('shellcheck', ['--shell=sh', filePath], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (chunk) => {
+      stdout += String(chunk);
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += String(chunk);
+    });
+
+    child.on('error', (error) => {
+      const errnoError = error as NodeJS.ErrnoException;
+      if (errnoError.code === 'ENOENT') {
+        reject(
+          new Error(
+            'shellcheck is required to run this test. Run `mise install` from the repo root to install it.',
+          ),
+        );
+        return;
+      }
+
+      reject(error);
+    });
+
+    child.on('close', (code, signal) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+        return;
+      }
+
+      const exitStatus = signal ? `was terminated by signal ${signal}` : `exited with code ${code}`;
+      const output = [stdout, stderr].filter(Boolean).join('\n').trim();
+
+      reject(new Error(`shellcheck ${exitStatus}${output ? `:\n${output}` : ''}`));
+    });
+  });
+}
+
 describe('Example commands', async () => {
   const { commandsToTest, unalteredCommands } = await getExampleCommands();
 
@@ -137,7 +188,7 @@ describe('Example commands', async () => {
           },
         }),
       );
-    } catch (error) {
+    } catch {
       // empty
     }
 
@@ -152,11 +203,8 @@ describe('Example commands', async () => {
   test.each(unalteredCommands)('Command %j passes shellcheck', async (unalteredCommand) => {
     const content = `#!/bin/sh\n${unalteredCommand}`;
     const filePath = await createTempFile(content);
-    const result = await shellcheck({
-      args: [filePath],
-    });
-    // console.log(result.output.toString());
-    expect(result.stdout.toString()).toBe('');
+    const result = await runShellcheck(filePath);
+    expect(result.stdout).toBe('');
   });
 });
 

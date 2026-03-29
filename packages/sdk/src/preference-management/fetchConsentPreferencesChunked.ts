@@ -1,11 +1,7 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
-import { addDaysUtc, clampPageSize } from '@transcend-io/utils';
-import { map as pmap } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
-import colors from 'colors';
+import { addDaysUtc, clampPageSize, map as pmap, type Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
-import { logger } from '../../logger.js';
 import { buildConsentChunks } from './buildConsentChunks.js';
 import {
   findEarliestDayWithData,
@@ -42,7 +38,7 @@ function mergeFilter(
   return {
     ...base,
     system: {
-      ...(base.system || {}),
+      ...base.system,
       ...(window.system?.updatedAfter ? { updatedAfter: window.system.updatedAfter } : {}),
       ...(window.system?.updatedBefore ? { updatedBefore: window.system.updatedBefore } : {}),
     },
@@ -53,7 +49,7 @@ function mergeFilter(
 }
 
 /**
- * High-level chunked fetch with progress bar.
+ * High-level chunked fetch with optional progress callback.
  *
  * If an `onItems` callback is provided, pages are streamed to the callback
  * as they are fetched (no accumulation in memory). If no callback is provided,
@@ -73,6 +69,8 @@ export async function fetchConsentPreferencesChunked(
     maxChunks = 5000,
     maxLookbackDays = 3650,
     onItems,
+    logger,
+    onProgress,
   }: {
     /** Partition */
     partition: string;
@@ -89,81 +87,65 @@ export async function fetchConsentPreferencesChunked(
     /** Optional streaming sink; if provided, items are not accumulated */
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onItems?: (items: PreferenceQueryResponseItem[]) => Promise<any> | any;
+    /** Logger */
+    logger: Logger;
+    /** Optional progress: completed chunks, total chunks, records fetched so far */
+    onProgress?: (completed: number, total: number, fetched: number) => void;
   },
 ): Promise<PreferenceQueryResponseItem[]> {
   const mode: ChunkMode = pickConsentChunkMode(filterBy);
   logger.info(
-    colors.magenta(
-      `Fetching consent preferences in chunks by ${
-        mode === 'timestamp' ? 'timestamp' : 'system.updatedAt'
-      }...`,
-    ),
+    `Fetching consent preferences in chunks by ${
+      mode === 'timestamp' ? 'timestamp' : 'system.updatedAt'
+    }...`,
   );
 
   // Resolve / discover bounds (UTC)
   let { after, before } = getBoundsFromConsentFilter(mode, filterBy);
   logger.info(
-    colors.magenta(
-      `Initial bounds: after=${after?.toISOString() ?? 'undefined'} before=${
-        before?.toISOString() ?? 'undefined'
-      }`,
-    ),
+    `Initial bounds: after=${after?.toISOString() ?? 'undefined'} before=${
+      before?.toISOString() ?? 'undefined'
+    }`,
   );
 
   if (!after || !before) {
     if (!after) {
-      logger.info(
-        colors.magenta(`Discovering earliest day with data for partition ${partition}...`),
-      );
+      logger.info(`Discovering earliest day with data for partition ${partition}...`);
       after = await findEarliestDayWithData(sombra, {
         partition,
         mode,
         baseFilter: filterBy,
         maxLookbackDays,
+        logger,
       });
-      logger.info(colors.green(`Discovered earliest day with data: ${after.toISOString()}`));
+      logger.info(`Discovered earliest day with data: ${after.toISOString()}`);
     }
     if (!before) {
-      logger.info(colors.magenta(`Discovering latest day with data for partition ${partition}...`));
+      logger.info(`Discovering latest day with data for partition ${partition}...`);
       const latestDay = await findLatestDayWithData(sombra, {
         partition,
         mode,
         baseFilter: filterBy,
         earliest: after,
+        logger,
       });
       // Exclusive upper bound = latest day start + 1 day (UTC)
       before = addDaysUtc(latestDay, 1);
-      logger.info(colors.green(`Discovered latest day with data: ${latestDay.toISOString()}`));
+      logger.info(`Discovered latest day with data: ${latestDay.toISOString()}`);
     }
   }
 
-  logger.info(
-    colors.green(`Final bounds (UTC): after=${after.toISOString()} before=${before.toISOString()}`),
-  );
+  logger.info(`Final bounds (UTC): after=${after.toISOString()} before=${before.toISOString()}`);
 
   // Build up to `maxChunks` chunks, min 1 hour each
   const chunks = buildConsentChunks(mode, after, before, maxChunks);
 
   logger.info(
-    colors.magenta(
-      `Fetching consent preferences from partition ${partition} in ${chunks.length} chunks...`,
-    ),
-  );
-
-  // Progress bar over chunks (unordered):
-  // - value = completed chunks (out-of-order OK)
-  // - payload fetched = total records fetched
-  const bar = new cliProgress.SingleBar(
-    {
-      format: 'Downloading [{bar}] {percentage}% | chunks {value}/{total} | fetched {fetched}',
-    },
-    cliProgress.Presets.shades_classic,
+    `Fetching consent preferences from partition ${partition} in ${chunks.length} chunks...`,
   );
 
   let completed = 0; // finished chunks (out-of-order)
   let fetched = 0; // raw records counter
-
-  bar.start(chunks.length, 0, { fetched });
 
   const t0 = Date.now();
   const pageSize = clampPageSize(limit);
@@ -177,9 +159,9 @@ export async function fetchConsentPreferencesChunked(
       const filter = mergeFilter(mode, filterBy, windowFilter);
 
       // Stream this chunk page-by-page
-      for await (const page of iterateConsentPages(sombra, partition, filter, pageSize)) {
+      for await (const page of iterateConsentPages(sombra, partition, filter, pageSize, logger)) {
         fetched += page.length;
-        bar.update(completed, { fetched });
+        onProgress?.(completed, chunks.length, fetched);
 
         if (onItems) {
           await onItems(page);
@@ -189,20 +171,17 @@ export async function fetchConsentPreferencesChunked(
       }
 
       completed += 1;
-      bar.update(completed, { fetched });
+      onProgress?.(completed, chunks.length, fetched);
     },
     { concurrency: Math.max(1, windowConcurrency) },
   );
 
-  bar.update(completed, { fetched });
-  bar.stop();
+  onProgress?.(completed, chunks.length, fetched);
 
   logger.info(
-    colors.green(
-      `Fetched ${fetched} consent preference records from partition ${partition} in ${
-        (Date.now() - t0) / 1000
-      }s.`,
-    ),
+    `Fetched ${fetched} consent preference records from partition ${partition} in ${
+      (Date.now() - t0) / 1000
+    }s.`,
   );
 
   return onItems ? [] : out;

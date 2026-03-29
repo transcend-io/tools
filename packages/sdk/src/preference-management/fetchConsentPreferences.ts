@@ -1,9 +1,8 @@
 import { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import { decodeCodec } from '@transcend-io/type-utils';
-import colors from 'colors';
+import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
-import { logger } from '../../logger.js';
 import { ConsentPreferenceResponse, PreferencesQueryFilter } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
@@ -26,6 +25,7 @@ export async function fetchConsentPreferences(
     filterBy = {},
     limit = 50,
     onItems,
+    logger,
   }: {
     /** Partition key to fetch (moved to URL path on new endpoint) */
     partition: string;
@@ -35,6 +35,7 @@ export async function fetchConsentPreferences(
     limit?: number;
     /** Optional streaming sink; if provided, pages are not accumulated */
     onItems?: (items: PreferenceQueryResponseItem[]) => Promise<void> | void;
+    logger: Logger;
   },
 ): Promise<PreferenceQueryResponseItem[]> {
   const collected: PreferenceQueryResponseItem[] = [];
@@ -80,11 +81,10 @@ export async function fetchConsentPreferences(
           })
           .json(),
       {
+        logger,
         onRetry: (attempt, _error, message) => {
           logger.warn(
-            colors.yellow(
-              `Retry attempt ${attempt} for fetchConsentPreferences due to error: ${message}`,
-            ),
+            `Retry attempt ${attempt} for fetchConsentPreferences due to error: ${message}`,
           );
         },
       },

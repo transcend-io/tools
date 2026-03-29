@@ -1,10 +1,9 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import type { Logger } from '@transcend-io/utils';
 import { startOfUtcDay, DAY_MS } from '@transcend-io/utils';
 /* eslint-disable max-lines */
-import colors from 'colors';
 import type { Got } from 'got';
 
-import { logger } from '../../logger.js';
 import { getComparisonTimeForRecord } from './getComparisonTimeForRecord.js';
 import { iterateConsentPages } from './iterateConsentPages.js';
 import { pickConsentChunkMode } from './pickConsentChunkMode.js';
@@ -61,7 +60,7 @@ function withBeforeBound(
   return {
     ...base,
     system: {
-      ...(base.system || {}),
+      ...base.system,
       ...(beforeISO ? { updatedBefore: beforeISO } : {}),
     },
     // ensure we don't mix dimensions
@@ -76,28 +75,28 @@ function withBeforeBound(
  * @param sombra - Got instance configured for Sombra API
  * @param partition - Preference Store partition id
  * @param filter - Query filter to use (page size internally forced to 1)
+ * @param logger - Logger
  * @returns The first record or null if none
  */
 async function fetchOne(
   sombra: Got,
   partition: string,
   filter: PreferencesQueryFilter,
+  logger: Logger,
 ): Promise<PreferenceQueryResponseItem | null> {
-  logger.info(colors.magenta(`Single-record probe with filter: ${JSON.stringify(filter)}`));
-  const it = iterateConsentPages(sombra, partition, filter, /* pageSize */ 1);
+  logger.info(`Single-record probe with filter: ${JSON.stringify(filter)}`);
+  const it = iterateConsentPages(sombra, partition, filter, /* pageSize */ 1, logger);
   const res = await it.next();
   if (res.done || !res.value || res.value.length === 0) {
-    logger.info(colors.yellow('Probe result: no record'));
+    logger.info('Probe result: no record');
     return null;
   }
   const item = res.value[0]!;
   logger.info(
-    colors.green(
-      `Probe result: found record at ${getComparisonTimeForRecord(
-        pickConsentChunkMode(filter),
-        item,
-      ).toISOString()}`,
-    ),
+    `Probe result: found record at ${getComparisonTimeForRecord(
+      pickConsentChunkMode(filter),
+      item,
+    ).toISOString()}`,
   );
   return item;
 }
@@ -128,23 +127,25 @@ export async function findEarliestDayWithData(
     baseFilter: PreferencesQueryFilter;
     /** Optional safety cap in days to avoid unbounded lookback (default ~10 years) */
     maxLookbackDays?: number;
+    /** Logger */
+    logger: Logger;
   },
 ): Promise<Date> {
-  const { partition, mode, baseFilter, maxLookbackDays = 3650 } = opts;
+  const { partition, mode, baseFilter, maxLookbackDays = 3650, logger } = opts;
 
   // 1) Find newest record (anchors our backtracking).
-  const newest = await fetchOne(sombra, partition, withBeforeBound(mode, baseFilter));
+  const newest = await fetchOne(sombra, partition, withBeforeBound(mode, baseFilter), logger);
   if (!newest) {
-    logger.info(colors.yellow('No records found; defaulting earliest day to today.'));
+    logger.info('No records found; defaulting earliest day to today.');
     return startOfUtcDay(new Date());
   }
   const newestInstant = getComparisonTimeForRecord(mode, newest);
-  logger.info(colors.green(`Newest instant: ${newestInstant.toISOString()}`));
+  logger.info(`Newest instant: ${newestInstant.toISOString()}`);
 
   // 2) Exponential jump back to find an empty region.
-  const seedSteps = [1, 7, 30]; // days
+  const seedSteps = [1, 7, 30] as const; // days
   let stepDaysIdx = 0;
-  let stepMs = seedSteps[0] * DAY_MS;
+  let stepMs = seedSteps[0]! * DAY_MS;
 
   let lastFoundInstant = newestInstant; // last instant we *could* find a record before
   let emptyBeforeInstant: Date | null = null; // first bound that yielded no results
@@ -153,7 +154,7 @@ export async function findEarliestDayWithData(
   while (true) {
     const probeBound =
       stepDaysIdx < seedSteps.length
-        ? new Date(newestInstant.getTime() - seedSteps[stepDaysIdx] * DAY_MS)
+        ? new Date(newestInstant.getTime() - seedSteps[stepDaysIdx]! * DAY_MS)
         : new Date(newestInstant.getTime() - stepMs);
 
     // stop if we exceeded lookback cap
@@ -161,44 +162,39 @@ export async function findEarliestDayWithData(
       (startOfUtcDay(new Date()).getTime() - startOfUtcDay(probeBound).getTime()) / DAY_MS;
     if (daysSince > maxLookbackDays) {
       logger.warn(
-        colors.yellow(
-          `Exponential jump exceeded maxLookbackDays=${maxLookbackDays}. Using current bounds.`,
-        ),
+        `Exponential jump exceeded maxLookbackDays=${maxLookbackDays}. Using current bounds.`,
       );
       emptyBeforeInstant = probeBound;
       break;
     }
 
     logger.info(
-      colors.magenta(
-        `Probing before=${probeBound.toISOString()} (jump step ${
-          stepDaysIdx < seedSteps.length
-            ? `${seedSteps[stepDaysIdx]}d`
-            : `${Math.round(stepMs / DAY_MS)}d`
-        })…`,
-      ),
+      `Probing before=${probeBound.toISOString()} (jump step ${
+        stepDaysIdx < seedSteps.length
+          ? `${seedSteps[stepDaysIdx]!}d`
+          : `${Math.round(stepMs / DAY_MS)}d`
+      })…`,
     );
 
     const hit = await fetchOne(
       sombra,
       partition,
       withBeforeBound(mode, baseFilter, probeBound.toISOString()),
+      logger,
     );
 
     if (hit) {
       lastFoundInstant = getComparisonTimeForRecord(mode, hit);
       logger.info(
-        colors.green(
-          `Found older record at ${lastFoundInstant.toISOString()} — continue jumping back.`,
-        ),
+        `Found older record at ${lastFoundInstant.toISOString()} — continue jumping back.`,
       );
       // advance step
       if (stepDaysIdx < seedSteps.length - 1) {
         stepDaysIdx += 1;
-        stepMs = seedSteps[stepDaysIdx] * DAY_MS;
+        stepMs = seedSteps[stepDaysIdx]! * DAY_MS;
       } else if (stepDaysIdx === seedSteps.length - 1) {
         stepDaysIdx += 1; // switch to doubling mode
-        stepMs = seedSteps[seedSteps.length - 1] * 2 * DAY_MS; // start at 60d
+        stepMs = seedSteps[seedSteps.length - 1]! * 2 * DAY_MS; // start at 60d
       } else {
         stepMs *= 2;
       }
@@ -208,9 +204,7 @@ export async function findEarliestDayWithData(
 
     // crossed into an empty zone — remember this bound
     emptyBeforeInstant = probeBound;
-    logger.info(
-      colors.green(`No record before ${probeBound.toISOString()} — established empty lower bound.`),
-    );
+    logger.info(`No record before ${probeBound.toISOString()} — established empty lower bound.`);
     break;
   }
 
@@ -227,11 +221,9 @@ export async function findEarliestDayWithData(
   let hi = lastFoundInstant; // known FOUND (there is data before this instant)
   let fwdStep = Math.max(DAY_MS, Math.floor((hi.getTime() - lo.getTime()) / 64)); // start small-ish
   logger.info(
-    colors.magenta(
-      `Exponential forward-from-empty start: empty=${lo.toISOString()} found=${hi.toISOString()} step=${Math.round(
-        fwdStep / DAY_MS,
-      )}d`,
-    ),
+    `Exponential forward-from-empty start: empty=${lo.toISOString()} found=${hi.toISOString()} step=${Math.round(
+      fwdStep / DAY_MS,
+    )}d`,
   );
 
   // Do a few gallop iterations (bounded so we don't loop forever if distribution is dense)
@@ -239,30 +231,23 @@ export async function findEarliestDayWithData(
     const probe = new Date(lo.getTime() + fwdStep);
     if (probe.getTime() >= hi.getTime()) break;
 
-    logger.info(colors.magenta(`Forward gallop probe before=${probe.toISOString()}…`));
+    logger.info(`Forward gallop probe before=${probe.toISOString()}…`);
     const hit = await fetchOne(
       sombra,
       partition,
       withBeforeBound(mode, baseFilter, probe.toISOString()),
+      logger,
     );
 
     if (hit) {
       // We crossed into data — tighten hi to the actual hit instant.
       hi = getComparisonTimeForRecord(mode, hit);
-      logger.info(
-        colors.green(
-          `Gallop hit at ${hi.toISOString()} — tightening found bound. Next step halves.`,
-        ),
-      );
+      logger.info(`Gallop hit at ${hi.toISOString()} — tightening found bound. Next step halves.`);
       fwdStep = Math.max(DAY_MS, Math.floor(fwdStep / 2));
     } else {
       // Still empty up to probe — advance lo and double the step.
       lo.setTime(probe.getTime());
-      logger.info(
-        colors.yellow(
-          `Gallop miss — advancing empty bound to ${lo.toISOString()}. Next step doubles.`,
-        ),
-      );
+      logger.info(`Gallop miss — advancing empty bound to ${lo.toISOString()}. Next step doubles.`);
       fwdStep = Math.min(hi.getTime() - lo.getTime(), fwdStep * 2);
       if (fwdStep < DAY_MS) fwdStep = DAY_MS;
     }
@@ -273,29 +258,28 @@ export async function findEarliestDayWithData(
   // 4) Finish with a short binary search between [lo (empty), hi (found)].
   while (hi.getTime() - lo.getTime() > DAY_MS) {
     const mid = new Date(lo.getTime() + Math.floor((hi.getTime() - lo.getTime()) / 2));
-    logger.info(colors.magenta(`Binary probe before=${mid.toISOString()}…`));
+    logger.info(`Binary probe before=${mid.toISOString()}…`);
 
     const hit = await fetchOne(
       sombra,
       partition,
       withBeforeBound(mode, baseFilter, mid.toISOString()),
+      logger,
     );
 
     if (hit) {
       const when = getComparisonTimeForRecord(mode, hit);
-      logger.info(colors.green(`Binary probe found record at ${when.toISOString()}.`));
+      logger.info(`Binary probe found record at ${when.toISOString()}.`);
       hi = when; // there is data before mid -> earliest could be even earlier
     } else {
-      logger.info(colors.yellow('Binary probe found no record.'));
+      logger.info('Binary probe found no record.');
       lo = mid; // still empty -> move low up
     }
   }
 
   const earliestDay = startOfUtcDay(hi);
   logger.info(
-    colors.green(
-      `Earliest day (UTC) resolved to ${earliestDay.toISOString()} (instant ≈ ${hi.toISOString()}).`,
-    ),
+    `Earliest day (UTC) resolved to ${earliestDay.toISOString()} (instant ≈ ${hi.toISOString()}).`,
   );
   return earliestDay;
 }
@@ -320,25 +304,25 @@ export async function findLatestDayWithData(
     baseFilter: PreferencesQueryFilter;
     /** Earliest date */
     earliest: Date; // inclusive day start
+    /** Logger */
+    logger: Logger;
   },
 ): Promise<Date> {
-  const { partition, mode, baseFilter } = opts;
+  const { partition, mode, baseFilter, logger } = opts;
 
-  logger.info(colors.magenta('Latest-day discovery: probing newest record…'));
-  const latest = await fetchOne(sombra, partition, withBeforeBound(mode, baseFilter));
+  logger.info('Latest-day discovery: probing newest record…');
+  const latest = await fetchOne(sombra, partition, withBeforeBound(mode, baseFilter), logger);
   if (!latest) {
-    logger.info(colors.yellow('No records found at all; defaulting latest day to today.'));
+    logger.info('No records found at all; defaulting latest day to today.');
     return startOfUtcDay(new Date());
   }
 
   const when = getComparisonTimeForRecord(mode, latest);
-  logger.info(colors.green(`Newest record instant is ${when.toISOString()}.`));
+  logger.info(`Newest record instant is ${when.toISOString()}.`);
 
   const latestDay = startOfUtcDay(when);
   logger.info(
-    colors.green(
-      `Latest day (UTC) resolved to ${latestDay.toISOString()} from instant ${when.toISOString()}.`,
-    ),
+    `Latest day (UTC) resolved to ${latestDay.toISOString()} from instant ${when.toISOString()}.`,
   );
 
   return latestDay;

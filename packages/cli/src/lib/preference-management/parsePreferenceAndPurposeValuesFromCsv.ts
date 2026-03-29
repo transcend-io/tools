@@ -7,7 +7,7 @@ import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { splitCsvToList } from '../requests/index.js';
+import { splitCsvToList } from '@transcend-io/utils';
 import { FileFormatState } from './codecs.js';
 
 /** Values that clearly mean "no preference recorded" and should map to null. */

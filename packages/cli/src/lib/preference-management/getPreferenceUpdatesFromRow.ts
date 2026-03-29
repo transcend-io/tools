@@ -2,7 +2,7 @@ import { PreferenceStorePurposeResponse, PreferenceTopicType } from '@transcend-
 import type { PreferenceTopic } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 
-import { splitCsvToList } from '../requests/index.js';
+import { splitCsvToList } from '@transcend-io/utils';
 import { PurposeRowMapping } from './codecs.js';
 
 /**

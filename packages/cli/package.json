@@ -70,12 +70,13 @@
     "access": "public"
   },
   "scripts": {
-    "start": "./dist/bin/cli.mjs",
     "build": "tsdown",
     "build:watch": "tsdown --watch",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "./dist/bin/cli.mjs",
     "test": "vitest run",
-    "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm",
     "script:transcend-json-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildTranscendJsonSchema.ts && oxfmt --write ./schema/transcend-yml-schema-*.json",
     "script:pathfinder-json-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildPathfinderJsonSchema.ts && oxfmt --write ./schema/pathfinder-policy-yml-schema.json",
     "docgen": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildReadmeDocs.ts",
@@ -142,13 +143,13 @@
     "date-fns": "^4.1.0",
     "doctoc": "^2.2.1",
     "fdir": "^6.4.6",
-    "shellcheck": "^3.1.0",
+    "publint": "catalog:",
     "tsdown": "catalog:",
     "tsx": "^4.20.3",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   }
 }

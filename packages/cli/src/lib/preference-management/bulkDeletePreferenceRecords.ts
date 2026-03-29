@@ -1,3 +1,8 @@
+import {
+  DeletePreferenceRecordCliCsvRow,
+  DeletePreferenceRecordsResponse,
+  withPreferenceRetry,
+} from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
@@ -6,8 +11,6 @@ import { chunk } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/index.js';
-import { DeletePreferenceRecordCliCsvRow, DeletePreferenceRecordsResponse } from './codecs.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 interface FailedResult extends DeletePreferenceRecordCliCsvRow {
   /** Error message describing the failure */
@@ -68,6 +71,7 @@ async function deletePreferenceRecordsRepository(
           })
           .json(),
       {
+        logger,
         maxAttempts: 3,
         onRetry: (attempt, _err, msg) => {
           logger.warn(

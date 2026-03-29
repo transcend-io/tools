@@ -1,7 +1,6 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import { getComparisonTimeForRecord } from '@transcend-io/sdk';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-import { getComparisonTimeForRecord } from '../getComparisonTimeForRecord.js';
 
 describe('getComparisonTimeForRecord', () => {
   const mkItem = (partial: Partial<PreferenceQueryResponseItem>): PreferenceQueryResponseItem =>

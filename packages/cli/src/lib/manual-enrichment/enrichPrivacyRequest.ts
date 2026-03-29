@@ -1,10 +1,10 @@
+import { splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 import { uniq } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { splitCsvToList } from '../requests/splitCsvToList.js';
 
 const ADMIN_URL = 'https://app.transcend.io/privacy-requests/incoming-requests/';
 /**

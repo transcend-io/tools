@@ -7,8 +7,7 @@ import { chunk } from 'lodash-es';
 
 import type { PreferenceUploadProgress } from '../../commands/consent/upload-preferences/upload/index.js';
 import { logger } from '../../logger.js';
-import { ConsentPreferenceResponse } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
+import { ConsentPreferenceResponse, withPreferenceRetry } from '@transcend-io/sdk';
 
 /**
  * Grab the current consent preference values for a list of identifiers
@@ -113,7 +112,8 @@ export async function getPreferencesForIdentifiers(
           })
           .json(),
       {
-        onRetry: (attempt, _err, msg) => {
+        logger,
+        onRetry: (attempt: number, _err: unknown, msg: string) => {
           logger.warn(
             colors.yellow(
               `[RETRY v1/preferences/${partitionKey}/query] ` +

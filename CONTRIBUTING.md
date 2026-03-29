@@ -4,8 +4,7 @@
 
 This repository is a `pnpm` + Turborepo monorepo for public `@transcend-io/*` TypeScript `packages/`.
 
-The root package is private. Publishable packages live in `packages/`. The `core` and `utils`
-packages are examples meant to demonstrate the toolchain. They are set to `private: true` in their `package.json`s so they are not published to npm.
+The root package is private. Publishable packages live in `packages/`.
 
 ## Setup
 
@@ -39,20 +38,31 @@ The repo uses `oxc` for linting and `oxfmt` for formatting.
 ## Common Commands
 
 - `pnpm build`: build workspace packages with `tsdown`
+- `pnpm test`: run package tests with Vitest
+- `pnpm quality`: run repo-wide verification checks and typecheck
+- `pnpm quality:fix`: auto-fix formatting and lint issues where possible, then run the remaining quality checks
 - `pnpm changeset`: create a changeset file
 
-Test/lint/format commands:
+Additional checks:
 
-- `pnpm test`: run package tests with Vitest
-- `pnpm quality`: run formatting, lint, and dependency-policy checks
-- `pnpm quality:fix`: auto-fix formatting and lint issues where possible
+- `pnpm typecheck`: run TypeScript checks across workspace packages
 - `pnpm lint`: run `oxlint` across the repo
 - `pnpm lint:fix`: run `oxlint --fix` across the repo
 - `pnpm format`: format the repo with `oxfmt`
 - `pnpm format:check`: verify formatting with `oxfmt --check`
-- `pnpm syncpack:lint`: enforce dependency version policy
-- `pnpm typecheck`: run TypeScript checks across workspace packages
-- `pnpm check-exports`: validate published package shape with `attw`
+- `pnpm check:changeset`: validate changeset coverage for publishable package changes
+- `pnpm check:packages`: validate shared package metadata and layout conventions
+- `pnpm check:exports`: validate published package shape with `attw`
+- `pnpm check:publint`: validate published package compatibility and packaging metadata
+- `pnpm check:deps`: enforce dependency version policy
+
+`pnpm quality` intentionally excludes `pnpm check:changeset`, since that check compares the current branch to its base and is mainly useful in pull request workflows.
+
+Release and maintenance:
+
+- `pnpm changeset:version`: apply pending changesets to versions and changelogs
+- `pnpm changeset:version:release`: apply pending changesets and reformat the repo
+- `pnpm release`: build and publish packages
 
 ### Run Commands in a Single Package
 
@@ -104,15 +114,16 @@ pnpm changeset
 
 Add a changeset when changes to a package under `packages/` would require a new version to be published to npm.
 
-[`scripts/check-changeset.mjs`](scripts/check-changeset.mjs) enforces this on pull requests. It ignores:
+[`scripts/check-changeset.ts`](scripts/check-changeset.ts) enforces this on pull requests. It only requires coverage for changed publishable packages, and it ignores:
 
+- private packages (i.e. packages with `"private": true` in their `package.json`)
 - package `README.md` changes
 - test files
 - generated `dist/` output
 - `node_modules/` and `.turbo/`
-- _See [`scripts/check-changeset.mjs`](scripts/check-changeset.mjs) for the full list of ignored files._
+- _See [`scripts/check-changeset.ts`](scripts/check-changeset.ts) for the full list of ignored files._
 
-If a PR changes a package and does not include a changeset, CI fails.
+If a PR changes a publishable package, each changed publishable package must be mentioned in at least one changeset frontmatter block. Otherwise, CI fails.
 
 ### Preview Releases
 
@@ -148,8 +159,8 @@ CI and release workflows can use Turbo remote caching when `secrets.TURBO_TOKEN`
 
 After a normal install from the repo root, Husky configures local Git hooks automatically.
 
-- `pre-commit`: runs `pnpm quality`
-- `pre-push`: runs `pnpm typecheck`, `pnpm test`, and `pnpm check-exports`
+- `pre-commit`: runs `pnpm quality:fix` and aborts if it updates tracked files
+- `pre-push`: runs `pnpm test`
 
 These hooks are local guardrails. CI still runs the canonical repo checks on pull requests and
 releases.
@@ -188,10 +199,12 @@ This repo uses the GitHub [Merge Queue](https://docs.github.com/en/repositories/
 
 ## Add A New Package
 
-Transcend Team: see our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
+Transcend Team:
 
-New packages should match the shape used in `packages/core` and `packages/utils` (private
-starters that model the layout).
+- See our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
+- If this is a net-new npm package, it needs to first be created [here](https://www.npmjs.com/settings/transcend-io/teams/team/developers/access?page=1&perPage=10), and it needs trusted publishing set up (see the HOWTO guide above for more on that). Once that is done, it should publish successfully the next time a release PR merges with a changeset for that package.
+
+New packages should match the shape used in `packages/sdk` and `packages/utils`.
 
 For a new package:
 
@@ -207,4 +220,8 @@ Current package conventions:
 - ESM-only packages with `"type": "module"`
 - published entrypoints served from `dist/`
 - `@transcend-io/source` export condition for live source resolution inside the monorepo
-- `build`, `typecheck`, `test`, and `check-exports` scripts in each package
+- `build`, `test`, `typecheck`, and `check:exports` scripts in each package
+- publishable packages also provide a `check:publint` script
+- `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
+- publishable packages include `homepage`, `repository`, and `author` metadata
+- released publishable packages keep a `CHANGELOG.md`
