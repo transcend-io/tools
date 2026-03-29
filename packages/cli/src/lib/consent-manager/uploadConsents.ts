@@ -133,7 +133,7 @@ export async function uploadConsents({
           if (parsed.error) {
             logger.error(colors.red(`Error: ${parsed.error}`));
           }
-        } catch (e) {
+        } catch {
           // continue
         }
         throw new Error(`Received an error from server: ${err?.response?.body || err?.message}`);

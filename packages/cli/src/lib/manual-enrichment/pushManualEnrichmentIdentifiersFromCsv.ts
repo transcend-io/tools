@@ -82,7 +82,7 @@ export async function pushManualEnrichmentIdentifiersFromCsv({
         } else {
           skippedCount += 1;
         }
-      } catch (err) {
+      } catch {
         errorCount += 1;
       }
     },

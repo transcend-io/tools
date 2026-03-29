@@ -188,7 +188,7 @@ describe('Example commands', async () => {
           },
         }),
       );
-    } catch (error) {
+    } catch {
       // empty
     }
 

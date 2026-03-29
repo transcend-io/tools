@@ -229,7 +229,7 @@ export async function uploadPreferenceManagementPreferencesInteractive({
           if (parsed.error) {
             logger.error(colors.red(`Error: ${parsed.error}`));
           }
-        } catch (e) {
+        } catch {
           // continue
         }
         logger.error(
