@@ -1,7 +1,7 @@
 ---
 '@transcend-io/sdk': minor
 '@transcend-io/utils': minor
-'@transcend-io/cli': patch
+'@transcend-io/cli': minor
 ---
 
 Rename @transcend-io/core to @transcend-io/sdk, make utils and sdk public, move GraphQL/REST API foundation and preference management fetchers into SDK
