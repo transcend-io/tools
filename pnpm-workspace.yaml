@@ -11,7 +11,7 @@ catalog:
   publint: ^0.3.18
   syncpack: ^14.2.0
   tsdown: ^0.21.2
-  turbo: ^2.8.16
+  turbo: ^2.8.21
   typescript: ^5.9.3
   vitest: ^4.0.18
 
