@@ -1,12 +1,12 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { CookieInput, CookieCsvInput } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { syncCookies } from '../graphql/index.js';
-import { splitCsvToList } from '../requests/index.js';
 import { readCsv } from '../requests/readCsv.js';
 
 const OMIT_COLUMNS = [

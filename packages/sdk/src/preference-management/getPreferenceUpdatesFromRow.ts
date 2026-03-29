@@ -1,9 +1,9 @@
 import { PreferenceStorePurposeResponse, PreferenceTopicType } from '@transcend-io/privacy-types';
-import type { PreferenceTopic } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
+import { splitCsvToList } from '@transcend-io/utils';
 
-import { splitCsvToList } from '../requests/index.js';
 import { PurposeRowMapping } from './codecs.js';
+import type { PreferenceTopic } from './fetchAllPreferenceTopics.js';
 
 /**
  * Parse an arbitrary object to the Transcend PUT /v1/preference update shape
@@ -68,7 +68,7 @@ export function getPreferenceUpdatesFromRow({
       }
 
       // The raw value from the CSV row for this column
-      const rawValue = row[columnName];
+      const rawValue = row[columnName] ?? '';
 
       // Check if parsing a preference or just the top level purpose
       if (preference) {

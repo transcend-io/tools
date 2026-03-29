@@ -1,9 +1,8 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import { decodeCodec } from '@transcend-io/type-utils';
-import colors from 'colors';
+import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
-import { logger } from '../../logger.js';
 import { ConsentPreferenceResponse, PreferencesQueryFilter } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
@@ -14,6 +13,7 @@ import { withPreferenceRetry } from './withPreferenceRetry.js';
  * @param partition - Partition key
  * @param filter - Query filter
  * @param pageSize - Number of items per page
+ * @param logger - Logger for retries
  * @yields Pages of PreferenceQueryResponseItem
  */
 export async function* iterateConsentPages(
@@ -21,6 +21,7 @@ export async function* iterateConsentPages(
   partition: string,
   filter: PreferencesQueryFilter,
   pageSize: number,
+  logger: Logger,
 ): AsyncGenerator<PreferenceQueryResponseItem[], void, void> {
   let cursor: string | undefined;
 
@@ -39,12 +40,9 @@ export async function* iterateConsentPages(
           })
           .json(),
       {
+        logger,
         onRetry: (attempt, _error, message) => {
-          logger.warn(
-            colors.yellow(
-              `Retry attempt ${attempt} for iterateConsentPages due to error: ${message}`,
-            ),
-          );
+          logger.warn(`Retry attempt ${attempt} for iterateConsentPages due to error: ${message}`);
         },
       },
     );

@@ -1,7 +1,4 @@
-import { extractErrorMessage, sleepPromise } from '@transcend-io/utils';
-import colors from 'colors';
-
-import { logger } from '../../logger.js';
+import { extractErrorMessage, sleepPromise, type Logger } from '@transcend-io/utils';
 
 /**
  * Transient network / platform errors that merit a retry.
@@ -23,6 +20,7 @@ export const RETRY_PREFERENCE_MSGS: string[] = [
  * Options for retrying preference operations.
  */
 export type RetryOptions = {
+  logger: Logger;
   /** Max attempts including the first try (default 12) */
   maxAttempts?: number;
   /** Initial backoff in ms (default 250) */
@@ -46,11 +44,12 @@ export async function withPreferenceRetry<T>(
   name: string,
   fn: () => Promise<T>,
   {
+    logger,
     maxAttempts = 12,
     baseDelayMs = 250,
     isRetryable = (_err, msg) => RETRY_PREFERENCE_MSGS.some((m) => msg.toLowerCase().includes(m)),
     onRetry,
-  }: RetryOptions = {},
+  }: RetryOptions,
 ): Promise<T> {
   let attempt = 0;
   // eslint-disable-next-line no-constant-condition
@@ -70,11 +69,7 @@ export async function withPreferenceRetry<T>(
       const backoff = baseDelayMs * 2 ** (attempt - 1);
       const jitter = Math.floor(Math.random() * baseDelayMs);
       const delay = backoff + jitter;
-      logger.warn(
-        colors.yellow(
-          `[retry] attempt ${attempt}/${maxAttempts - 1}; backing off ${delay}ms: ${msg}`,
-        ),
-      );
+      logger.warn(`[retry] attempt ${attempt}/${maxAttempts - 1}; backing off ${delay}ms: ${msg}`);
       await sleepPromise(delay);
     }
   }

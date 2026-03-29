@@ -1,9 +1,7 @@
+import { iterateConsentPages, type PreferencesQueryFilter } from '@transcend-io/sdk';
 import type { Got } from 'got';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-import { iterateConsentPages } from '../iterateConsentPages.js';
-import type { PreferencesQueryFilter } from '../types.js';
 
 // ---- Hoisted shared state so all mocks & SUT see the same data --------------
 const H = vi.hoisted(() => {
@@ -33,7 +31,7 @@ const H = vi.hoisted(() => {
   }> = [];
 
   // simple logger stub
-  const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn() };
+  const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
   const colors = { yellow: (s: string) => s };
 
   // sombra stub that records calls and returns a .json()able object
@@ -90,8 +88,8 @@ vi.mock('colors', () => ({
   ...H.colors,
 }));
 
-// Make withPreferenceRetry just call the fn once, and capture retry opts.
-vi.mock('../withPreferenceRetry.js', () => ({
+// Mock SDK module path so iterateConsentPages' internal import is intercepted.
+vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
   __esModule: true,
   withPreferenceRetry: vi.fn(
     async (
@@ -147,7 +145,7 @@ describe('iterateConsentPages', () => {
     };
 
     const out: any[] = [];
-    for await (const page of iterateConsentPages(sombra, 'part-1', filter, 250)) {
+    for await (const page of iterateConsentPages(sombra, 'part-1', filter, 250, H.logger)) {
       out.push(page.map((r: any) => r.id));
     }
 
@@ -184,7 +182,7 @@ describe('iterateConsentPages', () => {
 
     const sombra = H.makeSombra();
     const out: any[] = [];
-    for await (const page of iterateConsentPages(sombra, 'p-empty', {}, 10)) {
+    for await (const page of iterateConsentPages(sombra, 'p-empty', {}, 10, H.logger)) {
       out.push(page);
     }
 
@@ -199,7 +197,7 @@ describe('iterateConsentPages', () => {
     H.pushPage({ nodes: [{ id: 'x' }], cursor: undefined });
 
     const sombra = H.makeSombra();
-    const it = iterateConsentPages(sombra, 'p-retry', {}, 5);
+    const it = iterateConsentPages(sombra, 'p-retry', {}, 5, H.logger);
 
     // Advance one step to ensure request was made and retry opts captured
     await it.next();

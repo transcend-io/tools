@@ -1,14 +1,15 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import {
+  consentWindowHasAny,
+  withPreferenceRetry,
+  type PreferencesQueryFilter,
+} from '@transcend-io/sdk';
 import type { Got } from 'got';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { consentWindowHasAny } from '../consentWindowHasAny.js';
-import type { PreferencesQueryFilter } from '../types.js';
-import { withPreferenceRetry } from '../withPreferenceRetry.js';
-
 // --- Hoisted test state so mocks can reference it before SUT import ---------
 const H = vi.hoisted(() => {
-  const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn() };
+  const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
 
   // Capture retry opts passed to withPreferenceRetry
   let lastRetryOpts: {
@@ -79,7 +80,8 @@ vi.mock('colors', () => ({
   ...H.colors,
 }));
 
-vi.mock('../withPreferenceRetry.js', () => ({
+// Mock SDK module path so consentWindowHasAny's internal import is intercepted (barrel partial mock does not).
+vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
   __esModule: true,
   withPreferenceRetry: vi.fn(
     async (
@@ -122,6 +124,7 @@ describe('consentWindowHasAny', () => {
         baseFilter: base,
         afterISO: '2025-01-01T00:00:00.000Z',
         beforeISO: '2025-02-01T00:00:00.000Z',
+        logger: H.logger,
       });
       throw new Error('Expected error was not thrown');
     } catch (e) {
@@ -156,6 +159,7 @@ describe('consentWindowHasAny', () => {
       baseFilter: base,
       afterISO: '2025-01-01T00:00:00.000Z',
       beforeISO: '2025-02-01T00:00:00.000Z',
+      logger: H.logger,
     });
 
     expect(ok).toBe(true);
@@ -203,6 +207,7 @@ describe('consentWindowHasAny', () => {
       baseFilter: base,
       afterISO: '2025-03-01T00:00:00.000Z',
       beforeISO: '2025-03-02T00:00:00.000Z',
+      logger: H.logger,
     });
 
     expect(ok).toBe(false);
@@ -255,6 +260,7 @@ describe('consentWindowHasAny', () => {
       baseFilter: {},
       afterISO: '2025-01-01T00:00:00.000Z',
       beforeISO: '2025-01-02T00:00:00.000Z',
+      logger: H.logger,
     });
 
     // Grab the retry opts and simulate a retry event
