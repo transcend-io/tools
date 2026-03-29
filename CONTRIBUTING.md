@@ -222,4 +222,3 @@ Current package conventions:
 - `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
 - publishable packages include `homepage`, `repository`, and `author` metadata
 - released publishable packages keep a `CHANGELOG.md`
-- `packages/cli` keeps a `DEVELOPERS.md` and local `vitest.config.ts` because it has extra CLI-specific workflows

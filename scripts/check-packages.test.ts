@@ -55,7 +55,7 @@ describe('check-packages', () => {
     expect(result.stderr).toContain('packages/core: missing required file src/index.ts');
   });
 
-  it('fails when publishable metadata and CLI-specific docs are missing', () => {
+  it('fails when publishable metadata is missing', () => {
     const repositoryPath = createValidRepository();
 
     writePackageJson(repositoryPath, 'privacy-types', {
@@ -66,12 +66,6 @@ describe('check-packages', () => {
       version: '5.0.0',
     });
     unlinkSync(join(repositoryPath, 'packages/privacy-types/CHANGELOG.md'));
-    unlinkSync(join(repositoryPath, 'packages/cli/DEVELOPERS.md'));
-    writeRepositoryFile(
-      repositoryPath,
-      'packages/cli/vitest.config.ts',
-      "export { somethingElse } from '../../vitest.config.ts';\n",
-    );
 
     const result = runCheckPackages(repositoryPath);
 
@@ -84,9 +78,30 @@ describe('check-packages', () => {
     expect(result.stderr).toContain(
       'packages/privacy-types: devDependencies.publint should be "catalog:"',
     );
-    expect(result.stderr).toContain('packages/cli: missing required file DEVELOPERS.md');
+  });
+
+  it('fails when package build config stops using the shared tsdown defaults', () => {
+    const repositoryPath = createValidRepository();
+
+    writeRepositoryFile(
+      repositoryPath,
+      'packages/privacy-types/tsdown.config.ts',
+      `import { defineConfig } from 'tsdown';
+
+export default defineConfig({
+  entry: ['src/index.ts'],
+});
+`,
+    );
+
+    const result = runCheckPackages(repositoryPath);
+
+    expect(result.status).toBe(1);
     expect(result.stderr).toContain(
-      'packages/cli: vitest.config.ts should re-export the root Vitest config',
+      `packages/privacy-types: tsdown.config.ts should include "import sharedConfig from '../../tsdown.config.base.ts';"`,
+    );
+    expect(result.stderr).toContain(
+      'packages/privacy-types: tsdown.config.ts should include "...sharedConfig"',
     );
   });
 });
@@ -191,12 +206,6 @@ function createCliPackage(repositoryPath: string): void {
   });
   writeRepositoryFile(repositoryPath, 'packages/cli/src/index.ts', 'export {};\n');
   writeRepositoryFile(repositoryPath, 'packages/cli/CHANGELOG.md', '# Changelog\n');
-  writeRepositoryFile(repositoryPath, 'packages/cli/DEVELOPERS.md', '# Developers\n');
-  writeRepositoryFile(
-    repositoryPath,
-    'packages/cli/vitest.config.ts',
-    "export { default } from '../../vitest.config.ts';\n",
-  );
   writeRepositoryFile(repositoryPath, 'packages/cli/tsconfig.json', cliTsconfig);
   writeRepositoryFile(repositoryPath, 'packages/cli/tsdown.config.ts', cliTsdownConfig);
 }

@@ -146,15 +146,14 @@ function validateRootTsconfigReferences(
 function validatePackage(packageDirectory: string, problems: ValidationProblem[]): void {
   const manifest = readJsonFile<PackageManifest>(`${packageDirectory}/package.json`);
   const isPrivatePackage = manifest.private === true;
-  const isCliPackage = packageDirectory === 'packages/cli';
 
   expectFile(packageDirectory, 'tsconfig.json', problems);
   expectFile(packageDirectory, 'tsdown.config.ts', problems);
   expectFile(packageDirectory, 'src/index.ts', problems);
 
   validateManifest(packageDirectory, manifest, problems);
-  validateTsconfig(packageDirectory, isCliPackage, problems);
-  validateTsdownConfig(packageDirectory, isCliPackage, problems);
+  validateTsconfig(packageDirectory, problems);
+  validateTsdownConfig(packageDirectory, problems);
 
   if (!isPrivatePackage) {
     validatePublishableTooling(packageDirectory, manifest, problems);
@@ -163,10 +162,6 @@ function validatePackage(packageDirectory: string, problems: ValidationProblem[]
 
   if (!isPrivatePackage && shouldRequireChangelog(manifest)) {
     expectFile(packageDirectory, 'CHANGELOG.md', problems);
-  }
-
-  if (isCliPackage) {
-    validateCliPackage(packageDirectory, manifest, problems);
   }
 }
 
@@ -301,11 +296,7 @@ function validatePublishableTooling(
   }
 }
 
-function validateTsconfig(
-  packageDirectory: string,
-  isCliPackage: boolean,
-  problems: ValidationProblem[],
-): void {
+function validateTsconfig(packageDirectory: string, problems: ValidationProblem[]): void {
   if (!fileExists(`${packageDirectory}/tsconfig.json`)) {
     return;
   }
@@ -350,82 +341,9 @@ function validateTsconfig(
     problems,
   );
   expectArrayContains(packageDirectory, 'tsconfig.include', include, 'src/**/*.ts', problems);
-
-  if (!isCliPackage) {
-    return;
-  }
-
-  expectArrayContains(packageDirectory, 'tsconfig.include', include, 'src/**/*.d.ts', problems);
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.target',
-    compilerOptions.target,
-    'ESNext',
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.module',
-    compilerOptions.module,
-    'ESNext',
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.moduleResolution',
-    compilerOptions.moduleResolution,
-    'Bundler',
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.esModuleInterop',
-    compilerOptions.esModuleInterop,
-    true,
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.allowSyntheticDefaultImports',
-    compilerOptions.allowSyntheticDefaultImports,
-    true,
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.isolatedDeclarations',
-    compilerOptions.isolatedDeclarations,
-    false,
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.noUncheckedIndexedAccess',
-    compilerOptions.noUncheckedIndexedAccess,
-    false,
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.useUnknownInCatchVariables',
-    compilerOptions.useUnknownInCatchVariables,
-    false,
-    problems,
-  );
-  expectEqual(
-    packageDirectory,
-    'tsconfig.compilerOptions.verbatimModuleSyntax',
-    compilerOptions.verbatimModuleSyntax,
-    false,
-    problems,
-  );
 }
 
-function validateTsdownConfig(
-  packageDirectory: string,
-  isCliPackage: boolean,
-  problems: ValidationProblem[],
-): void {
+function validateTsdownConfig(packageDirectory: string, problems: ValidationProblem[]): void {
   const configPath = `${packageDirectory}/tsdown.config.ts`;
 
   if (!fileExists(configPath)) {
@@ -448,96 +366,13 @@ function validateTsdownConfig(
     '...sharedConfig',
     problems,
   );
-
-  if (isCliPackage) {
-    expectTextContains(packageDirectory, 'tsdown.config.ts', configContents, 'entry: [', problems);
-    expectTextContains(
-      packageDirectory,
-      'tsdown.config.ts',
-      configContents,
-      "'src/bin/cli.ts'",
-      problems,
-    );
-    expectTextContains(
-      packageDirectory,
-      'tsdown.config.ts',
-      configContents,
-      "'src/bin/bash-complete.ts'",
-      problems,
-    );
-    expectTextContains(
-      packageDirectory,
-      'tsdown.config.ts',
-      configContents,
-      "'src/bin/deprecated-command.ts'",
-      problems,
-    );
-    expectTextContains(
-      packageDirectory,
-      'tsdown.config.ts',
-      configContents,
-      "'src/index.ts'",
-      problems,
-    );
-    expectTextContains(
-      packageDirectory,
-      'tsdown.config.ts',
-      configContents,
-      'minify: true',
-      problems,
-    );
-    expectTextContains(
-      packageDirectory,
-      'tsdown.config.ts',
-      configContents,
-      'splitting: true',
-      problems,
-    );
-    expectTextContains(
-      packageDirectory,
-      'tsdown.config.ts',
-      configContents,
-      "tsconfig: 'tsconfig.json'",
-      problems,
-    );
-    return;
-  }
-
   expectTextContains(
     packageDirectory,
     'tsdown.config.ts',
     configContents,
-    "entry: ['src/index.ts']",
+    "'src/index.ts'",
     problems,
   );
-}
-
-function validateCliPackage(
-  packageDirectory: string,
-  manifest: PackageManifest,
-  problems: ValidationProblem[],
-): void {
-  expectEqual(packageDirectory, 'main', manifest.main, './dist/index.mjs', problems);
-  expectEqual(
-    packageDirectory,
-    'bin.transcend',
-    getNestedValue(manifest, 'bin', 'transcend'),
-    'dist/bin/cli.mjs',
-    problems,
-  );
-  expectFile(packageDirectory, 'DEVELOPERS.md', problems);
-  expectFile(packageDirectory, 'vitest.config.ts', problems);
-
-  if (fileExists(`${packageDirectory}/vitest.config.ts`)) {
-    const vitestConfig = readRepoFile(`${packageDirectory}/vitest.config.ts`).trim();
-
-    if (vitestConfig !== "export { default } from '../../vitest.config.ts';") {
-      problems.push({
-        message: 'vitest.config.ts should re-export the root Vitest config',
-        scope: packageDirectory,
-      });
-    }
-  }
 }
 
 function shouldRequireChangelog(manifest: PackageManifest): boolean {
