@@ -1,8 +1,9 @@
 import { RequestDataSiloStatus, RequestStatus } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { REQUEST_DATA_SILOS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface RequestDataSilo {
   /** ID of RequestDataSilo */
@@ -44,14 +45,17 @@ export async function fetchRequestDataSilosCount(
       totalCount: number;
     };
   }>(client, REQUEST_DATA_SILOS, {
-    first: 1,
-    offset: 0,
-    filterBy: {
-      dataSiloId,
-      requestId,
-      status: statuses,
-      requestStatus: requestStatuses,
+    variables: {
+      first: 1,
+      offset: 0,
+      filterBy: {
+        dataSiloId,
+        requestId,
+        status: statuses,
+        requestStatus: requestStatuses,
+      },
     },
+    logger,
   });
 
   return totalCount;
@@ -109,14 +113,17 @@ export async function fetchRequestDataSilos(
         totalCount: number;
       };
     }>(client, REQUEST_DATA_SILOS, {
-      first: PAGE_SIZE,
-      offset,
-      filterBy: {
-        dataSiloId,
-        requestId,
-        status: statuses,
-        requestStatus: requestStatuses,
+      variables: {
+        first: PAGE_SIZE,
+        offset,
+        filterBy: {
+          dataSiloId,
+          requestId,
+          status: statuses,
+          requestStatus: requestStatuses,
+        },
       },
+      logger,
     });
     requestDataSilos.push(...nodes);
 

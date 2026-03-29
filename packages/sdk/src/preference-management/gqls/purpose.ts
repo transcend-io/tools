@@ -1,13 +1,7 @@
+import { parse, type DocumentNode } from 'graphql';
 import { gql } from 'graphql-request';
 
-// TODO: https://transcend.height.app/T-27909 - enable optimizations
-// isExportCsv: true
-// useMaster: false
-// orderBy: [
-//   { field: createdAt, direction: ASC }
-//   { field: name, direction: ASC }
-// ]
-export const PURPOSES = gql`
+export const PURPOSES: DocumentNode = parse(gql`
   query TranscendCliPurposes(
     $first: Int!
     $offset: Int!
@@ -34,4 +28,4 @@ export const PURPOSES = gql`
       }
     }
   }
-`;
+`);

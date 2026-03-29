@@ -1,9 +1,10 @@
 import { ConsentTrackerSource, ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { COOKIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Cookie {
   /** ID of the cookie */
@@ -77,10 +78,8 @@ export async function fetchAllCookies(
         nodes: Cookie[];
       };
     }>(client, COOKIES, {
-      first: PAGE_SIZE,
-      offset,
-      airgapBundleId,
-      status,
+      variables: { first: PAGE_SIZE, offset, airgapBundleId, status },
+      logger,
     });
     cookies.push(...nodes);
     offset += PAGE_SIZE;

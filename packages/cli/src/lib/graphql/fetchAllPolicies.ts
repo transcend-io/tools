@@ -1,9 +1,10 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
 import { POLICIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Policy {
   /** ID of policy */
@@ -37,7 +38,8 @@ export async function fetchAllPolicies(client: GraphQLClient): Promise<Policy[]>
     /** Policies */
     privacyCenterPolicies: Policy[];
   }>(client, POLICIES, {
-    url: deployedPrivacyCenterUrl,
+    variables: { url: deployedPrivacyCenterUrl },
+    logger,
   });
 
   return privacyCenterPolicies.sort((a, b) =>

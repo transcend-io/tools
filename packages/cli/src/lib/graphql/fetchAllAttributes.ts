@@ -1,10 +1,10 @@
 import { AttributeKeyType, AttributeSupportedResourceType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
 import { ATTRIBUTES, ATTRIBUTE_VALUES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface AttributeValue {
   /** Attribute ID */
@@ -63,9 +63,8 @@ export async function fetchAllAttributeValues(
         nodes: AttributeValue[];
       };
     }>(client, ATTRIBUTE_VALUES, {
-      first: PAGE_SIZE,
-      offset,
-      attributeKeyId,
+      variables: { first: PAGE_SIZE, offset, attributeKeyId },
+      logger,
     });
     attributeValues.push(...nodes);
     offset += PAGE_SIZE;
@@ -100,8 +99,8 @@ export async function fetchAllAttributes(client: GraphQLClient): Promise<Attribu
         nodes: Attribute[];
       };
     }>(client, ATTRIBUTES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     attributes.push(
       ...(await Promise.all(

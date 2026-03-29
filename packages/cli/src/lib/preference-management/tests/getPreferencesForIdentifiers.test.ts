@@ -49,7 +49,8 @@ vi.mock('colors', () => ({
 }));
 
 // Intercept bluebird.map to capture concurrency and still execute
-vi.mock('../../bluebird.js', () => ({
+vi.mock('@transcend-io/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/utils')>()),
   map: vi.fn(async (arr: unknown[], mapper: (x: unknown) => unknown, opts) => {
     H.mapOpts.current = opts;
     const results = [];

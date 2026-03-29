@@ -1,14 +1,14 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
 import { PolicyInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_POLICIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const MAX_PAGE_SIZE = 100;
 
@@ -27,27 +27,30 @@ export async function updatePolicies(
   // Batch update policies
   await mapSeries(chunk(policyInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_POLICIES, {
-      privacyCenterId,
-      policies: page.map(([policy, policyId]) => ({
-        id: policyId,
-        title: policy.title,
-        disableEffectiveOn: policy.disableEffectiveOn,
-        disabledLocales: policy.disabledLocales,
-        ...(policy.effectiveOn || policy.content
-          ? {
-              version: {
-                ...(policy.effectiveOn ? { effectiveOn: policy.effectiveOn } : {}),
-                ...(policy.content
-                  ? {
-                      content: {
-                        defaultMessage: policy.content,
-                      },
-                    }
-                  : {}),
-              },
-            }
-          : {}),
-      })),
+      variables: {
+        privacyCenterId,
+        policies: page.map(([policy, policyId]) => ({
+          id: policyId,
+          title: policy.title,
+          disableEffectiveOn: policy.disableEffectiveOn,
+          disabledLocales: policy.disabledLocales,
+          ...(policy.effectiveOn || policy.content
+            ? {
+                version: {
+                  ...(policy.effectiveOn ? { effectiveOn: policy.effectiveOn } : {}),
+                  ...(policy.content
+                    ? {
+                        content: {
+                          defaultMessage: policy.content,
+                        },
+                      }
+                    : {}),
+                },
+              }
+            : {}),
+        })),
+      },
+      logger,
     });
   });
 }

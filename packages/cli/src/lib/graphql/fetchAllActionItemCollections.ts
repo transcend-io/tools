@@ -1,8 +1,9 @@
 import { TranscendProduct } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { GLOBAL_ACTION_ITEM_COLLECTIONS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface ActionItemCollection {
   /** ID of collection */
@@ -40,9 +41,12 @@ export async function fetchAllActionItemCollections(
       nodes: ActionItemCollection[];
     };
   }>(client, GLOBAL_ACTION_ITEM_COLLECTIONS, {
-    filterBy: {
-      ...filterBy,
+    variables: {
+      filterBy: {
+        ...filterBy,
+      },
     },
+    logger,
   });
   return nodes;
 }

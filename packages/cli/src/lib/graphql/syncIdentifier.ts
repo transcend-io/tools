@@ -1,9 +1,10 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { IdentifierInput } from '../../codecs.js';
+import { logger } from '../../logger.js';
 import type { DataSubject } from './fetchDataSubjects.js';
 import { UPDATE_IDENTIFIER } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Sync the consent manager
@@ -30,21 +31,24 @@ export async function syncIdentifier(
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_IDENTIFIER, {
-    input: {
-      id: identifierId,
-      selectOptions: identifier.selectOptions,
-      isRequiredInForm: identifier.isRequiredInForm,
-      regex: identifier.regex,
-      placeholder: identifier.placeholder,
-      displayTitle: identifier.displayTitle,
-      displayDescription: identifier.displayDescription,
-      displayOrder: identifier.displayOrder,
-      isUniqueOnPreferenceStore: identifier.isUniqueOnPreferenceStore,
-      privacyCenterVisibility: identifier.privacyCenterVisibility,
-      dataSubjectIds: identifier.dataSubjects
-        ? identifier.dataSubjects.map((type) => dataSubjectsByName[type].id)
-        : undefined,
-      skipPublish,
+    variables: {
+      input: {
+        id: identifierId,
+        selectOptions: identifier.selectOptions,
+        isRequiredInForm: identifier.isRequiredInForm,
+        regex: identifier.regex,
+        placeholder: identifier.placeholder,
+        displayTitle: identifier.displayTitle,
+        displayDescription: identifier.displayDescription,
+        displayOrder: identifier.displayOrder,
+        isUniqueOnPreferenceStore: identifier.isUniqueOnPreferenceStore,
+        privacyCenterVisibility: identifier.privacyCenterVisibility,
+        dataSubjectIds: identifier.dataSubjects
+          ? identifier.dataSubjects.map((type) => dataSubjectsByName[type].id)
+          : undefined,
+        skipPublish,
+      },
     },
+    logger,
   });
 }

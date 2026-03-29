@@ -7,15 +7,16 @@ import {
   QueueStatus,
   LargeLanguageModelClient,
 } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { Secret } from '@transcend-io/secret-value';
 /* eslint-disable max-lines */
 import { Optionalize, Requirize, apply, decodeCodec, getValues } from '@transcend-io/type-utils';
+import { mapSeries } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 import { groupBy, keyBy, uniq, chunk } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
-import { mapSeries } from '../bluebird.js';
 import {
   LargeLanguageModel,
   fetchAllLargeLanguageModels,
@@ -31,7 +32,6 @@ import {
   AgentFile,
   AgentFileFilterBy,
   ReportPromptRunInput,
-  buildTranscendGraphQLClient,
   fetchAllAgentFiles,
   fetchAllAgents,
   reportPromptRun,

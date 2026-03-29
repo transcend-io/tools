@@ -37,3 +37,4 @@ export * from './RateCounter.js';
 export * from './time.js';
 export * from './retrySamePromise.js';
 export * from './chunkOneCsvFile.js';
+export * from './bluebird.js';

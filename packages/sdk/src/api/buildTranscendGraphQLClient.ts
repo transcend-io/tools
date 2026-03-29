@@ -1,23 +1,22 @@
 import { GraphQLClient } from 'graphql-request';
 
-import { version } from '../../../package.json';
-
 /**
  * Create a GraphQL client
  *
  * @param transcendUrl - Transcend API URL
  * @param headers - Request headers to include in each request
+ * @param version - Optional version string to include in request headers
  * @returns GraphQL client
  */
 export function buildTranscendGraphQLClientGeneric(
   transcendUrl: string,
   headers: Record<string, string>,
+  version?: string,
 ): GraphQLClient {
-  // Create a GraphQL client
   return new GraphQLClient(`${transcendUrl}/graphql`, {
     headers: {
       ...headers,
-      version,
+      ...(version ? { version } : {}),
     },
   });
 }
@@ -27,10 +26,17 @@ export function buildTranscendGraphQLClientGeneric(
  *
  * @param transcendUrl - Transcend API URL
  * @param auth - API key to authenticate to API
+ * @param version - Optional version string to include in request headers
  * @returns GraphQL client
  */
-export function buildTranscendGraphQLClient(transcendUrl: string, auth: string): GraphQLClient {
-  return buildTranscendGraphQLClientGeneric(transcendUrl, {
-    Authorization: `Bearer ${auth}`,
-  });
+export function buildTranscendGraphQLClient(
+  transcendUrl: string,
+  auth: string,
+  version?: string,
+): GraphQLClient {
+  return buildTranscendGraphQLClientGeneric(
+    transcendUrl,
+    { Authorization: `Bearer ${auth}` },
+    version,
+  );
 }

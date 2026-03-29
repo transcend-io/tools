@@ -1,14 +1,14 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
-import colors from 'colors';
-
-import type { LocalContext } from '../../../context.js';
-import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllIdentifiers,
   fetchAllPurposesAndPreferences,
-} from '../../../lib/graphql/index.js';
+} from '@transcend-io/sdk';
+import colors from 'colors';
+
+import type { LocalContext } from '../../../context.js';
+import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { initCsvFile, appendCsvRowsOrdered } from '../../../lib/helpers/index.js';
 import {
   fetchConsentPreferences,
@@ -77,7 +77,11 @@ export async function pullConsentPreferences(
   doneInputValidation(this.process.exit);
 
   // Create sombra instance to communicate with
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Identifiers are key:value, parse to PreferenceIdentifier[]
@@ -117,8 +121,8 @@ export async function pullConsentPreferences(
 
   // Fetch full sets (purposes+topics, identifiers) to ensure header completeness
   const [purposesWithTopics, allIdentifiers] = await Promise.all([
-    fetchAllPurposesAndPreferences(client),
-    fetchAllIdentifiers(client),
+    fetchAllPurposesAndPreferences(client, { logger }),
+    fetchAllIdentifiers(client, { logger }),
   ]);
 
   // Identifier columns: exactly the identifier names

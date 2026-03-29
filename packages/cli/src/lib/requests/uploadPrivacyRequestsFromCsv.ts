@@ -1,6 +1,8 @@
 import { join } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
+import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 /* eslint-disable max-lines */
 import colors from 'colors';
@@ -9,12 +11,7 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
-import {
-  createSombraGotInstance,
-  buildTranscendGraphQLClient,
-  fetchAllRequestAttributeKeys,
-} from '../graphql/index.js';
+import { fetchAllRequestAttributeKeys } from '../graphql/index.js';
 import { CachedRequestState, CachedFileState } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { filterRows } from './filterRows.js';
@@ -120,7 +117,11 @@ export async function uploadPrivacyRequestsFromCsv({
   });
 
   // Create sombra instance to communicate with
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
 
   // Read in the list of integration requests
   const requestsList = readCsv(file, t.record(t.string, t.string));

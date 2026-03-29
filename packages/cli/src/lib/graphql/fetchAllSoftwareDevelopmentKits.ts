@@ -1,8 +1,9 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { SOFTWARE_DEVELOPMENT_KITS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface SoftwareDevelopmentKit {
   /** ID of software development kit */
@@ -59,8 +60,8 @@ export async function fetchAllSoftwareDevelopmentKits(
         nodes: SoftwareDevelopmentKit[];
       };
     }>(client, SOFTWARE_DEVELOPMENT_KITS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     softwareDevelopmentKits.push(...nodes);
     offset += PAGE_SIZE;

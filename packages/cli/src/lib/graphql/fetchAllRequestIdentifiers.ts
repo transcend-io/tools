@@ -1,12 +1,13 @@
 import { IdentifierType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { decodeCodec, valuesOf } from '@transcend-io/type-utils';
 import type { Got } from 'got';
 import { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 import semver from 'semver';
 
+import { logger } from '../../logger.js';
 import { SOMBRA_VERSION } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const MIN_SOMBRA_VERSION_TO_DECRYPT = '7.180.0';
 
@@ -51,7 +52,7 @@ export async function validateSombraVersion(client: GraphQLClient): Promise<void
         version: string;
       };
     };
-  }>(client, SOMBRA_VERSION);
+  }>(client, SOMBRA_VERSION, { logger });
 
   if (version && semver.lt(version, MIN_SOMBRA_VERSION_TO_DECRYPT)) {
     throw new Error(

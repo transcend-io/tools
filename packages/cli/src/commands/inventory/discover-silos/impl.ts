@@ -1,3 +1,4 @@
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import colors from 'colors';
 import { stringify } from 'query-string';
 
@@ -8,7 +9,6 @@ import { findFilesToScan } from '../../../lib/code-scanning/findFilesToScan.js';
 import { SILO_DISCOVERY_CONFIGS } from '../../../lib/code-scanning/index.js';
 import {
   fetchActiveSiloDiscoPlugin,
-  buildTranscendGraphQLClient,
   uploadSiloDiscoveryResults,
 } from '../../../lib/graphql/index.js';
 import { logger } from '../../../logger.js';

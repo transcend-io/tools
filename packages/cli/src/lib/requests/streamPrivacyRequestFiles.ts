@@ -1,8 +1,8 @@
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import type { Got } from 'got';
 
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { RequestFileMetadata } from './getFileMetadataForPrivacyRequests.js';
 
 /**

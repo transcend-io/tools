@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { CATALOGS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Catalog {
   /** Integration name */
@@ -36,8 +37,8 @@ export async function fetchAllCatalogs(client: GraphQLClient): Promise<Catalog[]
         nodes: Catalog[];
       };
     }>(client, CATALOGS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     catalogs.push(...nodes);
     offset += PAGE_SIZE;

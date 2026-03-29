@@ -1,11 +1,11 @@
 import type { UnstructuredSubDataPointRecommendationStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import colors from 'colors';
 import { uniq } from 'lodash-es';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullUnstructuredSubDataPointRecommendations } from '../../../lib/data-inventory/index.js';
-import { buildTranscendGraphQLClient } from '../../../lib/graphql/index.js';
 import { writeLargeCsv } from '../../../lib/helpers/index.js';
 import { logger } from '../../../logger.js';
 

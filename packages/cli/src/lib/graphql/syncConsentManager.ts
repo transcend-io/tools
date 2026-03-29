@@ -1,12 +1,13 @@
 import { InitialViewState, OnConsentExpiry } from '@transcend-io/airgap.js-types';
+import { fetchAllPurposes } from '@transcend-io/sdk';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { ConsentManageExperienceInput, ConsentManagerInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
-import { fetchAllPurposes } from './fetchAllPurposes.js';
 import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import {
@@ -23,7 +24,6 @@ import {
   CREATE_CONSENT_EXPERIENCE,
   UPDATE_CONSENT_MANAGER_THEME,
 } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
@@ -43,7 +43,7 @@ export async function syncConsentManagerExperiences(
   const experienceLookup = keyBy(existingExperiences, 'name');
 
   // Fetch existing purposes
-  const purposes = await fetchAllPurposes(client);
+  const purposes = await fetchAllPurposes(client, { logger });
   const purposeLookup = keyBy(purposes, 'trackingType');
 
   // Bulk update or create experiences
@@ -76,42 +76,48 @@ export async function syncConsentManagerExperiences(
       const existingExperience = experienceLookup[exp.name];
       if (existingExperience) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_EXPERIENCE, {
-          input: {
-            id: existingExperience.id,
-            name: exp.displayName,
-            regions: exp.regions,
-            operator: exp.operator,
-            onConsentExpiry: exp.onConsentExpiry,
-            consentExpiry: exp.consentExpiry,
-            displayPriority:
-              exp.displayPriority !== existingExperience.displayPriority
-                ? exp.displayPriority
-                : undefined,
-            viewState: exp.viewState,
-            purposes: purposeIds,
-            optedOutPurposes: optedOutPurposeIds,
-            browserLanguages: exp.browserLanguages,
-            browserTimeZones: exp.browserTimeZones,
+          variables: {
+            input: {
+              id: existingExperience.id,
+              name: exp.displayName,
+              regions: exp.regions,
+              operator: exp.operator,
+              onConsentExpiry: exp.onConsentExpiry,
+              consentExpiry: exp.consentExpiry,
+              displayPriority:
+                exp.displayPriority !== existingExperience.displayPriority
+                  ? exp.displayPriority
+                  : undefined,
+              viewState: exp.viewState,
+              purposes: purposeIds,
+              optedOutPurposes: optedOutPurposeIds,
+              browserLanguages: exp.browserLanguages,
+              browserTimeZones: exp.browserTimeZones,
+            },
           },
+          logger,
         });
         logger.info(colors.green(`Successfully synced consent experience "${exp.name}"!`));
       } else {
         // create new experience
         await makeGraphQLRequest(client, CREATE_CONSENT_EXPERIENCE, {
-          input: {
-            name: exp.name,
-            displayName: exp.displayName,
-            regions: exp.regions,
-            operator: exp.operator,
-            onConsentExpiry: exp.onConsentExpiry || OnConsentExpiry.Prompt,
-            consentExpiry: exp.consentExpiry,
-            displayPriority: exp.displayPriority,
-            viewState: exp.viewState || InitialViewState.Hidden,
-            purposes: purposeIds || [],
-            optedOutPurposes: optedOutPurposeIds || [],
-            browserLanguages: exp.browserLanguages,
-            browserTimeZones: exp.browserTimeZones,
+          variables: {
+            input: {
+              name: exp.name,
+              displayName: exp.displayName,
+              regions: exp.regions,
+              operator: exp.operator,
+              onConsentExpiry: exp.onConsentExpiry || OnConsentExpiry.Prompt,
+              consentExpiry: exp.consentExpiry,
+              displayPriority: exp.displayPriority,
+              viewState: exp.viewState || InitialViewState.Hidden,
+              purposes: purposeIds || [],
+              optedOutPurposes: optedOutPurposeIds || [],
+              browserLanguages: exp.browserLanguages,
+              browserTimeZones: exp.browserTimeZones,
+            },
           },
+          logger,
         });
         logger.info(colors.green(`Successfully created consent experience "${exp.name}"!`));
       }
@@ -152,8 +158,8 @@ export async function syncConsentManager(
           };
         };
       }>(client, CREATE_CONSENT_MANAGER, {
-        domains: consentManager.domains,
-        privacyCenterId,
+        variables: { domains: consentManager.domains, privacyCenterId },
+        logger,
       });
       airgapBundleId = createConsentManager.consentManager.id;
     } else {
@@ -164,8 +170,8 @@ export async function syncConsentManager(
   // sync domains
   if (consentManager.domains) {
     await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_DOMAINS, {
-      domains: consentManager.domains,
-      airgapBundleId,
+      variables: { domains: consentManager.domains, airgapBundleId },
+      logger,
     });
   }
 
@@ -179,67 +185,82 @@ export async function syncConsentManager(
       );
     }
     await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_PARTITION, {
-      partitionId: partitionToUpdate.id,
-      airgapBundleId,
+      variables: { partitionId: partitionToUpdate.id, airgapBundleId },
+      logger,
     });
   }
 
   if (consentManager.version) {
     await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_VERSION, {
-      airgapBundleId,
-      version: consentManager.version,
+      variables: { airgapBundleId, version: consentManager.version },
+      logger,
     });
   }
 
   // sync signed IAB agreement
   if (consentManager.signedIabAgreement) {
     await makeGraphQLRequest(client, UPDATE_LOAD_OPTIONS, {
-      input: {
-        id: airgapBundleId,
-        ...(consentManager.signedIabAgreement
-          ? { signedIabAgreement: consentManager.signedIabAgreement }
-          : {}),
+      variables: {
+        input: {
+          id: airgapBundleId,
+          ...(consentManager.signedIabAgreement
+            ? { signedIabAgreement: consentManager.signedIabAgreement }
+            : {}),
+        },
       },
+      logger,
     });
   }
 
   // sync default request policy
   if (consentManager.unknownRequestPolicy) {
     await makeGraphQLRequest(client, TOGGLE_UNKNOWN_REQUEST_POLICY, {
-      input: {
-        id: airgapBundleId,
-        unknownRequestPolicy: consentManager.unknownRequestPolicy,
+      variables: {
+        input: {
+          id: airgapBundleId,
+          unknownRequestPolicy: consentManager.unknownRequestPolicy,
+        },
       },
+      logger,
     });
   }
 
   // sync default cookie policy
   if (consentManager.unknownRequestPolicy) {
     await makeGraphQLRequest(client, TOGGLE_UNKNOWN_COOKIE_POLICY, {
-      input: {
-        id: airgapBundleId,
-        unknownCookiePolicy: consentManager.unknownCookiePolicy,
+      variables: {
+        input: {
+          id: airgapBundleId,
+          unknownCookiePolicy: consentManager.unknownCookiePolicy,
+        },
       },
+      logger,
     });
   }
 
   // sync telemetry partition strategy
   if (consentManager.telemetryPartitioning) {
     await makeGraphQLRequest(client, TOGGLE_TELEMETRY_PARTITION_STRATEGY, {
-      input: {
-        id: airgapBundleId,
-        strategy: consentManager.telemetryPartitioning,
+      variables: {
+        input: {
+          id: airgapBundleId,
+          strategy: consentManager.telemetryPartitioning,
+        },
       },
+      logger,
     });
   }
 
   // sync telemetry partition strategy
   if (consentManager.consentPrecedence) {
     await makeGraphQLRequest(client, TOGGLE_CONSENT_PRECEDENCE, {
-      input: {
-        id: airgapBundleId,
-        consentPrecedence: consentManager.consentPrecedence,
+      variables: {
+        input: {
+          id: airgapBundleId,
+          consentPrecedence: consentManager.consentPrecedence,
+        },
       },
+      logger,
     });
   }
 
@@ -251,10 +272,13 @@ export async function syncConsentManager(
   // update theme
   if (consentManager.theme) {
     await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_THEME, {
-      input: {
-        airgapBundleId,
-        ...consentManager.theme,
+      variables: {
+        input: {
+          airgapBundleId,
+          ...consentManager.theme,
+        },
       },
+      logger,
     });
   }
 
