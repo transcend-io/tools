@@ -8,6 +8,7 @@ import {
   PreferenceState,
   type PreferenceTopic,
 } from '@transcend-io/sdk';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
@@ -99,13 +100,19 @@ export async function parsePreferenceManagementCsvWithCache(
 
   // Grab existing preference store records
   const identifiers = preferences.map((pref) => pref[currentState.identifierColumn!]);
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+  if (!skipExistingRecordCheck) {
+    progressBar.start(identifiers.length, 0);
+  }
   const existingConsentRecords = skipExistingRecordCheck
     ? []
     : await getPreferencesForIdentifiers(sombra, {
         identifiers: identifiers.map((x) => ({ value: x })),
         partitionKey,
         logger,
+        onProgress: (completed, total) => progressBar.update(completed, { total }),
       });
+  progressBar.stop();
   const consentRecordByIdentifier = keyBy(existingConsentRecords, 'userId');
 
   // Clear out previous updates
