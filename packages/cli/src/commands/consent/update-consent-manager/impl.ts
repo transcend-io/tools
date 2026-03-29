@@ -1,9 +1,9 @@
 import { ConsentBundleType } from '@transcend-io/privacy-types';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
-import { mapSeries } from '../../../lib/bluebird.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { updateConsentManagerVersionToLatest } from '../../../lib/consent-manager/index.js';
 import { logger } from '../../../logger.js';

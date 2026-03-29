@@ -1,8 +1,9 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { MESSAGES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Message {
   /** ID of message */
@@ -32,6 +33,6 @@ export async function fetchAllMessages(client: GraphQLClient): Promise<Message[]
   const { translatedMessages } = await makeGraphQLRequest<{
     /** Messages */
     translatedMessages: Message[];
-  }>(client, MESSAGES, {});
+  }>(client, MESSAGES, { logger });
   return translatedMessages;
 }

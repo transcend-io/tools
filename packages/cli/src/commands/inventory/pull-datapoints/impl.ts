@@ -1,4 +1,5 @@
 import { DataCategoryType } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import colors from 'colors';
 import { uniq, groupBy } from 'lodash-es';
 
@@ -6,7 +7,6 @@ import { ADMIN_DASH_DATAPOINTS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullAllDatapoints } from '../../../lib/data-inventory/index.js';
-import { buildTranscendGraphQLClient } from '../../../lib/graphql/index.js';
 import { writeLargeCsv } from '../../../lib/helpers/index.js';
 import { logger } from '../../../logger.js';
 

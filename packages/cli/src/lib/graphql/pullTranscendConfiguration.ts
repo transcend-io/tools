@@ -5,6 +5,7 @@ import {
   ActionItemCode,
   RetentionType,
 } from '@transcend-io/privacy-types';
+import { fetchAllIdentifiers, fetchAllPurposesAndPreferences } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { flatten, keyBy, mapValues } from 'lodash-es';
@@ -67,7 +68,6 @@ import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingActivities } from './fetchAllProcessingActivities.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
-import { fetchAllPurposesAndPreferences } from './fetchAllPurposesAndPreferences.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
 import { fetchAllTeams } from './fetchAllTeams.js';
 import { fetchAllVendors } from './fetchAllVendors.js';
@@ -78,7 +78,6 @@ import {
   fetchConsentManagerTheme,
 } from './fetchConsentManagerId.js';
 import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
-import { fetchAllIdentifiers } from './fetchIdentifiers.js';
 import { fetchAllPromptGroups } from './fetchPromptGroups.js';
 import { fetchAllPromptPartials } from './fetchPromptPartials.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
@@ -231,7 +230,9 @@ export async function pullTranscendConfiguration(
     // Fetch email templates
     resources.includes(TranscendPullResource.Templates) ? fetchAllTemplates(client) : [],
     // Fetch identifiers
-    resources.includes(TranscendPullResource.Identifiers) ? fetchAllIdentifiers(client) : [],
+    resources.includes(TranscendPullResource.Identifiers)
+      ? fetchAllIdentifiers(client, { logger })
+      : [],
     // Fetch actions
     resources.includes(TranscendPullResource.Actions) ? fetchAllActions(client) : [],
     // Fetch business entities
@@ -296,7 +297,7 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
-      ? fetchAllPurposesAndPreferences(client)
+      ? fetchAllPurposesAndPreferences(client, { logger })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)

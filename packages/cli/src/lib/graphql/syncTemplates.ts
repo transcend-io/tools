@@ -1,8 +1,9 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { TemplateInput } from '../../codecs.js';
+import { logger } from '../../logger.js';
 import { TEMPLATES, CREATE_TEMPLATE } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Template {
   /** ID of Template */
@@ -49,9 +50,8 @@ export async function fetchAllTemplates(
         nodes: Template[];
       };
     }>(client, TEMPLATES, {
-      first: PAGE_SIZE,
-      offset,
-      title,
+      variables: { first: PAGE_SIZE, offset, title },
+      logger,
     });
     templates.push(...nodes);
     offset += PAGE_SIZE;
@@ -75,7 +75,8 @@ export async function syncTemplate(template: TemplateInput, client: GraphQLClien
   // If Template exists, update it
   if (!existingTemplate) {
     await makeGraphQLRequest(client, CREATE_TEMPLATE, {
-      title: template.title,
+      variables: { title: template.title },
+      logger,
     });
   }
 }

@@ -1,15 +1,15 @@
 import { RequestAction } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   NOTIFY_ADDITIONAL_TIME,
   fetchAllRequests,
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
   fetchAllTemplates,
 } from '../graphql/index.js';
 
@@ -103,12 +103,15 @@ export async function notifyPrivacyRequestsAdditionalTime({
     allRequests,
     async (requestToNotify) => {
       await makeGraphQLRequest(client, NOTIFY_ADDITIONAL_TIME, {
-        input: {
-          requestId: requestToNotify.id,
-          template: exactTemplateMatch.template.defaultMessage,
-          subject: exactTemplateMatch.subject.defaultMessage,
-          additionalTime: days,
+        variables: {
+          input: {
+            requestId: requestToNotify.id,
+            template: exactTemplateMatch.template.defaultMessage,
+            subject: exactTemplateMatch.subject.defaultMessage,
+            additionalTime: days,
+          },
         },
+        logger,
       });
 
       total += 1;

@@ -1,11 +1,11 @@
+import { createSombraGotInstance } from '@transcend-io/sdk';
+import { map, mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { chunk } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map, mapSeries } from '../bluebird.js';
-import { createSombraGotInstance } from '../graphql/index.js';
 import { readCsv } from '../requests/index.js';
 import { markCronIdentifierCompleted, CronIdentifierPush } from './markCronIdentifierCompleted.js';
 
@@ -40,7 +40,11 @@ export async function pushCronIdentifiersFromCsv({
   sleepSeconds?: number;
 }): Promise<number> {
   // Create sombra instance to communicate with
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
 
   // Read from CSV
   logger.info(colors.magenta(`Reading "${file}" from disk`));

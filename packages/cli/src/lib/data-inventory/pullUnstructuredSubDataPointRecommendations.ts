@@ -1,4 +1,5 @@
 import type { UnstructuredSubDataPointRecommendationStatus } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { gql, type GraphQLClient } from 'graphql-request';
@@ -6,7 +7,7 @@ import { sortBy } from 'lodash-es';
 
 import type { DataCategoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { ENTRY_COUNT, makeGraphQLRequest } from '../graphql/index.js';
+import { ENTRY_COUNT } from '../graphql/index.js';
 
 interface UnstructuredSubDataPointRecommendationCsvPreview {
   /** ID of subDatapoint */
@@ -97,7 +98,8 @@ export async function pullUnstructuredSubDataPointRecommendations(
       totalCount: number;
     };
   }>(client, ENTRY_COUNT, {
-    filterBy,
+    variables: { filterBy },
+    logger,
   });
 
   logger.info(colors.magenta('[Step 1/3] Pulling in all subdatapoints'));
@@ -151,11 +153,14 @@ export async function pullUnstructuredSubDataPointRecommendations(
           }
         `,
         {
-          first: pageSize,
-          offset,
-          filterBy: {
-            ...filterBy,
+          variables: {
+            first: pageSize,
+            offset,
+            filterBy: {
+              ...filterBy,
+            },
           },
+          logger,
         },
       );
 

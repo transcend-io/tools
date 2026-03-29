@@ -1,8 +1,9 @@
 import { RequestEnricherStatus } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { REQUEST_ENRICHERS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface RequestEnricher {
   /** ID of request enricher */
@@ -53,9 +54,8 @@ export async function fetchAllRequestEnrichers(
         nodes: RequestEnricher[];
       };
     }>(client, REQUEST_ENRICHERS, {
-      first: PAGE_SIZE,
-      offset,
-      requestId,
+      variables: { first: PAGE_SIZE, offset, requestId },
+      logger,
     });
     requestEnrichers.push(...nodes);
     offset += PAGE_SIZE;

@@ -1,10 +1,11 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
 import { PrivacyCenterThemePartial } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
 import { PRIVACY_CENTER } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface PrivacyCenter {
   /** ID of the privacy center */
@@ -66,7 +67,8 @@ export async function fetchAllPrivacyCenters(client: GraphQLClient): Promise<Pri
       themeStr: string;
     };
   }>(client, PRIVACY_CENTER, {
-    url: deployedPrivacyCenterUrl,
+    variables: { url: deployedPrivacyCenterUrl },
+    logger,
   });
 
   return [

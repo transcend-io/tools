@@ -1,15 +1,15 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   UPDATE_PRIVACY_REQUEST,
   fetchAllRequests,
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
   CANCEL_PRIVACY_REQUEST,
   fetchAllTemplates,
   Template,
@@ -119,24 +119,30 @@ export async function cancelPrivacyRequests({
       // and the request was created before silentModeBefore
       if (silentModeBefore && new Date(silentModeBefore) > new Date(requestToCancel.createdAt)) {
         await makeGraphQLRequest(client, UPDATE_PRIVACY_REQUEST, {
-          input: {
-            id: requestToCancel.id,
-            isSilent: true,
+          variables: {
+            input: {
+              id: requestToCancel.id,
+              isSilent: true,
+            },
           },
+          logger,
         });
       }
 
       // cancel the request
       await makeGraphQLRequest(client, CANCEL_PRIVACY_REQUEST, {
-        input: {
-          requestId: requestToCancel.id,
-          ...(cancelationTemplate
-            ? {
-                subject: `Re: ${cancelationTemplate.subject.defaultMessage}`,
-                template: cancelationTemplate.template.defaultMessage,
-              }
-            : {}),
+        variables: {
+          input: {
+            requestId: requestToCancel.id,
+            ...(cancelationTemplate
+              ? {
+                  subject: `Re: ${cancelationTemplate.subject.defaultMessage}`,
+                  template: cancelationTemplate.template.defaultMessage,
+                }
+              : {}),
+          },
         },
+        logger,
       });
 
       total += 1;

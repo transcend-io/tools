@@ -1,8 +1,10 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 import inquirer from 'inquirer';
 
-import { INITIALIZER, makeGraphQLRequest, Initializer } from '../graphql/index.js';
+import { logger } from '../../logger.js';
+import { INITIALIZER, Initializer } from '../graphql/index.js';
 import { CachedFileState, IDENTIFIER_BLOCK_LIST } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
 
@@ -32,7 +34,7 @@ export async function mapColumnsToIdentifiers(
   const { initializer } = await makeGraphQLRequest<{
     /** Query response */
     initializer: Initializer;
-  }>(client, INITIALIZER);
+  }>(client, INITIALIZER, { logger });
 
   // Determine the columns that should be mapped
   const columnQuestions = initializer.identifiers.filter(

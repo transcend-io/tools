@@ -6,12 +6,13 @@ import {
   IsoCountryCode,
   IsoCountrySubdivisionCode,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { ObjByString } from '@transcend-io/type-utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { makeGraphQLRequest, DataSubject, DATA_SUBJECTS } from '../graphql/index.js';
+import { DataSubject, DATA_SUBJECTS } from '../graphql/index.js';
 import { CachedFileState, NONE, ColumnName } from './constants.js';
 import { getUniqueValuesForColumn } from './getUniqueValuesForColumn.js';
 import { ColumnNameMap } from './mapCsvColumnsToApi.js';
@@ -45,7 +46,7 @@ export async function mapRequestEnumValues(
   const { internalSubjects } = await makeGraphQLRequest<{
     /** Query response */
     internalSubjects: DataSubject[];
-  }>(client, DATA_SUBJECTS);
+  }>(client, DATA_SUBJECTS, { logger });
 
   // Map RequestAction
   logger.info(colors.magenta('Determining mapping of columns for request action'));

@@ -2,11 +2,12 @@ import {
   AssessmentFormTemplateSource,
   AssessmentFormTemplateStatus,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import type { AssessmentSection, RetentionSchedule, UserPreview } from './fetchAllAssessments.js';
 import { ASSESSMENT_TEMPLATES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Represents an assessment template with various properties and metadata.
@@ -67,8 +68,8 @@ export async function fetchAllAssessmentTemplates(
         nodes: AssessmentTemplate[];
       };
     }>(client, ASSESSMENT_TEMPLATES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     assessmentTemplates.push(...nodes);
     offset += PAGE_SIZE;

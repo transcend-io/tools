@@ -1,8 +1,9 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { DataSubjectInput } from '../../codecs.js';
+import { logger } from '../../logger.js';
 import { UPDATE_DATA_SUBJECT, TOGGLE_DATA_SUBJECT } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Sync the data subjects
@@ -26,22 +27,28 @@ export async function syncDataSubject(
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_DATA_SUBJECT, {
-    input: {
-      id: dataSubjectId,
-      title: dataSubject.title,
-      adminDashboardDefaultSilentMode: dataSubject.adminDashboardDefaultSilentMode,
-      actions: dataSubject.actions,
-      skipPublish: skipPublish && typeof dataSubject.active === 'undefined',
+    variables: {
+      input: {
+        id: dataSubjectId,
+        title: dataSubject.title,
+        adminDashboardDefaultSilentMode: dataSubject.adminDashboardDefaultSilentMode,
+        actions: dataSubject.actions,
+        skipPublish: skipPublish && typeof dataSubject.active === 'undefined',
+      },
     },
+    logger,
   });
 
   if (typeof dataSubject.active === 'boolean') {
     await makeGraphQLRequest(client, TOGGLE_DATA_SUBJECT, {
-      input: {
-        id: dataSubjectId,
-        active: dataSubject.active,
-        skipPublish,
+      variables: {
+        input: {
+          id: dataSubjectId,
+          active: dataSubject.active,
+          skipPublish,
+        },
       },
+      logger,
     });
   }
 }

@@ -4,8 +4,7 @@
 
 This repository is a `pnpm` + Turborepo monorepo for public `@transcend-io/*` TypeScript `packages/`.
 
-The root package is private. Publishable packages live in `packages/`. The `core` and `utils`
-packages are examples meant to demonstrate the toolchain. They are set to `private: true` in their `package.json`s so they are not published to npm.
+The root package is private. Publishable packages live in `packages/`.
 
 ## Setup
 
@@ -202,8 +201,7 @@ This repo uses the GitHub [Merge Queue](https://docs.github.com/en/repositories/
 
 Transcend Team: see our [HOWTO: Migrate a repo to transcend-io/tools](https://www.notion.so/transcend/HOWTO-Migrate-a-repo-to-transcend-io-tools-33006522d0d780719751f9fbdf6b44cd).
 
-New packages should match the shape used in `packages/core` and `packages/utils` (private
-starters that model the layout).
+New packages should match the shape used in `packages/sdk` and `packages/utils`.
 
 For a new package:
 

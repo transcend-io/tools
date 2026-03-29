@@ -3,9 +3,9 @@ import {
   PreferenceStorePurposeResponse,
   PreferenceTopicType,
 } from '@transcend-io/privacy-types';
+import type { PreferenceTopic } from '@transcend-io/sdk';
 
 import { logger } from '../../logger.js';
-import { PreferenceTopic } from '../graphql/index.js';
 
 /**
  * Check if the pending set of updates will result in a change of

@@ -1,8 +1,9 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { BUSINESS_ENTITIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface BusinessEntity {
   /** ID of business entity */
@@ -57,8 +58,8 @@ export async function fetchAllBusinessEntities(client: GraphQLClient): Promise<B
         nodes: BusinessEntity[];
       };
     }>(client, BUSINESS_ENTITIES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     businessEntities.push(...nodes);
     offset += PAGE_SIZE;

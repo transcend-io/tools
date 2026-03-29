@@ -1,13 +1,13 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { AgentInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllAgents, Agent } from './fetchAllAgents.js';
 import { UPDATE_AGENTS, CREATE_AGENT } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new agent
@@ -39,7 +39,8 @@ export async function createAgent(
       agent: Agent;
     };
   }>(client, CREATE_AGENT, {
-    input,
+    variables: { input },
+    logger,
   });
   return createAgent.agent;
 }
@@ -55,16 +56,19 @@ export async function updateAgents(
   agentIdParis: [AgentInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_AGENTS, {
-    input: {
-      agents: agentIdParis.map(([agent, id]) => ({
-        id,
-        name: agent.name,
-        description: agent.description,
-        codeInterpreterEnabled: agent.codeInterpreterEnabled,
-        retrievalEnabled: agent.retrievalEnabled,
-        // TODO: https://transcend.height.app/T-31995 - prompt, largeLanguageModel, agentFunction, agentFile
-      })),
+    variables: {
+      input: {
+        agents: agentIdParis.map(([agent, id]) => ({
+          id,
+          name: agent.name,
+          description: agent.description,
+          codeInterpreterEnabled: agent.codeInterpreterEnabled,
+          retrievalEnabled: agent.retrievalEnabled,
+          // TODO: https://transcend.height.app/T-31995 - prompt, largeLanguageModel, agentFunction, agentFile
+        })),
+      },
     },
+    logger,
   });
 }
 

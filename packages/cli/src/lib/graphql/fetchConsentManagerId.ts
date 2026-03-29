@@ -9,8 +9,10 @@ import {
   BrowserTimeZone,
   SignedIabAgreementOption,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import {
   FETCH_CONSENT_MANAGER_ID,
   FETCH_CONSENT_MANAGER,
@@ -18,7 +20,6 @@ import {
   CONSENT_MANAGER_ANALYTICS_DATA,
   FETCH_CONSENT_MANAGER_THEME,
 } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface ConsentManager {
   /** ID of consent manager */
@@ -70,7 +71,7 @@ export async function fetchConsentManager(client: GraphQLClient): Promise<Consen
       /** Consent manager object */
       consentManager: ConsentManager;
     };
-  }>(client, FETCH_CONSENT_MANAGER);
+  }>(client, FETCH_CONSENT_MANAGER, { logger });
   return consentManager;
 }
 
@@ -96,7 +97,7 @@ export async function fetchConsentManagerId(
         id: string;
       };
     };
-  }>(client, FETCH_CONSENT_MANAGER_ID, {}, {}, maxRequests);
+  }>(client, FETCH_CONSENT_MANAGER_ID, { logger, maxRetries: maxRequests });
   return consentManager.id;
 }
 
@@ -172,8 +173,8 @@ export async function fetchConsentManagerExperiences(
         nodes: ConsentExperience[];
       };
     }>(client, EXPERIENCES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     experiences.push(...nodes);
     offset += PAGE_SIZE;
@@ -241,7 +242,8 @@ export async function fetchConsentManagerAnalyticsData(
       series: ConsentManagerMetric[];
     };
   }>(client, CONSENT_MANAGER_ANALYTICS_DATA, {
-    input,
+    variables: { input },
+    logger,
   });
   return series;
 }
@@ -277,7 +279,8 @@ export async function fetchConsentManagerTheme(
       theme: ConsentManagerTheme;
     };
   }>(client, FETCH_CONSENT_MANAGER_THEME, {
-    airgapBundleId,
+    variables: { airgapBundleId },
+    logger,
   });
   return theme;
 }

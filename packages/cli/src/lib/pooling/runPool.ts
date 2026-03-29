@@ -1,10 +1,10 @@
 import type { ChildProcess } from 'node:child_process';
 
 import type { ObjByString } from '@transcend-io/type-utils';
+import { RateCounter } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import colors from 'colors';
 
-import { RateCounter } from '../helpers/index.js';
 import { installInteractiveSwitcher } from './installInteractiveSwitcher.js';
 import { classifyLogLevel, initLogDir, makeLineSplitter } from './logRotation.js';
 import { safeGetLogPathsForSlot } from './safeGetLogPathsForSlot.js';
