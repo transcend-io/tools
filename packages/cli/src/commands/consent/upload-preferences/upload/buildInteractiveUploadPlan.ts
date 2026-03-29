@@ -1,3 +1,11 @@
+import {
+  loadReferenceData,
+  type FileFormatState,
+  type PendingSafePreferenceUpdates,
+  type PendingWithConflictPreferenceUpdates,
+  type PreferenceUploadReferenceData,
+  type SkippedPreferenceUpdates,
+} from '@transcend-io/sdk';
 import { limitRecords } from '@transcend-io/utils';
 import colors from 'colors';
 import type { Got } from 'got';
@@ -5,19 +13,11 @@ import type { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 
 import type { FormattedAttribute } from '../../../../lib/graphql/formatAttributeValues.js';
-import type {
-  FileFormatState,
-  PendingSafePreferenceUpdates,
-  PendingWithConflictPreferenceUpdates,
-  SkippedPreferenceUpdates,
-} from '@transcend-io/sdk';
 import { parsePreferenceManagementCsvWithCache } from '../../../../lib/preference-management/index.js';
 import { parseAttributesFromString, readCsv } from '../../../../lib/requests/index.js';
 import { logger } from '../../../../logger.js';
 import { type PreferenceReceiptsInterface } from '../artifacts/receipts/receiptsState.js';
 import { type PreferenceSchemaInterface } from '../schemaState.js';
-import { loadReferenceData, type PreferenceUploadReferenceData } from './loadReferenceData.js';
-import { transformCsv } from './transform/index.js';
 import type { PreferenceUploadProgress } from './types.js';
 
 export interface InteractiveUploadPreferencePlan {
@@ -127,11 +127,11 @@ export async function buildInteractiveUploadPreferencePlan({
   );
 
   // Build clients + reference data (purposes/topics/identifiers)
-  const references = await loadReferenceData(client);
+  const references = await loadReferenceData(client, { logger });
 
   // Read in the file
   logger.info(colors.magenta(`Reading in file: "${file}"`));
-  const preferences = transformCsv(readCsv(file, t.record(t.string, t.string)));
+  const preferences = readCsv(file, t.record(t.string, t.string));
   logger.info(colors.magenta(`Read in ${preferences.length} rows`));
 
   // Parse & validate CSV → derive safe/conflict/skipped sets (no uploading)

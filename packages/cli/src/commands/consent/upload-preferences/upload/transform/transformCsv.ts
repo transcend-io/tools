@@ -6,6 +6,8 @@ import { logger } from '../../../../../logger.js';
 /**
  * Add Transcend ID to preferences if email_id is present
  *
+ * FIXME remove
+ *
  * @param preferences - List of preferences
  * @returns The updated preferences with Transcend ID added
  */

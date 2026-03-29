@@ -1,25 +1,28 @@
-/**
- * Module: transform/buildPendingUpdates
- *
- * Pure transformation from parsed CSV rows + schema mappings into
- * PreferenceUpdateItem payloads, ready for upload.
- */
 import type { PreferenceUpdateItem } from '@transcend-io/privacy-types';
+
+import type {
+  ColumnIdentifierMap,
+  ColumnMetadataMap,
+  ColumnPurposeMap,
+  PendingSafePreferenceUpdates,
+  PendingWithConflictPreferenceUpdates,
+} from '../preference-management/codecs.js';
 import {
   getPreferenceIdentifiersFromRow,
-  getPreferenceMetadataFromRow,
-  getPreferenceUpdatesFromRow,
   NONE_PREFERENCE_MAP,
-  type ColumnIdentifierMap,
-  type ColumnMetadataMap,
-  type ColumnPurposeMap,
-  type PendingSafePreferenceUpdates,
-  type PendingWithConflictPreferenceUpdates,
-  type PreferenceTopic,
-  type Purpose,
-} from '@transcend-io/sdk';
+} from '../preference-management/getPreferenceIdentifiersFromRow.js';
+import { getPreferenceMetadataFromRow } from '../preference-management/getPreferenceMetadataFromRow.js';
+import { getPreferenceUpdatesFromRow } from '../preference-management/getPreferenceUpdatesFromRow.js';
+import type { PreferenceTopic } from '../preference-management/fetchAllPreferenceTopics.js';
+import type { Purpose } from '../preference-management/fetchAllPurposes.js';
 
-import type { FormattedAttribute } from '../../../../../lib/graphql/index.js';
+/** Attribute key-value pair for workflow settings */
+export interface FormattedAttribute {
+  /** Attribute key */
+  key: string;
+  /** Attribute values */
+  values: string[];
+}
 
 export interface BuildPendingParams {
   /** Safe updates keyed by user/primaryKey */
@@ -36,7 +39,7 @@ export interface BuildPendingParams {
   columnToIdentifier: ColumnIdentifierMap;
   /** CSV column -> metadata key mapping (optional) */
   columnToMetadata?: ColumnMetadataMap;
-  /** Full set of preference topics for resolving row → preference values */
+  /** Full set of preference topics for resolving row -> preference values */
   preferenceTopics: PreferenceTopic[];
   /** Full set of purposes for resolving slugs/trackingTypes */
   purposes: Purpose[];
@@ -55,7 +58,7 @@ export interface BuildPendingParams {
 /**
  * Convert parsed CSV rows into a map of PreferenceUpdateItem payloads.
  *
- * This function is *pure* (no IO, logging or state writes) and therefore easy to test.
+ * This function is pure (no IO, logging or state writes).
  *
  * @param params - Transformation inputs
  * @returns Map of primaryKey -> PreferenceUpdateItem
@@ -80,26 +83,25 @@ export function buildPendingUpdates(
     forceTriggerWorkflows,
   } = params;
 
-  // If conflicts are to be included, normalize the shape to match `safe` rows.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const merged: Record<string, any> = skipConflictUpdates
     ? { ...safe }
     : {
         ...safe,
-        ...Object.fromEntries(Object.entries(conflicts).map(([id, v]) => [id, v.row])),
+        ...Object.fromEntries(
+          Object.entries(conflicts).map(([id, v]) => [id, v.row]),
+        ),
       };
 
   const purposeSlugs = purposes.map((x) => x.trackingType);
   const out: Record<string, PreferenceUpdateItem> = {};
 
   for (const [userId, row] of Object.entries(merged)) {
-    // Determine timestamp used for the store
     const ts =
       timestampColumn === NONE_PREFERENCE_MAP || !timestampColumn
         ? new Date()
         : new Date(row[timestampColumn]);
 
-    // Resolve purposes/preferences from columns using schema mappings + topics
     const updates = getPreferenceUpdatesFromRow({
       row,
       columnToPurposeName,
@@ -107,13 +109,11 @@ export function buildPendingUpdates(
       purposeSlugs,
     });
 
-    // Resolve identifiers per row (email, phone, userId, etc.)
     const identifiers = getPreferenceIdentifiersFromRow({
       row,
       columnToIdentifier,
     });
 
-    // Resolve metadata from mapped columns (if any)
     const metadata = columnToMetadata
       ? getPreferenceMetadataFromRow({ row, columnToMetadata })
       : undefined;
@@ -132,7 +132,6 @@ export function buildPendingUpdates(
           forceTriggerWorkflow: forceTriggerWorkflows,
         },
       })),
-      // Only include metadata if there are values
       ...(metadata && metadata.length > 0 ? { metadata } : {}),
     };
   }

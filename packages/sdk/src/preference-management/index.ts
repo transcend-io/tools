@@ -5,6 +5,7 @@ export * from './createPreferenceAccessTokens.js';
 export * from './types.js';
 export * from './codecs.js';
 export * from './getPreferenceMetadataFromRow.js';
+export * from './getPreferenceIdentifiersFromRow.js';
 export * from './getPreferenceUpdatesFromRow.js';
 export * from './checkIfPendingPreferenceUpdatesAreNoOp.js';
 export * from './checkIfPendingPreferenceUpdatesCauseConflict.js';

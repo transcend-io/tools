@@ -9,9 +9,8 @@ import { chunk, groupBy } from 'lodash-es';
 import { RETRYABLE_BATCH_STATUSES } from '../../../../constants.js';
 import { logger } from '../../../../logger.js';
 import type { PreferenceReceiptsInterface } from '../artifacts/receipts/index.js';
-import { uploadChunkWithSplit } from './batchUploader.js';
+import { uploadChunkWithSplit, buildPendingUpdates } from '@transcend-io/sdk';
 import type { InteractiveUploadPreferencePlan } from './buildInteractiveUploadPlan.js';
-import { buildPendingUpdates } from './transform/index.js';
 import type { PreferenceUploadProgress } from './types.js';
 
 const { map: pMap } = Bluebird;
@@ -307,6 +306,7 @@ export async function interactivePreferenceUploaderFromPlan(
           isRetryableStatus: (s) =>
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             !!s && RETRYABLE_BATCH_STATUSES.has(s as any),
+          logger,
         },
         {
           onSuccess: markSuccessFor,

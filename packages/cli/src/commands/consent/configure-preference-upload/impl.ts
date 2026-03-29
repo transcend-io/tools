@@ -1,7 +1,11 @@
 import { createReadStream } from 'node:fs';
 
 import { PersistedState } from '@transcend-io/persisted-state';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  FileFormatState,
+  loadReferenceData,
+} from '@transcend-io/sdk';
 import colors from 'colors';
 import { parse as csvParse } from 'csv-parse';
 import inquirer from 'inquirer';
@@ -10,7 +14,6 @@ import * as t from 'io-ts';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { collectCsvFilesOrExit } from '../../../lib/helpers/collectCsvFilesOrExit.js';
-import { FileFormatState } from '@transcend-io/sdk';
 import {
   parsePreferenceIdentifiersFromCsv,
   parsePreferenceFileFormatFromCsv,
@@ -19,7 +22,6 @@ import {
 import { readCsv } from '../../../lib/requests/index.js';
 import { logger } from '../../../logger.js';
 import { computeSchemaFile } from '../upload-preferences/artifacts/index.js';
-import { loadReferenceData } from '../upload-preferences/upload/loadReferenceData.js';
 
 export interface ConfigurePreferenceUploadFlags {
   auth: string;
@@ -160,7 +162,7 @@ export async function configurePreferenceUpload(
 
   // 2) Fetch org reference data
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const { purposes, preferenceTopics, identifiers } = await loadReferenceData(client);
+  const { purposes, preferenceTopics, identifiers } = await loadReferenceData(client, { logger });
 
   const allIdentifierNames = identifiers.map((id) => id.name);
   logger.info(
