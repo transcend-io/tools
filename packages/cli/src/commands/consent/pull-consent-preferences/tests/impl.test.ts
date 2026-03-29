@@ -104,16 +104,6 @@ vi.mock('@transcend-io/sdk', () => ({
   ),
   // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
   fetchAllIdentifiers: vi.fn(async (_client) => H.identifiers),
-}));
-
-// New CSV helpers used by impl after your refactor
-vi.mock('../../../../lib/helpers/index.js', () => ({
-  initCsvFile: H.initCsvFile,
-  appendCsvRowsOrdered: H.appendCsvRowsOrdered,
-}));
-
-// preference-management: forward and record args, then delegate to our spies
-vi.mock('../../../../lib/preference-management/index.js', () => ({
   // eslint-disable-next-line require-await
   fetchConsentPreferences: async (sombra: unknown, opts: any) => {
     H.lastFetchArgs.sombra = sombra;
@@ -124,6 +114,11 @@ vi.mock('../../../../lib/preference-management/index.js', () => ({
   fetchConsentPreferencesChunked: async (sombra: unknown, opts: any) =>
     H.fetchConsentPreferencesChunked(sombra, opts),
   transformPreferenceRecordToCsv: H.transformPreferenceRecordToCsv,
+}));
+
+vi.mock('../../../../lib/helpers/index.js', () => ({
+  initCsvFile: H.initCsvFile,
+  appendCsvRowsOrdered: H.appendCsvRowsOrdered,
 }));
 
 describe('pullConsentPreferences', () => {

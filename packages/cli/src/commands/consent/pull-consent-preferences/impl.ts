@@ -4,18 +4,16 @@ import {
   createSombraGotInstance,
   fetchAllIdentifiers,
   fetchAllPurposesAndPreferences,
+  fetchConsentPreferences,
+  fetchConsentPreferencesChunked,
+  transformPreferenceRecordToCsv,
+  type PreferenceIdentifier,
 } from '@transcend-io/sdk';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { initCsvFile, appendCsvRowsOrdered } from '../../../lib/helpers/index.js';
-import {
-  fetchConsentPreferences,
-  fetchConsentPreferencesChunked,
-  transformPreferenceRecordToCsv,
-  type PreferenceIdentifier,
-} from '../../../lib/preference-management/index.js';
 import { logger } from '../../../logger.js';
 
 // Known “core” columns your transformer usually produces up front.
@@ -177,6 +175,7 @@ export async function pullConsentPreferences(
       windowConcurrency,
       maxChunks,
       maxLookbackDays,
+      logger,
       onItems: (items) => writeRows(items),
     });
 
@@ -189,6 +188,7 @@ export async function pullConsentPreferences(
     partition,
     filterBy,
     limit: concurrency, // page size (API max 50 enforced internally)
+    logger,
     onItems: (items) => writeRows(items),
   });
 

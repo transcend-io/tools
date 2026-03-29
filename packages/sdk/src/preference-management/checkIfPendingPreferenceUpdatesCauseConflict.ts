@@ -3,9 +3,9 @@ import {
   PreferenceStorePurposeResponse,
   PreferenceTopicType,
 } from '@transcend-io/privacy-types';
-import type { PreferenceTopic } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 
-import { logger } from '../../logger.js';
+import type { PreferenceTopic } from './fetchAllPreferenceTopics.js';
 
 /**
  * Check if the pending set of updates will result in a change of
@@ -19,6 +19,7 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
   pendingUpdates,
   preferenceTopics,
   log,
+  logger,
 }: {
   /** The current consent record */
   currentConsentRecord: PreferenceQueryResponseItem;
@@ -30,6 +31,8 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
   preferenceTopics: PreferenceTopic[];
   /** Whether to log the conflict */
   log?: boolean;
+  /** Logger used when `log` is true */
+  logger?: Logger;
 }): boolean {
   // Check if any update has conflict
   return !!Object.entries(pendingUpdates).find(([purposeName, { preferences = [], enabled }]) => {
@@ -40,7 +43,7 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
 
     // If no purpose exists, then it is not a conflict
     if (!currentPurpose) {
-      if (log) {
+      if (log && logger) {
         logger.warn(
           `No existing purpose found for ${purposeName} in consent record for ${currentConsentRecord.userId}.`,
         );
@@ -50,7 +53,7 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
 
     // If purpose.enabled value is off, this is a conflict
     if (currentPurpose.enabled !== enabled) {
-      if (log) {
+      if (log && logger) {
         logger.warn(
           `Purpose ${purposeName} enabled value conflict for user ${currentConsentRecord.userId}. ` +
             `Pending Value: ${enabled}, Current Value: ${currentPurpose.enabled}`,
@@ -68,7 +71,7 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
 
       // if no topic exists, no conflict
       if (!currentPreference) {
-        if (log) {
+        if (log && logger) {
           logger.warn(
             `No existing preference found for topic ${topic} in purpose ` +
               `${purposeName} for user ${currentConsentRecord.userId}.`,
@@ -91,7 +94,7 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
       switch (preferenceTopic.type) {
         case PreferenceTopicType.Boolean:
           boolMatch = currentPreference.choice.booleanValue !== choice.booleanValue;
-          if (log) {
+          if (log && logger) {
             logger.warn(
               `Preference topic ${topic} boolean value conflict for user ` +
                 `${currentConsentRecord.userId}. Expected: ${choice.booleanValue}, ` +
@@ -101,7 +104,7 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
           return boolMatch;
         case PreferenceTopicType.Select:
           selectMatch = currentPreference.choice.selectValue !== choice.selectValue;
-          if (log) {
+          if (log && logger) {
             logger.warn(
               `Preference topic ${topic} select value conflict for user ` +
                 `${currentConsentRecord.userId}. Expected: ${choice.selectValue}, ` +
@@ -117,7 +120,7 @@ export function checkIfPendingPreferenceUpdatesCauseConflict({
           selectMatch =
             sortedCurrentValues.length !== sortedNewValues.length ||
             !sortedCurrentValues.every((x, i) => x === sortedNewValues[i]);
-          if (log) {
+          if (log && logger) {
             logger.warn(
               `Preference topic ${topic} multi-select value conflict for user ` +
                 `${currentConsentRecord.userId}. Expected: ${sortedNewValues.join(

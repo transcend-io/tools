@@ -298,6 +298,9 @@ importers:
       '@transcend-io/privacy-types':
         specifier: workspace:*
         version: link:../privacy-types
+      '@transcend-io/type-utils':
+        specifier: ^1.8.9
+        version: 1.8.9
       '@transcend-io/utils':
         specifier: workspace:*
         version: link:../utils
@@ -310,6 +313,9 @@ importers:
       graphql-request:
         specifier: ^5.0.0
         version: 5.2.0(graphql@16.13.1)
+      io-ts:
+        specifier: ^2.2.21
+        version: 2.2.22(fp-ts@2.16.11)
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.23

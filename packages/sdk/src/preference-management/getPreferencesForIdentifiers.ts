@@ -1,12 +1,9 @@
 import { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import { decodeCodec } from '@transcend-io/type-utils';
-import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
-import colors from 'colors';
+import { map, type Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
-import { logger } from '../../logger.js';
 import { ConsentPreferenceResponse } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
@@ -24,6 +21,8 @@ export async function getPreferencesForIdentifiers(
     partitionKey,
     skipLogging = false,
     concurrency = 40,
+    logger,
+    onProgress,
   }: {
     /** The list of identifiers to look up */
     identifiers: {
@@ -36,17 +35,16 @@ export async function getPreferencesForIdentifiers(
     skipLogging?: boolean;
     /** Concurrency for requests (default 40) */
     concurrency?: number;
+    /** Logger */
+    logger: Logger;
+    /** Optional progress callback (completed count, total identifiers) */
+    onProgress?: (completed: number, total: number) => void;
   },
 ): Promise<PreferenceQueryResponseItem[]> {
   const results: PreferenceQueryResponseItem[] = [];
   const groupedIdentifiers = chunk(identifiers, 100);
 
-  // create a new progress bar instance and use shades_classic theme
   const t0 = new Date().getTime();
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-  if (!skipLogging) {
-    progressBar.start(identifiers.length, 0);
-  }
 
   let total = 0;
   await map(
@@ -64,11 +62,10 @@ export async function getPreferencesForIdentifiers(
             })
             .json(),
         {
+          logger,
           onRetry: (attempt, _err, msg) => {
             logger.warn(
-              colors.yellow(
-                `[RETRY] group size=${group.length} partition=${partitionKey} attempt=${attempt}: ${msg}`,
-              ),
+              `[RETRY] group size=${group.length} partition=${partitionKey} attempt=${attempt}: ${msg}`,
             );
           },
         },
@@ -77,20 +74,18 @@ export async function getPreferencesForIdentifiers(
       const result = decodeCodec(ConsentPreferenceResponse, rawResult);
       results.push(...result.nodes);
       total += group.length;
-      progressBar.update(total);
+      onProgress?.(total, identifiers.length);
     },
     {
       concurrency,
     },
   );
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
   if (!skipLogging) {
-    // Log completion time
-    logger.info(colors.green(`Completed download in "${totalTime / 1000}" seconds.`));
+    logger.info(`Completed download in "${totalTime / 1000}" seconds.`);
   }
 
   return results;

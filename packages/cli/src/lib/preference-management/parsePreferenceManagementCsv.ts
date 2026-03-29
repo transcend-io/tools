@@ -1,5 +1,13 @@
 import { PersistedState } from '@transcend-io/persisted-state';
-import type { PreferenceTopic } from '@transcend-io/sdk';
+import {
+  checkIfPendingPreferenceUpdatesAreNoOp,
+  checkIfPendingPreferenceUpdatesCauseConflict,
+  FileMetadataState,
+  getPreferencesForIdentifiers,
+  getPreferenceUpdatesFromRow,
+  PreferenceState,
+  type PreferenceTopic,
+} from '@transcend-io/sdk';
 import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
@@ -7,11 +15,6 @@ import { keyBy } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/index.js';
-import { checkIfPendingPreferenceUpdatesAreNoOp } from './checkIfPendingPreferenceUpdatesAreNoOp.js';
-import { checkIfPendingPreferenceUpdatesCauseConflict } from './checkIfPendingPreferenceUpdatesCauseConflict.js';
-import { FileMetadataState, PreferenceState } from './codecs.js';
-import { getPreferencesForIdentifiers } from './getPreferencesForIdentifiers.js';
-import { getPreferenceUpdatesFromRow } from './getPreferenceUpdatesFromRow.js';
 import { parsePreferenceAndPurposeValuesFromCsv } from './parsePreferenceAndPurposeValuesFromCsv.js';
 import { parsePreferenceIdentifiersFromCsv } from './parsePreferenceIdentifiersFromCsv.js';
 import { parsePreferenceTimestampsFromCsv } from './parsePreferenceTimestampsFromCsv.js';
@@ -101,6 +104,7 @@ export async function parsePreferenceManagementCsvWithCache(
     : await getPreferencesForIdentifiers(sombra, {
         identifiers: identifiers.map((x) => ({ value: x })),
         partitionKey,
+        logger,
       });
   const consentRecordByIdentifier = keyBy(existingConsentRecords, 'userId');
 

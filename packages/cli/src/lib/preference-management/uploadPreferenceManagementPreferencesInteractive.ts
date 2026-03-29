@@ -5,6 +5,8 @@ import {
   createSombraGotInstance,
   fetchAllPurposes,
   fetchAllPreferenceTopics,
+  getPreferenceUpdatesFromRow,
+  PreferenceState,
 } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
@@ -14,8 +16,6 @@ import { chunk } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import { parseAttributesFromString } from '../requests/index.js';
-import { PreferenceState } from './codecs.js';
-import { getPreferenceUpdatesFromRow } from './getPreferenceUpdatesFromRow.js';
 import { parsePreferenceManagementCsvWithCache } from './parsePreferenceManagementCsv.js';
 import { NONE_PREFERENCE_MAP } from './parsePreferenceTimestampsFromCsv.js';
 
