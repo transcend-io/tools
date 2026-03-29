@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { buildExportStatus } from '@transcend-io/sdk';
+import { buildExportStatus } from '@transcend-io/utils';
 
 describe('buildExportStatus', () => {
   it('returns expected paths for all export artifacts', () => {

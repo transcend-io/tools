@@ -3,7 +3,7 @@ import { createWriteStream, type WriteStream } from 'node:fs';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { ensureLogFile, getWorkerLogPaths, spawnWorkerProcess } from '@transcend-io/sdk';
+import { ensureLogFile, getWorkerLogPaths, spawnWorkerProcess } from '@transcend-io/utils';
 
 import { openLogTailWindowMulti } from '../openTerminal.js';
 
@@ -19,8 +19,8 @@ vi.mock('node:fs', () => ({
 vi.mock('../openTerminal.js', () => ({
   openLogTailWindowMulti: vi.fn(),
 }));
-vi.mock('@transcend-io/sdk', async () => {
-  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
+vi.mock('@transcend-io/utils', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
   const makeLineSplitter = vi.fn(
     (cb: (line: string) => void) => (chunk: unknown) => cb(String(chunk)),
   );

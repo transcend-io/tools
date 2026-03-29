@@ -3,7 +3,7 @@ import * as nodeUrl from 'node:url';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { ExportStatusMap } from '@transcend-io/sdk';
+import type { ExportStatusMap } from '@transcend-io/utils';
 import { writeExportsIndex } from '../writeExportsIndex.js';
 
 /**

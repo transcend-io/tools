@@ -43,7 +43,7 @@ vi.mock('../artifactAbsPath.js', () => ({
   ),
 }));
 
-vi.mock('@transcend-io/sdk', () => ({
+vi.mock('@transcend-io/utils', () => ({
   extractBlocks: H.fns.extractBlocks,
   isLogError: vi.fn(() => false),
   isLogWarn: vi.fn(() => false),

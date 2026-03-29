@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { classifyLogLevel } from '@transcend-io/sdk';
+import { classifyLogLevel } from '@transcend-io/utils';
 
 describe('classifyLogLevel', () => {
   it('detects explicit worker tags', () => {

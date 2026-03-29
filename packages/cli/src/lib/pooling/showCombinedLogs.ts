@@ -1,7 +1,7 @@
 /* eslint-disable no-continue, no-control-regex */
 import { readFileSync } from 'node:fs';
 
-import type { WorkerLogPaths } from '@transcend-io/sdk';
+import type { WorkerLogPaths } from '@transcend-io/utils';
 
 /**
  * Log locations

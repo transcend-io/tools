@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 /* SUT */
-import { runPool } from '@transcend-io/sdk';
+import { runPool } from '@transcend-io/utils';
 
 /* colors → identity */
 vi.mock('colors', () => ({
@@ -38,8 +38,8 @@ const mGetWorkerLogPaths = vi.fn().mockReturnValue({
 });
 const mSpawnWorkerProcess = vi.fn();
 
-vi.mock('@transcend-io/sdk', async () => {
-  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
+vi.mock('@transcend-io/utils', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
   return {
     ...actual,
     safeSend: (...a: unknown[]) => mSafeSend(...a),
@@ -169,7 +169,7 @@ describe('runPool', () => {
       cpuCount: 8,
       filesTotal: 1,
       childFlag: '--as-child',
-      hooks: hooks as unknown as import('@transcend-io/sdk').PoolHooks<Task, Prog, Res, Totals>,
+      hooks: hooks as unknown as import('@transcend-io/utils').PoolHooks<Task, Prog, Res, Totals>,
       render: (snap) => {
         renders.push({
           title: snap.title,
@@ -273,7 +273,7 @@ describe('runPool', () => {
       cpuCount: 4,
       filesTotal: 1,
       childFlag: '--as-child',
-      hooks: hooks as unknown as import('@transcend-io/sdk').PoolHooks<Task, Prog, Res, Totals>,
+      hooks: hooks as unknown as import('@transcend-io/utils').PoolHooks<Task, Prog, Res, Totals>,
       viewerMode: true,
       render: (snap) => flags.push(snap.final),
     });

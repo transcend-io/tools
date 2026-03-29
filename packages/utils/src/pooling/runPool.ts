@@ -1,7 +1,7 @@
 import type { ChildProcess } from 'node:child_process';
 
 import type { ObjByString } from '@transcend-io/type-utils';
-import { RateCounter } from '@transcend-io/utils';
+import { RateCounter } from '../RateCounter.js';
 /* eslint-disable max-lines */
 
 import { classifyLogLevel, initLogDir, makeLineSplitter } from './logRotation.js';

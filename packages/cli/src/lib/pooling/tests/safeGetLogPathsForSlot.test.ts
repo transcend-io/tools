@@ -7,7 +7,7 @@ import {
   isIpcOpen,
   getWorkerLogPaths,
   type WorkerLogPaths,
-} from '@transcend-io/sdk';
+} from '@transcend-io/utils';
 
 /**
  * Mock collaborators BEFORE importing the SUT.
@@ -17,8 +17,8 @@ import {
  * Since the SUT imports from './spawnWorkerProcess', and this test lives in ../tests,
  * the correct mock specifier here is '../spawnWorkerProcess'.
  */
-vi.mock('@transcend-io/sdk', async () => {
-  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
+vi.mock('@transcend-io/utils', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
   return {
     ...actual,
     isIpcOpen: vi.fn(),

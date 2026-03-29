@@ -2,7 +2,7 @@ import type { ChildProcess } from 'node:child_process';
 
 import { describe, it, expect, vi } from 'vitest';
 
-import { safeSend } from '@transcend-io/sdk';
+import { safeSend } from '@transcend-io/utils';
 
 /**
  * Make a ChildProcess-shaped object.

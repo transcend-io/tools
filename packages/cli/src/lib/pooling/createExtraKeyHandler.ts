@@ -1,4 +1,4 @@
-import type { ExportStatusMap, SlotPaths } from '@transcend-io/sdk';
+import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
 
 import { showCombinedLogs, type LogLocation } from './showCombinedLogs.js';
 

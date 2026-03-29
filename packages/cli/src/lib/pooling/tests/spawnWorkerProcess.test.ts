@@ -8,7 +8,7 @@ import {
   classifyLogLevel,
   CHILD_FLAG,
   spawnWorkerProcess,
-} from '@transcend-io/sdk';
+} from '@transcend-io/utils';
 
 import { openLogTailWindowMulti } from '../openTerminal.js';
 
@@ -24,8 +24,8 @@ vi.mock('node:fs', () => ({
 vi.mock('../openTerminal.js', () => ({
   openLogTailWindowMulti: vi.fn(),
 }));
-vi.mock('@transcend-io/sdk', async () => {
-  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
+vi.mock('@transcend-io/utils', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
   const makeLineSplitter = vi.fn(
     (cb: (line: string) => void) => (chunk: unknown) => cb(String(chunk)),
   );

@@ -12,7 +12,7 @@ import {
   type PoolHooks,
   runPool,
   buildExportStatus,
-} from '@transcend-io/sdk';
+} from '@transcend-io/utils';
 
 import {
   computePoolSize,

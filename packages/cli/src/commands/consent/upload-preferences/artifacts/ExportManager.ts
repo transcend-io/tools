@@ -10,7 +10,7 @@ import {
   type ExportArtifactResult,
   type ExportStatusMap,
   type LogExportKind,
-} from '@transcend-io/sdk';
+} from '@transcend-io/utils';
 
 import {
   copyToClipboard,

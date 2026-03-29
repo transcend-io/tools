@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
 
-import type { ExportStatusMap, SlotPaths } from '@transcend-io/sdk';
+import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
 
 /**
  * Mock the combined logs viewer. We assert calls and control resolution/rejection.

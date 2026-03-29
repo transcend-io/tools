@@ -23,7 +23,7 @@ const H = vi.hoisted(() => {
     poolSize?: number;
     cpuCount?: number;
     filesTotal?: number;
-    hooks?: import('@transcend-io/sdk').PoolHooks<
+    hooks?: import('@transcend-io/utils').PoolHooks<
       ChunkTask,
       ChunkProgress,
       ChunkResult,

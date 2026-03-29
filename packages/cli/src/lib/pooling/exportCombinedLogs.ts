@@ -3,7 +3,7 @@ import { once } from 'node:events';
 import { createReadStream, createWriteStream, mkdirSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
-import type { SlotPaths, WorkerLogPaths } from '@transcend-io/sdk';
+import type { SlotPaths, WorkerLogPaths } from '@transcend-io/utils';
 
 /** Which combined log to export */
 export type LogKind = 'error' | 'warn' | 'info' | 'all';

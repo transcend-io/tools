@@ -4,8 +4,8 @@ import { join, dirname } from 'node:path';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
-  type ToWorker,
 } from '@transcend-io/sdk';
+import type { ToWorker } from '@transcend-io/utils';
 import { splitCsvToList } from '@transcend-io/utils';
 import { logger } from '../../../logger.js';
 import { getFilePrefix } from './artifacts/index.js';

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { extractBlocks } from '@transcend-io/sdk';
+import { extractBlocks } from '@transcend-io/utils';
 
 /**
  * Blocks should start when `starts(cleanLine)` returns true,

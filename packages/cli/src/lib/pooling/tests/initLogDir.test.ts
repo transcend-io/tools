@@ -2,7 +2,7 @@ import { readdirSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from 'n
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { initLogDir } from '@transcend-io/sdk';
+import { initLogDir } from '@transcend-io/utils';
 
 /**
  * Mock colors BEFORE importing the SUT.
