@@ -1,6 +1,5 @@
-import { describe, it, expect } from 'vitest';
-
 import { isLogNewHeader } from '@transcend-io/utils';
+import { describe, it, expect } from 'vitest';
 
 describe('isLogNewHeader', () => {
   it('is true for errors, warnings, worker tags, and ISO timestamps', () => {

@@ -1,12 +1,10 @@
 import { mkdirSync, createWriteStream } from 'node:fs';
 import { join, dirname } from 'node:path';
 
-import {
-  buildTranscendGraphQLClient,
-  createSombraGotInstance,
-} from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import { CHILD_FLAG, splitCsvToList } from '@transcend-io/utils';
 import type { ToWorker } from '@transcend-io/utils';
-import { splitCsvToList } from '@transcend-io/utils';
+
 import { logger } from '../../../logger.js';
 import { getFilePrefix } from './artifacts/index.js';
 import { makeReceiptsState } from './artifacts/receipts/receiptsState.js';
@@ -189,5 +187,12 @@ export async function runChild(): Promise<void> {
   // Keep the process alive indefinitely
   await new Promise<never>(() => {
     // Keep the process alive
+  });
+}
+
+if (process.argv.includes(CHILD_FLAG)) {
+  runChild().catch((err) => {
+    logger.error(err);
+    process.exit(1);
   });
 }

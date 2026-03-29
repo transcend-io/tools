@@ -1,9 +1,8 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import { getPreferencesForIdentifiers } from '@transcend-io/sdk';
 import type { Got } from 'got';
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars,require-await */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-import { getPreferencesForIdentifiers } from '@transcend-io/sdk';
 
 // Hoisted shared spies / fakes
 const H = vi.hoisted(() => ({
@@ -71,7 +70,6 @@ vi.mock('@transcend-io/type-utils', async (importOriginal) => {
     decodeCodec: vi.fn((_codec, raw) => raw),
   };
 });
-
 
 describe('getPreferencesForIdentifiers', () => {
   beforeEach(() => {

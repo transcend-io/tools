@@ -3,14 +3,9 @@ import { createWriteStream, type WriteStream } from 'node:fs';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import {
-  ensureLogFile,
-  classifyLogLevel,
-  CHILD_FLAG,
-  spawnWorkerProcess,
-} from '@transcend-io/utils';
-
-import { openLogTailWindowMulti } from '../openTerminal.js';
+import { ensureLogFile } from '../ensureLogFile.js';
+import { classifyLogLevel } from '../logRotation.js';
+import { CHILD_FLAG, spawnWorkerProcess } from '../spawnWorkerProcess.js';
 
 /**
  * Inline mocks for all external deps used by the SUT.
@@ -21,17 +16,16 @@ vi.mock('node:child_process', () => ({
 vi.mock('node:fs', () => ({
   createWriteStream: vi.fn(),
 }));
-vi.mock('../openTerminal.js', () => ({
-  openLogTailWindowMulti: vi.fn(),
+vi.mock('../ensureLogFile.js', () => ({
+  ensureLogFile: vi.fn(),
 }));
-vi.mock('@transcend-io/utils', async () => {
-  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
+vi.mock('../logRotation.js', async () => {
+  const actual = await vi.importActual<typeof import('../logRotation.js')>('../logRotation.js');
   const makeLineSplitter = vi.fn(
     (cb: (line: string) => void) => (chunk: unknown) => cb(String(chunk)),
   );
   return {
     ...actual,
-    ensureLogFile: vi.fn(),
     classifyLogLevel: vi.fn(),
     makeLineSplitter,
   };
@@ -40,7 +34,6 @@ vi.mock('@transcend-io/utils', async () => {
 const mFork = vi.mocked(fork);
 const mCws = vi.mocked(createWriteStream);
 const mEnsure = vi.mocked(ensureLogFile);
-const mOpen = vi.mocked(openLogTailWindowMulti);
 const mClassify = vi.mocked(classifyLogLevel);
 
 /**
@@ -115,7 +108,7 @@ describe('spawnWorkerProcess', () => {
     mCws.mockImplementation(() => sink());
   });
 
-  it('ensures log files, forks with proper args, writes headers, and calls onLogFilesCreated when provided', () => {
+  it('ensures log files, forks with proper args, writes headers, and opens tails when enabled', () => {
     const child = makeChild();
     mFork.mockReturnValue(child as never);
 
@@ -124,8 +117,8 @@ describe('spawnWorkerProcess', () => {
       id: 3,
       modulePath: '/worker.js',
       logDir: '/tmp/logs',
-      onLogFilesCreated,
       isSilent: false,
+      onLogFilesCreated,
     });
 
     expect(p).toBe(child);
@@ -160,9 +153,9 @@ describe('spawnWorkerProcess', () => {
       );
     });
 
-    // onLogFilesCreated called with all six paths
+    // onLogFilesCreated invoked with all six paths (CLI wires tail windows here)
     expect(onLogFilesCreated).toHaveBeenCalledTimes(1);
-    const [paths, label, isSilent] = onLogFilesCreated.mock.calls[0]!;
+    const [paths, name, isSilent] = onLogFilesCreated.mock.calls[0]!;
     expect(paths).toEqual([
       '/tmp/logs/worker-3.log',
       '/tmp/logs/worker-3.out.log',
@@ -171,7 +164,7 @@ describe('spawnWorkerProcess', () => {
       '/tmp/logs/worker-3.warn.log',
       '/tmp/logs/worker-3.error.log',
     ]);
-    expect(label).toBe('worker-3');
+    expect(name).toBe('worker-3');
     expect(isSilent).toBe(false);
   });
 
@@ -197,22 +190,22 @@ describe('spawnWorkerProcess', () => {
       /** Content */
       content: string;
     }>;
-    const outStream = created[0]; // out
-    const errStream = created[1]; // err
-    const infoStream = created[2]; // info
-    const warnStream = created[3]; // warn
-    const errorStream = created[4]; // error
+    const outStream = created[0]!; // out
+    const errStream = created[1]!; // err
+    const infoStream = created[2]!; // info
+    const warnStream = created[3]!; // warn
+    const errorStream = created[4]!; // error
 
     // Emit a stdout line → goes to infoStream (classified) via splitter
     // eslint-disable-next-line no-underscore-dangle
-    child.stdout._emit('hello-out');
+    child.stdout!._emit('hello-out');
     expect(infoStream.content).toMatch(/hello-out\n/);
 
     // Emit stderr lines → classify first as error, second as warn (null => warn)
     // eslint-disable-next-line no-underscore-dangle
-    child.stderr._emit('boom!');
+    child.stderr!._emit('boom!');
     // eslint-disable-next-line no-underscore-dangle
-    child.stderr._emit('just-stderr');
+    child.stderr!._emit('just-stderr');
 
     expect(errorStream.content).toMatch(/boom!\n/);
     expect(warnStream.content).toMatch(/just-stderr\n/);

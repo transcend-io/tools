@@ -17,10 +17,7 @@ export interface BatchUploadPreferenceOptions {
 
 export interface BatchUploaderDeps {
   /** Network transport used for PUT uploads */
-  putBatch: (
-    updates: PreferenceUpdateItem[],
-    opts: BatchUploadPreferenceOptions,
-  ) => Promise<void>;
+  putBatch: (updates: PreferenceUpdateItem[], opts: BatchUploadPreferenceOptions) => Promise<void>;
   /** Retry policy for retryable statuses */
   retryPolicy: RetryPolicy;
   /** Endpoint behavior flags */
@@ -77,9 +74,7 @@ export async function uploadChunkWithSplit(
 
     if (deps.isRetryableStatus(status) || isSoftRateLimit) {
       try {
-        await retrySamePromise(putAll, deps.retryPolicy, (note) =>
-          logger.warn(note),
-        );
+        await retrySamePromise(putAll, deps.retryPolicy, (note) => logger.warn(note));
         await callbacks.onSuccess(entries);
         return;
       } catch (err2) {

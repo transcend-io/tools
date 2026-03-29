@@ -1,4 +1,6 @@
 import type { PreferenceUpdateItem } from '@transcend-io/privacy-types';
+// --- Import SUT & mocked symbols ---
+import { uploadChunkWithSplit, type BatchUploaderDeps } from '@transcend-io/sdk';
 import {
   getErrorStatus,
   extractErrorMessage,
@@ -8,8 +10,6 @@ import {
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 
 import { logger } from '../../../../../logger.js';
-// --- Import SUT & mocked symbols ---
-import { uploadChunkWithSplit, type BatchUploaderDeps } from '@transcend-io/sdk';
 
 // --- Mocks (declare BEFORE importing the SUT) ---
 vi.mock('@transcend-io/utils', () => ({

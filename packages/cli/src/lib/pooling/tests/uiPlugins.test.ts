@@ -1,8 +1,8 @@
 import type { ObjByString } from '@transcend-io/type-utils';
+import type { SlotState } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import type { CommonCtx } from '../dashboardPlugin.js';
-import type { SlotState } from '@transcend-io/utils';
 import { fmtNum, pctBar, poolProgress, makeHeader, makeWorkerRows } from '../uiPlugins.js';
 
 /**

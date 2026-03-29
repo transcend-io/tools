@@ -87,6 +87,8 @@ export interface SpawnWorkerOptions {
   childFlag?: string;
   /** Optional callback to open log tail windows (CLI-specific) */
   onLogFilesCreated?: (paths: string[], label: string, isSilent: boolean) => void;
+  /** Override execArgv passed to the forked child (default: process.execArgv). Pass [] to avoid inheriting debug/loader flags. */
+  execArgv?: string[];
 }
 
 /**
@@ -104,7 +106,15 @@ export interface SpawnWorkerOptions {
  * @returns The spawned ChildProcess instance.
  */
 export function spawnWorkerProcess(opts: SpawnWorkerOptions): ChildProcess {
-  const { id, modulePath, logDir, isSilent, childFlag = CHILD_FLAG, onLogFilesCreated } = opts;
+  const {
+    id,
+    modulePath,
+    logDir,
+    isSilent,
+    childFlag = CHILD_FLAG,
+    onLogFilesCreated,
+    execArgv = process.execArgv,
+  } = opts;
 
   const structuredPath = join(logDir, `worker-${id}.log`);
   const outPath = join(logDir, `worker-${id}.out.log`);
@@ -118,7 +128,7 @@ export function spawnWorkerProcess(opts: SpawnWorkerOptions): ChildProcess {
   const child = fork(modulePath, [childFlag], {
     stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
     env: { ...process.env, WORKER_ID: String(id), WORKER_LOG: structuredPath },
-    execArgv: process.execArgv,
+    execArgv,
     silent: isSilent,
   });
 

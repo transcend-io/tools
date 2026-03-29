@@ -3,9 +3,8 @@ import { createWriteStream, type WriteStream } from 'node:fs';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { ensureLogFile, getWorkerLogPaths, spawnWorkerProcess } from '@transcend-io/utils';
-
-import { openLogTailWindowMulti } from '../openTerminal.js';
+import { ensureLogFile } from '../ensureLogFile.js';
+import { getWorkerLogPaths, spawnWorkerProcess } from '../spawnWorkerProcess.js';
 
 /**
  * Mock deps before SUT import (inline factories).
@@ -16,17 +15,16 @@ vi.mock('node:child_process', () => ({
 vi.mock('node:fs', () => ({
   createWriteStream: vi.fn(),
 }));
-vi.mock('../openTerminal.js', () => ({
-  openLogTailWindowMulti: vi.fn(),
+vi.mock('../ensureLogFile.js', () => ({
+  ensureLogFile: vi.fn(),
 }));
-vi.mock('@transcend-io/utils', async () => {
-  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
+vi.mock('../logRotation.js', async () => {
+  const actual = await vi.importActual<typeof import('../logRotation.js')>('../logRotation.js');
   const makeLineSplitter = vi.fn(
     (cb: (line: string) => void) => (chunk: unknown) => cb(String(chunk)),
   );
   return {
     ...actual,
-    ensureLogFile: vi.fn(),
     classifyLogLevel: vi.fn(),
     makeLineSplitter,
   };
@@ -35,7 +33,6 @@ vi.mock('@transcend-io/utils', async () => {
 const mFork = vi.mocked(fork);
 const mCws = vi.mocked(createWriteStream);
 const mEnsure = vi.mocked(ensureLogFile);
-const mOpen = vi.mocked(openLogTailWindowMulti);
 
 /**
  * Create a fake child process with readable-like stdout/stderr.
@@ -129,7 +126,5 @@ describe('getWorkerLogPaths', () => {
       warnPath: '/logs/worker-7.warn.log',
       errorPath: '/logs/worker-7.error.log',
     });
-
-    expect(mOpen).not.toHaveBeenCalled(); // openLogWindows=false
   });
 });

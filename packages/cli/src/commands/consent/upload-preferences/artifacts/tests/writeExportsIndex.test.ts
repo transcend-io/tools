@@ -1,9 +1,9 @@
 import * as fs from 'node:fs';
 import * as nodeUrl from 'node:url';
 
+import type { ExportStatusMap } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { ExportStatusMap } from '@transcend-io/utils';
 import { writeExportsIndex } from '../writeExportsIndex.js';
 
 /**

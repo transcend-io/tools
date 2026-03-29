@@ -1,10 +1,10 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
+import { FileFormatState } from '@transcend-io/sdk';
 import colors from 'colors';
 import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { FileFormatState } from '@transcend-io/sdk';
 
 export const NONE_PREFERENCE_MAP = '[NONE]';
 

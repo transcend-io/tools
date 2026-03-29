@@ -1,11 +1,7 @@
 import { createReadStream } from 'node:fs';
 
 import { PersistedState } from '@transcend-io/persisted-state';
-import {
-  buildTranscendGraphQLClient,
-  FileFormatState,
-  loadReferenceData,
-} from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, FileFormatState, loadReferenceData } from '@transcend-io/sdk';
 import colors from 'colors';
 import { parse as csvParse } from 'csv-parse';
 import inquirer from 'inquirer';

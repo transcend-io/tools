@@ -13,7 +13,8 @@ const h = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../logger.js', () => ({ logger: h.mLogger }));
-vi.mock('@transcend-io/utils', () => ({
+vi.mock('@transcend-io/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/utils')>()),
   chunkOneCsvFile: (...a: Parameters<typeof h.mChunkOneCsvFile>) => h.mChunkOneCsvFile(...a),
   extractErrorMessage: (...a: Parameters<typeof h.mExtractErrorMessage>) =>
     h.mExtractErrorMessage(...a),

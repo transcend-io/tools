@@ -7,14 +7,14 @@ import type {
   PendingSafePreferenceUpdates,
   PendingWithConflictPreferenceUpdates,
 } from '../preference-management/codecs.js';
+import type { PreferenceTopic } from '../preference-management/fetchAllPreferenceTopics.js';
+import type { Purpose } from '../preference-management/fetchAllPurposes.js';
 import {
   getPreferenceIdentifiersFromRow,
   NONE_PREFERENCE_MAP,
 } from '../preference-management/getPreferenceIdentifiersFromRow.js';
 import { getPreferenceMetadataFromRow } from '../preference-management/getPreferenceMetadataFromRow.js';
 import { getPreferenceUpdatesFromRow } from '../preference-management/getPreferenceUpdatesFromRow.js';
-import type { PreferenceTopic } from '../preference-management/fetchAllPreferenceTopics.js';
-import type { Purpose } from '../preference-management/fetchAllPurposes.js';
 
 /** Attribute key-value pair for workflow settings */
 export interface FormattedAttribute {
@@ -88,9 +88,7 @@ export function buildPendingUpdates(
     ? { ...safe }
     : {
         ...safe,
-        ...Object.fromEntries(
-          Object.entries(conflicts).map(([id, v]) => [id, v.row]),
-        ),
+        ...Object.fromEntries(Object.entries(conflicts).map(([id, v]) => [id, v.row])),
       };
 
   const purposeSlugs = purposes.map((x) => x.trackingType);

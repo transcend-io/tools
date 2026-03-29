@@ -1,6 +1,5 @@
-import { describe, it, expect } from 'vitest';
-
 import { isLogWarn } from '@transcend-io/utils';
+import { describe, it, expect } from 'vitest';
 
 describe('isLogWarn', () => {
   it('matches WARN/WARNING case-insensitively', () => {

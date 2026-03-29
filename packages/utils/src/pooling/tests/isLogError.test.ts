@@ -1,6 +1,5 @@
-import { describe, it, expect } from 'vitest';
-
 import { isLogError } from '@transcend-io/utils';
+import { describe, it, expect } from 'vitest';
 
 describe('isLogError', () => {
   it('matches ERROR and runtime fatal indicators', () => {

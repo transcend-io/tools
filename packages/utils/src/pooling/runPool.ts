@@ -1,10 +1,18 @@
 import type { ChildProcess } from 'node:child_process';
 
 import type { ObjByString } from '@transcend-io/type-utils';
+
 import { RateCounter } from '../RateCounter.js';
 /* eslint-disable max-lines */
-
 import { classifyLogLevel, initLogDir, makeLineSplitter } from './logRotation.js';
+
+/** Thrown when the pool is cancelled via SIGINT */
+export class PoolCancelledError extends Error {
+  constructor() {
+    super('Pool cancelled by SIGINT');
+    this.name = 'PoolCancelledError';
+  }
+}
 import { safeGetLogPathsForSlot } from './safeGetLogPathsForSlot.js';
 import {
   getWorkerLogPaths,
@@ -254,11 +262,23 @@ export interface RunPoolOptions<
   /**
    * When true, run in “viewer mode” (non-interactive):
    *  - Do NOT install the interactive attach/switcher.
-   *  - Default `openLogWindows` to false.
+   *  - Do NOT open log tail windows.
    *  - Still render on a timer.
    *  - Provide `logDir`/`logsBySlot` to `postProcess` for auto-exports.
    */
   viewerMode?: boolean;
+
+  /** Interval in ms between render ticks (default 350). */
+  renderIntervalMs?: number;
+
+  /** Interval in ms between completion-poll checks (default 300). */
+  pollIntervalMs?: number;
+
+  /** Bytes to replay from log files when attaching to a worker (default 200KB). */
+  replayBytes?: number;
+
+  /** Reset mode for worker logs on startup (default 'truncate'). */
+  resetMode?: 'truncate' | 'delete';
 
   /**
    * Optional factory for additional key bindings (e.g., log viewers/exports).
@@ -279,12 +299,8 @@ export interface RunPoolOptions<
    */
   installInteractiveSwitcher?: (args: {
     /** Map of worker slot IDs to their ChildProcess instances */
-    workers: Map<number, import('node:child_process').ChildProcess>;
-    /** Called when a user attaches to a worker slot */
-    onAttach: (id: number) => void;
-    /** Called when a user detaches from a worker slot */
-    onDetach: () => void;
-    /** Called on Ctrl+C */
+    workers: Map<number, ChildProcess>;
+    /** Called on Ctrl+C — should trigger graceful shutdown */
     onCtrlC: () => void;
     /** Get log paths for a slot */
     getLogPaths: (id: number) => WorkerLogPaths | undefined;
@@ -292,8 +308,10 @@ export interface RunPoolOptions<
     replayBytes: number;
     /** Which log streams to replay */
     replayWhich: ('out' | 'err')[];
-    /** Called when entering attach screen */
-    onEnterAttachScreen: (id: number) => void;
+    /** Pause the dashboard render loop (e.g. while attached to a worker) */
+    setPaused: (paused: boolean) => void;
+    /** Trigger a dashboard repaint */
+    repaint: () => void;
   }) => () => void;
 }
 
@@ -327,9 +345,12 @@ export async function runPool<
   } = opts;
 
   const isSilent = opts.isSilent ?? true;
+  const renderIntervalMs = opts.renderIntervalMs ?? 350;
+  const pollIntervalMs = opts.pollIntervalMs ?? 300;
+  const replayBytes = opts.replayBytes ?? 200 * 1024;
 
   const startedAt = Date.now();
-  const logDir = initLogDir(baseDir);
+  const logDir = initLogDir(baseDir, { resetMode: opts.resetMode });
 
   /** Live worker processes keyed by slot id. */
   const workers = new Map<number, ChildProcess>();
@@ -457,9 +478,11 @@ export async function runPool<
       if (msg.type === 'ready') {
         if (!firstReady) {
           firstReady = true;
-          ticker = setInterval(() => repaint(false), 350);
+          ticker = setInterval(() => repaint(false), renderIntervalMs);
         }
-        assign(i); // try to start work immediately
+        if (!assign(i) && isIpcOpen(child)) {
+          safeSend(child, { type: 'shutdown' } as ToWorker<TTask>);
+        }
         return;
       }
 
@@ -539,6 +562,8 @@ export async function runPool<
     }
   };
 
+  let rejectPool: ((err: Error) => void) | null = null;
+
   const onSigint = (): void => {
     if (ticker) clearInterval(ticker);
     cleanupSwitcher?.();
@@ -551,7 +576,6 @@ export async function runPool<
     }
     tearDownStdin();
 
-    process.stdout.write('\nStopping workers...\n');
     for (const [, w] of workers) {
       if (isIpcOpen(w)) safeSend(w, { type: 'shutdown' } as ToWorker<TTask>);
       try {
@@ -560,31 +584,17 @@ export async function runPool<
         /* noop */
       }
     }
-    process.exit(130);
+    rejectPool?.(new PoolCancelledError());
   };
 
-  const onAttach = (id: number): void => {
-    paused = true; // stop dashboard repaint while attached/viewing
-    process.stdout.write('\x1b[2J\x1b[H'); // clear + home
-    process.stdout.write(
-      `Attached to worker ${id}. (Esc/Ctrl+] detach • Ctrl+D EOF • Ctrl+C SIGINT)\n`,
-    );
-  };
-  const onDetach = (): void => {
-    paused = false;
-    repaint();
-  };
-
-  process.once('SIGINT', onSigint);
+  process.on('SIGINT', onSigint);
 
   if (!viewerMode) {
     if (process.stdin.isTTY) {
       try {
         process.stdin.setRawMode(true);
       } catch {
-        process.stdout.write(
-          'Warning: Unable to enable raw mode for interactive key handling.\n',
-        );
+        process.stdout.write('Warning: Unable to enable raw mode for interactive key handling.\n');
       }
       process.stdin.resume(); // keep stdin flowing (no encoding — raw Buffer)
     }
@@ -592,13 +602,14 @@ export async function runPool<
     if (opts.installInteractiveSwitcher) {
       cleanupSwitcher = opts.installInteractiveSwitcher({
         workers,
-        onAttach,
-        onDetach,
         onCtrlC: onSigint,
         getLogPaths: (id) => safeGetLogPathsForSlot(id, workers, slotLogs),
-        replayBytes: 200 * 1024,
+        replayBytes,
         replayWhich: ['out', 'err'],
-        onEnterAttachScreen: onAttach,
+        setPaused: (p) => {
+          paused = p;
+        },
+        repaint: () => repaint(),
       });
     }
 
@@ -615,11 +626,14 @@ export async function runPool<
   }
 
   /* Wait for full completion, then post-process (with log context if needed). */
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
+    rejectPool = reject;
+
     const check = setInterval(async () => {
       if (activeWorkers === 0) {
         clearInterval(check);
         if (ticker) clearInterval(ticker);
+        process.off('SIGINT', onSigint);
         cleanupSwitcher();
 
         if (extraHandler) {
@@ -645,18 +659,12 @@ export async function runPool<
             getLogPathsForSlot: (id: number) => safeGetLogPathsForSlot(id, workers, slotLogs),
           });
         } catch (err: unknown) {
-          const msg =
-            (
-              err as {
-                /** Error stack */
-                stack?: string;
-              }
-            )?.stack ?? String(err);
-          process.stdout.write(`postProcess error: ${msg}\n`);
+          reject(err instanceof Error ? err : new Error(String(err)));
+          return;
         }
         resolve();
       }
-    }, 300);
+    }, pollIntervalMs);
   });
 }
 /* eslint-enable max-lines */

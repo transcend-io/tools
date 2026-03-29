@@ -13,7 +13,8 @@ const h = vi.hoisted(() => ({
 
 // Mock EXACT module ids the SUT imports
 vi.mock('../../../../logger.js', () => ({ logger: h.mLogger }));
-vi.mock('@transcend-io/utils', () => ({
+vi.mock('@transcend-io/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/utils')>()),
   extractErrorMessage: (...a: Parameters<typeof h.mExtractErrorMessage>) =>
     h.mExtractErrorMessage(...a),
 }));

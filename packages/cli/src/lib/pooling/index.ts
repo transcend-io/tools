@@ -1,4 +1,3 @@
-export * from './computePoolSize.js';
 export * from './openTerminal.js';
 export * from './showCombinedLogs.js';
 export * from './installInteractiveSwitcher.js';

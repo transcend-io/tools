@@ -1,6 +1,4 @@
 import { PersistedState } from '@transcend-io/persisted-state';
-import { retrySamePromise, type RetryPolicy } from '@transcend-io/utils';
-
 import {
   RequestUploadReceipts,
   type FailingPreferenceUpdates,
@@ -9,6 +7,7 @@ import {
   type PreferenceUpdateMap,
   type SkippedPreferenceUpdates,
 } from '@transcend-io/sdk';
+import { retrySamePromise, type RetryPolicy } from '@transcend-io/utils';
 
 export type PreferenceReceiptsInterface = {
   /** Path to file */

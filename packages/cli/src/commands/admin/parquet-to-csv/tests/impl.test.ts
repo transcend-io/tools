@@ -1,7 +1,7 @@
+import type { PoolHooks } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import type { LocalContext } from '../../../../context.js';
-import type { PoolHooks } from '@transcend-io/utils';
 import { parquetToCsv, type ParquetToCsvCommandFlags } from '../impl.js';
 import { parquetToCsvPlugin } from '../ui/index.js';
 import type { ParquetTask, ParquetProgress, ParquetResult } from '../worker.js';
@@ -40,7 +40,7 @@ const H = vi.hoisted(() => {
       cpuCount: 8,
     })),
     // runPool will just record its args for later inspection
-    runPool: vi.fn((args: typeof lastRunPoolArgs): void => {
+    runPool: vi.fn(async (args: typeof lastRunPoolArgs): Promise<void> => {
       Object.assign(lastRunPoolArgs, args);
     }),
     dashboardPlugin: vi.fn((input: unknown, plugin: unknown, viewerMode: boolean) => ({
@@ -111,6 +111,7 @@ vi.mock('@transcend-io/utils', async () => {
   return {
     ...actual,
     CHILD_FLAG: H.pooling.CHILD_FLAG,
+    computePoolSize: H.pooling.computePoolSize,
     runPool: H.pooling.runPool,
   };
 });
@@ -122,7 +123,6 @@ vi.mock('../../../../lib/pooling/index.js', async () => {
     );
   return {
     ...actual,
-    computePoolSize: H.pooling.computePoolSize,
     dashboardPlugin: H.pooling.dashboardPlugin,
     createExtraKeyHandler: H.pooling.createExtraKeyHandler,
   };

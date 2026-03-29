@@ -1,11 +1,12 @@
 import type { ChildProcess } from 'node:child_process';
 import * as readline from 'node:readline';
 
+import type { WorkerLogPaths } from '@transcend-io/utils';
+
 import { DEBUG } from '../../constants.js';
 import { keymap } from './keymap.js';
 import { replayFileTailToStdout } from './replayFileTailToStdout.js';
 import type { WhichLogs } from './showCombinedLogs.js';
-import type { WorkerLogPaths } from '@transcend-io/utils';
 import { cycleWorkers, getWorkerIds } from './workerIds.js';
 
 /**

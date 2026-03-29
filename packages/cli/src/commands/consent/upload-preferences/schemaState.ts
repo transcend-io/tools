@@ -1,12 +1,11 @@
 import { PersistedState } from '@transcend-io/persisted-state';
-import { retrySamePromise, type RetryPolicy } from '@transcend-io/utils';
-
 import {
   FileFormatState,
   type ColumnIdentifierMap,
   type ColumnMetadataMap,
   type ColumnPurposeMap,
 } from '@transcend-io/sdk';
+import { retrySamePromise, type RetryPolicy } from '@transcend-io/utils';
 
 export interface PreferenceSchemaInterface {
   /** Name of the column used as timestamp, if any */

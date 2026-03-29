@@ -1,31 +1,24 @@
+import {
+  CHILD_FLAG,
+  type PoolHooks,
+  runPool,
+  computePoolSize,
+  PoolCancelledError,
+  resolveWorkerPath,
+} from '@transcend-io/utils';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { collectCsvFilesOrExit } from '../../../lib/helpers/collectCsvFilesOrExit.js';
-import { CHILD_FLAG, type PoolHooks, runPool } from '@transcend-io/utils';
-
 import {
-  computePoolSize,
   createExtraKeyHandler,
   dashboardPlugin,
+  installInteractiveSwitcher,
 } from '../../../lib/pooling/index.js';
 import { logger } from '../../../logger.js';
 import { chunkCsvPlugin } from './ui/index.js';
-import { runChild, type ChunkProgress, type ChunkResult, type ChunkTask } from './worker.js';
-
-/**
- * Returns the current module's path so the worker pool knows what file to re-exec.
- * In Node ESM, __filename is undefined, so we fall back to argv[1].
- *
- * @returns The current module's path as a string
- */
-function getCurrentModulePath(): string {
-  if (typeof __filename !== 'undefined') {
-    return __filename as unknown as string;
-  }
-  return process.argv[1];
-}
+import type { ChunkProgress, ChunkResult, ChunkTask } from './worker.js';
 
 /**
  * Totals aggregate for this command.
@@ -103,28 +96,53 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
     title: `Chunk CSV - ${directory}`,
     baseDir: directory || outputDir || process.cwd(),
     childFlag: CHILD_FLAG,
-    childModulePath: getCurrentModulePath(),
+    childModulePath: resolveWorkerPath(import.meta.url, 'commands/admin/chunk-csv/worker.mjs'),
     poolSize,
     cpuCount,
     filesTotal: files.length,
     hooks,
     viewerMode,
     render: (input) => dashboardPlugin(input, chunkCsvPlugin, viewerMode),
+    installInteractiveSwitcher: viewerMode
+      ? undefined
+      : ({
+          workers,
+          onCtrlC,
+          getLogPaths,
+          replayBytes: rb,
+          replayWhich: rw,
+          setPaused,
+          repaint: rp,
+        }) =>
+          installInteractiveSwitcher({
+            workers,
+            onCtrlC,
+            getLogPaths,
+            replayBytes: rb,
+            replayWhich: rw,
+            onAttach: () => setPaused(true),
+            onDetach: () => {
+              setPaused(false);
+              rp();
+            },
+            onEnterAttachScreen: (id) => {
+              setPaused(true);
+              process.stdout.write('\x1b[2J\x1b[H');
+              process.stdout.write(
+                `Attached to worker ${id}. (Esc/Ctrl+] detach \u2022 Ctrl+D EOF \u2022 Ctrl+C SIGINT)\n`,
+              );
+            },
+          }),
     extraKeyHandler: ({ logsBySlot, repaint, setPaused }) =>
       createExtraKeyHandler({
         logsBySlot,
         repaint,
         setPaused,
       }),
-  });
-}
-
-/* -------------------------------------------------------------------------------------------------
- * If invoked directly as a child process, enter worker loop
- * ------------------------------------------------------------------------------------------------- */
-if (process.argv.includes(CHILD_FLAG)) {
-  runChild().catch((err) => {
-    logger.error(err);
-    process.exit(1);
+  }).catch((err) => {
+    if (err instanceof PoolCancelledError) {
+      process.exit(130);
+    }
+    throw err;
   });
 }

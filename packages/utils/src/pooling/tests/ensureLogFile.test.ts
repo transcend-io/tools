@@ -1,8 +1,7 @@
 import { existsSync, openSync, closeSync } from 'node:fs';
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 import { ensureLogFile } from '@transcend-io/utils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 /**
  * Mock fs BEFORE importing the SUT.

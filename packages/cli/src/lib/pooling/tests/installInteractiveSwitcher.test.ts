@@ -1,13 +1,13 @@
 import { EventEmitter } from 'node:events';
 import * as readline from 'node:readline';
 
+import type { WorkerLogPaths } from '@transcend-io/utils';
 /* eslint-disable no-underscore-dangle,max-lines */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { installInteractiveSwitcher } from '../installInteractiveSwitcher.js';
 import { keymap } from '../keymap.js';
 import { replayFileTailToStdout } from '../replayFileTailToStdout.js';
-import type { WorkerLogPaths } from '@transcend-io/utils';
 import { getWorkerIds, cycleWorkers } from '../workerIds.js';
 
 /**

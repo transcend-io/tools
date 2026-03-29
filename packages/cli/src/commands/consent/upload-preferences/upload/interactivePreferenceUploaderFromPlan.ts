@@ -1,4 +1,9 @@
 import type { PreferenceUpdateItem } from '@transcend-io/privacy-types';
+import {
+  uploadChunkWithSplit,
+  buildPendingUpdates,
+  type PreferenceUploadProgress,
+} from '@transcend-io/sdk';
 import { extractErrorMessage, limitRecords } from '@transcend-io/utils';
 import Bluebird from 'bluebird';
 /* eslint-disable no-param-reassign */
@@ -9,11 +14,6 @@ import { chunk, groupBy } from 'lodash-es';
 import { RETRYABLE_BATCH_STATUSES } from '../../../../constants.js';
 import { logger } from '../../../../logger.js';
 import type { PreferenceReceiptsInterface } from '../artifacts/receipts/index.js';
-import {
-  uploadChunkWithSplit,
-  buildPendingUpdates,
-  type PreferenceUploadProgress,
-} from '@transcend-io/sdk';
 import type { InteractiveUploadPreferencePlan } from './buildInteractiveUploadPlan.js';
 
 const { map: pMap } = Bluebird;

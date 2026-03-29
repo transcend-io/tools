@@ -1,6 +1,5 @@
-import { describe, it, expect } from 'vitest';
-
 import { makeLineSplitter } from '@transcend-io/utils';
+import { describe, it, expect } from 'vitest';
 
 describe('makeLineSplitter', () => {
   it('emits one line per newline across chunk boundaries', () => {

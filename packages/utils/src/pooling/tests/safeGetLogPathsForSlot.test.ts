@@ -2,23 +2,16 @@ import type { ChildProcess } from 'node:child_process';
 
 import { describe, it, expect, vi } from 'vitest';
 
-import {
-  safeGetLogPathsForSlot,
-  isIpcOpen,
-  getWorkerLogPaths,
-  type WorkerLogPaths,
-} from '@transcend-io/utils';
+import { safeGetLogPathsForSlot } from '../safeGetLogPathsForSlot.js';
+import { isIpcOpen, getWorkerLogPaths, type WorkerLogPaths } from '../spawnWorkerProcess.js';
 
 /**
  * Mock collaborators BEFORE importing the SUT.
- * Inline factory avoids Vitest hoisting pitfalls.
- *
- * IMPORTANT: The mock path MUST match the specifier used by the SUT after resolution.
- * Since the SUT imports from './spawnWorkerProcess', and this test lives in ../tests,
- * the correct mock specifier here is '../spawnWorkerProcess'.
  */
-vi.mock('@transcend-io/utils', async () => {
-  const actual = await vi.importActual<typeof import('@transcend-io/utils')>('@transcend-io/utils');
+vi.mock('../spawnWorkerProcess.js', async () => {
+  const actual = await vi.importActual<typeof import('../spawnWorkerProcess.js')>(
+    '../spawnWorkerProcess.js',
+  );
   return {
     ...actual,
     isIpcOpen: vi.fn(),

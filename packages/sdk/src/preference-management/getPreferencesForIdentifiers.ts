@@ -1,11 +1,6 @@
 import { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import { decodeCodec } from '@transcend-io/type-utils';
-import {
-  extractErrorMessage,
-  map,
-  splitInHalf,
-  type Logger,
-} from '@transcend-io/utils';
+import { extractErrorMessage, map, splitInHalf, type Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
@@ -77,8 +72,7 @@ export async function getPreferencesForIdentifiers(
     if (skipLogging) return;
     const shouldLog =
       total % logInterval === 0 ||
-      Math.floor((total - identifiers.length) / logInterval) <
-        Math.floor(total / logInterval);
+      Math.floor((total - identifiers.length) / logInterval) < Math.floor(total / logInterval);
     if (shouldLog) {
       logger.info(
         `Fetched ${total}/${identifiers.length} user preferences from partition ${partitionKey}`,
@@ -120,9 +114,7 @@ export async function getPreferencesForIdentifiers(
    * - If it fails with "did not pass validation", split into halves and recurse.
    * - If the group is a singleton and still fails validation, skip it.
    */
-  const processGroup = async (
-    group: { value: string; name: string }[],
-  ): Promise<void> => {
+  const processGroup = async (group: { value: string; name: string }[]): Promise<void> => {
     try {
       const nodes = await postGroupWithRetries(group);
       results.push(...nodes);
@@ -134,9 +126,7 @@ export async function getPreferencesForIdentifiers(
       if (/did not pass validation/i.test(msg)) {
         if (group.length === 1) {
           const only = group[0]!;
-          logger.warn(
-            `Skipping identifier "${only.value}" (${only.name}): ${msg}`,
-          );
+          logger.warn(`Skipping identifier "${only.value}" (${only.name}): ${msg}`);
           total += 1;
           maybeLogProgress(1);
           return;

@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 
+import type { WorkerLogPaths } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { showCombinedLogs, type WhichLogs } from '../showCombinedLogs.js';
-import type { WorkerLogPaths } from '@transcend-io/utils';
 
 /**
  * Mock fs BEFORE importing the SUT.

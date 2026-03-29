@@ -1,8 +1,7 @@
 import type { ChildProcess } from 'node:child_process';
 
-import { describe, it, expect } from 'vitest';
-
 import { isIpcOpen } from '@transcend-io/utils';
+import { describe, it, expect } from 'vitest';
 
 /**
  * Build a minimal ChildProcess-like object for isIpcOpen tests.

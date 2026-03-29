@@ -2,7 +2,6 @@
 import { readdirSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-
 /**
  * Reset worker logs in the given directory.
  * mode:
@@ -19,6 +18,7 @@ function resetWorkerLogs(dir: string, mode: 'truncate' | 'delete'): void {
     /worker-\d+\.err\.log$/,
     /worker-\d+\.warn\.log$/,
     /worker-\d+\.info\.log$/,
+    /worker-\d+\.error\.log$/,
   ];
   for (const name of readdirSync(dir)) {
     // eslint-disable-next-line no-continue
@@ -31,9 +31,6 @@ function resetWorkerLogs(dir: string, mode: 'truncate' | 'delete'): void {
       /* ignore */
     }
   }
-  process.stdout.write(
-    `Logs have been ${mode === 'delete' ? 'deleted' : 'truncated'} in ${dir}\n`,
-  );
 }
 
 /**
@@ -197,19 +194,19 @@ export function extractBlocks(text: string, starts: (cleanLine: string) => boole
 export type LogExportKind = 'error' | 'warn' | 'info' | 'all';
 
 /**
- * Ensure log directory exists
+ * Ensure log directory exists and reset any existing worker logs.
  *
- * @param rootDir - Root directory
- * @returns log dir
+ * @param rootDir - Root directory containing the pool's working state
+ * @param options - Options
+ * @returns Absolute path to the log directory
  */
-export function initLogDir(rootDir: string): string {
+export function initLogDir(
+  rootDir: string,
+  { resetMode = 'truncate' }: { resetMode?: 'truncate' | 'delete' } = {},
+): string {
   const logDir = join(rootDir, 'logs');
   mkdirSync(logDir, { recursive: true });
-
-  // FIXME
-  const RESET_MODE = (process.env.RESET_LOGS as 'truncate' | 'delete') ?? 'truncate';
-  resetWorkerLogs(logDir, RESET_MODE);
-
+  resetWorkerLogs(logDir, resetMode);
   return logDir;
 }
 
@@ -241,12 +238,12 @@ export type ExportStatusMap = {
 };
 
 /**
- * Return export statuses
+ * Build a map of canonical export artifact paths for a receipts/logs folder.
+ * Used by dashboard renderers and post-processing hooks to locate combined
+ * log files and failure CSVs.
  *
- * FIXME what is this for?
- *
- * @param receiptsFolder - Receipts directory
- * @returns Export map
+ * @param receiptsFolder - Directory where combined logs and failure artifacts are written
+ * @returns Map of artifact kind to path info
  */
 export function buildExportStatus(receiptsFolder: string): ExportStatusMap {
   return {
