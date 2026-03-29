@@ -38,7 +38,7 @@ function mergeFilter(
   return {
     ...base,
     system: {
-      ...(base.system || {}),
+      ...base.system,
       ...(window.system?.updatedAfter ? { updatedAfter: window.system.updatedAfter } : {}),
       ...(window.system?.updatedBefore ? { updatedBefore: window.system.updatedBefore } : {}),
     },

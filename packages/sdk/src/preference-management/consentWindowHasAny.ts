@@ -48,7 +48,7 @@ export async function consentWindowHasAny(
           timestampAfter: undefined,
           timestampBefore: undefined,
           system: {
-            ...(baseFilter.system || {}),
+            ...baseFilter.system,
             updatedAfter: afterISO,
             updatedBefore: beforeISO,
           },

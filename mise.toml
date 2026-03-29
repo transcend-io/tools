@@ -13,7 +13,7 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 [tools]
 node = "22.22.0"
 
-[tasks.bootstrap]
+[tasks.bootstrap-ci]
 description = "Install workspace dependencies with pnpm"
 run = '''
 if [ "${CI:-}" = "true" ]; then
@@ -21,4 +21,12 @@ if [ "${CI:-}" = "true" ]; then
 else
   pnpm install
 fi
+'''
+
+[tasks.bootstrap]
+description = "Set up workspace"
+depends = ["bootstrap-ci"]
+run = '''
+pnpm build
+pnpm quality
 '''
