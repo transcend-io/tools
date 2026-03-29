@@ -12,6 +12,7 @@ _.path = ["{{config_root}}/node_modules/.bin"]
 
 [tools]
 node = "22.22.0"
+shellcheck = "0.11.0"
 
 [tasks.bootstrap-ci]
 description = "Install workspace dependencies with pnpm"
