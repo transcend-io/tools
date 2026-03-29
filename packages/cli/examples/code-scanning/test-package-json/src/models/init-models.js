@@ -1,3 +1,4 @@
+// oxlint-disable-next-line no-unused-vars
 const { DataTypes } = require('sequelize');
 const _Comment = require('./Comment');
 const _Event = require('./Event');

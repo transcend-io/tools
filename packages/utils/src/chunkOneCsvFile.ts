@@ -71,7 +71,7 @@ function createCsvChunkWriter(
      */
     async end() {
       // End formatter; wait for underlying file stream to finish flush/close
-      const finished = Promise.all([once(ws, 'finish')]);
+      const finished = once(ws, 'finish');
       csv.end();
       await finished;
     },

@@ -13,7 +13,7 @@ git diff --cached --binary -- >"$before_staged_diff"
 git diff --binary -- >"$before_unstaged_diff"
 
 quality_status=0
-pnpm exec turbo run quality:fix --output-logs=new-only --no-update-notifier || quality_status=$?
+pnpm exec turbo run quality:fix --output-logs=errors-only --no-update-notifier || quality_status=$?
 
 git diff --cached --binary -- >"$after_staged_diff"
 git diff --binary -- >"$after_unstaged_diff"
