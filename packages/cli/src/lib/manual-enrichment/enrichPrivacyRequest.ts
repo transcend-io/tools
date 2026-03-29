@@ -4,7 +4,7 @@ import * as t from 'io-ts';
 import { uniq } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { splitCsvToList } from '../requests/splitCsvToList.js';
+import { splitCsvToList } from '@transcend-io/utils';
 
 const ADMIN_URL = 'https://app.transcend.io/privacy-requests/incoming-requests/';
 /**

@@ -6,7 +6,7 @@ import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { splitCsvToList } from '../requests/index.js';
+import { splitCsvToList } from '@transcend-io/utils';
 
 /* eslint-disable no-param-reassign */
 

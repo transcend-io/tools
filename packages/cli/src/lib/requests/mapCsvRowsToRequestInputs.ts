@@ -18,7 +18,7 @@ import { AttributeNameMap } from './mapColumnsToAttributes.js';
 import { IdentifierNameMap } from './mapColumnsToIdentifiers.js';
 import { ColumnNameMap } from './mapCsvColumnsToApi.js';
 import { ParsedAttributeInput } from './parseAttributesFromString.js';
-import { splitCsvToList } from './splitCsvToList.js';
+import { splitCsvToList } from '@transcend-io/utils';
 
 /**
  * Shape of additional identifiers

@@ -7,7 +7,7 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { uploadPreferenceManagementPreferencesInteractive } from '../../../lib/preference-management/index.js';
-import { splitCsvToList } from '../../../lib/requests/index.js';
+import { splitCsvToList } from '@transcend-io/utils';
 import { logger } from '../../../logger.js';
 
 export interface UploadPreferencesCommandFlags {

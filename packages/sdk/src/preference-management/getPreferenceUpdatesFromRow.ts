@@ -1,15 +1,9 @@
 import { PreferenceStorePurposeResponse, PreferenceTopicType } from '@transcend-io/privacy-types';
 import { apply } from '@transcend-io/type-utils';
+import { splitCsvToList } from '@transcend-io/utils';
 
 import { PurposeRowMapping } from './codecs.js';
 import type { PreferenceTopic } from './fetchAllPreferenceTopics.js';
-
-function splitCsvToList(value: string): string[] {
-  return value
-    .split(',')
-    .map((x) => x.trim())
-    .filter((x) => x);
-}
 
 /**
  * Parse an arbitrary object to the Transcend PUT /v1/preference update shape

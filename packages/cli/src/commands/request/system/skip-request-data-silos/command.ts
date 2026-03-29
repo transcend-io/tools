@@ -1,5 +1,10 @@
 import { buildCommand } from '@stricli/core';
-import { RequestDataSiloStatus, RequestStatus, ScopeName } from '@transcend-io/privacy-types';
+import {
+  RequestAction,
+  RequestDataSiloStatus,
+  RequestStatus,
+  ScopeName,
+} from '@transcend-io/privacy-types';
 
 import {
   createAuthParameter,
@@ -28,6 +33,13 @@ export const skipRequestDataSilosCommand = buildCommand({
         values: Object.values(RequestStatus),
         variadic: ',',
         brief: 'The request statuses to skip',
+      },
+      actions: {
+        kind: 'enum',
+        values: Object.values(RequestAction),
+        variadic: ',',
+        brief: 'The request actions to filter by when skipping',
+        optional: true,
       },
       status: {
         kind: 'enum',

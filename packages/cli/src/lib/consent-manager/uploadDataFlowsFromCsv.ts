@@ -6,7 +6,7 @@ import { DataFlowInput, DataFlowCsvInput } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { syncDataFlows } from '../graphql/index.js';
-import { splitCsvToList } from '../requests/index.js';
+import { splitCsvToList } from '@transcend-io/utils';
 import { readCsv } from '../requests/readCsv.js';
 
 const OMIT_COLUMNS = [
