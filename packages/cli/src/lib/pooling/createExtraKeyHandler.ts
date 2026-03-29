@@ -1,6 +1,6 @@
-import type { ExportStatusMap } from './logRotation.js';
+import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
+
 import { showCombinedLogs, type LogLocation } from './showCombinedLogs.js';
-import type { SlotPaths } from './spawnWorkerProcess.js';
 
 /** Severity filter applied by the viewer. */
 type ViewLevel = 'error' | 'warn' | 'all';

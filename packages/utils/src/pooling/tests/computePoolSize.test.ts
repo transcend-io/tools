@@ -1,6 +1,6 @@
 import { availableParallelism } from 'node:os';
 
-import { describe, it, expect, vi, Mock, beforeEach } from 'vitest';
+import { describe, it, expect, vi, type Mock, beforeEach } from 'vitest';
 
 import { computePoolSize } from '../computePoolSize.js';
 

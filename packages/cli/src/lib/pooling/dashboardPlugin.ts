@@ -1,10 +1,9 @@
-// lib/ui/dashboardPlugin.ts
+// lib/pooling/dashboardPlugin.ts
 import * as readline from 'node:readline';
 
 import type { ObjByString } from '@transcend-io/type-utils';
+import type { SlotState } from '@transcend-io/utils';
 import colors from 'colors';
-
-import type { SlotState } from './types.js';
 
 /**
  * A dashboard plugin defines how to render the worker pool UI.

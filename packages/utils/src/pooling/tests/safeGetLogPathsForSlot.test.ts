@@ -7,16 +7,17 @@ import { isIpcOpen, getWorkerLogPaths, type WorkerLogPaths } from '../spawnWorke
 
 /**
  * Mock collaborators BEFORE importing the SUT.
- * Inline factory avoids Vitest hoisting pitfalls.
- *
- * IMPORTANT: The mock path MUST match the specifier used by the SUT after resolution.
- * Since the SUT imports from './spawnWorkerProcess', and this test lives in ../tests,
- * the correct mock specifier here is '../spawnWorkerProcess'.
  */
-vi.mock('../spawnWorkerProcess.js', () => ({
-  isIpcOpen: vi.fn(),
-  getWorkerLogPaths: vi.fn(),
-}));
+vi.mock('../spawnWorkerProcess.js', async () => {
+  const actual = await vi.importActual<typeof import('../spawnWorkerProcess.js')>(
+    '../spawnWorkerProcess.js',
+  );
+  return {
+    ...actual,
+    isIpcOpen: vi.fn(),
+    getWorkerLogPaths: vi.fn(),
+  };
+});
 
 const mockedIsOpen = vi.mocked(isIpcOpen);
 const mockedGetPaths = vi.mocked(getWorkerLogPaths);

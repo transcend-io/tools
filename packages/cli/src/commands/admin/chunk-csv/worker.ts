@@ -1,6 +1,6 @@
-import { chunkOneCsvFile, extractErrorMessage } from '@transcend-io/utils';
+import { chunkOneCsvFile, extractErrorMessage, CHILD_FLAG } from '@transcend-io/utils';
+import type { ToWorker } from '@transcend-io/utils';
 
-import type { ToWorker } from '../../../lib/pooling/index.js';
 import { logger } from '../../../logger.js';
 
 /**
@@ -117,5 +117,12 @@ export async function runChild(): Promise<void> {
   await new Promise<never>(() => {
     // This promise never resolves, keeping the worker alive indefinitely
     // until the parent process instructs shutdown.
+  });
+}
+
+if (process.argv.includes(CHILD_FLAG)) {
+  runChild().catch((err) => {
+    logger.error(err);
+    process.exit(1);
   });
 }
