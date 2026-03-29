@@ -1,5 +1,6 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
 import type { PreferenceStoreIdentifier } from '@transcend-io/privacy-types';
+import type { Identifier } from '@transcend-io/sdk';
 import Bluebird from 'bluebird';
 import colors from 'colors';
 import inquirer from 'inquirer';
@@ -7,7 +8,6 @@ import inquirer from 'inquirer';
 import { uniq, keyBy } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import type { Identifier } from '../graphql/index.js';
 import { inquirerConfirmBoolean } from '../helpers/index.js';
 import type { FileFormatState, IdentifierMetadataForPreference } from './codecs.js';
 

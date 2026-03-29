@@ -1,6 +1,7 @@
 import { createReadStream } from 'node:fs';
 
 import { PersistedState } from '@transcend-io/persisted-state';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import colors from 'colors';
 import { parse as csvParse } from 'csv-parse';
 import inquirer from 'inquirer';
@@ -8,7 +9,6 @@ import * as t from 'io-ts';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { buildTranscendGraphQLClient } from '../../../lib/graphql/index.js';
 import { collectCsvFilesOrExit } from '../../../lib/helpers/collectCsvFilesOrExit.js';
 import {
   FileFormatState,

@@ -1,5 +1,6 @@
 import { PersistedState } from '@transcend-io/persisted-state';
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import type { Identifier, PreferenceTopic } from '@transcend-io/sdk';
 import type { ObjByString } from '@transcend-io/type-utils';
 import colors from 'colors';
 import type { Got } from 'got';
@@ -7,7 +8,6 @@ import { keyBy } from 'lodash-es';
 
 import type { PreferenceUploadProgress } from '../../commands/consent/upload-preferences/upload/index.js';
 import { logger } from '../../logger.js';
-import { PreferenceTopic, type Identifier } from '../graphql/index.js';
 import { checkIfPendingPreferenceUpdatesAreNoOp } from './checkIfPendingPreferenceUpdatesAreNoOp.js';
 import { checkIfPendingPreferenceUpdatesCauseConflict } from './checkIfPendingPreferenceUpdatesCauseConflict.js';
 import {

@@ -1,10 +1,8 @@
 import { mkdirSync, createWriteStream } from 'node:fs';
 import { join, dirname } from 'node:path';
 
-import {
-  buildTranscendGraphQLClient,
-  createSombraGotInstance,
-} from '../../../lib/graphql/index.js';
+import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+
 import type { ToWorker } from '../../../lib/pooling/index.js';
 import { splitCsvToList } from '../../../lib/requests/index.js';
 import { logger } from '../../../logger.js';
@@ -75,11 +73,10 @@ export async function runChild(): Promise<void> {
           const receipts = await makeReceiptsState(receiptFilepath);
           const schema = await makeSchemaState(options.schemaFile);
           const client = buildTranscendGraphQLClient(options.transcendUrl, options.auth);
-          const sombra = await createSombraGotInstance(
-            options.transcendUrl,
-            options.auth,
-            options.sombraAuth,
-          );
+          const sombra = await createSombraGotInstance(options.transcendUrl, options.auth, {
+            logger,
+            sombraApiKey: options.sombraAuth,
+          });
 
           // Derive identifierColumns and columnsToIgnore from config
           const columnToIdentifier = schema.getColumnToIdentifier();
