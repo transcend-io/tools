@@ -21,7 +21,7 @@ jobs:
           persist-credentials: false
       - uses: jdx/mise-action@v3
         with:
-          version: 2026.2.17
+          version: 2026.3.17
           install: false
           cache: true
       - name: Bootstrap workspace
@@ -29,9 +29,9 @@ jobs:
           mise trust --yes mise.toml
           mise install --locked
           mise exec -- npm install -g npm@^11.5.1
-          mise run bootstrap
+          mise run bootstrap-ci
       - name: Check dependency versions
-        run: mise exec -- pnpm syncpack:lint
+        run: mise exec -- pnpm check:deps
       - name: Lint
         run: mise exec -- pnpm lint
       - name: Check formatting
@@ -43,7 +43,7 @@ jobs:
       - name: Test
         run: mise exec -- pnpm test
       - name: Check exports
-        run: mise exec -- pnpm check-exports
+        run: mise exec -- pnpm check:exports
       - uses: actions/create-github-app-token@v3
         id: release_app
         with:
@@ -54,6 +54,6 @@ jobs:
       - uses: changesets/action@v1
         with:
           publish: mise exec -- pnpm release
-          version: mise exec -- pnpm version-packages:release
+          version: mise exec -- pnpm changeset:version:release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}

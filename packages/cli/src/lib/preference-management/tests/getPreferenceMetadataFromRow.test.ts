@@ -1,7 +1,5 @@
+import { type ColumnMetadataMap, getPreferenceMetadataFromRow } from '@transcend-io/sdk';
 import { describe, it, expect } from 'vitest';
-
-import type { ColumnMetadataMap } from '../codecs.js';
-import { getPreferenceMetadataFromRow } from '../getPreferenceMetadataFromRow.js';
 
 describe('getPreferenceMetadataFromRow', () => {
   const columnToMetadata: ColumnMetadataMap = {

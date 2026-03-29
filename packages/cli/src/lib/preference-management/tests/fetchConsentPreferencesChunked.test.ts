@@ -1,26 +1,18 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import { fetchConsentPreferencesChunked } from '@transcend-io/sdk';
 import type { Got } from 'got';
 /* eslint-disable @typescript-eslint/no-explicit-any,require-await,max-lines */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import { fetchConsentPreferencesChunked } from '../fetchConsentPreferencesChunked.js';
-
 // ---- Hoisted shared fakes / captors ----------------------------------------
 const H = vi.hoisted(() => ({
   // logger
-  loggerSpies: { info: vi.fn(), warn: vi.fn() },
+  loggerSpies: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 
   // colors passthrough
   colors: {
     magenta: (s: string) => s,
     green: (s: string) => s,
-  },
-
-  // progress bar spy
-  bar: {
-    start: vi.fn(),
-    update: vi.fn(),
-    stop: vi.fn(),
   },
 
   // helpers
@@ -65,42 +57,24 @@ vi.mock('colors', () => ({
   green: H.colors.green,
 }));
 
-vi.mock('cli-progress', () => {
-  const SingleBar = vi.fn(function MockSingleBar() {
-    return H.bar;
-  });
-  const Presets = { shades_classic: {} };
-
-  const def = { SingleBar, Presets };
-  return {
-    default: def, // supports `import cliProgress from 'cli-progress'`
-    SingleBar,
-    Presets,
-  };
-});
-
-vi.mock('../../bluebird.js', () => ({
-  // Use deterministic Promise.all behavior
+vi.mock('@transcend-io/utils', () => ({
+  clampPageSize: (n: number) => H.clampPageSize(n),
+  addDaysUtc: (d: Date, n: number) => H.addDaysUtc(d, n),
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   map: (arr: any[], fn: (x: any) => Promise<unknown>, _opts?: any) => Promise.all(arr.map(fn)),
 }));
 
-vi.mock('../../helpers/index.js', () => ({
-  clampPageSize: (n: number) => H.clampPageSize(n),
-  addDaysUtc: (d: Date, n: number) => H.addDaysUtc(d, n),
-}));
-
-vi.mock('../discoverConsentWindow.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/discoverConsentWindow.js', () => ({
   getBoundsFromConsentFilter: (...args: any[]) => H.getBoundsFromConsentFilter(...args),
   findEarliestDayWithData: (...args: any[]) => H.findEarliestDayWithData(...args),
   findLatestDayWithData: (...args: any[]) => H.findLatestDayWithData(...args),
 }));
 
-vi.mock('../buildConsentChunks.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/buildConsentChunks.js', () => ({
   buildConsentChunks: (...args: any[]) => H.buildConsentChunks(...args),
 }));
 
-vi.mock('../iterateConsentPages.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/iterateConsentPages.js', () => ({
   /**
    * Iterator spy
    *
@@ -124,7 +98,7 @@ vi.mock('../iterateConsentPages.js', () => ({
   },
 }));
 
-vi.mock('../pickConsentChunkMode.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/pickConsentChunkMode.js', () => ({
   pickConsentChunkMode: (...args: any[]) => H.pickConsentChunkMode(...args),
 }));
 
@@ -148,13 +122,6 @@ function makeItem(partition: string, ts: string): PreferenceQueryResponseItem {
 describe('fetchConsentPreferencesChunked', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // ✅ Recreate H.bar as a fresh object so no stale/wiped functions linger
-    (H as any).bar = {
-      start: vi.fn(),
-      update: vi.fn(),
-      stop: vi.fn(),
-    };
 
     H.iterateCalls.length = 0;
     H.iterators.length = 0;
@@ -203,6 +170,7 @@ describe('fetchConsentPreferencesChunked', () => {
       const limit = 999;
 
       const sombra = { post: vi.fn() } as unknown as Got;
+      const onProgress = vi.fn();
       const out = await fetchConsentPreferencesChunked(sombra, {
         partition,
         filterBy: baseFilter as any,
@@ -210,6 +178,8 @@ describe('fetchConsentPreferencesChunked', () => {
         windowConcurrency: 5,
         maxChunks: 10,
         maxLookbackDays: 3650,
+        logger: H.loggerSpies,
+        onProgress,
       });
 
       // Aggregated 3 items
@@ -240,10 +210,9 @@ describe('fetchConsentPreferencesChunked', () => {
       expect(call2.filter.timestampAfter).toEqual(w2.timestampAfter);
       expect(call2.filter.timestampBefore).toEqual(w2.timestampBefore);
 
-      // progress bar lifecycle
-      expect(H.bar.start).toHaveBeenCalledTimes(1);
-      expect(H.bar.update).toHaveBeenCalled(); // at least once
-      expect(H.bar.stop).toHaveBeenCalledTimes(1);
+      // SDK reports chunk/page progress via onProgress(completedChunks, totalChunks, fetched)
+      expect(onProgress).toHaveBeenCalled();
+      expect(onProgress).toHaveBeenLastCalledWith(2, 2, 3);
     },
   );
 
@@ -270,6 +239,7 @@ describe('fetchConsentPreferencesChunked', () => {
       filterBy: {},
       limit: 25,
       onItems: async (items) => delivered.push(items),
+      logger: H.loggerSpies,
     });
 
     // No accumulation when onItems is provided
@@ -319,6 +289,7 @@ describe('fetchConsentPreferencesChunked', () => {
         filterBy: { timestampAfter: 'SHOULD_BE_REMOVED' } as any, // ensure timestamp* is cleared in updated mode
         limit: 15,
         maxLookbackDays: 99,
+        logger: H.loggerSpies,
       });
 
       // Aggregated

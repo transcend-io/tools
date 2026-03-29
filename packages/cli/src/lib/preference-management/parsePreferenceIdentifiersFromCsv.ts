@@ -1,10 +1,10 @@
+import { FileMetadataState } from '@transcend-io/sdk';
 import colors from 'colors';
 import inquirer from 'inquirer';
 import { uniq, groupBy, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import { inquirerConfirmBoolean } from '../helpers/index.js';
-import { FileMetadataState } from './codecs.js';
 
 /* eslint-disable no-param-reassign */
 

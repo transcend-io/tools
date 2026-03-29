@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { USERS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface User {
   /** ID of user */
@@ -36,8 +37,8 @@ export async function fetchAllUsers(client: GraphQLClient): Promise<User[]> {
         nodes: User[];
       };
     }>(client, USERS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     users.push(...nodes);
     offset += PAGE_SIZE;

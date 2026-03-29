@@ -10,11 +10,12 @@ import {
   RetentionScheduleOperation,
   RetentionScheduleType,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 /* eslint-disable max-lines */
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { ASSESSMENTS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Represents an assessment with various properties and metadata.
@@ -356,8 +357,8 @@ export async function fetchAllAssessments(client: GraphQLClient): Promise<Assess
         nodes: Assessment[];
       };
     }>(client, ASSESSMENTS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     assessments.push(...nodes);
     offset += PAGE_SIZE;

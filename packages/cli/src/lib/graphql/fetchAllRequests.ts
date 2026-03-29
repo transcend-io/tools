@@ -6,6 +6,7 @@ import {
   IsoCountryCode,
   IsoCountrySubdivisionCode,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { valuesOf } from '@transcend-io/type-utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -14,7 +15,6 @@ import * as t from 'io-ts';
 
 import { logger } from '../../logger.js';
 import { REQUESTS, REQUESTS_COUNT } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export const RequestPurposeTrigger = t.type({
   title: t.string,
@@ -133,7 +133,7 @@ export async function fetchRequestsTotalCount(
       /** Total count */
       totalCount: number;
     };
-  }>(client, REQUESTS_COUNT, { filterBy });
+  }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger });
   return totalCount;
 }
 
@@ -227,7 +227,7 @@ export async function fetchAllRequests(
         /** Total count */
         totalCount: number;
       };
-    }>(client, REQUESTS_COUNT, { filterBy });
+    }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger });
 
     if (totalCount > PAGE_SIZE) {
       logger.info(colors.magenta(`Fetching ${totalCount} requests`));
@@ -258,9 +258,8 @@ export async function fetchAllRequests(
         };
       };
     }>(client, REQUESTS, {
-      first: PAGE_SIZE,
-      after: cursor,
-      filterBy,
+      variables: { first: PAGE_SIZE, after: cursor, filterBy },
+      logger,
     });
 
     if (streaming) {

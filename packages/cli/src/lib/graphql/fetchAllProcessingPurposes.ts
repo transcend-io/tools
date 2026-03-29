@@ -1,8 +1,9 @@
 import { ProcessingPurpose } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { PROCESSING_PURPOSE_SUB_CATEGORIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface ProcessingPurposeSubCategory {
   /** ID of processing purpose */
@@ -61,8 +62,8 @@ export async function fetchAllProcessingPurposes(
         nodes: ProcessingPurposeSubCategory[];
       };
     }>(client, PROCESSING_PURPOSE_SUB_CATEGORIES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     processingPurposeSubCategories.push(...nodes);
     offset += PAGE_SIZE;

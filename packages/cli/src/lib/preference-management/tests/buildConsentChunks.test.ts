@@ -1,7 +1,5 @@
+import { buildConsentChunks, type PreferencesQueryFilter } from '@transcend-io/sdk';
 import { describe, it, expect } from 'vitest';
-
-import { buildConsentChunks } from '../buildConsentChunks.js';
-import type { PreferencesQueryFilter } from '../types.js';
 
 const d = (iso: string): Date => new Date(iso);
 

@@ -5,13 +5,14 @@ import {
   PreflightRequestStatus,
   RequestAction,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Identifier } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { EnricherInput } from '../../codecs.js';
+import { logger } from '../../logger.js';
 import { DataSubject } from './fetchDataSubjects.js';
-import { Identifier } from './fetchIdentifiers.js';
 import { ENRICHERS, CREATE_ENRICHER, UPDATE_ENRICHER } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Enricher {
   /** ID of enricher */
@@ -83,9 +84,8 @@ export async function fetchAllEnrichers(
         nodes: Enricher[];
       };
     }>(client, ENRICHERS, {
-      first: PAGE_SIZE,
-      offset,
-      title,
+      variables: { first: PAGE_SIZE, offset, title },
+      logger,
     });
     enrichers.push(...nodes);
     offset += PAGE_SIZE;
@@ -134,49 +134,55 @@ export async function syncEnricher(
   const actionUpdates = enricher['privacy-actions'] || Object.values(RequestAction);
   if (existingEnricher) {
     await makeGraphQLRequest(client, UPDATE_ENRICHER, {
-      input: {
-        id: existingEnricher.id,
-        title: enricher.title,
-        url: enricher.url,
-        headers: enricher.headers,
-        testRegex: enricher.testRegex,
-        lookerQueryTitle: enricher.lookerQueryTitle,
-        expirationDuration:
-          typeof enricher.expirationDuration === 'number'
-            ? enricher.expirationDuration.toString()
-            : undefined,
-        transitionRequestStatus: enricher.transitionRequestStatus,
-        phoneNumbers: enricher.phoneNumbers,
-        regionList: enricher.regionList,
-        dataSubjectIds,
-        description: enricher.description || '',
-        inputIdentifier: inputIdentifier ? identifierByName[inputIdentifier].id : undefined,
-        identifiers: enricher['output-identifiers'].map((id) => identifierByName[id].id),
-        ...(existingEnricher.type === EnricherType.Sombra ? {} : { actions: actionUpdates }),
+      variables: {
+        input: {
+          id: existingEnricher.id,
+          title: enricher.title,
+          url: enricher.url,
+          headers: enricher.headers,
+          testRegex: enricher.testRegex,
+          lookerQueryTitle: enricher.lookerQueryTitle,
+          expirationDuration:
+            typeof enricher.expirationDuration === 'number'
+              ? enricher.expirationDuration.toString()
+              : undefined,
+          transitionRequestStatus: enricher.transitionRequestStatus,
+          phoneNumbers: enricher.phoneNumbers,
+          regionList: enricher.regionList,
+          dataSubjectIds,
+          description: enricher.description || '',
+          inputIdentifier: inputIdentifier ? identifierByName[inputIdentifier].id : undefined,
+          identifiers: enricher['output-identifiers'].map((id) => identifierByName[id].id),
+          ...(existingEnricher.type === EnricherType.Sombra ? {} : { actions: actionUpdates }),
+        },
       },
+      logger,
     });
   } else if (inputIdentifier) {
     await makeGraphQLRequest(client, CREATE_ENRICHER, {
-      input: {
-        title: enricher.title,
-        url: enricher.url,
-        type: enricher.type || EnricherType.Server,
-        headers: enricher.headers,
-        testRegex: enricher.testRegex,
-        lookerQueryTitle: enricher.lookerQueryTitle,
-        expirationDuration:
-          typeof enricher.expirationDuration === 'number'
-            ? enricher.expirationDuration.toString()
-            : undefined,
-        transitionRequestStatus: enricher.transitionRequestStatus,
-        phoneNumbers: enricher.phoneNumbers,
-        dataSubjectIds,
-        regionList: enricher.regionList,
-        description: enricher.description || '',
-        inputIdentifier: identifierByName[inputIdentifier].id,
-        identifiers: enricher['output-identifiers'].map((id) => identifierByName[id].id),
-        actions: actionUpdates,
+      variables: {
+        input: {
+          title: enricher.title,
+          url: enricher.url,
+          type: enricher.type || EnricherType.Server,
+          headers: enricher.headers,
+          testRegex: enricher.testRegex,
+          lookerQueryTitle: enricher.lookerQueryTitle,
+          expirationDuration:
+            typeof enricher.expirationDuration === 'number'
+              ? enricher.expirationDuration.toString()
+              : undefined,
+          transitionRequestStatus: enricher.transitionRequestStatus,
+          phoneNumbers: enricher.phoneNumbers,
+          dataSubjectIds,
+          regionList: enricher.regionList,
+          description: enricher.description || '',
+          inputIdentifier: identifierByName[inputIdentifier].id,
+          identifiers: enricher['output-identifiers'].map((id) => identifierByName[id].id),
+          actions: actionUpdates,
+        },
       },
+      logger,
     });
   }
 }

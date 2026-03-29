@@ -34,15 +34,12 @@ const H = vi.hoisted(() => {
 
   const reaDirSync = vi.fn((): string[] => []);
 
-  const gqlClient = { tag: 'gql' };
-
   return {
     logger,
     colors,
     doneInputValidation,
     sombra,
     bulkDeletePreferenceRecords,
-    gqlClient,
     writeCsv,
     reaDirSync,
   };
@@ -61,12 +58,9 @@ vi.mock('../../../../lib/cli/done-input-validation.js', () => ({
   doneInputValidation: H.doneInputValidation,
 }));
 
-// GraphQL: sombra factory and client builder
-vi.mock('../../../../lib/graphql/index.js', () => ({
-  __esModule: true,
+vi.mock('@transcend-io/sdk', () => ({
   // eslint-disable-next-line require-await
   createSombraGotInstance: vi.fn(async () => H.sombra),
-  buildTranscendGraphQLClient: vi.fn(() => H.gqlClient),
 }));
 
 // New CSV helpers used by impl after your refactor

@@ -1,10 +1,11 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import {
   fetchAllProcessingPurposes,
   ProcessingPurposeSubCategory,
@@ -13,7 +14,6 @@ import {
   UPDATE_PROCESSING_PURPOSE_SUB_CATEGORIES,
   CREATE_PROCESSING_PURPOSE_SUB_CATEGORY,
 } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new processing purpose
@@ -40,7 +40,8 @@ export async function createProcessingPurpose(
       processingPurposeSubCategory: ProcessingPurposeSubCategory;
     };
   }>(client, CREATE_PROCESSING_PURPOSE_SUB_CATEGORY, {
-    input,
+    variables: { input },
+    logger,
   });
   return createProcessingPurposeSubCategory.processingPurposeSubCategory;
 }
@@ -56,14 +57,17 @@ export async function updateProcessingPurposes(
   processingPurposeIdPairs: [ProcessingPurposeInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_PROCESSING_PURPOSE_SUB_CATEGORIES, {
-    input: {
-      processingPurposeSubCategories: processingPurposeIdPairs.map(([processingPurpose, id]) => ({
-        id,
-        description: processingPurpose.description,
-        // TODO: https://transcend.height.app/T-31994 - add  teams, owners
-        attributes: processingPurpose.attributes,
-      })),
+    variables: {
+      input: {
+        processingPurposeSubCategories: processingPurposeIdPairs.map(([processingPurpose, id]) => ({
+          id,
+          description: processingPurpose.description,
+          // TODO: https://transcend.height.app/T-31994 - add  teams, owners
+          attributes: processingPurpose.attributes,
+        })),
+      },
     },
+    logger,
   });
 }
 

@@ -1,8 +1,9 @@
 import { LargeLanguageModelClient } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { AGENTS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Agent {
   /** ID of agent */
@@ -86,9 +87,8 @@ export async function fetchAllAgents(
         nodes: Agent[];
       };
     }>(client, AGENTS, {
-      first: PAGE_SIZE,
-      offset,
-      filterBy,
+      variables: { first: PAGE_SIZE, offset, filterBy },
+      logger,
     });
     agents.push(...nodes);
     offset += PAGE_SIZE;

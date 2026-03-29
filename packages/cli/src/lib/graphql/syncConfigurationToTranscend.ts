@@ -1,15 +1,16 @@
+import type { Identifier } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllAttributes } from './fetchAllAttributes.js';
 import { fetchApiKeys } from './fetchApiKeys.js';
 import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
-import { fetchIdentifiersAndCreateMissing, Identifier } from './fetchIdentifiers.js';
+import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
 import { syncActionItemCollections } from './syncActionItemCollections.js';
 import { syncActionItems } from './syncActionItems.js';

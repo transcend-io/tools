@@ -1,12 +1,12 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { IntlMessageInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const MAX_PAGE_SIZE = 100;
 
@@ -23,17 +23,20 @@ export async function updateIntlMessages(
   // Batch update messages
   await mapSeries(chunk(messageInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
-      messages: page.map((message) => ({
-        ...(message.id.includes('.') ? {} : { id: message.id }),
-        defaultMessage: message.defaultMessage,
-        targetReactIntlId: message.targetReactIntlId,
-        translations: !message.translations
-          ? undefined
-          : Object.entries(message.translations).map(([locale, value]) => ({
-              locale,
-              value,
-            })),
-      })),
+      variables: {
+        messages: page.map((message) => ({
+          ...(message.id.includes('.') ? {} : { id: message.id }),
+          defaultMessage: message.defaultMessage,
+          targetReactIntlId: message.targetReactIntlId,
+          translations: !message.translations
+            ? undefined
+            : Object.entries(message.translations).map(([locale, value]) => ({
+                locale,
+                value,
+              })),
+        })),
+      },
+      logger,
     });
   });
 }

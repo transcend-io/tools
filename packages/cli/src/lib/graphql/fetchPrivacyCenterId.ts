@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { DEPLOYED_PRIVACY_CENTER_URL, FETCH_PRIVACY_CENTER_ID } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Fetch default privacy center URL
@@ -16,7 +17,7 @@ export async function fetchPrivacyCenterUrl(client: GraphQLClient): Promise<stri
       /** URL */
       deployedPrivacyCenterUrl: string;
     };
-  }>(client, DEPLOYED_PRIVACY_CENTER_URL);
+  }>(client, DEPLOYED_PRIVACY_CENTER_URL, { logger });
   return organization.deployedPrivacyCenterUrl;
 }
 
@@ -39,7 +40,8 @@ export async function fetchPrivacyCenterId(client: GraphQLClient, url?: string):
       id: string;
     };
   }>(client, FETCH_PRIVACY_CENTER_ID, {
-    url: urlToUse,
+    variables: { url: urlToUse },
+    logger,
   });
   return privacyCenter.id;
 }

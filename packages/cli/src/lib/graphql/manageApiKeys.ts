@@ -1,8 +1,9 @@
 import { ScopeName } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { CREATE_API_KEY, DELETE_API_KEY } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface CreatedApiKey {
   /** ID of API key */
@@ -37,7 +38,7 @@ export async function createApiKey(
       /** API key */
       apiKey: CreatedApiKey;
     };
-  }>(client, CREATE_API_KEY, { input });
+  }>(client, CREATE_API_KEY, { variables: { input }, logger });
 
   return apiKey;
 }
@@ -49,5 +50,5 @@ export async function createApiKey(
  * @param id - API key Id
  */
 export async function deleteApiKey(client: GraphQLClient, id: string): Promise<void> {
-  await makeGraphQLRequest(client, DELETE_API_KEY, { id });
+  await makeGraphQLRequest(client, DELETE_API_KEY, { variables: { id }, logger });
 }

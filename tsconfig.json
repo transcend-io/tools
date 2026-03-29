@@ -3,7 +3,7 @@
   "files": [],
   "references": [
     { "path": "./packages/utils" },
-    { "path": "./packages/core" },
+    { "path": "./packages/sdk" },
     { "path": "./packages/privacy-types" },
     { "path": "./packages/cli" }
   ]

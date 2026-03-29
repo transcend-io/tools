@@ -1,0 +1,29 @@
+---
+description: Prevent re-export wrapper files during refactors — import from the source package directly
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# No Re-Export Wrappers
+
+When moving code between packages, do NOT create intermediate re-export files that just forward imports. Instead, update all consumers to import directly from the source package.
+
+```typescript
+// BAD — wrapper file that just re-exports
+// packages/cli/src/lib/graphql/buildTranscendGraphQLClient.ts
+export {
+  buildTranscendGraphQLClient,
+  buildTranscendGraphQLClientGeneric,
+} from '@transcend-io/sdk';
+
+// GOOD — consumers import directly from the source
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+```
+
+When refactoring/moving functions between packages:
+
+1. Move the implementation to the target package
+2. Update ALL import sites to point to the new package directly
+3. Delete the old file entirely — do not leave a re-export shim
+
+This applies to both function re-exports and type re-exports. The only exception is a package's public barrel (`index.ts`), which is expected to re-export from submodules within the same package.

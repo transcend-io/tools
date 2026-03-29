@@ -1,21 +1,19 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
-import colors from 'colors';
-
-import type { LocalContext } from '../../../context.js';
-import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllIdentifiers,
   fetchAllPurposesAndPreferences,
-} from '../../../lib/graphql/index.js';
-import { initCsvFile, appendCsvRowsOrdered } from '../../../lib/helpers/index.js';
-import {
   fetchConsentPreferences,
   fetchConsentPreferencesChunked,
   transformPreferenceRecordToCsv,
   type PreferenceIdentifier,
-} from '../../../lib/preference-management/index.js';
+} from '@transcend-io/sdk';
+import colors from 'colors';
+
+import type { LocalContext } from '../../../context.js';
+import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
+import { initCsvFile, appendCsvRowsOrdered } from '../../../lib/helpers/index.js';
 import { logger } from '../../../logger.js';
 
 // Known “core” columns your transformer usually produces up front.
@@ -77,7 +75,11 @@ export async function pullConsentPreferences(
   doneInputValidation(this.process.exit);
 
   // Create sombra instance to communicate with
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Identifiers are key:value, parse to PreferenceIdentifier[]
@@ -117,8 +119,8 @@ export async function pullConsentPreferences(
 
   // Fetch full sets (purposes+topics, identifiers) to ensure header completeness
   const [purposesWithTopics, allIdentifiers] = await Promise.all([
-    fetchAllPurposesAndPreferences(client),
-    fetchAllIdentifiers(client),
+    fetchAllPurposesAndPreferences(client, { logger }),
+    fetchAllIdentifiers(client, { logger }),
   ]);
 
   // Identifier columns: exactly the identifier names
@@ -173,6 +175,7 @@ export async function pullConsentPreferences(
       windowConcurrency,
       maxChunks,
       maxLookbackDays,
+      logger,
       onItems: (items) => writeRows(items),
     });
 
@@ -185,6 +188,7 @@ export async function pullConsentPreferences(
     partition,
     filterBy,
     limit: concurrency, // page size (API max 50 enforced internally)
+    logger,
     onItems: (items) => writeRows(items),
   });
 

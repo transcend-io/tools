@@ -1,0 +1,59 @@
+{
+  "name": "@transcend-io/sdk",
+  "version": "0.0.0",
+  "description": "Transcend SDK — shared GraphQL/REST API clients and preference management utilities.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/sdk",
+  "license": "Apache-2.0",
+  "author": "Transcend Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transcend-io/tools.git",
+    "directory": "packages/sdk"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "dependencies": {
+    "@transcend-io/airgap.js-types": "^12.16.0",
+    "@transcend-io/privacy-types": "workspace:*",
+    "@transcend-io/type-utils": "^1.8.9",
+    "@transcend-io/utils": "workspace:*",
+    "got": "^11.8.5",
+    "graphql": "^16.6.0",
+    "graphql-request": "^5.0.0",
+    "io-ts": "^2.2.21",
+    "lodash-es": "^4.17.21"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
