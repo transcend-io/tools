@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from 'fs/promises';
+import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 import { tmpdir } from 'os';
@@ -101,28 +101,72 @@ async function getExampleCommands(): Promise<{
   };
 }
 
+type ShellcheckFinding = {
+  file: string;
+  line: number;
+  endLine: number;
+  column: number;
+  endColumn: number;
+  level: 'error' | 'warning' | 'info' | 'style';
+  code: number;
+  message: string;
+};
+
 /**
- * Creates a temp file with contents.
+ * Formats shellcheck findings for a single command.
  *
- * @param contents - The contents of the temp file.
- * @returns The path to the temp file.
+ * @param command - The command that failed shellcheck.
+ * @param findings - The shellcheck findings for the command.
+ * @returns A readable failure message for the command.
  */
-async function createTempFile(contents: string): Promise<string> {
-  const tempDir = await mkdtemp(join(tmpdir(), 'cli-example-script-'));
-  const filePath = join(tempDir, 'tempfile.txt');
-  await writeFile(filePath, contents);
-  return filePath;
+function formatShellcheckFailures(command: string, findings: ShellcheckFinding[]): string {
+  return [
+    `Command ${JSON.stringify(command)} is failing shellcheck:`,
+    ...[...findings]
+      .sort(
+        (left, right) =>
+          left.line - right.line || left.column - right.column || left.code - right.code,
+      )
+      .map(
+        (finding) =>
+          `  L${finding.line}:${finding.column} SC${finding.code} ${finding.level}: ${finding.message}`,
+      ),
+  ].join('\n');
 }
 
 /**
- * Runs shellcheck against a temp script file.
+ * Parses shellcheck JSON output into individual findings.
  *
- * @param filePath - Path to the script file to lint.
- * @returns The shellcheck process output.
+ * @param stdout - The stdout returned by shellcheck.
+ * @returns The parsed shellcheck findings.
  */
-async function runShellcheck(filePath: string): Promise<{ stdout: string; stderr: string }> {
-  return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-    const child = spawn('shellcheck', ['--shell=sh', filePath], {
+function parseShellcheckOutput(stdout: string): ShellcheckFinding[] {
+  const parsedOutput = JSON.parse(stdout) as
+    | ShellcheckFinding[]
+    | {
+        comments?: ShellcheckFinding[];
+      };
+
+  if (Array.isArray(parsedOutput)) {
+    return parsedOutput;
+  }
+
+  if (Array.isArray(parsedOutput.comments)) {
+    return parsedOutput.comments;
+  }
+
+  throw new Error('shellcheck returned an unexpected JSON payload');
+}
+
+/**
+ * Runs shellcheck against a batch of temp script files.
+ *
+ * @param filePaths - Paths to the script files to lint.
+ * @returns The shellcheck findings for the batch.
+ */
+async function runShellcheck(filePaths: string[]): Promise<ShellcheckFinding[]> {
+  return new Promise<ShellcheckFinding[]>((resolve, reject) => {
+    const child = spawn('shellcheck', ['--shell=sh', '--format=json1', ...filePaths], {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
@@ -153,7 +197,22 @@ async function runShellcheck(filePath: string): Promise<{ stdout: string; stderr
 
     child.on('close', (code, signal) => {
       if (code === 0) {
-        resolve({ stdout, stderr });
+        resolve([]);
+        return;
+      }
+
+      if (code === 1) {
+        try {
+          resolve(parseShellcheckOutput(stdout));
+        } catch (error) {
+          const output = [stdout, stderr].filter(Boolean).join('\n').trim();
+          reject(
+            new Error(`shellcheck returned invalid JSON output${output ? `:\n${output}` : ''}`, {
+              cause: error,
+            }),
+          );
+        }
+
         return;
       }
 
@@ -163,6 +222,61 @@ async function runShellcheck(filePath: string): Promise<{ stdout: string; stderr
       reject(new Error(`shellcheck ${exitStatus}${output ? `:\n${output}` : ''}`));
     });
   });
+}
+
+/**
+ * Runs shellcheck once for all example commands while preserving per-command failures.
+ *
+ * @param commands - The commands to lint with shellcheck.
+ * @returns Formatted shellcheck failures grouped by command.
+ */
+async function getShellcheckFailures(commands: string[]): Promise<string[]> {
+  const uniqueCommands = [...new Set(commands)];
+  const tempDir = await mkdtemp(join(tmpdir(), 'cli-example-script-'));
+
+  try {
+    const commandEntries = await Promise.all(
+      uniqueCommands.map(async (command, index) => {
+        const filePath = join(tempDir, `example-${index}.sh`);
+        await writeFile(filePath, `#!/bin/sh\n${command}`);
+
+        return {
+          command,
+          filePath,
+        };
+      }),
+    );
+
+    const findings = await runShellcheck(commandEntries.map(({ filePath }) => filePath));
+    const commandByFilePath = new Map(
+      commandEntries.map(({ command, filePath }) => [filePath, command]),
+    );
+    const findingsByCommand = new Map<string, ShellcheckFinding[]>();
+
+    for (const finding of findings) {
+      const command = commandByFilePath.get(finding.file);
+
+      if (!command) {
+        continue;
+      }
+
+      const existingFindings = findingsByCommand.get(command) ?? [];
+      existingFindings.push(finding);
+      findingsByCommand.set(command, existingFindings);
+    }
+
+    return uniqueCommands.flatMap((command) => {
+      const commandFindings = findingsByCommand.get(command);
+
+      if (!commandFindings || commandFindings.length === 0) {
+        return [];
+      }
+
+      return [formatShellcheckFailures(command, commandFindings)];
+    });
+  } finally {
+    await rm(tempDir, { recursive: true, force: true });
+  }
 }
 
 describe('Example commands', async () => {
@@ -200,11 +314,12 @@ describe('Example commands', async () => {
     }
   });
 
-  test.each(unalteredCommands)('Command %j passes shellcheck', async (unalteredCommand) => {
-    const content = `#!/bin/sh\n${unalteredCommand}`;
-    const filePath = await createTempFile(content);
-    const result = await runShellcheck(filePath);
-    expect(result.stdout).toBe('');
+  test('Example commands pass shellcheck', async () => {
+    const shellcheckFailures = await getShellcheckFailures(unalteredCommands);
+
+    if (shellcheckFailures.length > 0) {
+      throw new Error(shellcheckFailures.join('\n\n'));
+    }
   });
 });
 
