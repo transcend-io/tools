@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { extractBlocks } from '../logRotation.js';
+import { extractBlocks } from '@transcend-io/sdk';
 
 /**
  * Blocks should start when `starts(cleanLine)` returns true,

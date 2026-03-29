@@ -3,9 +3,9 @@ import { createWriteStream, type WriteStream } from 'node:fs';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { ensureLogFile } from '../ensureLogFile.js';
+import { ensureLogFile, getWorkerLogPaths, spawnWorkerProcess } from '@transcend-io/sdk';
+
 import { openLogTailWindowMulti } from '../openTerminal.js';
-import { getWorkerLogPaths, spawnWorkerProcess } from '../spawnWorkerProcess.js';
 
 /**
  * Mock deps before SUT import (inline factories).
@@ -19,14 +19,14 @@ vi.mock('node:fs', () => ({
 vi.mock('../openTerminal.js', () => ({
   openLogTailWindowMulti: vi.fn(),
 }));
-vi.mock('../ensureLogFile.js', () => ({
-  ensureLogFile: vi.fn(),
-}));
-vi.mock('../logRotation.js', () => {
+vi.mock('@transcend-io/sdk', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
   const makeLineSplitter = vi.fn(
     (cb: (line: string) => void) => (chunk: unknown) => cb(String(chunk)),
   );
   return {
+    ...actual,
+    ensureLogFile: vi.fn(),
     classifyLogLevel: vi.fn(),
     makeLineSplitter,
   };
@@ -113,7 +113,6 @@ describe('getWorkerLogPaths', () => {
       id: 7,
       modulePath: '/mod.js',
       logDir: '/logs',
-      openLogWindows: false,
       isSilent: true,
     });
 

@@ -3,10 +3,14 @@ import { createWriteStream, type WriteStream } from 'node:fs';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { ensureLogFile } from '../ensureLogFile.js';
-import { classifyLogLevel } from '../logRotation.js';
+import {
+  ensureLogFile,
+  classifyLogLevel,
+  CHILD_FLAG,
+  spawnWorkerProcess,
+} from '@transcend-io/sdk';
+
 import { openLogTailWindowMulti } from '../openTerminal.js';
-import { CHILD_FLAG, spawnWorkerProcess } from '../spawnWorkerProcess.js';
 
 /**
  * Inline mocks for all external deps used by the SUT.
@@ -20,14 +24,14 @@ vi.mock('node:fs', () => ({
 vi.mock('../openTerminal.js', () => ({
   openLogTailWindowMulti: vi.fn(),
 }));
-vi.mock('../ensureLogFile.js', () => ({
-  ensureLogFile: vi.fn(),
-}));
-vi.mock('../logRotation.js', () => {
+vi.mock('@transcend-io/sdk', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
   const makeLineSplitter = vi.fn(
     (cb: (line: string) => void) => (chunk: unknown) => cb(String(chunk)),
   );
   return {
+    ...actual,
+    ensureLogFile: vi.fn(),
     classifyLogLevel: vi.fn(),
     makeLineSplitter,
   };
@@ -111,15 +115,16 @@ describe('spawnWorkerProcess', () => {
     mCws.mockImplementation(() => sink());
   });
 
-  it('ensures log files, forks with proper args, writes headers, and opens tails when enabled', () => {
+  it('ensures log files, forks with proper args, writes headers, and calls onLogFilesCreated when provided', () => {
     const child = makeChild();
     mFork.mockReturnValue(child as never);
 
+    const onLogFilesCreated = vi.fn();
     const p = spawnWorkerProcess({
       id: 3,
       modulePath: '/worker.js',
       logDir: '/tmp/logs',
-      openLogWindows: true,
+      onLogFilesCreated,
       isSilent: false,
     });
 
@@ -155,9 +160,9 @@ describe('spawnWorkerProcess', () => {
       );
     });
 
-    // openLogTailWindowMulti called with all six paths
-    expect(mOpen).toHaveBeenCalledTimes(1);
-    const [paths, name, isSilent] = mOpen.mock.calls[0]!;
+    // onLogFilesCreated called with all six paths
+    expect(onLogFilesCreated).toHaveBeenCalledTimes(1);
+    const [paths, label, isSilent] = onLogFilesCreated.mock.calls[0]!;
     expect(paths).toEqual([
       '/tmp/logs/worker-3.log',
       '/tmp/logs/worker-3.out.log',
@@ -166,7 +171,7 @@ describe('spawnWorkerProcess', () => {
       '/tmp/logs/worker-3.warn.log',
       '/tmp/logs/worker-3.error.log',
     ]);
-    expect(name).toBe('worker-3');
+    expect(label).toBe('worker-3');
     expect(isSilent).toBe(false);
   });
 
@@ -182,7 +187,6 @@ describe('spawnWorkerProcess', () => {
       id: 1,
       modulePath: '/m.js',
       logDir: '/l',
-      openLogWindows: false,
       isSilent: true,
     });
 

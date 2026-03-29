@@ -3,7 +3,7 @@ import * as nodeUrl from 'node:url';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { ExportStatusMap } from '../../../../../lib/pooling/index.js';
+import type { ExportStatusMap } from '@transcend-io/sdk';
 import { writeExportsIndex } from '../writeExportsIndex.js';
 
 /**

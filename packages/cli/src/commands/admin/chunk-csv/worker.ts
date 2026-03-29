@@ -1,6 +1,6 @@
 import { chunkOneCsvFile, extractErrorMessage } from '@transcend-io/utils';
 
-import type { ToWorker } from '../../../lib/pooling/index.js';
+import type { ToWorker } from '@transcend-io/sdk';
 import { logger } from '../../../logger.js';
 
 /**

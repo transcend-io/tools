@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { installInteractiveSwitcher } from '../installInteractiveSwitcher.js';
 import { keymap } from '../keymap.js';
 import { replayFileTailToStdout } from '../replayFileTailToStdout.js';
-import type { WorkerLogPaths } from '../spawnWorkerProcess.js';
+import type { WorkerLogPaths } from '@transcend-io/sdk';
 import { getWorkerIds, cycleWorkers } from '../workerIds.js';
 
 /**

@@ -5,7 +5,7 @@ import { DEBUG } from '../../constants.js';
 import { keymap } from './keymap.js';
 import { replayFileTailToStdout } from './replayFileTailToStdout.js';
 import type { WhichLogs } from './showCombinedLogs.js';
-import type { WorkerLogPaths } from './spawnWorkerProcess.js';
+import type { WorkerLogPaths } from '@transcend-io/sdk';
 import { cycleWorkers, getWorkerIds } from './workerIds.js';
 
 /**

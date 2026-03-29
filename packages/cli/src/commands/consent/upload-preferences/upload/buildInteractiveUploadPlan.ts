@@ -3,6 +3,7 @@ import {
   type FileFormatState,
   type PendingSafePreferenceUpdates,
   type PendingWithConflictPreferenceUpdates,
+  type PreferenceUploadProgress,
   type PreferenceUploadReferenceData,
   type SkippedPreferenceUpdates,
 } from '@transcend-io/sdk';
@@ -18,7 +19,6 @@ import { parseAttributesFromString, readCsv } from '../../../../lib/requests/ind
 import { logger } from '../../../../logger.js';
 import { type PreferenceReceiptsInterface } from '../artifacts/receipts/receiptsState.js';
 import { type PreferenceSchemaInterface } from '../schemaState.js';
-import type { PreferenceUploadProgress } from './types.js';
 
 export interface InteractiveUploadPreferencePlan {
   /** CSV file path to load preference records from */

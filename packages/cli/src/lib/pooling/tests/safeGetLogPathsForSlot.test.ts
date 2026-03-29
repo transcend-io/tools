@@ -2,8 +2,12 @@ import type { ChildProcess } from 'node:child_process';
 
 import { describe, it, expect, vi } from 'vitest';
 
-import { safeGetLogPathsForSlot } from '../safeGetLogPathsForSlot.js';
-import { isIpcOpen, getWorkerLogPaths, type WorkerLogPaths } from '../spawnWorkerProcess.js';
+import {
+  safeGetLogPathsForSlot,
+  isIpcOpen,
+  getWorkerLogPaths,
+  type WorkerLogPaths,
+} from '@transcend-io/sdk';
 
 /**
  * Mock collaborators BEFORE importing the SUT.
@@ -13,10 +17,14 @@ import { isIpcOpen, getWorkerLogPaths, type WorkerLogPaths } from '../spawnWorke
  * Since the SUT imports from './spawnWorkerProcess', and this test lives in ../tests,
  * the correct mock specifier here is '../spawnWorkerProcess'.
  */
-vi.mock('../spawnWorkerProcess.js', () => ({
-  isIpcOpen: vi.fn(),
-  getWorkerLogPaths: vi.fn(),
-}));
+vi.mock('@transcend-io/sdk', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
+  return {
+    ...actual,
+    isIpcOpen: vi.fn(),
+    getWorkerLogPaths: vi.fn(),
+  };
+});
 
 const mockedIsOpen = vi.mocked(isIpcOpen);
 const mockedGetPaths = vi.mocked(getWorkerLogPaths);

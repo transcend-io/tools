@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { isLogError } from '../logRotation.js';
+import { isLogError } from '@transcend-io/sdk';
 
 describe('isLogError', () => {
   it('matches ERROR and runtime fatal indicators', () => {

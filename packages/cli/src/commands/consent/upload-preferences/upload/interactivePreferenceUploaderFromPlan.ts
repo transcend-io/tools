@@ -9,9 +9,12 @@ import { chunk, groupBy } from 'lodash-es';
 import { RETRYABLE_BATCH_STATUSES } from '../../../../constants.js';
 import { logger } from '../../../../logger.js';
 import type { PreferenceReceiptsInterface } from '../artifacts/receipts/index.js';
-import { uploadChunkWithSplit, buildPendingUpdates } from '@transcend-io/sdk';
+import {
+  uploadChunkWithSplit,
+  buildPendingUpdates,
+  type PreferenceUploadProgress,
+} from '@transcend-io/sdk';
 import type { InteractiveUploadPreferencePlan } from './buildInteractiveUploadPlan.js';
-import type { PreferenceUploadProgress } from './types.js';
 
 const { map: pMap } = Bluebird;
 

@@ -3,7 +3,7 @@ import { EventEmitter } from 'node:events';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 /* SUT */
-import { runPool } from '../runPool.js';
+import { runPool } from '@transcend-io/sdk';
 
 /* colors → identity */
 vi.mock('colors', () => ({
@@ -38,20 +38,26 @@ const mGetWorkerLogPaths = vi.fn().mockReturnValue({
 });
 const mSpawnWorkerProcess = vi.fn();
 
-vi.mock('../spawnWorkerProcess.js', () => ({
-  safeSend: (...a: unknown[]) => mSafeSend(...a),
-  isIpcOpen: (...a: unknown[]) => mIsIpcOpen(...a),
-  getWorkerLogPaths: (...a: unknown[]) => mGetWorkerLogPaths(...a),
-  spawnWorkerProcess: (...a: unknown[]) => mSpawnWorkerProcess(...a),
-}));
-
-/* logRotation bits the runner uses */
-vi.mock('../logRotation.js', () => ({
-  initLogDir: vi.fn(() => '/exp'), // avoid real FS
-  makeLineSplitter: (fn: (line: string) => void) => (buf: unknown) => fn(String(buf)),
-  classifyLogLevel: (line: string) =>
-    /ERROR/.test(line) ? 'error' : /WARN/.test(line) ? 'warn' : undefined,
-}));
+vi.mock('@transcend-io/sdk', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
+  return {
+    ...actual,
+    safeSend: (...a: unknown[]) => mSafeSend(...a),
+    isIpcOpen: (...a: unknown[]) => mIsIpcOpen(...a),
+    getWorkerLogPaths: (...a: unknown[]) => mGetWorkerLogPaths(...a),
+    spawnWorkerProcess: (...a: unknown[]) => mSpawnWorkerProcess(...a),
+    initLogDir: vi.fn(() => '/exp'),
+    makeLineSplitter: (fn: (line: string) => void) => (buf: unknown) => fn(String(buf)),
+    classifyLogLevel: (line: string) =>
+      /ERROR/.test(line) ? 'error' : /WARN/.test(line) ? 'warn' : undefined,
+    safeGetLogPathsForSlot: vi.fn(() => ({
+      out: '/tmp/out.log',
+      err: '/tmp/err.log',
+      structured: '/tmp/structured.log',
+      current: '/tmp/current.log',
+    })),
+  };
+});
 
 /* interactive switcher → cleanup fn */
 const mInstallInteractiveSwitcher = vi.fn().mockReturnValue(() => {
@@ -59,16 +65,6 @@ const mInstallInteractiveSwitcher = vi.fn().mockReturnValue(() => {
 });
 vi.mock('../installInteractiveSwitcher.js', () => ({
   installInteractiveSwitcher: (...a: unknown[]) => mInstallInteractiveSwitcher(...a),
-}));
-
-/* safeGetLogPathsForSlot — simple stub */
-vi.mock('../safeGetLogPathsForSlot.js', () => ({
-  safeGetLogPathsForSlot: vi.fn(() => ({
-    out: '/tmp/out.log',
-    err: '/tmp/err.log',
-    structured: '/tmp/structured.log',
-    current: '/tmp/current.log',
-  })),
 }));
 
 /* ─── Test utilities ─────────────────────────────────────────────────────── */
@@ -173,7 +169,7 @@ describe('runPool', () => {
       cpuCount: 8,
       filesTotal: 1,
       childFlag: '--as-child',
-      hooks: hooks as unknown as import('../runPool.js').PoolHooks<Task, Prog, Res, Totals>,
+      hooks: hooks as unknown as import('@transcend-io/sdk').PoolHooks<Task, Prog, Res, Totals>,
       render: (snap) => {
         renders.push({
           title: snap.title,
@@ -277,7 +273,7 @@ describe('runPool', () => {
       cpuCount: 4,
       filesTotal: 1,
       childFlag: '--as-child',
-      hooks: hooks as unknown as import('../runPool.js').PoolHooks<Task, Prog, Res, Totals>,
+      hooks: hooks as unknown as import('@transcend-io/sdk').PoolHooks<Task, Prog, Res, Totals>,
       viewerMode: true,
       render: (snap) => flags.push(snap.final),
     });

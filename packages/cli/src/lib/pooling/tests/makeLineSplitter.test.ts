@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { makeLineSplitter } from '../logRotation.js';
+import { makeLineSplitter } from '@transcend-io/sdk';
 
 describe('makeLineSplitter', () => {
   it('emits one line per newline across chunk boundaries', () => {

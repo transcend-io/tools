@@ -1,7 +1,7 @@
 import { extractErrorMessage } from '@transcend-io/utils';
 
 import { parquetToCsvOneFile } from '../../../lib/helpers/index.js';
-import type { ToWorker } from '../../../lib/pooling/index.js';
+import type { ToWorker } from '@transcend-io/sdk';
 import { logger } from '../../../logger.js';
 
 export type ParquetTask = {

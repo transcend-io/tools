@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { showCombinedLogs, type WhichLogs } from '../showCombinedLogs.js';
-import type { WorkerLogPaths } from '../spawnWorkerProcess.js';
+import type { WorkerLogPaths } from '@transcend-io/sdk';
 
 /**
  * Mock fs BEFORE importing the SUT.

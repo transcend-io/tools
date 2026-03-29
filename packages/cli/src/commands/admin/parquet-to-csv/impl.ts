@@ -3,12 +3,11 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { collectParquetFilesOrExit } from '../../../lib/helpers/index.js';
+import { CHILD_FLAG, type PoolHooks, runPool } from '@transcend-io/sdk';
+
 import {
   computePoolSize,
   createExtraKeyHandler,
-  CHILD_FLAG,
-  type PoolHooks,
-  runPool,
   dashboardPlugin,
 } from '../../../lib/pooling/index.js';
 import { logger } from '../../../logger.js';

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import type { LocalContext } from '../../../../context.js';
-import type { PoolHooks } from '../../../../lib/pooling/index.js';
+import type { PoolHooks } from '@transcend-io/sdk';
 import { parquetToCsv, type ParquetToCsvCommandFlags } from '../impl.js';
 import { parquetToCsvPlugin } from '../ui/index.js';
 import type { ParquetTask, ParquetProgress, ParquetResult } from '../worker.js';
@@ -106,6 +106,15 @@ vi.mock('../../../../lib/helpers/index.js', () => ({
  * IMPORTANT: mock the exact module id after resolution. Using the absolute path
  * to the actual file from *this test file* is reliable for Vitest.
  */
+vi.mock('@transcend-io/sdk', async () => {
+  const actual = await vi.importActual<typeof import('@transcend-io/sdk')>('@transcend-io/sdk');
+  return {
+    ...actual,
+    CHILD_FLAG: H.pooling.CHILD_FLAG,
+    runPool: H.pooling.runPool,
+  };
+});
+
 vi.mock('../../../../lib/pooling/index.js', async () => {
   const actual =
     await vi.importActual<typeof import('../../../../lib/pooling/index.js')>(
@@ -113,9 +122,7 @@ vi.mock('../../../../lib/pooling/index.js', async () => {
     );
   return {
     ...actual,
-    CHILD_FLAG: H.pooling.CHILD_FLAG,
     computePoolSize: H.pooling.computePoolSize,
-    runPool: H.pooling.runPool,
     dashboardPlugin: H.pooling.dashboardPlugin,
     createExtraKeyHandler: H.pooling.createExtraKeyHandler,
   };

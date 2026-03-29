@@ -1,9 +1,11 @@
 import { mkdirSync, createWriteStream } from 'node:fs';
 import { join, dirname } from 'node:path';
 
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
-
-import type { ToWorker } from '../../../lib/pooling/index.js';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  type ToWorker,
+} from '@transcend-io/sdk';
 import { splitCsvToList } from '@transcend-io/utils';
 import { logger } from '../../../logger.js';
 import { getFilePrefix } from './artifacts/index.js';

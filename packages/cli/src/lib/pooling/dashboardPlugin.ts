@@ -4,7 +4,7 @@ import * as readline from 'node:readline';
 import type { ObjByString } from '@transcend-io/type-utils';
 import colors from 'colors';
 
-import type { SlotState } from './types.js';
+import type { SlotState } from '@transcend-io/sdk';
 
 /**
  * A dashboard plugin defines how to render the worker pool UI.
