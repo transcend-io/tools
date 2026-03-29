@@ -1,7 +1,7 @@
 {
   "name": "@transcend-io/tools-monorepo",
   "private": true,
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "build": "turbo run build",
