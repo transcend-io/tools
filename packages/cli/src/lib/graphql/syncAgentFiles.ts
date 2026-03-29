@@ -1,13 +1,13 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { AgentFileInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllAgentFiles, AgentFile } from './fetchAllAgentFiles.js';
 import { UPDATE_AGENT_FILES, CREATE_AGENT_FILE } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new agent file
@@ -38,7 +38,8 @@ export async function createAgentFile(
       agentFile: AgentFile;
     };
   }>(client, CREATE_AGENT_FILE, {
-    input,
+    variables: { input },
+    logger,
   });
   return createAgentFile.agentFile;
 }
@@ -54,16 +55,19 @@ export async function updateAgentFiles(
   agentFileIdPairs: [AgentFileInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_AGENT_FILES, {
-    input: {
-      agentFiles: agentFileIdPairs.map(([agentFile, id]) => ({
-        id,
-        name: agentFile.name,
-        description: agentFile.description,
-        fileId: agentFile.fileId,
-        size: agentFile.size,
-        purpose: agentFile.purpose,
-      })),
+    variables: {
+      input: {
+        agentFiles: agentFileIdPairs.map(([agentFile, id]) => ({
+          id,
+          name: agentFile.name,
+          description: agentFile.description,
+          fileId: agentFile.fileId,
+          size: agentFile.size,
+          purpose: agentFile.purpose,
+        })),
+      },
     },
+    logger,
   });
 }
 

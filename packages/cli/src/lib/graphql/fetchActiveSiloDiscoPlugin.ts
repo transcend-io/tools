@@ -1,8 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
 import { ENABLED_PLUGINS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Plugin {
   /** Associated data silo */
@@ -36,8 +36,11 @@ export async function fetchActiveSiloDiscoPlugin(
   dataSiloId: string,
 ): Promise<Plugin> {
   const response = await makeGraphQLRequest<PluginResponse>(client, ENABLED_PLUGINS, {
-    dataSiloId,
-    type: 'DATA_SILO_DISCOVERY',
+    variables: {
+      dataSiloId,
+      type: 'DATA_SILO_DISCOVERY',
+    },
+    logger,
   });
 
   const { plugins, totalCount } = response.plugins;

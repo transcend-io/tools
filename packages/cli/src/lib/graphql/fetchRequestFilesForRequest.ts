@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { BULK_REQUEST_FILES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface RequestFileCursor {
   /** The ID of the request file */
@@ -61,11 +62,14 @@ export async function fetchRequestFilesForRequest(
       client,
       BULK_REQUEST_FILES,
       {
-        filterBy: {
-          ...filterBy,
+        variables: {
+          filterBy: {
+            ...filterBy,
+          },
+          first: pageSize,
+          after: cursor ?? undefined,
         },
-        first: pageSize,
-        after: cursor ?? undefined,
+        logger,
       },
     );
     const {

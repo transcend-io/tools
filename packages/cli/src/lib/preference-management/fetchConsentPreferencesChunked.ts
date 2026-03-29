@@ -1,11 +1,11 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import { addDaysUtc, clampPageSize } from '@transcend-io/utils';
+import { map as pmap } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import type { Got } from 'got';
 
 import { logger } from '../../logger.js';
-import { map as pmap } from '../bluebird.js';
 import { buildConsentChunks } from './buildConsentChunks.js';
 import {
   findEarliestDayWithData,

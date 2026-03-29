@@ -1,8 +1,9 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { CODE_PACKAGES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface CodePackage {
   /** ID of code package */
@@ -71,8 +72,8 @@ export async function fetchAllCodePackages(client: GraphQLClient): Promise<CodeP
         nodes: CodePackage[];
       };
     }>(client, CODE_PACKAGES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     codePackages.push(...nodes);
     offset += PAGE_SIZE;

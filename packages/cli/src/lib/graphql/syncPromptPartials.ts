@@ -1,13 +1,13 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { PromptPartialInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { fetchAllPromptPartials } from './fetchPromptPartials.js';
 import { UPDATE_PROMPT_PARTIALS, CREATE_PROMPT_PARTIAL } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Create a new prompt partial
@@ -37,7 +37,8 @@ export async function createPromptPartial(
       };
     };
   }>(client, CREATE_PROMPT_PARTIAL, {
-    input,
+    variables: { input },
+    logger,
   });
   logger.info(colors.green(`Successfully created prompt partial "${input.title}"!`));
   return promptPartial.id;
@@ -54,12 +55,15 @@ export async function updatePromptPartials(
   input: [PromptPartialInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_PROMPT_PARTIALS, {
-    input: {
-      promptPartials: input.map(([input, id]) => ({
-        ...input,
-        id,
-      })),
+    variables: {
+      input: {
+        promptPartials: input.map(([input, id]) => ({
+          ...input,
+          id,
+        })),
+      },
     },
+    logger,
   });
   logger.info(colors.green(`Successfully updated ${input.length} prompt partials!`));
 }

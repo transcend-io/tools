@@ -1,10 +1,11 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { uniq, keyBy, chunk } from 'lodash-es';
 
 import { ActionItemInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import {
   ActionItemCollection,
   fetchAllActionItemCollections,
@@ -12,7 +13,6 @@ import {
 import { fetchAllActionItems, ActionItem } from './fetchAllActionItems.js';
 import { Attribute, fetchAllAttributes } from './fetchAllAttributes.js';
 import { UPDATE_ACTION_ITEMS, CREATE_ACTION_ITEMS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new actionItem
@@ -41,30 +41,33 @@ export async function createActionItems(
   const chunked = chunk(actionItems, 100);
   await mapSeries(chunked, async (chunkToUpload) => {
     await makeGraphQLRequest(client, CREATE_ACTION_ITEMS, {
-      input: chunkToUpload.map((actionItem) => ({
-        title: actionItem.title,
-        type: actionItem.type,
-        priorityOverride: actionItem.priority,
-        dueDate: actionItem.dueDate,
-        customerExperienceActionItemId: actionItem.customerExperienceActionItemId,
-        resolved: actionItem.resolved,
-        notes: actionItem.notes,
-        link: actionItem.link,
-        assigneesUserEmails: actionItem.users,
-        assigneesTeamNames: actionItem.teams,
-        ...(actionItem.attributes
-          ? {
-              // TODO: https://transcend.height.app/T-38961 - insert attributes
-              // attributes: actionItem.attributes.map(({ key, values }) => ({
-              //   attributeKeyId: getAttribute(key),
-              //   attributeValueNames: values,
-              // })),
-            }
-          : {}),
-        collectionIds: actionItem.collections.map(
-          (collectionTitle) => actionItemCollectionByTitle[collectionTitle].id,
-        ),
-      })),
+      variables: {
+        input: chunkToUpload.map((actionItem) => ({
+          title: actionItem.title,
+          type: actionItem.type,
+          priorityOverride: actionItem.priority,
+          dueDate: actionItem.dueDate,
+          customerExperienceActionItemId: actionItem.customerExperienceActionItemId,
+          resolved: actionItem.resolved,
+          notes: actionItem.notes,
+          link: actionItem.link,
+          assigneesUserEmails: actionItem.users,
+          assigneesTeamNames: actionItem.teams,
+          ...(actionItem.attributes
+            ? {
+                // TODO: https://transcend.height.app/T-38961 - insert attributes
+                // attributes: actionItem.attributes.map(({ key, values }) => ({
+                //   attributeKeyId: getAttribute(key),
+                //   attributeValueNames: values,
+                // })),
+              }
+            : {}),
+          collectionIds: actionItem.collections.map(
+            (collectionTitle) => actionItemCollectionByTitle[collectionTitle].id,
+          ),
+        })),
+      },
+      logger,
     });
   });
 }
@@ -93,26 +96,29 @@ export async function updateActionItem(
     return existing.id;
   };
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEMS, {
-    input: {
-      ids: [actionItemId],
-      title: input.title,
-      priorityOverride: input.priority,
-      dueDate: input.dueDate,
-      resolved: input.resolved,
-      customerExperienceActionItemId: input.customerExperienceActionItemId,
-      notes: input.notes,
-      link: input.link,
-      assigneesUserEmails: input.users,
-      assigneesTeamNames: input.teams,
-      ...(input.attributes
-        ? {
-            attributes: input.attributes.map(({ key, values }) => ({
-              attributeKeyId: getAttribute(key),
-              attributeValueNames: values,
-            })),
-          }
-        : {}),
+    variables: {
+      input: {
+        ids: [actionItemId],
+        title: input.title,
+        priorityOverride: input.priority,
+        dueDate: input.dueDate,
+        resolved: input.resolved,
+        customerExperienceActionItemId: input.customerExperienceActionItemId,
+        notes: input.notes,
+        link: input.link,
+        assigneesUserEmails: input.users,
+        assigneesTeamNames: input.teams,
+        ...(input.attributes
+          ? {
+              attributes: input.attributes.map(({ key, values }) => ({
+                attributeKeyId: getAttribute(key),
+                attributeValueNames: values,
+              })),
+            }
+          : {}),
+      },
     },
+    logger,
   });
 }
 

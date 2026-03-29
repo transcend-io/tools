@@ -1,13 +1,13 @@
 import { RequestEnricherStatus, RequestStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { mapSeries, map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { mapSeries, map } from '../bluebird.js';
 import {
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
   fetchAllRequestEnrichers,
   fetchAllRequests,
   SKIP_REQUEST_ENRICHER,
@@ -87,7 +87,8 @@ export async function skipPreflightJobs({
               /** Whether we successfully uploaded the results */
               success: boolean;
             }>(client, SKIP_REQUEST_ENRICHER, {
-              requestEnricherId: requestEnricher.id,
+              variables: { requestEnricherId: requestEnricher.id },
+              logger,
             });
             totalSkipped += 1;
           } catch (err) {

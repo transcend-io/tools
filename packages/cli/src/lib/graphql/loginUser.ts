@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { DETERMINE_LOGIN_METHOD, ASSUME_ROLE, LOGIN } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface OrganizationPreview {
   /** Name of organization */
@@ -59,7 +60,8 @@ export async function loginUser(
       };
     };
   }>(client, DETERMINE_LOGIN_METHOD, {
-    email,
+    variables: { email },
+    logger,
   });
 
   const res = await client.rawRequest<{
@@ -124,8 +126,8 @@ export async function assumeRole(
       };
     };
   }>(client, DETERMINE_LOGIN_METHOD, {
-    email,
-    userId: roleId,
+    variables: { email, userId: roleId },
+    logger,
   });
 
   await client.rawRequest<{

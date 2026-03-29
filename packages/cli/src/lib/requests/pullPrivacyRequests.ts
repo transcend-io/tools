@@ -1,13 +1,12 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   RequestIdentifier,
-  buildTranscendGraphQLClient,
-  createSombraGotInstance,
   fetchAllRequestIdentifiers,
   fetchAllRequests,
   validateSombraVersion,
@@ -96,7 +95,11 @@ export async function pullPrivacyRequests({
   requestsFormattedForCsv: CsvRow[];
 }> {
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const sombra = await createSombraGotInstance(transcendUrl, auth, sombraAuth);
+  const sombra = await createSombraGotInstance(transcendUrl, auth, {
+    logger,
+    sombraApiKey: sombraAuth,
+    sombraUrl: process.env.SOMBRA_URL,
+  });
 
   // Log date range
   let dateRange = '';

@@ -1,9 +1,8 @@
-import colors from 'colors';
-import got, { Got } from 'got';
+import type { Logger } from '@transcend-io/utils';
+import got, { type Got } from 'got';
 
-import { logger } from '../../logger.js';
 import { buildTranscendGraphQLClient } from './buildTranscendGraphQLClient.js';
-import { ORGANIZATION } from './gqls/index.js';
+import { ORGANIZATION } from './gqls/organization.js';
 import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
@@ -12,34 +11,40 @@ import { makeGraphQLRequest } from './makeGraphQLRequest.js';
  *
  * @param transcendUrl - URL of Transcend API
  * @param transcendApiKey - Transcend API key
- * @param sombraApiKey - Sombra API key
+ * @param options - Additional options
  * @returns The instance of got that is capable of making requests to the customer ingress
  */
 export async function createSombraGotInstance(
   transcendUrl: string,
   transcendApiKey: string,
-  sombraApiKey?: string,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Sombra API key */
+    sombraApiKey?: string;
+    /** Override Sombra URL (replaces process.env.SOMBRA_URL lookup) */
+    sombraUrl?: string;
+  },
 ): Promise<Got> {
-  // Create GraphQL client to connect to Transcend backend
+  const { logger, sombraApiKey, sombraUrl } = options;
+
   const client = buildTranscendGraphQLClient(transcendUrl, transcendApiKey);
-  // Grab metadata about organization's sombra from GraphQL endpoint
   const { organization } = await makeGraphQLRequest<{
-    /** Requests */
+    /** Organization */
     organization: {
-      /** PrimarySombra related to organization */
+      /** Primary Sombra */
       sombra: {
-        /** URL of sombra */
+        /** URL */
         customerUrl: string;
       };
     };
-  }>(client, ORGANIZATION);
-  // Use SOMBRA_URL env var if provided, otherwise fall back to the primary sombra's customerUrl
-  const { customerUrl } = organization.sombra;
-  const sombraToUse = process.env.SOMBRA_URL || customerUrl;
+  }>(client, ORGANIZATION, { logger });
 
-  // Only validate the reverse tunnel URL if we're using the primary sombra (not SOMBRA_URL override)
+  const { customerUrl } = organization.sombra;
+  const sombraToUse = sombraUrl || customerUrl;
+
   if (
-    !process.env.SOMBRA_URL &&
+    !sombraUrl &&
     [
       'https://sombra-reverse-tunnel.transcend.io',
       'https://sombra-reverse-tunnel.us.transcend.io',
@@ -51,18 +56,13 @@ export async function createSombraGotInstance(
         'https://docs.transcend.io/docs/articles/sombra/deploying/customizing-sombra/networking',
     );
   }
-  logger.info(colors.green(`Using sombra: ${sombraToUse}`));
+  logger.info(`Using sombra: ${sombraToUse}`);
 
-  // Create got instance with default values
   return got.extend({
     prefixUrl: sombraToUse,
     headers: {
       Authorization: `Bearer ${transcendApiKey}`,
-      ...(sombraApiKey
-        ? {
-            'X-Sombra-Authorization': `Bearer ${sombraApiKey}`,
-          }
-        : {}),
+      ...(sombraApiKey ? { 'X-Sombra-Authorization': `Bearer ${sombraApiKey}` } : {}),
     },
   });
 }

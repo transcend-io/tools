@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { ATTRIBUTE_KEYS_REQUESTS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface AttributeKey {
   /** ID of attribute key */
@@ -36,8 +37,8 @@ export async function fetchAllRequestAttributeKeys(client: GraphQLClient): Promi
         nodes: AttributeKey[];
       };
     }>(client, ATTRIBUTE_KEYS_REQUESTS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     attributeKeys.push(...nodes);
     offset += PAGE_SIZE;

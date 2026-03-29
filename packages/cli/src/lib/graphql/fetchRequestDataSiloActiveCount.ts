@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { REDUCED_REQUESTS_FOR_DATA_SILO_COUNT } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Get number of open requests for a data silo
@@ -28,10 +29,13 @@ export async function fetchRequestDataSiloActiveCount(
       totalCount: number;
     };
   }>(client, REDUCED_REQUESTS_FOR_DATA_SILO_COUNT, {
-    input: {
-      dataSiloId,
-      isResolved: false,
+    variables: {
+      input: {
+        dataSiloId,
+        isResolved: false,
+      },
     },
+    logger,
   });
 
   return totalCount;

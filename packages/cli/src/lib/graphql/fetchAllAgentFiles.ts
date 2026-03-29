@@ -1,8 +1,9 @@
 import { PromptFilePurpose } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { AGENT_FILES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface AgentFile {
   /** ID of agentFile */
@@ -58,9 +59,8 @@ export async function fetchAllAgentFiles(
         nodes: AgentFile[];
       };
     }>(client, AGENT_FILES, {
-      first: PAGE_SIZE,
-      offset,
-      filterBy,
+      variables: { first: PAGE_SIZE, offset, filterBy },
+      logger,
     });
     agentFiles.push(...nodes);
     offset += PAGE_SIZE;

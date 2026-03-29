@@ -79,15 +79,11 @@ vi.mock('cli-progress', () => {
   };
 });
 
-vi.mock('../../bluebird.js', () => ({
-  // Use deterministic Promise.all behavior
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  map: (arr: any[], fn: (x: any) => Promise<unknown>, _opts?: any) => Promise.all(arr.map(fn)),
-}));
-
 vi.mock('@transcend-io/utils', () => ({
   clampPageSize: (n: number) => H.clampPageSize(n),
   addDaysUtc: (d: Date, n: number) => H.addDaysUtc(d, n),
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  map: (arr: any[], fn: (x: any) => Promise<unknown>, _opts?: any) => Promise.all(arr.map(fn)),
 }));
 
 vi.mock('../discoverConsentWindow.js', () => ({

@@ -4,10 +4,11 @@ import {
   RegionDetectionMethod,
   RequestAction,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { ACTIONS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Action {
   /** ID of identifier */
@@ -52,8 +53,8 @@ export async function fetchAllActions(client: GraphQLClient): Promise<Action[]> 
         nodes: Action[];
       };
     }>(client, ACTIONS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     actions.push(...nodes);
     offset += PAGE_SIZE;

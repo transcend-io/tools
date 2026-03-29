@@ -1,16 +1,16 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   REMOVE_REQUEST_IDENTIFIERS,
   fetchAllRequests,
   fetchAllRequestIdentifierMetadata,
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
 } from '../graphql/index.js';
 
 /**
@@ -75,10 +75,13 @@ export async function removeUnverifiedRequestIdentifiers({
           /** Whether we successfully uploaded the results */
           success: boolean;
         }>(client, REMOVE_REQUEST_IDENTIFIERS, {
-          input: {
-            requestId: requestToRestart.id,
-            requestIdentifierIds: clearOut,
+          variables: {
+            input: {
+              requestId: requestToRestart.id,
+              requestIdentifierIds: clearOut,
+            },
           },
+          logger,
         });
         processed += clearOut.length;
       }

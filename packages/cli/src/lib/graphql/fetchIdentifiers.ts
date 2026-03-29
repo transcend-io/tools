@@ -1,86 +1,13 @@
-import { IdentifierType, RequestAction } from '@transcend-io/privacy-types';
+import { fetchAllIdentifiers as sdkFetchAllIdentifiers, type Identifier } from '@transcend-io/sdk';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, flatten, difference } from 'lodash-es';
 
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
-import { CREATE_IDENTIFIER, IDENTIFIERS, NEW_IDENTIFIER_TYPES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
-
-export interface Identifier {
-  /** ID of identifier */
-  id: string;
-  /** Name of identifier */
-  name: string;
-  /** The type of identifier */
-  type: IdentifierType;
-  /** Regular expression to  */
-  regex: string;
-  /** The set of options that the identifier  */
-  selectOptions: string[];
-  /** Whether identifier is enabled on privacy center */
-  privacyCenterVisibility: RequestAction[];
-  /** Enabled data subjects that are exposed this identifier on the privacy center */
-  dataSubjects: {
-    /** type of data subjects */
-    type: string;
-  }[];
-  /** Whether identifier is a required field in privacy center form */
-  isRequiredInForm: boolean;
-  /** Identifier placeholder text */
-  placeholder: string;
-  /** Display title for identifier */
-  displayTitle: {
-    /** Default message */
-    defaultMessage: string;
-  };
-  /** Display description for identifier */
-  displayDescription: {
-    /** Default */
-    defaultMessage: string;
-  };
-  /** Display order */
-  displayOrder: number;
-  /** does this identifier uniquely identify a consent record */
-  isUniqueOnPreferenceStore: boolean;
-}
-
-const PAGE_SIZE = 20;
-
-/**
- * Fetch all identifiers in the organization
- *
- * @param client - GraphQL client
- * @returns All identifiers in the organization
- */
-export async function fetchAllIdentifiers(client: GraphQLClient): Promise<Identifier[]> {
-  const identifiers: Identifier[] = [];
-  let offset = 0;
-
-  // Whether to continue looping
-  let shouldContinue = false;
-  do {
-    const {
-      identifiers: { nodes },
-    } = await makeGraphQLRequest<{
-      /** Identifiers */
-      identifiers: {
-        /** List */
-        nodes: Identifier[];
-      };
-    }>(client, IDENTIFIERS, {
-      first: PAGE_SIZE,
-      offset,
-    });
-    identifiers.push(...nodes);
-    offset += PAGE_SIZE;
-    shouldContinue = nodes.length === PAGE_SIZE;
-  } while (shouldContinue);
-
-  return identifiers.sort((a, b) => a.name.localeCompare(b.name));
-}
+import { CREATE_IDENTIFIER, NEW_IDENTIFIER_TYPES } from './gqls/index.js';
 
 /**
  * Fetch all identifiers and if any are found in the config that are
@@ -96,13 +23,9 @@ export async function fetchIdentifiersAndCreateMissing(
   client: GraphQLClient,
   skipPublish = false,
 ): Promise<{ [k in string]: Identifier }> {
-  // Grab all existing identifiers
-  const allIdentifiers = await fetchAllIdentifiers(client);
-
-  // Create a map
+  const allIdentifiers = await sdkFetchAllIdentifiers(client, { logger });
   const identifiersByName = keyBy(allIdentifiers, 'name');
 
-  // Determine expected set of identifiers
   const expectedIdentifiers = uniq([
     ...flatten(
       enrichers.map((enricher) => [
@@ -118,7 +41,6 @@ export async function fetchIdentifiersAndCreateMissing(
     allIdentifiers.map(({ name }) => name),
   );
 
-  // If there are missing identifiers, create new ones
   if (missingIdentifiers.length > 0) {
     logger.info(colors.magenta(`Creating ${missingIdentifiers.length} new identifiers...`));
     const { newIdentifierTypes } = await makeGraphQLRequest<{
@@ -127,7 +49,7 @@ export async function fetchIdentifiersAndCreateMissing(
         /** Name of identifier type remaining */
         name: string;
       }[];
-    }>(client, NEW_IDENTIFIER_TYPES);
+    }>(client, NEW_IDENTIFIER_TYPES, { logger });
     const nativeTypesRemaining = newIdentifierTypes.map(({ name }) => name);
     await mapSeries(missingIdentifiers, async (identifier) => {
       logger.info(colors.magenta(`Creating identifier ${identifier}...`));
@@ -138,11 +60,14 @@ export async function fetchIdentifiersAndCreateMissing(
           identifier: Identifier;
         };
       }>(client, CREATE_IDENTIFIER, {
-        input: {
-          name: identifier,
-          type: nativeTypesRemaining.includes(identifier!) ? identifier : 'custom',
-          skipPublish,
+        variables: {
+          input: {
+            name: identifier,
+            type: nativeTypesRemaining.includes(identifier!) ? identifier : 'custom',
+            skipPublish,
+          },
         },
+        logger,
       });
       logger.info(colors.green(`Created identifier ${identifier}!`));
 

@@ -1,9 +1,10 @@
 import { UserPrivacySignalEnum } from '@transcend-io/airgap.js-types';
 import { DefaultConsentOption, PreferenceStoreAuthLevel } from '@transcend-io/privacy-types';
-import { GraphQLClient } from 'graphql-request';
+import type { Logger } from '@transcend-io/utils';
+import type { GraphQLClient } from 'graphql-request';
 
-import { PURPOSES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { PURPOSES } from './gqls/purpose.js';
 
 export interface Purpose {
   /** ID of purpose */
@@ -44,38 +45,32 @@ const PAGE_SIZE = 20;
  * Fetch all purposes in the organization
  *
  * @param client - GraphQL client
- * @param input - Input
+ * @param options - Options
  * @returns All purposes in the organization
  */
 export async function fetchAllPurposes(
   client: GraphQLClient,
-  {
-    includeDeleted = false,
-  }: {
+  options: {
+    /** Logger instance */
+    logger: Logger;
     /** Whether to include deleted purposes */
     includeDeleted?: boolean;
-  } = {},
+  },
 ): Promise<Purpose[]> {
+  const { logger, includeDeleted = false } = options;
   const purposes: Purpose[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {
       purposes: { nodes },
     } = await makeGraphQLRequest<{
       /** Purposes */
-      purposes: {
-        /** List */
-        nodes: Purpose[];
-      };
+      purposes: { /** List */ nodes: Purpose[] };
     }>(client, PURPOSES, {
-      first: PAGE_SIZE,
-      offset,
-      input: {
-        includeDeleted,
-      },
+      logger,
+      variables: { first: PAGE_SIZE, offset, input: { includeDeleted } },
     });
     purposes.push(...nodes);
     offset += PAGE_SIZE;

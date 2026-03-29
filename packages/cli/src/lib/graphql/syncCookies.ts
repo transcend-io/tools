@@ -1,14 +1,14 @@
+// import { keyBy } from 'lodash-es';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { CookieInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { UPDATE_OR_CREATE_COOKIES } from './gqls/index.js';
-// import { keyBy } from 'lodash-es';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const MAX_PAGE_SIZE = 100;
 
@@ -30,28 +30,31 @@ export async function updateOrCreateCookies(
 
   await mapSeries(chunk(cookieInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_OR_CREATE_COOKIES, {
-      airgapBundleId,
-      cookies: page.map((cookie) => ({
-        name: cookie.name,
-        trackingPurposes:
-          cookie.trackingPurposes && cookie.trackingPurposes.length > 0
-            ? cookie.trackingPurposes
-            : undefined,
-        // TODO: https://transcend.height.app/T-19841 - add with custom purposes
-        // purposeIds: cookie.trackingPurposes
-        //   ? cookie.trackingPurposes
-        //       .filter((purpose) => purpose !== 'Unknown')
-        //       .map((purpose) => purposeNameToId[purpose].id)
-        // : undefined,
-        description: cookie.description,
-        service: cookie.service,
-        status: cookie.status,
-        attributes: cookie.attributes,
-        isRegex: cookie.isRegex,
-        // TODO: https://transcend.height.app/T-23718
-        // owners,
-        // teams,
-      })),
+      variables: {
+        airgapBundleId,
+        cookies: page.map((cookie) => ({
+          name: cookie.name,
+          trackingPurposes:
+            cookie.trackingPurposes && cookie.trackingPurposes.length > 0
+              ? cookie.trackingPurposes
+              : undefined,
+          // TODO: https://transcend.height.app/T-19841 - add with custom purposes
+          // purposeIds: cookie.trackingPurposes
+          //   ? cookie.trackingPurposes
+          //       .filter((purpose) => purpose !== 'Unknown')
+          //       .map((purpose) => purposeNameToId[purpose].id)
+          // : undefined,
+          description: cookie.description,
+          service: cookie.service,
+          status: cookie.status,
+          attributes: cookie.attributes,
+          isRegex: cookie.isRegex,
+          // TODO: https://transcend.height.app/T-23718
+          // owners,
+          // teams,
+        })),
+      },
+      logger,
     });
   });
 }

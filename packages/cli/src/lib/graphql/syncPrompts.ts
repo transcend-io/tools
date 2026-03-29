@@ -1,13 +1,13 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { PromptInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
 import { UPDATE_PROMPTS, CREATE_PROMPT } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Create a new prompt
@@ -38,7 +38,8 @@ export async function createPrompt(
     };
   }>(client, CREATE_PROMPT, {
     // TODO: https://transcend.height.app/T-31994 - include models and groups, teams, users
-    input,
+    variables: { input },
+    logger,
   });
   logger.info(colors.green(`Successfully created prompt "${input.title}"!`));
   return prompt.id;
@@ -55,12 +56,15 @@ export async function updatePrompts(
   input: [PromptInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_PROMPTS, {
-    input: {
-      prompts: input.map(([input, id]) => ({
-        ...input,
-        id,
-      })),
+    variables: {
+      input: {
+        prompts: input.map(([input, id]) => ({
+          ...input,
+          id,
+        })),
+      },
     },
+    logger,
   });
   logger.info(colors.green(`Successfully updated ${input.length} prompts!`));
 }

@@ -1,13 +1,12 @@
 import { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import { decodeCodec } from '@transcend-io/type-utils';
-import { extractErrorMessage, splitInHalf } from '@transcend-io/utils';
+import { extractErrorMessage, map, splitInHalf } from '@transcend-io/utils';
 import colors from 'colors';
 import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
 import type { PreferenceUploadProgress } from '../../commands/consent/upload-preferences/upload/index.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { ConsentPreferenceResponse } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 

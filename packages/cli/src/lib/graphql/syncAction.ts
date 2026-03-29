@@ -1,10 +1,11 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 import { difference } from 'lodash-es';
 
 import { ActionInput } from '../../codecs.js';
+import { logger } from '../../logger.js';
 import { UPDATE_ACTION } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const ALL_COUNTRIES_AND_SUBDIVISIONS = [
   ...Object.values(IsoCountryCode),
@@ -33,17 +34,20 @@ export async function syncAction(
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_ACTION, {
-    input: {
-      id: actionId,
-      skipSecondaryIfNoFiles: action.skipSecondaryIfNoFiles,
-      skipDownloadableStep: action.skipDownloadableStep,
-      requiresReview: action.requiresReview,
-      waitingPeriod: action.waitingPeriod,
-      skipPublish,
-      regionList: action.regionBlockList
-        ? difference(ALL_COUNTRIES_AND_SUBDIVISIONS, action.regionBlockList)
-        : action.regionList,
-      regionDetectionMethod: action.regionDetectionMethod,
+    variables: {
+      input: {
+        id: actionId,
+        skipSecondaryIfNoFiles: action.skipSecondaryIfNoFiles,
+        skipDownloadableStep: action.skipDownloadableStep,
+        requiresReview: action.requiresReview,
+        waitingPeriod: action.waitingPeriod,
+        skipPublish,
+        regionList: action.regionBlockList
+          ? difference(ALL_COUNTRIES_AND_SUBDIVISIONS, action.regionBlockList)
+          : action.regionList,
+        regionDetectionMethod: action.regionDetectionMethod,
+      },
     },
+    logger,
   });
 }

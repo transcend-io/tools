@@ -1,17 +1,17 @@
 import { existsSync } from 'node:fs';
 
 import { SombraStandardScope } from '@transcend-io/privacy-types';
+import {
+  buildTranscendGraphQLClient,
+  createPreferenceAccessTokens,
+  type PreferenceAccessTokenInputWithIndex,
+} from '@transcend-io/sdk';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import * as t from 'io-ts';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import {
-  buildTranscendGraphQLClient,
-  createPreferenceAccessTokens,
-  type PreferenceAccessTokenInputWithIndex,
-} from '../../../lib/graphql/index.js';
 import { writeCsv } from '../../../lib/helpers/index.js';
 import { readCsv } from '../../../lib/requests/index.js';
 import { logger } from '../../../logger.js';
@@ -127,8 +127,12 @@ export async function generateAccessTokens(
 
     // Kick off token creation (batched internally)
     const t0 = Date.now();
-    const results = await createPreferenceAccessTokens(client, inputs, (progress) => {
-      progressBar.update(progress);
+    const results = await createPreferenceAccessTokens(client, {
+      records: inputs,
+      logger,
+      emitProgress: (progress) => {
+        progressBar.update(progress);
+      },
     });
     progressBar.update(inputs.length);
     progressBar.stop();

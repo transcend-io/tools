@@ -1,8 +1,9 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { VENDORS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface Vendor {
   /** ID of vendor */
@@ -76,8 +77,8 @@ export async function fetchAllVendors(client: GraphQLClient): Promise<Vendor[]> 
         nodes: Vendor[];
       };
     }>(client, VENDORS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     vendors.push(...nodes);
     offset += PAGE_SIZE;

@@ -1,8 +1,9 @@
 import { ActionItemCode, ActionItemPriorityOverride } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { GLOBAL_ACTION_ITEMS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface ActionItemRaw {
   /** ID of action item */
@@ -130,13 +131,16 @@ export async function fetchAllActionItems(
         nodes: ActionItemRaw[];
       };
     }>(client, GLOBAL_ACTION_ITEMS, {
-      first: PAGE_SIZE,
-      offset,
-      filterBy: {
-        ...filterBy,
-        ...(filterBy.startDueDate ? { startDueDate: filterBy.startDueDate.toISOString() } : {}),
-        ...(filterBy.endDueDate ? { endDueDate: filterBy.endDueDate.toISOString() } : {}),
+      variables: {
+        first: PAGE_SIZE,
+        offset,
+        filterBy: {
+          ...filterBy,
+          ...(filterBy.startDueDate ? { startDueDate: filterBy.startDueDate.toISOString() } : {}),
+          ...(filterBy.endDueDate ? { endDueDate: filterBy.endDueDate.toISOString() } : {}),
+        },
       },
+      logger,
     });
     actionItems.push(
       ...nodes.map((node) => ({
