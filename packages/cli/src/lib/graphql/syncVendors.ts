@@ -1,13 +1,13 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { VendorInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllVendors, Vendor } from './fetchAllVendors.js';
 import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new vendor
@@ -40,7 +40,8 @@ export async function createVendor(
       vendor: Vendor;
     };
   }>(client, CREATE_VENDOR, {
-    input,
+    variables: { input },
+    logger,
   });
   return createVendor.vendor;
 }
@@ -56,22 +57,25 @@ export async function updateVendors(
   vendorIdParis: [VendorInput, string][],
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_VENDORS, {
-    input: {
-      vendors: vendorIdParis.map(([vendor, id]) => ({
-        id,
-        title: vendor.title,
-        description: vendor.description,
-        address: vendor.address,
-        headquarterCountry: vendor.headquarterCountry,
-        headquarterSubDivision: vendor.headquarterSubDivision,
-        dataProcessingAgreementLink: vendor.dataProcessingAgreementLink,
-        contactName: vendor.contactName,
-        contactPhone: vendor.contactPhone,
-        websiteUrl: vendor.websiteUrl,
-        // TODO: https://transcend.height.app/T-31994 - add teams, owners
-        attributes: vendor.attributes,
-      })),
+    variables: {
+      input: {
+        vendors: vendorIdParis.map(([vendor, id]) => ({
+          id,
+          title: vendor.title,
+          description: vendor.description,
+          address: vendor.address,
+          headquarterCountry: vendor.headquarterCountry,
+          headquarterSubDivision: vendor.headquarterSubDivision,
+          dataProcessingAgreementLink: vendor.dataProcessingAgreementLink,
+          contactName: vendor.contactName,
+          contactPhone: vendor.contactPhone,
+          websiteUrl: vendor.websiteUrl,
+          // TODO: https://transcend.height.app/T-31994 - add teams, owners
+          attributes: vendor.attributes,
+        })),
+      },
     },
+    logger,
   });
 }
 

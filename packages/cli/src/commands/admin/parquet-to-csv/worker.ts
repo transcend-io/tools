@@ -1,5 +1,7 @@
-import { parquetToCsvOneFile, extractErrorMessage } from '../../../lib/helpers/index.js';
-import type { ToWorker } from '../../../lib/pooling/index.js';
+import { extractErrorMessage, CHILD_FLAG } from '@transcend-io/utils';
+import type { ToWorker } from '@transcend-io/utils';
+
+import { parquetToCsvOneFile } from '../../../lib/helpers/index.js';
 import { logger } from '../../../logger.js';
 
 export type ParquetTask = {
@@ -81,5 +83,12 @@ export async function runChild(): Promise<void> {
   // keep alive until shutdown
   await new Promise<never>(() => {
     // Do nothing
+  });
+}
+
+if (process.argv.includes(CHILD_FLAG)) {
+  runChild().catch((err) => {
+    logger.error(err);
+    process.exit(1);
   });
 }

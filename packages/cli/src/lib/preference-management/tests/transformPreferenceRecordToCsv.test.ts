@@ -1,7 +1,6 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import { transformPreferenceRecordToCsv } from '@transcend-io/sdk';
 import { describe, it, expect } from 'vitest';
-
-import { transformPreferenceRecordToCsv } from '../transformPreferenceRecordToCsv.js';
 
 describe('transformPreferenceRecordToCsv', () => {
   it(

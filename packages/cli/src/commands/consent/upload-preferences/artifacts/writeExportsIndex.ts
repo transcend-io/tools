@@ -3,7 +3,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import type { ExportStatusMap } from '../../../../lib/pooling/index.js';
+import type { ExportStatusMap } from '@transcend-io/utils';
+
 import { artifactAbsPath, type ExportKindWithCsv } from './artifactAbsPath.js';
 
 let lastIndexFileContents = '';

@@ -1,12 +1,12 @@
 import { ConsentPreferencesBody } from '@transcend-io/airgap.js-types';
 import { decodeCodec } from '@transcend-io/type-utils';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import * as t from 'io-ts';
 
 import { DEFAULT_TRANSCEND_CONSENT_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { createTranscendConsentGotInstance } from '../graphql/index.js';
 import { createConsentToken } from './createConsentToken.js';
 import type { ConsentPreferenceUpload } from './types.js';
@@ -133,7 +133,7 @@ export async function uploadConsents({
           if (parsed.error) {
             logger.error(colors.red(`Error: ${parsed.error}`));
           }
-        } catch (e) {
+        } catch {
           // continue
         }
         throw new Error(`Received an error from server: ${err?.response?.body || err?.message}`);

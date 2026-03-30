@@ -1,40 +1,5 @@
 import { gql } from 'graphql-request';
 
-// TODO: https://transcend.height.app/T-27909 - enable optimizations
-// isExportCsv: true
-export const IDENTIFIERS = gql`
-  query TranscendCliIdentifiers($first: Int!, $offset: Int!) {
-    identifiers(
-      first: $first
-      offset: $offset
-      useMaster: false
-      orderBy: [{ field: createdAt, direction: ASC }, { field: name, direction: ASC }]
-    ) {
-      nodes {
-        id
-        name
-        type
-        regex
-        selectOptions
-        privacyCenterVisibility
-        dataSubjects {
-          type
-        }
-        isRequiredInForm
-        placeholder
-        displayTitle {
-          defaultMessage
-        }
-        displayDescription {
-          defaultMessage
-        }
-        displayOrder
-        isUniqueOnPreferenceStore
-      }
-    }
-  }
-`;
-
 export const NEW_IDENTIFIER_TYPES = gql`
   query TranscendCliNewIdentifierTypes {
     newIdentifierTypes {

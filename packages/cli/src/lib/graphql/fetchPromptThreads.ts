@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { PROMPT_THREADS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface PromptThread {
   /** ID of prompts */
@@ -51,9 +52,8 @@ export async function fetchAllPromptThreads(
         nodes: PromptThread[];
       };
     }>(client, PROMPT_THREADS, {
-      first: PAGE_SIZE,
-      offset,
-      filterBy,
+      variables: { first: PAGE_SIZE, offset, filterBy },
+      logger,
     });
     promptThreads.push(...nodes);
     offset += PAGE_SIZE;

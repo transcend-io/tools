@@ -1,8 +1,9 @@
 import { LargeLanguageModelClient } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { LARGE_LANGUAGE_MODELS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface LargeLanguageModel {
   /** ID of prompts */
@@ -41,8 +42,8 @@ export async function fetchAllLargeLanguageModels(
         nodes: LargeLanguageModel[];
       };
     }>(client, LARGE_LANGUAGE_MODELS, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     largeLanguageModels.push(...nodes);
     offset += PAGE_SIZE;

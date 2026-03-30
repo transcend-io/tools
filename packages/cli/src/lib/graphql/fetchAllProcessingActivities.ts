@@ -5,11 +5,12 @@ import type {
   Controllership,
   RetentionType,
 } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import type { Region } from './formatRegions.js';
 import { PROCESSING_ACTIVITIES } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface ProcessingActivity {
   /** ID of processing activity */
@@ -111,8 +112,8 @@ export async function fetchAllProcessingActivities(
         nodes: ProcessingActivity[];
       };
     }>(client, PROCESSING_ACTIVITIES, {
-      first: PAGE_SIZE,
-      offset,
+      variables: { first: PAGE_SIZE, offset },
+      logger,
     });
     processingActivities.push(...nodes);
     offset += PAGE_SIZE;

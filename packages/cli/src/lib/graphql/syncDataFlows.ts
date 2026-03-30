@@ -1,15 +1,15 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { DataFlowInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 const MAX_PAGE_SIZE = 100;
 
@@ -33,30 +33,33 @@ export async function updateDataFlows(
 
   await mapSeries(chunk(dataFlowInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_DATA_FLOWS, {
-      airgapBundleId,
-      dataFlows: page.map(([flow, id]) => ({
-        id,
-        value: flow.value,
-        type: flow.type,
-        trackingType:
-          flow.trackingPurposes && flow.trackingPurposes.length > 0
-            ? flow.trackingPurposes
-            : undefined,
-        // TODO: https://transcend.height.app/T-19841 - add with custom purposes
-        // purposeIds: flow.trackingPurposes
-        //   ? flow.trackingPurposes
-        //       .filter((purpose) => purpose !== 'Unknown')
-        //       .map((purpose) => purposeNameToId[purpose].id)
-        // : undefined,
-        description: flow.description,
-        service: flow.service,
-        status: flow.status,
-        attributes: flow.attributes,
-        // TODO: https://transcend.height.app/T-23718
-        // owners,
-        // teams,
-      })),
-      classifyService,
+      variables: {
+        airgapBundleId,
+        dataFlows: page.map(([flow, id]) => ({
+          id,
+          value: flow.value,
+          type: flow.type,
+          trackingType:
+            flow.trackingPurposes && flow.trackingPurposes.length > 0
+              ? flow.trackingPurposes
+              : undefined,
+          // TODO: https://transcend.height.app/T-19841 - add with custom purposes
+          // purposeIds: flow.trackingPurposes
+          //   ? flow.trackingPurposes
+          //       .filter((purpose) => purpose !== 'Unknown')
+          //       .map((purpose) => purposeNameToId[purpose].id)
+          // : undefined,
+          description: flow.description,
+          service: flow.service,
+          status: flow.status,
+          attributes: flow.attributes,
+          // TODO: https://transcend.height.app/T-23718
+          // owners,
+          // teams,
+        })),
+        classifyService,
+      },
+      logger,
     });
   });
 }
@@ -79,30 +82,33 @@ export async function createDataFlows(
   // const purposeNameToId = keyBy(purposes, 'name');
   await mapSeries(chunk(dataFlowInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, CREATE_DATA_FLOWS, {
-      airgapBundleId,
-      dataFlows: page.map((flow) => ({
-        value: flow.value,
-        type: flow.type,
-        trackingType:
-          flow.trackingPurposes && flow.trackingPurposes.length > 0
-            ? flow.trackingPurposes
-            : undefined,
-        // TODO: https://transcend.height.app/T-19841 - add with custom purposes
-        // purposeIds: flow.trackingPurposes
-        //   ? flow.trackingPurposes
-        //       .filter((purpose) => purpose !== 'Unknown')
-        //       .map((purpose) => purposeNameToId[purpose].id)
-        //   : undefined,
-        description: flow.description,
-        service: flow.service,
-        status: flow.status,
-        attributes: flow.attributes,
-        // TODO: https://transcend.height.app/T-23718
-        // owners,
-        // teams,
-      })),
-      dropMatchingDataFlowsInTriage: true,
-      classifyService,
+      variables: {
+        airgapBundleId,
+        dataFlows: page.map((flow) => ({
+          value: flow.value,
+          type: flow.type,
+          trackingType:
+            flow.trackingPurposes && flow.trackingPurposes.length > 0
+              ? flow.trackingPurposes
+              : undefined,
+          // TODO: https://transcend.height.app/T-19841 - add with custom purposes
+          // purposeIds: flow.trackingPurposes
+          //   ? flow.trackingPurposes
+          //       .filter((purpose) => purpose !== 'Unknown')
+          //       .map((purpose) => purposeNameToId[purpose].id)
+          //   : undefined,
+          description: flow.description,
+          service: flow.service,
+          status: flow.status,
+          attributes: flow.attributes,
+          // TODO: https://transcend.height.app/T-23718
+          // owners,
+          // teams,
+        })),
+        dropMatchingDataFlowsInTriage: true,
+        classifyService,
+      },
+      logger,
     });
   });
 }

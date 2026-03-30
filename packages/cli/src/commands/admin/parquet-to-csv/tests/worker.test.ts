@@ -13,9 +13,12 @@ const h = vi.hoisted(() => ({
 
 // Mock EXACT module ids the SUT imports
 vi.mock('../../../../logger.js', () => ({ logger: h.mLogger }));
-vi.mock('../../../../lib/helpers/index.js', () => ({
+vi.mock('@transcend-io/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/utils')>()),
   extractErrorMessage: (...a: Parameters<typeof h.mExtractErrorMessage>) =>
     h.mExtractErrorMessage(...a),
+}));
+vi.mock('../../../../lib/helpers/index.js', () => ({
   parquetToCsvOneFile: (...a: Parameters<typeof h.mParquetToCsvOneFile>) =>
     h.mParquetToCsvOneFile(...a),
 }));

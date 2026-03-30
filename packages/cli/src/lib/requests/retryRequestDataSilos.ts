@@ -1,16 +1,16 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   RETRY_REQUEST_DATA_SILO,
   fetchRequestDataSilo,
   fetchAllRequests,
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
 } from '../graphql/index.js';
 
 /**
@@ -74,7 +74,8 @@ export async function retryRequestDataSilos({
           /** Whether we successfully uploaded the results */
           success: boolean;
         }>(client, RETRY_REQUEST_DATA_SILO, {
-          requestDataSiloId: requestDataSilo.id,
+          variables: { requestDataSiloId: requestDataSilo.id },
+          logger,
         });
       } catch (err) {
         // some requests may not have this data silo connected

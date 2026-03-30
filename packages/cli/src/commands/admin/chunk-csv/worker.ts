@@ -1,6 +1,6 @@
-import { chunkOneCsvFile } from '../../../lib/helpers/chunkOneCsvFile.js';
-import { extractErrorMessage } from '../../../lib/helpers/index.js';
-import type { ToWorker } from '../../../lib/pooling/index.js';
+import { chunkOneCsvFile, extractErrorMessage, CHILD_FLAG } from '@transcend-io/utils';
+import type { ToWorker } from '@transcend-io/utils';
+
 import { logger } from '../../../logger.js';
 
 /**
@@ -89,7 +89,7 @@ export async function runChild(): Promise<void> {
         outputDir,
         clearOutputDir,
         chunkSizeMB,
-        // Propagate incremental progress to the parent.
+        logger,
         onProgress: (processed, total) =>
           process.send?.({
             type: 'progress',
@@ -117,5 +117,12 @@ export async function runChild(): Promise<void> {
   await new Promise<never>(() => {
     // This promise never resolves, keeping the worker alive indefinitely
     // until the parent process instructs shutdown.
+  });
+}
+
+if (process.argv.includes(CHILD_FLAG)) {
+  runChild().catch((err) => {
+    logger.error(err);
+    process.exit(1);
   });
 }

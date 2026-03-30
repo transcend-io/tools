@@ -20,18 +20,21 @@ jobs:
       - uses: actions/checkout@v6
       - uses: jdx/mise-action@v3
         with:
-          version: 2026.2.17
+          version: 2026.3.17
           install: false
           cache: true
-      - run: mise trust --yes mise.toml
-      - run: mise install --locked
-      - run: mise run bootstrap
-      - run: mise exec -- pnpm build
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise run bootstrap-ci
+      - name: Build
+        run: mise exec -- pnpm build
       - name: Publish PR previews
         shell: bash
         run: |
           set +e
-          output="$(mise exec -- pnpx pkg-pr-new publish --packageManager=pnpm "./packages/*" 2>&1)"
+          output="$(mise exec -- pnpx pkg-pr-new publish --packageManager=pnpm,yarn "./packages/*" 2>&1)"
           status=$?
           set -e
 

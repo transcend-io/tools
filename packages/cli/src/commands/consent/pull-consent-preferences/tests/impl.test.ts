@@ -93,46 +93,17 @@ vi.mock('../../../../lib/cli/done-input-validation.js', () => ({
   doneInputValidation: H.doneInputValidation,
 }));
 
-// Mock the concrete creator…
-vi.mock('../../../../lib/graphql/createSombraGotInstance.js', () => ({
-  __esModule: true,
-  // eslint-disable-next-line require-await
-  createSombraGotInstance: vi.fn(async () => H.sombra),
-}));
-
-// …and the barrel that re-exports it
-vi.mock('../../../../lib/graphql/index.js', () => ({
+vi.mock('@transcend-io/sdk', () => ({
   __esModule: true,
   // eslint-disable-next-line require-await
   createSombraGotInstance: vi.fn(async () => H.sombra),
   buildTranscendGraphQLClient: vi.fn(() => H.gqlClient),
-
-  // NEW: add these so impl.ts can import from the barrel
   fetchAllPurposesAndPreferences: vi.fn(
     // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
     async (_client) => H.purposesWithTopics,
   ),
   // eslint-disable-next-line require-await, @typescript-eslint/no-unused-vars
   fetchAllIdentifiers: vi.fn(async (_client) => H.identifiers),
-}));
-
-// Safety net for any GraphQL calls
-vi.mock('../../../../lib/graphql/makeGraphQLRequest.js', () => ({
-  __esModule: true,
-  // eslint-disable-next-line require-await
-  makeGraphQLRequest: vi.fn(async () => ({
-    organization: { sombra: { customerUrl: 'https://mocked' } },
-  })),
-}));
-
-// New CSV helpers used by impl after your refactor
-vi.mock('../../../../lib/helpers/index.js', () => ({
-  initCsvFile: H.initCsvFile,
-  appendCsvRowsOrdered: H.appendCsvRowsOrdered,
-}));
-
-// preference-management: forward and record args, then delegate to our spies
-vi.mock('../../../../lib/preference-management/index.js', () => ({
   // eslint-disable-next-line require-await
   fetchConsentPreferences: async (sombra: unknown, opts: any) => {
     H.lastFetchArgs.sombra = sombra;
@@ -143,6 +114,11 @@ vi.mock('../../../../lib/preference-management/index.js', () => ({
   fetchConsentPreferencesChunked: async (sombra: unknown, opts: any) =>
     H.fetchConsentPreferencesChunked(sombra, opts),
   transformPreferenceRecordToCsv: H.transformPreferenceRecordToCsv,
+}));
+
+vi.mock('../../../../lib/helpers/index.js', () => ({
+  initCsvFile: H.initCsvFile,
+  appendCsvRowsOrdered: H.appendCsvRowsOrdered,
 }));
 
 describe('pullConsentPreferences', () => {

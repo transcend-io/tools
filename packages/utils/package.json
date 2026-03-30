@@ -1,9 +1,15 @@
 {
   "name": "@transcend-io/utils",
   "version": "0.0.0",
-  "private": true,
-  "description": "Starter shared utilities for the Transcend developer tools monorepo.",
+  "description": "Shared utilities for the Transcend developer tools monorepo.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/utils",
   "license": "Apache-2.0",
+  "author": "Transcend Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transcend-io/tools.git",
+    "directory": "packages/utils"
+  },
   "files": [
     "dist"
   ],
@@ -22,18 +28,27 @@
   },
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "dependencies": {
+    "@transcend-io/type-utils": "^1.8.9",
+    "bluebird": "^3.7.2",
+    "csv-parse": "^5.6.0",
+    "fast-csv": "^4.3.6"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@types/bluebird": "^3.5.38",
     "@types/node": "catalog:",
+    "publint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   }
 }

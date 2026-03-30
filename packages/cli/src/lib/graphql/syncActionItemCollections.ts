@@ -1,16 +1,16 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { ActionItemCollectionInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import {
   ActionItemCollection,
   fetchAllActionItemCollections,
 } from './fetchAllActionItemCollections.js';
 import { UPDATE_ACTION_ITEM_COLLECTION, CREATE_ACTION_ITEM_COLLECTION } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new action item collection
@@ -37,7 +37,8 @@ export async function createActionItemCollection(
       created: ActionItemCollection;
     };
   }>(client, CREATE_ACTION_ITEM_COLLECTION, {
-    input,
+    variables: { input },
+    logger,
   });
   return createActionItemCollection.created;
 }
@@ -55,13 +56,16 @@ export async function updateActionItemCollection(
   actionItemCollectionId: string,
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEM_COLLECTION, {
-    input: {
-      id: actionItemCollectionId,
-      title: input.title,
-      description: input.description,
-      hidden: input.hidden,
-      productLine: input.productLine,
+    variables: {
+      input: {
+        id: actionItemCollectionId,
+        title: input.title,
+        description: input.description,
+        hidden: input.hidden,
+        productLine: input.productLine,
+      },
     },
+    logger,
   });
 }
 

@@ -1,13 +1,13 @@
 import { readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
+import { map } from '@transcend-io/utils';
+import { splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
-import { map } from '../../../lib/bluebird.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { uploadPreferenceManagementPreferencesInteractive } from '../../../lib/preference-management/index.js';
-import { splitCsvToList } from '../../../lib/requests/index.js';
 import { logger } from '../../../logger.js';
 
 export interface UploadPreferencesCommandFlags {

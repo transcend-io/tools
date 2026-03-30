@@ -1,24 +1,19 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+import { getPreferencesForIdentifiers } from '@transcend-io/sdk';
 import type { Got } from 'got';
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars,require-await */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-import { getPreferencesForIdentifiers } from '../getPreferencesForIdentifiers.js';
 
 // Hoisted shared spies / fakes
 const H = vi.hoisted(() => ({
   loggerSpies: {
     info: vi.fn(),
     warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
   // Capture map options for assertions
   mapOpts: { current: undefined as unknown },
-  // Fake progress bar instance methods
-  progressBar: {
-    start: vi.fn(),
-    update: vi.fn(),
-    stop: vi.fn(),
-  },
   // Decode result stub
   makeDecodeResult: (nodes: PreferenceQueryResponseItem[]) => ({ nodes }),
 }));
@@ -26,16 +21,6 @@ const H = vi.hoisted(() => ({
 /** Mock external deps BEFORE SUT import */
 vi.mock('../../../logger.js', () => ({
   logger: H.loggerSpies,
-}));
-
-// Return a default export that has SingleBar and Presets
-vi.mock('cli-progress', () => ({
-  default: {
-    SingleBar: vi.fn(function MockSingleBar() {
-      return H.progressBar;
-    }),
-    Presets: { shades_classic: {} },
-  },
 }));
 
 // Keep colors stable
@@ -49,7 +34,8 @@ vi.mock('colors', () => ({
 }));
 
 // Intercept bluebird.map to capture concurrency and still execute
-vi.mock('../../bluebird.js', () => ({
+vi.mock('@transcend-io/utils', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/utils')>()),
   map: vi.fn(async (arr: unknown[], mapper: (x: unknown) => unknown, opts) => {
     H.mapOpts.current = opts;
     const results = [];
@@ -76,7 +62,7 @@ vi.mock('@transcend-io/type-utils', async (importOriginal) => {
 // but we still want to see that it's being called.
 const withRetrySpy = vi.fn(async (name: string, fn: () => Promise<any>, _opts?: any) => fn());
 
-vi.mock('../withPreferenceRetry.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
   withPreferenceRetry: (name: string, fn: unknown, opts?: unknown) =>
     // @ts-expect-error test-only
     withRetrySpy(name, fn, opts),
@@ -93,7 +79,7 @@ describe('getPreferencesForIdentifiers', () => {
 
   it(
     'chunks identifiers into groups of 100, calls the API per group, ' +
-      'aggregates nodes, and reports progress (skipLogging=true avoids start/info logs)',
+      'aggregates nodes, and reports progress via onProgress (skipLogging=true skips completion info log)',
     async () => {
       // Build 250 identifiers -> 3 groups: 100, 100, 50
       const identifiers = Array.from({ length: 250 }, (_, i) => ({
@@ -144,12 +130,15 @@ describe('getPreferencesForIdentifiers', () => {
       );
 
       const sombra = { post: postMock } as unknown as Got;
+      const onProgress = vi.fn();
 
       const out = await getPreferencesForIdentifiers(sombra, {
         identifiers,
         partitionKey: 'p0',
-        skipLogging: true, // avoid logger.info + progress start
+        skipLogging: true, // avoid completion logger.info
         concurrency: 7,
+        logger: H.loggerSpies,
+        onProgress,
       });
 
       // Expect 3 calls (100 + 100 + 50)
@@ -179,11 +168,13 @@ describe('getPreferencesForIdentifiers', () => {
       expect(out).toHaveLength(250);
       expect(out).toHaveLength(250);
 
-      // Progress bar: start not called when skipLogging=true, but update/stop still invoked
-      expect(H.progressBar.start).not.toHaveBeenCalled();
-      // We update once per group
-      expect(H.progressBar.update).toHaveBeenCalledTimes(3);
-      expect(H.progressBar.stop).toHaveBeenCalledTimes(1);
+      // onProgress after each group (SDK reports completed count vs total identifiers)
+      expect(onProgress).toHaveBeenCalledTimes(3);
+      expect(onProgress.mock.calls).toEqual([
+        [100, 250],
+        [200, 250],
+        [250, 250],
+      ]);
 
       // Logger.info only at the end when !skipLogging, so not in this test
       expect(H.loggerSpies.info).not.toHaveBeenCalled();
@@ -197,7 +188,7 @@ describe('getPreferencesForIdentifiers', () => {
     },
   );
 
-  it('logs progress start and completion when skipLogging=false', async () => {
+  it('logs completion when skipLogging=false and invokes onProgress per group', async () => {
     const identifiers = Array.from({ length: 5 }, (_, i) => ({
       value: `u${i + 1}`,
     }));
@@ -243,17 +234,19 @@ describe('getPreferencesForIdentifiers', () => {
     );
 
     const sombra = { post: postMock } as unknown as Got;
+    const onProgress = vi.fn();
     const out = await getPreferencesForIdentifiers(sombra, {
       identifiers,
       partitionKey: 'pA',
-      skipLogging: false, // enable start+info logs
+      skipLogging: false,
       concurrency: 2,
+      logger: H.loggerSpies,
+      onProgress,
     });
 
     expect(out).toHaveLength(5);
-    expect(H.progressBar.start).toHaveBeenCalledTimes(1);
-    expect(H.progressBar.start).toHaveBeenCalledWith(5, 0);
-    expect(H.progressBar.stop).toHaveBeenCalledTimes(1);
+    expect(onProgress).toHaveBeenCalledTimes(1);
+    expect(onProgress).toHaveBeenCalledWith(5, 5);
 
     // Completion info log called once
     expect(H.loggerSpies.info).toHaveBeenCalledTimes(1);

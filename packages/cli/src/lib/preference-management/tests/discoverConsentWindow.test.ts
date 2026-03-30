@@ -1,16 +1,14 @@
-import { addDays } from 'date-fns';
-import type { Got } from 'got';
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
-import { startOfUtcDay } from '../../helpers/index.js';
-// ---- Imports under test (after mocks) --------------------------------------
 import {
   getBoundsFromConsentFilter,
   findEarliestDayWithData,
   findLatestDayWithData,
-} from '../discoverConsentWindow.js';
-import type { PreferencesQueryFilter } from '../types.js';
+  type PreferencesQueryFilter,
+} from '@transcend-io/sdk';
+import { startOfUtcDay } from '@transcend-io/utils';
+import { addDays } from 'date-fns';
+import type { Got } from 'got';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // ---- Hoisted controls for mocks --------------------------------------------
 const H = vi.hoisted(() => ({
@@ -23,22 +21,20 @@ const H = vi.hoisted(() => ({
   noRecords: false,
   // Mode resolution for the pickConsentChunkMode mock
   mode: 'timestamp' as 'timestamp' | 'updated',
-}));
-
-// ---- Mocks -----------------------------------------------------------------
-vi.mock('../../../logger.js', () => ({
   logger: {
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
-vi.mock('../pickConsentChunkMode.js', () => ({
+// ---- Mocks (SDK source paths so discoverConsentWindow.ts internal imports are intercepted) ----
+vi.mock('../../../../../sdk/src/preference-management/pickConsentChunkMode.js', () => ({
   pickConsentChunkMode: vi.fn(() => H.mode),
 }));
 
-vi.mock('../getComparisonTimeForRecord.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/getComparisonTimeForRecord.js', () => ({
   getComparisonTimeForRecord: vi.fn(
     (_mode: 'timestamp' | 'updated', item: any) =>
       // Our mock items carry a .t: Date
@@ -49,7 +45,7 @@ vi.mock('../getComparisonTimeForRecord.js', () => ({
 // iterateConsentPages is used by fetchOne() to probe for data before a bound.
 // We implement a generator that yields either a single-item page (hit)
 // or an empty page (miss). When "noRecords" is true, always miss.
-vi.mock('../iterateConsentPages.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/iterateConsentPages.js', () => ({
   // eslint-disable-next-line func-names
   iterateConsentPages: vi.fn(async function* (
     _sombra: any,
@@ -57,6 +53,8 @@ vi.mock('../iterateConsentPages.js', () => ({
     filter: any,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _pageSize: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _logger: unknown,
   ) {
     if (H.noRecords) {
       // No data at all
@@ -154,6 +152,7 @@ describe('discoverConsentWindow helpers', () => {
         mode: 'timestamp',
         baseFilter: {},
         maxLookbackDays: 3650,
+        logger: H.logger,
       });
 
       const expected = startOfUtcDay(new Date());
@@ -169,6 +168,7 @@ describe('discoverConsentWindow helpers', () => {
         mode: 'timestamp',
         baseFilter: {},
         maxLookbackDays: 3650,
+        logger: H.logger,
       });
 
       expect(earliest.toISOString()).toBe(startOfUtcDay(H.dataset.earliest).toISOString());
@@ -183,6 +183,7 @@ describe('discoverConsentWindow helpers', () => {
         mode: 'updated',
         baseFilter: { system: {} },
         maxLookbackDays: 3650,
+        logger: H.logger,
       });
 
       expect(earliest.toISOString()).toBe(startOfUtcDay(H.dataset.earliest).toISOString());
@@ -201,6 +202,7 @@ describe('discoverConsentWindow helpers', () => {
           mode: 'timestamp',
           baseFilter: {},
           maxLookbackDays: 0, // force immediate exceed on the first 1d probe
+          logger: H.logger,
         });
 
         const today = startOfUtcDay(new Date()).toISOString();
@@ -225,6 +227,7 @@ describe('discoverConsentWindow helpers', () => {
         mode: 'timestamp',
         baseFilter: {},
         earliest: new Date('2020-01-01T00:00:00.000Z'),
+        logger: H.logger,
       });
 
       const expected = startOfUtcDay(new Date());
@@ -239,6 +242,7 @@ describe('discoverConsentWindow helpers', () => {
         mode: 'timestamp',
         baseFilter: {},
         earliest: H.dataset.earliest,
+        logger: H.logger,
       });
 
       expect(latest.toISOString()).toBe(startOfUtcDay(H.dataset.newest).toISOString());
@@ -252,6 +256,7 @@ describe('discoverConsentWindow helpers', () => {
         mode: 'updated',
         baseFilter: { system: {} },
         earliest: H.dataset.earliest,
+        logger: H.logger,
       });
 
       expect(latest.toISOString()).toBe(startOfUtcDay(H.dataset.newest).toISOString());

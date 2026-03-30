@@ -5,13 +5,13 @@ import {
   OneTrustGetRiskResponse,
   OneTrustGetUserResponse,
 } from '@transcend-io/privacy-types';
+import { mapSeries, map } from '@transcend-io/utils';
 import colors from 'colors';
 import type { Got } from 'got';
 import { GraphQLClient } from 'graphql-request';
 import { uniq } from 'lodash-es';
 
 import { logger } from '../../../logger.js';
-import { mapSeries, map } from '../../bluebird.js';
 import {
   getListOfOneTrustAssessments,
   getOneTrustAssessment,
@@ -95,12 +95,13 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
               userId: creatorId,
             });
             oneTrustCachedUsers[creatorId] = creator;
-          } catch (e) {
+          } catch (error) {
             logger.warn(
               colors.yellow(
                 `[assessment ${assessmentNumber} of ${assessments.length}]: failed to fetch form creator.` +
                   `\tcreatorId: ${creatorId}. Assessment Title: ${assessment.name}. Template Title: ${templateName}`,
               ),
+              error,
             );
           }
         }
@@ -122,12 +123,13 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
                   oneTrustCachedUsers[userId] = approver;
                 }
                 return [approver];
-              } catch (e) {
+              } catch (error) {
                 logger.warn(
                   colors.yellow(
                     `[assessment ${assessmentNumber} of ${assessments.length}]: failed to fetch a form approver.` +
                       `\tapproverId: ${userId}. Assessment Title: ${assessment.name}. Template Title: ${templateName}`,
                   ),
+                  error,
                 );
                 return [];
               }
@@ -155,12 +157,13 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
                   oneTrustCachedUsers[userId] = respondent;
                 }
                 return [respondent];
-              } catch (e) {
+              } catch (error) {
                 logger.warn(
                   colors.yellow(
                     `[assessment ${assessmentNumber} of ${assessments.length}]: failed to fetch a respondent.` +
                       `\trespondentId: ${userId}. Assessment Title: ${assessment.name}. Template Title: ${templateName}`,
                   ),
+                  error,
                 );
                 return [];
               }

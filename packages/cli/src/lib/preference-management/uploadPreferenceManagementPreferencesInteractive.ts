@@ -1,21 +1,21 @@
 import { PersistedState } from '@transcend-io/persisted-state';
 import { PreferenceUpdateItem } from '@transcend-io/privacy-types';
-import { apply } from '@transcend-io/type-utils';
-import cliProgress from 'cli-progress';
-import colors from 'colors';
-import { chunk } from 'lodash-es';
-
-import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllPurposes,
   fetchAllPreferenceTopics,
-} from '../graphql/index.js';
+  getPreferenceUpdatesFromRow,
+  PreferenceState,
+} from '@transcend-io/sdk';
+import { apply } from '@transcend-io/type-utils';
+import { map } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
+import colors from 'colors';
+import { chunk } from 'lodash-es';
+
+import { logger } from '../../logger.js';
 import { parseAttributesFromString } from '../requests/index.js';
-import { PreferenceState } from './codecs.js';
-import { getPreferenceUpdatesFromRow } from './getPreferenceUpdatesFromRow.js';
 import { parsePreferenceManagementCsvWithCache } from './parsePreferenceManagementCsv.js';
 import { NONE_PREFERENCE_MAP } from './parsePreferenceTimestampsFromCsv.js';
 
@@ -99,10 +99,14 @@ export async function uploadPreferenceManagementPreferencesInteractive({
 
   const [sombra, purposes, preferenceTopics] = await Promise.all([
     // Create sombra instance to communicate with
-    createSombraGotInstance(transcendUrl, auth, sombraAuth),
+    createSombraGotInstance(transcendUrl, auth, {
+      logger,
+      sombraApiKey: sombraAuth,
+      sombraUrl: process.env.SOMBRA_URL,
+    }),
     // get all purposes and topics
-    fetchAllPurposes(client),
-    fetchAllPreferenceTopics(client),
+    fetchAllPurposes(client, { logger }),
+    fetchAllPreferenceTopics(client, { logger }),
   ]);
 
   // Process the file
@@ -225,7 +229,7 @@ export async function uploadPreferenceManagementPreferencesInteractive({
           if (parsed.error) {
             logger.error(colors.red(`Error: ${parsed.error}`));
           }
-        } catch (e) {
+        } catch {
           // continue
         }
         logger.error(

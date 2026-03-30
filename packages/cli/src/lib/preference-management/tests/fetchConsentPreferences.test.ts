@@ -1,16 +1,17 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
+// Import SUT after mocks
+import { ConsentPreferenceResponse, fetchConsentPreferences } from '@transcend-io/sdk';
 import type { Got } from 'got';
 /* eslint-disable @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars,require-await */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Import SUT after mocks
-import { fetchConsentPreferences } from '../fetchConsentPreferences.js';
-import { ConsentPreferenceResponse } from '../types.js';
-
 // Hoisted shared spies / fakes
 const H = vi.hoisted(() => ({
   loggerSpies: {
+    info: vi.fn(),
     warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   },
   // decodeCodec pass-through
   decodeCodec: vi.fn((_codec: unknown, raw: any) => raw),
@@ -41,7 +42,7 @@ vi.mock('colors', () => ({
   yellow: H.colors.yellow,
 }));
 
-vi.mock('../withPreferenceRetry.js', () => ({
+vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
   withPreferenceRetry: (name: string, fn: unknown, opts?: unknown) =>
     // @ts-expect-error test-only
     H.withRetrySpy(name, fn, opts),
@@ -135,6 +136,7 @@ describe('fetchConsentPreferences', () => {
       partition,
       filterBy,
       limit: undefined, // use default
+      logger: H.loggerSpies,
     });
 
     // Aggregated
@@ -189,6 +191,7 @@ describe('fetchConsentPreferences', () => {
     const out = await fetchConsentPreferences(sombra, {
       partition,
       limit: 999,
+      logger: H.loggerSpies,
     });
 
     expect(out).toHaveLength(1);
@@ -225,6 +228,7 @@ describe('fetchConsentPreferences', () => {
       partition,
       filterBy: {}, // empty
       limit: 10,
+      logger: H.loggerSpies,
     });
 
     expect(out).toHaveLength(0);
@@ -307,6 +311,7 @@ describe('fetchConsentPreferences', () => {
       onItems: async (page) => {
         delivered.push(page);
       },
+      logger: H.loggerSpies,
     });
 
     // In streaming mode, nothing is accumulated

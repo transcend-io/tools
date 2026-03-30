@@ -1,12 +1,12 @@
 import { ScopeName } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClientGeneric } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { StoredApiKey } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import {
-  buildTranscendGraphQLClientGeneric,
   loginUser,
   createApiKey,
   fetchAllApiKeys,

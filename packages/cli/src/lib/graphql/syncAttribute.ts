@@ -1,10 +1,11 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, difference, groupBy } from 'lodash-es';
 
 import { AttributeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import { Attribute } from './fetchAllAttributes.js';
 import {
   CREATE_ATTRIBUTE,
@@ -13,7 +14,6 @@ import {
   UPDATE_ATTRIBUTE,
   UPDATE_ATTRIBUTE_VALUES,
 } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Sync attribute
@@ -56,16 +56,22 @@ export async function syncAttribute(
         };
       };
     }>(client, CREATE_ATTRIBUTE, {
-      type: attribute.type,
-      description: attribute.description,
-      ...input,
+      variables: {
+        type: attribute.type,
+        description: attribute.description,
+        ...input,
+      },
+      logger,
     });
     attributeKeyId = attributeKey.id;
   } else {
     await makeGraphQLRequest(client, UPDATE_ATTRIBUTE, {
-      attributeKeyId: existingAttribute.id,
-      description: existingAttribute.isCustom ? attribute.description : undefined,
-      ...input,
+      variables: {
+        attributeKeyId: existingAttribute.id,
+        description: existingAttribute.isCustom ? attribute.description : undefined,
+        ...input,
+      },
+      logger,
     });
     attributeKeyId = existingAttribute.id;
   }
@@ -83,11 +89,14 @@ export async function syncAttribute(
   // Create new attribute values
   if (newValues.length > 0) {
     await makeGraphQLRequest(client, CREATE_ATTRIBUTE_VALUES, {
-      input: newValues.map(({ name, ...rest }) => ({
-        name,
-        attributeKeyId,
-        ...rest,
-      })),
+      variables: {
+        input: newValues.map(({ name, ...rest }) => ({
+          name,
+          attributeKeyId,
+          ...rest,
+        })),
+      },
+      logger,
     });
     logger.info(colors.green(`Created ${newValues.length} attribute values`));
   }
@@ -95,14 +104,17 @@ export async function syncAttribute(
   // Update existing attribute values
   if (existingValues.length > 0) {
     await makeGraphQLRequest(client, UPDATE_ATTRIBUTE_VALUES, {
-      input: existingValues.map(({ name, ...rest }) => ({
-        id: existingAttributeMap[name].id,
-        name,
-        description: existingAttributeMap[name].description,
-        color: existingAttributeMap[name].color,
-        ...rest,
-        attributeKeyId,
-      })),
+      variables: {
+        input: existingValues.map(({ name, ...rest }) => ({
+          id: existingAttributeMap[name].id,
+          name,
+          description: existingAttributeMap[name].description,
+          color: existingAttributeMap[name].color,
+          ...rest,
+          attributeKeyId,
+        })),
+      },
+      logger,
     });
     logger.info(colors.green(`Updated ${existingValues.length} attribute values`));
   }
@@ -113,7 +125,8 @@ export async function syncAttribute(
       removedValues,
       async (value) => {
         await makeGraphQLRequest(client, DELETE_ATTRIBUTE_VALUE, {
-          id: existingAttributeMap[value].id,
+          variables: { id: existingAttributeMap[value].id },
+          logger,
         });
       },
       {

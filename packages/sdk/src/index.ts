@@ -1,0 +1,24 @@
+import { describePackageName } from '@transcend-io/utils';
+
+export interface MonorepoPackageDefinition {
+  directory: string;
+  displayName: string;
+  packageName: string;
+}
+
+export function createMonorepoPackageDefinition(
+  name: string,
+  directory: string,
+): MonorepoPackageDefinition {
+  const packageNameParts = describePackageName(name);
+
+  return {
+    directory,
+    displayName: packageNameParts.displayName,
+    packageName: `@transcend-io/${packageNameParts.slug}`,
+  };
+}
+
+export * from './api/index.js';
+export * from './data-inventory/index.js';
+export * from './preference-management/index.js';

@@ -1,7 +1,8 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
+import { logger } from '../../logger.js';
 import { RETRY_REQUEST_ENRICHER } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Retry a request enricher
@@ -11,6 +12,7 @@ import { makeGraphQLRequest } from './makeGraphQLRequest.js';
  */
 export async function retryRequestEnricher(client: GraphQLClient, id: string): Promise<void> {
   await makeGraphQLRequest(client, RETRY_REQUEST_ENRICHER, {
-    requestEnricherId: id,
+    variables: { requestEnricherId: id },
+    logger,
   });
 }

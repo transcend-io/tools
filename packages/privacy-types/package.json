@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/privacy-types",
-  "version": "4.154.1",
+  "version": "5.0.0",
   "description": "Core enums and types for interacting with Transcend's public APIs.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/privacy-types",
   "license": "Apache-2.0",
@@ -28,9 +28,10 @@
   },
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
-    "check-exports": "attw --pack . --ignore-rules cjs-resolves-to-esm"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
     "@transcend-io/internationalization": "^2.3.2",
@@ -41,11 +42,12 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@types/node": "catalog:",
+    "publint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   }
 }

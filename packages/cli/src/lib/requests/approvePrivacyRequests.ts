@@ -1,15 +1,15 @@
 import { RequestAction, RequestOrigin, RequestStatus } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { map } from '../bluebird.js';
 import {
   UPDATE_PRIVACY_REQUEST,
   fetchAllRequests,
   makeGraphQLRequest,
-  buildTranscendGraphQLClient,
   APPROVE_PRIVACY_REQUEST,
 } from '../graphql/index.js';
 
@@ -84,17 +84,21 @@ export async function approvePrivacyRequests({
       // and the request was created before silentModeBefore
       if (silentModeBefore && new Date(silentModeBefore) > new Date(requestToApprove.createdAt)) {
         await makeGraphQLRequest(client, UPDATE_PRIVACY_REQUEST, {
-          input: {
-            id: requestToApprove.id,
-            isSilent: true,
+          variables: {
+            input: {
+              id: requestToApprove.id,
+              isSilent: true,
+            },
           },
+          logger,
         });
       }
 
       try {
         // approve the request
         await makeGraphQLRequest(client, APPROVE_PRIVACY_REQUEST, {
-          input: { requestId: requestToApprove.id },
+          variables: { input: { requestId: requestToApprove.id } },
+          logger,
         });
       } catch (err) {
         if (err.message.includes('Request must be in an approving state,')) {

@@ -1,13 +1,13 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, chunk } from 'lodash-es';
 
 import { BusinessEntityInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import { fetchAllBusinessEntities, BusinessEntity } from './fetchAllBusinessEntities.js';
 import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Input to create a new business entity
@@ -40,7 +40,8 @@ export async function createBusinessEntity(
       businessEntity: BusinessEntity;
     };
   }>(client, CREATE_BUSINESS_ENTITY, {
-    input,
+    variables: { input },
+    logger,
   });
   return createBusinessEntity.businessEntity;
 }
@@ -58,19 +59,22 @@ export async function updateBusinessEntities(
   const chunkedUpdates = chunk(businessEntityIdParis, 100);
   await mapSeries(chunkedUpdates, async (chunked) => {
     await makeGraphQLRequest(client, UPDATE_BUSINESS_ENTITIES, {
-      input: chunked.map(([businessEntity, id]) => ({
-        id,
-        title: businessEntity.title,
-        description: businessEntity.description,
-        address: businessEntity.address,
-        headquarterCountry: businessEntity.headquarterCountry,
-        headquarterSubDivision: businessEntity.headquarterSubDivision,
-        dataProtectionOfficerName: businessEntity.dataProtectionOfficerName,
-        dataProtectionOfficerEmail: businessEntity.dataProtectionOfficerEmail,
-        attributes: businessEntity.attributes,
-        teamNames: businessEntity.teams,
-        ownerEmails: businessEntity.owners,
-      })),
+      variables: {
+        input: chunked.map(([businessEntity, id]) => ({
+          id,
+          title: businessEntity.title,
+          description: businessEntity.description,
+          address: businessEntity.address,
+          headquarterCountry: businessEntity.headquarterCountry,
+          headquarterSubDivision: businessEntity.headquarterSubDivision,
+          dataProtectionOfficerName: businessEntity.dataProtectionOfficerName,
+          dataProtectionOfficerEmail: businessEntity.dataProtectionOfficerEmail,
+          attributes: businessEntity.attributes,
+          teamNames: businessEntity.teams,
+          ownerEmails: businessEntity.owners,
+        })),
+      },
+      logger,
     });
   });
 }

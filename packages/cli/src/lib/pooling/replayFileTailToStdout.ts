@@ -12,16 +12,16 @@ export async function replayFileTailToStdout(
   maxBytes: number,
   write: (s: string) => void,
 ): Promise<void> {
-  await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     try {
       const st = statSync(path);
       const start = Math.max(0, st.size - maxBytes);
       const stream = createReadStream(path, { start, encoding: 'utf8' });
       stream.on('data', (chunk) => write(chunk as string));
-      stream.on('end', resolve);
-      stream.on('error', resolve);
+      stream.on('end', () => resolve());
+      stream.on('error', () => resolve());
     } catch {
-      resolve(undefined);
+      resolve();
     }
   });
 }

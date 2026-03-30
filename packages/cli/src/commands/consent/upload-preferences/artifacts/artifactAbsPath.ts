@@ -1,6 +1,6 @@
 import { join, resolve } from 'node:path';
 
-import type { LogExportKind } from '../../../../lib/pooling/index.js';
+import type { LogExportKind } from '@transcend-io/utils';
 
 export interface ExportArtifactStatus {
   /** The absolute path to the export artifact */

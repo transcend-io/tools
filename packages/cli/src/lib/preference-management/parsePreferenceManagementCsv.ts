@@ -1,17 +1,21 @@
 import { PersistedState } from '@transcend-io/persisted-state';
+import {
+  checkIfPendingPreferenceUpdatesAreNoOp,
+  checkIfPendingPreferenceUpdatesCauseConflict,
+  FileMetadataState,
+  getPreferencesForIdentifiers,
+  getPreferenceUpdatesFromRow,
+  PreferenceState,
+  type PreferenceTopic,
+} from '@transcend-io/sdk';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 import { keyBy } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { PreferenceTopic } from '../graphql/index.js';
 import { readCsv } from '../requests/index.js';
-import { checkIfPendingPreferenceUpdatesAreNoOp } from './checkIfPendingPreferenceUpdatesAreNoOp.js';
-import { checkIfPendingPreferenceUpdatesCauseConflict } from './checkIfPendingPreferenceUpdatesCauseConflict.js';
-import { FileMetadataState, PreferenceState } from './codecs.js';
-import { getPreferencesForIdentifiers } from './getPreferencesForIdentifiers.js';
-import { getPreferenceUpdatesFromRow } from './getPreferenceUpdatesFromRow.js';
 import { parsePreferenceAndPurposeValuesFromCsv } from './parsePreferenceAndPurposeValuesFromCsv.js';
 import { parsePreferenceIdentifiersFromCsv } from './parsePreferenceIdentifiersFromCsv.js';
 import { parsePreferenceTimestampsFromCsv } from './parsePreferenceTimestampsFromCsv.js';
@@ -96,12 +100,19 @@ export async function parsePreferenceManagementCsvWithCache(
 
   // Grab existing preference store records
   const identifiers = preferences.map((pref) => pref[currentState.identifierColumn!]);
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+  if (!skipExistingRecordCheck) {
+    progressBar.start(identifiers.length, 0);
+  }
   const existingConsentRecords = skipExistingRecordCheck
     ? []
     : await getPreferencesForIdentifiers(sombra, {
         identifiers: identifiers.map((x) => ({ value: x })),
         partitionKey,
+        logger,
+        onProgress: (completed, total) => progressBar.update(completed, { total }),
       });
+  progressBar.stop();
   const consentRecordByIdentifier = keyBy(existingConsentRecords, 'userId');
 
   // Clear out previous updates

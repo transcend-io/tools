@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
@@ -5,7 +6,6 @@ import { PrivacyCenterInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_PRIVACY_CENTER } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 /**
  * Sync the privacy center
@@ -26,33 +26,36 @@ export async function syncPrivacyCenter(
 
   try {
     await makeGraphQLRequest(client, UPDATE_PRIVACY_CENTER, {
-      input: {
-        privacyCenterId,
-        transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
-        useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
-        useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
-        replyToEmail: privacyCenter.replyToEmail,
-        supportEmail: privacyCenter.supportEmail,
-        preferBrowserDefaultLocale: privacyCenter.preferBrowserDefaultLocale,
-        defaultLocale: privacyCenter.defaultLocale,
-        locales: privacyCenter.locales,
-        showMarketingPreferences: privacyCenter.showMarketingPreferences,
-        showManageYourPrivacy: privacyCenter.showManageYourPrivacy,
-        showPolicies: privacyCenter.showPolicies,
-        showConsentManager: privacyCenter.showConsentManager,
-        showDataFlows: privacyCenter.showDataFlows,
-        showCookies: privacyCenter.showCookies,
-        showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
-        showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
-        isDisabled: privacyCenter.isDisabled,
-        ...(privacyCenter.theme
-          ? {
-              colorPalette: privacyCenter.theme.colors,
-              componentStyles: privacyCenter.theme.componentStyles,
-              textStyles: privacyCenter.theme.textStyles,
-            }
-          : {}),
+      variables: {
+        input: {
+          privacyCenterId,
+          transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
+          useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
+          useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
+          replyToEmail: privacyCenter.replyToEmail,
+          supportEmail: privacyCenter.supportEmail,
+          preferBrowserDefaultLocale: privacyCenter.preferBrowserDefaultLocale,
+          defaultLocale: privacyCenter.defaultLocale,
+          locales: privacyCenter.locales,
+          showMarketingPreferences: privacyCenter.showMarketingPreferences,
+          showManageYourPrivacy: privacyCenter.showManageYourPrivacy,
+          showPolicies: privacyCenter.showPolicies,
+          showConsentManager: privacyCenter.showConsentManager,
+          showDataFlows: privacyCenter.showDataFlows,
+          showCookies: privacyCenter.showCookies,
+          showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
+          showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
+          isDisabled: privacyCenter.isDisabled,
+          ...(privacyCenter.theme
+            ? {
+                colorPalette: privacyCenter.theme.colors,
+                componentStyles: privacyCenter.theme.componentStyles,
+                textStyles: privacyCenter.theme.textStyles,
+              }
+            : {}),
+        },
       },
+      logger,
     });
     logger.info(colors.green('Successfully synced privacy center!'));
   } catch (err) {

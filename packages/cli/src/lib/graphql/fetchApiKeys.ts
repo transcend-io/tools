@@ -1,3 +1,4 @@
+import { makeGraphQLRequest } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, difference } from 'lodash-es';
@@ -5,7 +6,6 @@ import { keyBy, uniq, difference } from 'lodash-es';
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { API_KEYS } from './gqls/index.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
 
 export interface ApiKey {
   /** ID of API key */
@@ -41,9 +41,8 @@ export async function fetchAllApiKeys(client: GraphQLClient, titles?: string[]):
         nodes: ApiKey[];
       };
     }>(client, API_KEYS, {
-      first: PAGE_SIZE,
-      offset,
-      titles,
+      variables: { first: PAGE_SIZE, offset, titles },
+      logger,
     });
     apiKeys.push(...nodes);
     offset += PAGE_SIZE;

@@ -47,6 +47,9 @@ vi.mock('../../../../../lib/pooling/index.js', () => ({
   copyToClipboard: H.fns.copyToClipboard,
   openPath: H.fns.openPath,
   revealInFileManager: H.fns.revealInFileManager,
+}));
+
+vi.mock('@transcend-io/utils', () => ({
   extractBlocks: H.fns.extractBlocks,
   isLogError: vi.fn(() => false),
   isLogWarn: vi.fn(() => false),

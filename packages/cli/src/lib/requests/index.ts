@@ -1,7 +1,6 @@
 export * from './fuzzyMatchColumns.js';
 export * from './constants.js';
 export * from './mapEnumValues.js';
-export * from './splitCsvToList.js';
 export * from './parseAttributesFromString.js';
 export * from './readCsv.js';
 export * from './getUniqueValuesForColumn.js';

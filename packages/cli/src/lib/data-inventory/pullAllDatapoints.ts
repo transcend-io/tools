@@ -2,6 +2,7 @@ import {
   type DataCategoryType,
   SubDataPointDataSubCategoryGuessStatus,
 } from '@transcend-io/privacy-types';
+import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { gql } from 'graphql-request';
@@ -11,7 +12,6 @@ import { keyBy, uniq, chunk, sortBy } from 'lodash-es';
 
 import type { DataCategoryInput, ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { mapSeries } from '../bluebird.js';
 import {
   DATAPOINT_EXPORT,
   DATA_SILO_EXPORT,
@@ -133,7 +133,8 @@ async function pullSubDatapoints(
       totalCount: number;
     };
   }>(client, SUB_DATA_POINTS_COUNT, {
-    filterBy,
+    variables: { filterBy },
+    logger,
   });
 
   logger.info(colors.magenta('[Step 1/3] Pulling in all subdatapoints'));
@@ -208,13 +209,16 @@ async function pullSubDatapoints(
           }
         `,
         {
-          first: pageSize,
-          offset,
-          filterBy: {
-            ...filterBy,
-            // TODO: https://transcend.height.app/T-40484 - add cursor support
-            // ...(cursor ? { cursor: { id: cursor } } : {}),
+          variables: {
+            first: pageSize,
+            offset,
+            filterBy: {
+              ...filterBy,
+              // TODO: https://transcend.height.app/T-40484 - add cursor support
+              // ...(cursor ? { cursor: { id: cursor } } : {}),
+            },
           },
+          logger,
         },
       );
 
@@ -291,10 +295,13 @@ async function pullDatapoints(
           nodes: DataPointCsvPreview[];
         };
       }>(client, DATAPOINT_EXPORT, {
-        first: pageSize,
-        filterBy: {
-          ids: dataPointIdsGroup,
+        variables: {
+          first: pageSize,
+          filterBy: {
+            ids: dataPointIdsGroup,
+          },
         },
+        logger,
       });
 
       dataPoints.push(...nodes);
@@ -365,10 +372,13 @@ async function pullDataSilos(
           nodes: DataSiloCsvPreview[];
         };
       }>(client, DATA_SILO_EXPORT, {
-        first: pageSize,
-        filterBy: {
-          ids: dataSiloIdsGroup,
+        variables: {
+          first: pageSize,
+          filterBy: {
+            ids: dataSiloIdsGroup,
+          },
         },
+        logger,
       });
 
       dataSilos.push(...nodes);
