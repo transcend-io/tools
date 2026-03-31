@@ -19,7 +19,6 @@ import { computeSchemaFile } from '../upload-preferences/artifacts/index.js';
 
 export interface ConfigurePreferenceUploadFlags {
   auth: string;
-  sombraAuth?: string;
   transcendUrl: string;
   directory: string;
   schemaFilePath?: string;

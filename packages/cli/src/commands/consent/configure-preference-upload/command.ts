@@ -3,7 +3,6 @@ import { ScopeName } from '@transcend-io/privacy-types';
 
 import {
   createAuthParameter,
-  createSombraAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
 
@@ -17,7 +16,6 @@ export const configurePreferenceUploadCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPreferenceStoreSettings, ScopeName.ViewRequestIdentitySettings],
       }),
-      sombraAuth: createSombraAuthParameter(),
       transcendUrl: createTranscendUrlParameter(),
       directory: {
         kind: 'parsed',
