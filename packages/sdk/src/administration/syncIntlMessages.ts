@@ -1,5 +1,4 @@
 import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
@@ -60,7 +59,7 @@ export async function syncIntlMessages(
   messages: IntlMessageInput[],
 ): Promise<boolean> {
   let encounteredError = false;
-  logger.info(colors.magenta(`Syncing "${messages.length}" messages...`));
+  logger.info(`Syncing "${messages.length}" messages...`);
 
   // Ensure no duplicates are being uploaded
   const notUnique = messages.filter(
@@ -75,12 +74,12 @@ export async function syncIntlMessages(
   }
 
   try {
-    logger.info(colors.magenta(`Upserting "${messages.length}" new messages...`));
+    logger.info(`Upserting "${messages.length}" new messages...`);
     await updateIntlMessages(client, messages);
-    logger.info(colors.green(`Successfully synced ${messages.length} messages!`));
+    logger.info(`Successfully synced ${messages.length} messages!`);
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create messages! - ${(err as Error).message}`));
+    logger.info(`Failed to create messages! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

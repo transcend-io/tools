@@ -1,6 +1,5 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
 import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
@@ -104,7 +103,7 @@ export async function updateVendors(
  */
 export async function syncVendors(client: GraphQLClient, inputs: VendorInput[]): Promise<boolean> {
   // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" vendors...`));
+  logger.info(`Syncing "${inputs.length}" vendors...`);
 
   let encounteredError = false;
 
@@ -125,28 +124,24 @@ export async function syncVendors(client: GraphQLClient, inputs: VendorInput[]):
     try {
       const newVendor = await createVendor(client, vendor);
       vendorByTitle[newVendor.title] = newVendor;
-      logger.info(colors.green(`Successfully synced vendor "${vendor.title}"!`));
+      logger.info(`Successfully synced vendor "${vendor.title}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(
-        colors.red(`Failed to sync vendor "${vendor.title}"! - ${(err as Error).message}`),
-      );
+      logger.info(`Failed to sync vendor "${vendor.title}"! - ${(err as Error).message}`);
     }
   });
 
   // Update all vendors
   try {
-    logger.info(colors.magenta(`Updating "${inputs.length}" vendors!`));
+    logger.info(`Updating "${inputs.length}" vendors!`);
     await updateVendors(
       client,
       inputs.map((input) => [input, vendorByTitle[input.title]!.id]),
     );
-    logger.info(colors.green(`Successfully synced "${inputs.length}" vendors!`));
+    logger.info(`Successfully synced "${inputs.length}" vendors!`);
   } catch (err) {
     encounteredError = true;
-    logger.info(
-      colors.red(`Failed to sync "${inputs.length}" vendors ! - ${(err as Error).message}`),
-    );
+    logger.info(`Failed to sync "${inputs.length}" vendors ! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

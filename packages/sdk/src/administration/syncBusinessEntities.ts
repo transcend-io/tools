@@ -1,6 +1,5 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
 import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, chunk } from 'lodash-es';
 
@@ -104,7 +103,7 @@ export async function syncBusinessEntities(
   inputs: BusinessEntityInput[],
 ): Promise<boolean> {
   // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" business entities...`));
+  logger.info(`Syncing "${inputs.length}" business entities...`);
 
   let encounteredError = false;
 
@@ -122,31 +121,27 @@ export async function syncBusinessEntities(
     try {
       const newBusinessEntity = await createBusinessEntity(client, businessEntity);
       businessEntityByTitle[newBusinessEntity.title] = newBusinessEntity;
-      logger.info(colors.green(`Successfully synced business entity "${businessEntity.title}"!`));
+      logger.info(`Successfully synced business entity "${businessEntity.title}"!`);
     } catch (err) {
       encounteredError = true;
       logger.info(
-        colors.red(
-          `Failed to sync business entity "${businessEntity.title}"! - ${(err as Error).message}`,
-        ),
+        `Failed to sync business entity "${businessEntity.title}"! - ${(err as Error).message}`,
       );
     }
   });
 
   // Update all business entities
   try {
-    logger.info(colors.magenta(`Updating "${inputs.length}" business entities!`));
+    logger.info(`Updating "${inputs.length}" business entities!`);
     await updateBusinessEntities(
       client,
       inputs.map((input) => [input, businessEntityByTitle[input.title]!.id]),
     );
-    logger.info(colors.green(`Successfully synced "${inputs.length}" business entities!`));
+    logger.info(`Successfully synced "${inputs.length}" business entities!`);
   } catch (err) {
     encounteredError = true;
     logger.info(
-      colors.red(
-        `Failed to sync "${inputs.length}" business entities ! - ${(err as Error).message}`,
-      ),
+      `Failed to sync "${inputs.length}" business entities ! - ${(err as Error).message}`,
     );
   }
 
