@@ -3,10 +3,10 @@ import {
   AssessmentFormTemplateStatus,
 } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { AssessmentSection, RetentionSchedule, UserPreview } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import type { AssessmentSection, RetentionSchedule, UserPreview } from './fetchAllAssessments.js';
 import { ASSESSMENT_TEMPLATES } from './gqls/index.js';
 
 /**

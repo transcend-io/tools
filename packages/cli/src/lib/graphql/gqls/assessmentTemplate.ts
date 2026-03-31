@@ -1,6 +1,5 @@
+import { ASSESSMENT_SECTION_FIELDS } from '@transcend-io/sdk';
 import { gql } from 'graphql-request';
-
-import { ASSESSMENT_SECTION_FIELDS } from './assessment.js';
 
 // TODO: https://transcend.height.app/T-27909 - enable optimizations
 // isExportCsv: true

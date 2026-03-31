@@ -6,6 +6,7 @@ import {
   RetentionType,
 } from '@transcend-io/privacy-types';
 import {
+  fetchAllAssessments,
   fetchAllBusinessEntities,
   fetchAllIdentifiers,
   fetchAllMessages,
@@ -67,7 +68,6 @@ import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllAgentFiles } from './fetchAllAgentFiles.js';
 import { fetchAllAgentFunctions } from './fetchAllAgentFunctions.js';
 import { fetchAllAgents } from './fetchAllAgents.js';
-import { fetchAllAssessments } from './fetchAllAssessments.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 import { fetchAllAttributes } from './fetchAllAttributes.js';
 import { fetchAllCookies } from './fetchAllCookies.js';
@@ -296,7 +296,7 @@ export async function pullTranscendConfiguration(
     // Fetch partitions
     resources.includes(TranscendPullResource.Partitions) ? fetchPartitions(client) : [],
     // Fetch assessments
-    resources.includes(TranscendPullResource.Assessments) ? fetchAllAssessments(client) : [],
+    resources.includes(TranscendPullResource.Assessments) ? fetchAllAssessments(client, { logger }) : [],
     // Fetch assessmentTemplates
     resources.includes(TranscendPullResource.AssessmentTemplates)
       ? fetchAllAssessmentTemplates(client)
