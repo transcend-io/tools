@@ -67,7 +67,10 @@ export async function fetchAllPurposes(
       purposes: { nodes },
     } = await makeGraphQLRequest<{
       /** Purposes */
-      purposes: { /** List */ nodes: Purpose[] };
+      purposes: {
+        /** List */
+        nodes: Purpose[];
+      };
     }>(client, PURPOSES, {
       logger,
       variables: { first: PAGE_SIZE, offset, input: { includeDeleted } },

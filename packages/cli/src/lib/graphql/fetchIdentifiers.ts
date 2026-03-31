@@ -1,5 +1,8 @@
-import { fetchAllIdentifiers as sdkFetchAllIdentifiers, type Identifier } from '@transcend-io/sdk';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  fetchAllIdentifiers as sdkFetchAllIdentifiers,
+  makeGraphQLRequest,
+  type Identifier,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';

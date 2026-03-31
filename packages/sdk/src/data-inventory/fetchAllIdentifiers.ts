@@ -19,15 +19,24 @@ export interface Identifier {
   /** Whether identifier is enabled on privacy center */
   privacyCenterVisibility: RequestAction[];
   /** Enabled data subjects that are exposed this identifier on the privacy center */
-  dataSubjects: { /** type of data subjects */ type: string }[];
+  dataSubjects: {
+    /** type of data subjects */
+    type: string;
+  }[];
   /** Whether identifier is a required field in privacy center form */
   isRequiredInForm: boolean;
   /** Identifier placeholder text */
   placeholder: string;
   /** Display title for identifier */
-  displayTitle: { /** Default message */ defaultMessage: string };
+  displayTitle: {
+    /** Default message */
+    defaultMessage: string;
+  };
   /** Display description for identifier */
-  displayDescription: { /** Default */ defaultMessage: string };
+  displayDescription: {
+    /** Default */
+    defaultMessage: string;
+  };
   /** Display order */
   displayOrder: number;
   /** Does this identifier uniquely identify a consent record */
@@ -45,7 +54,10 @@ const PAGE_SIZE = 20;
  */
 export async function fetchAllIdentifiers(
   client: GraphQLClient,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Identifier[]> {
   const { logger } = options;
   const identifiers: Identifier[] = [];
@@ -57,7 +69,10 @@ export async function fetchAllIdentifiers(
       identifiers: { nodes },
     } = await makeGraphQLRequest<{
       /** Identifiers */
-      identifiers: { /** List */ nodes: Identifier[] };
+      identifiers: {
+        /** List */
+        nodes: Identifier[];
+      };
     }>(client, IDENTIFIERS, {
       logger,
       variables: { first: PAGE_SIZE, offset },

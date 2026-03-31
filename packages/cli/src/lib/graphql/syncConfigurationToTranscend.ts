@@ -1,4 +1,4 @@
-import type { Identifier } from '@transcend-io/sdk';
+import { fetchApiKeys, syncTeams, type Identifier } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -8,7 +8,6 @@ import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllAttributes } from './fetchAllAttributes.js';
-import { fetchApiKeys } from './fetchApiKeys.js';
 import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
@@ -36,7 +35,6 @@ import { syncProcessingPurposes } from './syncProcessingPurposes.js';
 import { syncPromptGroups } from './syncPromptGroups.js';
 import { syncPromptPartials } from './syncPromptPartials.js';
 import { syncPrompts } from './syncPrompts.js';
-import { syncTeams } from './syncTeams.js';
 import { syncTemplate } from './syncTemplates.js';
 import { syncVendors } from './syncVendors.js';
 
@@ -119,7 +117,7 @@ export async function syncConfigurationToTranscend(
     dataSilos
       .map((dataSilo) => dataSilo['api-key-title'] || [])
       .reduce((acc, lst) => acc + lst.length, 0) > 0
-      ? fetchApiKeys(input, client)
+      ? fetchApiKeys(input, client, false, { logger })
       : {},
   ]);
 
@@ -150,7 +148,7 @@ export async function syncConfigurationToTranscend(
   }
 
   if (teams) {
-    const teamsSuccess = await syncTeams(client, teams);
+    const teamsSuccess = await syncTeams(client, teams, { logger });
     encounteredError = encounteredError || !teamsSuccess;
   }
 

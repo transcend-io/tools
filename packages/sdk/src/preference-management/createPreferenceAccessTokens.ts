@@ -45,7 +45,10 @@ async function createPreferenceAccessTokensPage(
     /** createPrivacyCenterAccessTokens mutation */
     createPrivacyCenterAccessTokens: {
       /** Nodes */
-      nodes: { /** Token */ token: string }[];
+      nodes: {
+        /** Token */
+        token: string;
+      }[];
     };
   }>(client, CREATE_PREFERENCE_ACCESS_TOKENS, {
     logger,

@@ -5,8 +5,7 @@ import {
   PreflightRequestStatus,
   RequestAction,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import type { Identifier } from '@transcend-io/sdk';
+import { makeGraphQLRequest, type Identifier } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { EnricherInput } from '../../codecs.js';

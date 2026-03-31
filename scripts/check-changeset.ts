@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 
 import { fileExists, readJsonFile, readRepoFile } from './lib/repo-files.ts';
 import { logGroup, prominentError } from './lib/reporting.ts';
+import { logger } from './logger.ts';
 
 type ChangesetConfig = {
   ignore?: unknown;
@@ -74,7 +75,7 @@ try {
   run();
 } catch (error) {
   const details = error instanceof Error ? error.message : String(error);
-  console.error(details);
+  logger.error(details);
   process.exit(1);
 }
 
@@ -152,8 +153,8 @@ function getChangedFiles(base: string): string[] {
   } catch (error) {
     const details = error instanceof Error ? error.message : String(error);
 
-    console.error(`Failed to compare changes against ${base}.`);
-    console.error(details);
+    logger.error(`Failed to compare changes against ${base}.`);
+    logger.error(details);
     process.exit(1);
   }
 }

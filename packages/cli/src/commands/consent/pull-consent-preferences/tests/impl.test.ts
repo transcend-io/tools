@@ -2,8 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { LocalContext } from '../../../../context.js';
-import { pullConsentPreferences } from '../impl.js';
-import type { PullConsentPreferencesCommandFlags } from '../impl.js';
+import { pullConsentPreferences, type PullConsentPreferencesCommandFlags } from '../impl.js';
 
 const H = vi.hoisted(() => {
   const logger = {

@@ -6,6 +6,6 @@
     "no-console": "warn",
     "no-debugger": "error",
     "no-unused-vars": "warn",
-    "import/no-duplicates": "error"
+    "import/no-duplicates": ["error", { "preferInline": true }]
   }
 }

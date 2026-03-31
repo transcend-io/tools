@@ -1,25 +1,46 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { ScopeName } from '@transcend-io/privacy-types';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { TeamInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllTeams, Team } from './fetchAllTeams.js';
-import { UPDATE_TEAM, CREATE_TEAM } from './gqls/index.js';
+import { UPDATE_TEAM, CREATE_TEAM } from './gqls/team.js';
+
+export interface TeamInput {
+  /** The display name of the team */
+  name: string;
+  /** Team description */
+  description: string;
+  /** SSO department for automated provisioning */
+  'sso-department'?: string;
+  /** SSO group name for automated provisioning */
+  'sso-group'?: string;
+  /** SSO title mapping for automated provisioning */
+  'sso-title'?: string;
+  /** List of user emails on the team */
+  users?: string[];
+  /** List of scopes that the team should have */
+  scopes?: ScopeName[];
+}
 
 /**
  * Input to create a new team
  *
  * @param client - GraphQL client
  * @param team - Input
+ * @param options - Options
  * @returns Created team
  */
 export async function createTeam(
   client: GraphQLClient,
   team: TeamInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<Team, 'id' | 'name'>> {
+  const { logger } = options;
   const input = {
     name: team.name,
     description: team.description,
@@ -49,13 +70,19 @@ export async function createTeam(
  * @param client - GraphQL client
  * @param input - Team input to update
  * @param teamId - ID of team
+ * @param options - Options
  * @returns Updated team
  */
 export async function updateTeam(
   client: GraphQLClient,
   input: TeamInput,
   teamId: string,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<Team, 'id' | 'name'>> {
+  const { logger } = options;
   const { updateTeam } = await makeGraphQLRequest<{
     /** Update team mutation */
     updateTeam: {
@@ -85,16 +112,25 @@ export async function updateTeam(
  *
  * @param client - GraphQL client
  * @param inputs - Inputs to create
+ * @param options - Options
  * @returns True if run without error, returns false if an error occurred
  */
-export async function syncTeams(client: GraphQLClient, inputs: TeamInput[]): Promise<boolean> {
+export async function syncTeams(
+  client: GraphQLClient,
+  inputs: TeamInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<boolean> {
+  const { logger } = options;
   // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" teams...`));
+  logger.info(`Syncing "${inputs.length}" teams...`);
 
   let encounteredError = false;
 
   // Fetch existing
-  const existingTeams = await fetchAllTeams(client);
+  const existingTeams = await fetchAllTeams(client, { logger });
 
   // Look up by name
   const teamsByName: { [k in string]: Pick<Team, 'id' | 'name'> } = keyBy(existingTeams, 'name');
@@ -106,24 +142,24 @@ export async function syncTeams(client: GraphQLClient, inputs: TeamInput[]): Pro
   // Create new teams
   await mapSeries(newTeams, async (team) => {
     try {
-      const newTeam = await createTeam(client, team);
+      const newTeam = await createTeam(client, team, { logger });
       teamsByName[newTeam.name] = newTeam;
-      logger.info(colors.green(`Successfully created team "${team.name}"!`));
+      logger.info(`Successfully created team "${team.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync team "${team.name}"! - ${err.message}`));
+      logger.error(`Failed to sync team "${team.name}"! - ${(err as Error).message}`);
     }
   });
 
   // Update all teams
   await mapSeries(updatedTeams, async (input) => {
     try {
-      const newTeam = await updateTeam(client, input, teamsByName[input.name].id);
+      const newTeam = await updateTeam(client, input, teamsByName[input.name]!.id, { logger });
       teamsByName[newTeam.name] = newTeam;
-      logger.info(colors.green(`Successfully updated team "${input.name}"!`));
+      logger.info(`Successfully updated team "${input.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync team "${input.name}"! - ${err.message}`));
+      logger.error(`Failed to sync team "${input.name}"! - ${(err as Error).message}`);
     }
   });
 

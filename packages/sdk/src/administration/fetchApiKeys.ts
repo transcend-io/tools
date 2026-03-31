@@ -1,17 +1,28 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import colors from 'colors';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, difference } from 'lodash-es';
 
-import { TranscendInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { API_KEYS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { API_KEYS } from './gqls/apiKey.js';
 
 export interface ApiKey {
   /** ID of API key */
   id: string;
   /** Title of API key */
   title: string;
+}
+
+export interface FetchApiKeysInput {
+  /** API key definitions */
+  'api-keys'?: {
+    /** Title of API key */
+    title: string;
+  }[];
+  /** Data silo definitions that may reference API keys */
+  'data-silos'?: {
+    /** Title of the API key to use */
+    'api-key-title'?: string;
+  }[];
 }
 
 const PAGE_SIZE = 20;
@@ -22,10 +33,19 @@ const ADMIN_LINK = 'https://app.transcend.io/infrastructure/api-keys';
  * Fetch all API keys in an organization
  *
  * @param client - Client
- * @param titles - Filter on titles
+ * @param options - Options
  * @returns API keys
  */
-export async function fetchAllApiKeys(client: GraphQLClient, titles?: string[]): Promise<ApiKey[]> {
+export async function fetchAllApiKeys(
+  client: GraphQLClient,
+  options: {
+    /** Filter on titles */
+    titles?: string[];
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<ApiKey[]> {
+  const { titles, logger } = options;
   const apiKeys: ApiKey[] = [];
   let offset = 0;
 
@@ -58,23 +78,29 @@ export async function fetchAllApiKeys(client: GraphQLClient, titles?: string[]):
  * @param apiKeyInputs - API keys to fetch metadata on
  * @param client - GraphQL client
  * @param fetchAll - When true, fetch all API keys
+ * @param options - Options
  * @returns A map from apiKey title to Identifier
  */
 export async function fetchApiKeys(
-  { 'api-keys': apiKeyInputs = [], 'data-silos': dataSilos = [] }: TranscendInput,
+  { 'api-keys': apiKeyInputs = [], 'data-silos': dataSilos = [] }: FetchApiKeysInput,
   client: GraphQLClient,
   fetchAll = false,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<{ [k in string]: ApiKey }> {
-  logger.info(colors.magenta(`Fetching ${fetchAll ? 'all' : apiKeyInputs.length} API keys...`));
+  const { logger } = options;
+  logger.info(`Fetching ${fetchAll ? 'all' : apiKeyInputs.length} API keys...`);
   const titles = apiKeyInputs.map(({ title }) => title);
   const expectedApiKeyTitles = uniq(
     dataSilos.map((silo) => silo['api-key-title']).filter((x): x is string => !!x),
   );
   const allTitlesExpected = [...expectedApiKeyTitles, ...titles];
-  const apiKeys = await fetchAllApiKeys(
-    client,
-    fetchAll ? undefined : [...expectedApiKeyTitles, ...titles],
-  );
+  const apiKeys = await fetchAllApiKeys(client, {
+    titles: fetchAll ? undefined : [...expectedApiKeyTitles, ...titles],
+    logger,
+  });
 
   // Create a map
   const apiKeysByTitle = keyBy(apiKeys, 'title');
@@ -87,12 +113,10 @@ export async function fetchApiKeys(
 
   // If there are missing apiKeys, throw an error
   if (missingApiKeys.length > 0) {
-    logger.info(
-      colors.red(
-        `Failed to find API keys "${missingApiKeys.join(
-          '", "',
-        )}"! Make sure these API keys are created at: ${ADMIN_LINK}`,
-      ),
+    logger.error(
+      `Failed to find API keys "${missingApiKeys.join(
+        '", "',
+      )}"! Make sure these API keys are created at: ${ADMIN_LINK}`,
     );
     process.exit(1);
   }

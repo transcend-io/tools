@@ -22,3 +22,4 @@ export function createMonorepoPackageDefinition(
 export * from './api/index.js';
 export * from './data-inventory/index.js';
 export * from './preference-management/index.js';
+export * from './administration/index.js';

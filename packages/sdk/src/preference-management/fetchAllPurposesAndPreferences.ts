@@ -18,7 +18,10 @@ export interface PurposeWithPreferences extends Purpose {
  */
 export async function fetchAllPurposesAndPreferences(
   client: GraphQLClient,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<PurposeWithPreferences[]> {
   const [purposes, topics] = await Promise.all([
     fetchAllPurposes(client, options),

@@ -1,5 +1,8 @@
-import type { Handlebars } from '@transcend-io/handlebars-utils';
-import { HandlebarsInput, createHandlebarsWithHelpers } from '@transcend-io/handlebars-utils';
+import {
+  HandlebarsInput,
+  createHandlebarsWithHelpers,
+  type Handlebars,
+} from '@transcend-io/handlebars-utils';
 import {
   PromptStatus,
   ChatCompletionRole,
