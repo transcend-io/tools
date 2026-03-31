@@ -11,6 +11,7 @@ export default defineConfig({
     'src/index.ts',
     'src/commands/admin/chunk-csv/worker.ts',
     'src/commands/admin/parquet-to-csv/worker.ts',
+    'src/commands/consent/upload-preferences/worker.ts',
   ],
   minify: true,
   splitting: true,
