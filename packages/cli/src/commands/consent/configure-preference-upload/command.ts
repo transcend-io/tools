@@ -31,11 +31,6 @@ export const configurePreferenceUploadCommand = buildCommand({
           'Path to the config JSON file. Defaults to <directory>/../preference-upload-schema.json',
         optional: true,
       },
-      partition: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'The partition key for the preference store',
-      },
     },
   },
   docs: {

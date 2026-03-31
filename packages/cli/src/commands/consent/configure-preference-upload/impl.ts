@@ -23,7 +23,6 @@ export interface ConfigurePreferenceUploadFlags {
   transcendUrl: string;
   directory: string;
   schemaFilePath?: string;
-  partition: string;
 }
 
 /**
