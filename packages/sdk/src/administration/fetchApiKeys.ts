@@ -1,4 +1,3 @@
-import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, difference } from 'lodash-es';
 
@@ -71,7 +70,7 @@ export async function fetchApiKeys(
   client: GraphQLClient,
   fetchAll = false,
 ): Promise<{ [k in string]: ApiKey }> {
-  logger.info(colors.magenta(`Fetching ${fetchAll ? 'all' : apiKeyInputs.length} API keys...`));
+  logger.info(`Fetching ${fetchAll ? 'all' : apiKeyInputs.length} API keys...`);
   const titles = apiKeyInputs.map(({ title }) => title);
   const expectedApiKeyTitles = uniq(
     dataSilos.map((silo) => silo['api-key-title']).filter((x): x is string => !!x),
@@ -94,11 +93,9 @@ export async function fetchApiKeys(
   // If there are missing apiKeys, throw an error
   if (missingApiKeys.length > 0) {
     logger.info(
-      colors.red(
-        `Failed to find API keys "${missingApiKeys.join(
-          '", "',
-        )}"! Make sure these API keys are created at: ${ADMIN_LINK}`,
-      ),
+      `Failed to find API keys "${missingApiKeys.join(
+        '", "',
+      )}"! Make sure these API keys are created at: ${ADMIN_LINK}`,
     );
     process.exit(1);
   }

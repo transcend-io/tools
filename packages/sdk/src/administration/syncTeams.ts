@@ -1,6 +1,5 @@
 import { ScopeName } from '@transcend-io/privacy-types';
 import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
@@ -106,7 +105,7 @@ export async function updateTeam(
  */
 export async function syncTeams(client: GraphQLClient, inputs: TeamInput[]): Promise<boolean> {
   // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" teams...`));
+  logger.info(`Syncing "${inputs.length}" teams...`);
 
   let encounteredError = false;
 
@@ -125,10 +124,10 @@ export async function syncTeams(client: GraphQLClient, inputs: TeamInput[]): Pro
     try {
       const newTeam = await createTeam(client, team);
       teamsByName[newTeam.name] = newTeam;
-      logger.info(colors.green(`Successfully created team "${team.name}"!`));
+      logger.info(`Successfully created team "${team.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync team "${team.name}"! - ${(err as Error).message}`));
+      logger.info(`Failed to sync team "${team.name}"! - ${(err as Error).message}`);
     }
   });
 
@@ -137,10 +136,10 @@ export async function syncTeams(client: GraphQLClient, inputs: TeamInput[]): Pro
     try {
       const newTeam = await updateTeam(client, input, teamsByName[input.name]!.id);
       teamsByName[newTeam.name] = newTeam;
-      logger.info(colors.green(`Successfully updated team "${input.name}"!`));
+      logger.info(`Successfully updated team "${input.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync team "${input.name}"! - ${(err as Error).message}`));
+      logger.info(`Failed to sync team "${input.name}"! - ${(err as Error).message}`);
     }
   });
 
