@@ -138,7 +138,7 @@ export async function syncTeams(
       logger.info(`Successfully created team "${team.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(`Failed to sync team "${team.name}"! - ${(err as Error).message}`);
+      logger.error(`Failed to sync team "${team.name}"! - ${(err as Error).message}`);
     }
   });
 
@@ -150,7 +150,7 @@ export async function syncTeams(
       logger.info(`Successfully updated team "${input.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(`Failed to sync team "${input.name}"! - ${(err as Error).message}`);
+      logger.error(`Failed to sync team "${input.name}"! - ${(err as Error).message}`);
     }
   });
 
