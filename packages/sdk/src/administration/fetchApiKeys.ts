@@ -1,17 +1,23 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, difference } from 'lodash-es';
 
-import { TranscendInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { API_KEYS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { API_KEYS } from './gqls/apiKey.js';
 
 export interface ApiKey {
   /** ID of API key */
   id: string;
   /** Title of API key */
   title: string;
+}
+
+export interface FetchApiKeysInput {
+  /** API key definitions */
+  'api-keys'?: { /** Title of API key */ title: string }[];
+  /** Data silo definitions that may reference API keys */
+  'data-silos'?: { /** Title of the API key to use */ 'api-key-title'?: string }[];
 }
 
 const PAGE_SIZE = 20;
@@ -61,7 +67,7 @@ export async function fetchAllApiKeys(client: GraphQLClient, titles?: string[]):
  * @returns A map from apiKey title to Identifier
  */
 export async function fetchApiKeys(
-  { 'api-keys': apiKeyInputs = [], 'data-silos': dataSilos = [] }: TranscendInput,
+  { 'api-keys': apiKeyInputs = [], 'data-silos': dataSilos = [] }: FetchApiKeysInput,
   client: GraphQLClient,
   fetchAll = false,
 ): Promise<{ [k in string]: ApiKey }> {

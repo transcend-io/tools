@@ -6,6 +6,8 @@ import {
   RetentionType,
 } from '@transcend-io/privacy-types';
 import { fetchAllIdentifiers, fetchAllPurposesAndPreferences } from '@transcend-io/sdk';
+import { fetchAllTeams } from '@transcend-io/sdk';
+import { fetchApiKeys } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { flatten, keyBy, mapValues } from 'lodash-es';
@@ -69,9 +71,7 @@ import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingActivities } from './fetchAllProcessingActivities.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
-import { fetchAllTeams } from './fetchAllTeams.js';
 import { fetchAllVendors } from './fetchAllVendors.js';
-import { fetchApiKeys } from './fetchApiKeys.js';
 import {
   fetchConsentManager,
   fetchConsentManagerExperiences,

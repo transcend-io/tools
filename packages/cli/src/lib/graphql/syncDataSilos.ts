@@ -8,6 +8,7 @@ import {
   SubDataPointDataSubCategoryGuessStatus,
 } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { ApiKey } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { mapSeries, map } from '@transcend-io/utils';
 /* eslint-disable max-lines */
@@ -18,7 +19,6 @@ import { sortBy, chunk, keyBy } from 'lodash-es';
 
 import { DataCategoryInput, DataSiloInput, ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { ApiKey } from './fetchApiKeys.js';
 import { convertToDataSubjectBlockList, DataSubject } from './fetchDataSubjects.js';
 import {
   DATA_SILOS,

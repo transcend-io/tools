@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { DETERMINE_LOGIN_METHOD, ASSUME_ROLE, LOGIN } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { DETERMINE_LOGIN_METHOD, ASSUME_ROLE, LOGIN } from './gqls/auth.js';
 
 export interface OrganizationPreview {
   /** Name of organization */

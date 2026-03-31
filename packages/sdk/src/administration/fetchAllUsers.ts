@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { USERS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { USERS } from './gqls/user.js';
 
 export interface User {
   /** ID of user */

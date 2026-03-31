@@ -1,13 +1,30 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { ScopeName } from '@transcend-io/privacy-types';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { TeamInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
 import { fetchAllTeams, Team } from './fetchAllTeams.js';
-import { UPDATE_TEAM, CREATE_TEAM } from './gqls/index.js';
+import { UPDATE_TEAM, CREATE_TEAM } from './gqls/team.js';
+
+export interface TeamInput {
+  /** The display name of the team */
+  name: string;
+  /** Team description */
+  description: string;
+  /** SSO department for automated provisioning */
+  'sso-department'?: string;
+  /** SSO group name for automated provisioning */
+  'sso-group'?: string;
+  /** SSO title mapping for automated provisioning */
+  'sso-title'?: string;
+  /** List of user emails on the team */
+  users?: string[];
+  /** List of scopes that the team should have */
+  scopes?: ScopeName[];
+}
 
 /**
  * Input to create a new team
@@ -111,19 +128,19 @@ export async function syncTeams(client: GraphQLClient, inputs: TeamInput[]): Pro
       logger.info(colors.green(`Successfully created team "${team.name}"!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync team "${team.name}"! - ${err.message}`));
+      logger.info(colors.red(`Failed to sync team "${team.name}"! - ${(err as Error).message}`));
     }
   });
 
   // Update all teams
   await mapSeries(updatedTeams, async (input) => {
     try {
-      const newTeam = await updateTeam(client, input, teamsByName[input.name].id);
+      const newTeam = await updateTeam(client, input, teamsByName[input.name]!.id);
       teamsByName[newTeam.name] = newTeam;
       logger.info(colors.green(`Successfully updated team "${input.name}"!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync team "${input.name}"! - ${err.message}`));
+      logger.info(colors.red(`Failed to sync team "${input.name}"! - ${(err as Error).message}`));
     }
   });
 
