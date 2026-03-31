@@ -10,6 +10,9 @@ import {
   fetchAllPurposesAndPreferences,
   fetchAllTeams,
   fetchApiKeys,
+  parseAssessmentDisplayLogic,
+  parseAssessmentRiskLogic,
+  type AssessmentRule,
 } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -86,8 +89,6 @@ import { fetchAllPromptPartials } from './fetchPromptPartials.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
 import { formatAttributeValues } from './formatAttributeValues.js';
 import { formatRegions } from './formatRegions.js';
-import { parseAssessmentDisplayLogic, type AssessmentRule } from './parseAssessmentDisplayLogic.js';
-import { parseAssessmentRiskLogic } from './parseAssessmentRiskLogic.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
 import { fetchPartitions } from './syncPartitions.js';

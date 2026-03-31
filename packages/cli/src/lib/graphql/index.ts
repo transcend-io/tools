@@ -40,8 +40,6 @@ export * from './fetchRequestDataSilo.js';
 export * from './fetchRequestDataSiloActiveCount.js';
 export * from './fetchRequestFilesForRequest.js';
 export * from './gqls/index.js';
-export * from './parseAssessmentDisplayLogic.js';
-export * from './parseAssessmentRiskLogic.js';
 export * from './pullTranscendConfiguration.js';
 export * from './reportPromptRun.js';
 export * from './retryRequestEnricher.js';
