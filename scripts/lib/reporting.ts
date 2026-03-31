@@ -1,5 +1,5 @@
 const isGithubActions = process.env.GITHUB_ACTIONS === 'true';
-import { logger } from '../logger.js';
+import { logger } from '../logger.ts';
 
 /** Prominent failure output: GitHub Actions annotations (::error::) or ANSI red locally. */
 export function prominentError(title: string, message: string): void {
