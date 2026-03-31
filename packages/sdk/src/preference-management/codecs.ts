@@ -130,6 +130,34 @@ export const FileMetadataState = t.intersection([
 export type FileMetadataState = t.TypeOf<typeof FileMetadataState>;
 
 /**
+ * Schema-only state for a preference CSV file format.
+ *
+ * Unlike FileMetadataState this does NOT embed upload receipts — it only
+ * describes how columns map to identifiers, purposes, timestamps, and metadata.
+ */
+export const FileFormatState = t.intersection([
+  t.type({
+    /** Maps each CSV column to its purpose/preference definition in Transcend */
+    columnToPurposeName: ColumnPurposeMap,
+    /** ISO 8601 timestamp of when this config was last generated or refreshed */
+    lastFetchedAt: t.string,
+    /** Maps each CSV column to the identifier it represents (e.g. email, userId) */
+    columnToIdentifier: ColumnIdentifierMap,
+  }),
+  t.partial({
+    /** CSV column whose values contain the consent timestamp */
+    timestampColumn: t.string,
+    /** Maps CSV columns to metadata keys stored alongside the preference record */
+    columnToMetadata: ColumnMetadataMap,
+    /** CSV columns that should be skipped during upload */
+    columnsToIgnore: t.array(t.string),
+  }),
+]);
+
+/** Override type */
+export type FileFormatState = t.TypeOf<typeof FileFormatState>;
+
+/**
  * This is the type of the receipts that are stored in the file
  * that is used to track the state of the upload process.
  * It is used to resume the upload process from where it left off.
@@ -249,6 +277,26 @@ export const PreferenceState = t.type({
 
 /** Override type */
 export type PreferenceState = t.TypeOf<typeof PreferenceState>;
+
+export const RequestUploadReceipts = t.type({
+  /** ISO 8601 timestamp of when the receipt file was last written */
+  lastFetchedAt: t.string,
+  /** Updates that can be applied without conflicting with existing preferences */
+  pendingSafeUpdates: PendingSafePreferenceUpdates,
+  /** Updates that conflict with existing preference values and need review */
+  pendingConflictUpdates: PendingWithConflictPreferenceUpdates,
+  /** Rows skipped because their preferences already match the store */
+  skippedUpdates: SkippedPreferenceUpdates,
+  /** Updates that were attempted but failed with an API error */
+  failingUpdates: FailingPreferenceUpdates,
+  /** Updates still queued to be sent to the API */
+  pendingUpdates: PreferenceUpdateMap,
+  /** Updates that have been successfully written to the preference store */
+  successfulUpdates: PreferenceUpdateMap,
+});
+
+/** Override type */
+export type RequestUploadReceipts = t.TypeOf<typeof RequestUploadReceipts>;
 
 export const DeletePreferenceRecordsInput = t.type({
   /** Array of consent preference records to delete */
