@@ -17,6 +17,7 @@ export const NONE_PREFERENCE_MAP = '[NONE]';
  *
  * Error is throw if timestamp is missing
  *
+ * @deprecated Use parsePreferenceFileFormatFromCsv which accepts FileFormatState
  * @param preferences - List of preferences
  * @param currentState - The current file metadata state for parsing this list
  * @returns The updated file metadata state

@@ -5,8 +5,9 @@ import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import { NONE_PREFERENCE_MAP } from './parsePreferenceTimestampsFromCsv.js';
 
-export const NONE_PREFERENCE_MAP = '[NONE]';
+export { NONE_PREFERENCE_MAP };
 
 /**
  * Parse timestamps and other file format mapping from a CSV list of preferences
