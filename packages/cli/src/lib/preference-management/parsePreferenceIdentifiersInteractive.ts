@@ -1,7 +1,6 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
-import type { PreferenceStoreIdentifier } from '@transcend-io/privacy-types';
 import type { Identifier } from '@transcend-io/sdk';
-import type { FileFormatState, IdentifierMetadataForPreference } from '@transcend-io/sdk';
+import type { FileFormatState } from '@transcend-io/sdk';
 import Bluebird from 'bluebird';
 import colors from 'colors';
 import inquirer from 'inquirer';
@@ -158,69 +157,3 @@ export async function parsePreferenceIdentifiersFromCsv(
   return { schemaState, preferences };
 }
 /* eslint-enable no-param-reassign */
-
-/**
- * Helper function to get the identifiers payload from a row
- *
- * @param options - Options
- * @param options.row - The current row from CSV file
- * @param options.columnToIdentifier - The column to identifier mapping metadata
- * @returns The updated preferences with identifiers payload
- */
-export function getPreferenceIdentifiersFromRow({
-  row,
-  columnToIdentifier,
-}: {
-  /** The current row from CSV file */
-  row: Record<string, string>;
-  /** The current file metadata state */
-  columnToIdentifier: FileFormatState['columnToIdentifier'];
-}): PreferenceStoreIdentifier[] {
-  const identifiers = Object.entries(columnToIdentifier)
-    .filter(([col]) => !!row[col])
-    .map(([col, identifierMapping]) => ({
-      name: identifierMapping.name,
-      value: row[col],
-    }));
-  return identifiers.sort(
-    (a, b) =>
-      (a.name === 'email' ? -1 : 0) - (b.name === 'email' ? -1 : 0) ||
-      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
-  );
-}
-
-/**
- * Helper function to get unique identifier name present in a row
- *
- * @param options - Options
- * @param options.row - The current row from CSV file
- * @param options.columnToIdentifier - The column to identifier mapping metadata
- * @returns The unique identifier names present in the row
- */
-export function getUniquePreferenceIdentifierNamesFromRow({
-  row,
-  columnToIdentifier,
-}: {
-  /** The current row from CSV file */
-  row: Record<string, string>;
-  /** The current file metadata state */
-  columnToIdentifier: FileFormatState['columnToIdentifier'];
-}): (IdentifierMetadataForPreference & {
-  /** Column name */
-  columnName: string;
-  /** Value of the identifier in the row */
-  value: string;
-})[] {
-  return Object.entries(columnToIdentifier)
-    .sort(
-      ([, a], [, b]) =>
-        (a.name === 'email' ? -1 : 0) - (b.name === 'email' ? -1 : 0) ||
-        a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
-    )
-    .filter(([col]) => row[col] && columnToIdentifier[col].isUniqueOnPreferenceStore)
-    .map(([col, identifier]) => ({
-      ...identifier,
-      columnName: col,
-      value: row[col],
-    }));
-}
