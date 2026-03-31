@@ -1,0 +1,34 @@
+---
+description: Disallow inline JSDoc comments inside object types
+globs: **/*.ts
+alwaysApply: false
+---
+
+# No Inline JSDoc in Object Types
+
+Never place `/** ... */` JSDoc comments inline inside object type literals. Always expand to multi-line.
+
+```typescript
+// ❌ BAD
+options: { /** Logger instance */ logger: Logger }
+nodes: { /** Token */ token: string }[]
+title: { /** ID */ id: string; /** Default message */ defaultMessage: string }
+
+// ✅ GOOD
+options: {
+  /** Logger instance */
+  logger: Logger;
+}
+nodes: {
+  /** Token */
+  token: string;
+}[]
+title: {
+  /** ID */
+  id: string;
+  /** Default message */
+  defaultMessage: string;
+}
+```
+
+This applies to inline types in function parameters, interface properties, and generic type arguments alike.

@@ -14,9 +14,15 @@ export interface ApiKey {
 
 export interface FetchApiKeysInput {
   /** API key definitions */
-  'api-keys'?: { /** Title of API key */ title: string }[];
+  'api-keys'?: {
+    /** Title of API key */
+    title: string;
+  }[];
   /** Data silo definitions that may reference API keys */
-  'data-silos'?: { /** Title of the API key to use */ 'api-key-title'?: string }[];
+  'data-silos'?: {
+    /** Title of the API key to use */
+    'api-key-title'?: string;
+  }[];
 }
 
 const PAGE_SIZE = 20;
@@ -79,7 +85,10 @@ export async function fetchApiKeys(
   { 'api-keys': apiKeyInputs = [], 'data-silos': dataSilos = [] }: FetchApiKeysInput,
   client: GraphQLClient,
   fetchAll = false,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<{ [k in string]: ApiKey }> {
   const { logger } = options;
   logger.info(`Fetching ${fetchAll ? 'all' : apiKeyInputs.length} API keys...`);

@@ -35,7 +35,10 @@ export interface TeamInput {
 export async function createTeam(
   client: GraphQLClient,
   team: TeamInput,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<Team, 'id' | 'name'>> {
   const { logger } = options;
   const input = {
@@ -74,7 +77,10 @@ export async function updateTeam(
   client: GraphQLClient,
   input: TeamInput,
   teamId: string,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<Team, 'id' | 'name'>> {
   const { logger } = options;
   const { updateTeam } = await makeGraphQLRequest<{
@@ -112,7 +118,10 @@ export async function updateTeam(
 export async function syncTeams(
   client: GraphQLClient,
   inputs: TeamInput[],
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
   const { logger } = options;
   // Fetch existing

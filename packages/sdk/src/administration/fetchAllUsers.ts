@@ -24,7 +24,10 @@ const PAGE_SIZE = 20;
  */
 export async function fetchAllUsers(
   client: GraphQLClient,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<User[]> {
   const { logger } = options;
   const users: User[] = [];

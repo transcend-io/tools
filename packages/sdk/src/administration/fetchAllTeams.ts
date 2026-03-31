@@ -49,7 +49,10 @@ const PAGE_SIZE = 20;
  */
 export async function fetchAllTeams(
   client: GraphQLClient,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Team[]> {
   const { logger } = options;
   const teams: Team[] = [];

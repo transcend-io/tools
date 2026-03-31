@@ -11,11 +11,21 @@ export interface PreferenceTopic {
   /** Slug of preference topic */
   slug: string;
   /** Title of topic */
-  title: { /** ID */ id: string; /** Default message */ defaultMessage: string };
+  title: {
+    /** ID */
+    id: string;
+    /** Default message */
+    defaultMessage: string;
+  };
   /** Whether to show in privacy center */
   showInPrivacyCenter: boolean;
   /** Description to display in privacy center */
-  displayDescription: { /** ID */ id: string; /** Default message */ defaultMessage: string };
+  displayDescription: {
+    /** ID */
+    id: string;
+    /** Default message */
+    defaultMessage: string;
+  };
   /** Type of preference topic */
   type: PreferenceTopicType;
   /** Default configuration */
@@ -25,10 +35,18 @@ export interface PreferenceTopic {
     /** Slug of value */
     slug: string;
     /** Title of value */
-    title: { /** ID */ id: string; /** Default message */ defaultMessage: string };
+    title: {
+      /** ID */
+      id: string;
+      /** Default message */
+      defaultMessage: string;
+    };
   }[];
   /** Related purpose */
-  purpose: { /** Slug */ trackingType: string };
+  purpose: {
+    /** Slug */
+    trackingType: string;
+  };
 }
 
 const PAGE_SIZE = 20;
@@ -57,7 +75,10 @@ export async function fetchAllPreferenceTopics(
       preferenceTopics: { nodes },
     } = await makeGraphQLRequest<{
       /** Preference topics */
-      preferenceTopics: { /** List */ nodes: PreferenceTopic[] };
+      preferenceTopics: {
+        /** List */
+        nodes: PreferenceTopic[];
+      };
     }>(client, PREFERENCE_TOPICS, {
       logger,
       variables: { first: PAGE_SIZE, offset },

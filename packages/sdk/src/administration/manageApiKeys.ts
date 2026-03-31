@@ -30,7 +30,10 @@ export async function createApiKey(
     /** Scopes for API key */
     scopes: ScopeName[];
   },
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<CreatedApiKey> {
   const { logger } = options;
   const {
@@ -56,7 +59,10 @@ export async function createApiKey(
 export async function deleteApiKey(
   client: GraphQLClient,
   id: string,
-  options: { /** Logger instance */ logger: Logger },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
   const { logger } = options;
   await makeGraphQLRequest(client, DELETE_API_KEY, { variables: { id }, logger });
