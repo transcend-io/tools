@@ -104,7 +104,7 @@ export async function fetchApiKeys(
 
   // If there are missing apiKeys, throw an error
   if (missingApiKeys.length > 0) {
-    logger.info(
+    logger.error(
       `Failed to find API keys "${missingApiKeys.join(
         '", "',
       )}"! Make sure these API keys are created at: ${ADMIN_LINK}`,
