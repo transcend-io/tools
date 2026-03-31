@@ -1,9 +1,9 @@
 import { AttributeSupportedResourceType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { SET_RESOURCE_ATTRIBUTES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { SET_RESOURCE_ATTRIBUTES } from './gqls/attribute.js';
 
 interface SetResourceAttributesInput {
   /** ID of resource */

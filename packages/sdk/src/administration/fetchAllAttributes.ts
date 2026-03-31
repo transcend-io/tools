@@ -1,10 +1,10 @@
 import { AttributeKeyType, AttributeSupportedResourceType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { ATTRIBUTES, ATTRIBUTE_VALUES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { ATTRIBUTES, ATTRIBUTE_VALUES } from './gqls/attribute.js';
 
 export interface AttributeValue {
   /** Attribute ID */

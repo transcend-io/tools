@@ -6,10 +6,10 @@ import type {
   RetentionType,
 } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Region } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import type { Region } from './formatRegions.js';
 import { PROCESSING_ACTIVITIES } from './gqls/index.js';
 
 export interface ProcessingActivity {

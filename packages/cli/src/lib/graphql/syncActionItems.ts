@@ -1,4 +1,5 @@
 import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { type Attribute, fetchAllAttributes } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -11,7 +12,6 @@ import {
   fetchAllActionItemCollections,
 } from './fetchAllActionItemCollections.js';
 import { fetchAllActionItems, ActionItem } from './fetchAllActionItems.js';
-import { Attribute, fetchAllAttributes } from './fetchAllAttributes.js';
 import { UPDATE_ACTION_ITEMS, CREATE_ACTION_ITEMS } from './gqls/index.js';
 
 /**

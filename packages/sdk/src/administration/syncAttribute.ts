@@ -1,11 +1,11 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { AttributeKeyType, AttributeSupportedResourceType } from '@transcend-io/privacy-types';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, difference, groupBy } from 'lodash-es';
 
-import { AttributeInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
 import { Attribute } from './fetchAllAttributes.js';
 import {
   CREATE_ATTRIBUTE,
@@ -13,7 +13,29 @@ import {
   DELETE_ATTRIBUTE_VALUE,
   UPDATE_ATTRIBUTE,
   UPDATE_ATTRIBUTE_VALUES,
-} from './gqls/index.js';
+} from './gqls/attribute.js';
+
+export interface AttributeValueInput {
+  /** Name of attribute value */
+  name: string;
+  /** Description */
+  description?: string;
+  /** Color */
+  color?: string;
+}
+
+export interface AttributeInput {
+  /** Name of attribute */
+  name: string;
+  /** Type of attribute */
+  type: AttributeKeyType;
+  /** Description of attribute */
+  description?: string;
+  /** Resource types that the attribute is enabled on */
+  resources?: AttributeSupportedResourceType[];
+  /** Values of attribute */
+  values?: AttributeValueInput[];
+}
 
 /**
  * Sync attribute
@@ -106,10 +128,10 @@ export async function syncAttribute(
     await makeGraphQLRequest(client, UPDATE_ATTRIBUTE_VALUES, {
       variables: {
         input: existingValues.map(({ name, ...rest }) => ({
-          id: existingAttributeMap[name].id,
+          id: existingAttributeMap[name]!.id,
           name,
-          description: existingAttributeMap[name].description,
-          color: existingAttributeMap[name].color,
+          description: existingAttributeMap[name]!.description,
+          color: existingAttributeMap[name]!.color,
           ...rest,
           attributeKeyId,
         })),
@@ -125,7 +147,7 @@ export async function syncAttribute(
       removedValues,
       async (value) => {
         await makeGraphQLRequest(client, DELETE_ATTRIBUTE_VALUE, {
-          variables: { id: existingAttributeMap[value].id },
+          variables: { id: existingAttributeMap[value]!.id },
           logger,
         });
       },

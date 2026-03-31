@@ -7,6 +7,7 @@ import {
 } from '@transcend-io/privacy-types';
 import {
   fetchAllAssessments,
+  fetchAllAttributes,
   fetchAllBusinessEntities,
   fetchAllIdentifiers,
   fetchAllMessages,
@@ -14,6 +15,7 @@ import {
   fetchAllTeams,
   fetchAllVendors,
   fetchApiKeys,
+  formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
   type AssessmentRule,
@@ -69,7 +71,6 @@ import { fetchAllAgentFiles } from './fetchAllAgentFiles.js';
 import { fetchAllAgentFunctions } from './fetchAllAgentFunctions.js';
 import { fetchAllAgents } from './fetchAllAgents.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
-import { fetchAllAttributes } from './fetchAllAttributes.js';
 import { fetchAllCookies } from './fetchAllCookies.js';
 import { fetchAllDataCategories } from './fetchAllDataCategories.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
@@ -88,7 +89,6 @@ import { fetchAllPromptGroups } from './fetchPromptGroups.js';
 import { fetchAllPromptPartials } from './fetchPromptPartials.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
 import { formatAttributeValues } from './formatAttributeValues.js';
-import { formatRegions } from './formatRegions.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
 import { fetchPartitions } from './syncPartitions.js';

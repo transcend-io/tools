@@ -1,6 +1,11 @@
 import { IsoCountrySubdivisionCode, IsoCountryCode } from '@transcend-io/privacy-types';
 
-import type { RegionInput } from '../../codecs.js';
+export interface RegionInput {
+  /** The country */
+  country?: IsoCountryCode;
+  /** The country subdivision */
+  countrySubDivision?: IsoCountrySubdivisionCode;
+}
 
 // Country subdivision is nullable in DB
 export interface Region {
