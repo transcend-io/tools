@@ -1,7 +1,5 @@
-import type { FileFormatState } from '@transcend-io/sdk';
+import { type FileFormatState, getPreferenceIdentifiersFromRow } from '@transcend-io/sdk';
 import { describe, it, expect } from 'vitest';
-
-import { getPreferenceIdentifiersFromRow } from '../getPreferenceIdentifiersFromRow.js';
 
 const columnToIdentifier: FileFormatState['columnToIdentifier'] = {
   email_col: { name: 'email', isUniqueOnPreferenceStore: true },
