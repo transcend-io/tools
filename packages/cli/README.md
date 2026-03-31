@@ -1234,17 +1234,18 @@ transcend request system retry-request-data-silos \
 
 ```txt
 USAGE
-  transcend request system skip-request-data-silos (--auth value) (--dataSiloId value) [--transcendUrl value] (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--status SKIPPED|RESOLVED]
+  transcend request system skip-request-data-silos (--auth value) (--dataSiloId value) [--transcendUrl value] (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--status SKIPPED|RESOLVED] [--actionTypes AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD]
   transcend request system skip-request-data-silos --help
 
-This command allows for bulk skipping all open privacy request jobs for a particular data silo. This command is useful if you want to disable a data silo and then clear out any active privacy requests that are still queued up for that data silo.
+This command allows for bulk skipping all open privacy request jobs for a particular data silo. This command is useful if you want to disable a data silo and then clear out any active privacy requests that are still queued up for that data silo. Use --actionTypes to target specific data actions (e.g. only ERASURE jobs).
 
 FLAGS
       --auth           The Transcend API key. Requires scopes: "Manage Request Compilation"
       --dataSiloId     The ID of the data silo to skip privacy request jobs for
-     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
-      --statuses       The request statuses to skip                                                 [REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED, separator = ,]
-     [--status]        The status to set the request data silo job to                               [SKIPPED|RESOLVED, default = SKIPPED]
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting                                              [default = https://api.transcend.io]
+      --statuses       The request statuses to skip                                                                                              [REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED, separator = ,]
+     [--status]        The status to set the request data silo job to                                                                            [SKIPPED|RESOLVED, default = SKIPPED]
+     [--actionTypes]   Filter by request action types (e.g. ACCESS,ERASURE). Only request data silo jobs for these action types will be skipped. [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
   -h  --help           Print help information and exit
 ```
 
@@ -1286,6 +1287,16 @@ transcend request system skip-request-data-silos \
   --dataSiloId=70810f2e-cf90-43f6-9776-901a5950599f \
   --statuses=COMPILING,SECONDARY \
   --status=RESOLVED
+```
+
+**Skip only ERASURE jobs for a data silo**
+
+```sh
+transcend request system skip-request-data-silos \
+  --auth="$TRANSCEND_API_KEY" \
+  --dataSiloId=70810f2e-cf90-43f6-9776-901a5950599f \
+  --statuses=COMPILING,SECONDARY \
+  --actionTypes=ERASURE
 ```
 
 ### `transcend request preflight pull-identifiers`

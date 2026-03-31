@@ -1,4 +1,4 @@
-import { RequestDataSiloStatus, RequestStatus } from '@transcend-io/privacy-types';
+import { RequestAction, RequestDataSiloStatus, RequestStatus } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
@@ -8,6 +8,11 @@ import { REQUEST_DATA_SILOS } from './gqls/index.js';
 export interface RequestDataSilo {
   /** ID of RequestDataSilo */
   id: string;
+  /** Request */
+  request: {
+    /** Type of request */
+    type: RequestAction;
+  };
 }
 
 export interface RequestDataSiloFilters {

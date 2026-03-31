@@ -1,4 +1,4 @@
-import { RequestStatus } from '@transcend-io/privacy-types';
+import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -23,10 +23,10 @@ export async function skipRequestDataSilos({
   dataSiloId,
   auth,
   concurrency = 50,
-  maxUploadPerChunk = 50000,
   status = 'SKIPPED',
   transcendUrl = DEFAULT_TRANSCEND_API,
   requestStatuses = [RequestStatus.Compiling, RequestStatus.Secondary],
+  actionTypes = [],
 }: {
   /** Transcend API key authentication */
   auth: string;
@@ -40,8 +40,8 @@ export async function skipRequestDataSilos({
   transcendUrl?: string;
   /** Request statuses to mark as completed */
   requestStatuses?: RequestStatus[];
-  /** Maximum number of items to mark skipped per go */
-  maxUploadPerChunk?: number;
+  /** Request action types to filter on */
+  actionTypes?: RequestAction[];
 }): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
@@ -54,8 +54,11 @@ export async function skipRequestDataSilos({
     dataSiloId,
     requestStatuses,
   });
-
-  logger.info(colors.magenta(`Marking ${requestDataSiloCount} request data silos as completed`));
+  logger.info(
+    colors.magenta(
+      `Marking ${requestDataSiloCount} request data silos as completed${actionTypes.length > 0 ? ` for action types: ${actionTypes.join(',')}` : ''}`,
+    ),
+  );
 
   // create a new progress bar instance and use shades_classic theme
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
@@ -63,23 +66,20 @@ export async function skipRequestDataSilos({
   let total = 0;
   progressBar.start(requestDataSiloCount, 0);
 
-  // fetch all RequestDataSilos that are open
-  while (total < requestDataSiloCount) {
-    const requestDataSilos = await fetchRequestDataSilos(client, {
-      dataSiloId,
-      requestStatuses,
-      limit: maxUploadPerChunk,
-      // eslint-disable-next-line no-loop-func
-      onProgress: (numUpdated) => {
-        total += numUpdated / 2;
-        progressBar.update(total);
-      },
-    });
+  // Fetch all matching request data silos, updating progress as pages are fetched
+  const requestDataSilos = await fetchRequestDataSilos(client, {
+    dataSiloId,
+    requestStatuses,
+    onProgress: (numFetched) => {
+      total += numFetched / 2;
+      progressBar.update(total);
+    },
+  });
 
-    await map(
-      requestDataSilos,
-      // eslint-disable-next-line no-loop-func
-      async (requestDataSilo) => {
+  await map(
+    requestDataSilos,
+    async (requestDataSilo) => {
+      if (actionTypes.length === 0 || actionTypes.includes(requestDataSilo.request.type)) {
         try {
           await makeGraphQLRequest<{
             /** Whether we successfully uploaded the results */
@@ -93,13 +93,13 @@ export async function skipRequestDataSilos({
             throw err;
           }
         }
+      }
 
-        total += 0.5;
-        progressBar.update(total);
-      },
-      { concurrency },
-    );
-  }
+      total += 0.5;
+      progressBar.update(total);
+    },
+    { concurrency },
+  );
 
   progressBar.stop();
   const t1 = new Date().getTime();
@@ -107,7 +107,7 @@ export async function skipRequestDataSilos({
 
   logger.info(
     colors.green(
-      `Successfully skipped  "${requestDataSiloCount}" requests in "${totalTime / 1000}" seconds!`,
+      `Successfully skipped "${requestDataSiloCount}" requests in "${totalTime / 1000}" seconds!`,
     ),
   );
   return requestDataSiloCount;
