@@ -1,9 +1,9 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { BUSINESS_ENTITIES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { BUSINESS_ENTITIES } from './gqls/businessEntity.js';
 
 export interface BusinessEntity {
   /** ID of business entity */

@@ -1,12 +1,19 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { IntlMessageInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { UPDATE_INTL_MESSAGES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
+
+export interface IntlMessageInput {
+  id: string;
+  targetReactIntlId?: string;
+  description?: string;
+  defaultMessage?: string;
+  translations?: Record<string, string>;
+}
 
 const MAX_PAGE_SIZE = 100;
 
@@ -73,7 +80,7 @@ export async function syncIntlMessages(
     logger.info(colors.green(`Successfully synced ${messages.length} messages!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create messages! - ${err.message}`));
+    logger.info(colors.red(`Failed to create messages! - ${(err as Error).message}`));
   }
 
   return !encounteredError;

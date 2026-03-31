@@ -1,4 +1,11 @@
-import { fetchApiKeys, syncTeams, type Identifier } from '@transcend-io/sdk';
+import {
+  fetchApiKeys,
+  syncBusinessEntities,
+  syncIntlMessages,
+  syncTeams,
+  syncVendors,
+  type Identifier,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -17,7 +24,6 @@ import { syncAgentFiles } from './syncAgentFiles.js';
 import { syncAgentFunctions } from './syncAgentFunctions.js';
 import { syncAgents } from './syncAgents.js';
 import { syncAttribute } from './syncAttribute.js';
-import { syncBusinessEntities } from './syncBusinessEntities.js';
 import { syncConsentManager } from './syncConsentManager.js';
 import { syncCookies } from './syncCookies.js';
 import { syncDataCategories } from './syncDataCategories.js';
@@ -26,7 +32,6 @@ import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
 import { syncEnricher } from './syncEnrichers.js';
 import { syncIdentifier } from './syncIdentifier.js';
-import { syncIntlMessages } from './syncIntlMessages.js';
 import { syncPartitions } from './syncPartitions.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
@@ -36,7 +41,6 @@ import { syncPromptGroups } from './syncPromptGroups.js';
 import { syncPromptPartials } from './syncPromptPartials.js';
 import { syncPrompts } from './syncPrompts.js';
 import { syncTemplate } from './syncTemplates.js';
-import { syncVendors } from './syncVendors.js';
 
 const CONCURRENCY = 10;
 

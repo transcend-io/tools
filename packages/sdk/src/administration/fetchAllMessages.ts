@@ -1,9 +1,9 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { MESSAGES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
+import { MESSAGES } from './gqls/message.js';
 
 export interface Message {
   /** ID of message */

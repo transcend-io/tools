@@ -1,13 +1,29 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { VendorInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
 import { fetchAllVendors, Vendor } from './fetchAllVendors.js';
-import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/index.js';
+import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/vendor.js';
+
+export interface VendorInput {
+  title: string;
+  description?: string;
+  dataProcessingAgreementLink?: string;
+  contactName?: string;
+  contactPhone?: string;
+  address?: string;
+  headquarterCountry?: IsoCountryCode;
+  headquarterSubDivision?: IsoCountrySubdivisionCode;
+  websiteUrl?: string;
+  businessEntity?: string;
+  owners?: string[];
+  teams?: string[];
+  attributes?: { key: string; values: string[] }[];
+}
 
 /**
  * Input to create a new vendor
@@ -112,7 +128,9 @@ export async function syncVendors(client: GraphQLClient, inputs: VendorInput[]):
       logger.info(colors.green(`Successfully synced vendor "${vendor.title}"!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync vendor "${vendor.title}"! - ${err.message}`));
+      logger.info(
+        colors.red(`Failed to sync vendor "${vendor.title}"! - ${(err as Error).message}`),
+      );
     }
   });
 
@@ -121,12 +139,14 @@ export async function syncVendors(client: GraphQLClient, inputs: VendorInput[]):
     logger.info(colors.magenta(`Updating "${inputs.length}" vendors!`));
     await updateVendors(
       client,
-      inputs.map((input) => [input, vendorByTitle[input.title].id]),
+      inputs.map((input) => [input, vendorByTitle[input.title]!.id]),
     );
     logger.info(colors.green(`Successfully synced "${inputs.length}" vendors!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to sync "${inputs.length}" vendors ! - ${err.message}`));
+    logger.info(
+      colors.red(`Failed to sync "${inputs.length}" vendors ! - ${(err as Error).message}`),
+    );
   }
 
   return !encounteredError;

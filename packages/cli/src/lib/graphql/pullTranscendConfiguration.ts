@@ -6,9 +6,12 @@ import {
   RetentionType,
 } from '@transcend-io/privacy-types';
 import {
+  fetchAllBusinessEntities,
   fetchAllIdentifiers,
+  fetchAllMessages,
   fetchAllPurposesAndPreferences,
   fetchAllTeams,
+  fetchAllVendors,
   fetchApiKeys,
 } from '@transcend-io/sdk';
 import colors from 'colors';
@@ -64,17 +67,14 @@ import { fetchAllAgents } from './fetchAllAgents.js';
 import { fetchAllAssessments } from './fetchAllAssessments.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 import { fetchAllAttributes } from './fetchAllAttributes.js';
-import { fetchAllBusinessEntities } from './fetchAllBusinessEntities.js';
 import { fetchAllCookies } from './fetchAllCookies.js';
 import { fetchAllDataCategories } from './fetchAllDataCategories.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
-import { fetchAllMessages } from './fetchAllMessages.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingActivities } from './fetchAllProcessingActivities.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
-import { fetchAllVendors } from './fetchAllVendors.js';
 import {
   fetchConsentManager,
   fetchConsentManagerExperiences,

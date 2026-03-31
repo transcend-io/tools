@@ -35,9 +35,11 @@
   },
   "dependencies": {
     "@transcend-io/airgap.js-types": "^12.16.0",
+    "@transcend-io/internationalization": "^2.3.2",
     "@transcend-io/privacy-types": "workspace:*",
     "@transcend-io/type-utils": "^1.8.9",
     "@transcend-io/utils": "workspace:*",
+    "colors": "^1.4.0",
     "got": "^11.8.5",
     "graphql": "^16.6.0",
     "graphql-request": "^5.0.0",

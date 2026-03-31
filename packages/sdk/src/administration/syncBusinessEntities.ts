@@ -1,13 +1,26 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, chunk } from 'lodash-es';
 
-import { BusinessEntityInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { logger } from '../logger.js';
 import { fetchAllBusinessEntities, BusinessEntity } from './fetchAllBusinessEntities.js';
-import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/index.js';
+import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/businessEntity.js';
+
+export interface BusinessEntityInput {
+  title: string;
+  description?: string;
+  address?: string;
+  headquarterCountry?: IsoCountryCode;
+  headquarterSubDivision?: IsoCountrySubdivisionCode;
+  dataProtectionOfficerName?: string;
+  dataProtectionOfficerEmail?: string;
+  attributes?: { key: string; values: string[] }[];
+  teams?: string[];
+  owners?: string[];
+}
 
 /**
  * Input to create a new business entity
@@ -113,7 +126,9 @@ export async function syncBusinessEntities(
     } catch (err) {
       encounteredError = true;
       logger.info(
-        colors.red(`Failed to sync business entity "${businessEntity.title}"! - ${err.message}`),
+        colors.red(
+          `Failed to sync business entity "${businessEntity.title}"! - ${(err as Error).message}`,
+        ),
       );
     }
   });
@@ -123,13 +138,15 @@ export async function syncBusinessEntities(
     logger.info(colors.magenta(`Updating "${inputs.length}" business entities!`));
     await updateBusinessEntities(
       client,
-      inputs.map((input) => [input, businessEntityByTitle[input.title].id]),
+      inputs.map((input) => [input, businessEntityByTitle[input.title]!.id]),
     );
     logger.info(colors.green(`Successfully synced "${inputs.length}" business entities!`));
   } catch (err) {
     encounteredError = true;
     logger.info(
-      colors.red(`Failed to sync "${inputs.length}" business entities ! - ${err.message}`),
+      colors.red(
+        `Failed to sync "${inputs.length}" business entities ! - ${(err as Error).message}`,
+      ),
     );
   }
 
