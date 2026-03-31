@@ -1,6 +1,5 @@
 import { InitialViewState, OnConsentExpiry } from '@transcend-io/airgap.js-types';
-import { fetchAllPurposes } from '@transcend-io/sdk';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { fetchAllPurposes, makeGraphQLRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';

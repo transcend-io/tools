@@ -2,14 +2,18 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { fetchAllRequests, makeGraphQLRequest, APPROVE_PRIVACY_REQUEST } from '../graphql/index.js';
+import { fetchAllRequests, APPROVE_PRIVACY_REQUEST } from '../graphql/index.js';
 import { getFileMetadataForPrivacyRequests } from './getFileMetadataForPrivacyRequests.js';
 import { streamPrivacyRequestFiles } from './streamPrivacyRequestFiles.js';
 

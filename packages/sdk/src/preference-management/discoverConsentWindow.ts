@@ -1,6 +1,5 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
-import type { Logger } from '@transcend-io/utils';
-import { startOfUtcDay, DAY_MS } from '@transcend-io/utils';
+import { startOfUtcDay, DAY_MS, type Logger } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import type { Got } from 'got';
 

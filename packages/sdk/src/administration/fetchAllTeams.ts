@@ -1,8 +1,8 @@
 import { ScopeName } from '@transcend-io/privacy-types';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { TEAMS } from './gqls/team.js';
 
 export interface Team {
@@ -44,9 +44,14 @@ const PAGE_SIZE = 20;
  * Fetch all teams in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All teams in the organization
  */
-export async function fetchAllTeams(client: GraphQLClient): Promise<Team[]> {
+export async function fetchAllTeams(
+  client: GraphQLClient,
+  options: { /** Logger instance */ logger: Logger },
+): Promise<Team[]> {
+  const { logger } = options;
   const teams: Team[] = [];
   let offset = 0;
 

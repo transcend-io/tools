@@ -7,8 +7,7 @@ import {
   RequestActionObjectResolver,
   SubDataPointDataSubCategoryGuessStatus,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { ApiKey } from '@transcend-io/sdk';
+import { makeGraphQLRequest, ApiKey } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { mapSeries, map } from '@transcend-io/utils';
 /* eslint-disable max-lines */

@@ -1,7 +1,7 @@
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { USERS } from './gqls/user.js';
 
 export interface User {
@@ -19,9 +19,14 @@ const PAGE_SIZE = 20;
  * Fetch all users in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All users in the organization
  */
-export async function fetchAllUsers(client: GraphQLClient): Promise<User[]> {
+export async function fetchAllUsers(
+  client: GraphQLClient,
+  options: { /** Logger instance */ logger: Logger },
+): Promise<User[]> {
+  const { logger } = options;
   const users: User[] = [];
   let offset = 0;
 

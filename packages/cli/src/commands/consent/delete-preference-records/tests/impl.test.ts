@@ -2,8 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import type { LocalContext } from '../../../../context.js';
-import { deletePreferenceRecords } from '../impl.js';
-import type { DeletePreferenceRecordsCommandFlags } from '../impl.js';
+import { deletePreferenceRecords, type DeletePreferenceRecordsCommandFlags } from '../impl.js';
 
 const H = vi.hoisted(() => {
   const logger = {

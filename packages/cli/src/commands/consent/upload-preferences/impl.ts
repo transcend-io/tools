@@ -1,8 +1,7 @@
 import { readdirSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
-import { map } from '@transcend-io/utils';
-import { splitCsvToList } from '@transcend-io/utils';
+import { map, splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';

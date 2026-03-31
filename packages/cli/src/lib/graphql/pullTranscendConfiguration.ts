@@ -5,9 +5,12 @@ import {
   ActionItemCode,
   RetentionType,
 } from '@transcend-io/privacy-types';
-import { fetchAllIdentifiers, fetchAllPurposesAndPreferences } from '@transcend-io/sdk';
-import { fetchAllTeams } from '@transcend-io/sdk';
-import { fetchApiKeys } from '@transcend-io/sdk';
+import {
+  fetchAllIdentifiers,
+  fetchAllPurposesAndPreferences,
+  fetchAllTeams,
+  fetchApiKeys,
+} from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { flatten, keyBy, mapValues } from 'lodash-es';
@@ -188,7 +191,9 @@ export async function pullTranscendConfiguration(
       ? fetchAllDataSubjects(client)
       : [],
     // Grab API keys
-    resources.includes(TranscendPullResource.ApiKeys) ? fetchApiKeys({}, client, true) : [],
+    resources.includes(TranscendPullResource.ApiKeys)
+      ? fetchApiKeys({}, client, true, { logger })
+      : [],
     // Fetch the data silos
     resources.includes(TranscendPullResource.DataSilos)
       ? fetchEnrichedDataSilos(client, {
@@ -280,7 +285,7 @@ export async function pullTranscendConfiguration(
       ? fetchAllActionItemCollections(client)
       : [],
     // Fetch teams
-    resources.includes(TranscendPullResource.Teams) ? fetchAllTeams(client) : [],
+    resources.includes(TranscendPullResource.Teams) ? fetchAllTeams(client, { logger }) : [],
     // Fetch policies
     resources.includes(TranscendPullResource.Policies) ? fetchAllPolicies(client) : [],
     // Fetch privacy centers

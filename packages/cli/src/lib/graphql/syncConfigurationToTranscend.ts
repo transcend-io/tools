@@ -1,6 +1,4 @@
-import type { Identifier } from '@transcend-io/sdk';
-import { fetchApiKeys } from '@transcend-io/sdk';
-import { syncTeams } from '@transcend-io/sdk';
+import { fetchApiKeys, syncTeams, type Identifier } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -119,7 +117,7 @@ export async function syncConfigurationToTranscend(
     dataSilos
       .map((dataSilo) => dataSilo['api-key-title'] || [])
       .reduce((acc, lst) => acc + lst.length, 0) > 0
-      ? fetchApiKeys(input, client)
+      ? fetchApiKeys(input, client, false, { logger })
       : {},
   ]);
 
@@ -150,7 +148,7 @@ export async function syncConfigurationToTranscend(
   }
 
   if (teams) {
-    const teamsSuccess = await syncTeams(client, teams);
+    const teamsSuccess = await syncTeams(client, teams, { logger });
     encounteredError = encounteredError || !teamsSuccess;
   }
 

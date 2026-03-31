@@ -1,7 +1,7 @@
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { DETERMINE_LOGIN_METHOD, ASSUME_ROLE, LOGIN } from './gqls/auth.js';
 
 export interface OrganizationPreview {
@@ -34,11 +34,14 @@ export async function loginUser(
   {
     email,
     password,
+    logger,
   }: {
     /** Email of user */
     email: string;
     /** Password of user */
     password: string;
+    /** Logger instance */
+    logger: Logger;
   },
 ): Promise<{
   /** Cookie to be used to make subsequent requests */
@@ -105,11 +108,14 @@ export async function assumeRole(
   {
     email,
     roleId,
+    logger,
   }: {
     /** Email of user */
     email: string;
     /** Role of user assuming into */
     roleId: string;
+    /** Logger instance */
+    logger: Logger;
   },
 ): Promise<void> {
   const {

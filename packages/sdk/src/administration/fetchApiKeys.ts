@@ -1,8 +1,8 @@
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, difference } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { API_KEYS } from './gqls/apiKey.js';
 
 export interface ApiKey {
@@ -27,10 +27,19 @@ const ADMIN_LINK = 'https://app.transcend.io/infrastructure/api-keys';
  * Fetch all API keys in an organization
  *
  * @param client - Client
- * @param titles - Filter on titles
+ * @param options - Options
  * @returns API keys
  */
-export async function fetchAllApiKeys(client: GraphQLClient, titles?: string[]): Promise<ApiKey[]> {
+export async function fetchAllApiKeys(
+  client: GraphQLClient,
+  options: {
+    /** Filter on titles */
+    titles?: string[];
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<ApiKey[]> {
+  const { titles, logger } = options;
   const apiKeys: ApiKey[] = [];
   let offset = 0;
 
@@ -63,23 +72,26 @@ export async function fetchAllApiKeys(client: GraphQLClient, titles?: string[]):
  * @param apiKeyInputs - API keys to fetch metadata on
  * @param client - GraphQL client
  * @param fetchAll - When true, fetch all API keys
+ * @param options - Options
  * @returns A map from apiKey title to Identifier
  */
 export async function fetchApiKeys(
   { 'api-keys': apiKeyInputs = [], 'data-silos': dataSilos = [] }: FetchApiKeysInput,
   client: GraphQLClient,
   fetchAll = false,
+  options: { /** Logger instance */ logger: Logger },
 ): Promise<{ [k in string]: ApiKey }> {
+  const { logger } = options;
   logger.info(`Fetching ${fetchAll ? 'all' : apiKeyInputs.length} API keys...`);
   const titles = apiKeyInputs.map(({ title }) => title);
   const expectedApiKeyTitles = uniq(
     dataSilos.map((silo) => silo['api-key-title']).filter((x): x is string => !!x),
   );
   const allTitlesExpected = [...expectedApiKeyTitles, ...titles];
-  const apiKeys = await fetchAllApiKeys(
-    client,
-    fetchAll ? undefined : [...expectedApiKeyTitles, ...titles],
-  );
+  const apiKeys = await fetchAllApiKeys(client, {
+    titles: fetchAll ? undefined : [...expectedApiKeyTitles, ...titles],
+    logger,
+  });
 
   // Create a map
   const apiKeysByTitle = keyBy(apiKeys, 'title');
