@@ -29,6 +29,3 @@ export function getPreferenceIdentifiersFromRow({
       a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
   );
 }
-
-/** Sentinel value indicating no timestamp/format column was selected */
-export const NONE_PREFERENCE_MAP = '[NONE]';
