@@ -1,4 +1,4 @@
-import { RequestDataSiloStatus, RequestStatus } from '@transcend-io/privacy-types';
+import { RequestAction, RequestDataSiloStatus, RequestStatus } from '@transcend-io/privacy-types';
 
 import { buildExamples } from '../../../../lib/docgen/buildExamples.js';
 import type { SkipRequestDataSilosCommandFlags } from './impl.js';
@@ -38,6 +38,15 @@ const examples = buildExamples<SkipRequestDataSilosCommandFlags>(
         dataSiloId: '70810f2e-cf90-43f6-9776-901a5950599f',
         statuses: [RequestStatus.Compiling, RequestStatus.Secondary],
         status: RequestDataSiloStatus.Resolved,
+      },
+    },
+    {
+      description: 'Skip only ERASURE jobs for a data silo',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        dataSiloId: '70810f2e-cf90-43f6-9776-901a5950599f',
+        statuses: [RequestStatus.Compiling, RequestStatus.Secondary],
+        actionTypes: [RequestAction.Erasure],
       },
     },
   ],

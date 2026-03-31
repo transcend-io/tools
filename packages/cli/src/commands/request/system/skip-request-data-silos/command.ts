@@ -1,5 +1,10 @@
 import { buildCommand } from '@stricli/core';
-import { RequestDataSiloStatus, RequestStatus, ScopeName } from '@transcend-io/privacy-types';
+import {
+  RequestAction,
+  RequestDataSiloStatus,
+  RequestStatus,
+  ScopeName,
+} from '@transcend-io/privacy-types';
 
 import {
   createAuthParameter,
@@ -35,11 +40,23 @@ export const skipRequestDataSilosCommand = buildCommand({
         brief: 'The status to set the request data silo job to',
         default: RequestDataSiloStatus.Skipped,
       },
+      actionTypes: {
+        kind: 'enum',
+        values: Object.values(RequestAction),
+        variadic: ',',
+        brief:
+          'Filter by request action types (e.g. ACCESS,ERASURE). ' +
+          'Only request data silo jobs for these action types will be skipped.',
+        optional: true,
+      },
     },
   },
   docs: {
     brief: 'Skip request data silos',
     fullDescription:
-      'This command allows for bulk skipping all open privacy request jobs for a particular data silo. This command is useful if you want to disable a data silo and then clear out any active privacy requests that are still queued up for that data silo.',
+      'This command allows for bulk skipping all open privacy request jobs for a particular data silo. ' +
+      'This command is useful if you want to disable a data silo and then clear out any active privacy ' +
+      'requests that are still queued up for that data silo. ' +
+      'Use --actionTypes to target specific data actions (e.g. only ERASURE jobs).',
   },
 });
