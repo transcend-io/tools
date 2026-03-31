@@ -1,5 +1,6 @@
-import { classifyLogLevel } from '@transcend-io/utils';
 import { describe, it, expect } from 'vitest';
+
+import { classifyLogLevel } from '../logRotation.js';
 
 describe('classifyLogLevel', () => {
   it('detects explicit worker tags', () => {

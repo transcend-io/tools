@@ -1,5 +1,6 @@
-import { buildExportStatus } from '@transcend-io/utils';
 import { describe, it, expect } from 'vitest';
+
+import { buildExportStatus } from '../logRotation.js';
 
 describe('buildExportStatus', () => {
   it('returns expected paths for all export artifacts', () => {

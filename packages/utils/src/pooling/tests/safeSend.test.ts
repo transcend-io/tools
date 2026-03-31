@@ -1,7 +1,8 @@
 import type { ChildProcess } from 'node:child_process';
 
-import { safeSend } from '@transcend-io/utils';
 import { describe, it, expect, vi } from 'vitest';
+
+import { safeSend } from '../spawnWorkerProcess.js';
 
 /**
  * Make a ChildProcess-shaped object.
