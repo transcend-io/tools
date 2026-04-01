@@ -245,7 +245,7 @@ export async function syncConfigurationToTranscend(
   if (attributes) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${attributes.length}" attributes...`));
-    const existingAttributes = await fetchAllAttributes(client);
+    const existingAttributes = await fetchAllAttributes(client, { logger });
     await map(
       attributes,
       async (attribute) => {
@@ -256,6 +256,7 @@ export async function syncConfigurationToTranscend(
           await syncAttribute(client, attribute, {
             existingAttribute: existing,
             deleteExtraAttributeValues,
+            logger,
           });
           logger.info(colors.green(`Successfully synced attribute "${attribute.name}"!`));
         } catch (err) {

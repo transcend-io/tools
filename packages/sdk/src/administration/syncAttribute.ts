@@ -1,11 +1,9 @@
 import { AttributeKeyType, AttributeSupportedResourceType } from '@transcend-io/privacy-types';
-import { map } from '@transcend-io/utils';
-import colors from 'colors';
+import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, difference, groupBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { Attribute } from './fetchAllAttributes.js';
 import {
   CREATE_ATTRIBUTE,
@@ -50,11 +48,14 @@ export async function syncAttribute(
   {
     existingAttribute,
     deleteExtraAttributeValues,
+    logger,
   }: {
     /** The existing attribute configuration if it exists */
     existingAttribute?: Attribute;
     /** When true, delete extra attributes not specified in the list of values */
     deleteExtraAttributeValues?: boolean;
+    /** Logger instance */
+    logger: Logger;
   },
 ): Promise<void> {
   // attribute key input
@@ -120,7 +121,7 @@ export async function syncAttribute(
       },
       logger,
     });
-    logger.info(colors.green(`Created ${newValues.length} attribute values`));
+    logger.info(`Created ${newValues.length} attribute values`);
   }
 
   // Update existing attribute values
@@ -138,7 +139,7 @@ export async function syncAttribute(
       },
       logger,
     });
-    logger.info(colors.green(`Updated ${existingValues.length} attribute values`));
+    logger.info(`Updated ${existingValues.length} attribute values`);
   }
 
   // Delete removed attribute values
@@ -155,6 +156,6 @@ export async function syncAttribute(
         concurrency: 10,
       },
     );
-    logger.info(colors.green(`Deleted ${removedValues.length} attribute values`));
+    logger.info(`Deleted ${removedValues.length} attribute values`);
   }
 }

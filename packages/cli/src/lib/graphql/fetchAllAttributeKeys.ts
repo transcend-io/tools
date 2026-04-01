@@ -1,5 +1,4 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { ATTRIBUTE_KEYS_REQUESTS } from '@transcend-io/sdk';
+import { makeGraphQLRequest, ATTRIBUTE_KEYS_REQUESTS } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';

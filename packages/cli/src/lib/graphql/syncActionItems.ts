@@ -1,5 +1,4 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { type Attribute, fetchAllAttributes } from '@transcend-io/sdk';
+import { makeGraphQLRequest, fetchAllAttributes, type Attribute } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -173,7 +172,7 @@ export async function syncActionItems(
   const [existingActionItems, existingActionItemCollections, attributeKeys] = await Promise.all([
     fetchAllActionItems(client),
     fetchAllActionItemCollections(client),
-    hasAttributes ? fetchAllAttributes(client) : [],
+    hasAttributes ? fetchAllAttributes(client, { logger }) : [],
   ]);
 
   // Look up by title

@@ -5,8 +5,7 @@ import type {
   Controllership,
   RetentionType,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import type { Region } from '@transcend-io/sdk';
+import { makeGraphQLRequest, type Region } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';

@@ -232,7 +232,9 @@ export async function pullTranscendConfiguration(
         ]
       : [],
     // Fetch attributes
-    resources.includes(TranscendPullResource.Attributes) ? fetchAllAttributes(client) : [],
+    resources.includes(TranscendPullResource.Attributes)
+      ? fetchAllAttributes(client, { logger })
+      : [],
     // Fetch email templates
     resources.includes(TranscendPullResource.Templates) ? fetchAllTemplates(client) : [],
     // Fetch identifiers
