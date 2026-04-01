@@ -90,7 +90,7 @@ export async function syncCookies(client: GraphQLClient, cookies: CookieInput[])
     logger.info(colors.green(`Successfully synced ${cookies.length} cookies!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create cookies! - ${err.message}`));
+    logger.error(colors.red(`Failed to create cookies! - ${err.message}`));
   }
 
   return !encounteredError;

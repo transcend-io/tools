@@ -112,7 +112,7 @@ export async function syncPromptPartials(
     logger.info(colors.green(`Successfully synced ${newPromptPartials.length} prompt partials!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create prompt partials! - ${err.message}`));
+    logger.error(colors.red(`Failed to create prompt partials! - ${err.message}`));
   }
 
   // Update existing promptPartials
@@ -127,7 +127,7 @@ export async function syncPromptPartials(
     );
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create prompt partials! - ${err.message}`));
+    logger.error(colors.red(`Failed to create prompt partials! - ${err.message}`));
   }
 
   logger.info(colors.green(`Synced "${promptPartials.length}" prompt partials!`));

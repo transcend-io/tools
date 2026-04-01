@@ -104,7 +104,7 @@ export async function syncAgents(client: GraphQLClient, inputs: AgentInput[]): P
       logger.info(colors.green(`Successfully synced agent "${agent.name}"!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync agent "${agent.name}"! - ${err.message}`));
+      logger.error(colors.red(`Failed to sync agent "${agent.name}"! - ${err.message}`));
     }
   });
 
@@ -118,7 +118,7 @@ export async function syncAgents(client: GraphQLClient, inputs: AgentInput[]): P
     logger.info(colors.green(`Successfully synced "${inputs.length}" agents!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to sync "${inputs.length}" agents ! - ${err.message}`));
+    logger.error(colors.red(`Failed to sync "${inputs.length}" agents ! - ${err.message}`));
   }
 
   return !encounteredError;

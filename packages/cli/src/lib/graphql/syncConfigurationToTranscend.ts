@@ -133,7 +133,7 @@ export async function syncConfigurationToTranscend(
       logger.info(colors.green('Successfully synced consent manager!'));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync consent manager! - ${err.message}`));
+      logger.error(colors.red(`Failed to sync consent manager! - ${err.message}`));
     }
   }
 
@@ -168,7 +168,7 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced template "${template.title}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync template "${template.title}"! - ${err.message}`));
+          logger.error(colors.red(`Failed to sync template "${template.title}"! - ${err.message}`));
         }
       },
       {
@@ -260,7 +260,9 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced attribute "${attribute.name}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync attribute "${attribute.name}"! - ${err.message}`));
+          logger.error(
+            colors.red(`Failed to sync attribute "${attribute.name}"! - ${err.message}`),
+          );
         }
       },
       {
@@ -292,7 +294,7 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync enricher "${enricher.title}"! - ${err.message}`));
+          logger.error(colors.red(`Failed to sync enricher "${enricher.title}"! - ${err.message}`));
         }
       },
       {
@@ -364,7 +366,7 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced action "${action.type}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync action "${action.type}"! - ${err.message}`));
+          logger.error(colors.red(`Failed to sync action "${action.type}"! - ${err.message}`));
         }
       },
       {

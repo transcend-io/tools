@@ -128,7 +128,7 @@ export async function syncPromptGroups(
     logger.info(colors.green(`Successfully synced ${newPromptGroups.length} prompt groups!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create prompt groups! - ${err.message}`));
+    logger.error(colors.red(`Failed to create prompt groups! - ${err.message}`));
   }
 
   // Update existing promptGroups
@@ -158,7 +158,7 @@ export async function syncPromptGroups(
     );
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create prompt groups! - ${err.message}`));
+    logger.error(colors.red(`Failed to create prompt groups! - ${err.message}`));
   }
 
   logger.info(colors.green(`Synced "${promptGroups.length}" prompt groups!`));

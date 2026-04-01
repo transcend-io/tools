@@ -106,7 +106,7 @@ export async function syncAgentFiles(
       logger.info(colors.green(`Successfully synced agent file "${agentFile.name}"!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync agent file "${agentFile.name}"! - ${err.message}`));
+      logger.error(colors.red(`Failed to sync agent file "${agentFile.name}"! - ${err.message}`));
     }
   });
 
@@ -120,7 +120,7 @@ export async function syncAgentFiles(
     logger.info(colors.green(`Successfully synced "${inputs.length}" agent files!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to sync "${inputs.length}" agent files! - ${err.message}`));
+    logger.error(colors.red(`Failed to sync "${inputs.length}" agent files! - ${err.message}`));
   }
 
   return !encounteredError;

@@ -226,7 +226,7 @@ export async function syncActionItems(
       logger.info(colors.green(`Successfully created "${newActionItems.length}" actionItems!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to create action items! - ${err.message}`));
+      logger.error(colors.red(`Failed to create action items! - ${err.message}`));
     }
   }
 
@@ -244,7 +244,7 @@ export async function syncActionItems(
       logger.info(colors.green(`Successfully synced action item "${input.title}"!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync action item "${input.title}"! - ${err.message}`));
+      logger.error(colors.red(`Failed to sync action item "${input.title}"! - ${err.message}`));
     }
   });
 

@@ -151,7 +151,7 @@ export async function syncRepositories(
     logger.info(colors.green(`Successfully synced ${newRepositories.length} repositories!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create repositories! - ${err.message}`));
+    logger.error(colors.red(`Failed to create repositories! - ${err.message}`));
   }
 
   // Update existing repositories
@@ -176,7 +176,7 @@ export async function syncRepositories(
       );
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to update repositories! - ${err.message}`));
+      logger.error(colors.red(`Failed to update repositories! - ${err.message}`));
     }
 
     logger.info(colors.green(`Synced "${repositories.length}" repositories!`));

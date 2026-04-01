@@ -153,7 +153,7 @@ export async function syncBusinessEntities(
       logger.info(`Successfully synced business entity "${businessEntity.title}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(
+      logger.error(
         `Failed to sync business entity "${businessEntity.title}"! - ${(err as Error).message}`,
       );
     }
@@ -170,7 +170,7 @@ export async function syncBusinessEntities(
     logger.info(`Successfully synced "${inputs.length}" business entities!`);
   } catch (err) {
     encounteredError = true;
-    logger.info(
+    logger.error(
       `Failed to sync "${inputs.length}" business entities ! - ${(err as Error).message}`,
     );
   }

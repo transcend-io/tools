@@ -189,7 +189,7 @@ export async function syncSoftwareDevelopmentKits(
     );
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create software development kits! - ${err.message}`));
+    logger.error(colors.red(`Failed to create software development kits! - ${err.message}`));
   }
 
   // Update existing software development kits
@@ -221,7 +221,7 @@ export async function syncSoftwareDevelopmentKits(
       );
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to update software development kits! - ${err.message}`));
+      logger.error(colors.red(`Failed to update software development kits! - ${err.message}`));
     }
 
     logger.info(

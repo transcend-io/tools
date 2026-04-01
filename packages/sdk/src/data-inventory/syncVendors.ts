@@ -162,7 +162,7 @@ export async function syncVendors(
       logger.info(`Successfully synced vendor "${vendor.title}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(`Failed to sync vendor "${vendor.title}"! - ${(err as Error).message}`);
+      logger.error(`Failed to sync vendor "${vendor.title}"! - ${(err as Error).message}`);
     }
   });
 
@@ -177,7 +177,7 @@ export async function syncVendors(
     logger.info(`Successfully synced "${inputs.length}" vendors!`);
   } catch (err) {
     encounteredError = true;
-    logger.info(`Failed to sync "${inputs.length}" vendors ! - ${(err as Error).message}`);
+    logger.error(`Failed to sync "${inputs.length}" vendors ! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

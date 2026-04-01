@@ -88,7 +88,7 @@ export async function syncIntlMessages(
     logger.info(`Successfully synced ${messages.length} messages!`);
   } catch (err) {
     encounteredError = true;
-    logger.info(`Failed to create messages! - ${(err as Error).message}`);
+    logger.error(`Failed to create messages! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

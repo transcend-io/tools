@@ -60,7 +60,7 @@ export async function syncPrivacyCenter(
     logger.info(colors.green('Successfully synced privacy center!'));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create privacy center! - ${err.message}`));
+    logger.error(colors.red(`Failed to create privacy center! - ${err.message}`));
   }
 
   return !encounteredError;
