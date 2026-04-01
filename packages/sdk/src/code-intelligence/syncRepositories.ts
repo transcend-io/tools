@@ -1,13 +1,19 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries, map } from '@transcend-io/utils';
-import colors from 'colors';
+import { mapSeries, map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
-import { RepositoryInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllRepositories, Repository } from './fetchAllRepositories.js';
-import { UPDATE_REPOSITORIES, CREATE_REPOSITORY } from './gqls/index.js';
+import { UPDATE_REPOSITORIES, CREATE_REPOSITORY } from './gqls/repository.js';
+
+export interface RepositoryInput {
+  /** Title of repository */
+  name: string;
+  /** Description of the repository */
+  description?: string;
+  /** Github repository URL */
+  url: string;
+}
 
 const CHUNK_SIZE = 100;
 
@@ -16,6 +22,7 @@ const CHUNK_SIZE = 100;
  *
  * @param client - GraphQL client
  * @param input - Repository input
+ * @param options - Options
  * @returns Created repository
  */
 export async function createRepository(
@@ -36,7 +43,12 @@ export async function createRepository(
     /** Team names */
     teamNames?: string[];
   },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Repository> {
+  const { logger } = options;
   const {
     createRepository: { repository },
   } = await makeGraphQLRequest<{
@@ -49,7 +61,7 @@ export async function createRepository(
     variables: { input },
     logger,
   });
-  logger.info(colors.green(`Successfully created repository "${input.name}"!`));
+  logger.info(`Successfully created repository "${input.name}"!`);
   return repository;
 }
 
@@ -58,6 +70,7 @@ export async function createRepository(
  *
  * @param client - GraphQL client
  * @param inputs - Repository input
+ * @param options - Options
  * @returns Updated repositories
  */
 export async function updateRepositories(
@@ -80,7 +93,12 @@ export async function updateRepositories(
     /** Team names */
     teamNames?: string[];
   }[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Repository[]> {
+  const { logger } = options;
   const {
     updateRepositories: { repositories },
   } = await makeGraphQLRequest<{
@@ -97,7 +115,7 @@ export async function updateRepositories(
     },
     logger,
   });
-  logger.info(colors.green(`Successfully updated ${inputs.length} repositories!`));
+  logger.info(`Successfully updated ${inputs.length} repositories!`);
   return repositories;
 }
 
@@ -106,24 +124,30 @@ export async function updateRepositories(
  *
  * @param client - GraphQL client
  * @param repositories - Repositories
- * @param concurrency - Concurrency
+ * @param options - Options
  * @returns The repositories that were upserted and whether the sync was successful
  */
 export async function syncRepositories(
   client: GraphQLClient,
   repositories: RepositoryInput[],
-  concurrency = 20,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Concurrency */
+    concurrency?: number;
+  },
 ): Promise<{
   /** The repositories that were upserted */
   repositories: Repository[];
   /** If successful */
   success: boolean;
 }> {
+  const { logger, concurrency = 20 } = options;
   let encounteredError = false;
   const repos: Repository[] = [];
 
   // Index existing repositories
-  const existing = await fetchAllRepositories(client);
+  const existing = await fetchAllRepositories(client, { logger });
   const repositoryByName = keyBy(existing, 'name');
 
   // Determine which repositories are new vs existing
@@ -137,21 +161,21 @@ export async function syncRepositories(
     .filter(([, existing]) => !existing)
     .map(([repoInput]) => repoInput as RepositoryInput);
   try {
-    logger.info(colors.magenta(`Creating "${newRepositories.length}" new repositories...`));
+    logger.info(`Creating "${newRepositories.length}" new repositories...`);
     await map(
       newRepositories,
       async (repo) => {
-        const newRepo = await createRepository(client, repo);
+        const newRepo = await createRepository(client, repo, { logger });
         repos.push(newRepo);
       },
       {
         concurrency,
       },
     );
-    logger.info(colors.green(`Successfully synced ${newRepositories.length} repositories!`));
+    logger.info(`Successfully synced ${newRepositories.length} repositories!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create repositories! - ${err.message}`));
+    logger.error(`Failed to create repositories! - ${(err as Error).message}`);
   }
 
   // Update existing repositories
@@ -159,7 +183,7 @@ export async function syncRepositories(
     (x): x is [RepositoryInput, string] => !!x[1],
   );
   const chunks = chunk(existingRepositories, CHUNK_SIZE);
-  logger.info(colors.magenta(`Updating "${existingRepositories.length}" repositories...`));
+  logger.info(`Updating "${existingRepositories.length}" repositories...`);
 
   await mapSeries(chunks, async (chunk) => {
     try {
@@ -169,17 +193,16 @@ export async function syncRepositories(
           ...input,
           id,
         })),
+        { logger },
       );
       repos.push(...updatedRepos);
-      logger.info(
-        colors.green(`Successfully updated "${existingRepositories.length}" repositories!`),
-      );
+      logger.info(`Successfully updated "${existingRepositories.length}" repositories!`);
     } catch (err) {
       encounteredError = true;
-      logger.error(colors.red(`Failed to update repositories! - ${err.message}`));
+      logger.error(`Failed to update repositories! - ${(err as Error).message}`);
     }
 
-    logger.info(colors.green(`Synced "${repositories.length}" repositories!`));
+    logger.info(`Synced "${repositories.length}" repositories!`);
   });
 
   // Return true upon success

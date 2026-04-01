@@ -1,9 +1,9 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { SOFTWARE_DEVELOPMENT_KITS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { SOFTWARE_DEVELOPMENT_KITS } from './gqls/softwareDevelopmentKit.js';
 
 export interface SoftwareDevelopmentKit {
   /** ID of software development kit */
@@ -40,11 +40,17 @@ const PAGE_SIZE = 20;
  * Fetch all software development kits in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All software development kits in the organization
  */
 export async function fetchAllSoftwareDevelopmentKits(
   client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<SoftwareDevelopmentKit[]> {
+  const { logger } = options;
   const softwareDevelopmentKits: SoftwareDevelopmentKit[] = [];
   let offset = 0;
 
