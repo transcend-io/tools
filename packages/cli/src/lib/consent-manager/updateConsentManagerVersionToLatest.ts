@@ -1,11 +1,15 @@
 import { ConsentBundleType } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, fetchConsentManagerId } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  deployConsentManager,
+  fetchConsentManagerId,
+  updateConsentManagerToLatest,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { updateConsentManagerToLatest, deployConsentManager } from '../graphql/index.js';
 
 /**
  * Update the consent manager to latest version
@@ -40,10 +44,14 @@ export async function updateConsentManagerVersionToLatest({
         `Update Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}" to latest version...`,
       ),
     );
-    await updateConsentManagerToLatest(client, {
-      id: consentManagerId,
-      bundleType,
-    });
+    await updateConsentManagerToLatest(
+      client,
+      {
+        id: consentManagerId,
+        bundleType,
+      },
+      { logger },
+    );
     logger.info(
       colors.green(
         `Updated Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}" to latest version!`,
@@ -60,10 +68,14 @@ export async function updateConsentManagerVersionToLatest({
           `Deploying Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}"...`,
         ),
       );
-      await deployConsentManager(client, {
-        id: consentManagerId,
-        bundleType,
-      });
+      await deployConsentManager(
+        client,
+        {
+          id: consentManagerId,
+          bundleType,
+        },
+        { logger },
+      );
       logger.info(
         colors.green(
           `Deployed Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}"!`,

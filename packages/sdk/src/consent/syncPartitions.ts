@@ -1,16 +1,10 @@
-import {
-  CONSENT_PARTITIONS,
-  CREATE_CONSENT_PARTITION,
-  fetchConsentManagerId,
-  makeGraphQLRequest,
-} from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { difference } from 'lodash-es';
 
-import { PartitionInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { fetchConsentManagerId } from './fetchConsentManagerId.js';
+import { CONSENT_PARTITIONS, CREATE_CONSENT_PARTITION } from './gqls/consentManager.js';
 
 const PAGE_SIZE = 50;
 
@@ -23,23 +17,37 @@ export interface TranscendPartition {
   partition: string;
 }
 
+export interface PartitionInput {
+  /** Name of partition */
+  name: string;
+  /** Value of partition, cannot be pushed, can only be pulled */
+  partition?: string;
+}
+
 /**
  * Fetch the list of partitions
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns Partition list
  */
-export async function fetchPartitions(client: GraphQLClient): Promise<TranscendPartition[]> {
+export async function fetchPartitions(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<TranscendPartition[]> {
+  const { logger } = options;
   const partitions: TranscendPartition[] = [];
   let offset = 0;
 
-  // Fetch all partitions
   let shouldContinue = false;
   do {
     const {
       consentPartitions: { nodes },
     } = await makeGraphQLRequest<{
-      /** Consent experience */
+      /** Consent partitions */
       consentPartitions: {
         /** List */
         nodes: TranscendPartition[];
@@ -57,20 +65,25 @@ export async function fetchPartitions(client: GraphQLClient): Promise<TranscendP
 }
 
 /**
- * Sync the consent manager
+ * Sync the consent partitions
  *
  * @param client - GraphQL client
- * @param partitionInputs  - The partition input
- *@returns true on success
+ * @param partitionInputs - The partition inputs
+ * @param options - Options
+ * @returns True on success
  */
 export async function syncPartitions(
   client: GraphQLClient,
   partitionInputs: PartitionInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
-  // Grab the bundleId associated with this API key
+  const { logger } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
   let encounteredError = false;
-  const partitions = await fetchPartitions(client);
+  const partitions = await fetchPartitions(client, { logger });
   const newPartitionNames = difference(
     partitionInputs.map(({ name }) => name),
     partitions.map(({ name }) => name),
@@ -86,9 +99,9 @@ export async function syncPartitions(
         },
         logger,
       });
-      logger.info(colors.green(`Successfully created consent partition: ${name}!`));
+      logger.info(`Successfully created consent partition: ${name}!`);
     } catch (err) {
-      logger.error(colors.red(`Failed to create consent partition: ${name}! - ${err.message}`));
+      logger.error(`Failed to create consent partition: ${name}! - ${(err as Error).message}`);
       encounteredError = true;
     }
   });

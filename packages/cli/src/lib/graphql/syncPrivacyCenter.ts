@@ -1,11 +1,9 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { fetchPrivacyCenterId, makeGraphQLRequest, UPDATE_PRIVACY_CENTER } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
 import { PrivacyCenterInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
-import { UPDATE_PRIVACY_CENTER } from './gqls/index.js';
 
 /**
  * Sync the privacy center
@@ -22,7 +20,7 @@ export async function syncPrivacyCenter(
   logger.info(colors.magenta('Syncing privacy center...'));
 
   // Grab the privacy center ID
-  const privacyCenterId = await fetchPrivacyCenterId(client);
+  const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
   try {
     await makeGraphQLRequest(client, UPDATE_PRIVACY_CENTER, {
