@@ -24,8 +24,6 @@ export * from './privacyCenter.js';
 export * from './agent.js';
 export * from './agentFile.js';
 export * from './agentFunction.js';
-export * from './dataCategory.js';
 export * from './processingPurpose.js';
-export * from './processingActivity.js';
 export * from './sombraVersion.js';
 export * from './siloDiscoveryResult.js';

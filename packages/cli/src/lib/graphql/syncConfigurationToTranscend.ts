@@ -5,7 +5,9 @@ import {
   syncActionItems,
   syncAttribute,
   syncBusinessEntities,
+  syncDataCategories,
   syncIntlMessages,
+  syncProcessingActivities,
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
@@ -29,7 +31,6 @@ import { syncAgentFunctions } from './syncAgentFunctions.js';
 import { syncAgents } from './syncAgents.js';
 import { syncConsentManager } from './syncConsentManager.js';
 import { syncCookies } from './syncCookies.js';
-import { syncDataCategories } from './syncDataCategories.js';
 import { syncDataFlows } from './syncDataFlows.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
@@ -38,7 +39,6 @@ import { syncIdentifier } from './syncIdentifier.js';
 import { syncPartitions } from './syncPartitions.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
-import { syncProcessingActivities } from './syncProcessingActivities.js';
 import { syncProcessingPurposes } from './syncProcessingPurposes.js';
 import { syncTemplate } from './syncTemplates.js';
 
@@ -192,7 +192,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync data categories
   if (dataCategories) {
-    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories);
+    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories, { logger });
     encounteredError = encounteredError || !dataCategoriesSuccess;
   }
 
@@ -467,7 +467,9 @@ export async function syncConfigurationToTranscend(
 
   // Update processing activities
   if (processingActivities) {
-    const processingActivitySuccess = await syncProcessingActivities(client, processingActivities);
+    const processingActivitySuccess = await syncProcessingActivities(client, processingActivities, {
+      logger,
+    });
     encounteredError = encounteredError || !processingActivitySuccess;
   }
 

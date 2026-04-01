@@ -5,11 +5,12 @@ import type {
   Controllership,
   RetentionType,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest, type Region } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { PROCESSING_ACTIVITIES } from './gqls/index.js';
+import type { Region } from '../administration/formatRegions.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { PROCESSING_ACTIVITIES } from './gqls/processingActivity.js';
 
 export interface ProcessingActivity {
   /** ID of processing activity */
@@ -91,15 +92,20 @@ const PAGE_SIZE = 20;
  * Fetch all processingActivities in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All processingActivities in the organization
  */
 export async function fetchAllProcessingActivities(
   client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<ProcessingActivity[]> {
+  const { logger } = options;
   const processingActivities: ProcessingActivity[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {

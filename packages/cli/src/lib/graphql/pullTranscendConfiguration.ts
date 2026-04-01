@@ -11,10 +11,12 @@ import {
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
+  fetchAllDataCategories,
   fetchAllIdentifiers,
   fetchAllMessages,
   fetchAllPromptGroups,
   fetchAllPromptPartials,
+  fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
   fetchAllTeams,
@@ -75,11 +77,9 @@ import { fetchAllAgentFunctions } from './fetchAllAgentFunctions.js';
 import { fetchAllAgents } from './fetchAllAgents.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 import { fetchAllCookies } from './fetchAllCookies.js';
-import { fetchAllDataCategories } from './fetchAllDataCategories.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
-import { fetchAllProcessingActivities } from './fetchAllProcessingActivities.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
 import {
@@ -249,7 +249,7 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch processing activities
     resources.includes(TranscendPullResource.ProcessingActivities)
-      ? fetchAllProcessingActivities(client)
+      ? fetchAllProcessingActivities(client, { logger })
       : [],
     // Fetch consent manager
     resources.includes(TranscendPullResource.ConsentManager)
@@ -278,7 +278,9 @@ export async function pullTranscendConfiguration(
     // Fetch vendors
     resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client, { logger }) : [],
     // Fetch dataCategories
-    resources.includes(TranscendPullResource.DataCategories) ? fetchAllDataCategories(client) : [],
+    resources.includes(TranscendPullResource.DataCategories)
+      ? fetchAllDataCategories(client, { logger })
+      : [],
     // Fetch dataCategories
     resources.includes(TranscendPullResource.ProcessingPurposes)
       ? fetchAllProcessingPurposes(client)
