@@ -296,7 +296,9 @@ export async function pullTranscendConfiguration(
     // Fetch partitions
     resources.includes(TranscendPullResource.Partitions) ? fetchPartitions(client) : [],
     // Fetch assessments
-    resources.includes(TranscendPullResource.Assessments) ? fetchAllAssessments(client, { logger }) : [],
+    resources.includes(TranscendPullResource.Assessments)
+      ? fetchAllAssessments(client, { logger })
+      : [],
     // Fetch assessmentTemplates
     resources.includes(TranscendPullResource.AssessmentTemplates)
       ? fetchAllAssessmentTemplates(client)
