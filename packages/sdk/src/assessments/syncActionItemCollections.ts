@@ -1,28 +1,46 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { TranscendProduct } from '@transcend-io/privacy-types';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { ActionItemCollectionInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import {
   ActionItemCollection,
   fetchAllActionItemCollections,
 } from './fetchAllActionItemCollections.js';
-import { UPDATE_ACTION_ITEM_COLLECTION, CREATE_ACTION_ITEM_COLLECTION } from './gqls/index.js';
+import {
+  CREATE_ACTION_ITEM_COLLECTION,
+  UPDATE_ACTION_ITEM_COLLECTION,
+} from './gqls/actionItemCollection.js';
+
+export interface ActionItemCollectionInput {
+  /** The display title of the collection */
+  title: string;
+  /** Locations where collection is shown */
+  productLine: TranscendProduct;
+  /** Description of collection */
+  description?: string;
+  /** Whether hidden */
+  hidden?: boolean;
+}
 
 /**
- * Input to create a new action item collection
+ * Create a new action item collection
  *
  * @param client - GraphQL client
  * @param actionItemCollection - Input
+ * @param options - Options
  * @returns Created action item collection
  */
 export async function createActionItemCollection(
   client: GraphQLClient,
   actionItemCollection: ActionItemCollectionInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<ActionItemCollection, 'id' | 'title'>> {
+  const { logger } = options;
   const input = {
     title: actionItemCollection.title,
     description: actionItemCollection.description || '',
@@ -44,17 +62,23 @@ export async function createActionItemCollection(
 }
 
 /**
- * Input to update actionItem collection
+ * Update an action item collection
  *
  * @param client - GraphQL client
  * @param input - Input to update
  * @param actionItemCollectionId - ID of action item collection to update
+ * @param options - Options
  */
 export async function updateActionItemCollection(
   client: GraphQLClient,
   input: ActionItemCollectionInput,
   actionItemCollectionId: string,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEM_COLLECTION, {
     variables: {
       input: {
@@ -74,53 +98,53 @@ export async function updateActionItemCollection(
  *
  * @param client - GraphQL client
  * @param inputs - Inputs to create
+ * @param options - Options
  * @returns True if run without error, returns false if an error occurred
  */
 export async function syncActionItemCollections(
   client: GraphQLClient,
   inputs: ActionItemCollectionInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
+  const { logger } = options;
   let encounteredError = false;
-  // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" action item collections...`));
+  logger.info(`Syncing "${inputs.length}" action item collections...`);
 
-  // Fetch existing
-  const existingActionItemCollections = await fetchAllActionItemCollections(client);
+  const existingActionItemCollections = await fetchAllActionItemCollections(client, { logger });
 
-  // Look up by title
   const collectionByTitle: { [k in string]: ActionItemCollection } = keyBy(
     existingActionItemCollections,
     'title',
   );
 
-  // Create new actionItems
   const newCollections = inputs.filter((input) => !collectionByTitle[input.title]);
 
-  // Create new actionItem collections
   await mapSeries(newCollections, async (input) => {
     try {
-      await createActionItemCollection(client, input);
-      logger.info(colors.green(`Successfully created action item collection "${input.title}"!`));
+      await createActionItemCollection(client, input, { logger });
+      logger.info(`Successfully created action item collection "${input.title}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(
-        colors.red(`Failed to create action item collection "${input.title}"! - ${err.message}`),
+      logger.error(
+        `Failed to create action item collection "${input.title}"! - ${(err as Error).message}`,
       );
     }
   });
 
-  // Update all actionItems
   const actionItemsToUpdate = inputs
     .map((input) => [input, collectionByTitle[input.title]?.id])
     .filter((x): x is [ActionItemCollectionInput, string] => !!x[1]);
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
-      await updateActionItemCollection(client, input, actionItemId);
-      logger.info(colors.green(`Successfully synced action item collection "${input.title}"!`));
+      await updateActionItemCollection(client, input, actionItemId, { logger });
+      logger.info(`Successfully synced action item collection "${input.title}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(
-        colors.red(`Failed to sync action item collection "${input.title}"! - ${err.message}`),
+      logger.error(
+        `Failed to sync action item collection "${input.title}"! - ${(err as Error).message}`,
       );
     }
   });

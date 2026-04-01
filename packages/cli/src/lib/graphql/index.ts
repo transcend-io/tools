@@ -1,7 +1,6 @@
 export * from './createTranscendConsentGotInstance.js';
 export * from './deployConsentManager.js';
 export * from './fetchActiveSiloDiscoPlugin.js';
-export * from './fetchAllActionItems.js';
 export * from './fetchAllActions.js';
 export * from './fetchAllAgentFiles.js';
 export * from './fetchAllAgentFunctions.js';
@@ -32,8 +31,6 @@ export * from './gqls/index.js';
 export * from './pullTranscendConfiguration.js';
 export * from './retryRequestEnricher.js';
 export * from './syncAction.js';
-export * from './syncActionItemCollections.js';
-export * from './syncActionItems.js';
 export * from './syncAgentFiles.js';
 export * from './syncAgentFunctions.js';
 export * from './syncAgents.js';
