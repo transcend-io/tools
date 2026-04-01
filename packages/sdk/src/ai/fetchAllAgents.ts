@@ -1,9 +1,9 @@
 import { LargeLanguageModelClient } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { AGENTS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { AGENTS } from './gqls/agent.js';
 
 export interface Agent {
   /** ID of agent */
@@ -60,22 +60,27 @@ const PAGE_SIZE = 20;
  * Fetch all agents in the organization
  *
  * @param client - GraphQL client
- * @param filterBy - Filter by
+ * @param options - Options
  * @returns All agents in the organization
  */
 export async function fetchAllAgents(
   client: GraphQLClient,
-  filterBy: {
-    /** Names of the agents to filter for */
-    names?: string[];
-    /** IDs of agents */
-    agentIds?: string[];
-  } = {},
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Filter by */
+    filterBy?: {
+      /** Names of the agents to filter for */
+      names?: string[];
+      /** IDs of agents */
+      agentIds?: string[];
+    };
+  },
 ): Promise<Agent[]> {
+  const { logger, filterBy = {} } = options;
   const agents: Agent[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {

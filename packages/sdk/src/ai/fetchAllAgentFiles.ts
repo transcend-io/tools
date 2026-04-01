@@ -1,9 +1,9 @@
 import { PromptFilePurpose } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { AGENT_FILES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { AGENT_FILES } from './gqls/agentFile.js';
 
 export interface AgentFile {
   /** ID of agentFile */
@@ -22,8 +22,6 @@ export interface AgentFile {
   purpose: PromptFilePurpose;
 }
 
-const PAGE_SIZE = 20;
-
 export interface AgentFileFilterBy {
   /** Filter by remote file IDs */
   fileIds?: string[];
@@ -33,21 +31,28 @@ export interface AgentFileFilterBy {
   initialFileNames?: string[];
 }
 
+const PAGE_SIZE = 20;
+
 /**
- * Fetch all agentFiles in the organization
+ * Fetch all agent files in the organization
  *
  * @param client - GraphQL client
- * @param filterBy - Filter by options
- * @returns All agentFiles in the organization
+ * @param options - Options
+ * @returns All agent files in the organization
  */
 export async function fetchAllAgentFiles(
   client: GraphQLClient,
-  filterBy: AgentFileFilterBy = {},
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Filter by */
+    filterBy?: AgentFileFilterBy;
+  },
 ): Promise<AgentFile[]> {
+  const { logger, filterBy = {} } = options;
   const agentFiles: AgentFile[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {

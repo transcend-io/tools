@@ -11,7 +11,12 @@ import {
   LargeLanguageModelClient,
 } from '@transcend-io/privacy-types';
 import {
+  type Agent,
+  type AgentFile,
+  type AgentFileFilterBy,
   buildTranscendGraphQLClient,
+  fetchAllAgentFiles,
+  fetchAllAgents,
   fetchAllLargeLanguageModels,
   fetchAllPromptThreads,
   fetchPromptsWithVariables,
@@ -32,13 +37,6 @@ import { groupBy, keyBy, uniq, chunk } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  Agent,
-  AgentFile,
-  AgentFileFilterBy,
-  fetchAllAgentFiles,
-  fetchAllAgents,
-} from '../graphql/index.js';
 
 /**
  * An LLM Prompt definition
@@ -279,7 +277,7 @@ export class TranscendPromptManager<
         promptTitles,
       }),
       fetchAllLargeLanguageModels(this.graphQLClient, { logger }),
-      fetchAllAgents(this.graphQLClient, { names: agentNames }),
+      fetchAllAgents(this.graphQLClient, { logger, filterBy: { names: agentNames } }),
     ]);
     this.agentsByName = keyBy(agents, 'name');
     this.agentsByAgentId = keyBy(agents, 'agentId');
@@ -342,7 +340,8 @@ export class TranscendPromptManager<
       return agent;
     }
     const [remoteAgent] = await fetchAllAgents(this.graphQLClient, {
-      names: [name],
+      logger,
+      filterBy: { names: [name] },
     });
     if (!remoteAgent) {
       return undefined;
@@ -389,7 +388,8 @@ export class TranscendPromptManager<
     const remoteAgents: Agent[] = [];
     await mapSeries(chunkedNames, async (chunkedName) => {
       const pageOfAgents = await fetchAllAgents(this.graphQLClient, {
-        names: chunkedName,
+        logger,
+        filterBy: { names: chunkedName },
       });
       pageOfAgents.forEach((agent) => {
         this.agentsByName[agent.name] = agent;
@@ -407,7 +407,7 @@ export class TranscendPromptManager<
    * @returns The files found matching the filter
    */
   getAgentFiles(filterBy: AgentFileFilterBy): Promise<AgentFile[]> {
-    return fetchAllAgentFiles(this.graphQLClient, filterBy);
+    return fetchAllAgentFiles(this.graphQLClient, { logger, filterBy });
   }
 
   /**

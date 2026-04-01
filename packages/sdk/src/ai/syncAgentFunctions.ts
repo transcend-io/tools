@@ -1,25 +1,38 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
+import type { JSONSchema7 } from 'json-schema';
 import { keyBy } from 'lodash-es';
 
-import { AgentFunctionInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllAgentFunctions, AgentFunction } from './fetchAllAgentFunctions.js';
-import { UPDATE_AGENT_FUNCTIONS, CREATE_AGENT_FUNCTION } from './gqls/index.js';
+import { UPDATE_AGENT_FUNCTIONS, CREATE_AGENT_FUNCTION } from './gqls/agentFunction.js';
+
+export interface AgentFunctionInput {
+  /** Name of the agent function */
+  name: string;
+  /** Description of the agent function */
+  description: string;
+  /** The JSON schema parameters (string or parsed) */
+  parameters: JSONSchema7 | string;
+}
 
 /**
- * Input to create a new agent function
+ * Create a new agent function
  *
  * @param client - GraphQL client
  * @param agentFunction - Input
+ * @param options - Options
  * @returns Created agent function
  */
 export async function createAgentFunction(
   client: GraphQLClient,
   agentFunction: AgentFunctionInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<AgentFunction, 'id' | 'name'>> {
+  const { logger } = options;
   const input = {
     name: agentFunction.name,
     description: agentFunction.description,
@@ -42,15 +55,21 @@ export async function createAgentFunction(
 }
 
 /**
- * Input to update agent functions
+ * Update agent functions
  *
  * @param client - GraphQL client
  * @param agentFunctionIdPairs - [AgentFunctionInput, agentFunctionId] list
+ * @param options - Options
  */
 export async function updateAgentFunctions(
   client: GraphQLClient,
   agentFunctionIdPairs: [AgentFunctionInput, string][],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FUNCTIONS, {
     variables: {
       input: {
@@ -67,57 +86,58 @@ export async function updateAgentFunctions(
 }
 
 /**
- * Sync the data inventory agent functions
+ * Sync the agent functions
  *
  * @param client - GraphQL client
  * @param inputs - Inputs to create
+ * @param options - Options
  * @returns True if run without error, returns false if an error occurred
  */
 export async function syncAgentFunctions(
   client: GraphQLClient,
   inputs: AgentFunctionInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
-  // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" agent functions...`));
+  const { logger } = options;
+  logger.info(`Syncing "${inputs.length}" agent functions...`);
 
   let encounteredError = false;
 
-  // Fetch existing
-  const existingAgentFunctions = await fetchAllAgentFunctions(client);
+  const existingAgentFunctions = await fetchAllAgentFunctions(client, { logger });
 
-  // Look up by name
-  const agentFunctionByName: {
+  const agentFunctionByName = keyBy(existingAgentFunctions, 'name') as {
     [k in string]: Pick<AgentFunction, 'id' | 'name'>;
-  } = keyBy(existingAgentFunctions, 'name');
+  };
 
-  // Create new agent functions
   const newAgentFunctions = inputs.filter((input) => !agentFunctionByName[input.name]);
 
-  // Create new agent functions
   await mapSeries(newAgentFunctions, async (agentFunction) => {
     try {
-      const newAgentFunction = await createAgentFunction(client, agentFunction);
+      const newAgentFunction = await createAgentFunction(client, agentFunction, { logger });
       agentFunctionByName[newAgentFunction.name] = newAgentFunction;
-      logger.info(colors.green(`Successfully synced agent function "${agentFunction.name}"!`));
+      logger.info(`Successfully synced agent function "${agentFunction.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(
-        colors.red(`Failed to sync agent function "${agentFunction.name}"! - ${err.message}`),
+      logger.error(
+        `Failed to sync agent function "${agentFunction.name}"! - ${(err as Error).message}`,
       );
     }
   });
 
-  // Update all agent functions
   try {
-    logger.info(colors.magenta(`Updating "${inputs.length}" agent functions!`));
+    logger.info(`Updating "${inputs.length}" agent functions!`);
     await updateAgentFunctions(
       client,
-      inputs.map((input) => [input, agentFunctionByName[input.name].id]),
+      inputs.map((input) => [input, agentFunctionByName[input.name]!.id]),
+      { logger },
     );
-    logger.info(colors.green(`Successfully synced "${inputs.length}" agent functions!`));
+    logger.info(`Successfully synced "${inputs.length}" agent functions!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to sync "${inputs.length}" agent functions! - ${err.message}`));
+    logger.error(`Failed to sync "${inputs.length}" agent functions! - ${(err as Error).message}`);
   }
 
   return !encounteredError;
