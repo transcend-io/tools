@@ -6,9 +6,12 @@ import {
   RetentionType,
 } from '@transcend-io/privacy-types';
 import {
+  fetchAllBusinessEntities,
   fetchAllIdentifiers,
+  fetchAllMessages,
   fetchAllPurposesAndPreferences,
   fetchAllTeams,
+  fetchAllVendors,
   fetchApiKeys,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
@@ -67,17 +70,14 @@ import { fetchAllAgents } from './fetchAllAgents.js';
 import { fetchAllAssessments } from './fetchAllAssessments.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 import { fetchAllAttributes } from './fetchAllAttributes.js';
-import { fetchAllBusinessEntities } from './fetchAllBusinessEntities.js';
 import { fetchAllCookies } from './fetchAllCookies.js';
 import { fetchAllDataCategories } from './fetchAllDataCategories.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
-import { fetchAllMessages } from './fetchAllMessages.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingActivities } from './fetchAllProcessingActivities.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
-import { fetchAllVendors } from './fetchAllVendors.js';
 import {
   fetchConsentManager,
   fetchConsentManagerExperiences,
@@ -243,7 +243,7 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.Actions) ? fetchAllActions(client) : [],
     // Fetch business entities
     resources.includes(TranscendPullResource.BusinessEntities)
-      ? fetchAllBusinessEntities(client)
+      ? fetchAllBusinessEntities(client, { logger })
       : [],
     // Fetch processing activities
     resources.includes(TranscendPullResource.ProcessingActivities)
@@ -270,7 +270,7 @@ export async function pullTranscendConfiguration(
     // Fetch agentFiles
     resources.includes(TranscendPullResource.AgentFiles) ? fetchAllAgentFiles(client) : [],
     // Fetch vendors
-    resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client) : [],
+    resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client, { logger }) : [],
     // Fetch dataCategories
     resources.includes(TranscendPullResource.DataCategories) ? fetchAllDataCategories(client) : [],
     // Fetch dataCategories
@@ -292,7 +292,7 @@ export async function pullTranscendConfiguration(
     // Fetch privacy centers
     resources.includes(TranscendPullResource.PrivacyCenters) ? fetchAllPrivacyCenters(client) : [],
     // Fetch messages
-    resources.includes(TranscendPullResource.Messages) ? fetchAllMessages(client) : [],
+    resources.includes(TranscendPullResource.Messages) ? fetchAllMessages(client, { logger }) : [],
     // Fetch partitions
     resources.includes(TranscendPullResource.Partitions) ? fetchPartitions(client) : [],
     // Fetch assessments

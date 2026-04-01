@@ -218,7 +218,7 @@ export async function syncCodePackages(
     logger.info(colors.green(`Successfully synced ${newCodePackages.length} code packages!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create code packages! - ${err.message}`));
+    logger.error(colors.red(`Failed to create code packages! - ${err.message}`));
   }
 
   // Update existing codePackages
@@ -257,7 +257,7 @@ export async function syncCodePackages(
       logger.info(colors.green(`Successfully updated "${chunk.length}" code packages!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to update code packages! - ${err.message}`));
+      logger.error(colors.red(`Failed to update code packages! - ${err.message}`));
     }
   });
 

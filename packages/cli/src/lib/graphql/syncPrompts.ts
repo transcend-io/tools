@@ -113,7 +113,7 @@ export async function syncPrompts(
     logger.info(colors.green(`Successfully synced ${newPrompts.length} prompts!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create prompts! - ${err.message}`));
+    logger.error(colors.red(`Failed to create prompts! - ${err.message}`));
   }
 
   // Update existing prompts
@@ -124,7 +124,7 @@ export async function syncPrompts(
     logger.info(colors.green(`Successfully updated "${existingPrompts.length}" prompts!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create prompts! - ${err.message}`));
+    logger.error(colors.red(`Failed to create prompts! - ${err.message}`));
   }
 
   logger.info(colors.green(`Synced "${prompts.length}" prompts!`));

@@ -307,6 +307,9 @@ importers:
       '@transcend-io/airgap.js-types':
         specifier: ^12.16.0
         version: 12.16.0
+      '@transcend-io/internationalization':
+        specifier: ^2.3.2
+        version: 2.3.2
       '@transcend-io/privacy-types':
         specifier: workspace:*
         version: link:../privacy-types

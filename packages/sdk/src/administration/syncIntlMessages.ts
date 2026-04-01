@@ -1,12 +1,22 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { IntlMessageInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { UPDATE_INTL_MESSAGES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
+
+export interface IntlMessageInput {
+  /** React Intl message ID */
+  id: string;
+  /** Target React Intl ID to map this message to */
+  targetReactIntlId?: string;
+  /** Description of the message for translators */
+  description?: string;
+  /** Default English message content */
+  defaultMessage?: string;
+  /** Map from locale code to translated string */
+  translations?: Record<string, string>;
+}
 
 const MAX_PAGE_SIZE = 100;
 
@@ -19,7 +29,12 @@ const MAX_PAGE_SIZE = 100;
 export async function updateIntlMessages(
   client: GraphQLClient,
   messageInputs: IntlMessageInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   // Batch update messages
   await mapSeries(chunk(messageInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
@@ -51,9 +66,14 @@ export async function updateIntlMessages(
 export async function syncIntlMessages(
   client: GraphQLClient,
   messages: IntlMessageInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
+  const { logger } = options;
   let encounteredError = false;
-  logger.info(colors.magenta(`Syncing "${messages.length}" messages...`));
+  logger.info(`Syncing "${messages.length}" messages...`);
 
   // Ensure no duplicates are being uploaded
   const notUnique = messages.filter(
@@ -68,12 +88,12 @@ export async function syncIntlMessages(
   }
 
   try {
-    logger.info(colors.magenta(`Upserting "${messages.length}" new messages...`));
-    await updateIntlMessages(client, messages);
-    logger.info(colors.green(`Successfully synced ${messages.length} messages!`));
+    logger.info(`Upserting "${messages.length}" new messages...`);
+    await updateIntlMessages(client, messages, { logger });
+    logger.info(`Successfully synced ${messages.length} messages!`);
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create messages! - ${err.message}`));
+    logger.error(`Failed to create messages! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

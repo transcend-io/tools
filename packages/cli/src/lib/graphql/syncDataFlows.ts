@@ -171,7 +171,7 @@ export async function syncDataFlows(
     logger.info(colors.green(`Successfully synced ${newDataFlows.length} data flows!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create data flows! - ${err.message}`));
+    logger.error(colors.red(`Failed to create data flows! - ${err.message}`));
   }
 
   // Update existing data flows
@@ -184,7 +184,7 @@ export async function syncDataFlows(
     logger.info(colors.green(`Successfully updated "${existingDataFlows.length}" data flows!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create data flows! - ${err.message}`));
+    logger.error(colors.red(`Failed to create data flows! - ${err.message}`));
   }
 
   logger.info(colors.green(`Synced "${dataFlows.length}" data flows!`));

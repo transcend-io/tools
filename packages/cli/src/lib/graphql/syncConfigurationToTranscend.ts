@@ -1,4 +1,11 @@
-import { fetchApiKeys, syncTeams, type Identifier } from '@transcend-io/sdk';
+import {
+  fetchApiKeys,
+  syncBusinessEntities,
+  syncIntlMessages,
+  syncTeams,
+  syncVendors,
+  type Identifier,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -17,7 +24,6 @@ import { syncAgentFiles } from './syncAgentFiles.js';
 import { syncAgentFunctions } from './syncAgentFunctions.js';
 import { syncAgents } from './syncAgents.js';
 import { syncAttribute } from './syncAttribute.js';
-import { syncBusinessEntities } from './syncBusinessEntities.js';
 import { syncConsentManager } from './syncConsentManager.js';
 import { syncCookies } from './syncCookies.js';
 import { syncDataCategories } from './syncDataCategories.js';
@@ -26,7 +32,6 @@ import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
 import { syncEnricher } from './syncEnrichers.js';
 import { syncIdentifier } from './syncIdentifier.js';
-import { syncIntlMessages } from './syncIntlMessages.js';
 import { syncPartitions } from './syncPartitions.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
@@ -36,7 +41,6 @@ import { syncPromptGroups } from './syncPromptGroups.js';
 import { syncPromptPartials } from './syncPromptPartials.js';
 import { syncPrompts } from './syncPrompts.js';
 import { syncTemplate } from './syncTemplates.js';
-import { syncVendors } from './syncVendors.js';
 
 const CONCURRENCY = 10;
 
@@ -129,7 +133,7 @@ export async function syncConfigurationToTranscend(
       logger.info(colors.green('Successfully synced consent manager!'));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to sync consent manager! - ${err.message}`));
+      logger.error(colors.red(`Failed to sync consent manager! - ${err.message}`));
     }
   }
 
@@ -164,7 +168,7 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced template "${template.title}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync template "${template.title}"! - ${err.message}`));
+          logger.error(colors.red(`Failed to sync template "${template.title}"! - ${err.message}`));
         }
       },
       {
@@ -176,13 +180,13 @@ export async function syncConfigurationToTranscend(
 
   // Sync business entities
   if (businessEntities) {
-    const businessEntitySuccess = await syncBusinessEntities(client, businessEntities);
+    const businessEntitySuccess = await syncBusinessEntities(client, businessEntities, { logger });
     encounteredError = encounteredError || !businessEntitySuccess;
   }
 
   // Sync vendors
   if (vendors) {
-    const vendorsSuccess = await syncVendors(client, vendors);
+    const vendorsSuccess = await syncVendors(client, vendors, { logger });
     encounteredError = encounteredError || !vendorsSuccess;
   }
 
@@ -256,7 +260,9 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced attribute "${attribute.name}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync attribute "${attribute.name}"! - ${err.message}`));
+          logger.error(
+            colors.red(`Failed to sync attribute "${attribute.name}"! - ${err.message}`),
+          );
         }
       },
       {
@@ -288,7 +294,7 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync enricher "${enricher.title}"! - ${err.message}`));
+          logger.error(colors.red(`Failed to sync enricher "${enricher.title}"! - ${err.message}`));
         }
       },
       {
@@ -360,7 +366,7 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced action "${action.type}"!`));
         } catch (err) {
           encounteredError = true;
-          logger.info(colors.red(`Failed to sync action "${action.type}"! - ${err.message}`));
+          logger.error(colors.red(`Failed to sync action "${action.type}"! - ${err.message}`));
         }
       },
       {
@@ -421,7 +427,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync messages
   if (messages) {
-    const messagesSuccess = await syncIntlMessages(client, messages);
+    const messagesSuccess = await syncIntlMessages(client, messages, { logger });
     encounteredError = encounteredError || !messagesSuccess;
   }
 

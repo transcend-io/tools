@@ -94,7 +94,7 @@ export async function syncPolicies(
     logger.info(colors.green(`Successfully synced ${policies.length} policies!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create policies! - ${err.message}`));
+    logger.error(colors.red(`Failed to create policies! - ${err.message}`));
   }
 
   return !encounteredError;

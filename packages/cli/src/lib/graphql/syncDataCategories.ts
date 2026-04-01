@@ -118,7 +118,9 @@ export async function syncDataCategories(
     logger.info(colors.green(`Successfully synced "${inputs.length}" data categories!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to sync "${inputs.length}" data categories ! - ${err.message}`));
+    logger.error(
+      colors.red(`Failed to sync "${inputs.length}" data categories ! - ${err.message}`),
+    );
   }
 
   return !encounteredError;

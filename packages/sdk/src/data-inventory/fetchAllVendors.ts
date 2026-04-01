@@ -1,9 +1,9 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { VENDORS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { VENDORS } from './gqls/vendor.js';
 
 export interface Vendor {
   /** ID of vendor */
@@ -61,7 +61,14 @@ const PAGE_SIZE = 20;
  * @param client - GraphQL client
  * @returns All vendors in the organization
  */
-export async function fetchAllVendors(client: GraphQLClient): Promise<Vendor[]> {
+export async function fetchAllVendors(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<Vendor[]> {
+  const { logger } = options;
   const vendors: Vendor[] = [];
   let offset = 0;
 

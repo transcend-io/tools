@@ -117,7 +117,7 @@ export async function syncAgentFunctions(
     logger.info(colors.green(`Successfully synced "${inputs.length}" agent functions!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to sync "${inputs.length}" agent functions! - ${err.message}`));
+    logger.error(colors.red(`Failed to sync "${inputs.length}" agent functions! - ${err.message}`));
   }
 
   return !encounteredError;
