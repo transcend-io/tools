@@ -7,7 +7,6 @@ export * from './fetchAllActions.js';
 export * from './fetchAllAgentFiles.js';
 export * from './fetchAllAgentFunctions.js';
 export * from './fetchAllAgents.js';
-export * from './fetchAllAssessments.js';
 export * from './fetchAllAssessmentTemplates.js';
 export * from './fetchAllAttributeKeys.js';
 export * from './fetchAllAttributes.js';

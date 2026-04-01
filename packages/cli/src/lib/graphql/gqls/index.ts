@@ -15,7 +15,6 @@ export * from './promptThread.js';
 export * from './policy.js';
 export * from './request.js';
 export * from './RequestEnricher.js';
-export * from './assessment.js';
 export * from './assessmentTemplate.js';
 export * from './prompt.js';
 export * from './RequestEnricher.js';
