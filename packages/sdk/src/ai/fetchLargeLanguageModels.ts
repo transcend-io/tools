@@ -1,9 +1,9 @@
 import { LargeLanguageModelClient } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { LARGE_LANGUAGE_MODELS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { LARGE_LANGUAGE_MODELS } from './gqls/largeLanguageModel.js';
 
 export interface LargeLanguageModel {
   /** ID of prompts */
@@ -22,11 +22,17 @@ const PAGE_SIZE = 20;
  * Fetch all LargeLanguageModels in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All LargeLanguageModels in the organization
  */
 export async function fetchAllLargeLanguageModels(
   client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<LargeLanguageModel[]> {
+  const { logger } = options;
   const largeLanguageModels: LargeLanguageModel[] = [];
   let offset = 0;
 

@@ -4,6 +4,9 @@ import {
   syncAttribute,
   syncBusinessEntities,
   syncIntlMessages,
+  syncPromptGroups,
+  syncPromptPartials,
+  syncPrompts,
   syncTeams,
   syncVendors,
   type Identifier,
@@ -37,9 +40,6 @@ import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
 import { syncProcessingActivities } from './syncProcessingActivities.js';
 import { syncProcessingPurposes } from './syncProcessingPurposes.js';
-import { syncPromptGroups } from './syncPromptGroups.js';
-import { syncPromptPartials } from './syncPromptPartials.js';
-import { syncPrompts } from './syncPrompts.js';
 import { syncTemplate } from './syncTemplates.js';
 
 const CONCURRENCY = 10;
@@ -139,15 +139,15 @@ export async function syncConfigurationToTranscend(
 
   // Sync prompts
   if (prompts) {
-    const promptsSuccess = await syncPrompts(client, prompts);
+    const promptsSuccess = await syncPrompts(client, prompts, { logger });
     encounteredError = encounteredError || !promptsSuccess;
   }
   if (promptPartials) {
-    const promptsSuccess = await syncPromptPartials(client, promptPartials);
+    const promptsSuccess = await syncPromptPartials(client, promptPartials, { logger });
     encounteredError = encounteredError || !promptsSuccess;
   }
   if (promptGroups) {
-    const promptsSuccess = await syncPromptGroups(client, promptGroups);
+    const promptsSuccess = await syncPromptGroups(client, promptGroups, { logger });
     encounteredError = encounteredError || !promptsSuccess;
   }
 

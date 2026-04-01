@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { PROMPT_THREADS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { PROMPT_THREADS } from './gqls/promptThread.js';
 
 export interface PromptThread {
   /** ID of prompts */
@@ -25,18 +25,24 @@ const PAGE_SIZE = 20;
  * Fetch all PromptThreads in the organization
  *
  * @param client - GraphQL client
- * @param filterBy - Filter options
+ * @param options - Options
  * @returns All PromptThreads in the organization
  */
 export async function fetchAllPromptThreads(
   client: GraphQLClient,
-  filterBy: {
-    /** Thread IDs to filter on */
-    threadIds?: string[];
-    /** Slack message timestamps to filter on */
-    slackMessageTs?: string[];
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Filter options */
+    filterBy: {
+      /** Thread IDs to filter on */
+      threadIds?: string[];
+      /** Slack message timestamps to filter on */
+      slackMessageTs?: string[];
+    };
   },
 ): Promise<PromptThread[]> {
+  const { logger, filterBy } = options;
   const promptThreads: PromptThread[] = [];
   let offset = 0;
 

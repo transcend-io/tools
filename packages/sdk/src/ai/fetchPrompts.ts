@@ -1,9 +1,9 @@
 import { PromptStatus, PromptResponseFormat } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { PROMPTS, PROMPTS_WITH_VARIABLES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { PROMPTS, PROMPTS_WITH_VARIABLES } from './gqls/prompt.js';
 
 export interface Prompt {
   /** ID of prompt */
@@ -33,19 +33,21 @@ const PAGE_SIZE = 20;
  */
 export async function fetchAllPrompts(
   client: GraphQLClient,
-  {
-    text,
-    titles = [],
-    ids = [],
-  }: {
-    /** Filter by text */
-    text?: string;
-    /** Filter by ids */
-    ids?: string[];
-    /** Filter by titles */
-    titles?: string[];
-  } = {},
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** Filter by text */
+      text?: string;
+      /** Filter by ids */
+      ids?: string[];
+      /** Filter by titles */
+      titles?: string[];
+    };
+  },
 ): Promise<Prompt[]> {
+  const { logger, filterBy: { text, ids = [], titles = [] } = {} } = options;
   const prompts: Prompt[] = [];
   let offset = 0;
 
@@ -159,16 +161,16 @@ export type TranscendPromptsAndVariables = {
  */
 export async function fetchPromptsWithVariables(
   client: GraphQLClient,
-  {
-    promptTitles = [],
-    promptIds = [],
-  }: {
-    /** Filter by prompt ids */
-    promptIds?: string[];
+  options: {
+    /** Logger instance */
+    logger: Logger;
     /** Filter by prompt titles */
     promptTitles?: string[];
-  } = {},
+    /** Filter by prompt ids */
+    promptIds?: string[];
+  },
 ): Promise<TranscendPromptsAndVariables> {
+  const { logger, promptTitles = [], promptIds = [] } = options;
   const { promptsWithVariables } = await makeGraphQLRequest<{
     /** Prompts */
     promptsWithVariables: TranscendPromptsAndVariables;

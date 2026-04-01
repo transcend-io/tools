@@ -11,6 +11,9 @@ import {
   fetchAllBusinessEntities,
   fetchAllIdentifiers,
   fetchAllMessages,
+  fetchAllPromptGroups,
+  fetchAllPromptPartials,
+  fetchAllPrompts,
   fetchAllPurposesAndPreferences,
   fetchAllTeams,
   fetchAllVendors,
@@ -85,9 +88,6 @@ import {
   fetchConsentManagerTheme,
 } from './fetchConsentManagerId.js';
 import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
-import { fetchAllPromptGroups } from './fetchPromptGroups.js';
-import { fetchAllPromptPartials } from './fetchPromptPartials.js';
-import { fetchAllPrompts } from './fetchPrompts.js';
 import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
@@ -260,11 +260,15 @@ export async function pullTranscendConfiguration(
       ? fetchConsentManagerExperiences(client)
       : [],
     // Fetch prompts
-    resources.includes(TranscendPullResource.Prompts) ? fetchAllPrompts(client) : [],
+    resources.includes(TranscendPullResource.Prompts) ? fetchAllPrompts(client, { logger }) : [],
     // Fetch promptPartials
-    resources.includes(TranscendPullResource.PromptPartials) ? fetchAllPromptPartials(client) : [],
+    resources.includes(TranscendPullResource.PromptPartials)
+      ? fetchAllPromptPartials(client, { logger })
+      : [],
     // Fetch promptGroups
-    resources.includes(TranscendPullResource.PromptGroups) ? fetchAllPromptGroups(client) : [],
+    resources.includes(TranscendPullResource.PromptGroups)
+      ? fetchAllPromptGroups(client, { logger })
+      : [],
     // Fetch agents
     resources.includes(TranscendPullResource.Agents) ? fetchAllAgents(client) : [],
     // Fetch agentFunctions
