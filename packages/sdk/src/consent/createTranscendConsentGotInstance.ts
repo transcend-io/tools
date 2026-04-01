@@ -8,7 +8,6 @@ import got, { Got } from 'got';
  * @returns The instance of got that is capable of making requests to the customer ingress
  */
 export function createTranscendConsentGotInstance(transcendUrl: string): Got {
-  // Create got instance with default values
   return got.extend({
     prefixUrl: transcendUrl,
   });

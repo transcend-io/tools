@@ -1,5 +1,10 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  CREATE_DATA_FLOWS,
+  fetchConsentManagerId,
+  makeGraphQLRequest,
+  UPDATE_DATA_FLOWS,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -8,8 +13,6 @@ import { chunk } from 'lodash-es';
 import { DataFlowInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
-import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/index.js';
 
 const MAX_PAGE_SIZE = 100;
 
@@ -25,7 +28,7 @@ export async function updateDataFlows(
   dataFlowInputs: [DataFlowInput, string][],
   classifyService = false,
 ): Promise<void> {
-  const airgapBundleId = await fetchConsentManagerId(client);
+  const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
   // const purposes = await fetchAllPurposes(client);
@@ -76,7 +79,7 @@ export async function createDataFlows(
   dataFlowInputs: DataFlowInput[],
   classifyService = false,
 ): Promise<void> {
-  const airgapBundleId = await fetchConsentManagerId(client);
+  const airgapBundleId = await fetchConsentManagerId(client, { logger });
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
   // const purposes = await fetchAllPurposes(client);
   // const purposeNameToId = keyBy(purposes, 'name');

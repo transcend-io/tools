@@ -1,5 +1,22 @@
 import { InitialViewState, OnConsentExpiry } from '@transcend-io/airgap.js-types';
-import { fetchAllPurposes, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  CREATE_CONSENT_EXPERIENCE,
+  CREATE_CONSENT_MANAGER,
+  fetchAllPurposes,
+  fetchConsentManagerExperiences,
+  fetchConsentManagerId,
+  makeGraphQLRequest,
+  TOGGLE_CONSENT_PRECEDENCE,
+  TOGGLE_TELEMETRY_PARTITION_STRATEGY,
+  TOGGLE_UNKNOWN_COOKIE_POLICY,
+  TOGGLE_UNKNOWN_REQUEST_POLICY,
+  UPDATE_CONSENT_EXPERIENCE,
+  UPDATE_CONSENT_MANAGER_DOMAINS,
+  UPDATE_CONSENT_MANAGER_PARTITION,
+  UPDATE_CONSENT_MANAGER_THEME,
+  UPDATE_CONSENT_MANAGER_VERSION,
+  UPDATE_LOAD_OPTIONS,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,22 +24,7 @@ import { keyBy } from 'lodash-es';
 
 import { ConsentManageExperienceInput, ConsentManagerInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
-import {
-  UPDATE_CONSENT_MANAGER_DOMAINS,
-  CREATE_CONSENT_MANAGER,
-  UPDATE_LOAD_OPTIONS,
-  UPDATE_CONSENT_MANAGER_PARTITION,
-  UPDATE_CONSENT_MANAGER_VERSION,
-  TOGGLE_TELEMETRY_PARTITION_STRATEGY,
-  TOGGLE_UNKNOWN_COOKIE_POLICY,
-  TOGGLE_CONSENT_PRECEDENCE,
-  TOGGLE_UNKNOWN_REQUEST_POLICY,
-  UPDATE_CONSENT_EXPERIENCE,
-  CREATE_CONSENT_EXPERIENCE,
-  UPDATE_CONSENT_MANAGER_THEME,
-} from './gqls/index.js';
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
@@ -38,7 +40,7 @@ export async function syncConsentManagerExperiences(
   experiences: ConsentManageExperienceInput[],
 ): Promise<void> {
   // Fetch existing experiences and
-  const existingExperiences = await fetchConsentManagerExperiences(client);
+  const existingExperiences = await fetchConsentManagerExperiences(client, { logger });
   const experienceLookup = keyBy(existingExperiences, 'name');
 
   // Fetch existing purposes
@@ -141,7 +143,7 @@ export async function syncConsentManager(
 
   // ensure the consent manager is created and deployed
   try {
-    airgapBundleId = await fetchConsentManagerId(client, 1);
+    airgapBundleId = await fetchConsentManagerId(client, { logger, maxRequests: 1 });
   } catch (err) {
     // TODO: https://transcend.height.app/T-23778
     if (err.message.includes('AirgapBundle not found')) {

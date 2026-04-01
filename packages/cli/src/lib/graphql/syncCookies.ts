@@ -1,5 +1,9 @@
 // import { keyBy } from 'lodash-es';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  fetchConsentManagerId,
+  makeGraphQLRequest,
+  UPDATE_OR_CREATE_COOKIES,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,8 +11,6 @@ import { chunk } from 'lodash-es';
 
 import { CookieInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { UPDATE_OR_CREATE_COOKIES } from './gqls/index.js';
 
 const MAX_PAGE_SIZE = 100;
 
@@ -22,7 +24,7 @@ export async function updateOrCreateCookies(
   client: GraphQLClient,
   cookieInputs: CookieInput[],
 ): Promise<void> {
-  const airgapBundleId = await fetchConsentManagerId(client);
+  const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
   // const purposes = await fetchAllPurposes(client);

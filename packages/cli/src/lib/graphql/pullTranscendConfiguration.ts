@@ -12,6 +12,9 @@ import {
   fetchAllAttributes,
   fetchAllBusinessEntities,
   fetchAllDataCategories,
+  fetchConsentManager,
+  fetchConsentManagerExperiences,
+  fetchConsentManagerTheme,
   fetchAllIdentifiers,
   fetchAllMessages,
   fetchAllPromptGroups,
@@ -82,11 +85,6 @@ import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
-import {
-  fetchConsentManager,
-  fetchConsentManagerExperiences,
-  fetchConsentManagerTheme,
-} from './fetchConsentManagerId.js';
 import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
 import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
@@ -253,11 +251,11 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch consent manager
     resources.includes(TranscendPullResource.ConsentManager)
-      ? fetchConsentManager(client)
+      ? fetchConsentManager(client, { logger })
       : undefined,
     // Fetch consent manager experiences
     resources.includes(TranscendPullResource.ConsentManager)
-      ? fetchConsentManagerExperiences(client)
+      ? fetchConsentManagerExperiences(client, { logger })
       : [],
     // Fetch prompts
     resources.includes(TranscendPullResource.Prompts) ? fetchAllPrompts(client, { logger }) : [],
@@ -326,7 +324,7 @@ export async function pullTranscendConfiguration(
 
   const consentManagerTheme =
     resources.includes(TranscendPullResource.ConsentManager) && consentManager
-      ? await fetchConsentManagerTheme(client, consentManager.id)
+      ? await fetchConsentManagerTheme(client, consentManager.id, { logger })
       : undefined;
 
   const result: TranscendInput = {};

@@ -3,12 +3,10 @@ import {
   ConsentTrackerSource,
   ConsentTrackerStatus,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { DATA_FLOWS, fetchConsentManagerId, makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { DATA_FLOWS } from './gqls/index.js';
 
 export interface DataFlow {
   /** ID of data flow */
@@ -68,7 +66,7 @@ export async function fetchAllDataFlows(
   const dataFlows: DataFlow[] = [];
   let offset = 0;
 
-  const airgapBundleId = await fetchConsentManagerId(client);
+  const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // Try to fetch an DataFlow with the same title
   let shouldContinue = false;

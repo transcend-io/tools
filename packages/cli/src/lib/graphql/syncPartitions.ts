@@ -1,4 +1,9 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  CONSENT_PARTITIONS,
+  CREATE_CONSENT_PARTITION,
+  fetchConsentManagerId,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -6,8 +11,6 @@ import { difference } from 'lodash-es';
 
 import { PartitionInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { CREATE_CONSENT_PARTITION, CONSENT_PARTITIONS } from './gqls/index.js';
 
 const PAGE_SIZE = 50;
 
@@ -65,7 +68,7 @@ export async function syncPartitions(
   partitionInputs: PartitionInput[],
 ): Promise<boolean> {
   // Grab the bundleId associated with this API key
-  const airgapBundleId = await fetchConsentManagerId(client);
+  const airgapBundleId = await fetchConsentManagerId(client, { logger });
   let encounteredError = false;
   const partitions = await fetchPartitions(client);
   const newPartitionNames = difference(

@@ -9,17 +9,17 @@ import {
   BrowserTimeZone,
   SignedIabAgreementOption,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import {
   FETCH_CONSENT_MANAGER_ID,
   FETCH_CONSENT_MANAGER,
   EXPERIENCES,
-  CONSENT_MANAGER_ANALYTICS_DATA,
   FETCH_CONSENT_MANAGER_THEME,
-} from './gqls/index.js';
+} from './gqls/consentManager.js';
+import { CONSENT_MANAGER_ANALYTICS_DATA } from './gqls/consentManagerMetrics.js';
 
 export interface ConsentManager {
   /** ID of consent manager */
@@ -60,9 +60,16 @@ export interface ConsentManager {
  * Fetch consent manager
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns Consent manager ID in organization
  */
-export async function fetchConsentManager(client: GraphQLClient): Promise<ConsentManager> {
+export async function fetchConsentManager(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<ConsentManager> {
   const {
     consentManager: { consentManager },
   } = await makeGraphQLRequest<{
@@ -71,7 +78,7 @@ export async function fetchConsentManager(client: GraphQLClient): Promise<Consen
       /** Consent manager object */
       consentManager: ConsentManager;
     };
-  }>(client, FETCH_CONSENT_MANAGER, { logger });
+  }>(client, FETCH_CONSENT_MANAGER, { logger: options.logger });
   return consentManager;
 }
 
@@ -79,12 +86,17 @@ export async function fetchConsentManager(client: GraphQLClient): Promise<Consen
  * Fetch consent manager ID
  *
  * @param client - GraphQL client
- * @param maxRequests - = Max number of requests to send
+ * @param options - Options
  * @returns Consent manager ID in organization
  */
 export async function fetchConsentManagerId(
   client: GraphQLClient,
-  maxRequests?: number,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Max number of requests to send */
+    maxRequests?: number;
+  },
 ): Promise<string> {
   const {
     consentManager: { consentManager },
@@ -97,7 +109,10 @@ export async function fetchConsentManagerId(
         id: string;
       };
     };
-  }>(client, FETCH_CONSENT_MANAGER_ID, { logger, maxRetries: maxRequests });
+  }>(client, FETCH_CONSENT_MANAGER_ID, {
+    logger: options.logger,
+    maxRetries: options.maxRequests,
+  });
   return consentManager.id;
 }
 
@@ -141,9 +156,7 @@ export interface ConsentExperience {
     /** Purpose slug */
     trackingType: string;
   }[];
-  /**
-   * Browser languages that define this regional experience
-   */
+  /** Browser languages that define this regional experience */
   browserLanguages: BrowserLanguage[];
   /** Browser time zones that define this regional experience */
   browserTimeZones: BrowserTimeZone[];
@@ -153,15 +166,19 @@ export interface ConsentExperience {
  * Fetch consent manager experiences
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns Consent manager experiences in the organization
  */
 export async function fetchConsentManagerExperiences(
   client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<ConsentExperience[]> {
   const experiences: ConsentExperience[] = [];
   let offset = 0;
 
-  // Fetch all experiences
   let shouldContinue = false;
   do {
     const {
@@ -174,7 +191,7 @@ export async function fetchConsentManagerExperiences(
       };
     }>(client, EXPERIENCES, {
       variables: { first: PAGE_SIZE, offset },
-      logger,
+      logger: options.logger,
     });
     experiences.push(...nodes);
     offset += PAGE_SIZE;
@@ -209,6 +226,7 @@ export interface ConsentManagerMetric {
  *
  * @param client - GraphQL client
  * @param input - Input for fetching data
+ * @param options - Options
  * @returns Consent manager purposes in the organization
  */
 export async function fetchConsentManagerAnalyticsData(
@@ -232,6 +250,10 @@ export async function fetchConsentManagerAnalyticsData(
     /** Whether or not to smooth the time series */
     smoothTimeseries: false;
   },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<ConsentManagerMetric[]> {
   const {
     analyticsData: { series },
@@ -243,7 +265,7 @@ export async function fetchConsentManagerAnalyticsData(
     };
   }>(client, CONSENT_MANAGER_ANALYTICS_DATA, {
     variables: { input },
-    logger,
+    logger: options.logger,
   });
   return series;
 }
@@ -264,11 +286,16 @@ export interface ConsentManagerTheme {
  *
  * @param client - GraphQL client
  * @param airgapBundleId - Airgap bundle ID to fetch for
+ * @param options - Options
  * @returns Consent manager ID in organization
  */
 export async function fetchConsentManagerTheme(
   client: GraphQLClient,
   airgapBundleId: string,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<ConsentManagerTheme> {
   const {
     consentManagerTheme: { theme },
@@ -280,7 +307,7 @@ export async function fetchConsentManagerTheme(
     };
   }>(client, FETCH_CONSENT_MANAGER_THEME, {
     variables: { airgapBundleId },
-    logger,
+    logger: options.logger,
   });
   return theme;
 }
