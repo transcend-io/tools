@@ -8,15 +8,30 @@ import { fetchAllBusinessEntities, BusinessEntity } from './fetchAllBusinessEnti
 import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/businessEntity.js';
 
 export interface BusinessEntityInput {
+  /** Display title of the business entity */
   title: string;
+  /** Description of the business entity */
   description?: string;
+  /** Physical address */
   address?: string;
+  /** Headquarters country */
   headquarterCountry?: IsoCountryCode;
+  /** Headquarters country subdivision */
   headquarterSubDivision?: IsoCountrySubdivisionCode;
+  /** Name of the data protection officer */
   dataProtectionOfficerName?: string;
+  /** Email of the data protection officer */
   dataProtectionOfficerEmail?: string;
-  attributes?: { key: string; values: string[] }[];
+  /** Custom attribute values to assign */
+  attributes?: {
+    /** Attribute key name */
+    key: string;
+    /** Attribute values */
+    values: string[];
+  }[];
+  /** Team names to assign */
   teams?: string[];
+  /** Owner email addresses to assign */
   owners?: string[];
 }
 

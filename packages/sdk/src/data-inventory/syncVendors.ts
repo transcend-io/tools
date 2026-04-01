@@ -8,19 +8,37 @@ import { fetchAllVendors, Vendor } from './fetchAllVendors.js';
 import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/vendor.js';
 
 export interface VendorInput {
+  /** Display title of the vendor */
   title: string;
+  /** Description of the vendor */
   description?: string;
+  /** URL to the data processing agreement */
   dataProcessingAgreementLink?: string;
+  /** Name of the primary contact */
   contactName?: string;
+  /** Phone number of the primary contact */
   contactPhone?: string;
+  /** Physical address */
   address?: string;
+  /** Headquarters country */
   headquarterCountry?: IsoCountryCode;
+  /** Headquarters country subdivision */
   headquarterSubDivision?: IsoCountrySubdivisionCode;
+  /** Vendor website URL */
   websiteUrl?: string;
+  /** Title of the associated business entity */
   businessEntity?: string;
+  /** Owner email addresses to assign */
   owners?: string[];
+  /** Team names to assign */
   teams?: string[];
-  attributes?: { key: string; values: string[] }[];
+  /** Custom attribute values to assign */
+  attributes?: {
+    /** Attribute key name */
+    key: string;
+    /** Attribute values */
+    values: string[];
+  }[];
 }
 
 /**
