@@ -1,5 +1,5 @@
 import {
-  ConsentManagerMetric,
+  type ConsentManagerMetric,
   ConsentManagerMetricBin,
   fetchConsentManagerAnalyticsData,
   fetchConsentManagerId,

@@ -14,7 +14,9 @@ import {
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
+  fetchAllCookies,
   fetchAllDataCategories,
+  fetchAllDataFlows,
   fetchConsentManager,
   fetchConsentManagerExperiences,
   fetchConsentManagerTheme,
@@ -79,8 +81,6 @@ import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
 import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
-import { fetchAllCookies } from './fetchAllCookies.js';
-import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
@@ -211,10 +211,10 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.DataFlows)
       ? [
           ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
-            ? await fetchAllDataFlows(client, ConsentTrackerStatus.Live)
+            ? await fetchAllDataFlows(client, ConsentTrackerStatus.Live, { logger })
             : []),
           ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
-            ? await fetchAllDataFlows(client, ConsentTrackerStatus.NeedsReview)
+            ? await fetchAllDataFlows(client, ConsentTrackerStatus.NeedsReview, { logger })
             : []),
         ]
       : [],
@@ -222,10 +222,10 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.Cookies)
       ? [
           ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
-            ? await fetchAllCookies(client, ConsentTrackerStatus.Live)
+            ? await fetchAllCookies(client, ConsentTrackerStatus.Live, { logger })
             : []),
           ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
-            ? await fetchAllCookies(client, ConsentTrackerStatus.NeedsReview)
+            ? await fetchAllCookies(client, ConsentTrackerStatus.NeedsReview, { logger })
             : []),
         ]
       : [],
