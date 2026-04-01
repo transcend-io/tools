@@ -1,5 +1,11 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  CREATE_CODE_PACKAGE,
+  UPDATE_CODE_PACKAGES,
+  fetchAllCodePackages,
+  type CodePackage,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,8 +13,6 @@ import { chunk, uniq, keyBy, uniqBy } from 'lodash-es';
 
 import { CodePackageInput, RepositoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { CodePackage, fetchAllCodePackages } from './fetchAllCodePackages.js';
-import { CREATE_CODE_PACKAGE, UPDATE_CODE_PACKAGES } from './gqls/index.js';
 import { syncRepositories } from './syncRepositories.js';
 import { syncSoftwareDevelopmentKits } from './syncSoftwareDevelopmentKits.js';
 
@@ -139,7 +143,7 @@ export async function syncCodePackages(
   const [existingCodePackages, { softwareDevelopmentKits: existingSoftwareDevelopmentKits }] =
     await Promise.all([
       // fetch all code packages
-      fetchAllCodePackages(client),
+      fetchAllCodePackages(client, { logger }),
       // make sure all SDKs exist
       syncSoftwareDevelopmentKits(
         client,
