@@ -319,9 +319,6 @@ importers:
       '@transcend-io/utils':
         specifier: workspace:*
         version: link:../utils
-      colors:
-        specifier: ^1.4.0
-        version: 1.4.0
       got:
         specifier: ^11.8.5
         version: 11.8.6
