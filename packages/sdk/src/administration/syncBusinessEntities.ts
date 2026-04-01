@@ -1,10 +1,9 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
-import { mapSeries } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, chunk } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { fetchAllBusinessEntities, BusinessEntity } from './fetchAllBusinessEntities.js';
 import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/businessEntity.js';
 
@@ -31,7 +30,12 @@ export interface BusinessEntityInput {
 export async function createBusinessEntity(
   client: GraphQLClient,
   businessEntity: BusinessEntityInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<BusinessEntity> {
+  const { logger } = options;
   const input = {
     title: businessEntity.title,
     description: businessEntity.description,
@@ -67,7 +71,12 @@ export async function createBusinessEntity(
 export async function updateBusinessEntities(
   client: GraphQLClient,
   businessEntityIdParis: [BusinessEntityInput, string][],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   const chunkedUpdates = chunk(businessEntityIdParis, 100);
   await mapSeries(chunkedUpdates, async (chunked) => {
     await makeGraphQLRequest(client, UPDATE_BUSINESS_ENTITIES, {
@@ -101,14 +110,19 @@ export async function updateBusinessEntities(
 export async function syncBusinessEntities(
   client: GraphQLClient,
   inputs: BusinessEntityInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
+  const { logger } = options;
   // Fetch existing
   logger.info(`Syncing "${inputs.length}" business entities...`);
 
   let encounteredError = false;
 
   // Fetch existing
-  const existingBusinessEntities = await fetchAllBusinessEntities(client);
+  const existingBusinessEntities = await fetchAllBusinessEntities(client, { logger });
 
   // Look up by title
   const businessEntityByTitle = keyBy(existingBusinessEntities, 'title');
@@ -119,7 +133,7 @@ export async function syncBusinessEntities(
   // Create new business entities
   await mapSeries(newBusinessEntities, async (businessEntity) => {
     try {
-      const newBusinessEntity = await createBusinessEntity(client, businessEntity);
+      const newBusinessEntity = await createBusinessEntity(client, businessEntity, { logger });
       businessEntityByTitle[newBusinessEntity.title] = newBusinessEntity;
       logger.info(`Successfully synced business entity "${businessEntity.title}"!`);
     } catch (err) {
@@ -136,6 +150,7 @@ export async function syncBusinessEntities(
     await updateBusinessEntities(
       client,
       inputs.map((input) => [input, businessEntityByTitle[input.title]!.id]),
+      { logger },
     );
     logger.info(`Successfully synced "${inputs.length}" business entities!`);
   } catch (err) {

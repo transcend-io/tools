@@ -180,13 +180,13 @@ export async function syncConfigurationToTranscend(
 
   // Sync business entities
   if (businessEntities) {
-    const businessEntitySuccess = await syncBusinessEntities(client, businessEntities);
+    const businessEntitySuccess = await syncBusinessEntities(client, businessEntities, { logger });
     encounteredError = encounteredError || !businessEntitySuccess;
   }
 
   // Sync vendors
   if (vendors) {
-    const vendorsSuccess = await syncVendors(client, vendors);
+    const vendorsSuccess = await syncVendors(client, vendors, { logger });
     encounteredError = encounteredError || !vendorsSuccess;
   }
 
@@ -425,7 +425,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync messages
   if (messages) {
-    const messagesSuccess = await syncIntlMessages(client, messages);
+    const messagesSuccess = await syncIntlMessages(client, messages, { logger });
     encounteredError = encounteredError || !messagesSuccess;
   }
 

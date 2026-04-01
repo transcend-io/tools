@@ -1,10 +1,9 @@
 import { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
-import { mapSeries } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { fetchAllVendors, Vendor } from './fetchAllVendors.js';
 import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/vendor.js';
 
@@ -34,7 +33,12 @@ export interface VendorInput {
 export async function createVendor(
   client: GraphQLClient,
   vendor: VendorInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<Vendor, 'id' | 'title'>> {
+  const { logger } = options;
   const input = {
     title: vendor.title,
     description: vendor.description,
@@ -70,7 +74,12 @@ export async function createVendor(
 export async function updateVendors(
   client: GraphQLClient,
   vendorIdParis: [VendorInput, string][],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   await makeGraphQLRequest(client, UPDATE_VENDORS, {
     variables: {
       input: {
@@ -101,14 +110,22 @@ export async function updateVendors(
  * @param inputs - Inputs to create
  * @returns True if run without error, returns false if an error occurred
  */
-export async function syncVendors(client: GraphQLClient, inputs: VendorInput[]): Promise<boolean> {
+export async function syncVendors(
+  client: GraphQLClient,
+  inputs: VendorInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<boolean> {
+  const { logger } = options;
   // Fetch existing
   logger.info(`Syncing "${inputs.length}" vendors...`);
 
   let encounteredError = false;
 
   // Fetch existing
-  const existingVendors = await fetchAllVendors(client);
+  const existingVendors = await fetchAllVendors(client, { logger });
 
   // Look up by title
   const vendorByTitle: { [k in string]: Pick<Vendor, 'id' | 'title'> } = keyBy(
@@ -122,7 +139,7 @@ export async function syncVendors(client: GraphQLClient, inputs: VendorInput[]):
   // Create new vendors
   await mapSeries(newVendors, async (vendor) => {
     try {
-      const newVendor = await createVendor(client, vendor);
+      const newVendor = await createVendor(client, vendor, { logger });
       vendorByTitle[newVendor.title] = newVendor;
       logger.info(`Successfully synced vendor "${vendor.title}"!`);
     } catch (err) {
@@ -137,6 +154,7 @@ export async function syncVendors(client: GraphQLClient, inputs: VendorInput[]):
     await updateVendors(
       client,
       inputs.map((input) => [input, vendorByTitle[input.title]!.id]),
+      { logger },
     );
     logger.info(`Successfully synced "${inputs.length}" vendors!`);
   } catch (err) {

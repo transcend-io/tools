@@ -1,9 +1,8 @@
-import { mapSeries } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { logger } from '../logger.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
 
 export interface IntlMessageInput {
@@ -25,7 +24,12 @@ const MAX_PAGE_SIZE = 100;
 export async function updateIntlMessages(
   client: GraphQLClient,
   messageInputs: IntlMessageInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   // Batch update messages
   await mapSeries(chunk(messageInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
@@ -57,7 +61,12 @@ export async function updateIntlMessages(
 export async function syncIntlMessages(
   client: GraphQLClient,
   messages: IntlMessageInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
+  const { logger } = options;
   let encounteredError = false;
   logger.info(`Syncing "${messages.length}" messages...`);
 
@@ -75,7 +84,7 @@ export async function syncIntlMessages(
 
   try {
     logger.info(`Upserting "${messages.length}" new messages...`);
-    await updateIntlMessages(client, messages);
+    await updateIntlMessages(client, messages, { logger });
     logger.info(`Successfully synced ${messages.length} messages!`);
   } catch (err) {
     encounteredError = true;
