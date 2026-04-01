@@ -117,7 +117,7 @@ export async function pullConsentMetrics(
               logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
               await writeCsv(
                 file,
-                points.map(({ key, value }) => ({
+                points.map(({ key, value }: { key: string; value: string }) => ({
                   timestamp: key,
                   value,
                 })),
@@ -170,7 +170,7 @@ export async function pullConsentMetrics(
             logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
             writeCsv(
               file,
-              points.map(({ key, value }) => ({
+              points.map(({ key, value }: { key: string; value: string }) => ({
                 timestamp: key,
                 value,
               })),

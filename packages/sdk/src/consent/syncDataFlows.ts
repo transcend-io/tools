@@ -1,18 +1,46 @@
-import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import {
-  CREATE_DATA_FLOWS,
-  fetchConsentManagerId,
-  makeGraphQLRequest,
-  UPDATE_DATA_FLOWS,
-} from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { ConsentTrackerStatus, DataFlowScope } from '@transcend-io/privacy-types';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { DataFlowInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
+import { fetchConsentManagerId } from './fetchConsentManagerId.js';
+import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/consentManager.js';
+
+/** Attribute key-value pair for a data flow */
+export interface DataFlowAttributeInput {
+  /** Attribute key */
+  key: string;
+  /** Attribute values */
+  values: string[];
+}
+
+/**
+ * Input to define a data flow for sync
+ *
+ * @see https://app.transcend.io/consent-manager/data-flows/approved
+ */
+export interface DataFlowInput {
+  /** Value of data flow */
+  value: string;
+  /** Type of data flow */
+  type: DataFlowScope;
+  /** Description of data flow */
+  description?: string;
+  /** The tracking purposes that are required to be opted in for this data flow */
+  trackingPurposes?: string[];
+  /** Name of the consent service attached */
+  service?: string;
+  /** Status of the tracker (approved vs triage) */
+  status?: ConsentTrackerStatus;
+  /** Email addresses of owners */
+  owners?: string[];
+  /** Names of teams responsible for managing this data flow */
+  teams?: string[];
+  /** Attribute key-value pairs */
+  attributes?: DataFlowAttributeInput[];
+}
 
 const MAX_PAGE_SIZE = 100;
 
@@ -21,13 +49,19 @@ const MAX_PAGE_SIZE = 100;
  *
  * @param client - GraphQL client
  * @param dataFlowInputs - [DataFlowInput, Data Flow ID] mappings to update
- * @param classifyService - classify service if missing
+ * @param classifyService - Classify service if missing
+ * @param options - Options
  */
 export async function updateDataFlows(
   client: GraphQLClient,
   dataFlowInputs: [DataFlowInput, string][],
   classifyService = false,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
@@ -72,17 +106,25 @@ export async function updateDataFlows(
  *
  * @param client - GraphQL client
  * @param dataFlowInputs - List of data flows to create
- * @param classifyService - classify service if missing
+ * @param classifyService - Classify service if missing
+ * @param options - Options
  */
 export async function createDataFlows(
   client: GraphQLClient,
   dataFlowInputs: DataFlowInput[],
   classifyService = false,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
+
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
   // const purposes = await fetchAllPurposes(client);
   // const purposeNameToId = keyBy(purposes, 'name');
+
   await mapSeries(chunk(dataFlowInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, CREATE_DATA_FLOWS, {
       variables: {
@@ -108,7 +150,6 @@ export async function createDataFlows(
           // owners,
           // teams,
         })),
-        dropMatchingDataFlowsInTriage: true,
         classifyService,
       },
       logger,
@@ -122,25 +163,28 @@ export async function createDataFlows(
  * @param client - GraphQL client
  * @param dataFlows - The data flows to upload
  * @param classifyService - When true, auto classify the service based on the data flow value
+ * @param options - Options
  * @returns True if the command ran successfully, returns false if an error occurred
  */
 export async function syncDataFlows(
   client: GraphQLClient,
   dataFlows: DataFlowInput[],
   classifyService: boolean,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
+  const { logger } = options;
   let encounteredError = false;
-  logger.info(colors.magenta(`Syncing "${dataFlows.length}" data flows...`));
+  logger.info(`Syncing "${dataFlows.length}" data flows...`);
 
-  // Ensure no duplicates are being uploaded
-  // De-dupe the data flows based on [value, type]
   const notUnique = dataFlows.filter(
     (dataFlow) =>
       dataFlows.filter((flow) => dataFlow.value === flow.value && dataFlow.type === flow.type)
         .length > 1,
   );
 
-  // Throw error to prompt user to de-dupe before uploading
   if (notUnique.length > 0) {
     throw new Error(
       `Failed to upload data flows as there were non-unique entries found: ${notUnique
@@ -149,49 +193,43 @@ export async function syncDataFlows(
     );
   }
 
-  // Fetch existing data flows to determine whether we are creating a new data flow
-  // or updating an existing data flow
-  logger.info(colors.magenta('Fetching data flows...'));
+  logger.info('Fetching data flows...');
   const [existingLiveDataFlows, existingInReviewDataFlows] = await Promise.all([
-    fetchAllDataFlows(client, ConsentTrackerStatus.Live),
-    fetchAllDataFlows(client, ConsentTrackerStatus.NeedsReview),
+    fetchAllDataFlows(client, ConsentTrackerStatus.Live, { logger }),
+    fetchAllDataFlows(client, ConsentTrackerStatus.NeedsReview, { logger }),
   ]);
   const allDataFlows = [...existingLiveDataFlows, ...existingInReviewDataFlows];
 
-  // Determine which data flows are new vs existing
   const mapDataFlowsToExisting = dataFlows.map((dataFlow) => [
     dataFlow,
     allDataFlows.find((flow) => dataFlow.value === flow.value && dataFlow.type === flow.type)?.id,
   ]);
 
-  // Create the new data flows
   const newDataFlows = mapDataFlowsToExisting
     .filter(([, existing]) => !existing)
     .map(([flow]) => flow as DataFlowInput);
   try {
-    logger.info(colors.magenta(`Creating "${newDataFlows.length}" new data flows...`));
-    await createDataFlows(client, newDataFlows, classifyService);
-    logger.info(colors.green(`Successfully synced ${newDataFlows.length} data flows!`));
+    logger.info(`Creating "${newDataFlows.length}" new data flows...`);
+    await createDataFlows(client, newDataFlows, classifyService, { logger });
+    logger.info(`Successfully synced ${newDataFlows.length} data flows!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create data flows! - ${err.message}`));
+    logger.error(`Failed to create data flows! - ${(err as Error).message}`);
   }
 
-  // Update existing data flows
   const existingDataFlows = mapDataFlowsToExisting.filter(
     (x): x is [DataFlowInput, string] => !!x[1],
   );
   try {
-    logger.info(colors.magenta(`Updating "${existingDataFlows.length}" data flows...`));
-    await updateDataFlows(client, existingDataFlows, classifyService);
-    logger.info(colors.green(`Successfully updated "${existingDataFlows.length}" data flows!`));
+    logger.info(`Updating "${existingDataFlows.length}" data flows...`);
+    await updateDataFlows(client, existingDataFlows, classifyService, { logger });
+    logger.info(`Successfully updated "${existingDataFlows.length}" data flows!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create data flows! - ${err.message}`));
+    logger.error(`Failed to update data flows! - ${(err as Error).message}`);
   }
 
-  logger.info(colors.green(`Synced "${dataFlows.length}" data flows!`));
+  logger.info(`Synced "${dataFlows.length}" data flows!`);
 
-  // Return true upon success
   return !encounteredError;
 }

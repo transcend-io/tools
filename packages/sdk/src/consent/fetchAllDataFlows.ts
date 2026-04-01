@@ -3,10 +3,12 @@ import {
   ConsentTrackerSource,
   ConsentTrackerStatus,
 } from '@transcend-io/privacy-types';
-import { DATA_FLOWS, fetchConsentManagerId, makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { fetchConsentManagerId } from './fetchConsentManagerId.js';
+import { DATA_FLOWS } from './gqls/consentManager.js';
 
 export interface DataFlow {
   /** ID of data flow */
@@ -44,7 +46,7 @@ export interface DataFlow {
     name: string;
     /** Attribute key that the value represents */
     attributeKey: {
-      /** Name of attribute team */
+      /** Name of attribute key */
       name: string;
     };
   }[];
@@ -57,18 +59,23 @@ const PAGE_SIZE = 20;
  *
  * @param client - GraphQL client
  * @param status - The status to fetch
+ * @param options - Options
  * @returns All DataFlows in the organization
  */
 export async function fetchAllDataFlows(
   client: GraphQLClient,
   status = ConsentTrackerStatus.Live,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<DataFlow[]> {
+  const { logger } = options;
   const dataFlows: DataFlow[] = [];
   let offset = 0;
 
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
-  // Try to fetch an DataFlow with the same title
   let shouldContinue = false;
   do {
     const {

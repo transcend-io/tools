@@ -9,6 +9,8 @@ import {
   syncAttribute,
   syncBusinessEntities,
   syncDataCategories,
+  syncCookies,
+  syncDataFlows,
   syncIntlMessages,
   syncProcessingActivities,
   syncPromptGroups,
@@ -30,8 +32,6 @@ import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSub
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
 import { syncConsentManager } from './syncConsentManager.js';
-import { syncCookies } from './syncCookies.js';
-import { syncDataFlows } from './syncDataFlows.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
 import { syncEnricher } from './syncEnrichers.js';
@@ -228,7 +228,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync cookies
   if (cookies) {
-    const cookiesSuccess = await syncCookies(client, cookies);
+    const cookiesSuccess = await syncCookies(client, cookies, { logger });
     encounteredError = encounteredError || !cookiesSuccess;
   }
 
@@ -417,7 +417,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync data flows
   if (dataFlows) {
-    const syncedDataFlows = await syncDataFlows(client, dataFlows, classifyService);
+    const syncedDataFlows = await syncDataFlows(client, dataFlows, classifyService, { logger });
     encounteredError = encounteredError || !syncedDataFlows;
   }
 
