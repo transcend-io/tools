@@ -1,25 +1,51 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { DataCategoryType } from '@transcend-io/privacy-types';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { DataCategoryInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataCategories, DataSubCategory } from './fetchAllDataCategories.js';
-import { UPDATE_DATA_SUB_CATEGORIES, CREATE_DATA_SUB_CATEGORY } from './gqls/index.js';
+import { UPDATE_DATA_SUB_CATEGORIES, CREATE_DATA_SUB_CATEGORY } from './gqls/dataCategory.js';
+
+export interface DataCategoryInput {
+  /** Name of data category */
+  name: string;
+  /** Type of data category */
+  category: DataCategoryType;
+  /** Description of data category */
+  description?: string;
+  /** Regex for data category */
+  regex?: string;
+  /** Owner email addresses to assign */
+  owners?: string[];
+  /** Team names to assign */
+  teams?: string[];
+  /** Attribute value and its corresponding attribute key */
+  attributes?: {
+    /** Attribute key */
+    key: string;
+    /** Attribute values */
+    values: string[];
+  }[];
+}
 
 /**
- * Input to create a new data category
+ * Create a new data category
  *
  * @param client - GraphQL client
  * @param dataCategory - Input
+ * @param options - Options
  * @returns Created data category
  */
 export async function createDataCategory(
   client: GraphQLClient,
   dataCategory: DataCategoryInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<DataSubCategory, 'id' | 'name' | 'category'>> {
+  const { logger } = options;
   const input = {
     name: dataCategory.name,
     category: dataCategory.category,
@@ -41,15 +67,21 @@ export async function createDataCategory(
 }
 
 /**
- * Input to update data categories
+ * Update data categories
  *
  * @param client - GraphQL client
  * @param dataCategoryIdPairs - [DataCategoryInput, dataCategoryId] list
+ * @param options - Options
  */
 export async function updateDataCategories(
   client: GraphQLClient,
   dataCategoryIdPairs: [DataCategoryInput, string][],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   await makeGraphQLRequest(client, UPDATE_DATA_SUB_CATEGORIES, {
     variables: {
       input: {
@@ -70,19 +102,26 @@ export async function updateDataCategories(
  *
  * @param client - GraphQL client
  * @param inputs - Inputs to create
+ * @param options - Options
  * @returns True if run without error, returns false if an error occurred
  */
 export async function syncDataCategories(
   client: GraphQLClient,
   inputs: DataCategoryInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
-  // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" data categories...`));
+  const { logger } = options;
+  logger.info(`Syncing "${inputs.length}" data categories...`);
 
   let encounteredError = false;
 
   // Fetch existing
-  const existingDataCategories = await fetchAllDataCategories(client);
+  const existingDataCategories = await fetchAllDataCategories(client, {
+    logger,
+  });
 
   // Look up by name
   const dataCategoryByName: {
@@ -94,33 +133,31 @@ export async function syncDataCategories(
     (input) => !dataCategoryByName[`${input.name}:${input.category}`],
   );
 
-  // Create new data categories
   await mapSeries(newDataCategories, async (dataCategory) => {
     try {
-      const newDataCategory = await createDataCategory(client, dataCategory);
+      const newDataCategory = await createDataCategory(client, dataCategory, { logger });
       dataCategoryByName[`${newDataCategory.name}:${newDataCategory.category}`] = newDataCategory;
-      logger.info(colors.green(`Successfully synced data category "${dataCategory.name}"!`));
+      logger.info(`Successfully synced data category "${dataCategory.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.info(
-        colors.red(`Failed to sync data category "${dataCategory.name}"! - ${err.message}`),
+      logger.error(
+        `Failed to sync data category "${dataCategory.name}"! - ${(err as Error).message}`,
       );
     }
   });
 
   // Update all data categories
   try {
-    logger.info(colors.magenta(`Updating "${inputs.length}" data categories!`));
+    logger.info(`Updating "${inputs.length}" data categories!`);
     await updateDataCategories(
       client,
-      inputs.map((input) => [input, dataCategoryByName[`${input.name}:${input.category}`].id]),
+      inputs.map((input) => [input, dataCategoryByName[`${input.name}:${input.category}`]!.id]),
+      { logger },
     );
-    logger.info(colors.green(`Successfully synced "${inputs.length}" data categories!`));
+    logger.info(`Successfully synced "${inputs.length}" data categories!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(
-      colors.red(`Failed to sync "${inputs.length}" data categories ! - ${err.message}`),
-    );
+    logger.error(`Failed to sync "${inputs.length}" data categories ! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

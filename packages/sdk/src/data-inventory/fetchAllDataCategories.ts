@@ -1,9 +1,9 @@
 import { DataCategoryType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { DATA_SUB_CATEGORIES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { DATA_SUB_CATEGORIES } from './gqls/dataCategory.js';
 
 export interface DataSubCategory {
   /** ID of data category */
@@ -44,13 +44,20 @@ const PAGE_SIZE = 20;
  * Fetch all dataSubCategories in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All dataSubCategories in the organization
  */
-export async function fetchAllDataCategories(client: GraphQLClient): Promise<DataSubCategory[]> {
+export async function fetchAllDataCategories(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<DataSubCategory[]> {
+  const { logger } = options;
   const dataSubCategories: DataSubCategory[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {
