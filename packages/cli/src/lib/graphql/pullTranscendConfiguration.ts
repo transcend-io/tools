@@ -8,6 +8,9 @@ import {
 import {
   fetchAllActionItemCollections,
   fetchAllActionItems,
+  fetchAllAgentFiles,
+  fetchAllAgentFunctions,
+  fetchAllAgents,
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
@@ -72,9 +75,6 @@ import {
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
 import { fetchAllActions } from './fetchAllActions.js';
-import { fetchAllAgentFiles } from './fetchAllAgentFiles.js';
-import { fetchAllAgentFunctions } from './fetchAllAgentFunctions.js';
-import { fetchAllAgents } from './fetchAllAgents.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 import { fetchAllCookies } from './fetchAllCookies.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
@@ -270,11 +270,15 @@ export async function pullTranscendConfiguration(
       ? fetchAllPromptGroups(client, { logger })
       : [],
     // Fetch agents
-    resources.includes(TranscendPullResource.Agents) ? fetchAllAgents(client) : [],
+    resources.includes(TranscendPullResource.Agents) ? fetchAllAgents(client, { logger }) : [],
     // Fetch agentFunctions
-    resources.includes(TranscendPullResource.AgentFunctions) ? fetchAllAgentFunctions(client) : [],
+    resources.includes(TranscendPullResource.AgentFunctions)
+      ? fetchAllAgentFunctions(client, { logger })
+      : [],
     // Fetch agentFiles
-    resources.includes(TranscendPullResource.AgentFiles) ? fetchAllAgentFiles(client) : [],
+    resources.includes(TranscendPullResource.AgentFiles)
+      ? fetchAllAgentFiles(client, { logger })
+      : [],
     // Fetch vendors
     resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client, { logger }) : [],
     // Fetch dataCategories

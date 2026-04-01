@@ -4,6 +4,7 @@ packages:
 catalog:
   '@arethetypeswrong/cli': ^0.18.2
   '@changesets/cli': ^2.30.0
+  '@types/json-schema': ^7.0.15
   '@transcend-io/internationalization': ^2.3.2
   '@types/node': ^22.19.15
   husky: ^9.1.7

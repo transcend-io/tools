@@ -1,25 +1,42 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { PromptFilePurpose } from '@transcend-io/privacy-types';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { AgentFileInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllAgentFiles, AgentFile } from './fetchAllAgentFiles.js';
-import { UPDATE_AGENT_FILES, CREATE_AGENT_FILE } from './gqls/index.js';
+import { UPDATE_AGENT_FILES, CREATE_AGENT_FILE } from './gqls/agentFile.js';
+
+export interface AgentFileInput {
+  /** Name of the agent file */
+  name: string;
+  /** Description of the agent file */
+  description?: string;
+  /** File ID */
+  fileId: string;
+  /** File size */
+  size: number;
+  /** File purpose */
+  purpose: PromptFilePurpose;
+}
 
 /**
- * Input to create a new agent file
+ * Create a new agent file
  *
  * @param client - GraphQL client
  * @param agentFile - Input
+ * @param options - Options
  * @returns Created agent file
  */
 export async function createAgentFile(
   client: GraphQLClient,
   agentFile: AgentFileInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Pick<AgentFile, 'id' | 'name' | 'fileId'>> {
+  const { logger } = options;
   const input = {
     name: agentFile.name,
     description: agentFile.description,
@@ -45,15 +62,21 @@ export async function createAgentFile(
 }
 
 /**
- * Input to update agent files
+ * Update agent files
  *
  * @param client - GraphQL client
  * @param agentFileIdPairs - [AgentFileInput, agentFileId] list
+ * @param options - Options
  */
 export async function updateAgentFiles(
   client: GraphQLClient,
   agentFileIdPairs: [AgentFileInput, string][],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FILES, {
     variables: {
       input: {
@@ -72,55 +95,56 @@ export async function updateAgentFiles(
 }
 
 /**
- * Sync the data inventory agent files
+ * Sync the agent files
  *
  * @param client - GraphQL client
  * @param inputs - Inputs to create
+ * @param options - Options
  * @returns True if run without error, returns false if an error occurred
  */
 export async function syncAgentFiles(
   client: GraphQLClient,
   inputs: AgentFileInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<boolean> {
-  // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" agent files...`));
+  const { logger } = options;
+  logger.info(`Syncing "${inputs.length}" agent files...`);
 
   let encounteredError = false;
 
-  // Fetch existing
-  const existingAgentFiles = await fetchAllAgentFiles(client);
+  const existingAgentFiles = await fetchAllAgentFiles(client, { logger });
 
-  // Look up by name
-  const agentFileByName: {
+  const agentFileByName = keyBy(existingAgentFiles, 'name') as {
     [k in string]: Pick<AgentFile, 'id' | 'name' | 'fileId'>;
-  } = keyBy(existingAgentFiles, 'name');
+  };
 
-  // Create new agent files
   const newAgentFiles = inputs.filter((input) => !agentFileByName[input.name]);
 
-  // Create new agent files
   await mapSeries(newAgentFiles, async (agentFile) => {
     try {
-      const newAgentFile = await createAgentFile(client, agentFile);
+      const newAgentFile = await createAgentFile(client, agentFile, { logger });
       agentFileByName[newAgentFile.name] = newAgentFile;
-      logger.info(colors.green(`Successfully synced agent file "${agentFile.name}"!`));
+      logger.info(`Successfully synced agent file "${agentFile.name}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.error(colors.red(`Failed to sync agent file "${agentFile.name}"! - ${err.message}`));
+      logger.error(`Failed to sync agent file "${agentFile.name}"! - ${(err as Error).message}`);
     }
   });
 
-  // Update all agent files
   try {
-    logger.info(colors.magenta(`Updating "${inputs.length}" agent files!`));
+    logger.info(`Updating "${inputs.length}" agent files!`);
     await updateAgentFiles(
       client,
-      inputs.map((input) => [input, agentFileByName[input.name].id]),
+      inputs.map((input) => [input, agentFileByName[input.name]!.id]),
+      { logger },
     );
-    logger.info(colors.green(`Successfully synced "${inputs.length}" agent files!`));
+    logger.info(`Successfully synced "${inputs.length}" agent files!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to sync "${inputs.length}" agent files! - ${err.message}`));
+    logger.error(`Failed to sync "${inputs.length}" agent files! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

@@ -1,9 +1,9 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import type { JSONSchema7 } from 'json-schema';
 
-import { logger } from '../../logger.js';
-import { AGENT_FUNCTIONS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { AGENT_FUNCTIONS } from './gqls/agentFunction.js';
 
 export interface AgentFunction {
   /** ID of agentFunction */
@@ -16,7 +16,7 @@ export interface AgentFunction {
   parameters: JSONSchema7;
 }
 
-interface AgentFunctionInput extends Omit<AgentFunction, 'parameters'> {
+interface AgentFunctionRaw extends Omit<AgentFunction, 'parameters'> {
   /** Stringified parameters */
   parameters: string;
 }
@@ -24,16 +24,23 @@ interface AgentFunctionInput extends Omit<AgentFunction, 'parameters'> {
 const PAGE_SIZE = 20;
 
 /**
- * Fetch all agentFunctions in the organization
+ * Fetch all agent functions in the organization
  *
  * @param client - GraphQL client
- * @returns All agentFunctions in the organization
+ * @param options - Options
+ * @returns All agent functions in the organization
  */
-export async function fetchAllAgentFunctions(client: GraphQLClient): Promise<AgentFunction[]> {
+export async function fetchAllAgentFunctions(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<AgentFunction[]> {
+  const { logger } = options;
   const agentFunctions: AgentFunction[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {
@@ -42,7 +49,7 @@ export async function fetchAllAgentFunctions(client: GraphQLClient): Promise<Age
       /** AgentFunctions */
       agentFunctions: {
         /** List */
-        nodes: AgentFunctionInput[];
+        nodes: AgentFunctionRaw[];
       };
     }>(client, AGENT_FUNCTIONS, {
       variables: { first: PAGE_SIZE, offset },

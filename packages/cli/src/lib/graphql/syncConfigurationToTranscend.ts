@@ -3,6 +3,9 @@ import {
   fetchApiKeys,
   syncActionItemCollections,
   syncActionItems,
+  syncAgentFiles,
+  syncAgentFunctions,
+  syncAgents,
   syncAttribute,
   syncBusinessEntities,
   syncDataCategories,
@@ -26,9 +29,6 @@ import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
-import { syncAgentFiles } from './syncAgentFiles.js';
-import { syncAgentFunctions } from './syncAgentFunctions.js';
-import { syncAgents } from './syncAgents.js';
 import { syncConsentManager } from './syncConsentManager.js';
 import { syncCookies } from './syncCookies.js';
 import { syncDataFlows } from './syncDataFlows.js';
@@ -210,19 +210,19 @@ export async function syncConfigurationToTranscend(
 
   // Sync agents
   if (agents) {
-    const agentsSuccess = await syncAgents(client, agents);
+    const agentsSuccess = await syncAgents(client, agents, { logger });
     encounteredError = encounteredError || !agentsSuccess;
   }
 
   // Sync agent functions
   if (agentFunctions) {
-    const agentFunctionsSuccess = await syncAgentFunctions(client, agentFunctions);
+    const agentFunctionsSuccess = await syncAgentFunctions(client, agentFunctions, { logger });
     encounteredError = encounteredError || !agentFunctionsSuccess;
   }
 
   // Sync agent files
   if (agentFiles) {
-    const agentFilesSuccess = await syncAgentFiles(client, agentFiles);
+    const agentFilesSuccess = await syncAgentFiles(client, agentFiles, { logger });
     encounteredError = encounteredError || !agentFilesSuccess;
   }
 
