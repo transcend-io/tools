@@ -26,11 +26,24 @@ export * from './fetchConsentManagerId.js';
 export * from './fetchDataSubjects.js';
 export * from './fetchIdentifiers.js';
 export * from './fetchPrivacyCenterId.js';
-export * from './fetchPromptGroups.js';
-export * from './fetchPromptGroups.js';
-export * from './fetchPromptPartials.js';
-export * from './fetchPrompts.js';
-export * from './fetchPromptThreads.js';
+export {
+  fetchAllLargeLanguageModels,
+  type LargeLanguageModel,
+  fetchAllPromptGroups,
+  type PromptGroup,
+  fetchAllPromptPartials,
+  type PromptPartial,
+  fetchAllPrompts,
+  type Prompt,
+  fetchPromptsWithVariables,
+  type TranscendPromptTemplated,
+  type TranscendPromptPartialTemplated,
+  type TranscendPromptsAndVariables,
+  type PromptCalculatedVariable,
+  type PromptRuntimeVariable,
+  fetchAllPromptThreads,
+  type PromptThread,
+} from '@transcend-io/sdk';
 export * from './fetchRequestDataSilo.js';
 export * from './fetchRequestDataSiloActiveCount.js';
 export * from './fetchRequestFilesForRequest.js';

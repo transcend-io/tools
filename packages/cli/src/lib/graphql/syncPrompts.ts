@@ -1,4 +1,4 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { fetchAllPrompts, makeGraphQLRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -6,7 +6,6 @@ import { keyBy } from 'lodash-es';
 
 import { PromptInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchAllPrompts } from './fetchPrompts.js';
 import { UPDATE_PROMPTS, CREATE_PROMPT } from './gqls/index.js';
 
 /**
@@ -86,7 +85,7 @@ export async function syncPrompts(
   logger.info(colors.magenta(`Syncing "${prompts.length}" prompts...`));
 
   // Index existing prompts
-  const existing = await fetchAllPrompts(client);
+  const existing = await fetchAllPrompts(client, { logger });
   const promptByTitle = keyBy(existing, 'title');
 
   // Determine which prompts are new vs existing

@@ -1,4 +1,4 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { fetchAllPromptGroups, fetchAllPrompts, makeGraphQLRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -6,8 +6,6 @@ import { keyBy } from 'lodash-es';
 
 import { PromptGroupInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchAllPromptGroups } from './fetchPromptGroups.js';
-import { fetchAllPrompts } from './fetchPrompts.js';
 import { UPDATE_PROMPT_GROUPS, CREATE_PROMPT_GROUP } from './gqls/index.js';
 
 export interface EditPromptGroupInput {
@@ -90,8 +88,8 @@ export async function syncPromptGroups(
   logger.info(colors.magenta(`Syncing "${promptGroups.length}" prompt groups...`));
 
   // Index existing prompt groups
-  const existing = await fetchAllPromptGroups(client);
-  const existingPrompts = await fetchAllPrompts(client);
+  const existing = await fetchAllPromptGroups(client, { logger });
+  const existingPrompts = await fetchAllPrompts(client, { logger });
   const promptByTitle = keyBy(existingPrompts, 'title');
   const promptGroupByTitle = keyBy(existing, 'title');
 

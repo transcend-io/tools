@@ -1,4 +1,4 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { fetchAllPromptPartials, makeGraphQLRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -6,7 +6,6 @@ import { keyBy } from 'lodash-es';
 
 import { PromptPartialInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchAllPromptPartials } from './fetchPromptPartials.js';
 import { UPDATE_PROMPT_PARTIALS, CREATE_PROMPT_PARTIAL } from './gqls/index.js';
 
 /**
@@ -85,7 +84,7 @@ export async function syncPromptPartials(
   logger.info(colors.magenta(`Syncing "${promptPartials.length}" prompt partials...`));
 
   // Index existing prompt partials
-  const existing = await fetchAllPromptPartials(client);
+  const existing = await fetchAllPromptPartials(client, { logger });
   const promptPartialByTitle = keyBy(existing, 'title');
 
   // Determine which promptPartials are new vs existing

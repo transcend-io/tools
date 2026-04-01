@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { PROMPT_GROUPS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { PROMPT_GROUPS } from './gqls/prompt.js';
 
 export interface PromptGroup {
   /** ID of prompts */
@@ -24,9 +24,17 @@ const PAGE_SIZE = 20;
  * Fetch all PromptGroups in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All PromptGroups in the organization
  */
-export async function fetchAllPromptGroups(client: GraphQLClient): Promise<PromptGroup[]> {
+export async function fetchAllPromptGroups(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<PromptGroup[]> {
+  const { logger } = options;
   const promptGroups: PromptGroup[] = [];
   let offset = 0;
 

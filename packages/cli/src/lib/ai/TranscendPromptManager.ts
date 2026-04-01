@@ -10,7 +10,16 @@ import {
   QueueStatus,
   LargeLanguageModelClient,
 } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllLargeLanguageModels,
+  fetchAllPromptThreads,
+  fetchPromptsWithVariables,
+  type LargeLanguageModel,
+  type PromptThread,
+  type TranscendPromptTemplated,
+  type TranscendPromptsAndVariables,
+} from '@transcend-io/sdk';
 import { Secret } from '@transcend-io/secret-value';
 /* eslint-disable max-lines */
 import { Optionalize, Requirize, apply, decodeCodec, getValues } from '@transcend-io/type-utils';
@@ -20,16 +29,7 @@ import * as t from 'io-ts';
 import { groupBy, keyBy, uniq, chunk } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
-import {
-  LargeLanguageModel,
-  fetchAllLargeLanguageModels,
-} from '../graphql/fetchLargeLanguageModels.js';
-import {
-  TranscendPromptTemplated,
-  TranscendPromptsAndVariables,
-  fetchPromptsWithVariables,
-} from '../graphql/fetchPrompts.js';
-import { PromptThread, fetchAllPromptThreads } from '../graphql/fetchPromptThreads.js';
+import { logger } from '../../logger.js';
 import {
   Agent,
   AgentFile,
@@ -274,10 +274,11 @@ export class TranscendPromptManager<
     // Fetch prompts and data
     const [response, largeLanguageModels, agents] = await Promise.all([
       fetchPromptsWithVariables(this.graphQLClient, {
+        logger,
         promptIds,
         promptTitles,
       }),
-      fetchAllLargeLanguageModels(this.graphQLClient),
+      fetchAllLargeLanguageModels(this.graphQLClient, { logger }),
       fetchAllAgents(this.graphQLClient, { names: agentNames }),
     ]);
     this.agentsByName = keyBy(agents, 'name');
@@ -359,7 +360,8 @@ export class TranscendPromptManager<
    */
   async getPromptThreadBySlackTs(ts: string): Promise<PromptThread | undefined> {
     const [thread] = await fetchAllPromptThreads(this.graphQLClient, {
-      slackMessageTs: [ts],
+      logger,
+      filterBy: { slackMessageTs: [ts] },
     });
     return thread;
   }

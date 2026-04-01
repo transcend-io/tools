@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { PROMPT_PARTIALS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { PROMPT_PARTIALS } from './gqls/prompt.js';
 
 export interface PromptPartial {
   /** ID of prompts */
@@ -19,9 +19,17 @@ const PAGE_SIZE = 20;
  * Fetch all PromptPartials in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All PromptPartials in the organization
  */
-export async function fetchAllPromptPartials(client: GraphQLClient): Promise<PromptPartial[]> {
+export async function fetchAllPromptPartials(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<PromptPartial[]> {
+  const { logger } = options;
   const promptPartials: PromptPartial[] = [];
   let offset = 0;
 
