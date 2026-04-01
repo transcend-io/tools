@@ -4,11 +4,11 @@ import {
   PromptRunProductArea,
   LargeLanguageModelClient,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { REPORT_PROMPT_RUN } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { REPORT_PROMPT_RUN } from './gqls/promptRun.js';
 
 export interface ReportPromptRunInput {
   /** Name of run */
@@ -75,12 +75,18 @@ export interface ReportPromptRunInput {
  *
  * @param client - GraphQL client
  * @param input - Prompt input
+ * @param options - Options
  * @returns Prompt ID
  */
 export async function reportPromptRun(
   client: GraphQLClient,
   input: ReportPromptRunInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<string> {
+  const { logger } = options;
   const {
     reportPromptRun: { promptRun },
   } = await makeGraphQLRequest<{

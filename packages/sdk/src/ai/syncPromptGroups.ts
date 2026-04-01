@@ -1,12 +1,20 @@
-import { fetchAllPromptGroups, fetchAllPrompts, makeGraphQLRequest } from '@transcend-io/sdk';
-import { map } from '@transcend-io/utils';
-import colors from 'colors';
+import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { PromptGroupInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { UPDATE_PROMPT_GROUPS, CREATE_PROMPT_GROUP } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { fetchAllPromptGroups } from './fetchPromptGroups.js';
+import { fetchAllPrompts } from './fetchPrompts.js';
+import { UPDATE_PROMPT_GROUPS, CREATE_PROMPT_GROUP } from './gqls/prompt.js';
+
+export interface PromptGroupInput {
+  /** Title of prompt group */
+  title: string;
+  /** Description */
+  description: string;
+  /** Prompt titles */
+  prompts: string[];
+}
 
 export interface EditPromptGroupInput {
   /** Title of prompt group */
@@ -22,12 +30,18 @@ export interface EditPromptGroupInput {
  *
  * @param client - GraphQL client
  * @param input - Prompt input
+ * @param options - Options
  * @returns Prompt group ID
  */
 export async function createPromptGroup(
   client: GraphQLClient,
   input: EditPromptGroupInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<string> {
+  const { logger } = options;
   const {
     createPromptGroup: { promptGroup },
   } = await makeGraphQLRequest<{
@@ -43,7 +57,7 @@ export async function createPromptGroup(
     variables: { input },
     logger,
   });
-  logger.info(colors.green(`Successfully created prompt group "${input.title}"!`));
+  logger.info(`Successfully created prompt group "${input.title}"!`);
   return promptGroup.id;
 }
 
@@ -52,11 +66,17 @@ export async function createPromptGroup(
  *
  * @param client - GraphQL client
  * @param input - Prompt input
+ * @param options - Options
  */
 export async function updatePromptGroups(
   client: GraphQLClient,
   input: [EditPromptGroupInput, string][],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPT_GROUPS, {
     variables: {
       input: {
@@ -68,7 +88,7 @@ export async function updatePromptGroups(
     },
     logger,
   });
-  logger.info(colors.green(`Successfully updated ${input.length} prompt groups!`));
+  logger.info(`Successfully updated ${input.length} prompt groups!`);
 }
 
 /**
@@ -76,16 +96,22 @@ export async function updatePromptGroups(
  *
  * @param client - GraphQL client
  * @param promptGroups - PromptGroups
- * @param concurrency - Concurrency
+ * @param options - Options
  * @returns True if synced successfully
  */
 export async function syncPromptGroups(
   client: GraphQLClient,
   promptGroups: PromptGroupInput[],
-  concurrency = 20,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Concurrency */
+    concurrency?: number;
+  },
 ): Promise<boolean> {
+  const { logger, concurrency = 20 } = options;
   let encounteredError = false;
-  logger.info(colors.magenta(`Syncing "${promptGroups.length}" prompt groups...`));
+  logger.info(`Syncing "${promptGroups.length}" prompt groups...`);
 
   // Index existing prompt groups
   const existing = await fetchAllPromptGroups(client, { logger });
@@ -104,40 +130,44 @@ export async function syncPromptGroups(
     .filter(([, existing]) => !existing)
     .map(([promptInput]) => promptInput as PromptGroupInput);
   try {
-    logger.info(colors.magenta(`Creating "${newPromptGroups.length}" new prompt groups...`));
+    logger.info(`Creating "${newPromptGroups.length}" new prompt groups...`);
     await map(
       newPromptGroups,
       async (prompt) => {
-        await createPromptGroup(client, {
-          ...prompt,
-          promptIds: prompt.prompts.map((title) => {
-            const prompt = promptByTitle[title];
-            if (!prompt) {
-              throw new Error(`Failed to find prompt with title: "${title}"`);
-            }
-            return prompt.id;
-          }),
-        });
+        await createPromptGroup(
+          client,
+          {
+            ...prompt,
+            promptIds: prompt.prompts.map((title) => {
+              const prompt = promptByTitle[title];
+              if (!prompt) {
+                throw new Error(`Failed to find prompt with title: "${title}"`);
+              }
+              return prompt.id;
+            }),
+          },
+          { logger },
+        );
       },
       {
         concurrency,
       },
     );
-    logger.info(colors.green(`Successfully synced ${newPromptGroups.length} prompt groups!`));
+    logger.info(`Successfully synced ${newPromptGroups.length} prompt groups!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create prompt groups! - ${err.message}`));
+    logger.error(`Failed to create prompt groups! - ${(err as Error).message}`);
   }
 
   // Update existing promptGroups
-  const existingPromptGroups = mapPromptGroupsToExisting.filter(
+  const existingPromptGroupsMapped = mapPromptGroupsToExisting.filter(
     (x): x is [PromptGroupInput, string] => !!x[1],
   );
   try {
-    logger.info(colors.magenta(`Updating "${existingPromptGroups.length}" prompt groups...`));
+    logger.info(`Updating "${existingPromptGroupsMapped.length}" prompt groups...`);
     await updatePromptGroups(
       client,
-      existingPromptGroups.map(([{ prompts, ...input }, id]) => [
+      existingPromptGroupsMapped.map(([{ prompts, ...input }, id]) => [
         {
           ...input,
           promptIds: prompts.map((title) => {
@@ -150,17 +180,15 @@ export async function syncPromptGroups(
         },
         id,
       ]),
+      { logger },
     );
-    logger.info(
-      colors.green(`Successfully updated "${existingPromptGroups.length}" prompt groups!`),
-    );
+    logger.info(`Successfully updated "${existingPromptGroupsMapped.length}" prompt groups!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create prompt groups! - ${err.message}`));
+    logger.error(`Failed to create prompt groups! - ${(err as Error).message}`);
   }
 
-  logger.info(colors.green(`Synced "${promptGroups.length}" prompt groups!`));
+  logger.info(`Synced "${promptGroups.length}" prompt groups!`);
 
-  // Return true upon success
   return !encounteredError;
 }

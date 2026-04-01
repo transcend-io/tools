@@ -17,6 +17,8 @@ import {
   fetchPromptsWithVariables,
   type LargeLanguageModel,
   type PromptThread,
+  reportPromptRun,
+  type ReportPromptRunInput,
   type TranscendPromptTemplated,
   type TranscendPromptsAndVariables,
 } from '@transcend-io/sdk';
@@ -34,10 +36,8 @@ import {
   Agent,
   AgentFile,
   AgentFileFilterBy,
-  ReportPromptRunInput,
   fetchAllAgentFiles,
   fetchAllAgents,
-  reportPromptRun,
 } from '../graphql/index.js';
 
 /**
@@ -602,12 +602,39 @@ export class TranscendPromptManager<
       // Parse the response
       parsed = this.parseAiResponse(promptName, response);
     } catch (err) {
-      await reportPromptRun(this.graphQLClient, {
+      await reportPromptRun(
+        this.graphQLClient,
+        {
+          productArea: PromptRunProductArea.PromptManager,
+          ...options,
+          name,
+          error: err.message,
+          status: QueueStatus.Error,
+          ...(typeof largeLanguageModel === 'string'
+            ? { largeLanguageModelId: largeLanguageModel }
+            : {
+                largeLanguageModelName: largeLanguageModel.name,
+                largeLanguageModelClient: largeLanguageModel.client,
+              }),
+          promptId: promptInput.id,
+          promptRunMessages: options.promptRunMessages.map((message, ind) => ({
+            ...message,
+            ...(ind === 0 ? { template: promptInput.content } : {}),
+          })),
+        },
+        { logger },
+      );
+      throw err;
+    }
+
+    // report successful run
+    const promptRunId = await reportPromptRun(
+      this.graphQLClient,
+      {
         productArea: PromptRunProductArea.PromptManager,
         ...options,
         name,
-        error: err.message,
-        status: QueueStatus.Error,
+        status: QueueStatus.Resolved,
         ...(typeof largeLanguageModel === 'string'
           ? { largeLanguageModelId: largeLanguageModel }
           : {
@@ -619,28 +646,9 @@ export class TranscendPromptManager<
           ...message,
           ...(ind === 0 ? { template: promptInput.content } : {}),
         })),
-      });
-      throw err;
-    }
-
-    // report successful run
-    const promptRunId = await reportPromptRun(this.graphQLClient, {
-      productArea: PromptRunProductArea.PromptManager,
-      ...options,
-      name,
-      status: QueueStatus.Resolved,
-      ...(typeof largeLanguageModel === 'string'
-        ? { largeLanguageModelId: largeLanguageModel }
-        : {
-            largeLanguageModelName: largeLanguageModel.name,
-            largeLanguageModelClient: largeLanguageModel.client,
-          }),
-      promptId: promptInput.id,
-      promptRunMessages: options.promptRunMessages.map((message, ind) => ({
-        ...message,
-        ...(ind === 0 ? { template: promptInput.content } : {}),
-      })),
-    });
+      },
+      { logger },
+    );
 
     return {
       result: parsed,
@@ -691,23 +699,27 @@ export class TranscendPromptManager<
       throw new Error(`promptRunMessages[0].role is expected to be = ${ChatCompletionRole.System}`);
     }
 
-    const promptRunId = await reportPromptRun(this.graphQLClient, {
-      productArea: PromptRunProductArea.PromptManager,
-      ...options,
-      name,
-      status: QueueStatus.Error,
-      ...(typeof largeLanguageModel === 'string'
-        ? { largeLanguageModelId: largeLanguageModel }
-        : {
-            largeLanguageModelName: largeLanguageModel.name,
-            largeLanguageModelClient: largeLanguageModel.client,
-          }),
-      promptId: promptInput.id,
-      promptRunMessages: options.promptRunMessages.map((message, ind) => ({
-        ...message,
-        ...(ind === 0 ? { template: promptInput.content } : {}),
-      })),
-    });
+    const promptRunId = await reportPromptRun(
+      this.graphQLClient,
+      {
+        productArea: PromptRunProductArea.PromptManager,
+        ...options,
+        name,
+        status: QueueStatus.Error,
+        ...(typeof largeLanguageModel === 'string'
+          ? { largeLanguageModelId: largeLanguageModel }
+          : {
+              largeLanguageModelName: largeLanguageModel.name,
+              largeLanguageModelClient: largeLanguageModel.client,
+            }),
+        promptId: promptInput.id,
+        promptRunMessages: options.promptRunMessages.map((message, ind) => ({
+          ...message,
+          ...(ind === 0 ? { template: promptInput.content } : {}),
+        })),
+      },
+      { logger },
+    );
 
     return {
       promptRunId,

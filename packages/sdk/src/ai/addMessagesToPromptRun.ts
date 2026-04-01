@@ -1,9 +1,9 @@
 import { QueueStatus, ChatCompletionRole } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { ADD_MESSAGES_TO_PROMPT_RUN } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { ADD_MESSAGES_TO_PROMPT_RUN } from './gqls/promptRun.js';
 
 export interface AddMessagesToPromptRunInput {
   /** ID of run */
@@ -42,12 +42,18 @@ export interface AddMessagesToPromptRunInput {
  *
  * @param client - GraphQL client
  * @param input - Prompt input
+ * @param options - Options
  * @returns Prompt ID
  */
 export async function addMessagesToPromptRun(
   client: GraphQLClient,
   { promptRunId, promptRunMessages = [], ...rest }: AddMessagesToPromptRunInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<string> {
+  const { logger } = options;
   const {
     addMessagesToPromptRun: { promptRun },
   } = await makeGraphQLRequest<{
