@@ -1,10 +1,8 @@
 import { ConsentTrackerSource, ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { COOKIES, fetchConsentManagerId, makeGraphQLRequest } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { COOKIES } from './gqls/index.js';
 
 export interface Cookie {
   /** ID of the cookie */
@@ -64,7 +62,7 @@ export async function fetchAllCookies(
   const cookies: Cookie[] = [];
   let offset = 0;
 
-  const airgapBundleId = await fetchConsentManagerId(client);
+  const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // Try to fetch an Cookies with the same title
   let shouldContinue = false;

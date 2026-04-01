@@ -1,4 +1,3 @@
-export * from './createTranscendConsentGotInstance.js';
 export * from './deployConsentManager.js';
 export * from './fetchActiveSiloDiscoPlugin.js';
 export * from './fetchAllActions.js';
@@ -15,7 +14,6 @@ export * from './fetchAllRequestIdentifierMetadata.js';
 export * from './fetchAllRequestIdentifiers.js';
 export * from './fetchAllRequests.js';
 export * from './fetchCatalogs.js';
-export * from './fetchConsentManagerId.js';
 export * from './fetchDataSubjects.js';
 export * from './fetchIdentifiers.js';
 export * from './fetchPrivacyCenterId.js';
