@@ -6,10 +6,15 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
 
 export interface IntlMessageInput {
+  /** React Intl message ID */
   id: string;
+  /** Target React Intl ID to map this message to */
   targetReactIntlId?: string;
+  /** Description of the message for translators */
   description?: string;
+  /** Default English message content */
   defaultMessage?: string;
+  /** Map from locale code to translated string */
   translations?: Record<string, string>;
 }
 
