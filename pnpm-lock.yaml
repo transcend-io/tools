@@ -12,6 +12,9 @@ catalogs:
     '@changesets/cli':
       specifier: ^2.30.0
       version: 2.30.0
+    '@transcend-io/internationalization':
+      specifier: ^2.3.2
+      version: 2.3.2
     '@types/node':
       specifier: ^22.19.15
       version: 22.19.15
@@ -93,7 +96,7 @@ importers:
         specifier: ^1.3.2
         version: 1.3.2
       '@transcend-io/internationalization':
-        specifier: ^2.3.2
+        specifier: 'catalog:'
         version: 2.3.2
       '@transcend-io/persisted-state':
         specifier: ^1.0.6
@@ -271,7 +274,7 @@ importers:
   packages/privacy-types:
     dependencies:
       '@transcend-io/internationalization':
-        specifier: ^2.3.2
+        specifier: 'catalog:'
         version: 2.3.2
       '@transcend-io/type-utils':
         specifier: ^1.8.9
@@ -308,7 +311,7 @@ importers:
         specifier: ^12.16.0
         version: 12.16.0
       '@transcend-io/internationalization':
-        specifier: ^2.3.2
+        specifier: 'catalog:'
         version: 2.3.2
       '@transcend-io/privacy-types':
         specifier: workspace:*

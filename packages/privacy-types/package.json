@@ -34,7 +34,7 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@transcend-io/internationalization": "^2.3.2",
+    "@transcend-io/internationalization": "catalog:",
     "@transcend-io/type-utils": "^1.8.9",
     "fp-ts": "^2.16.1",
     "io-ts": "^2.2.21"

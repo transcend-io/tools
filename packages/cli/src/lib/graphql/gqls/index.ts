@@ -9,7 +9,6 @@ export * from './repository.js';
 export * from './siloDiscovery.js';
 export * from './template.js';
 export * from './softwareDevelopmentKit.js';
-export * from './codePackage.js';
 export * from './policy.js';
 export * from './request.js';
 export * from './RequestEnricher.js';
