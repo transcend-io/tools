@@ -1,10 +1,9 @@
 import { AttributeKeyType, AttributeSupportedResourceType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import colors from 'colors';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { ATTRIBUTES, ATTRIBUTE_VALUES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { ATTRIBUTES, ATTRIBUTE_VALUES } from './gqls/attribute.js';
 
 export interface AttributeValue {
   /** Attribute ID */
@@ -46,8 +45,12 @@ const PAGE_SIZE = 100;
 export async function fetchAllAttributeValues(
   client: GraphQLClient,
   attributeKeyId: string,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<AttributeValue[]> {
-  logger.info(colors.magenta(`Fetching all attribute values for ${attributeKeyId}...`));
+  const { logger } = options;
   const attributeValues: AttributeValue[] = [];
   let offset = 0;
 
@@ -82,8 +85,14 @@ export const SYNC_ATTRIBUTE_TYPES = [AttributeKeyType.MultiSelect, AttributeKeyT
  * @param client - GraphQL client
  * @returns A map from apiKey title to Identifier
  */
-export async function fetchAllAttributes(client: GraphQLClient): Promise<Attribute[]> {
-  logger.info(colors.magenta('Fetching all attributes...'));
+export async function fetchAllAttributes(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<Attribute[]> {
+  const { logger } = options;
   const attributes: Attribute[] = [];
   let offset = 0;
 
@@ -107,7 +116,7 @@ export async function fetchAllAttributes(client: GraphQLClient): Promise<Attribu
         nodes.map(async (node) => ({
           ...node,
           values: SYNC_ATTRIBUTE_TYPES.includes(node.type)
-            ? await fetchAllAttributeValues(client, node.id)
+            ? await fetchAllAttributeValues(client, node.id, { logger })
             : [],
         })),
       )),

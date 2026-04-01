@@ -1,5 +1,7 @@
 import {
+  fetchAllAttributes,
   fetchApiKeys,
+  syncAttribute,
   syncBusinessEntities,
   syncIntlMessages,
   syncTeams,
@@ -14,7 +16,6 @@ import { GraphQLClient } from 'graphql-request';
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllActions } from './fetchAllActions.js';
-import { fetchAllAttributes } from './fetchAllAttributes.js';
 import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
@@ -23,7 +24,6 @@ import { syncActionItems } from './syncActionItems.js';
 import { syncAgentFiles } from './syncAgentFiles.js';
 import { syncAgentFunctions } from './syncAgentFunctions.js';
 import { syncAgents } from './syncAgents.js';
-import { syncAttribute } from './syncAttribute.js';
 import { syncConsentManager } from './syncConsentManager.js';
 import { syncCookies } from './syncCookies.js';
 import { syncDataCategories } from './syncDataCategories.js';
@@ -245,7 +245,7 @@ export async function syncConfigurationToTranscend(
   if (attributes) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${attributes.length}" attributes...`));
-    const existingAttributes = await fetchAllAttributes(client);
+    const existingAttributes = await fetchAllAttributes(client, { logger });
     await map(
       attributes,
       async (attribute) => {
@@ -256,6 +256,7 @@ export async function syncConfigurationToTranscend(
           await syncAttribute(client, attribute, {
             existingAttribute: existing,
             deleteExtraAttributeValues,
+            logger,
           });
           logger.info(colors.green(`Successfully synced attribute "${attribute.name}"!`));
         } catch (err) {
