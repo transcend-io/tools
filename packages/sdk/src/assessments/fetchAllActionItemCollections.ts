@@ -1,9 +1,9 @@
 import { TranscendProduct } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { GLOBAL_ACTION_ITEM_COLLECTIONS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { GLOBAL_ACTION_ITEM_COLLECTIONS } from './gqls/actionItemCollection.js';
 
 export interface ActionItemCollection {
   /** ID of collection */
@@ -22,16 +22,22 @@ export interface ActionItemCollection {
  * Fetch all action item collections in the organization
  *
  * @param client - GraphQL client
- * @param filterBy - Filter by
+ * @param options - Options
  * @returns All action item collections in the organization
  */
 export async function fetchAllActionItemCollections(
   client: GraphQLClient,
-  filterBy: {
-    /** Filter on location */
-    location?: TranscendProduct;
-  } = {},
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Filter by */
+    filterBy?: {
+      /** Filter on location */
+      location?: TranscendProduct;
+    };
+  },
 ): Promise<ActionItemCollection[]> {
+  const { logger, filterBy = {} } = options;
   const {
     globalActionItemCollections: { nodes },
   } = await makeGraphQLRequest<{

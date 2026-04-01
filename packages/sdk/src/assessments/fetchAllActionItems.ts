@@ -1,9 +1,9 @@
 import { ActionItemCode, ActionItemPriorityOverride } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { GLOBAL_ACTION_ITEMS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { GLOBAL_ACTION_ITEMS } from './gqls/actionItem.js';
 
 export interface ActionItemRaw {
   /** ID of action item */
@@ -98,28 +98,33 @@ const PAGE_SIZE = 20;
  * Fetch all action items in the organization
  *
  * @param client - GraphQL client
- * @param filterBy - Filter by
+ * @param options - Options
  * @returns All action items in the organization
  */
 export async function fetchAllActionItems(
   client: GraphQLClient,
-  filterBy: {
-    /** Names of the action items to filter for */
-    priority?: ActionItemPriorityOverride[];
-    /** Type of action item */
-    type?: ActionItemCode[];
-    /** Whether resolved or not */
-    resolved?: boolean;
-    /** Filter for action items due before this date */
-    startDueDate?: Date;
-    /** Filter for action items due after this date */
-    endDueDate?: Date;
-  } = {},
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Filter by */
+    filterBy?: {
+      /** Names of the action items to filter for */
+      priority?: ActionItemPriorityOverride[];
+      /** Type of action item */
+      type?: ActionItemCode[];
+      /** Whether resolved or not */
+      resolved?: boolean;
+      /** Filter for action items due before this date */
+      startDueDate?: Date;
+      /** Filter for action items due after this date */
+      endDueDate?: Date;
+    };
+  },
 ): Promise<ActionItem[]> {
+  const { logger, filterBy = {} } = options;
   const actionItems: ActionItem[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {
@@ -145,10 +150,10 @@ export async function fetchAllActionItems(
     actionItems.push(
       ...nodes.map((node) => ({
         ...node,
-        id: node.ids[0],
-        title: node.titles[0],
-        notes: node.notes[0],
-        link: node.links[0],
+        id: node.ids[0]!,
+        title: node.titles[0]!,
+        notes: node.notes[0]!,
+        link: node.links[0]!,
       })),
     );
     offset += PAGE_SIZE;

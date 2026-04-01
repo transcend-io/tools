@@ -6,6 +6,8 @@ import {
   RetentionType,
 } from '@transcend-io/privacy-types';
 import {
+  fetchAllActionItemCollections,
+  fetchAllActionItems,
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
@@ -67,8 +69,6 @@ import {
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
-import { fetchAllActionItemCollections } from './fetchAllActionItemCollections.js';
-import { fetchAllActionItems } from './fetchAllActionItems.js';
 import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllAgentFiles } from './fetchAllAgentFiles.js';
 import { fetchAllAgentFunctions } from './fetchAllAgentFunctions.js';
@@ -285,11 +285,14 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch actionItems
     resources.includes(TranscendPullResource.ActionItems)
-      ? fetchAllActionItems(client, { type: [ActionItemCode.Onboarding] })
+      ? fetchAllActionItems(client, {
+          logger,
+          filterBy: { type: [ActionItemCode.Onboarding] },
+        })
       : [],
     // Fetch actionItemCollections
     resources.includes(TranscendPullResource.ActionItemCollections)
-      ? fetchAllActionItemCollections(client)
+      ? fetchAllActionItemCollections(client, { logger })
       : [],
     // Fetch teams
     resources.includes(TranscendPullResource.Teams) ? fetchAllTeams(client, { logger }) : [],

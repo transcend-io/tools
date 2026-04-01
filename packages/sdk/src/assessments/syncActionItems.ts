@@ -1,34 +1,81 @@
-import { makeGraphQLRequest, fetchAllAttributes, type Attribute } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import { ActionItemCode, ActionItemPriorityOverride } from '@transcend-io/privacy-types';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { uniq, keyBy, chunk } from 'lodash-es';
 
-import { ActionItemInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import {
   ActionItemCollection,
   fetchAllActionItemCollections,
 } from './fetchAllActionItemCollections.js';
 import { fetchAllActionItems, ActionItem } from './fetchAllActionItems.js';
-import { UPDATE_ACTION_ITEMS, CREATE_ACTION_ITEMS } from './gqls/index.js';
+import { UPDATE_ACTION_ITEMS, CREATE_ACTION_ITEMS } from './gqls/actionItem.js';
+
+/** Minimal attribute key shape needed for action item sync */
+export interface ActionItemAttributeKey {
+  /** ID of attribute */
+  id: string;
+  /** Name of attribute */
+  name: string;
+}
+
+export interface ActionItemInput {
+  /** The display title of the action item */
+  title: string;
+  /** Action item type */
+  type: ActionItemCode;
+  /** The titles of the collections that the action item is grouped within */
+  collections: string[];
+  /** Priority of the action item */
+  priority?: ActionItemPriorityOverride;
+  /** Customer experience action item key */
+  customerExperienceActionItemId?: string;
+  /** Due date of the action item */
+  dueDate?: string;
+  /** Whether action item has been resolved */
+  resolved?: boolean;
+  /** Notes */
+  notes?: string;
+  /** Links to action items */
+  link?: string;
+  /** The email addresses of the employees assigned to the action item */
+  users?: string[];
+  /** The names of teams assigned to the action item */
+  teams?: string[];
+  /** Attribute value and its corresponding attribute key */
+  attributes?: {
+    /** Attribute key name */
+    key: string;
+    /** Attribute value names */
+    values: string[];
+  }[];
+}
 
 /**
- * Input to create a new actionItem
+ * Create new action items
  *
  * @param client - GraphQL client
  * @param actionItems - Action item inputs
  * @param actionItemCollectionByTitle - Action item collections indexed by title
- * @param attributeKeysByName - Lookup attribute by name
+ * @param options - Options
  */
 export async function createActionItems(
   client: GraphQLClient,
   actionItems: ActionItemInput[],
-  actionItemCollectionByTitle: { [k in string]: ActionItemCollection },
-  // TODO: https://transcend.height.app/T-38961 - insert attributes
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  attributeKeysByName: { [k in string]: Attribute } = {},
+  actionItemCollectionByTitle: {
+    [k in string]: ActionItemCollection;
+  },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    // TODO: https://transcend.height.app/T-38961 - insert attributes
+    /** Attribute keys indexed by name */
+    attributeKeysByName?: {
+      [k in string]: ActionItemAttributeKey;
+    };
+  },
 ): Promise<void> {
+  const { logger } = options;
   // TODO: https://transcend.height.app/T-38961 - insert attributes
   // const getAttribute = (key: string): string => {
   //   const existing = attributeKeysByName[key];
@@ -62,7 +109,7 @@ export async function createActionItems(
               }
             : {}),
           collectionIds: actionItem.collections.map(
-            (collectionTitle) => actionItemCollectionByTitle[collectionTitle].id,
+            (collectionTitle) => actionItemCollectionByTitle[collectionTitle]!.id,
           ),
         })),
       },
@@ -72,21 +119,27 @@ export async function createActionItems(
 }
 
 /**
- * Input to update actionItems
+ * Update an action item
  *
  * @param client - GraphQL client
  * @param input - Input to update
  * @param actionItemId - ID of action item to update
- * @param attributeKeysByName - Attribute keys by name
+ * @param options - Options
  */
 export async function updateActionItem(
   client: GraphQLClient,
   input: ActionItemInput,
   actionItemId: string,
-  attributeKeysByName: {
-    [k in string]: Attribute;
-  } = {},
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Attribute keys indexed by name */
+    attributeKeysByName?: {
+      [k in string]: ActionItemAttributeKey;
+    };
+  },
 ): Promise<void> {
+  const { logger, attributeKeysByName = {} } = options;
   const getAttribute = (key: string): string => {
     const existing = attributeKeysByName[key];
     if (!existing) {
@@ -138,7 +191,7 @@ function actionItemToUniqueCode({
 }
 
 /**
- * Convert action item to a unique key
+ * Convert action item input to a unique key
  *
  * @param actionItem - action item
  * @returns Unique key
@@ -151,85 +204,77 @@ function actionItemInputToUniqueCode({
 }
 
 /**
- * Sync the action item
+ * Sync the action items
  *
  * @param client - GraphQL client
  * @param inputs - Inputs to create
+ * @param options - Options
  * @returns True if run without error, returns false if an error occurred
  */
 export async function syncActionItems(
   client: GraphQLClient,
   inputs: ActionItemInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Pre-fetched attribute keys (pass result of fetchAllAttributes) */
+    attributeKeys?: ActionItemAttributeKey[];
+  },
 ): Promise<boolean> {
+  const { logger, attributeKeys = [] } = options;
   let encounteredError = false;
-  // Fetch existing
-  logger.info(colors.magenta(`Syncing "${inputs.length}" actionItems...`));
+  logger.info(`Syncing "${inputs.length}" actionItems...`);
 
-  // Determine if attributes are syncing
-  const hasAttributes = inputs.some((input) => input.attributes && input.attributes.length > 0);
-
-  // Fetch existing
-  const [existingActionItems, existingActionItemCollections, attributeKeys] = await Promise.all([
-    fetchAllActionItems(client),
-    fetchAllActionItemCollections(client),
-    hasAttributes ? fetchAllAttributes(client, { logger }) : [],
+  const [existingActionItems, existingActionItemCollections] = await Promise.all([
+    fetchAllActionItems(client, { logger }),
+    fetchAllActionItemCollections(client, { logger }),
   ]);
 
-  // Look up by title
   const actionItemCollectionByTitle: { [k in string]: ActionItemCollection } = keyBy(
     existingActionItemCollections,
     'title',
   );
-  const actionItemByTitle: { [k in string]: ActionItem } = keyBy(
-    existingActionItems,
-    actionItemToUniqueCode,
-  );
+  const actionItemByTitle = keyBy(existingActionItems, actionItemToUniqueCode) as {
+    [k in string]: ActionItem;
+  };
   const attributeKeysByName = keyBy(attributeKeys, 'name');
-  const actionItemByCxId: { [k in string]: ActionItem } = keyBy(
+  const actionItemByCxId = keyBy(
     existingActionItems.filter((x) => !!x.customerExperienceActionItemIds),
     ({ customerExperienceActionItemIds }) => customerExperienceActionItemIds[0],
-  );
+  ) as { [k in string]: ActionItem };
 
-  // Ensure all collections exist
   const missingCollections = uniq(inputs.map((input) => input.collections).flat()).filter(
     (collectionTitle) => !actionItemCollectionByTitle[collectionTitle],
   );
   if (missingCollections.length > 0) {
-    logger.info(
-      colors.red(
-        `Missing action item collections: "${missingCollections.join(
-          '", "',
-        )}" - please create them first!`,
-      ),
+    logger.error(
+      `Missing action item collections: "${missingCollections.join(
+        '", "',
+      )}" - please create them first!`,
     );
     return false;
   }
 
-  // Create new actionItems
   const newActionItems = inputs.filter(
     (input) =>
       !actionItemByTitle[actionItemInputToUniqueCode(input)] &&
       !actionItemByCxId[input.customerExperienceActionItemId!],
   );
 
-  // Create new actionItems
   if (newActionItems.length > 0) {
     try {
-      logger.info(colors.magenta(`Creating "${newActionItems.length}" actionItems...`));
-      await createActionItems(
-        client,
-        newActionItems,
-        actionItemCollectionByTitle,
+      logger.info(`Creating "${newActionItems.length}" actionItems...`);
+      await createActionItems(client, newActionItems, actionItemCollectionByTitle, {
+        logger,
         attributeKeysByName,
-      );
-      logger.info(colors.green(`Successfully created "${newActionItems.length}" actionItems!`));
+      });
+      logger.info(`Successfully created "${newActionItems.length}" actionItems!`);
     } catch (err) {
       encounteredError = true;
-      logger.error(colors.red(`Failed to create action items! - ${err.message}`));
+      logger.error(`Failed to create action items! - ${(err as Error).message}`);
     }
   }
 
-  // Update all actionItems
   const actionItemsToUpdate = inputs
     .map((input) => [
       input,
@@ -239,11 +284,11 @@ export async function syncActionItems(
     .filter((x): x is [ActionItemInput, string] => !!x[1]);
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
-      await updateActionItem(client, input, actionItemId, attributeKeysByName);
-      logger.info(colors.green(`Successfully synced action item "${input.title}"!`));
+      await updateActionItem(client, input, actionItemId, { logger, attributeKeysByName });
+      logger.info(`Successfully synced action item "${input.title}"!`);
     } catch (err) {
       encounteredError = true;
-      logger.error(colors.red(`Failed to sync action item "${input.title}"! - ${err.message}`));
+      logger.error(`Failed to sync action item "${input.title}"! - ${(err as Error).message}`);
     }
   });
 

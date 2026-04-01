@@ -1,6 +1,8 @@
 import {
   fetchAllAttributes,
   fetchApiKeys,
+  syncActionItemCollections,
+  syncActionItems,
   syncAttribute,
   syncBusinessEntities,
   syncIntlMessages,
@@ -22,8 +24,6 @@ import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
-import { syncActionItemCollections } from './syncActionItemCollections.js';
-import { syncActionItems } from './syncActionItems.js';
 import { syncAgentFiles } from './syncAgentFiles.js';
 import { syncAgentFunctions } from './syncAgentFunctions.js';
 import { syncAgents } from './syncAgents.js';
@@ -237,6 +237,7 @@ export async function syncConfigurationToTranscend(
     const actionItemCollectionsSuccess = await syncActionItemCollections(
       client,
       actionItemCollections,
+      { logger },
     );
     encounteredError = encounteredError || !actionItemCollectionsSuccess;
   }
@@ -275,7 +276,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync action items
   if (actionItems) {
-    const actionItemsSuccess = await syncActionItems(client, actionItems);
+    const actionItemsSuccess = await syncActionItems(client, actionItems, { logger });
     encounteredError = encounteredError || !actionItemsSuccess;
   }
 
