@@ -18,7 +18,7 @@ fi
 workspace_root=$(echo "${input}" | jq -r '.workspace_roots[0] // empty')
 
 # Build the preload command - source all shell function files
-preload="export TOOLS_DIR=\"${workspace_root}\"; for f in \"${workspace_root}\"/.cursor/hooks/shell-functions/*; do source \"\$f\" 2>/dev/null; done"
+preload="for f in \"${workspace_root}\"/.cursor/hooks/shell-functions/*; do source \"\$f\" 2>/dev/null; done"
 
 # Wrap the original command with our preload
 wrapped_command="${preload}; ${command}"

@@ -6,18 +6,27 @@
 #   tools-rm packages/cli/dist        # Remove specific path
 #   tools-rm node_modules .turbo      # Remove multiple paths
 tools-rm() {
-  local tools_dir="${TOOLS_DIR:-}"
-  if [[ -z "${tools_dir}" ]]; then
-    tools_dir="$(git rev-parse --show-toplevel 2>/dev/null || echo "")"
-  fi
-  if [[ -z "${tools_dir}" ]]; then
+  local repo_dir
+  repo_dir="$(git rev-parse --show-toplevel 2>/dev/null || echo "")"
+  if [[ -z "${repo_dir}" ]]; then
     if [[ -d "${HOME}/transcend/tools" ]]; then
-      tools_dir="${HOME}/transcend/tools"
+      repo_dir="${HOME}/transcend/tools"
     else
-      echo "❌ ERROR: Could not determine tools repo directory"
-      echo "   Set TOOLS_DIR environment variable or run from within the repo"
+      echo "❌ ERROR: Could not determine repo directory"
+      echo "   Run from within the tools repo"
       return 1
     fi
+  fi
+
+  # Verify this is actually the tools repo
+  local repo_name
+  repo_name="$(basename "${repo_dir}")"
+  if [[ "${repo_name}" != "tools" ]]; then
+    echo "❌ ERROR: tools-rm can only be run within the tools repo"
+    echo "   Current repo: ${repo_dir}"
+    echo ""
+    echo "   This command is blocked to protect other repositories."
+    return 1
   fi
 
   if [[ $# -eq 0 ]]; then
@@ -26,11 +35,10 @@ tools-rm() {
     return 1
   fi
 
-  local resolved_tools_dir
-  resolved_tools_dir="$(cd "${tools_dir}" && pwd -P 2>/dev/null || echo "${tools_dir}")"
+  local resolved_repo_dir
+  resolved_repo_dir="$(cd "${repo_dir}" && pwd -P 2>/dev/null || echo "${repo_dir}")"
 
   for target in "$@"; do
-    # Resolve to absolute path
     local abs_target
     if [[ "${target}" == /* ]]; then
       abs_target="${target}"
@@ -38,28 +46,24 @@ tools-rm() {
       abs_target="${PWD}/${target}"
     fi
 
-    # Resolve symlinks and normalize
     abs_target="$(realpath -m "${abs_target}" 2>/dev/null || echo "${abs_target}")"
 
-    # Safety check: target must be within the tools repo
-    if [[ "${abs_target}" != "${resolved_tools_dir}" && "${abs_target}" != "${resolved_tools_dir}/"* ]]; then
+    if [[ "${abs_target}" != "${resolved_repo_dir}" && "${abs_target}" != "${resolved_repo_dir}/"* ]]; then
       echo "❌ ERROR: tools-rm can only remove paths within the tools repo"
       echo "   Target:     ${target}"
       echo "   Resolved:   ${abs_target}"
-      echo "   Tools repo: ${tools_dir}"
+      echo "   Tools repo: ${repo_dir}"
       echo ""
       echo "   This command is blocked to protect files outside the repository."
       return 1
     fi
 
-    # Prevent removing the repo root itself
-    if [[ "${abs_target}" == "${resolved_tools_dir}" ]]; then
+    if [[ "${abs_target}" == "${resolved_repo_dir}" ]]; then
       echo "❌ ERROR: Cannot remove the tools repo root directory"
       return 1
     fi
   done
 
-  # All paths validated — safe to remove
   for target in "$@"; do
     local abs_target
     if [[ "${target}" == /* ]]; then
