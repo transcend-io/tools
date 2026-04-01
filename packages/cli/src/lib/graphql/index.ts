@@ -45,8 +45,6 @@ export * from './syncPartitions.js';
 export * from './syncPolicies.js';
 export * from './syncPrivacyCenter.js';
 export * from './syncProcessingPurposes.js';
-export * from './syncRepositories.js';
-export * from './syncSoftwareDevelopmentKits.js';
 export * from './syncTemplates.js';
 export * from './uploadSiloDiscoveryResults.js';
 export * from './fetchAllSiloDiscoveryResults.js';

@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { REPOSITORIES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { REPOSITORIES } from './gqls/repository.js';
 
 export interface Repository {
   /** ID of repository */
@@ -35,9 +35,17 @@ const PAGE_SIZE = 20;
  * Fetch all repositories in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All repositories in the organization
  */
-export async function fetchAllRepositories(client: GraphQLClient): Promise<Repository[]> {
+export async function fetchAllRepositories(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<Repository[]> {
+  const { logger } = options;
   const repositories: Repository[] = [];
   let offset = 0;
 

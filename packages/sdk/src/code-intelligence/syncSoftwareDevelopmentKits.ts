@@ -1,17 +1,32 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries, map } from '@transcend-io/utils';
-import colors from 'colors';
+import { mapSeries, map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
-import { SoftwareDevelopmentKitInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import {
   fetchAllSoftwareDevelopmentKits,
   SoftwareDevelopmentKit,
 } from './fetchAllSoftwareDevelopmentKits.js';
-import { UPDATE_SOFTWARE_DEVELOPMENT_KITS, CREATE_SOFTWARE_DEVELOPMENT_KIT } from './gqls/index.js';
+import {
+  UPDATE_SOFTWARE_DEVELOPMENT_KITS,
+  CREATE_SOFTWARE_DEVELOPMENT_KIT,
+} from './gqls/softwareDevelopmentKit.js';
+
+export interface SoftwareDevelopmentKitInput {
+  /** Title of software development kit */
+  name: string;
+  /** Code package type */
+  codePackageType: CodePackageType;
+  /** Description of the SDK */
+  description?: string;
+  /** Github repository URL */
+  repositoryUrl?: string;
+  /** Integration name */
+  catalogIntegrationName?: string;
+  /** Documentation links */
+  documentationLinks?: string[];
+}
 
 const CHUNK_SIZE = 100;
 
@@ -20,6 +35,7 @@ const CHUNK_SIZE = 100;
  *
  * @param client - GraphQL client
  * @param input - Software development kit input
+ * @param options - Options
  * @returns Created software development kit
  */
 export async function createSoftwareDevelopmentKit(
@@ -50,7 +66,12 @@ export async function createSoftwareDevelopmentKit(
     /** Team names */
     teamNames?: string[];
   },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<SoftwareDevelopmentKit> {
+  const { logger } = options;
   const {
     createSoftwareDevelopmentKit: { softwareDevelopmentKit },
   } = await makeGraphQLRequest<{
@@ -63,7 +84,7 @@ export async function createSoftwareDevelopmentKit(
     variables: { input },
     logger,
   });
-  logger.info(colors.green(`Successfully created software development kit "${input.name}"!`));
+  logger.info(`Successfully created software development kit "${input.name}"!`);
   return softwareDevelopmentKit;
 }
 
@@ -72,6 +93,7 @@ export async function createSoftwareDevelopmentKit(
  *
  * @param client - GraphQL client
  * @param inputs - Software development kit input
+ * @param options - Options
  * @returns Updated software development kits
  */
 export async function updateSoftwareDevelopmentKits(
@@ -102,7 +124,12 @@ export async function updateSoftwareDevelopmentKits(
     /** Team names */
     teamNames?: string[];
   }[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<SoftwareDevelopmentKit[]> {
+  const { logger } = options;
   const {
     updateSoftwareDevelopmentKits: { softwareDevelopmentKits },
   } = await makeGraphQLRequest<{
@@ -119,7 +146,7 @@ export async function updateSoftwareDevelopmentKits(
     },
     logger,
   });
-  logger.info(colors.green(`Successfully updated ${inputs.length} software development kits!`));
+  logger.info(`Successfully updated ${inputs.length} software development kits!`);
   return softwareDevelopmentKits;
 }
 
@@ -128,25 +155,31 @@ export async function updateSoftwareDevelopmentKits(
  *
  * @param client - GraphQL client
  * @param softwareDevelopmentKits - Software development kits
- * @param concurrency - Concurrency
+ * @param options - Options
  * @returns The software development kits that were upserted and whether the sync was successful
  */
 export async function syncSoftwareDevelopmentKits(
   client: GraphQLClient,
   softwareDevelopmentKits: SoftwareDevelopmentKitInput[],
-  concurrency = 20,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+    /** Concurrency */
+    concurrency?: number;
+  },
 ): Promise<{
   /** The SDKs that were upserted */
   softwareDevelopmentKits: SoftwareDevelopmentKit[];
   /** If successful */
   success: boolean;
 }> {
+  const { logger, concurrency = 20 } = options;
   let encounteredError = false;
   const sdks: SoftwareDevelopmentKit[] = [];
-  logger.info(colors.magenta('Syncing software development kits...'));
+  logger.info('Syncing software development kits...');
 
   // Index existing software development kits
-  const existing = await fetchAllSoftwareDevelopmentKits(client);
+  const existing = await fetchAllSoftwareDevelopmentKits(client, { logger });
   const softwareDevelopmentKitByTitle = keyBy(existing, ({ name, codePackageType }) =>
     JSON.stringify({ name, codePackageType }),
   );
@@ -167,15 +200,11 @@ export async function syncSoftwareDevelopmentKits(
     .filter(([, existing]) => !existing)
     .map(([sdkInput]) => sdkInput as SoftwareDevelopmentKitInput);
   try {
-    logger.info(
-      colors.magenta(
-        `Creating "${newSoftwareDevelopmentKits.length}" new software development kits...`,
-      ),
-    );
+    logger.info(`Creating "${newSoftwareDevelopmentKits.length}" new software development kits...`);
     await map(
       newSoftwareDevelopmentKits,
       async (sdk) => {
-        const newSdk = await createSoftwareDevelopmentKit(client, sdk);
+        const newSdk = await createSoftwareDevelopmentKit(client, sdk, { logger });
         sdks.push(newSdk);
       },
       {
@@ -183,13 +212,11 @@ export async function syncSoftwareDevelopmentKits(
       },
     );
     logger.info(
-      colors.green(
-        `Successfully synced ${newSoftwareDevelopmentKits.length} software development kits!`,
-      ),
+      `Successfully synced ${newSoftwareDevelopmentKits.length} software development kits!`,
     );
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create software development kits! - ${err.message}`));
+    logger.error(`Failed to create software development kits! - ${(err as Error).message}`);
   }
 
   // Update existing software development kits
@@ -197,11 +224,7 @@ export async function syncSoftwareDevelopmentKits(
     (x): x is [SoftwareDevelopmentKitInput, string] => !!x[1],
   );
   const chunks = chunk(existingSoftwareDevelopmentKits, CHUNK_SIZE);
-  logger.info(
-    colors.magenta(
-      `Updating "${existingSoftwareDevelopmentKits.length}" software development kits...`,
-    ),
-  );
+  logger.info(`Updating "${existingSoftwareDevelopmentKits.length}" software development kits...`);
 
   await mapSeries(chunks, async (chunk) => {
     try {
@@ -212,21 +235,18 @@ export async function syncSoftwareDevelopmentKits(
           ...input,
           id,
         })),
+        { logger },
       );
       sdks.push(...updatedSdks);
       logger.info(
-        colors.green(
-          `Successfully updated "${existingSoftwareDevelopmentKits.length}" software development kits!`,
-        ),
+        `Successfully updated "${existingSoftwareDevelopmentKits.length}" software development kits!`,
       );
     } catch (err) {
       encounteredError = true;
-      logger.error(colors.red(`Failed to update software development kits! - ${err.message}`));
+      logger.error(`Failed to update software development kits! - ${(err as Error).message}`);
     }
 
-    logger.info(
-      colors.green(`Synced "${softwareDevelopmentKits.length}" software development kits!`),
-    );
+    logger.info(`Synced "${softwareDevelopmentKits.length}" software development kits!`);
   });
 
   // Return true upon success
