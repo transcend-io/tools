@@ -20,6 +20,7 @@ import {
   fetchConsentManager,
   fetchConsentManagerExperiences,
   fetchConsentManagerTheme,
+  fetchAllEnrichers,
   fetchAllIdentifiers,
   fetchAllMessages,
   fetchAllPromptGroups,
@@ -89,7 +90,6 @@ import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js'
 import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
 import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
-import { fetchAllEnrichers } from './syncEnrichers.js';
 import { fetchAllTemplates } from './syncTemplates.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
@@ -206,7 +206,9 @@ export async function pullTranscendConfiguration(
         })
       : [],
     // Fetch enrichers
-    resources.includes(TranscendPullResource.Enrichers) ? fetchAllEnrichers(client) : [],
+    resources.includes(TranscendPullResource.Enrichers)
+      ? fetchAllEnrichers(client, { logger })
+      : [],
     // Fetch data flows
     resources.includes(TranscendPullResource.DataFlows)
       ? [

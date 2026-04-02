@@ -1,7 +1,6 @@
 export * from './dataPoint.js';
 export * from './entry.js';
 export * from './dataSilo.js';
-export * from './enricher.js';
 export * from './catalog.js';
 export * from './identifier.js';
 export * from './dataSubject.js';
@@ -9,9 +8,7 @@ export * from './siloDiscovery.js';
 export * from './template.js';
 export * from './policy.js';
 export * from './request.js';
-export * from './RequestEnricher.js';
 export * from './assessmentTemplate.js';
-export * from './RequestEnricher.js';
 export * from './RequestDataSilo.js';
 export * from './RequestIdentifier.js';
 export * from './requestFile.js';

@@ -12,6 +12,7 @@ import {
   syncConsentManager,
   syncCookies,
   syncDataFlows,
+  syncEnricher,
   syncIntlMessages,
   syncPartitions,
   syncProcessingActivities,
@@ -35,7 +36,6 @@ import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
-import { syncEnricher } from './syncEnrichers.js';
 import { syncIdentifier } from './syncIdentifier.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
@@ -288,11 +288,15 @@ export async function syncConfigurationToTranscend(
       async (enricher) => {
         logger.info(colors.magenta(`Syncing enricher "${enricher.title}"...`));
         try {
-          await syncEnricher(client, {
-            enricher,
-            identifierByName,
-            dataSubjectsByName,
-          });
+          await syncEnricher(
+            client,
+            {
+              enricher,
+              identifierByName,
+              dataSubjectsByName,
+            },
+            { logger },
+          );
           logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
         } catch (err) {
           encounteredError = true;
