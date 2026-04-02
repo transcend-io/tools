@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { CATALOGS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { CATALOGS } from './gqls/catalog.js';
 
 export interface Catalog {
   /** Integration name */
@@ -19,13 +19,20 @@ const PAGE_SIZE = 100;
  * Fetch all integration catalogs in an organization
  *
  * @param client - Client
+ * @param options - Options
  * @returns Integration catalogs
  */
-export async function fetchAllCatalogs(client: GraphQLClient): Promise<Catalog[]> {
+export async function fetchAllCatalogs(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<Catalog[]> {
+  const { logger } = options;
   const catalogs: Catalog[] = [];
   let offset = 0;
 
-  // Paginate
   let shouldContinue = false;
   do {
     const {
@@ -58,24 +65,28 @@ export interface IndexedCatalogs {
  * Fetch all integration catalogs and index them for usage in common utility manners
  *
  * @param client - Client
+ * @param options - Options
  * @returns Integration catalogs
  */
-export async function fetchAndIndexCatalogs(client: GraphQLClient): Promise<
+export async function fetchAndIndexCatalogs(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<
   {
     /** List of all catalogs */
     catalogs: Catalog[];
   } & IndexedCatalogs
 > {
-  // Fetch all integrations in the catalog
-  const catalogs = await fetchAllCatalogs(client);
+  const catalogs = await fetchAllCatalogs(client, options);
 
-  // Create mapping from service name to service title
   const serviceToTitle = catalogs.reduce(
     (acc, catalog) => Object.assign(acc, { [catalog.integrationName]: catalog.title }),
     {} as { [k in string]: string },
   );
 
-  // Create mapping from service name to boolean indicate if service has API integration support
   const serviceToSupportedIntegration = catalogs.reduce(
     (acc, catalog) =>
       Object.assign(acc, {

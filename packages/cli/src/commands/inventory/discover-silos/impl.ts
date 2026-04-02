@@ -1,4 +1,8 @@
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchActiveSiloDiscoPlugin,
+  uploadSiloDiscoveryResults,
+} from '@transcend-io/sdk';
 import colors from 'colors';
 import { stringify } from 'query-string';
 
@@ -7,10 +11,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { findFilesToScan } from '../../../lib/code-scanning/findFilesToScan.js';
 import { SILO_DISCOVERY_CONFIGS } from '../../../lib/code-scanning/index.js';
-import {
-  fetchActiveSiloDiscoPlugin,
-  uploadSiloDiscoveryResults,
-} from '../../../lib/graphql/index.js';
 import { logger } from '../../../logger.js';
 
 export interface DiscoverSilosCommandFlags {
@@ -31,7 +31,7 @@ export async function discoverSilos(
   // Create a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
-  const plugin = await fetchActiveSiloDiscoPlugin(client, dataSiloId);
+  const plugin = await fetchActiveSiloDiscoPlugin(client, dataSiloId, { logger });
 
   const config = SILO_DISCOVERY_CONFIGS[plugin.dataSilo.type];
   if (!config) {
@@ -50,7 +50,7 @@ export async function discoverSilos(
     config,
   });
 
-  await uploadSiloDiscoveryResults(client, plugin.id, results);
+  await uploadSiloDiscoveryResults(client, plugin.id, results, { logger });
 
   const newUrl = new URL(ADMIN_DASH);
   newUrl.pathname = '/data-map/data-inventory/silo-discovery/triage';
