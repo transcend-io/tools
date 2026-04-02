@@ -1,12 +1,15 @@
 import { RequestAction } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchRequestDataSiloActiveCount,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { fetchRequestDataSiloActiveCount } from '../graphql/index.js';
 import { pullCronPageOfIdentifiers, CronIdentifier } from './pullCronPageOfIdentifiers.js';
 
 /**
@@ -82,9 +85,13 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
 
   let totalRequestCount = 0;
   if (!skipRequestCount) {
-    totalRequestCount = await fetchRequestDataSiloActiveCount(client, {
-      dataSiloId,
-    });
+    totalRequestCount = await fetchRequestDataSiloActiveCount(
+      client,
+      {
+        dataSiloId,
+      },
+      { logger },
+    );
   }
 
   logger.info(

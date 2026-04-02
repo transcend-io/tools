@@ -1,16 +1,16 @@
 import { RequestAction, RequestOrigin, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllRequests,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  UPDATE_PRIVACY_REQUEST,
-  fetchAllRequests,
-  APPROVE_PRIVACY_REQUEST,
-} from '../graphql/index.js';
+import { UPDATE_PRIVACY_REQUEST, APPROVE_PRIVACY_REQUEST } from '../graphql/index.js';
 
 /**
  * Approve a set of privacy requests
@@ -60,15 +60,19 @@ export async function approvePrivacyRequests({
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Approving],
-    createdAtAfter,
-    createdAtBefore,
-    updatedAtBefore,
-    updatedAtAfter,
-    origins: requestOrigins,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses: [RequestStatus.Approving],
+      createdAtAfter,
+      createdAtBefore,
+      updatedAtBefore,
+      updatedAtAfter,
+      origins: requestOrigins,
+    },
+    { logger },
+  );
 
   // Notify Transcend
   logger.info(colors.magenta(`Approving "${allRequests.length}" requests.`));

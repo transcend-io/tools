@@ -1,5 +1,10 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequests,
+  fetchRequestsTotalCount,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -7,12 +12,7 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  fetchRequestsTotalCount,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { fetchAllRequestIdentifiers, validateSombraVersion } from '../graphql/index.js';
 import { initCsvFile, appendCsvRowsOrdered, parseFilePath } from '../helpers/index.js';
 import { formatRequestForCsv, ExportedPrivacyRequest } from './formatRequestForCsv.js';
 
@@ -157,7 +157,7 @@ export async function streamPrivacyRequestsToCsv({
     await validateSombraVersion(client);
   }
 
-  const totalExpected = await fetchRequestsTotalCount(client, filterBy);
+  const totalExpected = await fetchRequestsTotalCount(client, filterBy, { logger });
   logger.info(colors.magenta(`Fetching ${totalExpected} requests`));
 
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
@@ -192,47 +192,51 @@ export async function streamPrivacyRequestsToCsv({
       let rowCount = 0;
 
       try {
-        await fetchAllRequests(client, {
-          actions,
-          text: identifierSearch,
-          statuses,
-          createdAtBefore: chunk.createdAtBefore,
-          createdAtAfter: chunk.createdAtAfter,
-          updatedAtBefore,
-          updatedAtAfter,
-          isTest,
-          onPage: async (nodes) => {
-            if (nodes.length === 0) return;
+        await fetchAllRequests(
+          client,
+          {
+            actions,
+            text: identifierSearch,
+            statuses,
+            createdAtBefore: chunk.createdAtBefore,
+            createdAtAfter: chunk.createdAtAfter,
+            updatedAtBefore,
+            updatedAtAfter,
+            isTest,
+            onPage: async (nodes) => {
+              if (nodes.length === 0) return;
 
-            // Optionally enrich each request with its identifiers
-            const enriched: ExportedPrivacyRequest[] = skipRequestIdentifiers
-              ? nodes.map((n) => ({ ...n, requestIdentifiers: [] }))
-              : await map(
-                  nodes,
-                  async (n) => ({
-                    ...n,
-                    requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
-                      requestId: n.id,
-                      skipSombraCheck: true,
+              // Optionally enrich each request with its identifiers
+              const enriched: ExportedPrivacyRequest[] = skipRequestIdentifiers
+                ? nodes.map((n) => ({ ...n, requestIdentifiers: [] }))
+                : await map(
+                    nodes,
+                    async (n) => ({
+                      ...n,
+                      requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
+                        requestId: n.id,
+                        skipSombraCheck: true,
+                      }),
                     }),
-                  }),
-                  { concurrency: pageLimit },
-                );
+                    { concurrency: pageLimit },
+                  );
 
-            const rows: Record<string, string | null | number | boolean>[] =
-              enriched.map(formatRequestForCsv);
+              const rows: Record<string, string | null | number | boolean>[] =
+                enriched.map(formatRequestForCsv);
 
-            if (!headers) {
-              headers = uniq(rows.map((r: Record<string, unknown>) => Object.keys(r)).flat());
-              initCsvFile(chunkFile, headers);
-            }
+              if (!headers) {
+                headers = uniq(rows.map((r: Record<string, unknown>) => Object.keys(r)).flat());
+                initCsvFile(chunkFile, headers);
+              }
 
-            appendCsvRowsOrdered(chunkFile, rows, headers);
-            rowCount += rows.length;
-            globalFetched += rows.length;
-            progressBar.update(globalFetched);
+              appendCsvRowsOrdered(chunkFile, rows, headers);
+              rowCount += rows.length;
+              globalFetched += rows.length;
+              progressBar.update(globalFetched);
+            },
           },
-        });
+          { logger },
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         logger.error(

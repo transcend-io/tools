@@ -1,16 +1,16 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllRequests,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  REMOVE_REQUEST_IDENTIFIERS,
-  fetchAllRequests,
-  fetchAllRequestIdentifierMetadata,
-} from '../graphql/index.js';
+import { REMOVE_REQUEST_IDENTIFIERS, fetchAllRequestIdentifierMetadata } from '../graphql/index.js';
 
 /**
  * Remove a set of unverified request identifier
@@ -45,10 +45,14 @@ export async function removeUnverifiedRequestIdentifiers({
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Enriching],
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses: [RequestStatus.Enriching],
+    },
+    { logger },
+  );
 
   // Notify Transcend
   logger.info(colors.magenta('Fetched requests in preflight/enriching state.'));

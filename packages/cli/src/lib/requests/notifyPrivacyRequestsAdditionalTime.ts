@@ -1,12 +1,16 @@
 import { RequestAction } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllRequests,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { NOTIFY_ADDITIONAL_TIME, fetchAllRequests, fetchAllTemplates } from '../graphql/index.js';
+import { NOTIFY_ADDITIONAL_TIME, fetchAllTemplates } from '../graphql/index.js';
 
 /**
  * Mark a set of privacy requests to be in silent mode.
@@ -73,16 +77,20 @@ export async function notifyPrivacyRequestsAdditionalTime({
   }
 
   // Pull in the requests
-  let allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    isSilent: false,
-    isClosed: false,
-    requestIds,
-  });
+  let allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      isSilent: false,
+      isClosed: false,
+      requestIds,
+    },
+    { logger },
+  );
 
   // Filter requests by daysLeft
   allRequests = allRequests.filter(

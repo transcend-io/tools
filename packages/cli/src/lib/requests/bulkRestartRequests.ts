@@ -2,7 +2,11 @@ import { join, resolve } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequests,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -11,11 +15,7 @@ import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { fetchAllRequestIdentifiers, validateSombraVersion } from '../graphql/index.js';
 import { SuccessfulRequest } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { restartPrivacyRequest } from './restartPrivacyRequest.js';
@@ -123,15 +123,19 @@ export async function bulkRestartRequests({
 
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const allRequests = await fetchAllRequests(client, {
-    requestIds,
-    actions: requestActions,
-    statuses: requestStatuses,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      requestIds,
+      actions: requestActions,
+      statuses: requestStatuses,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+    },
+    { logger },
+  );
   const requests = allRequests.filter((request) => new Date(request.createdAt) < createdAt);
   logger.info(`Found ${requests.length} requests to restart`);
 

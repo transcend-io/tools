@@ -5,6 +5,7 @@ import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
+  fetchAllRequests,
   makeGraphQLRequest,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
@@ -13,7 +14,7 @@ import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { fetchAllRequests, APPROVE_PRIVACY_REQUEST } from '../graphql/index.js';
+import { APPROVE_PRIVACY_REQUEST } from '../graphql/index.js';
 import { getFileMetadataForPrivacyRequests } from './getFileMetadataForPrivacyRequests.js';
 import { streamPrivacyRequestFiles } from './streamPrivacyRequestFiles.js';
 
@@ -78,15 +79,19 @@ export async function downloadPrivacyRequestFiles({
   }
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: [RequestAction.Access],
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    statuses,
-    requestIds,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: [RequestAction.Access],
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      statuses,
+      requestIds,
+    },
+    { logger },
+  );
 
   // Download the file metadata for each request
   const requestFileMetadata = await getFileMetadataForPrivacyRequests(allRequests, {
