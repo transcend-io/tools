@@ -1,16 +1,17 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  makeGraphQLRequest,
+  RETRY_REQUEST_DATA_SILO,
+  fetchRequestDataSilo,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  RETRY_REQUEST_DATA_SILO,
-  fetchRequestDataSilo,
-  fetchAllRequests,
-} from '../graphql/index.js';
+import { fetchAllRequests } from '../graphql/index.js';
 
 /**
  * Retry a set of RequestDataSilos
@@ -64,10 +65,14 @@ export async function retryRequestDataSilos({
     allRequests,
     async (requestToRestart) => {
       try {
-        const requestDataSilo = await fetchRequestDataSilo(client, {
-          requestId: requestToRestart.id,
-          dataSiloId,
-        });
+        const requestDataSilo = await fetchRequestDataSilo(
+          client,
+          {
+            requestId: requestToRestart.id,
+            dataSiloId,
+          },
+          { logger },
+        );
 
         await makeGraphQLRequest<{
           /** Whether we successfully uploaded the results */

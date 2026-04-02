@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { BULK_REQUEST_FILES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { BULK_REQUEST_FILES } from './gqls/requestFile.js';
 
 export interface RequestFileCursor {
   /** The ID of the request file */
@@ -39,11 +39,11 @@ export interface RequestFileResponse {
  * @param client - GraphQL client
  * @param pageSize - How many request files to fetch per API call
  * @param filterBy - Filter by
+ * @param options - Options
  * @returns All RequestFiles in the organization
  */
 export async function fetchRequestFilesForRequest(
   client: GraphQLClient,
-  /** How many request files to fetch per API call */
   pageSize: number,
   filterBy: {
     /** Filter by request IDs */
@@ -51,11 +51,15 @@ export async function fetchRequestFilesForRequest(
     /** Filter by data silo ID */
     dataSiloIds: string[];
   },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<RequestFile[]> {
+  const { logger } = options;
   const requestFiles: RequestFile[] = [];
   let cursor: string | null = null;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const response: RequestFileResponse = await makeGraphQLRequest<RequestFileResponse>(

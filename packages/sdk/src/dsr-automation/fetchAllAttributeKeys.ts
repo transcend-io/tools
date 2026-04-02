@@ -1,7 +1,8 @@
-import { makeGraphQLRequest, ATTRIBUTE_KEYS_REQUESTS } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
+import { ATTRIBUTE_KEYS_REQUESTS } from '../administration/gqls/attributeKey.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 
 export interface AttributeKey {
   /** ID of attribute key */
@@ -18,13 +19,20 @@ const PAGE_SIZE = 20;
  * Fetch all attribute keys enabled for privacy requests
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All attribute keys in the organization
  */
-export async function fetchAllRequestAttributeKeys(client: GraphQLClient): Promise<AttributeKey[]> {
+export async function fetchAllRequestAttributeKeys(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<AttributeKey[]> {
+  const { logger } = options;
   const attributeKeys: AttributeKey[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {

@@ -1,16 +1,17 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  makeGraphQLRequest,
+  CHANGE_REQUEST_DATA_SILO_STATUS,
+  fetchRequestDataSilos,
+  fetchRequestDataSilosCount,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  CHANGE_REQUEST_DATA_SILO_STATUS,
-  fetchRequestDataSilos,
-  fetchRequestDataSilosCount,
-} from '../graphql/index.js';
 
 /**
  * Given a data silo ID, mark all open request data silos as skipped
@@ -49,10 +50,14 @@ export async function skipRequestDataSilos({
   const t0 = new Date().getTime();
 
   // Determine total number of request data silos
-  const requestDataSiloCount = await fetchRequestDataSilosCount(client, {
-    dataSiloId,
-    requestStatuses,
-  });
+  const requestDataSiloCount = await fetchRequestDataSilosCount(
+    client,
+    {
+      dataSiloId,
+      requestStatuses,
+    },
+    { logger },
+  );
   logger.info(
     colors.magenta(
       `Marking ${requestDataSiloCount} request data silos as completed${actionTypes.length > 0 ? ` for action types: ${actionTypes.join(',')}` : ''}`,
@@ -66,14 +71,18 @@ export async function skipRequestDataSilos({
   progressBar.start(requestDataSiloCount, 0);
 
   // Fetch all matching request data silos, updating progress as pages are fetched
-  const requestDataSilos = await fetchRequestDataSilos(client, {
-    dataSiloId,
-    requestStatuses,
-    onProgress: (numFetched) => {
-      total += numFetched / 2;
-      progressBar.update(total);
+  const requestDataSilos = await fetchRequestDataSilos(
+    client,
+    {
+      dataSiloId,
+      requestStatuses,
+      onProgress: (numFetched) => {
+        total += numFetched / 2;
+        progressBar.update(total);
+      },
     },
-  });
+    { logger },
+  );
 
   await map(
     requestDataSilos,

@@ -1,12 +1,16 @@
 import { RequestDataSiloStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  makeGraphQLRequest,
+  CHANGE_REQUEST_DATA_SILO_STATUS,
+  fetchRequestDataSilo,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { CHANGE_REQUEST_DATA_SILO_STATUS, fetchRequestDataSilo } from '../graphql/index.js';
 
 /**
  * Given a CSV of Request IDs, mark associated RequestDataSilos as completed
@@ -55,10 +59,14 @@ export async function markRequestDataSiloIdsCompleted({
   await map(
     requestIds,
     async (requestId) => {
-      const requestDataSilo = await fetchRequestDataSilo(client, {
-        requestId,
-        dataSiloId,
-      });
+      const requestDataSilo = await fetchRequestDataSilo(
+        client,
+        {
+          requestId,
+          dataSiloId,
+        },
+        { logger },
+      );
 
       try {
         await makeGraphQLRequest<{

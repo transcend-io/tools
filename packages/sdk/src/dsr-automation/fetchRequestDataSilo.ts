@@ -1,9 +1,9 @@
 import { RequestAction, RequestDataSiloStatus, RequestStatus } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { REQUEST_DATA_SILOS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { REQUEST_DATA_SILOS } from './gqls/requestDataSilo.js';
 
 export interface RequestDataSilo {
   /** ID of RequestDataSilo */
@@ -20,9 +20,7 @@ export interface RequestDataSiloFilters {
   requestId?: string;
   /** Data silo ID */
   dataSiloId?: string;
-  /**
-   * The statuses to filter on
-   */
+  /** The statuses to filter on */
   statuses?: RequestDataSiloStatus[];
   /** The request statuses to filter on */
   requestStatuses?: RequestStatus[];
@@ -32,13 +30,19 @@ export interface RequestDataSiloFilters {
  * Fetch a count of request data silos
  *
  * @param client - GraphQL client
- * @param options - Filter options
- * @returns List of request identifiers
+ * @param filters - Filter options
+ * @param options - Options
+ * @returns Count of request data silos
  */
 export async function fetchRequestDataSilosCount(
   client: GraphQLClient,
   { requestId, dataSiloId, requestStatuses, statuses }: RequestDataSiloFilters,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<number> {
+  const { logger } = options;
   const {
     requestDataSilos: { totalCount },
   } = await makeGraphQLRequest<{
@@ -72,8 +76,9 @@ const PAGE_SIZE = 100;
  * Fetch all request data silos by some filter criteria
  *
  * @param client - GraphQL client
- * @param options - Filter options
- * @returns List of request identifiers
+ * @param filters - Filter options
+ * @param options - Options
+ * @returns List of request data silos
  */
 export async function fetchRequestDataSilos(
   client: GraphQLClient,
@@ -89,9 +94,7 @@ export async function fetchRequestDataSilos(
     requestId?: string;
     /** Data silo ID */
     dataSiloId?: string;
-    /**
-     * The statuses to filter on
-     */
+    /** The statuses to filter on */
     statuses?: RequestDataSiloStatus[];
     /** The request statuses to filter on */
     requestStatuses?: RequestStatus[];
@@ -100,11 +103,15 @@ export async function fetchRequestDataSilos(
     /** Handle progress updates */
     onProgress?: (numUpdated: number) => void;
   },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<RequestDataSilo[]> {
+  const { logger } = options;
   const requestDataSilos: RequestDataSilo[] = [];
   let offset = 0;
 
-  // Try to fetch an DataFlow with the same title
   let shouldContinue = false;
   do {
     const {
@@ -141,11 +148,12 @@ export async function fetchRequestDataSilos(
 }
 
 /**
- * Fetch all request identifiers for a particular request
+ * Fetch a single request data silo by request and data silo IDs
  *
  * @param client - GraphQL client
- * @param options - Filter options
- * @returns List of request identifiers
+ * @param filters - Filter options
+ * @param options - Options
+ * @returns The matching request data silo
  */
 export async function fetchRequestDataSilo(
   client: GraphQLClient,
@@ -158,16 +166,24 @@ export async function fetchRequestDataSilo(
     /** Data silo ID */
     dataSiloId: string;
   },
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<RequestDataSilo> {
-  const nodes = await fetchRequestDataSilos(client, {
-    requestId,
-    dataSiloId,
-  });
+  const nodes = await fetchRequestDataSilos(
+    client,
+    {
+      requestId,
+      dataSiloId,
+    },
+    options,
+  );
   if (nodes.length !== 1) {
     throw new Error(
       `Failed to find RequestDataSilo with requestId:${requestId},dataSiloId:${dataSiloId}`,
     );
   }
 
-  return nodes[0];
+  return nodes[0]!;
 }

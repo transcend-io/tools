@@ -31,6 +31,7 @@ import {
   fetchAllTeams,
   fetchAllVendors,
   fetchApiKeys,
+  formatAttributeValues,
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
@@ -87,7 +88,6 @@ import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
 import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
-import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
 import { fetchAllTemplates } from './syncTemplates.js';
