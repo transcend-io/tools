@@ -16,7 +16,6 @@ export * from './RequestDataSilo.js';
 export * from './RequestIdentifier.js';
 export * from './requestFile.js';
 export * from './action.js';
-export * from './privacyCenter.js';
 export * from './processingPurpose.js';
 export * from './sombraVersion.js';
 export * from './siloDiscoveryResult.js';

@@ -1,4 +1,4 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { fetchPrivacyCenterId, makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,7 +7,6 @@ import { chunk, keyBy } from 'lodash-es';
 import { PolicyInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
-import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_POLICIES } from './gqls/index.js';
 
 const MAX_PAGE_SIZE = 100;
@@ -22,7 +21,7 @@ export async function updatePolicies(
   client: GraphQLClient,
   policyInputs: [PolicyInput, string | undefined][],
 ): Promise<void> {
-  const privacyCenterId = await fetchPrivacyCenterId(client);
+  const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
   // Batch update policies
   await mapSeries(chunk(policyInputs, MAX_PAGE_SIZE), async (page) => {

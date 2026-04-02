@@ -1,57 +1,145 @@
-import { InitialViewState, OnConsentExpiry } from '@transcend-io/airgap.js-types';
+import { InitialViewState, OnConsentExpiry, BrowserLanguage } from '@transcend-io/airgap.js-types';
 import {
-  CREATE_CONSENT_EXPERIENCE,
-  CREATE_CONSENT_MANAGER,
-  fetchAllPurposes,
-  fetchConsentManagerExperiences,
-  fetchConsentManagerId,
-  makeGraphQLRequest,
-  TOGGLE_CONSENT_PRECEDENCE,
-  TOGGLE_TELEMETRY_PARTITION_STRATEGY,
-  TOGGLE_UNKNOWN_COOKIE_POLICY,
-  TOGGLE_UNKNOWN_REQUEST_POLICY,
-  UPDATE_CONSENT_EXPERIENCE,
-  UPDATE_CONSENT_MANAGER_DOMAINS,
-  UPDATE_CONSENT_MANAGER_PARTITION,
-  UPDATE_CONSENT_MANAGER_THEME,
-  UPDATE_CONSENT_MANAGER_VERSION,
-  UPDATE_LOAD_OPTIONS,
-} from '@transcend-io/sdk';
-import { map } from '@transcend-io/utils';
-import colors from 'colors';
+  ConsentBundleType,
+  ConsentPrecedenceOption,
+  IsoCountryCode,
+  IsoCountrySubdivisionCode,
+  RegionsOperator,
+  UnknownRequestPolicy,
+  TelemetryPartitionStrategy,
+  SignedIabAgreementOption,
+  BrowserTimeZone,
+} from '@transcend-io/privacy-types';
+import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { ConsentManageExperienceInput, ConsentManagerInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { fetchAllPurposes } from '../preference-management/fetchAllPurposes.js';
+import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
+import { fetchPrivacyCenterId, fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
+import {
+  UPDATE_CONSENT_MANAGER_DOMAINS,
+  CREATE_CONSENT_MANAGER,
+  UPDATE_LOAD_OPTIONS,
+  UPDATE_CONSENT_MANAGER_PARTITION,
+  UPDATE_CONSENT_MANAGER_VERSION,
+  TOGGLE_TELEMETRY_PARTITION_STRATEGY,
+  TOGGLE_UNKNOWN_COOKIE_POLICY,
+  TOGGLE_CONSENT_PRECEDENCE,
+  TOGGLE_UNKNOWN_REQUEST_POLICY,
+  UPDATE_CONSENT_EXPERIENCE,
+  CREATE_CONSENT_EXPERIENCE,
+  UPDATE_CONSENT_MANAGER_THEME,
+} from './gqls/consentManager.js';
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
+
+export interface ConsentManageExperienceInput {
+  /** Name of experience */
+  name: string;
+  /** Display name of experience */
+  displayName?: string;
+  /** Regions that define this regional experience */
+  regions?: {
+    /** Country */
+    country?: IsoCountryCode;
+    /** Country subdivision */
+    countrySubDivision?: IsoCountrySubdivisionCode;
+  }[];
+  /** How to handle consent expiry */
+  onConsentExpiry?: OnConsentExpiry;
+  /** Consent expiration value */
+  consentExpiry?: number;
+  /** In vs not in operator */
+  operator?: RegionsOperator;
+  /** Priority of experience */
+  displayPriority?: number;
+  /** View state to prompt when auto prompting is enabled */
+  viewState?: InitialViewState;
+  /** Purposes that can be opted out of in a particular experience */
+  purposes?: {
+    /** Slug of purpose */
+    trackingType: string;
+  }[];
+  /** Purposes that are opted out by default in a particular experience */
+  optedOutPurposes?: {
+    /** Slug of purpose */
+    trackingType: string;
+  }[];
+  /** Browser languages that define this regional experience */
+  browserLanguages?: BrowserLanguage[];
+  /** Browser time zones that define this regional experience */
+  browserTimeZones?: BrowserTimeZone[];
+}
+
+export interface ConsentManagerInput {
+  /** Airgap version */
+  version?: string;
+  /** Bundle URLs per bundle type */
+  bundleUrls?: Partial<Record<ConsentBundleType, string>>;
+  /** The consent manager domains */
+  domains?: string[];
+  /** Key used to partition consent records */
+  partition?: string;
+  /** Precedence of signals vs user input */
+  consentPrecedence?: ConsentPrecedenceOption;
+  /** The consent manager unknown request policy */
+  unknownRequestPolicy?: UnknownRequestPolicy;
+  /** The consent manager unknown cookie policy */
+  unknownCookiePolicy?: UnknownRequestPolicy;
+  /** The XDI sync endpoint */
+  syncEndpoint?: string;
+  /** The telemetry partitioning strategy */
+  telemetryPartitioning?: TelemetryPartitionStrategy;
+  /** Whether the site owner has signed the IAB agreement */
+  signedIabAgreement?: SignedIabAgreementOption;
+  /** Regional experience configurations */
+  experiences?: ConsentManageExperienceInput[];
+  /** Theme configuration */
+  theme?: {
+    /** Primary color */
+    primaryColor?: string;
+    /** Font color */
+    fontColor?: string;
+    /** Privacy policy URL */
+    privacyPolicy?: string;
+    /** Auto-prompt setting */
+    prompt?: number;
+  };
+  /** The Shared XDI host sync groups config (JSON) */
+  syncGroups?: string;
+}
 
 /**
  * Sync consent manager experiences up to Transcend
  *
  * @param client - GraphQL client
  * @param experiences - The experience inputs
+ * @param options - Options
  */
 export async function syncConsentManagerExperiences(
   client: GraphQLClient,
   experiences: ConsentManageExperienceInput[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
-  // Fetch existing experiences and
-  const existingExperiences = await fetchConsentManagerExperiences(client, { logger });
+  const { logger } = options;
+
+  const existingExperiences = await fetchConsentManagerExperiences(client, {
+    logger,
+  });
   const experienceLookup = keyBy(existingExperiences, 'name');
 
-  // Fetch existing purposes
   const purposes = await fetchAllPurposes(client, { logger });
   const purposeLookup = keyBy(purposes, 'trackingType');
 
-  // Bulk update or create experiences
   await map(
     experiences,
     async (exp, ind) => {
-      // Purpose IDs
       const purposeIds = exp.purposes?.map((purpose, ind2) => {
         const existingPurpose = purposeLookup[purpose.trackingType];
         if (!existingPurpose) {
@@ -73,7 +161,6 @@ export async function syncConsentManagerExperiences(
         return existingPurpose.id;
       });
 
-      // update experience
       const existingExperience = experienceLookup[exp.name];
       if (existingExperience) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_EXPERIENCE, {
@@ -98,9 +185,8 @@ export async function syncConsentManagerExperiences(
           },
           logger,
         });
-        logger.info(colors.green(`Successfully synced consent experience "${exp.name}"!`));
+        logger.info(`Successfully synced consent experience "${exp.name}"!`);
       } else {
-        // create new experience
         await makeGraphQLRequest(client, CREATE_CONSENT_EXPERIENCE, {
           variables: {
             input: {
@@ -120,7 +206,7 @@ export async function syncConsentManagerExperiences(
           },
           logger,
         });
-        logger.info(colors.green(`Successfully created consent experience "${exp.name}"!`));
+        logger.info(`Successfully created consent experience "${exp.name}"!`);
       }
     },
     {
@@ -134,20 +220,30 @@ export async function syncConsentManagerExperiences(
  *
  * @param client - GraphQL client
  * @param consentManager - The consent manager input
+ * @param options - Options
  */
 export async function syncConsentManager(
   client: GraphQLClient,
   consentManager: ConsentManagerInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   let airgapBundleId: string;
 
-  // ensure the consent manager is created and deployed
   try {
-    airgapBundleId = await fetchConsentManagerId(client, { logger, maxRequests: 1 });
+    airgapBundleId = await fetchConsentManagerId(client, {
+      logger,
+      maxRequests: 1,
+    });
   } catch (err) {
     // TODO: https://transcend.height.app/T-23778
-    if (err.message.includes('AirgapBundle not found')) {
-      const privacyCenterId = await fetchPrivacyCenterId(client);
+    if ((err as Error).message.includes('AirgapBundle not found')) {
+      const privacyCenterId = await fetchPrivacyCenterId(client, {
+        logger,
+      });
 
       const { createConsentManager } = await makeGraphQLRequest<{
         /** Create consent manager */
@@ -159,7 +255,7 @@ export async function syncConsentManager(
           };
         };
       }>(client, CREATE_CONSENT_MANAGER, {
-        variables: { domains: consentManager.domains, privacyCenterId },
+        variables: { privacyCenterId },
         logger,
       });
       airgapBundleId = createConsentManager.consentManager.id;
@@ -168,7 +264,6 @@ export async function syncConsentManager(
     }
   }
 
-  // sync domains
   if (consentManager.domains) {
     await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_DOMAINS, {
       variables: { domains: consentManager.domains, airgapBundleId },
@@ -176,9 +271,8 @@ export async function syncConsentManager(
     });
   }
 
-  // sync partition
   if (consentManager.partition) {
-    const partitions = await fetchPartitions(client);
+    const partitions = await fetchPartitions(client, { logger });
     const partitionToUpdate = partitions.find((part) => part.name === consentManager.partition);
     if (!partitionToUpdate) {
       throw new Error(
@@ -198,7 +292,6 @@ export async function syncConsentManager(
     });
   }
 
-  // sync signed IAB agreement
   if (consentManager.signedIabAgreement) {
     await makeGraphQLRequest(client, UPDATE_LOAD_OPTIONS, {
       variables: {
@@ -213,7 +306,6 @@ export async function syncConsentManager(
     });
   }
 
-  // sync default request policy
   if (consentManager.unknownRequestPolicy) {
     await makeGraphQLRequest(client, TOGGLE_UNKNOWN_REQUEST_POLICY, {
       variables: {
@@ -226,7 +318,6 @@ export async function syncConsentManager(
     });
   }
 
-  // sync default cookie policy
   if (consentManager.unknownRequestPolicy) {
     await makeGraphQLRequest(client, TOGGLE_UNKNOWN_COOKIE_POLICY, {
       variables: {
@@ -239,7 +330,6 @@ export async function syncConsentManager(
     });
   }
 
-  // sync telemetry partition strategy
   if (consentManager.telemetryPartitioning) {
     await makeGraphQLRequest(client, TOGGLE_TELEMETRY_PARTITION_STRATEGY, {
       variables: {
@@ -252,7 +342,6 @@ export async function syncConsentManager(
     });
   }
 
-  // sync telemetry partition strategy
   if (consentManager.consentPrecedence) {
     await makeGraphQLRequest(client, TOGGLE_CONSENT_PRECEDENCE, {
       variables: {
@@ -265,12 +354,12 @@ export async function syncConsentManager(
     });
   }
 
-  // Update experience configurations
   if (consentManager.experiences) {
-    await syncConsentManagerExperiences(client, consentManager.experiences);
+    await syncConsentManagerExperiences(client, consentManager.experiences, {
+      logger,
+    });
   }
 
-  // update theme
   if (consentManager.theme) {
     await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_THEME, {
       variables: {

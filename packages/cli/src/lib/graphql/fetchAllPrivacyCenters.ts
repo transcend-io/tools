@@ -1,11 +1,9 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
 import { PrivacyCenterThemePartial } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { fetchPrivacyCenterUrl, makeGraphQLRequest, PRIVACY_CENTER } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
-import { PRIVACY_CENTER } from './gqls/index.js';
 
 export interface PrivacyCenter {
   /** ID of the privacy center */
@@ -57,7 +55,7 @@ export interface PrivacyCenter {
  * @returns All privacy centers in the organization
  */
 export async function fetchAllPrivacyCenters(client: GraphQLClient): Promise<PrivacyCenter[]> {
-  const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client);
+  const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client, { logger });
   const {
     privacyCenter: { themeStr, ...rest },
   } = await makeGraphQLRequest<{

@@ -27,6 +27,7 @@ import {
   fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
+  fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
   fetchApiKeys,
@@ -89,7 +90,6 @@ import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchData
 import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
-import { fetchPartitions } from './syncPartitions.js';
 import { fetchAllTemplates } from './syncTemplates.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
@@ -307,7 +307,7 @@ export async function pullTranscendConfiguration(
     // Fetch messages
     resources.includes(TranscendPullResource.Messages) ? fetchAllMessages(client, { logger }) : [],
     // Fetch partitions
-    resources.includes(TranscendPullResource.Partitions) ? fetchPartitions(client) : [],
+    resources.includes(TranscendPullResource.Partitions) ? fetchPartitions(client, { logger }) : [],
     // Fetch assessments
     resources.includes(TranscendPullResource.Assessments)
       ? fetchAllAssessments(client, { logger })

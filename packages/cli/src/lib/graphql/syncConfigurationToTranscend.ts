@@ -9,9 +9,11 @@ import {
   syncAttribute,
   syncBusinessEntities,
   syncDataCategories,
+  syncConsentManager,
   syncCookies,
   syncDataFlows,
   syncIntlMessages,
+  syncPartitions,
   syncProcessingActivities,
   syncPromptGroups,
   syncPromptPartials,
@@ -31,12 +33,10 @@ import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
-import { syncConsentManager } from './syncConsentManager.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
 import { syncEnricher } from './syncEnrichers.js';
 import { syncIdentifier } from './syncIdentifier.js';
-import { syncPartitions } from './syncPartitions.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
 import { syncProcessingPurposes } from './syncProcessingPurposes.js';
@@ -129,7 +129,7 @@ export async function syncConfigurationToTranscend(
   if (consentManager) {
     logger.info(colors.magenta('Syncing consent manager...'));
     try {
-      await syncConsentManager(client, consentManager);
+      await syncConsentManager(client, consentManager, { logger });
       logger.info(colors.green('Successfully synced consent manager!'));
     } catch (err) {
       encounteredError = true;
@@ -204,7 +204,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync partitions
   if (partitions) {
-    const partitionsSuccess = await syncPartitions(client, partitions);
+    const partitionsSuccess = await syncPartitions(client, partitions, { logger });
     encounteredError = encounteredError || !partitionsSuccess;
   }
 
