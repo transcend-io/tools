@@ -1,6 +1,9 @@
 import {
+  createDataSubject,
   fetchAllAttributes,
+  fetchAllDataSubjects,
   fetchApiKeys,
+  fetchIdentifiersAndCreateMissing,
   syncActionItemCollections,
   syncActionItems,
   syncAgentFiles,
@@ -12,6 +15,8 @@ import {
   syncConsentManager,
   syncCookies,
   syncDataFlows,
+  syncDataSubject,
+  syncIdentifier,
   syncIntlMessages,
   syncPartitions,
   syncProcessingActivities,
@@ -20,27 +25,74 @@ import {
   syncPrompts,
   syncTeams,
   syncVendors,
+  type DataSubject,
   type Identifier,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
+import { keyBy, flatten, uniq, difference } from 'lodash-es';
 
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { fetchAllActions } from './fetchAllActions.js';
-import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
-import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncAction } from './syncAction.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
-import { syncDataSubject } from './syncDataSubject.js';
 import { syncEnricher } from './syncEnrichers.js';
-import { syncIdentifier } from './syncIdentifier.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
 import { syncProcessingPurposes } from './syncProcessingPurposes.js';
 import { syncTemplate } from './syncTemplates.js';
+
+/**
+ * Fetch all of the data subjects in the organization
+ *
+ * @param input - Input to fetch
+ * @param client - GraphQL client
+ * @param fetchAll - When true, always fetch all subjects
+ * @returns The list of data subjects
+ */
+async function ensureAllDataSubjectsExist(
+  {
+    'data-silos': dataSilos = [],
+    'data-subjects': dataSubjects = [],
+    'processing-activities': processingActivities = [],
+    enrichers = [],
+  }: TranscendInput,
+  client: GraphQLClient,
+  fetchAll = false,
+): Promise<{ [type in string]: DataSubject }> {
+  const expectedDataSubjects = uniq([
+    ...flatten(dataSilos.map((silo) => silo['data-subjects'] || []) || []),
+    ...flatten(processingActivities.map(({ dataSubjectTypes }) => dataSubjectTypes ?? []) ?? []),
+    ...flatten(enrichers.map((enricher) => enricher['data-subjects'] || []) || []),
+    ...dataSubjects.map((subject) => subject.type),
+  ]);
+  if (expectedDataSubjects.length === 0 && !fetchAll) {
+    return {};
+  }
+
+  const internalSubjects = await fetchAllDataSubjects(client, { logger });
+  const dataSubjectByName = keyBy(internalSubjects, 'type');
+
+  const missingDataSubjects = difference(
+    expectedDataSubjects,
+    internalSubjects.map(({ type }) => type),
+  );
+
+  if (missingDataSubjects.length > 0) {
+    logger.info(colors.magenta(`Creating ${missingDataSubjects.length} new data subjects...`));
+    for (const dataSubjectType of missingDataSubjects) {
+      logger.info(colors.magenta(`Creating data subject ${dataSubjectType}...`));
+      const created = await createDataSubject(client, dataSubjectType, { logger });
+      logger.info(colors.green(`Created data subject ${dataSubjectType}!`));
+      dataSubjectByName[dataSubjectType] = created;
+    }
+  }
+
+  return dataSubjectByName;
+}
 
 const CONCURRENCY = 10;
 
@@ -110,7 +162,10 @@ export async function syncConfigurationToTranscend(
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
     enrichers || identifiers
-      ? fetchIdentifiersAndCreateMissing(input, client, !publishToPrivacyCenter)
+      ? fetchIdentifiersAndCreateMissing(input, client, {
+          skipPublish: !publishToPrivacyCenter,
+          logger,
+        })
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
     dataSilos || dataSubjects || enrichers || processingActivities
@@ -327,6 +382,7 @@ export async function syncConfigurationToTranscend(
             dataSubjectsByName,
             identifierId: existing.id,
             skipPublish: !publishToPrivacyCenter,
+            logger,
           });
           logger.info(colors.green(`Successfully synced identifier "${identifier.type}"!`));
         } catch (err) {
@@ -382,7 +438,7 @@ export async function syncConfigurationToTranscend(
   if (dataSubjects) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${dataSubjects.length}" data subjects...`));
-    const existingDataSubjects = await fetchAllDataSubjects(client);
+    const existingDataSubjects = await fetchAllDataSubjects(client, { logger });
     await map(
       dataSubjects,
       async (dataSubject) => {
@@ -399,6 +455,7 @@ export async function syncConfigurationToTranscend(
             dataSubject,
             dataSubjectId: existing.id,
             skipPublish: !publishToPrivacyCenter,
+            logger,
           });
           logger.info(colors.green(`Successfully synced data subject "${dataSubject.type}"!`));
         } catch (err) {

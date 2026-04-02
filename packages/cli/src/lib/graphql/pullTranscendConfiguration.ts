@@ -34,6 +34,8 @@ import {
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
+  convertToDataSubjectAllowlist,
+  fetchAllDataSubjects,
   type AssessmentRule,
 } from '@transcend-io/sdk';
 import colors from 'colors';
@@ -86,7 +88,6 @@ import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchAllProcessingPurposes } from './fetchAllProcessingPurposes.js';
 import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
-import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
 import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
@@ -187,7 +188,7 @@ export async function pullTranscendConfiguration(
     // Grab all data subjects in the organization
     resources.includes(TranscendPullResource.DataSilos) ||
     resources.includes(TranscendPullResource.DataSubjects)
-      ? fetchAllDataSubjects(client)
+      ? fetchAllDataSubjects(client, { logger })
       : [],
     // Grab API keys
     resources.includes(TranscendPullResource.ApiKeys)

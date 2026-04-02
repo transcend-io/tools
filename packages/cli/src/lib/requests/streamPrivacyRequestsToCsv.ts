@@ -1,5 +1,10 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequestIdentifiers,
+  validateSombraVersion,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -7,12 +12,7 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  fetchRequestsTotalCount,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { fetchAllRequests, fetchRequestsTotalCount } from '../graphql/index.js';
 import { initCsvFile, appendCsvRowsOrdered, parseFilePath } from '../helpers/index.js';
 import { formatRequestForCsv, ExportedPrivacyRequest } from './formatRequestForCsv.js';
 
@@ -154,7 +154,7 @@ export async function streamPrivacyRequestsToCsv({
 
   // Validate Sombra version once before bulk-fetching identifiers
   if (!skipRequestIdentifiers) {
-    await validateSombraVersion(client);
+    await validateSombraVersion(client, { logger });
   }
 
   const totalExpected = await fetchRequestsTotalCount(client, filterBy);
@@ -214,6 +214,7 @@ export async function streamPrivacyRequestsToCsv({
                     requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
                       requestId: n.id,
                       skipSombraCheck: true,
+                      logger,
                     }),
                   }),
                   { concurrency: pageLimit },

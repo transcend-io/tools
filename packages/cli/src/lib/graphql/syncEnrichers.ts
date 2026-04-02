@@ -5,12 +5,11 @@ import {
   PreflightRequestStatus,
   RequestAction,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest, type Identifier } from '@transcend-io/sdk';
+import { makeGraphQLRequest, type DataSubject, type Identifier } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { EnricherInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { DataSubject } from './fetchDataSubjects.js';
 import { ENRICHERS, CREATE_ENRICHER, UPDATE_ENRICHER } from './gqls/index.js';
 
 export interface Enricher {

@@ -1,16 +1,15 @@
+import { parse, type DocumentNode } from 'graphql';
 import { gql } from 'graphql-request';
 
-export const REMOVE_REQUEST_IDENTIFIERS = gql`
+export const REMOVE_REQUEST_IDENTIFIERS: DocumentNode = parse(gql`
   mutation TranscendCliRemoveRequestIdentifiers($input: RemoveRequestIdentifiersInput!) {
     removeRequestIdentifiers(input: $input) {
       count
     }
   }
-`;
+`);
 
-// TODO: https://transcend.height.app/T-27909 - enable optimizations
-// isExportCsv: true
-export const REQUEST_IDENTIFIERS = gql`
+export const REQUEST_IDENTIFIERS: DocumentNode = parse(gql`
   query TranscendCliRequestIdentifiers(
     $first: Int!
     $offset: Int!
@@ -37,4 +36,4 @@ export const REQUEST_IDENTIFIERS = gql`
       totalCount
     }
   }
-`;
+`);

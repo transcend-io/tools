@@ -1,16 +1,17 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequestIdentifiers,
+  validateSombraVersion,
+  type RequestIdentifier,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  RequestIdentifier,
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { fetchAllRequests } from '../graphql/index.js';
 import { formatRequestForCsv, CsvRow, ExportedPrivacyRequest } from './formatRequestForCsv.js';
 
 /**
@@ -149,7 +150,7 @@ export async function pullPrivacyRequests({
 
   // Validate Sombra version once before bulk-fetching identifiers
   if (!skipRequestIdentifiers) {
-    await validateSombraVersion(client);
+    await validateSombraVersion(client, { logger });
   }
 
   // Fetch the request identifiers for those requests
@@ -164,6 +165,7 @@ export async function pullPrivacyRequests({
           const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
             requestId: request.id,
             skipSombraCheck: true,
+            logger,
           });
           return {
             ...request,

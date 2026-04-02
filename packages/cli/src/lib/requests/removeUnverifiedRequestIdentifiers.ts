@@ -1,16 +1,17 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllRequestIdentifierMetadata,
+  makeGraphQLRequest,
+  REMOVE_REQUEST_IDENTIFIERS,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  REMOVE_REQUEST_IDENTIFIERS,
-  fetchAllRequests,
-  fetchAllRequestIdentifierMetadata,
-} from '../graphql/index.js';
+import { fetchAllRequests } from '../graphql/index.js';
 
 /**
  * Remove a set of unverified request identifier
@@ -61,6 +62,7 @@ export async function removeUnverifiedRequestIdentifiers({
     async (requestToRestart) => {
       const requestIdentifiers = await fetchAllRequestIdentifierMetadata(client, {
         requestId: requestToRestart.id,
+        logger,
       });
       const clearOut = requestIdentifiers
         .filter(

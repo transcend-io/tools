@@ -1,13 +1,13 @@
 import { IdentifierType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { decodeCodec, valuesOf } from '@transcend-io/type-utils';
+import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 import { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 import semver from 'semver';
 
-import { logger } from '../../logger.js';
-import { SOMBRA_VERSION } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { SOMBRA_VERSION } from './gqls/sombraVersion.js';
 
 const MIN_SOMBRA_VERSION_TO_DECRYPT = '7.180.0';
 
@@ -37,8 +37,16 @@ export const RequestIdentifiersResponse = t.type({
  * to avoid repeating this check on every request.
  *
  * @param client - GraphQL client
+ * @param options - Options
  */
-export async function validateSombraVersion(client: GraphQLClient): Promise<void> {
+export async function validateSombraVersion(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<void> {
+  const { logger } = options;
   const {
     organization: {
       sombra: { version },
@@ -72,22 +80,22 @@ export async function validateSombraVersion(client: GraphQLClient): Promise<void
 export async function fetchAllRequestIdentifiers(
   client: GraphQLClient,
   sombra: Got,
-  {
-    requestId,
-    skipSombraCheck = false,
-  }: {
+  options: {
     /** ID of request to filter on */
     requestId: string;
     /** Skip the Sombra version check (caller already validated) */
     skipSombraCheck?: boolean;
+    /** Logger instance */
+    logger: Logger;
   },
 ): Promise<RequestIdentifier[]> {
+  const { requestId, skipSombraCheck = false, logger } = options;
   const requestIdentifiers: RequestIdentifier[] = [];
   let offset = 0;
   let shouldContinue = false;
 
   if (!skipSombraCheck) {
-    await validateSombraVersion(client);
+    await validateSombraVersion(client, { logger });
   }
 
   do {
@@ -106,9 +114,7 @@ export async function fetchAllRequestIdentifiers(
         })
         .json();
     } catch (err) {
-      throw new Error(
-        `Failed to fetch request identifiers: ${err?.response?.body || err?.message}`,
-      );
+      throw new Error(`Failed to fetch request identifiers: ${(err as Error).message}`);
     }
 
     const { identifiers: nodes } = decodeCodec(RequestIdentifiersResponse, response);
