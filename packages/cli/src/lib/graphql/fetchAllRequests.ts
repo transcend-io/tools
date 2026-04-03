@@ -8,7 +8,6 @@ import {
 } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { valuesOf } from '@transcend-io/type-utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
@@ -165,6 +164,7 @@ export async function fetchAllRequests(
     isClosed,
     requestIds = [],
     onPage,
+    onProgress,
   }: {
     /** Actions to filter on */
     actions?: RequestAction[];
@@ -195,6 +195,13 @@ export async function fetchAllRequests(
     requestIds?: string[];
     /** When provided, called with each page of nodes instead of accumulating in memory */
     onPage?: (nodes: PrivacyRequest[]) => void | Promise<void>;
+    /** Called with progress info after the count query and after each page (non-streaming only) */
+    onProgress?: (info: {
+      /** Total number of requests matching the filter */
+      totalCount: number;
+      /** Number of requests fetched so far */
+      fetchedCount: number;
+    }) => void;
   } = {},
 ): Promise<PrivacyRequest[]> {
   const streaming = !!onPage;
@@ -213,26 +220,19 @@ export async function fetchAllRequests(
     updatedAtAfter: updatedAtAfter ? updatedAtAfter.toISOString() : undefined,
   };
 
-  // When streaming, the caller manages progress/logging — skip count query & bar
-  const t0 = new Date().getTime();
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+  let totalCount = 0;
 
-  if (!streaming) {
+  if (!streaming && onProgress) {
     logger.info(colors.magenta('Fetching requests...'));
-    const {
-      requests: { totalCount },
-    } = await makeGraphQLRequest<{
+    const result = await makeGraphQLRequest<{
       /** Requests */
       requests: {
         /** Total count */
         totalCount: number;
       };
     }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger });
-
-    if (totalCount > PAGE_SIZE) {
-      logger.info(colors.magenta(`Fetching ${totalCount} requests`));
-      progressBar.start(totalCount, 0);
-    }
+    totalCount = result.requests.totalCount;
+    onProgress({ totalCount, fetchedCount: 0 });
   }
 
   const requests: PrivacyRequest[] = [];
@@ -270,22 +270,14 @@ export async function fetchAllRequests(
 
     fetchedCount += nodes.length;
     cursor = pageInfo.endCursor ?? undefined;
-    if (!streaming) {
-      progressBar.update(fetchedCount);
+    if (!streaming && onProgress) {
+      onProgress({ totalCount, fetchedCount });
     }
     shouldContinue = pageInfo.hasNextPage;
   } while (shouldContinue);
 
   if (!streaming) {
-    progressBar.stop();
-    const t1 = new Date().getTime();
-    const totalTime = t1 - t0;
-
-    logger.info(
-      colors.green(
-        `Completed fetching of ${fetchedCount} request in "${totalTime / 1000}" seconds.`,
-      ),
-    );
+    logger.info(colors.green(`Completed fetching of ${fetchedCount} requests.`));
   }
 
   if (streaming) {

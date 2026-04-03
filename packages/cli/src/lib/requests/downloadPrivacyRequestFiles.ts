@@ -8,12 +8,12 @@ import {
   makeGraphQLRequest,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests, APPROVE_PRIVACY_REQUEST } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 import { getFileMetadataForPrivacyRequests } from './getFileMetadataForPrivacyRequests.js';
 import { streamPrivacyRequestFiles } from './streamPrivacyRequestFiles.js';
 
@@ -77,75 +77,69 @@ export async function downloadPrivacyRequestFiles({
     mkdirSync(folderPath);
   }
 
-  // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: [RequestAction.Access],
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    statuses,
-    requestIds,
-  });
+  const allRequests = await withProgressBar((bar) =>
+    fetchAllRequests(client, {
+      actions: [RequestAction.Access],
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      statuses,
+      requestIds,
+      onProgress({ totalCount, fetchedCount }) {
+        bar.start(totalCount);
+        bar.update(fetchedCount);
+      },
+    }),
+  );
 
-  // Download the file metadata for each request
   const requestFileMetadata = await getFileMetadataForPrivacyRequests(allRequests, {
     sombra,
     concurrency,
   });
 
-  // Start timer for download process
   const t0 = new Date().getTime();
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
   let total = 0;
   let totalApproved = 0;
-  progressBar.start(allRequests.length, 0);
 
-  // Download the files for each request
-  await map(
-    requestFileMetadata,
-    async ([request, metadata]) => {
-      // Create a new folder to store request files
-      const requestFolder = join(folderPath, request.id);
-      if (!existsSync(requestFolder)) {
-        mkdirSync(requestFolder);
-      }
+  await withProgressBar(async (bar) => {
+    bar.start(allRequests.length);
+    await map(
+      requestFileMetadata,
+      async ([request, metadata]) => {
+        const requestFolder = join(folderPath, request.id);
+        if (!existsSync(requestFolder)) {
+          mkdirSync(requestFolder);
+        }
 
-      // Stream each file to disk
-      await streamPrivacyRequestFiles(metadata, {
-        sombra,
-        requestId: request.id,
-        onFileDownloaded: (fil, stream) => {
-          // Ensure a folder exists for the file
-          // filename looks like Health/heartbeat.csv
-          const filePath = join(requestFolder, fil.fileName);
-          const folder = dirname(filePath);
-          if (!existsSync(folder)) {
-            mkdirSync(folder, { recursive: true });
-          }
-
-          // Write to disk
-          writeFileSync(filePath, stream);
-        },
-      });
-
-      // Approve the request if requested
-      if (approveAfterDownload && request.status === RequestStatus.Approving) {
-        await makeGraphQLRequest(client, APPROVE_PRIVACY_REQUEST, {
-          variables: { input: { requestId: request.id } },
-          logger,
+        await streamPrivacyRequestFiles(metadata, {
+          sombra,
+          requestId: request.id,
+          onFileDownloaded: (fil, stream) => {
+            const filePath = join(requestFolder, fil.fileName);
+            const folder = dirname(filePath);
+            if (!existsSync(folder)) {
+              mkdirSync(folder, { recursive: true });
+            }
+            writeFileSync(filePath, stream);
+          },
         });
-        totalApproved += 1;
-      }
 
-      // Increment the progress bar
-      total += 1;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
+        if (approveAfterDownload && request.status === RequestStatus.Approving) {
+          await makeGraphQLRequest(client, APPROVE_PRIVACY_REQUEST, {
+            variables: { input: { requestId: request.id } },
+            logger,
+          });
+          totalApproved += 1;
+        }
 
-  progressBar.stop();
+        total += 1;
+        bar.update(total);
+      },
+      { concurrency },
+    );
+  });
+
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

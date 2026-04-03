@@ -15,6 +15,7 @@ import {
   fetchAllRequests,
   validateSombraVersion,
 } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 import { writeCsv } from '../helpers/writeCsv.js';
 
 export interface PrivacyRequestWithIdentifiers extends PrivacyRequest {
@@ -65,11 +66,16 @@ export async function pullManualEnrichmentIdentifiersToCsv({
     ),
   );
 
-  // Pull all privacy requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Enriching],
-  });
+  const allRequests = await withProgressBar((bar) =>
+    fetchAllRequests(client, {
+      actions: requestActions,
+      statuses: [RequestStatus.Enriching],
+      onProgress({ totalCount, fetchedCount }) {
+        bar.start(totalCount);
+        bar.update(fetchedCount);
+      },
+    }),
+  );
 
   await validateSombraVersion(client);
 

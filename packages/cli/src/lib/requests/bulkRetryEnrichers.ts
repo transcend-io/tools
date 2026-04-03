@@ -1,7 +1,6 @@
 import { RequestAction, RequestEnricherStatus, RequestStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { difference } from 'lodash-es';
 
@@ -12,6 +11,7 @@ import {
   fetchAllRequests,
   retryRequestEnricher,
 } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Restart a bunch of request enrichers
@@ -54,29 +54,30 @@ export async function bulkRetryEnrichers({
   /** Concurrency to upload requests at */
   concurrency?: number;
 }): Promise<void> {
-  // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-  // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   logger.info(colors.magenta('Fetching requests to restart...'));
 
-  const requests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Enriching],
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    requestIds,
-  });
+  const requests = await withProgressBar((bar) =>
+    fetchAllRequests(client, {
+      actions: requestActions,
+      statuses: [RequestStatus.Enriching],
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      requestIds,
+      onProgress({ totalCount, fetchedCount }) {
+        bar.start(totalCount);
+        bar.update(fetchedCount);
+      },
+    }),
+  );
 
   let totalRestarted = 0;
 
-  // Validate request IDs
   if (requestIds.length > 0 && requestIds.length !== requests.length) {
     const missingRequests = difference(
       requestIds,
@@ -90,38 +91,35 @@ export async function bulkRetryEnrichers({
     }
   }
 
-  // Map over the requests
   let total = 0;
-  progressBar.start(requests.length, 0);
-  await map(
-    requests,
-    async (request) => {
-      // Pull the request identifiers
-      const requestEnrichers = await fetchAllRequestEnrichers(client, {
-        requestId: request.id,
-      });
-      const requestEnrichersToRestart = requestEnrichers.filter(
-        (requestEnricher) =>
-          requestEnricher.enricher.id === enricherId &&
-          requestEnricherStatuses.includes(requestEnricher.status),
-      );
-      await map(requestEnrichersToRestart, async (requestEnricher) => {
-        await retryRequestEnricher(client, requestEnricher.id);
-        totalRestarted += 1;
-      });
+  await withProgressBar(async (bar) => {
+    bar.start(requests.length);
+    await map(
+      requests,
+      async (request) => {
+        const requestEnrichers = await fetchAllRequestEnrichers(client, {
+          requestId: request.id,
+        });
+        const requestEnrichersToRestart = requestEnrichers.filter(
+          (requestEnricher) =>
+            requestEnricher.enricher.id === enricherId &&
+            requestEnricherStatuses.includes(requestEnricher.status),
+        );
+        await map(requestEnrichersToRestart, async (requestEnricher) => {
+          await retryRequestEnricher(client, requestEnricher.id);
+          totalRestarted += 1;
+        });
 
-      // Cache successful upload
-      total += 1;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
+        total += 1;
+        bar.update(total);
+      },
+      { concurrency },
+    );
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  // Log completion time
   logger.info(
     colors.green(
       `Completed restarting of ${requests.length} requests and ${totalRestarted} enrichers in "${
