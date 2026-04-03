@@ -8,6 +8,7 @@ import {
 import {
   fetchAllActionItemCollections,
   fetchAllActionItems,
+  fetchAllActions,
   fetchAllAgentFiles,
   fetchAllAgentFunctions,
   fetchAllAgents,
@@ -20,6 +21,8 @@ import {
   fetchAllPolicies,
   fetchAllPrivacyCenters,
   fetchAllProcessingPurposes,
+  fetchAllSiloDiscoveryResults,
+  fetchAllTemplates,
   fetchConsentManager,
   fetchConsentManagerExperiences,
   fetchConsentManagerTheme,
@@ -83,14 +86,11 @@ import {
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
-import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
-import { fetchAllSiloDiscoveryResults } from './fetchAllSiloDiscoveryResults.js';
 import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
 import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
-import { fetchAllTemplates } from './syncTemplates.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
   TranscendPullResource.DataSilos,
@@ -234,13 +234,15 @@ export async function pullTranscendConfiguration(
       ? fetchAllAttributes(client, { logger })
       : [],
     // Fetch email templates
-    resources.includes(TranscendPullResource.Templates) ? fetchAllTemplates(client) : [],
+    resources.includes(TranscendPullResource.Templates)
+      ? fetchAllTemplates(client, { logger })
+      : [],
     // Fetch identifiers
     resources.includes(TranscendPullResource.Identifiers)
       ? fetchAllIdentifiers(client, { logger })
       : [],
     // Fetch actions
-    resources.includes(TranscendPullResource.Actions) ? fetchAllActions(client) : [],
+    resources.includes(TranscendPullResource.Actions) ? fetchAllActions(client, { logger }) : [],
     // Fetch business entities
     resources.includes(TranscendPullResource.BusinessEntities)
       ? fetchAllBusinessEntities(client, { logger })
@@ -324,7 +326,7 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
-      ? fetchAllSiloDiscoveryResults(client)
+      ? fetchAllSiloDiscoveryResults(client, { logger })
       : [],
   ]);
 

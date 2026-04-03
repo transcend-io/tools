@@ -4,11 +4,11 @@ import {
   RegionDetectionMethod,
   RequestAction,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { ACTIONS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { ACTIONS } from './gqls/action.js';
 
 export interface Action {
   /** ID of identifier */
@@ -35,13 +35,20 @@ const PAGE_SIZE = 20;
  * Fetch all actions in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All actions in the organization
  */
-export async function fetchAllActions(client: GraphQLClient): Promise<Action[]> {
+export async function fetchAllActions(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<Action[]> {
+  const { logger } = options;
   const actions: Action[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {

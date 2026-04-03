@@ -28,3 +28,4 @@ export * from './ai/index.js';
 export * from './assessments/index.js';
 export * from './code-intelligence/index.js';
 export * from './consent/index.js';
+export * from './dsr-automation/index.js';
