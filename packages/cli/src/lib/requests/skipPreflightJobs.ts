@@ -5,12 +5,12 @@ import {
   makeGraphQLRequest,
 } from '@transcend-io/sdk';
 import { mapSeries, map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequestEnrichers, SKIP_REQUEST_ENRICHER } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Given an enricher ID, mark all open request enrichers as skipped
@@ -42,12 +42,18 @@ export async function skipPreflightJobs({
   const t0 = new Date().getTime();
 
   // fetch all RequestDataSilos that are open
-  const requests = await fetchAllRequests(
-    client,
-    {
-      statuses: [RequestStatus.Enriching],
-    },
-    { logger },
+  const requests = await withProgressBar((bar) =>
+    fetchAllRequests(
+      client,
+      {
+        statuses: [RequestStatus.Enriching],
+        onProgress({ totalCount, fetchedCount }) {
+          bar.start(totalCount);
+          bar.update(fetchedCount);
+        },
+      },
+      { logger },
+    ),
   );
 
   // Notify Transcend
@@ -59,59 +65,56 @@ export async function skipPreflightJobs({
     ),
   );
 
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-
-  let total = 0;
-  progressBar.start(requests.length, 0);
   let totalSkipped = 0;
-  await map(
-    requests,
-    async (request) => {
-      // TODO dont pull all in
-      const requestEnrichers = await fetchAllRequestEnrichers(client, {
-        requestId: request.id,
-      });
-      const requestEnrichersFiltered = requestEnrichers.filter(
-        (enricher) =>
-          enricherIds.includes(enricher.enricher.id) &&
-          ![
-            RequestEnricherStatus.Resolved,
-            RequestEnricherStatus.Skipped,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ].includes(enricher.status as any),
-      );
-
-      // TODO
-      if (requestEnrichersFiltered.length > 0) {
-        await mapSeries(requestEnrichersFiltered, async (requestEnricher) => {
-          try {
-            await makeGraphQLRequest<{
-              /** Whether we successfully uploaded the results */
-              success: boolean;
-            }>(client, SKIP_REQUEST_ENRICHER, {
-              variables: { requestEnricherId: requestEnricher.id },
-              logger,
-            });
-            totalSkipped += 1;
-          } catch (err) {
-            if (
-              !err.message.includes(
-                'Client error: Cannot skip Request enricher because it has already completed',
-              )
-            ) {
-              throw err;
-            }
-          }
+  await withProgressBar(async (bar) => {
+    bar.start(requests.length);
+    let total = 0;
+    await map(
+      requests,
+      async (request) => {
+        // TODO dont pull all in
+        const requestEnrichers = await fetchAllRequestEnrichers(client, {
+          requestId: request.id,
         });
-      }
-      total += 1;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
+        const requestEnrichersFiltered = requestEnrichers.filter(
+          (enricher) =>
+            enricherIds.includes(enricher.enricher.id) &&
+            ![
+              RequestEnricherStatus.Resolved,
+              RequestEnricherStatus.Skipped,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ].includes(enricher.status as any),
+        );
 
-  progressBar.stop();
+        // TODO
+        if (requestEnrichersFiltered.length > 0) {
+          await mapSeries(requestEnrichersFiltered, async (requestEnricher) => {
+            try {
+              await makeGraphQLRequest<{
+                /** Whether we successfully uploaded the results */
+                success: boolean;
+              }>(client, SKIP_REQUEST_ENRICHER, {
+                variables: { requestEnricherId: requestEnricher.id },
+                logger,
+              });
+              totalSkipped += 1;
+            } catch (err) {
+              if (
+                !err.message.includes(
+                  'Client error: Cannot skip Request enricher because it has already completed',
+                )
+              ) {
+                throw err;
+              }
+            }
+          });
+        }
+        total += 1;
+        bar.update(total);
+      },
+      { concurrency },
+    );
+  });
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

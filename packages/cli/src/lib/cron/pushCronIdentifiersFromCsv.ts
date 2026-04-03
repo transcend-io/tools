@@ -1,11 +1,11 @@
 import { createSombraGotInstance } from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { chunk } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
+import { withProgressBar } from '../helpers/index.js';
 import { readCsv } from '../requests/index.js';
 import { markCronIdentifierCompleted, CronIdentifierPush } from './markCronIdentifierCompleted.js';
 
@@ -59,56 +59,57 @@ export async function pushCronIdentifiersFromCsv({
 
   // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   let successCount = 0;
   let failureCount = 0;
   let errorCount = 0;
-  progressBar.start(activeResults.length, 0);
 
   // Process in chunks with sleep intervals
   const chunks = chunk(activeResults, concurrency);
   const totalChunks = chunks.length;
-  const processChunk = async (items: CronIdentifierPush[], chunkIndex: number): Promise<void> => {
-    logger.info(
-      colors.blue(`Processing chunk ${chunkIndex + 1}/${totalChunks} (${chunk.length} items)`),
-    );
 
-    // Process the items of the chunk concurrently
-    await map(items, async (identifier) => {
-      try {
-        const success = await markCronIdentifierCompleted(sombra, identifier);
-        if (success) {
-          successCount += 1;
-        } else {
-          failureCount += 1;
+  await withProgressBar(async (bar) => {
+    bar.start(activeResults.length);
+
+    const processChunk = async (items: CronIdentifierPush[], chunkIndex: number): Promise<void> => {
+      logger.info(
+        colors.blue(`Processing chunk ${chunkIndex + 1}/${totalChunks} (${chunk.length} items)`),
+      );
+
+      // Process the items of the chunk concurrently
+      await map(items, async (identifier) => {
+        try {
+          const success = await markCronIdentifierCompleted(sombra, identifier);
+          if (success) {
+            successCount += 1;
+          } else {
+            failureCount += 1;
+          }
+        } catch (e) {
+          logger.error(
+            colors.red(
+              `Error notifying Transcend for identifier "${identifier.identifier}" - ${e?.message}`,
+            ),
+          );
+          errorCount += 1;
         }
-      } catch (e) {
-        logger.error(
-          colors.red(
-            `Error notifying Transcend for identifier "${identifier.identifier}" - ${e?.message}`,
-          ),
-        );
-        errorCount += 1;
-      }
-      progressBar.update(successCount + failureCount);
-    });
-
-    // Sleep between chunks (except for the last chunk)
-    if (sleepSeconds > 0 && chunkIndex < totalChunks - 1) {
-      logger.info(colors.yellow(`Sleeping for ${sleepSeconds}s before next chunk...`));
-
-      await new Promise((resolve) => {
-        setTimeout(resolve, sleepSeconds * 1000);
+        bar.update(successCount + failureCount);
       });
-    }
-  };
 
-  // Process all chunks sequentially
-  await mapSeries(chunks, processChunk);
+      // Sleep between chunks (except for the last chunk)
+      if (sleepSeconds > 0 && chunkIndex < totalChunks - 1) {
+        logger.info(colors.yellow(`Sleeping for ${sleepSeconds}s before next chunk...`));
 
-  progressBar.stop();
+        await new Promise((resolve) => {
+          setTimeout(resolve, sleepSeconds * 1000);
+        });
+      }
+    };
+
+    // Process all chunks sequentially
+    await mapSeries(chunks, processChunk);
+  });
+
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

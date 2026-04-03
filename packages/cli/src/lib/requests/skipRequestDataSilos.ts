@@ -1,7 +1,6 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
@@ -11,6 +10,7 @@ import {
   fetchRequestDataSilos,
   fetchRequestDataSilosCount,
 } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Given a data silo ID, mark all open request data silos as skipped
@@ -59,48 +59,45 @@ export async function skipRequestDataSilos({
     ),
   );
 
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+  await withProgressBar(async (bar) => {
+    let total = 0;
+    bar.start(requestDataSiloCount);
 
-  let total = 0;
-  progressBar.start(requestDataSiloCount, 0);
+    // Fetch all matching request data silos, updating progress as pages are fetched
+    const requestDataSilos = await fetchRequestDataSilos(client, {
+      dataSiloId,
+      requestStatuses,
+      onProgress: (numFetched) => {
+        total += numFetched / 2;
+        bar.update(total);
+      },
+    });
 
-  // Fetch all matching request data silos, updating progress as pages are fetched
-  const requestDataSilos = await fetchRequestDataSilos(client, {
-    dataSiloId,
-    requestStatuses,
-    onProgress: (numFetched) => {
-      total += numFetched / 2;
-      progressBar.update(total);
-    },
-  });
-
-  await map(
-    requestDataSilos,
-    async (requestDataSilo) => {
-      if (actionTypes.length === 0 || actionTypes.includes(requestDataSilo.request.type)) {
-        try {
-          await makeGraphQLRequest<{
-            /** Whether we successfully uploaded the results */
-            success: boolean;
-          }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
-            variables: { requestDataSiloId: requestDataSilo.id, status },
-            logger,
-          });
-        } catch (err) {
-          if (!err.message.includes('Client error: Request must be active:')) {
-            throw err;
+    await map(
+      requestDataSilos,
+      async (requestDataSilo) => {
+        if (actionTypes.length === 0 || actionTypes.includes(requestDataSilo.request.type)) {
+          try {
+            await makeGraphQLRequest<{
+              /** Whether we successfully uploaded the results */
+              success: boolean;
+            }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
+              variables: { requestDataSiloId: requestDataSilo.id, status },
+              logger,
+            });
+          } catch (err) {
+            if (!err.message.includes('Client error: Request must be active:')) {
+              throw err;
+            }
           }
         }
-      }
 
-      total += 0.5;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
-
-  progressBar.stop();
+        total += 0.5;
+        bar.update(total);
+      },
+      { concurrency },
+    );
+  });
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

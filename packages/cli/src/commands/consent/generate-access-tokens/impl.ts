@@ -6,13 +6,12 @@ import {
   createPreferenceAccessTokens,
   type PreferenceAccessTokenInputWithIndex,
 } from '@transcend-io/sdk';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import * as t from 'io-ts';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { writeCsv } from '../../../lib/helpers/index.js';
+import { withProgressBar, writeCsv } from '../../../lib/helpers/index.js';
 import { readCsv } from '../../../lib/requests/index.js';
 import { logger } from '../../../logger.js';
 
@@ -121,21 +120,20 @@ export async function generateAccessTokens(
       };
     });
 
-    // Progress bar
-    const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-    progressBar.start(inputs.length, 0);
-
     // Kick off token creation (batched internally)
     const t0 = Date.now();
-    const results = await createPreferenceAccessTokens(client, {
-      records: inputs,
-      logger,
-      emitProgress: (progress) => {
-        progressBar.update(progress);
-      },
+    const results = await withProgressBar(async (bar) => {
+      bar.start(inputs.length);
+      const results = await createPreferenceAccessTokens(client, {
+        records: inputs,
+        logger,
+        emitProgress: (progress) => {
+          bar.update(progress);
+        },
+      });
+      bar.update(inputs.length);
+      return results;
     });
-    progressBar.update(inputs.length);
-    progressBar.stop();
 
     // Prepare output CSV rows
     const outputRows = results.map(({ accessToken, input }) => {

@@ -6,4 +6,5 @@ export * from './readSafe.js';
 export * from './collectParquetFilesOrExit.js';
 export * from './collectCsvFilesOrExit.js';
 export * from './parquetToCsvOneFile.js';
+export * from './withProgressBar.js';
 export * from './writeCsv.js';
