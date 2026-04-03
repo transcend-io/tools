@@ -1,3 +1,4 @@
+export * from './ensureAllDataSubjectsExist.js';
 export * from './fetchAllAssessmentTemplates.js';
 export * from './fetchAllAttributeKeys.js';
 export * from './fetchAllPolicies.js';
