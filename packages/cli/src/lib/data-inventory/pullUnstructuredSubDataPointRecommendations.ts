@@ -1,6 +1,5 @@
 import type { UnstructuredSubDataPointRecommendationStatus } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { gql, type GraphQLClient } from 'graphql-request';
 import { sortBy } from 'lodash-es';
@@ -8,6 +7,7 @@ import { sortBy } from 'lodash-es';
 import type { DataCategoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { ENTRY_COUNT } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 interface UnstructuredSubDataPointRecommendationCsvPreview {
   /** ID of subDatapoint */
@@ -75,11 +75,7 @@ export async function pullUnstructuredSubDataPointRecommendations(
   const unstructuredSubDataPointRecommendations: UnstructuredSubDataPointRecommendationCsvPreview[] =
     [];
 
-  // Time duration
   const t0 = new Date().getTime();
-
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Filters
   const filterBy = {
@@ -104,24 +100,25 @@ export async function pullUnstructuredSubDataPointRecommendations(
 
   logger.info(colors.magenta('[Step 1/3] Pulling in all subdatapoints'));
 
-  progressBar.start(totalCount, 0);
-  let total = 0;
-  let shouldContinue = false;
-  let cursor: string | undefined;
-  let offset = 0;
-  do {
-    try {
-      const {
-        unstructuredSubDataPointRecommendations: { nodes },
-      } = await makeGraphQLRequest<{
-        /** Query response */
-        unstructuredSubDataPointRecommendations: {
-          /** List of matches */
-          nodes: UnstructuredSubDataPointRecommendationCsvPreview[];
-        };
-      }>(
-        client,
-        gql`
+  await withProgressBar(async (bar) => {
+    bar.start(totalCount);
+    let total = 0;
+    let shouldContinue = false;
+    let cursor: string | undefined;
+    let offset = 0;
+    do {
+      try {
+        const {
+          unstructuredSubDataPointRecommendations: { nodes },
+        } = await makeGraphQLRequest<{
+          /** Query response */
+          unstructuredSubDataPointRecommendations: {
+            /** List of matches */
+            nodes: UnstructuredSubDataPointRecommendationCsvPreview[];
+          };
+        }>(
+          client,
+          gql`
           query TranscendCliUnstructuredSubDataPointRecommendationCsvExport(
             $filterBy: UnstructuredSubDataPointRecommendationsFilterInput
             $first: Int!
@@ -152,33 +149,33 @@ export async function pullUnstructuredSubDataPointRecommendations(
             }
           }
         `,
-        {
-          variables: {
-            first: pageSize,
-            offset,
-            filterBy: {
-              ...filterBy,
+          {
+            variables: {
+              first: pageSize,
+              offset,
+              filterBy: {
+                ...filterBy,
+              },
             },
+            logger,
           },
-          logger,
-        },
-      );
+        );
 
-      cursor = nodes[nodes.length - 1]?.id as string;
-      unstructuredSubDataPointRecommendations.push(...nodes);
-      shouldContinue = nodes.length === pageSize;
-      total += nodes.length;
-      offset += nodes.length;
-      progressBar.update(total);
-    } catch (err) {
-      logger.error(
-        colors.red(`An error fetching subdatapoints for cursor ${cursor} and offset ${offset}`),
-      );
-      throw err;
-    }
-  } while (shouldContinue);
+        cursor = nodes[nodes.length - 1]?.id as string;
+        unstructuredSubDataPointRecommendations.push(...nodes);
+        shouldContinue = nodes.length === pageSize;
+        total += nodes.length;
+        offset += nodes.length;
+        bar.update(total);
+      } catch (err) {
+        logger.error(
+          colors.red(`An error fetching subdatapoints for cursor ${cursor} and offset ${offset}`),
+        );
+        throw err;
+      }
+    } while (shouldContinue);
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

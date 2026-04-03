@@ -1,13 +1,13 @@
 import { TableEncryptionType } from '@transcend-io/privacy-types';
 import { decodeCodec, valuesOf } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 
 import { logger } from '../../logger.js';
 import { PrivacyRequest } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 export const IntlMessage = t.type({
   /** The message key */
@@ -108,60 +108,53 @@ export async function getFileMetadataForPrivacyRequests(
 ): Promise<[Pick<PrivacyRequest, 'id' | 'status'>, RequestFileMetadata[]][]> {
   logger.info(colors.magenta(`Pulling file metadata for ${requests.length} requests`));
 
-  // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-
-  // Start timer
   let total = 0;
-  progressBar.start(requests.length, 0);
 
-  // Loop over the requests
-  const results = await map(
-    requests,
-    async (
-      requestToDownload,
-    ): Promise<[Pick<PrivacyRequest, 'id' | 'status'>, RequestFileMetadata[]]> => {
-      const localResults: RequestFileMetadata[] = [];
+  const results = await withProgressBar(async (bar) => {
+    bar.start(requests.length);
+    return map(
+      requests,
+      async (
+        requestToDownload,
+      ): Promise<[Pick<PrivacyRequest, 'id' | 'status'>, RequestFileMetadata[]]> => {
+        const localResults: RequestFileMetadata[] = [];
 
-      // Paginate over the file metadata for this request
-      let shouldContinue = true;
-      let offset = 0;
-      while (shouldContinue) {
-        let response: RequestFileMetadataResponse;
-        try {
-          // Grab the file metadata for this request
+        let shouldContinue = true;
+        let offset = 0;
+        while (shouldContinue) {
+          let response: RequestFileMetadataResponse;
+          try {
+            const rawResponse = await sombra
+              .get(`v1/data-subject-request/${requestToDownload.id}/download-keys`, {
+                searchParams: {
+                  limit,
+                  offset,
+                },
+              })
+              .json();
+            response = decodeCodec(RequestFileMetadataResponse, rawResponse);
+            localResults.push(...response.nodes);
 
-          const rawResponse = await sombra
-            .get(`v1/data-subject-request/${requestToDownload.id}/download-keys`, {
-              searchParams: {
-                limit,
-                offset,
-              },
-            })
-            .json();
-          response = decodeCodec(RequestFileMetadataResponse, rawResponse);
-          localResults.push(...response.nodes);
-
-          // Increase offset and break if no more pages
-          offset += limit;
-          shouldContinue =
-            // eslint-disable-next-line no-underscore-dangle
-            !!response._links.next && response.nodes.length === limit;
-        } catch (err) {
-          throw new Error(`Received an error from server: ${err?.response?.body || err?.message}`);
+            offset += limit;
+            shouldContinue =
+              // eslint-disable-next-line no-underscore-dangle
+              !!response._links.next && response.nodes.length === limit;
+          } catch (err) {
+            throw new Error(
+              `Received an error from server: ${err?.response?.body || err?.message}`,
+            );
+          }
         }
-      }
 
-      total += 1;
-      progressBar.update(total);
-      return [requestToDownload, localResults];
-    },
-    { concurrency },
-  );
+        total += 1;
+        bar.update(total);
+        return [requestToDownload, localResults];
+      },
+      { concurrency },
+    );
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

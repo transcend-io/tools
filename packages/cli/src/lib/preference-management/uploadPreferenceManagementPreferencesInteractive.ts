@@ -10,11 +10,11 @@ import {
 } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { chunk } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import { withProgressBar } from '../helpers/index.js';
 import { parseAttributesFromString } from '../requests/index.js';
 import { parsePreferenceManagementCsvWithCache } from './parsePreferenceManagementCsv.js';
 import { NONE_PREFERENCE_MAP } from './parsePreferenceTimestampsFromCsv.js';
@@ -199,66 +199,62 @@ export async function uploadPreferenceManagementPreferencesInteractive({
     ),
   );
 
-  // Time duration
   const t0 = new Date().getTime();
 
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-
-  // Build a GraphQL client
   let total = 0;
   const updatesToRun = Object.entries(pendingUpdates);
   const chunkedUpdates = chunk(updatesToRun, skipWorkflowTriggers ? 100 : 10);
-  progressBar.start(updatesToRun.length, 0);
-  await map(
-    chunkedUpdates,
-    async (currentChunk) => {
-      // Make the request
-      try {
-        await sombra
-          .put('v1/preferences', {
-            json: {
-              records: currentChunk.map(([, update]) => update),
-              skipWorkflowTriggers,
-            },
-          })
-          .json();
-      } catch (err) {
+
+  await withProgressBar(async (bar) => {
+    bar.start(updatesToRun.length);
+    await map(
+      chunkedUpdates,
+      async (currentChunk) => {
         try {
-          const parsed = JSON.parse(err?.response?.body || '{}');
-          if (parsed.error) {
-            logger.error(colors.red(`Error: ${parsed.error}`));
+          await sombra
+            .put('v1/preferences', {
+              json: {
+                records: currentChunk.map(([, update]) => update),
+                skipWorkflowTriggers,
+              },
+            })
+            .json();
+        } catch (err) {
+          try {
+            const parsed = JSON.parse(err?.response?.body || '{}');
+            if (parsed.error) {
+              logger.error(colors.red(`Error: ${parsed.error}`));
+            }
+          } catch {
+            // continue
           }
-        } catch {
-          // continue
+          logger.error(
+            colors.red(
+              `Failed to upload ${currentChunk.length} user preferences to partition ${partition}: ${
+                err?.response?.body || err?.message
+              }`,
+            ),
+          );
+          const failingUpdates = preferenceState.getValue('failingUpdates');
+          currentChunk.forEach(([userId, update]) => {
+            failingUpdates[userId] = {
+              uploadedAt: new Date().toISOString(),
+              update,
+              error: err?.response?.body || err?.message || 'Unknown error',
+            };
+          });
+          await preferenceState.setValue(failingUpdates, 'failingUpdates');
         }
-        logger.error(
-          colors.red(
-            `Failed to upload ${currentChunk.length} user preferences to partition ${partition}: ${
-              err?.response?.body || err?.message
-            }`,
-          ),
-        );
-        const failingUpdates = preferenceState.getValue('failingUpdates');
-        currentChunk.forEach(([userId, update]) => {
-          failingUpdates[userId] = {
-            uploadedAt: new Date().toISOString(),
-            update,
-            error: err?.response?.body || err?.message || 'Unknown error',
-          };
-        });
-        await preferenceState.setValue(failingUpdates, 'failingUpdates');
-      }
 
-      total += currentChunk.length;
-      progressBar.update(total);
-    },
-    {
-      concurrency: 40,
-    },
-  );
+        total += currentChunk.length;
+        bar.update(total);
+      },
+      {
+        concurrency: 40,
+      },
+    );
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
   logger.info(

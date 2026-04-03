@@ -4,7 +4,6 @@ import {
 } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { gql, type GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
@@ -18,6 +17,7 @@ import {
   type DataSiloAttributeValue,
   SUB_DATA_POINTS_COUNT,
 } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 export interface DataSiloCsvPreview {
   /** ID of dataSilo */
@@ -104,13 +104,8 @@ async function pullSubDatapoints(
 ): Promise<SubDataPointCsvPreview[]> {
   const subDataPoints: SubDataPointCsvPreview[] = [];
 
-  // Time duration
   const t0 = new Date().getTime();
 
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-
-  // Filters
   const filterBy = {
     ...(parentCategories.length > 0 ? { category: parentCategories } : {}),
     ...(subCategories.length > 0 ? { subCategoryIds: subCategories } : {}),
@@ -138,24 +133,25 @@ async function pullSubDatapoints(
 
   logger.info(colors.magenta('[Step 1/3] Pulling in all subdatapoints'));
 
-  progressBar.start(totalCount, 0);
-  let total = 0;
-  let shouldContinue = false;
-  let cursor: string | undefined;
-  let offset = 0;
-  do {
-    try {
-      const {
-        subDataPoints: { nodes },
-      } = await makeGraphQLRequest<{
-        /** Query response */
-        subDataPoints: {
-          /** List of matches */
-          nodes: SubDataPointCsvPreview[];
-        };
-      }>(
-        client,
-        gql`
+  await withProgressBar(async (bar) => {
+    bar.start(totalCount);
+    let total = 0;
+    let shouldContinue = false;
+    let cursor: string | undefined;
+    let offset = 0;
+    do {
+      try {
+        const {
+          subDataPoints: { nodes },
+        } = await makeGraphQLRequest<{
+          /** Query response */
+          subDataPoints: {
+            /** List of matches */
+            nodes: SubDataPointCsvPreview[];
+          };
+        }>(
+          client,
+          gql`
           query TranscendCliSubDataPointCsvExport(
             $filterBy: SubDataPointFiltersInput
             $first: Int!
@@ -207,35 +203,35 @@ async function pullSubDatapoints(
             }
           }
         `,
-        {
-          variables: {
-            first: pageSize,
-            offset,
-            filterBy: {
-              ...filterBy,
-              // TODO: https://transcend.height.app/T-40484 - add cursor support
-              // ...(cursor ? { cursor: { id: cursor } } : {}),
+          {
+            variables: {
+              first: pageSize,
+              offset,
+              filterBy: {
+                ...filterBy,
+                // TODO: https://transcend.height.app/T-40484 - add cursor support
+                // ...(cursor ? { cursor: { id: cursor } } : {}),
+              },
             },
+            logger,
           },
-          logger,
-        },
-      );
+        );
 
-      cursor = nodes[nodes.length - 1]?.id as string;
-      subDataPoints.push(...nodes);
-      shouldContinue = nodes.length === pageSize;
-      total += nodes.length;
-      offset += nodes.length;
-      progressBar.update(total);
-    } catch (err) {
-      logger.error(
-        colors.red(`An error fetching subdatapoints for cursor ${cursor} and offset ${offset}`),
-      );
-      throw err;
-    }
-  } while (shouldContinue);
+        cursor = nodes[nodes.length - 1]?.id as string;
+        subDataPoints.push(...nodes);
+        shouldContinue = nodes.length === pageSize;
+        total += nodes.length;
+        offset += nodes.length;
+        bar.update(total);
+      } catch (err) {
+        logger.error(
+          colors.red(`An error fetching subdatapoints for cursor ${cursor} and offset ${offset}`),
+        );
+        throw err;
+      }
+    } while (shouldContinue);
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
@@ -270,51 +266,47 @@ async function pullDatapoints(
 ): Promise<DataPointCsvPreview[]> {
   const dataPoints: DataPointCsvPreview[] = [];
 
-  // Time duration
   const t0 = new Date().getTime();
-
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   logger.info(colors.magenta(`[Step 2/3] Fetching metadata for ${dataPointIds.length} datapoints`));
 
-  // Group by 100
   const dataPointsGrouped = chunk(dataPointIds, pageSize);
 
-  progressBar.start(dataPointIds.length, 0);
   let total = 0;
-  await mapSeries(dataPointsGrouped, async (dataPointIdsGroup) => {
-    try {
-      const {
-        dataPoints: { nodes },
-      } = await makeGraphQLRequest<{
-        /** Query response */
-        dataPoints: {
-          /** List of matches */
-          nodes: DataPointCsvPreview[];
-        };
-      }>(client, DATAPOINT_EXPORT, {
-        variables: {
-          first: pageSize,
-          filterBy: {
-            ids: dataPointIdsGroup,
+  await withProgressBar(async (bar) => {
+    bar.start(dataPointIds.length);
+    await mapSeries(dataPointsGrouped, async (dataPointIdsGroup) => {
+      try {
+        const {
+          dataPoints: { nodes },
+        } = await makeGraphQLRequest<{
+          /** Query response */
+          dataPoints: {
+            /** List of matches */
+            nodes: DataPointCsvPreview[];
+          };
+        }>(client, DATAPOINT_EXPORT, {
+          variables: {
+            first: pageSize,
+            filterBy: {
+              ids: dataPointIdsGroup,
+            },
           },
-        },
-        logger,
-      });
+          logger,
+        });
 
-      dataPoints.push(...nodes);
-      total += dataPointIdsGroup.length;
-      progressBar.update(total);
-    } catch (err) {
-      logger.error(
-        colors.red(`An error fetching subdatapoints for IDs ${dataPointIdsGroup.join(', ')}`),
-      );
-      throw err;
-    }
+        dataPoints.push(...nodes);
+        total += dataPointIdsGroup.length;
+        bar.update(total);
+      } catch (err) {
+        logger.error(
+          colors.red(`An error fetching subdatapoints for IDs ${dataPointIdsGroup.join(', ')}`),
+        );
+        throw err;
+      }
+    });
   });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
@@ -347,51 +339,47 @@ async function pullDataSilos(
 ): Promise<DataSiloCsvPreview[]> {
   const dataSilos: DataSiloCsvPreview[] = [];
 
-  // Time duration
   const t0 = new Date().getTime();
-
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   logger.info(colors.magenta(`[Step 3/3] Fetching metadata for ${dataSiloIds.length} data silos`));
 
-  // Group by 100
   const dataSilosGrouped = chunk(dataSiloIds, pageSize);
 
-  progressBar.start(dataSiloIds.length, 0);
   let total = 0;
-  await mapSeries(dataSilosGrouped, async (dataSiloIdsGroup) => {
-    try {
-      const {
-        dataSilos: { nodes },
-      } = await makeGraphQLRequest<{
-        /** Query response */
-        dataSilos: {
-          /** List of matches */
-          nodes: DataSiloCsvPreview[];
-        };
-      }>(client, DATA_SILO_EXPORT, {
-        variables: {
-          first: pageSize,
-          filterBy: {
-            ids: dataSiloIdsGroup,
+  await withProgressBar(async (bar) => {
+    bar.start(dataSiloIds.length);
+    await mapSeries(dataSilosGrouped, async (dataSiloIdsGroup) => {
+      try {
+        const {
+          dataSilos: { nodes },
+        } = await makeGraphQLRequest<{
+          /** Query response */
+          dataSilos: {
+            /** List of matches */
+            nodes: DataSiloCsvPreview[];
+          };
+        }>(client, DATA_SILO_EXPORT, {
+          variables: {
+            first: pageSize,
+            filterBy: {
+              ids: dataSiloIdsGroup,
+            },
           },
-        },
-        logger,
-      });
+          logger,
+        });
 
-      dataSilos.push(...nodes);
-      total += dataSiloIdsGroup.length;
-      progressBar.update(total);
-    } catch (err) {
-      logger.error(
-        colors.red(`An error fetching data silos for IDs ${dataSiloIdsGroup.join(', ')}`),
-      );
-      throw err;
-    }
+        dataSilos.push(...nodes);
+        total += dataSiloIdsGroup.length;
+        bar.update(total);
+      } catch (err) {
+        logger.error(
+          colors.red(`An error fetching data silos for IDs ${dataSiloIdsGroup.join(', ')}`),
+        );
+        throw err;
+      }
+    });
   });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

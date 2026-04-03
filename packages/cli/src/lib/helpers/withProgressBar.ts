@@ -6,6 +6,8 @@ export interface ProgressBar {
   start: (total: number, initial?: number) => void;
   /** Update the bar to the given value */
   update: (value: number) => void;
+  /** Increment the bar by 1 */
+  increment: () => void;
 }
 
 /**
@@ -27,6 +29,9 @@ export async function withProgressBar<T>(fn: (bar: ProgressBar) => Promise<T>): 
       },
       update(value) {
         if (started) progressBar.update(value);
+      },
+      increment() {
+        if (started) progressBar.increment();
       },
     });
   } finally {

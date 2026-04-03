@@ -2,12 +2,12 @@ import { ConsentPreferencesBody } from '@transcend-io/airgap.js-types';
 import { createTranscendConsentGotInstance } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import * as t from 'io-ts';
 
 import { DEFAULT_TRANSCEND_CONSENT_API } from '../../constants.js';
 import { logger } from '../../logger.js';
+import { withProgressBar } from '../helpers/index.js';
 import { createConsentToken } from './createConsentToken.js';
 import type { ConsentPreferenceUpload } from './types.js';
 
@@ -88,64 +88,59 @@ export async function uploadConsents({
     colors.magenta(`Uploading ${preferences.length} user preferences to partition ${partition}`),
   );
 
-  // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-  // Build a GraphQL client
   let total = 0;
-  progressBar.start(preferences.length, 0);
-  await map(
-    preferences,
-    async ({ userId, confirmed = 'true', updated, prompted, purposes, ...consent }) => {
-      const token = createConsentToken(userId, base64EncryptionKey, base64SigningKey);
+  await withProgressBar(async (bar) => {
+    bar.start(preferences.length);
+    await map(
+      preferences,
+      async ({ userId, confirmed = 'true', updated, prompted, purposes, ...consent }) => {
+        const token = createConsentToken(userId, base64EncryptionKey, base64SigningKey);
 
-      // parse usp string
-      const [, saleStatus] = consent.usp ? USP_STRING_REGEX.exec(consent.usp) || [] : [];
+        const [, saleStatus] = consent.usp ? USP_STRING_REGEX.exec(consent.usp) || [] : [];
 
-      const input = {
-        token,
-        partition,
-        consent: {
-          confirmed: confirmed === 'true',
-          purposes: purposes
-            ? decodeCodec(PurposeMap, purposes)
-            : consent.usp
-              ? { SaleOfInfo: saleStatus === 'Y' }
-              : {},
-          ...(updated ? { updated: updated === 'true' } : {}),
-          ...(prompted ? { prompted: prompted === 'true' } : {}),
-          ...consent,
-        },
-      } as ConsentPreferencesBody;
+        const input = {
+          token,
+          partition,
+          consent: {
+            confirmed: confirmed === 'true',
+            purposes: purposes
+              ? decodeCodec(PurposeMap, purposes)
+              : consent.usp
+                ? { SaleOfInfo: saleStatus === 'Y' }
+                : {},
+            ...(updated ? { updated: updated === 'true' } : {}),
+            ...(prompted ? { prompted: prompted === 'true' } : {}),
+            ...consent,
+          },
+        } as ConsentPreferencesBody;
 
-      // Make the request
-      try {
-        await transcendConsentApi
-          .post('sync', {
-            json: input,
-          })
-          .json();
-      } catch (err) {
         try {
-          const parsed = JSON.parse(err?.response?.body || '{}');
-          if (parsed.error) {
-            logger.error(colors.red(`Error: ${parsed.error}`));
+          await transcendConsentApi
+            .post('sync', {
+              json: input,
+            })
+            .json();
+        } catch (err) {
+          try {
+            const parsed = JSON.parse(err?.response?.body || '{}');
+            if (parsed.error) {
+              logger.error(colors.red(`Error: ${parsed.error}`));
+            }
+          } catch {
+            // continue
           }
-        } catch {
-          // continue
+          throw new Error(`Received an error from server: ${err?.response?.body || err?.message}`);
         }
-        throw new Error(`Received an error from server: ${err?.response?.body || err?.message}`);
-      }
 
-      total += 1;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
+        total += 1;
+        bar.update(total);
+      },
+      { concurrency },
+    );
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

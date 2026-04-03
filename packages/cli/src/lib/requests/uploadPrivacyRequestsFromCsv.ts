@@ -7,7 +7,6 @@ import {
   fetchAllRequestAttributeKeys,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 /* eslint-disable max-lines */
 import colors from 'colors';
 import * as t from 'io-ts';
@@ -15,6 +14,7 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
+import { withProgressBar } from '../helpers/index.js';
 import { CachedRequestState, CachedFileState } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { filterRows } from './filterRows.js';
@@ -83,10 +83,7 @@ export async function uploadPrivacyRequestsFromCsv({
   /** Whether a dry run is happening */
   dryRun?: boolean;
 }): Promise<void> {
-  // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Parse out the extra attributes to apply to all requests uploaded
   const parsedAttributes = parseAttributesFromString(attributes);
@@ -171,131 +168,125 @@ export async function uploadPrivacyRequestsFromCsv({
     requestAttributeKeys,
   });
 
-  // start the progress bar with a total value of 200 and start value of 0
-  if (!debug) {
-    progressBar.start(requestInputs.length, 0);
-  }
   let total = 0;
-  // Submit each request
-  await map(
-    requestInputs,
-    async ([rawRow, requestInput], ind) => {
-      // The identifier to log, only include personal data if debug mode is on
-      const requestLogId = debug
-        ? `email:${requestInput.email} | coreIdentifier:${requestInput.coreIdentifier}`
-        : `row:${ind.toString()}`;
+  await withProgressBar(async (bar) => {
+    if (!debug) {
+      bar.start(requestInputs.length);
+    }
+    await map(
+      requestInputs,
+      async ([rawRow, requestInput], ind) => {
+        const requestLogId = debug
+          ? `email:${requestInput.email} | coreIdentifier:${requestInput.coreIdentifier}`
+          : `row:${ind.toString()}`;
 
-      if (debug) {
-        logger.info(
-          colors.magenta(
-            `[${ind + 1}/${requestInputs.length}] Importing: ${JSON.stringify(
-              requestInput,
+        if (debug) {
+          logger.info(
+            colors.magenta(
+              `[${ind + 1}/${requestInputs.length}] Importing: ${JSON.stringify(
+                requestInput,
+                null,
+                2,
+              )}`,
+            ),
+          );
+        }
+
+        if (dryRun) {
+          logger.info(colors.magenta('Bailing out on dry run because dryRun is set'));
+          return;
+        }
+
+        try {
+          const requestResponse = await submitPrivacyRequest(sombra, requestInput, {
+            details: `Uploaded by Transcend Cli: "tr-request-upload" : ${JSON.stringify(
+              rawRow,
               null,
               2,
             )}`,
-          ),
-        );
-      }
+            isTest,
+            emailIsVerified,
+            skipSendingReceipt,
+            isSilent,
+            additionalAttributes: parsedAttributes,
+          });
 
-      // Skip on dry run
-      if (dryRun) {
-        logger.info(colors.magenta('Bailing out on dry run because dryRun is set'));
-        return;
-      }
-
-      try {
-        // Make the GraphQL request to submit the privacy request
-        const requestResponse = await submitPrivacyRequest(sombra, requestInput, {
-          details: `Uploaded by Transcend Cli: "tr-request-upload" : ${JSON.stringify(
-            rawRow,
-            null,
-            2,
-          )}`,
-          isTest,
-          emailIsVerified,
-          skipSendingReceipt,
-          isSilent,
-          additionalAttributes: parsedAttributes,
-        });
-
-        // Log success
-        if (debug) {
-          logger.info(
-            colors.green(
-              `[${ind + 1}/${
-                requestInputs.length
-              }] Successfully submitted the test data subject request: "${requestLogId}"`,
-            ),
-          );
-          logger.info(
-            colors.green(
-              `[${ind + 1}/${requestInputs.length}] View it at: "${requestResponse.link}"`,
-            ),
-          );
-        }
-
-        // Cache successful upload
-        const successfulRequests = requestState.getValue('successfulRequests');
-        successfulRequests.push({
-          id: requestResponse.id,
-          link: requestResponse.link,
-          rowIndex: ind,
-          coreIdentifier: requestResponse.coreIdentifier,
-          attemptedAt: new Date().toISOString(),
-        });
-        await requestState.setValue(successfulRequests, 'successfulRequests');
-      } catch (err) {
-        const msg = `${err.message} - ${JSON.stringify(err.response?.body, null, 2)}`;
-        const clientError = extractClientError(msg);
-
-        if (clientError === 'Client error: You have already made this request.') {
           if (debug) {
             logger.info(
-              colors.yellow(
-                `[${ind + 1}/${requestInputs.length}] Skipping request as it is a duplicate`,
-              ),
-            );
-          }
-          const duplicateRequests = requestState.getValue('duplicateRequests');
-          duplicateRequests.push({
-            coreIdentifier: requestInput.coreIdentifier,
-            rowIndex: ind,
-            attemptedAt: new Date().toISOString(),
-          });
-          await requestState.setValue(duplicateRequests, 'duplicateRequests');
-        } else {
-          const failingRequests = requestState.getValue('failingRequests');
-          failingRequests.push({
-            ...requestInput,
-            rowIndex: ind,
-            error: clientError || msg,
-            attemptedAt: new Date().toISOString(),
-          });
-          await requestState.setValue(failingRequests, 'failingRequests');
-          if (debug) {
-            logger.error(colors.red(clientError || msg));
-            logger.error(
-              colors.red(
+              colors.green(
                 `[${ind + 1}/${
                   requestInputs.length
-                }] Failed to submit request for: "${requestLogId}"`,
+                }] Successfully submitted the test data subject request: "${requestLogId}"`,
+              ),
+            );
+            logger.info(
+              colors.green(
+                `[${ind + 1}/${requestInputs.length}] View it at: "${requestResponse.link}"`,
               ),
             );
           }
+
+          const successfulRequests = requestState.getValue('successfulRequests');
+          successfulRequests.push({
+            id: requestResponse.id,
+            link: requestResponse.link,
+            rowIndex: ind,
+            coreIdentifier: requestResponse.coreIdentifier,
+            attemptedAt: new Date().toISOString(),
+          });
+          await requestState.setValue(successfulRequests, 'successfulRequests');
+        } catch (err) {
+          const msg = `${err.message} - ${JSON.stringify(err.response?.body, null, 2)}`;
+          const clientError = extractClientError(msg);
+
+          if (clientError === 'Client error: You have already made this request.') {
+            if (debug) {
+              logger.info(
+                colors.yellow(
+                  `[${ind + 1}/${requestInputs.length}] Skipping request as it is a duplicate`,
+                ),
+              );
+            }
+            const duplicateRequests = requestState.getValue('duplicateRequests');
+            duplicateRequests.push({
+              coreIdentifier: requestInput.coreIdentifier,
+              rowIndex: ind,
+              attemptedAt: new Date().toISOString(),
+            });
+            await requestState.setValue(duplicateRequests, 'duplicateRequests');
+          } else {
+            const failingRequests = requestState.getValue('failingRequests');
+            failingRequests.push({
+              ...requestInput,
+              rowIndex: ind,
+              error: clientError || msg,
+              attemptedAt: new Date().toISOString(),
+            });
+            await requestState.setValue(failingRequests, 'failingRequests');
+            if (debug) {
+              logger.error(colors.red(clientError || msg));
+              logger.error(
+                colors.red(
+                  `[${ind + 1}/${
+                    requestInputs.length
+                  }] Failed to submit request for: "${requestLogId}"`,
+                ),
+              );
+            }
+          }
         }
-      }
 
-      total += 1;
-      if (!debug) {
-        progressBar.update(total);
-      }
-    },
-    {
-      concurrency,
-    },
-  );
+        total += 1;
+        if (!debug) {
+          bar.update(total);
+        }
+      },
+      {
+        concurrency,
+      },
+    );
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

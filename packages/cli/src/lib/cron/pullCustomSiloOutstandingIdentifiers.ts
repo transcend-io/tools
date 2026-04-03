@@ -1,12 +1,12 @@
 import { RequestAction } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { fetchRequestDataSiloActiveCount } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 import { pullCronPageOfIdentifiers, CronIdentifier } from './pullCronPageOfIdentifiers.js';
 
 /**
@@ -94,88 +94,78 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
     ),
   );
 
-  // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
   const foundRequestIds = new Set<string>();
 
-  // identifiers found in total
   const identifiers: CronIdentifierWithAction[] = [];
-  // current chunk of identifiers to be saved
   let currentChunk: CsvFormattedIdentifier[] = [];
 
-  // map over each action
-  if (!skipRequestCount) {
-    progressBar.start(totalRequestCount, 0);
-  }
-  await mapSeries(actions, async (action) => {
-    let offset = 0;
-    let shouldContinue = true;
-
-    // Fetch a page of identifiers
-    while (shouldContinue) {
-      const pageIdentifiers = await pullCronPageOfIdentifiers(sombra, {
-        dataSiloId,
-        limit: apiPageSize,
-        offset,
-        requestType: action,
-      });
-
-      const identifiersWithAction: CronIdentifierWithAction[] = pageIdentifiers.map(
-        (identifier) => {
-          foundRequestIds.add(identifier.requestId);
-          return {
-            ...identifier,
-            action,
-          };
-        },
-      );
-
-      const csvFormattedIdentifiers = identifiersWithAction.map(
-        ({ attributes, ...identifier }) => ({
-          ...identifier,
-          ...attributes.reduce(
-            (acc, val) =>
-              Object.assign(acc, {
-                [val.key]: val.values.join(','),
-              }),
-            {},
-          ),
-        }),
-      );
-
-      identifiers.push(...identifiersWithAction);
-      currentChunk.push(...csvFormattedIdentifiers);
-
-      // Check if we've reached the savePageSize and call the onSave callback
-      if (currentChunk.length >= savePageSize) {
-        await onSave(currentChunk);
-        currentChunk = [];
-      }
-
-      shouldContinue = pageIdentifiers.length === apiPageSize;
-      offset += apiPageSize;
-      if (!skipRequestCount) {
-        progressBar.update(foundRequestIds.size);
-      } else {
-        logger.info(
-          colors.magenta(
-            `Pulled ${pageIdentifiers.length} outstanding identifiers for ${foundRequestIds.size} requests`,
-          ),
-        );
-      }
+  await withProgressBar(async (bar) => {
+    if (!skipRequestCount) {
+      bar.start(totalRequestCount);
     }
+    await mapSeries(actions, async (action) => {
+      let offset = 0;
+      let shouldContinue = true;
+
+      while (shouldContinue) {
+        const pageIdentifiers = await pullCronPageOfIdentifiers(sombra, {
+          dataSiloId,
+          limit: apiPageSize,
+          offset,
+          requestType: action,
+        });
+
+        const identifiersWithAction: CronIdentifierWithAction[] = pageIdentifiers.map(
+          (identifier) => {
+            foundRequestIds.add(identifier.requestId);
+            return {
+              ...identifier,
+              action,
+            };
+          },
+        );
+
+        const csvFormattedIdentifiers = identifiersWithAction.map(
+          ({ attributes, ...identifier }) => ({
+            ...identifier,
+            ...attributes.reduce(
+              (acc, val) =>
+                Object.assign(acc, {
+                  [val.key]: val.values.join(','),
+                }),
+              {},
+            ),
+          }),
+        );
+
+        identifiers.push(...identifiersWithAction);
+        currentChunk.push(...csvFormattedIdentifiers);
+
+        if (currentChunk.length >= savePageSize) {
+          await onSave(currentChunk);
+          currentChunk = [];
+        }
+
+        shouldContinue = pageIdentifiers.length === apiPageSize;
+        offset += apiPageSize;
+        if (!skipRequestCount) {
+          bar.update(foundRequestIds.size);
+        } else {
+          logger.info(
+            colors.magenta(
+              `Pulled ${pageIdentifiers.length} outstanding identifiers for ${foundRequestIds.size} requests`,
+            ),
+          );
+        }
+      }
+    });
   });
 
-  // Save any remaining identifiers in the current chunk
   if (currentChunk.length > 0) {
     await onSave(currentChunk);
   }
 
-  if (!skipRequestCount) {
-    progressBar.stop();
-  }
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

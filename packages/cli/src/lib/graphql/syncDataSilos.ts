@@ -11,13 +11,13 @@ import { makeGraphQLRequest, ApiKey } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
 import { mapSeries, map } from '@transcend-io/utils';
 /* eslint-disable max-lines */
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { sortBy, chunk, keyBy } from 'lodash-es';
 
 import { DataCategoryInput, DataSiloInput, ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
+import { withProgressBar } from '../helpers/index.js';
 import { convertToDataSubjectBlockList, DataSubject } from './fetchDataSubjects.js';
 import {
   DATA_SILOS,
@@ -757,9 +757,6 @@ export async function syncDataSilos(
   });
 
   // Sync datapoints
-
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
   const dataSilosWithDataPoints = dataSilos.filter(({ datapoints = [] }) => datapoints.length > 0);
   const totalDataPoints = dataSilos
     .map(({ datapoints = [] }) => datapoints.length)
@@ -769,111 +766,112 @@ export async function syncDataSilos(
       `Syncing "${totalDataPoints}" datapoints from "${dataSilosWithDataPoints.length}" data silos...`,
     ),
   );
-  progressBar.start(totalDataPoints, 0);
+
   let total = 0;
+  await withProgressBar(async (bar) => {
+    bar.start(totalDataPoints);
+    await map(
+      dataSilosWithDataPoints,
+      async ({ datapoints, title }) => {
+        if (datapoints) {
+          await mapSeries(datapoints, async (datapoint) => {
+            const fields = datapoint.fields
+              ? datapoint.fields.map(
+                  ({ key, description, categories, purposes, attributes, ...rest }) =>
+                    // TODO: Support setting title separately from the 'key/name'
+                    ({
+                      name: key,
+                      description,
+                      categories: !categories
+                        ? undefined
+                        : categories.map((category) => ({
+                            ...category,
+                            name: category.name || 'Other',
+                          })),
+                      purposes: !purposes
+                        ? undefined
+                        : purposes.map((purpose) => ({
+                            ...purpose,
+                            name: purpose.name || 'Other',
+                          })),
+                      attributes,
+                      accessRequestVisibilityEnabled: rest['access-request-visibility-enabled'],
+                      erasureRequestRedactionEnabled: rest['erasure-request-redaction-enabled'],
+                    }),
+                )
+              : undefined;
 
-  await map(
-    dataSilosWithDataPoints,
-    async ({ datapoints, title }) => {
-      if (datapoints) {
-        await mapSeries(datapoints, async (datapoint) => {
-          const fields = datapoint.fields
-            ? datapoint.fields.map(
-                ({ key, description, categories, purposes, attributes, ...rest }) =>
-                  // TODO: Support setting title separately from the 'key/name'
-                  ({
-                    name: key,
-                    description,
-                    categories: !categories
-                      ? undefined
-                      : categories.map((category) => ({
-                          ...category,
-                          name: category.name || 'Other',
-                        })),
-                    purposes: !purposes
-                      ? undefined
-                      : purposes.map((purpose) => ({
-                          ...purpose,
-                          name: purpose.name || 'Other',
-                        })),
-                    attributes,
-                    accessRequestVisibilityEnabled: rest['access-request-visibility-enabled'],
-                    erasureRequestRedactionEnabled: rest['erasure-request-redaction-enabled'],
-                  }),
-              )
-            : undefined;
+            const payload = {
+              dataSiloId: existingDataSiloByTitle[title].id,
+              path: datapoint.path,
+              name: datapoint.key,
+              title: datapoint.title,
+              description: datapoint.description,
+              ...(datapoint.owners
+                ? {
+                    ownerEmails: datapoint.owners,
+                  }
+                : {}),
+              ...(datapoint.teams
+                ? {
+                    teamNames: datapoint.teams,
+                  }
+                : {}),
+              ...(datapoint['data-collection-tag']
+                ? { dataCollectionTag: datapoint['data-collection-tag'] }
+                : {}),
+              querySuggestions: !datapoint['privacy-action-queries']
+                ? undefined
+                : Object.entries(datapoint['privacy-action-queries']).map(([key, value]) => ({
+                    requestType: key,
+                    suggestedQuery: value,
+                  })),
+              enabledActions: datapoint['privacy-actions'] || [], // clear out when not specified
+              subDataPoints: fields,
+            };
 
-          const payload = {
-            dataSiloId: existingDataSiloByTitle[title].id,
-            path: datapoint.path,
-            name: datapoint.key,
-            title: datapoint.title,
-            description: datapoint.description,
-            ...(datapoint.owners
-              ? {
-                  ownerEmails: datapoint.owners,
-                }
-              : {}),
-            ...(datapoint.teams
-              ? {
-                  teamNames: datapoint.teams,
-                }
-              : {}),
-            ...(datapoint['data-collection-tag']
-              ? { dataCollectionTag: datapoint['data-collection-tag'] }
-              : {}),
-            querySuggestions: !datapoint['privacy-action-queries']
-              ? undefined
-              : Object.entries(datapoint['privacy-action-queries']).map(([key, value]) => ({
-                  requestType: key,
-                  suggestedQuery: value,
-                })),
-            enabledActions: datapoint['privacy-actions'] || [], // clear out when not specified
-            subDataPoints: fields,
-          };
-
-          // Ensure no duplicate sub-datapoints are provided
-          const subDataPointsToUpdate = (payload.subDataPoints || []).map(({ name }) => name);
-          const duplicateDataPoints = subDataPointsToUpdate.filter(
-            (name, index) => subDataPointsToUpdate.indexOf(name) !== index,
-          );
-          if (duplicateDataPoints.length > 0) {
-            logger.info(
-              colors.red(
-                `\nCannot update datapoint "${
-                  datapoint.key
-                }" as it has duplicate sub-datapoints with the same name: \n${duplicateDataPoints.join(
-                  '\n',
-                )}`,
-              ),
+            // Ensure no duplicate sub-datapoints are provided
+            const subDataPointsToUpdate = (payload.subDataPoints || []).map(({ name }) => name);
+            const duplicateDataPoints = subDataPointsToUpdate.filter(
+              (name, index) => subDataPointsToUpdate.indexOf(name) !== index,
             );
-            encounteredError = true;
-          } else {
-            try {
-              await makeGraphQLRequest(client, UPDATE_OR_CREATE_DATA_POINT, {
-                variables: payload,
-                logger,
-              });
-            } catch (err) {
+            if (duplicateDataPoints.length > 0) {
               logger.info(
                 colors.red(
-                  `\nFailed to update datapoint "${datapoint.key}" for data silo "${title}"! - \n${err.message}`,
+                  `\nCannot update datapoint "${
+                    datapoint.key
+                  }" as it has duplicate sub-datapoints with the same name: \n${duplicateDataPoints.join(
+                    '\n',
+                  )}`,
                 ),
               );
               encounteredError = true;
+            } else {
+              try {
+                await makeGraphQLRequest(client, UPDATE_OR_CREATE_DATA_POINT, {
+                  variables: payload,
+                  logger,
+                });
+              } catch (err) {
+                logger.info(
+                  colors.red(
+                    `\nFailed to update datapoint "${datapoint.key}" for data silo "${title}"! - \n${err.message}`,
+                  ),
+                );
+                encounteredError = true;
+              }
             }
-          }
-          total += 1;
-          progressBar.update(total);
-        });
-      }
-    },
-    {
-      concurrency: 10,
-    },
-  );
+            total += 1;
+            bar.update(total);
+          });
+        }
+      },
+      {
+        concurrency: 10,
+      },
+    );
+  });
 
-  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
