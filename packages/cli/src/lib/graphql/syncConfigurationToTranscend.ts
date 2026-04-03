@@ -1,6 +1,8 @@
 import {
+  fetchAllActions,
   fetchAllAttributes,
   fetchApiKeys,
+  syncAction,
   syncActionItemCollections,
   syncActionItems,
   syncAgentFiles,
@@ -19,6 +21,7 @@ import {
   syncPromptPartials,
   syncPrompts,
   syncTeams,
+  syncTemplate,
   syncVendors,
   type Identifier,
 } from '@transcend-io/sdk';
@@ -29,10 +32,8 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
-import { syncAction } from './syncAction.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
 import { syncEnricher } from './syncEnrichers.js';
@@ -40,7 +41,6 @@ import { syncIdentifier } from './syncIdentifier.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
 import { syncProcessingPurposes } from './syncProcessingPurposes.js';
-import { syncTemplate } from './syncTemplates.js';
 
 const CONCURRENCY = 10;
 
@@ -164,7 +164,7 @@ export async function syncConfigurationToTranscend(
       async (template) => {
         logger.info(colors.magenta(`Syncing template "${template.title}"...`));
         try {
-          await syncTemplate(template, client);
+          await syncTemplate(client, template, { logger });
           logger.info(colors.green(`Successfully synced template "${template.title}"!`));
         } catch (err) {
           encounteredError = true;
@@ -347,7 +347,7 @@ export async function syncConfigurationToTranscend(
   if (actions) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${actions.length}" actions...`));
-    const existingActions = await fetchAllActions(client);
+    const existingActions = await fetchAllActions(client, { logger });
     await map(
       actions,
       async (action) => {
@@ -360,11 +360,15 @@ export async function syncConfigurationToTranscend(
 
         logger.info(colors.magenta(`Syncing action "${action.type}"...`));
         try {
-          await syncAction(client, {
-            action,
-            actionId: existing.id,
-            skipPublish: !publishToPrivacyCenter,
-          });
+          await syncAction(
+            client,
+            {
+              action,
+              actionId: existing.id,
+              skipPublish: !publishToPrivacyCenter,
+            },
+            { logger },
+          );
           logger.info(colors.green(`Successfully synced action "${action.type}"!`));
         } catch (err) {
           encounteredError = true;

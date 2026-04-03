@@ -2,6 +2,7 @@ import { RequestAction } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   fetchAllRequests,
+  fetchAllTemplates,
   makeGraphQLRequest,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
@@ -10,7 +11,7 @@ import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { NOTIFY_ADDITIONAL_TIME, fetchAllTemplates } from '../graphql/index.js';
+import { NOTIFY_ADDITIONAL_TIME } from '../graphql/index.js';
 
 /**
  * Mark a set of privacy requests to be in silent mode.
@@ -70,7 +71,10 @@ export async function notifyPrivacyRequestsAdditionalTime({
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Grab the template with that title
-  const matchingTemplates = await fetchAllTemplates(client, emailTemplate);
+  const matchingTemplates = await fetchAllTemplates(client, {
+    title: emailTemplate,
+    logger,
+  });
   const exactTemplateMatch = matchingTemplates.find((template) => template.title === emailTemplate);
   if (!exactTemplateMatch) {
     throw new Error(`Failed to find a template with title: "${emailTemplate}"`);
