@@ -1,9 +1,9 @@
 import type { IsoCountryCode, IsoCountrySubdivisionCode } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { SILO_DISCOVERY_RESULTS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { SILO_DISCOVERY_RESULTS } from './gqls/siloDiscoveryResult.js';
 
 export interface SiloDiscoveryResult {
   /** Title of silo discovery result */
@@ -41,15 +41,20 @@ const PAGE_SIZE = 30;
  * Fetch all silo discovery results in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All silo discovery results in the organization
  */
 export async function fetchAllSiloDiscoveryResults(
   client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<SiloDiscoveryResult[]> {
+  const { logger } = options;
   const siloDiscoveryResults: SiloDiscoveryResult[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {
