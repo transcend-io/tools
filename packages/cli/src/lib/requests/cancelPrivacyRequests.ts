@@ -6,6 +6,7 @@ import {
   type Template,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
@@ -15,7 +16,6 @@ import {
   fetchAllRequests,
   CANCEL_PRIVACY_REQUEST,
 } from '../graphql/index.js';
-import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Cancel a set of privacy requests
@@ -71,10 +71,15 @@ export async function cancelPrivacyRequests({
   /** The email template to use when canceling the requests */
   cancellationTitle?: string;
 }): Promise<number> {
+  // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
+  // Time duration
   const t0 = new Date().getTime();
+  // create a new progress bar instance and use shades_classic theme
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
+  // Grab the template with that title
   let cancelationTemplate: Template | undefined;
   if (cancellationTitle) {
     const matchingTemplates = await fetchAllTemplates(client, {
@@ -90,22 +95,18 @@ export async function cancelPrivacyRequests({
     cancelationTemplate = exactTitleMatch;
   }
 
-  const allRequests = await withProgressBar((bar) =>
-    fetchAllRequests(client, {
-      actions: requestActions,
-      createdAtBefore,
-      createdAtAfter,
-      updatedAtBefore,
-      updatedAtAfter,
-      statuses,
-      requestIds,
-      onProgress({ totalCount, fetchedCount }) {
-        bar.start(totalCount);
-        bar.update(fetchedCount);
-      },
-    }),
-  );
+  // Pull in the requests
+  const allRequests = await fetchAllRequests(client, {
+    actions: requestActions,
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    statuses,
+    requestIds,
+  });
 
+  // Notify Transcend
   logger.info(
     colors.magenta(
       `Canceling "${allRequests.length}" requests${
@@ -115,45 +116,47 @@ export async function cancelPrivacyRequests({
   );
 
   let total = 0;
-  await withProgressBar(async (bar) => {
-    bar.start(allRequests.length);
-    await map(
-      allRequests,
-      async (requestToCancel) => {
-        if (silentModeBefore && new Date(silentModeBefore) > new Date(requestToCancel.createdAt)) {
-          await makeGraphQLRequest(client, UPDATE_PRIVACY_REQUEST, {
-            variables: {
-              input: {
-                id: requestToCancel.id,
-                isSilent: true,
-              },
-            },
-            logger,
-          });
-        }
-
-        await makeGraphQLRequest(client, CANCEL_PRIVACY_REQUEST, {
+  progressBar.start(allRequests.length, 0);
+  await map(
+    allRequests,
+    async (requestToCancel) => {
+      // update request to silent mode if silentModeBefore is defined
+      // and the request was created before silentModeBefore
+      if (silentModeBefore && new Date(silentModeBefore) > new Date(requestToCancel.createdAt)) {
+        await makeGraphQLRequest(client, UPDATE_PRIVACY_REQUEST, {
           variables: {
             input: {
-              requestId: requestToCancel.id,
-              ...(cancelationTemplate
-                ? {
-                    subject: `Re: ${cancelationTemplate.subject.defaultMessage}`,
-                    template: cancelationTemplate.template.defaultMessage,
-                  }
-                : {}),
+              id: requestToCancel.id,
+              isSilent: true,
             },
           },
           logger,
         });
+      }
 
-        total += 1;
-        bar.update(total);
-      },
-      { concurrency },
-    );
-  });
+      // cancel the request
+      await makeGraphQLRequest(client, CANCEL_PRIVACY_REQUEST, {
+        variables: {
+          input: {
+            requestId: requestToCancel.id,
+            ...(cancelationTemplate
+              ? {
+                  subject: `Re: ${cancelationTemplate.subject.defaultMessage}`,
+                  template: cancelationTemplate.template.defaultMessage,
+                }
+              : {}),
+          },
+        },
+        logger,
+      });
 
+      total += 1;
+      progressBar.update(total);
+    },
+    { concurrency },
+  );
+
+  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

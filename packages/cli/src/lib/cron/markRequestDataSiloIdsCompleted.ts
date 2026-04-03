@@ -6,11 +6,11 @@ import {
   fetchRequestDataSilo,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Given a CSV of Request IDs, mark associated RequestDataSilos as completed
@@ -42,8 +42,12 @@ export async function markRequestDataSiloIdsCompleted({
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
+  // Time duration
   const t0 = new Date().getTime();
+  // create a new progress bar instance and use shades_classic theme
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
+  // Notify Transcend
   logger.info(
     colors.magenta(
       `Notifying Transcend for data silo "${dataSiloId}" marking "${requestIds.length}" requests as completed.`,
@@ -51,47 +55,46 @@ export async function markRequestDataSiloIdsCompleted({
   );
 
   let total = 0;
-  await withProgressBar(async (bar) => {
-    bar.start(requestIds.length);
-    await map(
-      requestIds,
-      async (requestId) => {
-        const requestDataSilo = await fetchRequestDataSilo(
-          client,
-          {
-            requestId,
-            dataSiloId,
+  progressBar.start(requestIds.length, 0);
+  await map(
+    requestIds,
+    async (requestId) => {
+      const requestDataSilo = await fetchRequestDataSilo(
+        client,
+        {
+          requestId,
+          dataSiloId,
+        },
+        { logger },
+      );
+
+      try {
+        await makeGraphQLRequest<{
+          /** Whether we successfully uploaded the results */
+          success: boolean;
+        }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
+          variables: {
+            requestDataSiloId: requestDataSilo.id,
+            status,
           },
-          { logger },
-        );
-
-        try {
-          await makeGraphQLRequest<{
-            /** Whether we successfully uploaded the results */
-            success: boolean;
-          }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
-            variables: {
-              requestDataSiloId: requestDataSilo.id,
-              status,
-            },
-            logger,
-          });
-        } catch (err) {
-          if (
-            !err.message.includes('Client error: Request must be active:') &&
-            !err.message.includes('Failed to find RequestDataSilo')
-          ) {
-            throw err;
-          }
+          logger,
+        });
+      } catch (err) {
+        if (
+          !err.message.includes('Client error: Request must be active:') &&
+          !err.message.includes('Failed to find RequestDataSilo')
+        ) {
+          throw err;
         }
+      }
 
-        total += 1;
-        bar.update(total);
-      },
-      { concurrency },
-    );
-  });
+      total += 1;
+      progressBar.update(total);
+    },
+    { concurrency },
+  );
 
+  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

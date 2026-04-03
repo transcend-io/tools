@@ -5,12 +5,12 @@ import {
   makeGraphQLRequest,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { NOTIFY_ADDITIONAL_TIME, fetchAllRequests } from '../graphql/index.js';
-import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Mark a set of privacy requests to be in silent mode.
@@ -61,10 +61,15 @@ export async function notifyPrivacyRequestsAdditionalTime({
   /** API URL for Transcend backend */
   transcendUrl?: string;
 }): Promise<number> {
+  // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
+  // Time duration
   const t0 = new Date().getTime();
+  // create a new progress bar instance and use shades_classic theme
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
+  // Grab the template with that title
   const matchingTemplates = await fetchAllTemplates(client, {
     title: emailTemplate,
     logger,
@@ -74,54 +79,50 @@ export async function notifyPrivacyRequestsAdditionalTime({
     throw new Error(`Failed to find a template with title: "${emailTemplate}"`);
   }
 
-  let allRequests = await withProgressBar((bar) =>
-    fetchAllRequests(client, {
-      actions: requestActions,
-      createdAtBefore,
-      createdAtAfter,
-      updatedAtBefore,
-      updatedAtAfter,
-      isSilent: false,
-      isClosed: false,
-      requestIds,
-      onProgress({ totalCount, fetchedCount }) {
-        bar.start(totalCount);
-        bar.update(fetchedCount);
-      },
-    }),
-  );
+  // Pull in the requests
+  let allRequests = await fetchAllRequests(client, {
+    actions: requestActions,
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    isSilent: false,
+    isClosed: false,
+    requestIds,
+  });
 
+  // Filter requests by daysLeft
   allRequests = allRequests.filter(
     (request) => typeof request.daysRemaining === 'number' && request.daysRemaining < daysLeft,
   );
 
+  // Notify Transcend
   logger.info(colors.magenta(`Notifying "${allRequests.length}" that more time is needed.`));
 
   let total = 0;
-  await withProgressBar(async (bar) => {
-    bar.start(allRequests.length);
-    await map(
-      allRequests,
-      async (requestToNotify) => {
-        await makeGraphQLRequest(client, NOTIFY_ADDITIONAL_TIME, {
-          variables: {
-            input: {
-              requestId: requestToNotify.id,
-              template: exactTemplateMatch.template.defaultMessage,
-              subject: exactTemplateMatch.subject.defaultMessage,
-              additionalTime: days,
-            },
+  progressBar.start(allRequests.length, 0);
+  await map(
+    allRequests,
+    async (requestToNotify) => {
+      await makeGraphQLRequest(client, NOTIFY_ADDITIONAL_TIME, {
+        variables: {
+          input: {
+            requestId: requestToNotify.id,
+            template: exactTemplateMatch.template.defaultMessage,
+            subject: exactTemplateMatch.subject.defaultMessage,
+            additionalTime: days,
           },
-          logger,
-        });
+        },
+        logger,
+      });
 
-        total += 1;
-        bar.update(total);
-      },
-      { concurrency },
-    );
-  });
+      total += 1;
+      progressBar.update(total);
+    },
+    { concurrency },
+  );
 
+  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

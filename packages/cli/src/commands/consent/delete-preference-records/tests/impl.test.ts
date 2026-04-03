@@ -65,7 +65,6 @@ vi.mock('@transcend-io/sdk', () => ({
 // New CSV helpers used by impl after your refactor
 vi.mock('../../../../lib/helpers/index.js', () => ({
   writeCsv: H.writeCsv,
-  withProgressBar: (fn: any) => fn({ start: vi.fn(), update: vi.fn(), increment: vi.fn() }),
 }));
 
 // preference-management: forward and record args, then delegate to our spies

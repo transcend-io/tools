@@ -4,6 +4,7 @@ import { PersistedState } from '@transcend-io/persisted-state';
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 import * as t from 'io-ts';
 import { difference } from 'lodash-es';
@@ -15,7 +16,6 @@ import {
   fetchAllRequests,
   validateSombraVersion,
 } from '../graphql/index.js';
-import { withProgressBar } from '../helpers/index.js';
 import { SuccessfulRequest } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { restartPrivacyRequest } from './restartPrivacyRequest.js';
@@ -99,7 +99,10 @@ export async function bulkRestartRequests({
   /** Concurrency to upload requests at */
   concurrency?: number;
 }): Promise<void> {
+  // Time duration
   const t0 = new Date().getTime();
+  // create a new progress bar instance and use shades_classic theme
+  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Create a new state file to store the requests from this run
   const cacheFile = join(
@@ -118,22 +121,17 @@ export async function bulkRestartRequests({
     sombraUrl: process.env.SOMBRA_URL,
   });
 
+  // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const allRequests = await withProgressBar((bar) =>
-    fetchAllRequests(client, {
-      requestIds,
-      actions: requestActions,
-      statuses: requestStatuses,
-      createdAtBefore,
-      createdAtAfter,
-      updatedAtBefore,
-      updatedAtAfter,
-      onProgress({ totalCount, fetchedCount }) {
-        bar.start(totalCount);
-        bar.update(fetchedCount);
-      },
-    }),
-  );
+  const allRequests = await fetchAllRequests(client, {
+    requestIds,
+    actions: requestActions,
+    statuses: requestStatuses,
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+  });
   const requests = allRequests.filter((request) => new Date(request.createdAt) < createdAt);
   logger.info(`Found ${requests.length} requests to restart`);
 
@@ -165,68 +163,72 @@ export async function bulkRestartRequests({
     await validateSombraVersion(client);
   }
 
+  // Map over the requests
   let total = 0;
-  await withProgressBar(async (bar) => {
-    bar.start(requests.length);
-    await map(
-      requests,
-      async (request, ind) => {
-        try {
-          const requestIdentifiers = copyIdentifiers
-            ? await fetchAllRequestIdentifiers(client, sombra, {
-                requestId: request.id,
-                skipSombraCheck: true,
-              })
-            : [];
+  progressBar.start(requests.length, 0);
+  await map(
+    requests,
+    async (request, ind) => {
+      try {
+        // Pull the request identifiers
+        const requestIdentifiers = copyIdentifiers
+          ? await fetchAllRequestIdentifiers(client, sombra, {
+              requestId: request.id,
+              skipSombraCheck: true,
+            })
+          : [];
 
-          const requestResponse = await restartPrivacyRequest(
-            sombra,
-            {
-              ...request,
-              isSilent:
-                !!silentModeBefore && new Date(request.createdAt) < silentModeBefore
-                  ? true
-                  : request.isSilent,
-            },
-            {
-              requestIdentifiers,
-              skipWaitingPeriod,
-              sendEmailReceipt,
-              emailIsVerified,
-            },
-          );
+        // Make the GraphQL request to restart the request
+        const requestResponse = await restartPrivacyRequest(
+          sombra,
+          {
+            ...request,
+            // override silent mode
+            isSilent:
+              !!silentModeBefore && new Date(request.createdAt) < silentModeBefore
+                ? true
+                : request.isSilent,
+          },
+          {
+            requestIdentifiers,
+            skipWaitingPeriod,
+            sendEmailReceipt,
+            emailIsVerified,
+          },
+        );
 
-          const restartedRequests = state.getValue('restartedRequests');
-          restartedRequests.push({
-            id: requestResponse.id,
-            link: requestResponse.link,
-            rowIndex: ind,
-            coreIdentifier: requestResponse.coreIdentifier,
-            attemptedAt: new Date().toISOString(),
-          });
-          await state.setValue(restartedRequests, 'restartedRequests');
-        } catch (err) {
-          const msg = `${err.message} - ${JSON.stringify(err.response?.body, null, 2)}`;
-          const clientError = extractClientError(msg);
+        // Cache successful upload
+        const restartedRequests = state.getValue('restartedRequests');
+        restartedRequests.push({
+          id: requestResponse.id,
+          link: requestResponse.link,
+          rowIndex: ind,
+          coreIdentifier: requestResponse.coreIdentifier,
+          attemptedAt: new Date().toISOString(),
+        });
+        await state.setValue(restartedRequests, 'restartedRequests');
+      } catch (err) {
+        const msg = `${err.message} - ${JSON.stringify(err.response?.body, null, 2)}`;
+        const clientError = extractClientError(msg);
 
-          const failingRequests = state.getValue('failingRequests');
-          failingRequests.push({
-            id: request.id,
-            link: request.link,
-            rowIndex: ind,
-            coreIdentifier: request.coreIdentifier,
-            attemptedAt: new Date().toISOString(),
-            error: clientError || msg,
-          });
-          await state.setValue(failingRequests, 'failingRequests');
-        }
-        total += 1;
-        bar.update(total);
-      },
-      { concurrency },
-    );
-  });
+        const failingRequests = state.getValue('failingRequests');
+        failingRequests.push({
+          id: request.id,
+          link: request.link,
+          rowIndex: ind,
+          coreIdentifier: request.coreIdentifier,
+          attemptedAt: new Date().toISOString(),
+          error: clientError || msg,
+        });
+        await state.setValue(failingRequests, 'failingRequests');
+      }
+      total += 1;
+      progressBar.update(total);
+    },
+    { concurrency },
+  );
 
+  progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

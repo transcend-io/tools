@@ -3,11 +3,12 @@ import { join } from 'node:path';
 
 import { createSombraGotInstance } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
+import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { withProgressBar, writeCsv } from '../../../lib/helpers/index.js';
+import { writeCsv } from '../../../lib/helpers/index.js';
 import { bulkDeletePreferenceRecords } from '../../../lib/preference-management/index.js';
 import { logger } from '../../../logger.js';
 
@@ -116,24 +117,33 @@ export async function deletePreferenceRecords(
     sombraApiKey: sombraAuth,
     sombraUrl: process.env.SOMBRA_URL,
   });
-  const failedResultsArrays = await withProgressBar(async (bar) => {
-    bar.start(files.length);
-    return map(
-      files,
-      async (filePath) => {
-        const result = await bulkDeletePreferenceRecords(sombra, {
-          partition,
-          filePath,
-          timestamp,
-          maxItemsInChunk,
-          maxConcurrency,
-        });
-        bar.increment();
-        return result;
-      },
-      { concurrency: fileConcurrency },
-    );
-  });
+  const globalProgressBar = new cliProgress.SingleBar(
+    {
+      format: `Deletion Progress |${colors.cyan('[{bar}]')}| Duration: ${colors.red(
+        '{duration_formatted}',
+      )} | {value}/{total} Files Processed `,
+    },
+    cliProgress.Presets.shades_classic,
+  );
+  globalProgressBar.start(files.length, 0);
+
+  // Process batch of files with concurrency
+  const failedResultsArrays = await map(
+    files,
+    async (filePath) => {
+      const result = await bulkDeletePreferenceRecords(sombra, {
+        partition,
+        filePath,
+        timestamp,
+        maxItemsInChunk,
+        maxConcurrency,
+      });
+      globalProgressBar.increment();
+      return result;
+    },
+    { concurrency: fileConcurrency },
+  );
+  globalProgressBar.stop();
   const failedResults = failedResultsArrays.flat();
 
   // Check for failed results and write receipt if any
