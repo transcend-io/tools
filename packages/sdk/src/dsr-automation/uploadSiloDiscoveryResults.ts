@@ -1,11 +1,20 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { logger } from '../../logger.js';
-import { SiloDiscoveryRawResults } from '../code-scanning/findFilesToScan.js';
-import { ADD_SILO_DISCOVERY_RESULTS } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { ADD_SILO_DISCOVERY_RESULTS } from './gqls/siloDiscovery.js';
+
+export interface SiloDiscoveryRawResult {
+  /** The name of the potential data silo entry */
+  name: string;
+  /** A unique UUID (represents the same resource across different silo discovery runs) */
+  resourceId: string;
+  /** Any hosts associated with the entry */
+  host?: string;
+  /** Type of data silo */
+  type?: string | undefined;
+}
 
 const CHUNK_SIZE = 1000;
 
@@ -15,12 +24,18 @@ const CHUNK_SIZE = 1000;
  * @param client - GraphQL Client
  * @param pluginId - pluginID to associate with the results
  * @param results - The results
+ * @param options - Options
  */
 export async function uploadSiloDiscoveryResults(
   client: GraphQLClient,
   pluginId: string,
-  results: SiloDiscoveryRawResults[],
+  results: SiloDiscoveryRawResult[],
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<void> {
+  const { logger } = options;
   const chunks = chunk(results, CHUNK_SIZE);
 
   await mapSeries(chunks, async (rawResults) => {

@@ -1,7 +1,7 @@
+import { type IndexedCatalogs } from '@transcend-io/sdk';
 import { union } from 'lodash-es';
 
 import { DataFlowInput, DataSiloInput } from '../../codecs.js';
-import { IndexedCatalogs } from '../graphql/index.js';
 
 /**
  * Convert data flow configurations into a set of data silo configurations

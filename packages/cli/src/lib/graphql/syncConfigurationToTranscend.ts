@@ -1,9 +1,11 @@
 import {
   createDataSubject,
+  fetchAllActions,
   fetchAllAttributes,
   fetchAllDataSubjects,
   fetchApiKeys,
   fetchIdentifiersAndCreateMissing,
+  syncAction,
   syncActionItemCollections,
   syncActionItems,
   syncAgentFiles,
@@ -24,6 +26,7 @@ import {
   syncPromptPartials,
   syncPrompts,
   syncTeams,
+  syncTemplate,
   syncVendors,
   type DataSubject,
   type Identifier,
@@ -36,14 +39,11 @@ import { keyBy, flatten, uniq, difference } from 'lodash-es';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchAllActions } from './fetchAllActions.js';
-import { syncAction } from './syncAction.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncEnricher } from './syncEnrichers.js';
 import { syncPolicies } from './syncPolicies.js';
 import { syncPrivacyCenter } from './syncPrivacyCenter.js';
 import { syncProcessingPurposes } from './syncProcessingPurposes.js';
-import { syncTemplate } from './syncTemplates.js';
 
 /**
  * Fetch all of the data subjects in the organization
@@ -219,7 +219,7 @@ export async function syncConfigurationToTranscend(
       async (template) => {
         logger.info(colors.magenta(`Syncing template "${template.title}"...`));
         try {
-          await syncTemplate(template, client);
+          await syncTemplate(client, template, { logger });
           logger.info(colors.green(`Successfully synced template "${template.title}"!`));
         } catch (err) {
           encounteredError = true;
@@ -403,7 +403,7 @@ export async function syncConfigurationToTranscend(
   if (actions) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${actions.length}" actions...`));
-    const existingActions = await fetchAllActions(client);
+    const existingActions = await fetchAllActions(client, { logger });
     await map(
       actions,
       async (action) => {
@@ -416,11 +416,15 @@ export async function syncConfigurationToTranscend(
 
         logger.info(colors.magenta(`Syncing action "${action.type}"...`));
         try {
-          await syncAction(client, {
-            action,
-            actionId: existing.id,
-            skipPublish: !publishToPrivacyCenter,
-          });
+          await syncAction(
+            client,
+            {
+              action,
+              actionId: existing.id,
+              skipPublish: !publishToPrivacyCenter,
+            },
+            { logger },
+          );
           logger.info(colors.green(`Successfully synced action "${action.type}"!`));
         } catch (err) {
           encounteredError = true;
