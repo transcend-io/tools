@@ -1,4 +1,4 @@
-import inquirer from 'inquirer';
+import { Separator } from '@inquirer/prompts';
 import { expect, describe, it } from 'vitest';
 
 import { fuzzyMatchColumns, fuzzySearch, NONE } from '../index.js';
@@ -20,7 +20,7 @@ describe('fuzzyMatchColumns', () => {
     expect(fuzzyMatchColumns(['dog', 'cat', 'cat-dog'], 'dog', true)).to.deep.equal([
       'dog',
       'cat-dog',
-      new inquirer.Separator(),
+      new Separator(),
       'cat',
     ]);
   });
@@ -29,7 +29,7 @@ describe('fuzzyMatchColumns', () => {
     expect(fuzzyMatchColumns(['dog', 'cat', 'cat-dog'], 'dog', false)).to.deep.equal([
       'dog',
       'cat-dog',
-      new inquirer.Separator(),
+      new Separator(),
       NONE,
       'cat',
     ]);
