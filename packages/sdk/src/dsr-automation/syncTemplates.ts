@@ -1,9 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { TemplateInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { TEMPLATES, CREATE_TEMPLATE } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { TEMPLATES, CREATE_TEMPLATE } from './gqls/template.js';
 
 export interface Template {
   /** ID of Template */
@@ -22,23 +21,33 @@ export interface Template {
   };
 }
 
+export interface SyncTemplateInput {
+  /** The title of the template */
+  title: string;
+}
+
 const PAGE_SIZE = 20;
 
 /**
  * Fetch all Templates in the organization
  *
  * @param client - GraphQL client
- * @param title - Filter by title
+ * @param options - Options
  * @returns All Templates in the organization
  */
 export async function fetchAllTemplates(
   client: GraphQLClient,
-  title?: string,
+  options: {
+    /** Filter by title */
+    title?: string;
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<Template[]> {
+  const { title, logger } = options;
   const templates: Template[] = [];
   let offset = 0;
 
-  // Try to fetch an Template with the same title
   let shouldContinue = false;
   do {
     const {
@@ -64,15 +73,22 @@ export async function fetchAllTemplates(
 /**
  * Sync an email template configuration
  *
- * @param template - The email template input
  * @param client - GraphQL client
+ * @param template - The email template input
+ * @param options - Options
  */
-export async function syncTemplate(template: TemplateInput, client: GraphQLClient): Promise<void> {
-  // Try to fetch an Template with the same title
-  const matches = await fetchAllTemplates(client, template.title);
+export async function syncTemplate(
+  client: GraphQLClient,
+  template: SyncTemplateInput,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
+): Promise<void> {
+  const { logger } = options;
+  const matches = await fetchAllTemplates(client, { title: template.title, logger });
   const existingTemplate = matches.find(({ title }) => title === template.title);
 
-  // If Template exists, update it
   if (!existingTemplate) {
     await makeGraphQLRequest(client, CREATE_TEMPLATE, {
       variables: { title: template.title },
