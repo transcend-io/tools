@@ -16,7 +16,10 @@ import {
   syncDataFlows,
   syncIntlMessages,
   syncPartitions,
+  syncPolicies,
+  syncPrivacyCenter,
   syncProcessingActivities,
+  syncProcessingPurposes,
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
@@ -38,9 +41,6 @@ import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
 import { syncEnricher } from './syncEnrichers.js';
 import { syncIdentifier } from './syncIdentifier.js';
-import { syncPolicies } from './syncPolicies.js';
-import { syncPrivacyCenter } from './syncPrivacyCenter.js';
-import { syncProcessingPurposes } from './syncProcessingPurposes.js';
 
 const CONCURRENCY = 10;
 
@@ -198,7 +198,9 @@ export async function syncConfigurationToTranscend(
 
   // Sync processing purposes
   if (processingPurposes) {
-    const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes);
+    const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes, {
+      logger,
+    });
     encounteredError = encounteredError || !processingPurposesSuccess;
   }
 
@@ -427,7 +429,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync privacy center
   if (privacyCenter) {
-    const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter);
+    const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter, { logger });
     encounteredError = encounteredError || !privacyCenterSuccess;
   }
 
@@ -439,7 +441,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync policies
   if (policies) {
-    const policiesSuccess = await syncPolicies(client, policies);
+    const policiesSuccess = await syncPolicies(client, policies, { logger });
     encounteredError = encounteredError || !policiesSuccess;
   }
 
