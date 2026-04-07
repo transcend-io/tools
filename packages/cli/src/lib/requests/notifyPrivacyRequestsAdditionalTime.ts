@@ -1,16 +1,17 @@
 import { RequestAction } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
+  fetchAllRequests,
   fetchAllTemplates,
   makeGraphQLRequest,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { NOTIFY_ADDITIONAL_TIME, fetchAllRequests } from '../graphql/index.js';
+import { NOTIFY_ADDITIONAL_TIME } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Mark a set of privacy requests to be in silent mode.
@@ -66,8 +67,6 @@ export async function notifyPrivacyRequestsAdditionalTime({
 
   // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Grab the template with that title
   const matchingTemplates = await fetchAllTemplates(client, {
@@ -80,16 +79,26 @@ export async function notifyPrivacyRequestsAdditionalTime({
   }
 
   // Pull in the requests
-  let allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    isSilent: false,
-    isClosed: false,
-    requestIds,
-  });
+  let allRequests = await withProgressBar((bar) =>
+    fetchAllRequests(
+      client,
+      {
+        actions: requestActions,
+        createdAtBefore,
+        createdAtAfter,
+        updatedAtBefore,
+        updatedAtAfter,
+        isSilent: false,
+        isClosed: false,
+        requestIds,
+        onProgress({ totalCount, fetchedCount }) {
+          bar.start(totalCount);
+          bar.update(fetchedCount);
+        },
+      },
+      { logger },
+    ),
+  );
 
   // Filter requests by daysLeft
   allRequests = allRequests.filter(
@@ -100,29 +109,29 @@ export async function notifyPrivacyRequestsAdditionalTime({
   logger.info(colors.magenta(`Notifying "${allRequests.length}" that more time is needed.`));
 
   let total = 0;
-  progressBar.start(allRequests.length, 0);
-  await map(
-    allRequests,
-    async (requestToNotify) => {
-      await makeGraphQLRequest(client, NOTIFY_ADDITIONAL_TIME, {
-        variables: {
-          input: {
-            requestId: requestToNotify.id,
-            template: exactTemplateMatch.template.defaultMessage,
-            subject: exactTemplateMatch.subject.defaultMessage,
-            additionalTime: days,
+  await withProgressBar(async (bar) => {
+    bar.start(allRequests.length);
+    await map(
+      allRequests,
+      async (requestToNotify) => {
+        await makeGraphQLRequest(client, NOTIFY_ADDITIONAL_TIME, {
+          variables: {
+            input: {
+              requestId: requestToNotify.id,
+              template: exactTemplateMatch.template.defaultMessage,
+              subject: exactTemplateMatch.subject.defaultMessage,
+              additionalTime: days,
+            },
           },
-        },
-        logger,
-      });
+          logger,
+        });
 
-      total += 1;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
-
-  progressBar.stop();
+        total += 1;
+        bar.update(total);
+      },
+      { concurrency },
+    );
+  });
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

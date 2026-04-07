@@ -1,6 +1,7 @@
+import type { PrivacyRequest } from '@transcend-io/sdk';
 import { groupBy } from 'lodash-es';
 
-import type { PrivacyRequest, RequestIdentifier } from '../graphql/index.js';
+import type { RequestIdentifier } from '../graphql/index.js';
 
 export interface ExportedPrivacyRequest extends PrivacyRequest {
   /** Request identifiers */

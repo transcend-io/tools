@@ -1,16 +1,16 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllRequests,
+  makeGraphQLRequest,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  RETRY_REQUEST_DATA_SILO,
-  fetchRequestDataSilo,
-  fetchAllRequests,
-} from '../graphql/index.js';
+import { RETRY_REQUEST_DATA_SILO, fetchRequestDataSilo } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 
 /**
  * Retry a set of RequestDataSilos
@@ -41,14 +41,22 @@ export async function retryRequestDataSilos({
 
   // Time duration
   const t0 = new Date().getTime();
-  // create a new progress bar instance and use shades_classic theme
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Compiling, RequestStatus.Approving],
-  });
+  const allRequests = await withProgressBar((bar) =>
+    fetchAllRequests(
+      client,
+      {
+        actions: requestActions,
+        statuses: [RequestStatus.Compiling, RequestStatus.Approving],
+        onProgress({ totalCount, fetchedCount }) {
+          bar.start(totalCount);
+          bar.update(fetchedCount);
+        },
+      },
+      { logger },
+    ),
+  );
 
   // Notify Transcend
   logger.info(
@@ -59,38 +67,38 @@ export async function retryRequestDataSilos({
 
   let total = 0;
   let skipped = 0;
-  progressBar.start(allRequests.length, 0);
-  await map(
-    allRequests,
-    async (requestToRestart) => {
-      try {
-        const requestDataSilo = await fetchRequestDataSilo(client, {
-          requestId: requestToRestart.id,
-          dataSiloId,
-        });
+  await withProgressBar(async (bar) => {
+    bar.start(allRequests.length);
+    await map(
+      allRequests,
+      async (requestToRestart) => {
+        try {
+          const requestDataSilo = await fetchRequestDataSilo(client, {
+            requestId: requestToRestart.id,
+            dataSiloId,
+          });
 
-        await makeGraphQLRequest<{
-          /** Whether we successfully uploaded the results */
-          success: boolean;
-        }>(client, RETRY_REQUEST_DATA_SILO, {
-          variables: { requestDataSiloId: requestDataSilo.id },
-          logger,
-        });
-      } catch (err) {
-        // some requests may not have this data silo connected
-        if (!err.message.includes('Failed to find RequestDataSilo')) {
-          throw err;
+          await makeGraphQLRequest<{
+            /** Whether we successfully uploaded the results */
+            success: boolean;
+          }>(client, RETRY_REQUEST_DATA_SILO, {
+            variables: { requestDataSiloId: requestDataSilo.id },
+            logger,
+          });
+        } catch (err) {
+          // some requests may not have this data silo connected
+          if (!err.message.includes('Failed to find RequestDataSilo')) {
+            throw err;
+          }
+          skipped += 1;
         }
-        skipped += 1;
-      }
 
-      total += 1;
-      progressBar.update(total);
-    },
-    { concurrency },
-  );
-
-  progressBar.stop();
+        total += 1;
+        bar.update(total);
+      },
+      { concurrency },
+    );
+  });
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 

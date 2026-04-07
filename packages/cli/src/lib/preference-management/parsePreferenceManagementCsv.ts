@@ -8,13 +8,13 @@ import {
   PreferenceState,
   type PreferenceTopic,
 } from '@transcend-io/sdk';
-import cliProgress from 'cli-progress';
 import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 import { keyBy } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import { withProgressBar } from '../helpers/index.js';
 import { readCsv } from '../requests/index.js';
 import { parsePreferenceAndPurposeValuesFromCsv } from './parsePreferenceAndPurposeValuesFromCsv.js';
 import { parsePreferenceIdentifiersFromCsv } from './parsePreferenceIdentifiersFromCsv.js';
@@ -100,19 +100,19 @@ export async function parsePreferenceManagementCsvWithCache(
 
   // Grab existing preference store records
   const identifiers = preferences.map((pref) => pref[currentState.identifierColumn!]);
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
-  if (!skipExistingRecordCheck) {
-    progressBar.start(identifiers.length, 0);
-  }
-  const existingConsentRecords = skipExistingRecordCheck
-    ? []
-    : await getPreferencesForIdentifiers(sombra, {
-        identifiers: identifiers.map((x) => ({ value: x })),
-        partitionKey,
-        logger,
-        onProgress: (completed, total) => progressBar.update(completed, { total }),
-      });
-  progressBar.stop();
+  const existingConsentRecords = await withProgressBar(async (bar) => {
+    if (!skipExistingRecordCheck) {
+      bar.start(identifiers.length);
+    }
+    return skipExistingRecordCheck
+      ? []
+      : await getPreferencesForIdentifiers(sombra, {
+          identifiers: identifiers.map((x) => ({ value: x })),
+          partitionKey,
+          logger,
+          onProgress: (completed) => bar.update(completed),
+        });
+  });
   const consentRecordByIdentifier = keyBy(existingConsentRecords, 'userId');
 
   // Clear out previous updates

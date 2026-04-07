@@ -1,3 +1,6 @@
+export * from './fetchAllRequests.js';
+export * from './fetchRequestDataSiloActiveCount.js';
+export * from './gqls/request.js';
 export * from './fetchActiveSiloDiscoPlugin.js';
 export * from './fetchAllActions.js';
 export * from './fetchAllSiloDiscoveryResults.js';

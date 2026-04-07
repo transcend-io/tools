@@ -1,5 +1,9 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequests,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 
@@ -8,7 +12,6 @@ import { logger } from '../../logger.js';
 import {
   RequestIdentifier,
   fetchAllRequestIdentifiers,
-  fetchAllRequests,
   validateSombraVersion,
 } from '../graphql/index.js';
 import { formatRequestForCsv, CsvRow, ExportedPrivacyRequest } from './formatRequestForCsv.js';
@@ -133,16 +136,20 @@ export async function pullPrivacyRequests({
   const chunkResults = await map(
     chunks,
     (chunk) =>
-      fetchAllRequests(client, {
-        actions,
-        text: identifierSearch,
-        statuses,
-        createdAtBefore: chunk.createdAtBefore,
-        createdAtAfter: chunk.createdAtAfter,
-        updatedAtBefore,
-        updatedAtAfter,
-        isTest,
-      }),
+      fetchAllRequests(
+        client,
+        {
+          actions,
+          text: identifierSearch,
+          statuses,
+          createdAtBefore: chunk.createdAtBefore,
+          createdAtAfter: chunk.createdAtAfter,
+          updatedAtBefore,
+          updatedAtAfter,
+          isTest,
+        },
+        { logger },
+      ),
     { concurrency: useChunks ? concurrency : 1 },
   );
   const requests = chunkResults.flat();

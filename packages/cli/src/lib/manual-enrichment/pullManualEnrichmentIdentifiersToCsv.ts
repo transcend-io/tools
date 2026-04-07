@@ -1,5 +1,10 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequests,
+  type PrivacyRequest,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { groupBy, uniq } from 'lodash-es';
@@ -7,14 +12,13 @@ import { groupBy, uniq } from 'lodash-es';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import {
-  PrivacyRequest,
   RequestEnricher,
   RequestIdentifier,
   fetchAllRequestEnrichers,
   fetchAllRequestIdentifiers,
-  fetchAllRequests,
   validateSombraVersion,
 } from '../graphql/index.js';
+import { withProgressBar } from '../helpers/index.js';
 import { writeCsv } from '../helpers/writeCsv.js';
 
 export interface PrivacyRequestWithIdentifiers extends PrivacyRequest {
@@ -66,10 +70,20 @@ export async function pullManualEnrichmentIdentifiersToCsv({
   );
 
   // Pull all privacy requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Enriching],
-  });
+  const allRequests = await withProgressBar((bar) =>
+    fetchAllRequests(
+      client,
+      {
+        actions: requestActions,
+        statuses: [RequestStatus.Enriching],
+        onProgress({ totalCount, fetchedCount }) {
+          bar.start(totalCount);
+          bar.update(fetchedCount);
+        },
+      },
+      { logger },
+    ),
+  );
 
   await validateSombraVersion(client);
 

@@ -6,15 +6,13 @@ import {
   IsoCountryCode,
   IsoCountrySubdivisionCode,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { valuesOf } from '@transcend-io/type-utils';
-import cliProgress from 'cli-progress';
-import colors from 'colors';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 
-import { logger } from '../../logger.js';
-import { REQUESTS, REQUESTS_COUNT } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { REQUESTS, REQUESTS_COUNT } from './gqls/request.js';
 
 export const RequestPurposeTrigger = t.type({
   title: t.string,
@@ -119,11 +117,16 @@ const PAGE_SIZE = 100;
  *
  * @param client - GraphQL client
  * @param filterBy - Filter object (already serialized to ISO strings)
+ * @param options - Options
  * @returns The total count
  */
 export async function fetchRequestsTotalCount(
   client: GraphQLClient,
   filterBy: Record<string, unknown>,
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<number> {
   const {
     requests: { totalCount },
@@ -133,7 +136,7 @@ export async function fetchRequestsTotalCount(
       /** Total count */
       totalCount: number;
     };
-  }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger });
+  }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger: options.logger });
   return totalCount;
 }
 
@@ -146,26 +149,13 @@ export async function fetchRequestsTotalCount(
  * (existing behaviour, kept for backward compatibility).
  *
  * @param client - GraphQL client
- * @param options - Filter options
+ * @param filterOptions - Filter options
+ * @param options - Options
  * @returns List of requests (empty when using onPage)
  */
 export async function fetchAllRequests(
   client: GraphQLClient,
-  {
-    actions = [],
-    statuses = [],
-    origins = [],
-    text,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    isTest,
-    isSilent,
-    isClosed,
-    requestIds = [],
-    onPage,
-  }: {
+  filterOptions: {
     /** Actions to filter on */
     actions?: RequestAction[];
     /** Origins to filter on */
@@ -195,8 +185,36 @@ export async function fetchAllRequests(
     requestIds?: string[];
     /** When provided, called with each page of nodes instead of accumulating in memory */
     onPage?: (nodes: PrivacyRequest[]) => void | Promise<void>;
+    /** Called with progress info after the count query and after each page (non-streaming only) */
+    onProgress?: (info: {
+      /** Total number of requests matching the filter */
+      totalCount: number;
+      /** Number of requests fetched so far */
+      fetchedCount: number;
+    }) => void;
   } = {},
+  options: {
+    /** Logger instance */
+    logger: Logger;
+  },
 ): Promise<PrivacyRequest[]> {
+  const {
+    actions = [],
+    statuses = [],
+    origins = [],
+    text,
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    isTest,
+    isSilent,
+    isClosed,
+    requestIds = [],
+    onPage,
+    onProgress,
+  } = filterOptions;
+  const { logger } = options;
   const streaming = !!onPage;
 
   const filterBy = {
@@ -213,32 +231,25 @@ export async function fetchAllRequests(
     updatedAtAfter: updatedAtAfter ? updatedAtAfter.toISOString() : undefined,
   };
 
-  // When streaming, the caller manages progress/logging — skip count query & bar
   const t0 = new Date().getTime();
-  const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
+  let totalCount = 0;
 
-  if (!streaming) {
-    logger.info(colors.magenta('Fetching requests...'));
-    const {
-      requests: { totalCount },
-    } = await makeGraphQLRequest<{
+  if (!streaming && onProgress) {
+    logger.info('Fetching requests...');
+    const result = await makeGraphQLRequest<{
       /** Requests */
       requests: {
         /** Total count */
         totalCount: number;
       };
     }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger });
-
-    if (totalCount > PAGE_SIZE) {
-      logger.info(colors.magenta(`Fetching ${totalCount} requests`));
-      progressBar.start(totalCount, 0);
-    }
+    totalCount = result.requests.totalCount;
+    onProgress({ totalCount, fetchedCount: 0 });
   }
 
   const requests: PrivacyRequest[] = [];
   let fetchedCount = 0;
 
-  // Paginate through all results
   let cursor: string | undefined;
   let shouldContinue = false;
   do {
@@ -270,36 +281,28 @@ export async function fetchAllRequests(
 
     fetchedCount += nodes.length;
     cursor = pageInfo.endCursor ?? undefined;
-    if (!streaming) {
-      progressBar.update(fetchedCount);
+    if (!streaming && onProgress) {
+      onProgress({ totalCount, fetchedCount });
     }
     shouldContinue = pageInfo.hasNextPage;
   } while (shouldContinue);
 
   if (!streaming) {
-    progressBar.stop();
     const t1 = new Date().getTime();
     const totalTime = t1 - t0;
 
-    logger.info(
-      colors.green(
-        `Completed fetching of ${fetchedCount} request in "${totalTime / 1000}" seconds.`,
-      ),
-    );
+    logger.info(`Completed fetching of ${fetchedCount} request in "${totalTime / 1000}" seconds.`);
   }
 
   if (streaming) {
     return [];
   }
 
-  // Filter down requests by request ID
   let allRequests = requests;
   if (requestIds && requestIds.length > 0) {
     allRequests = allRequests.filter((request) => requestIds.includes(request.id));
     logger.info(
-      colors.green(
-        `Filtered down to ${allRequests.length} requests based on ${requestIds.length} provided IDs.`,
-      ),
+      `Filtered down to ${allRequests.length} requests based on ${requestIds.length} provided IDs.`,
     );
   }
 

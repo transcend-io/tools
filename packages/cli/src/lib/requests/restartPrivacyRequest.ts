@@ -1,10 +1,11 @@
 import { IdentifierType } from '@transcend-io/privacy-types';
+import type { PrivacyRequest } from '@transcend-io/sdk';
 import { apply, decodeCodec } from '@transcend-io/type-utils';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 import { groupBy } from 'lodash-es';
 
-import { PrivacyRequest, RequestIdentifier } from '../graphql/index.js';
+import { RequestIdentifier } from '../graphql/index.js';
 import { IDENTIFIER_BLOCK_LIST } from './constants.js';
 import { PrivacyRequestResponse } from './submitPrivacyRequest.js';
 
