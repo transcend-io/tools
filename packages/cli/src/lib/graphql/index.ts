@@ -1,8 +1,5 @@
 export * from './fetchAllAssessmentTemplates.js';
 export * from './fetchAllAttributeKeys.js';
-export * from './fetchAllPolicies.js';
-export * from './fetchAllPrivacyCenters.js';
-export * from './fetchAllProcessingPurposes.js';
 export * from './fetchAllRequestEnrichers.js';
 export * from './fetchAllRequestIdentifierMetadata.js';
 export * from './fetchAllRequestIdentifiers.js';
@@ -22,6 +19,3 @@ export * from './syncDataSilos.js';
 export * from './syncDataSubject.js';
 export * from './syncEnrichers.js';
 export * from './syncIdentifier.js';
-export * from './syncPolicies.js';
-export * from './syncPrivacyCenter.js';
-export * from './syncProcessingPurposes.js';
