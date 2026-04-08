@@ -45,12 +45,12 @@ export async function updateOrCreateCookies(
   client: GraphQLClient,
   options: {
     /** List of cookie inputs */
-    cookies: CookieInput[];
+    input: CookieInput[];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { cookies, logger = NOOP_LOGGER } = options;
+  const { input: cookies, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   await mapSeries(chunk(cookies, MAX_PAGE_SIZE), async (page) => {
@@ -110,7 +110,7 @@ export async function syncCookies(
 
   try {
     logger.info(`Upserting "${cookies.length}" new cookies...`);
-    await updateOrCreateCookies(client, { cookies, logger });
+    await updateOrCreateCookies(client, { input: cookies, logger });
     logger.info(`Successfully synced ${cookies.length} cookies!`);
   } catch (err) {
     encounteredError = true;

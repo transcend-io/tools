@@ -26,13 +26,14 @@ export interface AgentFunctionInput {
  */
 export async function createAgentFunction(
   client: GraphQLClient,
-  agentFunction: AgentFunctionInput,
   options: {
+    /** Agent function to create */
+    input: AgentFunctionInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Pick<AgentFunction, 'id' | 'name'>> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input: agentFunction, logger = NOOP_LOGGER } = options;
   const input = {
     name: agentFunction.name,
     description: agentFunction.description,
@@ -64,12 +65,12 @@ export async function updateAgentFunctions(
   client: GraphQLClient,
   options: {
     /** [AgentFunctionInput, agentFunctionId] list */
-    agentFunctions: [AgentFunctionInput, string][];
+    input: [AgentFunctionInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { agentFunctions, logger = NOOP_LOGGER } = options;
+  const { input: agentFunctions, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FUNCTIONS, {
     variables: {
       input: {
@@ -116,7 +117,7 @@ export async function syncAgentFunctions(
 
   await mapSeries(newAgentFunctions, async (agentFunction) => {
     try {
-      const newAgentFunction = await createAgentFunction(client, agentFunction, { logger });
+      const newAgentFunction = await createAgentFunction(client, { input: agentFunction, logger });
       agentFunctionByName[newAgentFunction.name] = newAgentFunction;
       logger.info(`Successfully synced agent function "${agentFunction.name}"!`);
     } catch (err) {
@@ -130,7 +131,7 @@ export async function syncAgentFunctions(
   try {
     logger.info(`Updating "${inputs.length}" agent functions!`);
     await updateAgentFunctions(client, {
-      agentFunctions: inputs.map((input) => [input, agentFunctionByName[input.name]!.id]),
+      input: inputs.map((input) => [input, agentFunctionByName[input.name]!.id]),
       logger,
     });
     logger.info(`Successfully synced "${inputs.length}" agent functions!`);

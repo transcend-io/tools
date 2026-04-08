@@ -30,13 +30,14 @@ export interface AgentFileInput {
  */
 export async function createAgentFile(
   client: GraphQLClient,
-  agentFile: AgentFileInput,
   options: {
+    /** Agent file to create */
+    input: AgentFileInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Pick<AgentFile, 'id' | 'name' | 'fileId'>> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input: agentFile, logger = NOOP_LOGGER } = options;
   const input = {
     name: agentFile.name,
     description: agentFile.description,
@@ -71,12 +72,12 @@ export async function updateAgentFiles(
   client: GraphQLClient,
   options: {
     /** [AgentFileInput, agentFileId] list */
-    agentFiles: [AgentFileInput, string][];
+    input: [AgentFileInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { agentFiles, logger = NOOP_LOGGER } = options;
+  const { input: agentFiles, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FILES, {
     variables: {
       input: {
@@ -125,7 +126,7 @@ export async function syncAgentFiles(
 
   await mapSeries(newAgentFiles, async (agentFile) => {
     try {
-      const newAgentFile = await createAgentFile(client, agentFile, { logger });
+      const newAgentFile = await createAgentFile(client, { input: agentFile, logger });
       agentFileByName[newAgentFile.name] = newAgentFile;
       logger.info(`Successfully synced agent file "${agentFile.name}"!`);
     } catch (err) {
@@ -137,7 +138,7 @@ export async function syncAgentFiles(
   try {
     logger.info(`Updating "${inputs.length}" agent files!`);
     await updateAgentFiles(client, {
-      agentFiles: inputs.map((input) => [input, agentFileByName[input.name]!.id]),
+      input: inputs.map((input) => [input, agentFileByName[input.name]!.id]),
       logger,
     });
     logger.info(`Successfully synced "${inputs.length}" agent files!`);

@@ -37,13 +37,14 @@ export interface AgentInput {
  */
 export async function createAgent(
   client: GraphQLClient,
-  agent: AgentInput,
   options: {
+    /** Agent to create */
+    input: AgentInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Pick<Agent, 'id' | 'name' | 'agentId'>> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input: agent, logger = NOOP_LOGGER } = options;
   const input = {
     name: agent.name,
     description: agent.description,
@@ -79,12 +80,12 @@ export async function updateAgents(
   client: GraphQLClient,
   options: {
     /** [AgentInput, agentId] list */
-    agents: [AgentInput, string][];
+    input: [AgentInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { agents, logger = NOOP_LOGGER } = options;
+  const { input: agents, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENTS, {
     variables: {
       input: {
@@ -133,7 +134,7 @@ export async function syncAgents(
 
   await mapSeries(newAgents, async (agent) => {
     try {
-      const newAgent = await createAgent(client, agent, { logger });
+      const newAgent = await createAgent(client, { input: agent, logger });
       agentByName[newAgent.name] = newAgent;
       logger.info(`Successfully synced agent "${agent.name}"!`);
     } catch (err) {
@@ -145,7 +146,7 @@ export async function syncAgents(
   try {
     logger.info(`Updating "${inputs.length}" agents!`);
     await updateAgents(client, {
-      agents: inputs.map((input) => [input, agentByName[input.name]!.id]),
+      input: inputs.map((input) => [input, agentByName[input.name]!.id]),
       logger,
     });
     logger.info(`Successfully synced "${inputs.length}" agents!`);

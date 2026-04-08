@@ -41,7 +41,7 @@ export async function updateConsentManagerToLatest(
   client: GraphQLClient,
   options: {
     /** Consent manager to update */
-    consentManager: {
+    input: {
       /** ID of Consent Manager */
       id: string;
       /** Type of bundle */
@@ -51,7 +51,7 @@ export async function updateConsentManagerToLatest(
     logger?: Logger;
   },
 ): Promise<void> {
-  const { consentManager, logger } = options;
+  const { input: consentManager, logger } = options;
   await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_TO_LATEST, {
     variables: { airgapBundleId: consentManager.id, bundleType: consentManager.bundleType },
     logger,

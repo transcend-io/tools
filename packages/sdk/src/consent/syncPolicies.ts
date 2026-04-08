@@ -33,12 +33,12 @@ export async function updatePolicies(
   client: GraphQLClient,
   options: {
     /** [PolicyInput, policyId] list */
-    policies: [PolicyInput, string | undefined][];
+    input: [PolicyInput, string | undefined][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { policies: policyInputs, logger = NOOP_LOGGER } = options;
+  const { input: policyInputs, logger = NOOP_LOGGER } = options;
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
   await mapSeries(chunk(policyInputs, MAX_PAGE_SIZE), async (page) => {
@@ -108,7 +108,7 @@ export async function syncPolicies(
   try {
     logger.info(`Upserting "${policies.length}" new policies...`);
     await updatePolicies(client, {
-      policies: policies.map((policy) => [policy, policiesById[policy.title]?.id]),
+      input: policies.map((policy) => [policy, policiesById[policy.title]?.id]),
       logger,
     });
     logger.info(`Successfully synced ${policies.length} policies!`);

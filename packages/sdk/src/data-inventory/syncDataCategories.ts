@@ -39,13 +39,14 @@ export interface DataCategoryInput {
  */
 export async function createDataCategory(
   client: GraphQLClient,
-  dataCategory: DataCategoryInput,
   options: {
+    /** Data category to create */
+    input: DataCategoryInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Pick<DataSubCategory, 'id' | 'name' | 'category'>> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input: dataCategory, logger = NOOP_LOGGER } = options;
   const input = {
     name: dataCategory.name,
     category: dataCategory.category,
@@ -76,12 +77,12 @@ export async function updateDataCategories(
   client: GraphQLClient,
   options: {
     /** [DataCategoryInput, dataCategoryId] list */
-    dataCategories: [DataCategoryInput, string][];
+    input: [DataCategoryInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { dataCategories, logger = NOOP_LOGGER } = options;
+  const { input: dataCategories, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_DATA_SUB_CATEGORIES, {
     variables: {
       input: {
@@ -135,7 +136,7 @@ export async function syncDataCategories(
 
   await mapSeries(newDataCategories, async (dataCategory) => {
     try {
-      const newDataCategory = await createDataCategory(client, dataCategory, { logger });
+      const newDataCategory = await createDataCategory(client, { input: dataCategory, logger });
       dataCategoryByName[`${newDataCategory.name}:${newDataCategory.category}`] = newDataCategory;
       logger.info(`Successfully synced data category "${dataCategory.name}"!`);
     } catch (err) {
@@ -150,7 +151,7 @@ export async function syncDataCategories(
   try {
     logger.info(`Updating "${inputs.length}" data categories!`);
     await updateDataCategories(client, {
-      dataCategories: inputs.map((input) => [
+      input: inputs.map((input) => [
         input,
         dataCategoryByName[`${input.name}:${input.category}`]!.id,
       ]),

@@ -35,13 +35,14 @@ export interface EditPromptGroupInput {
  */
 export async function createPromptGroup(
   client: GraphQLClient,
-  input: EditPromptGroupInput,
   options: {
+    /** Prompt group to create */
+    input: EditPromptGroupInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<string> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input, logger = NOOP_LOGGER } = options;
   const {
     createPromptGroup: { promptGroup },
   } = await makeGraphQLRequest<{
@@ -71,12 +72,12 @@ export async function updatePromptGroups(
   client: GraphQLClient,
   options: {
     /** [EditPromptGroupInput, promptGroupId] list */
-    promptGroups: [EditPromptGroupInput, string][];
+    input: [EditPromptGroupInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { promptGroups, logger = NOOP_LOGGER } = options;
+  const { input: promptGroups, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPT_GROUPS, {
     variables: {
       input: {
@@ -134,9 +135,8 @@ export async function syncPromptGroups(
     await map(
       newPromptGroups,
       async (prompt) => {
-        await createPromptGroup(
-          client,
-          {
+        await createPromptGroup(client, {
+          input: {
             ...prompt,
             promptIds: prompt.prompts.map((title) => {
               const prompt = promptByTitle[title];
@@ -146,8 +146,8 @@ export async function syncPromptGroups(
               return prompt.id;
             }),
           },
-          { logger },
-        );
+          logger,
+        });
       },
       {
         concurrency,
@@ -166,7 +166,7 @@ export async function syncPromptGroups(
   try {
     logger.info(`Updating "${existingPromptGroupsMapped.length}" prompt groups...`);
     await updatePromptGroups(client, {
-      promptGroups: existingPromptGroupsMapped.map(([{ prompts, ...input }, id]) => [
+      input: existingPromptGroupsMapped.map(([{ prompts, ...input }, id]) => [
         {
           ...input,
           promptIds: prompts.map((title) => {

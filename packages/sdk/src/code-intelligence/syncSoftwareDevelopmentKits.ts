@@ -40,38 +40,39 @@ const CHUNK_SIZE = 100;
  */
 export async function createSoftwareDevelopmentKit(
   client: GraphQLClient,
-  input: {
-    /** Title of software development kit */
-    name: string;
-    /** Code package type */
-    codePackageType: CodePackageType;
-    /** Description of the SDK */
-    description?: string;
-    /** Github repository */
-    repositoryUrl?: string;
-    /** Integration name */
-    catalogIntegrationName?: string;
-    /** Doc links */
-    documentationLinks?: string[];
-    /** Code package IDs */
-    codePackageIds?: string[];
-    /** Code package names */
-    codePackageNames?: string[];
-    /** User IDs of owners */
-    ownerIds?: string[];
-    /** Emails of owners */
-    ownerEmails?: string[];
-    /** Team IDs */
-    teamIds?: string[];
-    /** Team names */
-    teamNames?: string[];
-  },
   options: {
+    /** Software development kit to create */
+    input: {
+      /** Title of software development kit */
+      name: string;
+      /** Code package type */
+      codePackageType: CodePackageType;
+      /** Description of the SDK */
+      description?: string;
+      /** Github repository */
+      repositoryUrl?: string;
+      /** Integration name */
+      catalogIntegrationName?: string;
+      /** Doc links */
+      documentationLinks?: string[];
+      /** Code package IDs */
+      codePackageIds?: string[];
+      /** Code package names */
+      codePackageNames?: string[];
+      /** User IDs of owners */
+      ownerIds?: string[];
+      /** Emails of owners */
+      ownerEmails?: string[];
+      /** Team IDs */
+      teamIds?: string[];
+      /** Team names */
+      teamNames?: string[];
+    };
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<SoftwareDevelopmentKit> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input, logger = NOOP_LOGGER } = options;
   const {
     createSoftwareDevelopmentKit: { softwareDevelopmentKit },
   } = await makeGraphQLRequest<{
@@ -99,7 +100,7 @@ export async function updateSoftwareDevelopmentKits(
   client: GraphQLClient,
   options: {
     /** Software development kit inputs to update */
-    sdks: {
+    input: {
       /** ID of software development kit */
       id: string;
       /** Title of software development kit */
@@ -129,7 +130,7 @@ export async function updateSoftwareDevelopmentKits(
     logger?: Logger;
   },
 ): Promise<SoftwareDevelopmentKit[]> {
-  const { sdks, logger = NOOP_LOGGER } = options;
+  const { input: sdks, logger = NOOP_LOGGER } = options;
   const {
     updateSoftwareDevelopmentKits: { softwareDevelopmentKits },
   } = await makeGraphQLRequest<{
@@ -204,7 +205,7 @@ export async function syncSoftwareDevelopmentKits(
     await map(
       newSoftwareDevelopmentKits,
       async (sdk) => {
-        const newSdk = await createSoftwareDevelopmentKit(client, sdk, { logger });
+        const newSdk = await createSoftwareDevelopmentKit(client, { input: sdk, logger });
         sdks.push(newSdk);
       },
       {
@@ -230,7 +231,7 @@ export async function syncSoftwareDevelopmentKits(
     try {
       const updatedSdks = await updateSoftwareDevelopmentKits(client, {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        sdks: chunk.map(([{ codePackageType, ...input }, id]) => ({
+        input: chunk.map(([{ codePackageType, ...input }, id]) => ({
           ...input,
           id,
         })),

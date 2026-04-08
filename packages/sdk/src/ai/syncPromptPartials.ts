@@ -23,18 +23,19 @@ export interface PromptPartialInput {
  */
 export async function createPromptPartial(
   client: GraphQLClient,
-  input: {
-    /** Title of prompt partial */
-    title: string;
-    /** Prompt content */
-    content: string;
-  },
   options: {
+    /** Prompt partial to create */
+    input: {
+      /** Title of prompt partial */
+      title: string;
+      /** Prompt content */
+      content: string;
+    };
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<string> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input, logger = NOOP_LOGGER } = options;
   const {
     createPromptPartial: { promptPartial },
   } = await makeGraphQLRequest<{
@@ -64,12 +65,12 @@ export async function updatePromptPartials(
   client: GraphQLClient,
   options: {
     /** [PromptPartialInput, promptPartialId] list */
-    promptPartials: [PromptPartialInput, string][];
+    input: [PromptPartialInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { promptPartials, logger = NOOP_LOGGER } = options;
+  const { input: promptPartials, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPT_PARTIALS, {
     variables: {
       input: {
@@ -125,7 +126,7 @@ export async function syncPromptPartials(
     await map(
       newPromptPartials,
       async (prompt) => {
-        await createPromptPartial(client, prompt, { logger });
+        await createPromptPartial(client, { input: prompt, logger });
       },
       {
         concurrency,
@@ -143,7 +144,7 @@ export async function syncPromptPartials(
   );
   try {
     logger.info(`Updating "${existingPromptPartials.length}" prompt partials...`);
-    await updatePromptPartials(client, { promptPartials: existingPromptPartials, logger });
+    await updatePromptPartials(client, { input: existingPromptPartials, logger });
     logger.info(`Successfully updated "${existingPromptPartials.length}" prompt partials!`);
   } catch (err) {
     encounteredError = true;

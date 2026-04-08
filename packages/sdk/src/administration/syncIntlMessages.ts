@@ -30,12 +30,12 @@ export async function updateIntlMessages(
   client: GraphQLClient,
   options: {
     /** List of message inputs */
-    messages: IntlMessageInput[];
+    input: IntlMessageInput[];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { messages, logger = NOOP_LOGGER } = options;
+  const { input: messages, logger = NOOP_LOGGER } = options;
   // Batch update messages
   await mapSeries(chunk(messages, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
@@ -90,7 +90,7 @@ export async function syncIntlMessages(
 
   try {
     logger.info(`Upserting "${messages.length}" new messages...`);
-    await updateIntlMessages(client, { messages, logger });
+    await updateIntlMessages(client, { input: messages, logger });
     logger.info(`Successfully synced ${messages.length} messages!`);
   } catch (err) {
     encounteredError = true;

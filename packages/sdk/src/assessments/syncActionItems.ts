@@ -61,8 +61,9 @@ export interface ActionItemInput {
  */
 export async function createActionItems(
   client: GraphQLClient,
-  actionItems: ActionItemInput[],
   options: {
+    /** Action items to create */
+    input: ActionItemInput[];
     /** Logger instance */
     logger?: Logger;
     /** Action item collections indexed by title */
@@ -76,7 +77,7 @@ export async function createActionItems(
     };
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER, actionItemCollectionByTitle } = options;
+  const { input: actionItems, logger = NOOP_LOGGER, actionItemCollectionByTitle } = options;
   // TODO: https://transcend.height.app/T-38961 - insert attributes
   // const getAttribute = (key: string): string => {
   //   const existing = attributeKeysByName[key];
@@ -129,7 +130,7 @@ export async function updateActionItem(
   client: GraphQLClient,
   options: {
     /** Action item input to update */
-    actionItem: ActionItemInput & {
+    input: ActionItemInput & {
       /** ID of action item to update */
       id: string;
     };
@@ -141,7 +142,7 @@ export async function updateActionItem(
     };
   },
 ): Promise<void> {
-  const { actionItem, logger = NOOP_LOGGER, attributeKeysByName = {} } = options;
+  const { input: actionItem, logger = NOOP_LOGGER, attributeKeysByName = {} } = options;
   const getAttribute = (key: string): string => {
     const existing = attributeKeysByName[key];
     if (!existing) {
@@ -266,7 +267,8 @@ export async function syncActionItems(
   if (newActionItems.length > 0) {
     try {
       logger.info(`Creating "${newActionItems.length}" actionItems...`);
-      await createActionItems(client, newActionItems, {
+      await createActionItems(client, {
+        input: newActionItems,
         logger,
         actionItemCollectionByTitle,
         attributeKeysByName,
@@ -288,7 +290,7 @@ export async function syncActionItems(
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
       await updateActionItem(client, {
-        actionItem: { ...input, id: actionItemId },
+        input: { ...input, id: actionItemId },
         logger,
         attributeKeysByName,
       });

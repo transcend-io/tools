@@ -34,13 +34,14 @@ export interface ActionItemCollectionInput {
  */
 export async function createActionItemCollection(
   client: GraphQLClient,
-  actionItemCollection: ActionItemCollectionInput,
   options: {
+    /** Action item collection to create */
+    input: ActionItemCollectionInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Pick<ActionItemCollection, 'id' | 'title'>> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input: actionItemCollection, logger = NOOP_LOGGER } = options;
   const input = {
     title: actionItemCollection.title,
     description: actionItemCollection.description || '',
@@ -71,7 +72,7 @@ export async function updateActionItemCollection(
   client: GraphQLClient,
   options: {
     /** Action item collection input to update */
-    actionItemCollection: ActionItemCollectionInput & {
+    input: ActionItemCollectionInput & {
       /** ID of action item collection to update */
       id: string;
     };
@@ -79,7 +80,7 @@ export async function updateActionItemCollection(
     logger?: Logger;
   },
 ): Promise<void> {
-  const { actionItemCollection, logger = NOOP_LOGGER } = options;
+  const { input: actionItemCollection, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEM_COLLECTION, {
     variables: {
       input: {
@@ -125,7 +126,7 @@ export async function syncActionItemCollections(
 
   await mapSeries(newCollections, async (input) => {
     try {
-      await createActionItemCollection(client, input, { logger });
+      await createActionItemCollection(client, { input, logger });
       logger.info(`Successfully created action item collection "${input.title}"!`);
     } catch (err) {
       encounteredError = true;
@@ -141,7 +142,7 @@ export async function syncActionItemCollections(
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
       await updateActionItemCollection(client, {
-        actionItemCollection: { ...input, id: actionItemId },
+        input: { ...input, id: actionItemId },
         logger,
       });
       logger.info(`Successfully synced action item collection "${input.title}"!`);

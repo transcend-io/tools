@@ -24,15 +24,21 @@ export interface CreatedApiKey {
 export async function createApiKey(
   client: GraphQLClient,
   options: {
-    /** Title of API key */
-    title: string;
-    /** Scopes for API key */
-    scopes: ScopeName[];
+    /** Input for creating an API key */
+    input: {
+      /** Title of API key */
+      title: string;
+      /** Scopes for API key */
+      scopes: ScopeName[];
+    };
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<CreatedApiKey> {
-  const { title, scopes, logger } = options;
+  const {
+    input: { title, scopes },
+    logger,
+  } = options;
   const {
     createApiKey: { apiKey },
   } = await makeGraphQLRequest<{

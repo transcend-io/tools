@@ -138,7 +138,10 @@ export async function generateCrossAccountApiKeys({
             `Creating API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,
           ),
         );
-        const { apiKey } = await createApiKey(client, { title: apiKeyTitle, scopes, logger });
+        const { apiKey } = await createApiKey(client, {
+          input: { title: apiKeyTitle, scopes },
+          logger,
+        });
         results.push({
           organizationName: role.organization.name,
           organizationId: role.organization.id,

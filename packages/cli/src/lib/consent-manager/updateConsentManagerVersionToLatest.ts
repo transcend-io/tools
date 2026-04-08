@@ -45,7 +45,7 @@ export async function updateConsentManagerVersionToLatest({
       ),
     );
     await updateConsentManagerToLatest(client, {
-      consentManager: {
+      input: {
         id: consentManagerId,
         bundleType,
       },

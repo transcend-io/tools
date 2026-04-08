@@ -54,14 +54,14 @@ export async function updateDataFlows(
   client: GraphQLClient,
   options: {
     /** [DataFlowInput, Data Flow ID] mappings to update */
-    dataFlows: [DataFlowInput, string][];
+    input: [DataFlowInput, string][];
     /** Classify service if missing */
     classifyService?: boolean;
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { dataFlows, classifyService = false, logger = NOOP_LOGGER } = options;
+  const { input: dataFlows, classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
@@ -110,15 +110,16 @@ export async function updateDataFlows(
  */
 export async function createDataFlows(
   client: GraphQLClient,
-  dataFlowInputs: DataFlowInput[],
   options: {
+    /** Data flow inputs to create */
+    input: DataFlowInput[];
     /** Classify service if missing */
     classifyService?: boolean;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<void> {
-  const { classifyService = false, logger = NOOP_LOGGER } = options;
+  const { input: dataFlowInputs, classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
@@ -216,7 +217,7 @@ export async function syncDataFlows(
     .map(([flow]) => flow as DataFlowInput);
   try {
     logger.info(`Creating "${newDataFlows.length}" new data flows...`);
-    await createDataFlows(client, newDataFlows, { classifyService, logger });
+    await createDataFlows(client, { input: newDataFlows, classifyService, logger });
     logger.info(`Successfully synced ${newDataFlows.length} data flows!`);
   } catch (err) {
     encounteredError = true;
@@ -228,7 +229,7 @@ export async function syncDataFlows(
   );
   try {
     logger.info(`Updating "${existingDataFlows.length}" data flows...`);
-    await updateDataFlows(client, { dataFlows: existingDataFlows, classifyService, logger });
+    await updateDataFlows(client, { input: existingDataFlows, classifyService, logger });
     logger.info(`Successfully updated "${existingDataFlows.length}" data flows!`);
   } catch (err) {
     encounteredError = true;

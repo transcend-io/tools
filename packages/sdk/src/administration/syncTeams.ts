@@ -34,13 +34,14 @@ export interface TeamInput {
  */
 export async function createTeam(
   client: GraphQLClient,
-  team: TeamInput,
   options: {
+    /** Team to create */
+    input: TeamInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Pick<Team, 'id' | 'name'>> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input: team, logger = NOOP_LOGGER } = options;
   const input = {
     name: team.name,
     description: team.description,
@@ -75,7 +76,7 @@ export async function updateTeam(
   client: GraphQLClient,
   options: {
     /** Team input to update */
-    team: TeamInput & {
+    input: TeamInput & {
       /** ID of team to update */
       id: string;
     };
@@ -83,7 +84,7 @@ export async function updateTeam(
     logger?: Logger;
   },
 ): Promise<Pick<Team, 'id' | 'name'>> {
-  const { team, logger = NOOP_LOGGER } = options;
+  const { input: team, logger = NOOP_LOGGER } = options;
   const teamId = team.id;
   const { updateTeam } = await makeGraphQLRequest<{
     /** Update team mutation */
@@ -144,7 +145,7 @@ export async function syncTeams(
   // Create new teams
   await mapSeries(newTeams, async (team) => {
     try {
-      const newTeam = await createTeam(client, team, { logger });
+      const newTeam = await createTeam(client, { input: team, logger });
       teamsByName[newTeam.name] = newTeam;
       logger.info(`Successfully created team "${team.name}"!`);
     } catch (err) {
@@ -157,7 +158,7 @@ export async function syncTeams(
   await mapSeries(updatedTeams, async (input) => {
     try {
       const newTeam = await updateTeam(client, {
-        team: { ...input, id: teamsByName[input.name]!.id },
+        input: { ...input, id: teamsByName[input.name]!.id },
         logger,
       });
       teamsByName[newTeam.name] = newTeam;

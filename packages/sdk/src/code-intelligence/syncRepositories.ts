@@ -27,28 +27,29 @@ const CHUNK_SIZE = 100;
  */
 export async function createRepository(
   client: GraphQLClient,
-  input: {
-    /** Title of repository */
-    name: string;
-    /** Description of the repository */
-    description?: string;
-    /** Github repository */
-    url: string;
-    /** User IDs of owners */
-    ownerIds?: string[];
-    /** Emails of owners */
-    ownerEmails?: string[];
-    /** Team IDs */
-    teamIds?: string[];
-    /** Team names */
-    teamNames?: string[];
-  },
   options: {
+    /** Repository to create */
+    input: {
+      /** Title of repository */
+      name: string;
+      /** Description of the repository */
+      description?: string;
+      /** Github repository */
+      url: string;
+      /** User IDs of owners */
+      ownerIds?: string[];
+      /** Emails of owners */
+      ownerEmails?: string[];
+      /** Team IDs */
+      teamIds?: string[];
+      /** Team names */
+      teamNames?: string[];
+    };
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Repository> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input, logger = NOOP_LOGGER } = options;
   const {
     createRepository: { repository },
   } = await makeGraphQLRequest<{
@@ -76,7 +77,7 @@ export async function updateRepositories(
   client: GraphQLClient,
   options: {
     /** Repository inputs to update */
-    repositories: {
+    input: {
       /** ID of repository */
       id: string;
       /** Title of repository */
@@ -98,7 +99,7 @@ export async function updateRepositories(
     logger?: Logger;
   },
 ): Promise<Repository[]> {
-  const { repositories, logger = NOOP_LOGGER } = options;
+  const { input: repositories, logger = NOOP_LOGGER } = options;
   const {
     updateRepositories: { repositories: updatedRepositories },
   } = await makeGraphQLRequest<{
@@ -165,7 +166,7 @@ export async function syncRepositories(
     await map(
       newRepositories,
       async (repo) => {
-        const newRepo = await createRepository(client, repo, { logger });
+        const newRepo = await createRepository(client, { input: repo, logger });
         repos.push(newRepo);
       },
       {
@@ -188,7 +189,7 @@ export async function syncRepositories(
   await mapSeries(chunks, async (chunk) => {
     try {
       const updatedRepos = await updateRepositories(client, {
-        repositories: chunk.map(([input, id]) => ({
+        input: chunk.map(([input, id]) => ({
           ...input,
           id,
         })),

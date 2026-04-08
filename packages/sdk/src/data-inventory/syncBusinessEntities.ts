@@ -44,13 +44,14 @@ export interface BusinessEntityInput {
  */
 export async function createBusinessEntity(
   client: GraphQLClient,
-  businessEntity: BusinessEntityInput,
   options: {
+    /** Business entity to create */
+    input: BusinessEntityInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<BusinessEntity> {
-  const { logger = NOOP_LOGGER } = options;
+  const { input: businessEntity, logger = NOOP_LOGGER } = options;
   const input = {
     title: businessEntity.title,
     description: businessEntity.description,
@@ -87,12 +88,12 @@ export async function updateBusinessEntities(
   client: GraphQLClient,
   options: {
     /** [BusinessEntityInput, businessEntityId] list */
-    businessEntities: [BusinessEntityInput, string][];
+    input: [BusinessEntityInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { businessEntities, logger = NOOP_LOGGER } = options;
+  const { input: businessEntities, logger = NOOP_LOGGER } = options;
   const chunkedUpdates = chunk(businessEntities, 100);
   await mapSeries(chunkedUpdates, async (chunked) => {
     await makeGraphQLRequest(client, UPDATE_BUSINESS_ENTITIES, {
@@ -149,7 +150,10 @@ export async function syncBusinessEntities(
   // Create new business entities
   await mapSeries(newBusinessEntities, async (businessEntity) => {
     try {
-      const newBusinessEntity = await createBusinessEntity(client, businessEntity, { logger });
+      const newBusinessEntity = await createBusinessEntity(client, {
+        input: businessEntity,
+        logger,
+      });
       businessEntityByTitle[newBusinessEntity.title] = newBusinessEntity;
       logger.info(`Successfully synced business entity "${businessEntity.title}"!`);
     } catch (err) {
@@ -164,7 +168,7 @@ export async function syncBusinessEntities(
   try {
     logger.info(`Updating "${inputs.length}" business entities!`);
     await updateBusinessEntities(client, {
-      businessEntities: inputs.map((input) => [input, businessEntityByTitle[input.title]!.id]),
+      input: inputs.map((input) => [input, businessEntityByTitle[input.title]!.id]),
       logger,
     });
     logger.info(`Successfully synced "${inputs.length}" business entities!`);

@@ -43,13 +43,15 @@ export interface ProcessingPurposeInput {
  */
 export async function createProcessingPurpose(
   client: GraphQLClient,
-  processingPurpose: ProcessingPurposeInput,
   options: {
+    /** Processing purpose to create */
+    input: ProcessingPurposeInput;
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<Pick<ProcessingPurposeSubCategory, 'id' | 'name' | 'purpose'>> {
-  const input = {
+  const { input: processingPurpose, logger } = options;
+  const gqlInput = {
     name: processingPurpose.name,
     purpose: processingPurpose.purpose,
     description: processingPurpose.description,
@@ -63,8 +65,8 @@ export async function createProcessingPurpose(
       processingPurposeSubCategory: ProcessingPurposeSubCategory;
     };
   }>(client, CREATE_PROCESSING_PURPOSE_SUB_CATEGORY, {
-    variables: { input },
-    logger: options.logger,
+    variables: { input: gqlInput },
+    logger,
   });
   return createProcessingPurposeSubCategory.processingPurposeSubCategory;
 }
@@ -79,12 +81,12 @@ export async function updateProcessingPurposes(
   client: GraphQLClient,
   options: {
     /** [ProcessingPurposeInput, processingPurposeId] list */
-    processingPurposes: [ProcessingPurposeInput, string][];
+    input: [ProcessingPurposeInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { processingPurposes, logger } = options;
+  const { input: processingPurposes, logger } = options;
   await makeGraphQLRequest(client, UPDATE_PROCESSING_PURPOSE_SUB_CATEGORIES, {
     variables: {
       input: {
@@ -134,7 +136,8 @@ export async function syncProcessingPurposes(
 
   await mapSeries(newProcessingPurposes, async (processingPurpose) => {
     try {
-      const newProcessingPurpose = await createProcessingPurpose(client, processingPurpose, {
+      const newProcessingPurpose = await createProcessingPurpose(client, {
+        input: processingPurpose,
         logger,
       });
       processingPurposeByName[`${newProcessingPurpose.name}:${newProcessingPurpose.purpose}`] =
@@ -151,7 +154,7 @@ export async function syncProcessingPurposes(
   try {
     logger.info(`Updating "${inputs.length}" processing purposes!`);
     await updateProcessingPurposes(client, {
-      processingPurposes: inputs.map((input) => [
+      input: inputs.map((input) => [
         input,
         processingPurposeByName[`${input.name}:${input.purpose}`]!.id,
       ]),
