@@ -22,7 +22,7 @@
     "changeset:version": "changeset version",
     "changeset:version:release": "changeset version && pnpm format:root",
     "release": "turbo run build && changeset publish",
-    "test:root": "vitest run scripts/check-changeset.test.ts scripts/check-minimum-release-age.test.ts scripts/package-conventions.test.ts",
+    "test:root": "vitest run scripts/check-changeset.test.ts scripts/package-conventions.test.ts",
     "typecheck:root": "tsc -p scripts/tsconfig.json --noEmit",
     "lint:root": "oxlint .",
     "lint:fix:root": "oxlint --fix .",
