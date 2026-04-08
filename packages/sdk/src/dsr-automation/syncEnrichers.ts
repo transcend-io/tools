@@ -5,13 +5,52 @@ import {
   PreflightRequestStatus,
   RequestAction,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest, type Identifier } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { EnricherInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
-import { DataSubject } from './fetchDataSubjects.js';
-import { ENRICHERS, CREATE_ENRICHER, UPDATE_ENRICHER } from './gqls/index.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import type { Identifier } from '../data-inventory/fetchAllIdentifiers.js';
+import { ENRICHERS, CREATE_ENRICHER, UPDATE_ENRICHER } from './gqls/enricher.js';
+
+export interface EnricherInput {
+  /** The display title of the enricher */
+  title: string;
+  /** The names of the identifiers that can be resolved by this enricher */
+  'output-identifiers': string[];
+  /** Internal description for why the enricher is needed */
+  description?: string;
+  /** The URL of the enricher */
+  url?: string;
+  /** The type of enricher */
+  type?: EnricherType;
+  /** The name of the identifier that will be the input to this enricher */
+  'input-identifier'?: string;
+  /** A regular expression that can be used to match on for cancellation */
+  testRegex?: string;
+  /** For looker integration - the title of the looker query to run */
+  lookerQueryTitle?: string;
+  /** The duration (in ms) that the enricher should take to execute */
+  expirationDuration?: number;
+  /** The status that the enricher should transfer to when condition is met */
+  transitionRequestStatus?: PreflightRequestStatus;
+  /** For twilio integration - the phone numbers that can be used to send text codes */
+  phoneNumbers?: string[];
+  /** The list of regions that should trigger the preflight check */
+  regionList?: (IsoCountryCode | IsoCountrySubdivisionCode)[];
+  /** Specify which data subjects the enricher should run for */
+  'data-subjects'?: string[];
+  /** Headers to include in the webhook */
+  headers?: {
+    /** Header name */
+    name: string;
+    /** Header value */
+    value: string;
+    /** Whether the value is a secret */
+    isSecret?: boolean;
+  }[];
+  /** The privacy actions that the enricher should run against */
+  'privacy-actions'?: RequestAction[];
+}
 
 export interface Enricher {
   /** ID of enricher */
@@ -49,10 +88,15 @@ export interface Enricher {
   transitionRequestStatus?: PreflightRequestStatus;
   /** The twilio phone number to send from */
   phoneNumbers: string[];
-  /**
-   * The list of regions that should trigger the enrichment condition
-   */
+  /** The list of regions that should trigger the enrichment condition */
   regionList: (IsoCountryCode | IsoCountrySubdivisionCode)[];
+}
+
+export interface DataSubjectRef {
+  /** ID of data subject */
+  id: string;
+  /** Type of data subject */
+  type: string;
 }
 
 const PAGE_SIZE = 20;
@@ -61,17 +105,26 @@ const PAGE_SIZE = 20;
  * Fetch all enrichers in the organization
  *
  * @param client - GraphQL client
- * @param title - Filter by title
+ * @param options - Options
  * @returns All enrichers in the organization
  */
 export async function fetchAllEnrichers(
   client: GraphQLClient,
-  title?: string,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** Filter by title */
+      title?: string;
+    };
+  } = {},
 ): Promise<Enricher[]> {
+  const { logger = NOOP_LOGGER, filterBy } = options;
+  const { title } = filterBy ?? {};
   const enrichers: Enricher[] = [];
   let offset = 0;
 
-  // Whether to continue looping
   let shouldContinue = false;
   do {
     const {
@@ -102,24 +155,24 @@ export async function fetchAllEnrichers(
  */
 export async function syncEnricher(
   client: GraphQLClient,
-  {
-    enricher,
-    identifierByName,
-    dataSubjectsByName,
-  }: {
+  options: {
     /** The enricher input */
-    enricher: EnricherInput;
+    input: EnricherInput;
     /** Index of identifiers in the organization */
     identifierByName: { [name in string]: Identifier };
     /** Lookup data subject by name */
-    dataSubjectsByName: { [name in string]: DataSubject };
+    dataSubjectsByName: { [name in string]: DataSubjectRef };
+    /** Logger instance */
+    logger?: Logger;
   },
 ): Promise<void> {
-  // Whether to continue looping
-  const matches = await fetchAllEnrichers(client, enricher.title);
+  const { input: enricher, identifierByName, dataSubjectsByName, logger = NOOP_LOGGER } = options;
+  const matches = await fetchAllEnrichers(client, {
+    filterBy: { title: enricher.title },
+    logger,
+  });
   const existingEnricher = matches.find(({ title }) => title === enricher.title);
 
-  // Map to data subject Ids
   const dataSubjectIds = enricher['data-subjects']?.map((subject) => {
     const existing = dataSubjectsByName[subject];
     if (!existing) {
@@ -128,7 +181,6 @@ export async function syncEnricher(
     return existing.id;
   });
 
-  // If enricher exists, update it, else create new
   const inputIdentifier = enricher['input-identifier'];
   const actionUpdates = enricher['privacy-actions'] || Object.values(RequestAction);
   if (existingEnricher) {
@@ -150,8 +202,8 @@ export async function syncEnricher(
           regionList: enricher.regionList,
           dataSubjectIds,
           description: enricher.description || '',
-          inputIdentifier: inputIdentifier ? identifierByName[inputIdentifier].id : undefined,
-          identifiers: enricher['output-identifiers'].map((id) => identifierByName[id].id),
+          inputIdentifier: inputIdentifier ? identifierByName[inputIdentifier]!.id : undefined,
+          identifiers: enricher['output-identifiers']!.map((id) => identifierByName[id]!.id),
           ...(existingEnricher.type === EnricherType.Sombra ? {} : { actions: actionUpdates }),
         },
       },
@@ -176,8 +228,8 @@ export async function syncEnricher(
           dataSubjectIds,
           regionList: enricher.regionList,
           description: enricher.description || '',
-          inputIdentifier: identifierByName[inputIdentifier].id,
-          identifiers: enricher['output-identifiers'].map((id) => identifierByName[id].id),
+          inputIdentifier: identifierByName[inputIdentifier]!.id,
+          identifiers: enricher['output-identifiers'].map((id) => identifierByName[id]!.id),
           actions: actionUpdates,
         },
       },

@@ -1,5 +1,4 @@
 export * from './fetchAllAssessmentTemplates.js';
-export * from './fetchAllRequestEnrichers.js';
 export * from './fetchAllRequestIdentifierMetadata.js';
 export * from './fetchAllRequestIdentifiers.js';
 export * from './fetchAllRequests.js';
@@ -8,10 +7,8 @@ export * from './fetchIdentifiers.js';
 export * from './fetchRequestDataSiloActiveCount.js';
 export * from './gqls/index.js';
 export * from './pullTranscendConfiguration.js';
-export * from './retryRequestEnricher.js';
 export * from './syncCodePackages.js';
 export * from './syncConfigurationToTranscend.js';
 export * from './syncDataSilos.js';
 export * from './syncDataSubject.js';
-export * from './syncEnrichers.js';
 export * from './syncIdentifier.js';

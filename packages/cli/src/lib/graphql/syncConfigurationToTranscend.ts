@@ -14,6 +14,7 @@ import {
   syncConsentManager,
   syncCookies,
   syncDataFlows,
+  syncEnricher,
   syncIntlMessages,
   syncPartitions,
   syncPolicies,
@@ -39,7 +40,6 @@ import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSub
 import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
 import { syncDataSubject } from './syncDataSubject.js';
-import { syncEnricher } from './syncEnrichers.js';
 import { syncIdentifier } from './syncIdentifier.js';
 
 const CONCURRENCY = 10;
@@ -291,9 +291,10 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing enricher "${enricher.title}"...`));
         try {
           await syncEnricher(client, {
-            enricher,
+            input: enricher,
             identifierByName,
             dataSubjectsByName,
+            logger,
           });
           logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
         } catch (err) {
