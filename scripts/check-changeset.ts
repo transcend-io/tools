@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { dirname } from 'node:path';
 
 import { fileExists, readJsonFile, readRepoFile } from './lib/repo-files.ts';
 import { logGroup, prominentError } from './lib/reporting.ts';
@@ -172,12 +173,14 @@ function isRelevantPackageChange(filePath: string, base: string): boolean {
     return false;
   }
 
-  const [, packageName, ...rest] = filePath.split('/');
-  const relativePath = rest.join('/');
+  const packageDirectory = resolvePackageDirectory(filePath);
 
-  if (!packageName || !relativePath) {
+  if (!packageDirectory) {
     return false;
   }
+
+  const relativePath =
+    filePath.length > packageDirectory.length ? filePath.slice(packageDirectory.length + 1) : '';
 
   if (relativePath === 'package.json') {
     return hasRelevantPackageJsonChange(filePath, base);
@@ -297,14 +300,30 @@ function sortJsonValue(value: unknown): unknown {
   return value;
 }
 
-function getPackageDirectory(filePath: string): string | null {
-  const [, packageDirectory] = filePath.split('/');
+/**
+ * Resolves the workspace package root for a path under `packages/`, including nested
+ * layouts such as `packages/mcp/mcp-server/`.
+ */
+function resolvePackageDirectory(filePath: string): string | null {
+  let currentDir = dirname(filePath);
 
-  if (!packageDirectory) {
-    return null;
+  while (currentDir.startsWith('packages')) {
+    if (currentDir === 'packages') {
+      break;
+    }
+
+    if (fileExists(`${currentDir}/package.json`)) {
+      return currentDir;
+    }
+
+    currentDir = dirname(currentDir);
   }
 
-  return `packages/${packageDirectory}`;
+  return null;
+}
+
+function getPackageDirectory(filePath: string): string | null {
+  return resolvePackageDirectory(filePath);
 }
 
 function getChangedPublishablePackages(filePaths: string[]): PackageMetadata[] {
