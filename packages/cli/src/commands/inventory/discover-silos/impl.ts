@@ -31,7 +31,10 @@ export async function discoverSilos(
   // Create a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
-  const plugin = await fetchActiveSiloDiscoPlugin(client, dataSiloId, { logger });
+  const plugin = await fetchActiveSiloDiscoPlugin(client, {
+    logger,
+    filterBy: { dataSiloId },
+  });
 
   const config = SILO_DISCOVERY_CONFIGS[plugin.dataSilo.type];
   if (!config) {
@@ -50,7 +53,11 @@ export async function discoverSilos(
     config,
   });
 
-  await uploadSiloDiscoveryResults(client, plugin.id, results, { logger });
+  await uploadSiloDiscoveryResults(client, {
+    pluginId: plugin.id,
+    results,
+    logger,
+  });
 
   const newUrl = new URL(ADMIN_DASH);
   newUrl.pathname = '/data-map/data-inventory/silo-discovery/triage';

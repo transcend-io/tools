@@ -3,7 +3,7 @@ import { GraphQLClient } from 'graphql-request';
 import type { JSONSchema7 } from 'json-schema';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllAgentFunctions, AgentFunction } from './fetchAllAgentFunctions.js';
 import { UPDATE_AGENT_FUNCTIONS, CREATE_AGENT_FUNCTION } from './gqls/agentFunction.js';
 
@@ -26,13 +26,14 @@ export interface AgentFunctionInput {
  */
 export async function createAgentFunction(
   client: GraphQLClient,
-  agentFunction: AgentFunctionInput,
   options: {
+    /** Agent function to create */
+    input: AgentFunctionInput;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<AgentFunction, 'id' | 'name'>> {
-  const { logger } = options;
+  const { input: agentFunction, logger = NOOP_LOGGER } = options;
   const input = {
     name: agentFunction.name,
     description: agentFunction.description,
@@ -58,22 +59,22 @@ export async function createAgentFunction(
  * Update agent functions
  *
  * @param client - GraphQL client
- * @param agentFunctionIdPairs - [AgentFunctionInput, agentFunctionId] list
  * @param options - Options
  */
 export async function updateAgentFunctions(
   client: GraphQLClient,
-  agentFunctionIdPairs: [AgentFunctionInput, string][],
   options: {
+    /** [AgentFunctionInput, agentFunctionId] list */
+    input: [AgentFunctionInput, string][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: agentFunctions, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FUNCTIONS, {
     variables: {
       input: {
-        agentFunctions: agentFunctionIdPairs.map(([agentFunction, id]) => ({
+        agentFunctions: agentFunctions.map(([agentFunction, id]) => ({
           id,
           name: agentFunction.name,
           description: agentFunction.description,
@@ -98,10 +99,10 @@ export async function syncAgentFunctions(
   inputs: AgentFunctionInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" agent functions...`);
 
   let encounteredError = false;
@@ -116,7 +117,7 @@ export async function syncAgentFunctions(
 
   await mapSeries(newAgentFunctions, async (agentFunction) => {
     try {
-      const newAgentFunction = await createAgentFunction(client, agentFunction, { logger });
+      const newAgentFunction = await createAgentFunction(client, { input: agentFunction, logger });
       agentFunctionByName[newAgentFunction.name] = newAgentFunction;
       logger.info(`Successfully synced agent function "${agentFunction.name}"!`);
     } catch (err) {
@@ -129,11 +130,10 @@ export async function syncAgentFunctions(
 
   try {
     logger.info(`Updating "${inputs.length}" agent functions!`);
-    await updateAgentFunctions(
-      client,
-      inputs.map((input) => [input, agentFunctionByName[input.name]!.id]),
-      { logger },
-    );
+    await updateAgentFunctions(client, {
+      input: inputs.map((input) => [input, agentFunctionByName[input.name]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" agent functions!`);
   } catch (err) {
     encounteredError = true;

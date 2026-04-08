@@ -1,5 +1,9 @@
 import { RequestAction, RequestEnricherStatus, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllRequestEnrichers,
+  retryRequestEnricher,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -7,11 +11,7 @@ import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestEnrichers,
-  fetchAllRequests,
-  retryRequestEnricher,
-} from '../graphql/index.js';
+import { fetchAllRequests } from '../graphql/index.js';
 
 /**
  * Restart a bunch of request enrichers
@@ -98,7 +98,8 @@ export async function bulkRetryEnrichers({
     async (request) => {
       // Pull the request identifiers
       const requestEnrichers = await fetchAllRequestEnrichers(client, {
-        requestId: request.id,
+        filterBy: { requestId: request.id },
+        logger,
       });
       const requestEnrichersToRestart = requestEnrichers.filter(
         (requestEnricher) =>
@@ -106,7 +107,7 @@ export async function bulkRetryEnrichers({
           requestEnricherStatuses.includes(requestEnricher.status),
       );
       await map(requestEnrichersToRestart, async (requestEnricher) => {
-        await retryRequestEnricher(client, requestEnricher.id);
+        await retryRequestEnricher(client, { id: requestEnricher.id, logger });
         totalRestarted += 1;
       });
 

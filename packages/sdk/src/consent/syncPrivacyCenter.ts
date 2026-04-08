@@ -2,7 +2,7 @@ import type { LocaleValue } from '@transcend-io/internationalization';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_PRIVACY_CENTER } from './gqls/privacyCenter.js';
 
@@ -67,10 +67,10 @@ export async function syncPrivacyCenter(
   privacyCenter: PrivacyCenterInput,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info('Syncing privacy center...');
 

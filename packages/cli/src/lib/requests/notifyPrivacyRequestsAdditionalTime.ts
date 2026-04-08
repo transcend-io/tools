@@ -71,8 +71,8 @@ export async function notifyPrivacyRequestsAdditionalTime({
 
   // Grab the template with that title
   const matchingTemplates = await fetchAllTemplates(client, {
-    title: emailTemplate,
     logger,
+    filterBy: { title: emailTemplate },
   });
   const exactTemplateMatch = matchingTemplates.find((template) => template.title === emailTemplate);
   if (!exactTemplateMatch) {

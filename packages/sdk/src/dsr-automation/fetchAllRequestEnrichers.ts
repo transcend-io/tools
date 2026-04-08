@@ -1,9 +1,9 @@
 import { RequestEnricherStatus } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { REQUEST_ENRICHERS } from './gqls/index.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { REQUEST_ENRICHERS } from './gqls/requestEnricher.js';
 
 export interface RequestEnricher {
   /** ID of request enricher */
@@ -27,22 +27,28 @@ const PAGE_SIZE = 50;
  * Fetch all request enrichers for a particular request
  *
  * @param client - GraphQL client
- * @param options - Filter options
+ * @param options - Options
  * @returns List of request enrichers
  */
 export async function fetchAllRequestEnrichers(
   client: GraphQLClient,
-  {
-    requestId,
-  }: {
-    /** ID of request to filter on */
-    requestId: string;
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+    /** Filter options */
+    filterBy: {
+      /** ID of request to filter on */
+      requestId: string;
+    };
   },
 ): Promise<RequestEnricher[]> {
+  const {
+    logger = NOOP_LOGGER,
+    filterBy: { requestId },
+  } = options;
   const requestEnrichers: RequestEnricher[] = [];
   let offset = 0;
 
-  // Paginate
   let shouldContinue = false;
   do {
     const {

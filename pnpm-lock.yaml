@@ -24,6 +24,9 @@ catalogs:
     '@types/node':
       specifier: ^22.19.15
       version: 22.19.15
+    '@types/semver':
+      specifier: ^7.7.1
+      version: 7.7.1
     husky:
       specifier: ^9.1.7
       version: 9.1.7
@@ -36,6 +39,9 @@ catalogs:
     publint:
       specifier: ^0.3.18
       version: 0.3.18
+    semver:
+      specifier: ^7.7.4
+      version: 7.7.4
     syncpack:
       specifier: ^14.2.0
       version: 14.2.0
@@ -198,7 +204,7 @@ importers:
         specifier: '=7.0.0'
         version: 7.0.0
       semver:
-        specifier: ^7.6.0
+        specifier: 'catalog:'
         version: 7.7.4
       undici:
         specifier: ^5.22.1
@@ -250,7 +256,7 @@ importers:
         specifier: 'catalog:'
         version: 22.19.15
       '@types/semver':
-        specifier: ^7
+        specifier: 'catalog:'
         version: 7.7.1
       '@types/yargs-parser':
         specifier: ^21.0.0
@@ -677,6 +683,9 @@ importers:
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.23
+      semver:
+        specifier: 'catalog:'
+        version: 7.7.4
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
@@ -690,6 +699,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.15
+      '@types/semver':
+        specifier: 'catalog:'
+        version: 7.7.1
       publint:
         specifier: 'catalog:'
         version: 0.3.18

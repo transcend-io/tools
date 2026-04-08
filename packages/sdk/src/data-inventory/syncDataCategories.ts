@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataCategories, DataSubCategory } from './fetchAllDataCategories.js';
 import { UPDATE_DATA_SUB_CATEGORIES, CREATE_DATA_SUB_CATEGORY } from './gqls/dataCategory.js';
 
@@ -39,13 +39,14 @@ export interface DataCategoryInput {
  */
 export async function createDataCategory(
   client: GraphQLClient,
-  dataCategory: DataCategoryInput,
   options: {
+    /** Data category to create */
+    input: DataCategoryInput;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<DataSubCategory, 'id' | 'name' | 'category'>> {
-  const { logger } = options;
+  const { input: dataCategory, logger = NOOP_LOGGER } = options;
   const input = {
     name: dataCategory.name,
     category: dataCategory.category,
@@ -70,22 +71,22 @@ export async function createDataCategory(
  * Update data categories
  *
  * @param client - GraphQL client
- * @param dataCategoryIdPairs - [DataCategoryInput, dataCategoryId] list
  * @param options - Options
  */
 export async function updateDataCategories(
   client: GraphQLClient,
-  dataCategoryIdPairs: [DataCategoryInput, string][],
   options: {
+    /** [DataCategoryInput, dataCategoryId] list */
+    input: [DataCategoryInput, string][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: dataCategories, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_DATA_SUB_CATEGORIES, {
     variables: {
       input: {
-        dataSubCategories: dataCategoryIdPairs.map(([dataCategory, id]) => ({
+        dataSubCategories: dataCategories.map(([dataCategory, id]) => ({
           id,
           description: dataCategory.description,
           // TODO: https://transcend.height.app/T-31994 - add  teams, owners
@@ -110,10 +111,10 @@ export async function syncDataCategories(
   inputs: DataCategoryInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" data categories...`);
 
   let encounteredError = false;
@@ -135,7 +136,7 @@ export async function syncDataCategories(
 
   await mapSeries(newDataCategories, async (dataCategory) => {
     try {
-      const newDataCategory = await createDataCategory(client, dataCategory, { logger });
+      const newDataCategory = await createDataCategory(client, { input: dataCategory, logger });
       dataCategoryByName[`${newDataCategory.name}:${newDataCategory.category}`] = newDataCategory;
       logger.info(`Successfully synced data category "${dataCategory.name}"!`);
     } catch (err) {
@@ -149,11 +150,13 @@ export async function syncDataCategories(
   // Update all data categories
   try {
     logger.info(`Updating "${inputs.length}" data categories!`);
-    await updateDataCategories(
-      client,
-      inputs.map((input) => [input, dataCategoryByName[`${input.name}:${input.category}`]!.id]),
-      { logger },
-    );
+    await updateDataCategories(client, {
+      input: inputs.map((input) => [
+        input,
+        dataCategoryByName[`${input.name}:${input.category}`]!.id,
+      ]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" data categories!`);
   } catch (err) {
     encounteredError = true;

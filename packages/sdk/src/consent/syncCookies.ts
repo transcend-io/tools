@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { UPDATE_OR_CREATE_COOKIES } from './gqls/consentManager.js';
 
@@ -39,21 +39,21 @@ const MAX_PAGE_SIZE = 100;
  * Update or create cookies
  *
  * @param client - GraphQL client
- * @param cookieInputs - List of cookie inputs
  * @param options - Options
  */
 export async function updateOrCreateCookies(
   client: GraphQLClient,
-  cookieInputs: CookieInput[],
   options: {
+    /** List of cookie inputs */
+    input: CookieInput[];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: cookies, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
-  await mapSeries(chunk(cookieInputs, MAX_PAGE_SIZE), async (page) => {
+  await mapSeries(chunk(cookies, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_OR_CREATE_COOKIES, {
       variables: {
         airgapBundleId,
@@ -88,10 +88,10 @@ export async function syncCookies(
   cookies: CookieInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${cookies.length}" cookies...`);
 
@@ -110,7 +110,7 @@ export async function syncCookies(
 
   try {
     logger.info(`Upserting "${cookies.length}" new cookies...`);
-    await updateOrCreateCookies(client, cookies, { logger });
+    await updateOrCreateCookies(client, { input: cookies, logger });
     logger.info(`Successfully synced ${cookies.length} cookies!`);
   } catch (err) {
     encounteredError = true;

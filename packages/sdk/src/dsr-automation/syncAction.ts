@@ -47,8 +47,8 @@ export async function syncAction(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<void> {
   const { logger } = options;
   const { action, actionId, skipPublish = false } = actionInput;

@@ -26,6 +26,7 @@ import {
   fetchConsentManager,
   fetchConsentManagerExperiences,
   fetchConsentManagerTheme,
+  fetchAllEnrichers,
   fetchAllIdentifiers,
   fetchAllMessages,
   fetchAllPromptGroups,
@@ -37,9 +38,13 @@ import {
   fetchAllTeams,
   fetchAllVendors,
   fetchApiKeys,
+  formatAttributeValues,
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
+  convertToDataSubjectAllowlist,
+  fetchAllDataSubjects,
+  fetchEnrichedDataSilos,
   type AssessmentRule,
 } from '@transcend-io/sdk';
 import colors from 'colors';
@@ -87,10 +92,6 @@ import {
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
-import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
-import { formatAttributeValues } from './formatAttributeValues.js';
-import { fetchEnrichedDataSilos } from './syncDataSilos.js';
-import { fetchAllEnrichers } from './syncEnrichers.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
   TranscendPullResource.DataSilos,
@@ -187,11 +188,11 @@ export async function pullTranscendConfiguration(
     // Grab all data subjects in the organization
     resources.includes(TranscendPullResource.DataSilos) ||
     resources.includes(TranscendPullResource.DataSubjects)
-      ? fetchAllDataSubjects(client)
+      ? fetchAllDataSubjects(client, { logger })
       : [],
     // Grab API keys
     resources.includes(TranscendPullResource.ApiKeys)
-      ? fetchApiKeys({}, client, true, { logger })
+      ? fetchApiKeys(client, { fetchAll: true, logger })
       : [],
     // Fetch the data silos
     resources.includes(TranscendPullResource.DataSilos)
@@ -203,18 +204,27 @@ export async function pullTranscendConfiguration(
           includeGuessedCategories,
           skipDatapoints,
           skipSubDatapoints,
+          logger,
         })
       : [],
     // Fetch enrichers
-    resources.includes(TranscendPullResource.Enrichers) ? fetchAllEnrichers(client) : [],
+    resources.includes(TranscendPullResource.Enrichers)
+      ? fetchAllEnrichers(client, { logger })
+      : [],
     // Fetch data flows
     resources.includes(TranscendPullResource.DataFlows)
       ? [
           ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
-            ? await fetchAllDataFlows(client, ConsentTrackerStatus.Live, { logger })
+            ? await fetchAllDataFlows(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.Live },
+              })
             : []),
           ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
-            ? await fetchAllDataFlows(client, ConsentTrackerStatus.NeedsReview, { logger })
+            ? await fetchAllDataFlows(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.NeedsReview },
+              })
             : []),
         ]
       : [],
@@ -222,10 +232,16 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.Cookies)
       ? [
           ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
-            ? await fetchAllCookies(client, ConsentTrackerStatus.Live, { logger })
+            ? await fetchAllCookies(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.Live },
+              })
             : []),
           ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
-            ? await fetchAllCookies(client, ConsentTrackerStatus.NeedsReview, { logger })
+            ? await fetchAllCookies(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.NeedsReview },
+              })
             : []),
         ]
       : [],
@@ -332,7 +348,10 @@ export async function pullTranscendConfiguration(
 
   const consentManagerTheme =
     resources.includes(TranscendPullResource.ConsentManager) && consentManager
-      ? await fetchConsentManagerTheme(client, consentManager.id, { logger })
+      ? await fetchConsentManagerTheme(client, {
+          logger,
+          filterBy: { airgapBundleId: consentManager.id },
+        })
       : undefined;
 
   const result: TranscendInput = {};
