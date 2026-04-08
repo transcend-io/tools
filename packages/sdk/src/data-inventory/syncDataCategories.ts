@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataCategories, DataSubCategory } from './fetchAllDataCategories.js';
 import { UPDATE_DATA_SUB_CATEGORIES, CREATE_DATA_SUB_CATEGORY } from './gqls/dataCategory.js';
 
@@ -42,10 +42,10 @@ export async function createDataCategory(
   dataCategory: DataCategoryInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<DataSubCategory, 'id' | 'name' | 'category'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     name: dataCategory.name,
     category: dataCategory.category,
@@ -78,10 +78,10 @@ export async function updateDataCategories(
   dataCategoryIdPairs: [DataCategoryInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_DATA_SUB_CATEGORIES, {
     variables: {
       input: {
@@ -110,10 +110,10 @@ export async function syncDataCategories(
   inputs: DataCategoryInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" data categories...`);
 
   let encounteredError = false;

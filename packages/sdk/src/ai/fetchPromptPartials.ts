@@ -26,7 +26,7 @@ export async function fetchAllPromptPartials(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<PromptPartial[]> {
   const { logger } = options;

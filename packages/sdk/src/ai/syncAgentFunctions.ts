@@ -3,7 +3,7 @@ import { GraphQLClient } from 'graphql-request';
 import type { JSONSchema7 } from 'json-schema';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllAgentFunctions, AgentFunction } from './fetchAllAgentFunctions.js';
 import { UPDATE_AGENT_FUNCTIONS, CREATE_AGENT_FUNCTION } from './gqls/agentFunction.js';
 
@@ -29,10 +29,10 @@ export async function createAgentFunction(
   agentFunction: AgentFunctionInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<AgentFunction, 'id' | 'name'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     name: agentFunction.name,
     description: agentFunction.description,
@@ -66,10 +66,10 @@ export async function updateAgentFunctions(
   agentFunctionIdPairs: [AgentFunctionInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FUNCTIONS, {
     variables: {
       input: {
@@ -98,10 +98,10 @@ export async function syncAgentFunctions(
   inputs: AgentFunctionInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" agent functions...`);
 
   let encounteredError = false;

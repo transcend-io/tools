@@ -22,7 +22,7 @@ export async function deployConsentManager(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, DEPLOY_CONSENT_MANAGER, {
@@ -48,7 +48,7 @@ export async function updateConsentManagerToLatest(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_TO_LATEST, {

@@ -62,7 +62,7 @@ export async function fetchAllPreferenceTopics(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<PreferenceTopic[]> {
   const { logger } = options;

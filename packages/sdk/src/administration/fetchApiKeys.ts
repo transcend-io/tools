@@ -2,7 +2,7 @@ import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, difference } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { API_KEYS } from './gqls/apiKey.js';
 
 export interface ApiKey {
@@ -40,7 +40,7 @@ export async function fetchAllApiKeys(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy?: {
       /** Filter on titles */
@@ -48,7 +48,7 @@ export async function fetchAllApiKeys(
     };
   },
 ): Promise<ApiKey[]> {
-  const { logger, filterBy: { titles } = {} } = options;
+  const { logger = NOOP_LOGGER, filterBy: { titles } = {} } = options;
   const apiKeys: ApiKey[] = [];
   let offset = 0;
 
@@ -90,13 +90,13 @@ export async function fetchApiKeys(
     /** When true, fetch all API keys */
     fetchAll?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<{ [k in string]: ApiKey }> {
   const {
     apiKeyInputs: { 'api-keys': apiKeyDefs = [], 'data-silos': dataSilos = [] } = {},
     fetchAll = false,
-    logger,
+    logger = NOOP_LOGGER,
   } = options;
   logger.info(`Fetching ${fetchAll ? 'all' : apiKeyDefs.length} API keys...`);
   const titles = apiKeyDefs.map(({ title }) => title);

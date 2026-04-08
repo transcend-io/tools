@@ -105,7 +105,7 @@ export async function fetchAllActionItems(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter by */
     filterBy?: {
       /** Names of the action items to filter for */

@@ -29,7 +29,7 @@ export async function fetchAllLargeLanguageModels(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<LargeLanguageModel[]> {
   const { logger } = options;

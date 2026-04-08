@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllAgents, Agent } from './fetchAllAgents.js';
 import { UPDATE_AGENTS, CREATE_AGENT } from './gqls/agent.js';
 
@@ -40,10 +40,10 @@ export async function createAgent(
   agent: AgentInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Agent, 'id' | 'name' | 'agentId'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     name: agent.name,
     description: agent.description,
@@ -81,10 +81,10 @@ export async function updateAgents(
   agentIdPairs: [AgentInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENTS, {
     variables: {
       input: {
@@ -115,10 +115,10 @@ export async function syncAgents(
   inputs: AgentInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" agents...`);
 
   let encounteredError = false;

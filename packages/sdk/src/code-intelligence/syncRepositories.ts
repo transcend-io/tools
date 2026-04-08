@@ -2,7 +2,7 @@ import { mapSeries, map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllRepositories, Repository } from './fetchAllRepositories.js';
 import { UPDATE_REPOSITORIES, CREATE_REPOSITORY } from './gqls/repository.js';
 
@@ -45,10 +45,10 @@ export async function createRepository(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Repository> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const {
     createRepository: { repository },
   } = await makeGraphQLRequest<{
@@ -95,10 +95,10 @@ export async function updateRepositories(
   }[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Repository[]> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const {
     updateRepositories: { repositories },
   } = await makeGraphQLRequest<{
@@ -132,7 +132,7 @@ export async function syncRepositories(
   repositories: RepositoryInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Concurrency */
     concurrency?: number;
   },
@@ -142,7 +142,7 @@ export async function syncRepositories(
   /** If successful */
   success: boolean;
 }> {
-  const { logger, concurrency = 20 } = options;
+  const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
   const repos: Repository[] = [];
 

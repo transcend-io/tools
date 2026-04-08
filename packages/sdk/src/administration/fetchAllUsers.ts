@@ -26,7 +26,7 @@ export async function fetchAllUsers(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<User[]> {
   const { logger } = options;

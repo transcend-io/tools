@@ -83,7 +83,7 @@ export async function reportPromptRun(
   input: ReportPromptRunInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<string> {
   const { logger } = options;

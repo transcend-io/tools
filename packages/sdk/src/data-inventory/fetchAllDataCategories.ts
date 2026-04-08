@@ -51,7 +51,7 @@ export async function fetchAllDataCategories(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<DataSubCategory[]> {
   const { logger } = options;

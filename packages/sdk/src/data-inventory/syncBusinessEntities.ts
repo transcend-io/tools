@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllBusinessEntities, BusinessEntity } from './fetchAllBusinessEntities.js';
 import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/businessEntity.js';
 
@@ -47,10 +47,10 @@ export async function createBusinessEntity(
   businessEntity: BusinessEntityInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<BusinessEntity> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     title: businessEntity.title,
     description: businessEntity.description,
@@ -88,10 +88,10 @@ export async function updateBusinessEntities(
   businessEntityIdParis: [BusinessEntityInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const chunkedUpdates = chunk(businessEntityIdParis, 100);
   await mapSeries(chunkedUpdates, async (chunked) => {
     await makeGraphQLRequest(client, UPDATE_BUSINESS_ENTITIES, {
@@ -127,10 +127,10 @@ export async function syncBusinessEntities(
   inputs: BusinessEntityInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   // Fetch existing
   logger.info(`Syncing "${inputs.length}" business entities...`);
 

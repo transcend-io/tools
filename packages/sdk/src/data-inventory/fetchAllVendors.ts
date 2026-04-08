@@ -65,7 +65,7 @@ export async function fetchAllVendors(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Vendor[]> {
   const { logger } = options;

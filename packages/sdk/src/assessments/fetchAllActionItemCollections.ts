@@ -29,7 +29,7 @@ export async function fetchAllActionItemCollections(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter by */
     filterBy?: {
       /** Filter on location */

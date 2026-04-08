@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { uniq, keyBy, chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   ActionItemCollection,
   fetchAllActionItemCollections,
@@ -62,12 +62,13 @@ export interface ActionItemInput {
 export async function createActionItems(
   client: GraphQLClient,
   actionItems: ActionItemInput[],
-  actionItemCollectionByTitle: {
-    [k in string]: ActionItemCollection;
-  },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
+    /** Action item collections indexed by title */
+    actionItemCollectionByTitle: {
+      [k in string]: ActionItemCollection;
+    };
     // TODO: https://transcend.height.app/T-38961 - insert attributes
     /** Attribute keys indexed by name */
     attributeKeysByName?: {
@@ -75,7 +76,7 @@ export async function createActionItems(
     };
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER, actionItemCollectionByTitle } = options;
   // TODO: https://transcend.height.app/T-38961 - insert attributes
   // const getAttribute = (key: string): string => {
   //   const existing = attributeKeysByName[key];
@@ -128,18 +129,20 @@ export async function createActionItems(
  */
 export async function updateActionItem(
   client: GraphQLClient,
-  input: ActionItemInput,
-  actionItemId: string,
+  input: ActionItemInput & {
+    /** ID of action item to update */
+    id: string;
+  },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Attribute keys indexed by name */
     attributeKeysByName?: {
       [k in string]: ActionItemAttributeKey;
     };
   },
 ): Promise<void> {
-  const { logger, attributeKeysByName = {} } = options;
+  const { logger = NOOP_LOGGER, attributeKeysByName = {} } = options;
   const getAttribute = (key: string): string => {
     const existing = attributeKeysByName[key];
     if (!existing) {
@@ -150,7 +153,7 @@ export async function updateActionItem(
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEMS, {
     variables: {
       input: {
-        ids: [actionItemId],
+        ids: [input.id],
         title: input.title,
         priorityOverride: input.priority,
         dueDate: input.dueDate,
@@ -216,12 +219,12 @@ export async function syncActionItems(
   inputs: ActionItemInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Pre-fetched attribute keys (pass result of fetchAllAttributes) */
     attributeKeys?: ActionItemAttributeKey[];
   },
 ): Promise<boolean> {
-  const { logger, attributeKeys = [] } = options;
+  const { logger = NOOP_LOGGER, attributeKeys = [] } = options;
   let encounteredError = false;
   logger.info(`Syncing "${inputs.length}" actionItems...`);
 
@@ -264,8 +267,9 @@ export async function syncActionItems(
   if (newActionItems.length > 0) {
     try {
       logger.info(`Creating "${newActionItems.length}" actionItems...`);
-      await createActionItems(client, newActionItems, actionItemCollectionByTitle, {
+      await createActionItems(client, newActionItems, {
         logger,
+        actionItemCollectionByTitle,
         attributeKeysByName,
       });
       logger.info(`Successfully created "${newActionItems.length}" actionItems!`);
@@ -284,7 +288,11 @@ export async function syncActionItems(
     .filter((x): x is [ActionItemInput, string] => !!x[1]);
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
-      await updateActionItem(client, input, actionItemId, { logger, attributeKeysByName });
+      await updateActionItem(
+        client,
+        { ...input, id: actionItemId },
+        { logger, attributeKeysByName },
+      );
       logger.info(`Successfully synced action item "${input.title}"!`);
     } catch (err) {
       encounteredError = true;

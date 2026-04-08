@@ -28,14 +28,19 @@ const CHUNK_SIZE = 1000;
  */
 export async function uploadSiloDiscoveryResults(
   client: GraphQLClient,
-  pluginId: string,
-  results: SiloDiscoveryRawResult[],
+  input: {
+    /** Plugin ID to associate with the results */
+    pluginId: string;
+    /** The discovery results to upload */
+    results: SiloDiscoveryRawResult[];
+  },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   const { logger } = options;
+  const { pluginId, results } = input;
   const chunks = chunk(results, CHUNK_SIZE);
 
   await mapSeries(chunks, async (rawResults) => {

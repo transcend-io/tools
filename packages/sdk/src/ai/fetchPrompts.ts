@@ -35,7 +35,7 @@ export async function fetchAllPrompts(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy?: {
       /** Filter by text */
@@ -163,7 +163,7 @@ export async function fetchPromptsWithVariables(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy?: {
       /** Filter by prompt titles */

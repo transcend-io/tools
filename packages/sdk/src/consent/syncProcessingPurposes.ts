@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   fetchAllProcessingPurposes,
   ProcessingPurposeSubCategory,
@@ -46,7 +46,7 @@ export async function createProcessingPurpose(
   processingPurpose: ProcessingPurposeInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<ProcessingPurposeSubCategory, 'id' | 'name' | 'purpose'>> {
   const input = {
@@ -81,7 +81,7 @@ export async function updateProcessingPurposes(
   processingPurposeIdPairs: [ProcessingPurposeInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   await makeGraphQLRequest(client, UPDATE_PROCESSING_PURPOSE_SUB_CATEGORIES, {
@@ -112,10 +112,10 @@ export async function syncProcessingPurposes(
   inputs: ProcessingPurposeInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
 
   logger.info(`Syncing "${inputs.length}" processing purposes...`);
 

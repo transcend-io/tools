@@ -49,7 +49,7 @@ export async function fetchAllProcessingPurposes(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<ProcessingPurposeSubCategory[]> {
   const processingPurposeSubCategories: ProcessingPurposeSubCategory[] = [];

@@ -50,7 +50,7 @@ export async function addMessagesToPromptRun(
   { promptRunId, promptRunMessages = [], ...rest }: AddMessagesToPromptRunInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<string> {
   const { logger } = options;

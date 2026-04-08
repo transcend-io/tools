@@ -120,7 +120,7 @@ export async function generateCrossAccountApiKeys({
             `Deleting existing API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,
           ),
         );
-        await deleteApiKey(client, apiKeyWithTitle.id, { logger });
+        await deleteApiKey(client, { id: apiKeyWithTitle.id }, { logger });
         logger.info(
           colors.green(
             `Successfully deleted API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,

@@ -47,7 +47,7 @@ export async function fetchAllSoftwareDevelopmentKits(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<SoftwareDevelopmentKit[]> {
   const { logger } = options;

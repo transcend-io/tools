@@ -29,7 +29,7 @@ export async function setResourceAttributes(
   input: SetResourceAttributesInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   const { logger } = options;

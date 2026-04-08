@@ -1,5 +1,6 @@
 ---
 '@transcend-io/sdk': major
+'@transcend-io/cli': minor
 ---
 
 Standardize SDK function signatures to follow `(client, options)` convention

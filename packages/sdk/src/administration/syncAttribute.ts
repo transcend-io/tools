@@ -3,7 +3,7 @@ import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, difference, groupBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { Attribute } from './fetchAllAttributes.js';
 import {
   CREATE_ATTRIBUTE,
@@ -48,14 +48,14 @@ export async function syncAttribute(
   {
     existingAttribute,
     deleteExtraAttributeValues,
-    logger,
+    logger = NOOP_LOGGER,
   }: {
     /** The existing attribute configuration if it exists */
     existingAttribute?: Attribute;
     /** When true, delete extra attributes not specified in the list of values */
     deleteExtraAttributeValues?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   // attribute key input

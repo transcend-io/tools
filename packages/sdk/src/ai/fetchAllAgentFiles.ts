@@ -44,7 +44,7 @@ export async function fetchAllAgentFiles(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter by */
     filterBy?: AgentFileFilterBy;
   },

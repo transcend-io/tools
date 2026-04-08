@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/consentManager.js';
@@ -58,10 +58,10 @@ export async function updateDataFlows(
     /** Classify service if missing */
     classifyService?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { classifyService = false, logger } = options;
+  const { classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
@@ -115,10 +115,10 @@ export async function createDataFlows(
     /** Classify service if missing */
     classifyService?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { classifyService = false, logger } = options;
+  const { classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
@@ -172,10 +172,10 @@ export async function syncDataFlows(
     /** When true, auto classify the service based on the data flow value */
     classifyService?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { classifyService = false, logger } = options;
+  const { classifyService = false, logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${dataFlows.length}" data flows...`);
 

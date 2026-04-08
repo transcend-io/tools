@@ -37,7 +37,7 @@ export async function fetchRequestDataSilosCount(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy?: RequestDataSiloFilters;
   },
@@ -83,7 +83,7 @@ export async function fetchRequestDataSilos(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy?: RequestDataSiloFilters;
     /** Limit on number of requests */
@@ -147,7 +147,7 @@ export async function fetchRequestDataSilo(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy: {
       /** ID of request to filter on */

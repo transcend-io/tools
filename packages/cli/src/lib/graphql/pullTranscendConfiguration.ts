@@ -344,7 +344,10 @@ export async function pullTranscendConfiguration(
 
   const consentManagerTheme =
     resources.includes(TranscendPullResource.ConsentManager) && consentManager
-      ? await fetchConsentManagerTheme(client, consentManager.id, { logger })
+      ? await fetchConsentManagerTheme(client, {
+          logger,
+          filterBy: { airgapBundleId: consentManager.id },
+        })
       : undefined;
 
   const result: TranscendInput = {};

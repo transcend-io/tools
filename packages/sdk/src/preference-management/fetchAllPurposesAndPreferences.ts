@@ -20,7 +20,7 @@ export async function fetchAllPurposesAndPreferences(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<PurposeWithPreferences[]> {
   const [purposes, topics] = await Promise.all([

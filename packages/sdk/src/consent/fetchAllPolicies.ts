@@ -37,7 +37,7 @@ export async function fetchAllPolicies(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Policy[]> {
   const { logger } = options;

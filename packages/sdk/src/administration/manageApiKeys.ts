@@ -32,7 +32,7 @@ export async function createApiKey(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<CreatedApiKey> {
   const { logger } = options;
@@ -58,12 +58,15 @@ export async function createApiKey(
  */
 export async function deleteApiKey(
   client: GraphQLClient,
-  id: string,
+  input: {
+    /** API key ID to delete */
+    id: string;
+  },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   const { logger } = options;
-  await makeGraphQLRequest(client, DELETE_API_KEY, { variables: { id }, logger });
+  await makeGraphQLRequest(client, DELETE_API_KEY, { variables: { id: input.id }, logger });
 }

@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   ActionItemCollection,
   fetchAllActionItemCollections,
@@ -37,10 +37,10 @@ export async function createActionItemCollection(
   actionItemCollection: ActionItemCollectionInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<ActionItemCollection, 'id' | 'title'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     title: actionItemCollection.title,
     description: actionItemCollection.description || '',
@@ -71,18 +71,20 @@ export async function createActionItemCollection(
  */
 export async function updateActionItemCollection(
   client: GraphQLClient,
-  input: ActionItemCollectionInput,
-  actionItemCollectionId: string,
+  input: ActionItemCollectionInput & {
+    /** ID of action item collection to update */
+    id: string;
+  },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEM_COLLECTION, {
     variables: {
       input: {
-        id: actionItemCollectionId,
+        id: input.id,
         title: input.title,
         description: input.description,
         hidden: input.hidden,
@@ -106,10 +108,10 @@ export async function syncActionItemCollections(
   inputs: ActionItemCollectionInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${inputs.length}" action item collections...`);
 
@@ -139,7 +141,7 @@ export async function syncActionItemCollections(
     .filter((x): x is [ActionItemCollectionInput, string] => !!x[1]);
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
-      await updateActionItemCollection(client, input, actionItemId, { logger });
+      await updateActionItemCollection(client, { ...input, id: actionItemId }, { logger });
       logger.info(`Successfully synced action item collection "${input.title}"!`);
     } catch (err) {
       encounteredError = true;

@@ -26,7 +26,7 @@ export async function fetchAllRequestAttributeKeys(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<AttributeKey[]> {
   const { logger } = options;

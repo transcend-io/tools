@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllTeams, Team } from './fetchAllTeams.js';
 import { UPDATE_TEAM, CREATE_TEAM } from './gqls/team.js';
 
@@ -37,10 +37,10 @@ export async function createTeam(
   team: TeamInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Team, 'id' | 'name'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     name: team.name,
     description: team.description,
@@ -75,14 +75,17 @@ export async function createTeam(
  */
 export async function updateTeam(
   client: GraphQLClient,
-  input: TeamInput,
-  teamId: string,
+  input: TeamInput & {
+    /** ID of team to update */
+    id: string;
+  },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Team, 'id' | 'name'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
+  const teamId = input.id;
   const { updateTeam } = await makeGraphQLRequest<{
     /** Update team mutation */
     updateTeam: {
@@ -120,10 +123,10 @@ export async function syncTeams(
   inputs: TeamInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   // Fetch existing
   logger.info(`Syncing "${inputs.length}" teams...`);
 
@@ -154,7 +157,11 @@ export async function syncTeams(
   // Update all teams
   await mapSeries(updatedTeams, async (input) => {
     try {
-      const newTeam = await updateTeam(client, input, teamsByName[input.name]!.id, { logger });
+      const newTeam = await updateTeam(
+        client,
+        { ...input, id: teamsByName[input.name]!.id },
+        { logger },
+      );
       teamsByName[newTeam.name] = newTeam;
       logger.info(`Successfully updated team "${input.name}"!`);
     } catch (err) {

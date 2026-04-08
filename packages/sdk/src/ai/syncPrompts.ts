@@ -2,7 +2,7 @@ import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
 import { UPDATE_PROMPTS, CREATE_PROMPT } from './gqls/prompt.js';
 
@@ -39,10 +39,10 @@ export async function createPrompt(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<string> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const {
     createPrompt: { prompt },
   } = await makeGraphQLRequest<{
@@ -75,10 +75,10 @@ export async function updatePrompts(
   input: [PromptInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPTS, {
     variables: {
       input: {
@@ -106,12 +106,12 @@ export async function syncPrompts(
   prompts: PromptInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Concurrency */
     concurrency?: number;
   },
 ): Promise<boolean> {
-  const { logger, concurrency = 20 } = options;
+  const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
   logger.info(`Syncing "${prompts.length}" prompts...`);
 

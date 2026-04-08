@@ -26,7 +26,7 @@ export async function fetchAllCatalogs(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Catalog[]> {
   const { logger } = options;
@@ -72,7 +72,7 @@ export async function fetchAndIndexCatalogs(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<
   {

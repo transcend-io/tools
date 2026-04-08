@@ -61,7 +61,7 @@ export async function fetchAllCookies(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy?: {
       /** The status to fetch */

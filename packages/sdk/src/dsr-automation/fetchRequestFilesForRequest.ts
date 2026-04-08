@@ -44,7 +44,7 @@ export async function fetchRequestFilesForRequest(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** How many request files to fetch per API call */
     pageSize?: number;
     /** Filter options */

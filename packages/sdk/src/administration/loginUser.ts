@@ -40,7 +40,7 @@ export async function loginUser(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<{
   /** Cookie to be used to make subsequent requests */
@@ -116,7 +116,7 @@ export async function assumeRole(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   const { email, roleId } = params;

@@ -14,7 +14,7 @@ import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPurposes } from '../preference-management/fetchAllPurposes.js';
 import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
 import { fetchPrivacyCenterId, fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
@@ -124,10 +124,10 @@ export async function syncConsentManagerExperiences(
   experiences: ConsentManageExperienceInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
 
   const existingExperiences = await fetchConsentManagerExperiences(client, {
     logger,
@@ -227,10 +227,10 @@ export async function syncConsentManager(
   consentManager: ConsentManagerInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let airgapBundleId: string;
 
   try {

@@ -15,7 +15,7 @@ export async function fetchPrivacyCenterUrl(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<string> {
   const { organization } = await makeGraphQLRequest<{
@@ -39,13 +39,16 @@ export async function fetchPrivacyCenterId(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-    /** URL to look up */
-    url?: string;
+    logger?: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** URL to look up */
+      url?: string;
+    };
   },
 ): Promise<string> {
-  const { logger } = options;
-  let urlToUse = options.url;
+  const { logger, filterBy: { url } = {} } = options;
+  let urlToUse = url;
   if (!urlToUse) {
     urlToUse = await fetchPrivacyCenterUrl(client, { logger });
   }

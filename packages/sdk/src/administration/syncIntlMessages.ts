@@ -2,7 +2,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
 
 export interface IntlMessageInput {
@@ -31,10 +31,10 @@ export async function updateIntlMessages(
   messageInputs: IntlMessageInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   // Batch update messages
   await mapSeries(chunk(messageInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
@@ -68,10 +68,10 @@ export async function syncIntlMessages(
   messages: IntlMessageInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${messages.length}" messages...`);
 

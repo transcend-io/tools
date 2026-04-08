@@ -3,7 +3,7 @@ import got, { type Got } from 'got';
 
 import { buildTranscendGraphQLClient } from './buildTranscendGraphQLClient.js';
 import { ORGANIZATION } from './gqls/organization.js';
-import { makeGraphQLRequest } from './makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from './makeGraphQLRequest.js';
 
 /**
  * Instantiate an instance of got that is capable of making requests
@@ -19,14 +19,14 @@ export async function createSombraGotInstance(
   transcendApiKey: string,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Sombra API key */
     sombraApiKey?: string;
     /** Override Sombra URL (replaces process.env.SOMBRA_URL lookup) */
     sombraUrl?: string;
   },
 ): Promise<Got> {
-  const { logger, sombraApiKey, sombraUrl } = options;
+  const { logger = NOOP_LOGGER, sombraApiKey, sombraUrl } = options;
 
   const client = buildTranscendGraphQLClient(transcendUrl, transcendApiKey);
   const { organization } = await makeGraphQLRequest<{

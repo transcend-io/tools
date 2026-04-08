@@ -39,7 +39,7 @@ export async function fetchAllTemplates(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy?: {
       /** Filter by title */
@@ -85,7 +85,7 @@ export async function syncTemplate(
   template: SyncTemplateInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
   const { logger } = options;

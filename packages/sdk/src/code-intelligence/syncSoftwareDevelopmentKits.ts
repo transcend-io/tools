@@ -3,7 +3,7 @@ import { mapSeries, map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   fetchAllSoftwareDevelopmentKits,
   SoftwareDevelopmentKit,
@@ -68,10 +68,10 @@ export async function createSoftwareDevelopmentKit(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<SoftwareDevelopmentKit> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const {
     createSoftwareDevelopmentKit: { softwareDevelopmentKit },
   } = await makeGraphQLRequest<{
@@ -126,10 +126,10 @@ export async function updateSoftwareDevelopmentKits(
   }[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<SoftwareDevelopmentKit[]> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const {
     updateSoftwareDevelopmentKits: { softwareDevelopmentKits },
   } = await makeGraphQLRequest<{
@@ -163,7 +163,7 @@ export async function syncSoftwareDevelopmentKits(
   softwareDevelopmentKits: SoftwareDevelopmentKitInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Concurrency */
     concurrency?: number;
   },
@@ -173,7 +173,7 @@ export async function syncSoftwareDevelopmentKits(
   /** If successful */
   success: boolean;
 }> {
-  const { logger, concurrency = 20 } = options;
+  const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
   const sdks: SoftwareDevelopmentKit[] = [];
   logger.info('Syncing software development kits...');

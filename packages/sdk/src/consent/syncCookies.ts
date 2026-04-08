@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { UPDATE_OR_CREATE_COOKIES } from './gqls/consentManager.js';
 
@@ -47,10 +47,10 @@ export async function updateOrCreateCookies(
   cookieInputs: CookieInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   await mapSeries(chunk(cookieInputs, MAX_PAGE_SIZE), async (page) => {
@@ -88,10 +88,10 @@ export async function syncCookies(
   cookies: CookieInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${cookies.length}" cookies...`);
 

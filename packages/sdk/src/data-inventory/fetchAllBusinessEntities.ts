@@ -46,7 +46,7 @@ export async function fetchAllBusinessEntities(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<BusinessEntity[]> {
   const { logger } = options;

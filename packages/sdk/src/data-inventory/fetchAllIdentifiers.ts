@@ -56,7 +56,7 @@ export async function fetchAllIdentifiers(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Identifier[]> {
   const { logger } = options;

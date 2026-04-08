@@ -42,7 +42,7 @@ export async function fetchAllActions(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Action[]> {
   const { logger } = options;

@@ -67,7 +67,7 @@ export async function fetchAllAgents(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter by */
     filterBy?: {
       /** Names of the agents to filter for */

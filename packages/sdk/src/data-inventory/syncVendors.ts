@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllVendors, Vendor } from './fetchAllVendors.js';
 import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/vendor.js';
 
@@ -53,10 +53,10 @@ export async function createVendor(
   vendor: VendorInput,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Vendor, 'id' | 'title'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     title: vendor.title,
     description: vendor.description,
@@ -94,10 +94,10 @@ export async function updateVendors(
   vendorIdParis: [VendorInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_VENDORS, {
     variables: {
       input: {
@@ -133,10 +133,10 @@ export async function syncVendors(
   inputs: VendorInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   // Fetch existing
   logger.info(`Syncing "${inputs.length}" vendors...`);
 
