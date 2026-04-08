@@ -1,6 +1,5 @@
-import { apply, ObjByString } from '@transcend-io/type-utils';
-import inquirer from 'inquirer';
-import autoCompletePrompt from 'inquirer-autocomplete-prompt';
+import { search } from '@inquirer/prompts';
+import { apply } from '@transcend-io/type-utils';
 
 import { fuzzySearch } from './fuzzyMatchColumns.js';
 
@@ -17,24 +16,24 @@ export async function mapEnumValues<TValue extends string>(
   expectedOutputs: TValue[],
   cache: { [k in string]: TValue },
 ): Promise<{ [k in string]: TValue }> {
-  inquirer.registerPrompt('autocomplete', autoCompletePrompt);
-
   const inputs = csvInputs.map((item) => item || '<blank>').filter((value) => !cache[value]);
   if (inputs.length === 0) {
     return cache;
   }
-  const result = await inquirer.prompt<{ [k in string]: TValue }>(
-    inputs.map((value) => ({
-      name: value,
+
+  const result: { [k in string]: TValue } = {} as { [k in string]: TValue };
+  for (const value of inputs) {
+    result[value] = await search<TValue>({
       message: `Map value of: ${value}`,
-      type: 'autocomplete',
-      default: expectedOutputs.find((x) => fuzzySearch(value, x)),
-      source: (answersSoFar: ObjByString, input: string) =>
-        !input
+      source: (term) => {
+        const items = !term
           ? expectedOutputs
-          : expectedOutputs.filter((x) => typeof x === 'string' && fuzzySearch(input, x)),
-    })),
-  );
+          : expectedOutputs.filter((x) => typeof x === 'string' && fuzzySearch(term, x));
+        return items.map((v) => ({ value: v, name: v }));
+      },
+    });
+  }
+
   return {
     ...cache,
     ...apply(result, (r) =>

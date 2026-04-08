@@ -1,6 +1,6 @@
+import { select } from '@inquirer/prompts';
 import type { PersistedState } from '@transcend-io/persisted-state';
 import { getValues, getEntries } from '@transcend-io/type-utils';
-import inquirer from 'inquirer';
 import { startCase } from 'lodash-es';
 
 import { ColumnName, CachedFileState, IS_REQUIRED, CAN_APPLY_IN_BULK } from './constants.js';
@@ -30,30 +30,21 @@ export async function mapCsvColumnsToApi(
   );
 
   // Skip mapping when everything is mapped
-  const columnNameMap =
-    columnQuestions.length === 0
-      ? {}
-      : // prompt questions to map columns
-        await inquirer.prompt<{
-          [k in ColumnName]?: string;
-        }>(
-          columnQuestions.map((name) => {
-            const field = startCase(name.replace('ColumnName', ''));
-            const matches = fuzzyMatchColumns(
-              columnNames,
-              field,
-              IS_REQUIRED[name],
-              !!CAN_APPLY_IN_BULK[name],
-            );
-            return {
-              name,
-              message: `Choose the column that will be used to map in the field: ${field}`,
-              type: 'list',
-              default: matches[0],
-              choices: matches,
-            };
-          }),
-        );
+  const columnNameMap: ColumnNameMap = {};
+  for (const name of columnQuestions) {
+    const field = startCase(name.replace('ColumnName', ''));
+    const matches = fuzzyMatchColumns(
+      columnNames,
+      field,
+      IS_REQUIRED[name],
+      !!CAN_APPLY_IN_BULK[name],
+    );
+    columnNameMap[name] = await select<string>({
+      message: `Choose the column that will be used to map in the field: ${field}`,
+      default: matches.find((m): m is string => typeof m === 'string'),
+      choices: matches,
+    });
+  }
 
   await Promise.all(getEntries(columnNameMap).map(([k, v]) => state.setValue(v, 'columnNames', k)));
   return columnNameMap;

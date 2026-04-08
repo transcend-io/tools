@@ -1,10 +1,9 @@
+import { confirm, select } from '@inquirer/prompts';
 import { FileMetadataState } from '@transcend-io/sdk';
 import colors from 'colors';
-import inquirer from 'inquirer';
 import { uniq, groupBy, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
-import { inquirerConfirmBoolean } from '../helpers/index.js';
 
 /* eslint-disable no-param-reassign */
 
@@ -38,22 +37,14 @@ export async function parsePreferenceIdentifiersFromCsv(
 
   // Determine the identifier column to work off of
   if (!currentState.identifierColumn) {
-    const { identifierName } = await inquirer.prompt<{
-      /** Identifier name */
-      identifierName: string;
-    }>([
-      {
-        name: 'identifierName',
-        message:
-          'Choose the column that will be used as the identifier to upload consent preferences by',
-        type: 'list',
-        default:
-          remainingColumnsForIdentifier.find((col) => col.toLowerCase().includes('email')) ||
-          remainingColumnsForIdentifier[0],
-        choices: remainingColumnsForIdentifier,
-      },
-    ]);
-    currentState.identifierColumn = identifierName;
+    currentState.identifierColumn = await select({
+      message:
+        'Choose the column that will be used as the identifier to upload consent preferences by',
+      default:
+        remainingColumnsForIdentifier.find((col) => col.toLowerCase().includes('email')) ||
+        remainingColumnsForIdentifier[0],
+      choices: remainingColumnsForIdentifier,
+    });
   }
   logger.info(colors.magenta(`Using identifier column "${currentState.identifierColumn}"`));
 
@@ -69,7 +60,7 @@ export async function parsePreferenceIdentifiersFromCsv(
     logger.warn(colors.yellow(msg));
 
     // Ask user if they would like to skip rows missing an identifier
-    const skip = await inquirerConfirmBoolean({
+    const skip = await confirm({
       message: 'Would you like to skip rows missing an identifier?',
     });
     if (!skip) {
@@ -103,7 +94,7 @@ export async function parsePreferenceIdentifiersFromCsv(
 
     // Ask user if they would like to take the most recent update
     // for each duplicate identifier
-    const skip = await inquirerConfirmBoolean({
+    const skip = await confirm({
       message: 'Would you like to automatically take the latest update?',
     });
     if (!skip) {

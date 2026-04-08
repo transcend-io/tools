@@ -1,5 +1,5 @@
+import { Separator } from '@inquirer/prompts';
 import fuzzysearch from 'fuzzysearch';
-import inquirer from 'inquirer';
 
 import { NONE, BULK_APPLY } from './constants.js';
 
@@ -32,13 +32,13 @@ export function fuzzyMatchColumns(
   fuzzyMapName: string,
   isRequired: boolean,
   canApplyAll?: boolean,
-): (string | InstanceType<typeof inquirer.Separator>)[] {
+): (string | Separator)[] {
   const matchingColumnNames = allColumnNames.filter((x) =>
     fuzzySearch(fuzzyMapName.toLowerCase(), x.toLowerCase()),
   );
   return [
     ...matchingColumnNames,
-    new inquirer.Separator(),
+    new Separator(),
     ...(isRequired ? [] : [NONE]),
     ...(canApplyAll ? [BULK_APPLY] : []),
     ...allColumnNames.filter((x) => !matchingColumnNames.includes(x)),

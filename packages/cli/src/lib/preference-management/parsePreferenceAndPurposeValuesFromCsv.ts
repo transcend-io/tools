@@ -1,8 +1,8 @@
+import { select, confirm } from '@inquirer/prompts';
 import { PreferenceTopicType } from '@transcend-io/privacy-types';
 import { FileMetadataState, type PreferenceTopic } from '@transcend-io/sdk';
 import { mapSeries, splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
-import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
@@ -66,18 +66,11 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
         colors.magenta(`Column "${col}" is associated with purpose "${purposeMapping.purpose}"`),
       );
     } else {
-      const { purposeName } = await inquirer.prompt<{
-        /** purpose name */
-        purposeName: string;
-      }>([
-        {
-          name: 'purposeName',
-          message: `Choose the purpose that column ${col} is associated with`,
-          type: 'list',
-          default: purposeNames.find((x) => x.startsWith(purposeSlugs[0])),
-          choices: purposeNames,
-        },
-      ]);
+      const purposeName = await select({
+        message: `Choose the purpose that column ${col} is associated with`,
+        default: purposeNames.find((x) => x.startsWith(purposeSlugs[0])),
+        choices: purposeNames,
+      });
       const [purposeSlug, preferenceSlug] = purposeName.split('->');
       purposeMapping = {
         purpose: purposeSlug,
@@ -98,18 +91,10 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
       }
       // if preference is null, this column is just for the purpose
       if (purposeMapping.preference === null) {
-        const { purposeValue } = await inquirer.prompt<{
-          /** purpose value */
-          purposeValue: boolean;
-        }>([
-          {
-            name: 'purposeValue',
-            message: `Choose the purpose value for value "${value}" associated with purpose "${purposeMapping.purpose}"`,
-            type: 'confirm',
-            default: value !== 'false',
-          },
-        ]);
-        purposeMapping.valueMapping[value] = purposeValue;
+        purposeMapping.valueMapping[value] = await confirm({
+          message: `Choose the purpose value for value "${value}" associated with purpose "${purposeMapping.purpose}"`,
+          default: value !== 'false',
+        });
       }
 
       // if preference is not null, this column is for a specific preference
@@ -122,38 +107,21 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
         const preferenceOptions = preferenceTopic.preferenceOptionValues.map(({ slug }) => slug);
 
         if (preferenceTopic.type === PreferenceTopicType.Boolean) {
-          const { preferenceValue } = await inquirer.prompt<{
-            /** purpose value */
-            preferenceValue: boolean;
-          }>([
-            {
-              name: 'preferenceValue',
-              message:
-                // eslint-disable-next-line max-len
-                `Choose the preference value for "${preferenceTopic.slug}" value "${value}" associated with purpose "${purposeMapping.purpose}"`,
-              type: 'confirm',
-              default: value !== 'false',
-            },
-          ]);
-          purposeMapping.valueMapping[value] = preferenceValue;
+          purposeMapping.valueMapping[value] = await confirm({
+            // eslint-disable-next-line max-len
+            message: `Choose the preference value for "${preferenceTopic.slug}" value "${value}" associated with purpose "${purposeMapping.purpose}"`,
+            default: value !== 'false',
+          });
           return;
         }
 
         if (preferenceTopic.type === PreferenceTopicType.Select) {
-          const { preferenceValue } = await inquirer.prompt<{
-            /** purpose value */
-            preferenceValue: boolean;
-          }>([
-            {
-              name: 'preferenceValue',
-              // eslint-disable-next-line max-len
-              message: `Choose the preference value for "${preferenceTopic.slug}" value "${value}" associated with purpose "${purposeMapping.purpose}"`,
-              type: 'list',
-              choices: preferenceOptions,
-              default: preferenceOptions.find((x) => x === value),
-            },
-          ]);
-          purposeMapping.valueMapping[value] = preferenceValue;
+          purposeMapping.valueMapping[value] = await select({
+            // eslint-disable-next-line max-len
+            message: `Choose the preference value for "${preferenceTopic.slug}" value "${value}" associated with purpose "${purposeMapping.purpose}"`,
+            choices: preferenceOptions,
+            default: preferenceOptions.find((x) => x === value),
+          });
           return;
         }
 
@@ -165,20 +133,12 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
             if (purposeMapping.valueMapping[parsedValue] !== undefined) {
               return;
             }
-            const { preferenceValue } = await inquirer.prompt<{
-              /** purpose value */
-              preferenceValue: boolean;
-            }>([
-              {
-                name: 'preferenceValue',
-                // eslint-disable-next-line max-len
-                message: `Choose the preference value for "${preferenceTopic.slug}" value "${parsedValue}" associated with purpose "${purposeMapping.purpose}"`,
-                type: 'list',
-                choices: preferenceOptions,
-                default: preferenceOptions.find((x) => x === parsedValue),
-              },
-            ]);
-            purposeMapping.valueMapping[parsedValue] = preferenceValue;
+            purposeMapping.valueMapping[parsedValue] = await select({
+              // eslint-disable-next-line max-len
+              message: `Choose the preference value for "${preferenceTopic.slug}" value "${parsedValue}" associated with purpose "${purposeMapping.purpose}"`,
+              choices: preferenceOptions,
+              default: preferenceOptions.find((x) => x === parsedValue),
+            });
           });
           return;
         }

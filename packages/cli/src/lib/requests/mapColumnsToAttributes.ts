@@ -1,7 +1,7 @@
+import { select } from '@inquirer/prompts';
 import type { PersistedState } from '@transcend-io/persisted-state';
 import type { AttributeKey } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
-import inquirer from 'inquirer';
 
 import { CachedFileState } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
@@ -36,24 +36,16 @@ export async function mapColumnsToAttributes(
   );
 
   // Skip mapping when everything is mapped
-  const attributeNameMap =
-    columnQuestions.length === 0
-      ? {}
-      : // prompt questions to map columns
-        await inquirer.prompt<{
-          [k in string]: string;
-        }>(
-          columnQuestions.map(({ name }) => {
-            const matches = fuzzyMatchColumns(columnNames, name, false);
-            return {
-              name,
-              message: `Choose the column that will be used to map in the attribute: ${name}`,
-              type: 'list',
-              default: matches[0],
-              choices: matches,
-            };
-          }),
-        );
+  const attributeNameMap: Record<string, string> = {};
+  for (const { name } of columnQuestions) {
+    const matches = fuzzyMatchColumns(columnNames, name, false);
+    attributeNameMap[name] = await select<string>({
+      message: `Choose the column that will be used to map in the attribute: ${name}`,
+      default: matches.find((m): m is string => typeof m === 'string'),
+      choices: matches,
+    });
+  }
+
   await Promise.all(
     Object.entries(attributeNameMap).map(([k, v]) => state.setValue(v, 'attributeNames', k)),
   );
