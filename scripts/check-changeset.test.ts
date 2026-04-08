@@ -13,6 +13,7 @@ type PackageDefinition = {
   directory: string;
   name: string;
   private?: boolean;
+  version?: string;
 };
 
 type RepositoryDefinition = {
@@ -37,6 +38,24 @@ afterEach(() => {
 });
 
 describe('check-changeset', () => {
+  it('ignores packages at version 0.0.0 until the first real release', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'alpha-pkg', name: '@transcend-io/alpha-pkg', version: '0.0.0' }],
+    });
+
+    writeRepositoryFile(
+      repository.path,
+      'packages/alpha-pkg/src/index.ts',
+      'export const value = 2;\n',
+    );
+    commitAll(repository.path, 'change placeholder package without changeset');
+
+    const result = runCheckChangeset(repository.path, repository.baseSha);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+
   it('passes when a nested workspace package (e.g. packages/mcp/...) is covered', () => {
     const repository = createRepository({
       packages: [{ directory: 'mcp/mcp-server', name: '@transcend-io/mcp-server' }],
@@ -238,7 +257,7 @@ function createRepository({ packages }: RepositoryDefinition): Repository {
         {
           name: packageDefinition.name,
           private: packageDefinition.private === true || undefined,
-          version: '1.0.0',
+          version: packageDefinition.version ?? '1.0.0',
         },
         null,
         2,
