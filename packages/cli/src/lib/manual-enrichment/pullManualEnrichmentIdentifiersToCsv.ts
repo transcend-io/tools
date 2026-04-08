@@ -84,11 +84,10 @@ export async function pullManualEnrichmentIdentifiersToCsv({
     allRequests,
     async (request) => {
       // Fetch enrichers
-      const requestEnrichers = await fetchAllRequestEnrichers(
-        client,
-        { requestId: request.id },
-        { logger },
-      );
+      const requestEnrichers = await fetchAllRequestEnrichers(client, {
+        filterBy: { requestId: request.id },
+        logger,
+      });
 
       // Check if manual enrichment exists for that request
       const hasManualEnrichment = requestEnrichers.filter(

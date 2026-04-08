@@ -8,7 +8,7 @@ import {
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import type { Identifier } from '../data-inventory/fetchAllIdentifiers.js';
 import { ENRICHERS, CREATE_ENRICHER, UPDATE_ENRICHER } from './gqls/enricher.js';
 
@@ -111,13 +111,17 @@ const PAGE_SIZE = 20;
 export async function fetchAllEnrichers(
   client: GraphQLClient,
   options: {
-    /** Filter by title */
-    title?: string;
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** Filter by title */
+      title?: string;
+    };
+  } = {},
 ): Promise<Enricher[]> {
-  const { title, logger } = options;
+  const { logger = NOOP_LOGGER, filterBy } = options;
+  const { title } = filterBy ?? {};
   const enrichers: Enricher[] = [];
   let offset = 0;
 
@@ -147,28 +151,24 @@ export async function fetchAllEnrichers(
  * Sync an enricher configuration
  *
  * @param client - GraphQL client
- * @param syncOptions - Sync options
  * @param options - Options
  */
 export async function syncEnricher(
   client: GraphQLClient,
-  syncOptions: {
+  options: {
     /** The enricher input */
-    enricher: EnricherInput;
+    input: EnricherInput;
     /** Index of identifiers in the organization */
     identifierByName: { [name in string]: Identifier };
     /** Lookup data subject by name */
     dataSubjectsByName: { [name in string]: DataSubjectRef };
-  },
-  options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { enricher, identifierByName, dataSubjectsByName } = syncOptions;
-  const { logger } = options;
+  const { input: enricher, identifierByName, dataSubjectsByName, logger = NOOP_LOGGER } = options;
   const matches = await fetchAllEnrichers(client, {
-    title: enricher.title,
+    filterBy: { title: enricher.title },
     logger,
   });
   const existingEnricher = matches.find(({ title }) => title === enricher.title);

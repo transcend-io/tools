@@ -290,15 +290,12 @@ export async function syncConfigurationToTranscend(
       async (enricher) => {
         logger.info(colors.magenta(`Syncing enricher "${enricher.title}"...`));
         try {
-          await syncEnricher(
-            client,
-            {
-              enricher,
-              identifierByName,
-              dataSubjectsByName,
-            },
-            { logger },
-          );
+          await syncEnricher(client, {
+            input: enricher,
+            identifierByName,
+            dataSubjectsByName,
+            logger,
+          });
           logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
         } catch (err) {
           encounteredError = true;

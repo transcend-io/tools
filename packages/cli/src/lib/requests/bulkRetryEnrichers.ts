@@ -97,18 +97,17 @@ export async function bulkRetryEnrichers({
     requests,
     async (request) => {
       // Pull the request identifiers
-      const requestEnrichers = await fetchAllRequestEnrichers(
-        client,
-        { requestId: request.id },
-        { logger },
-      );
+      const requestEnrichers = await fetchAllRequestEnrichers(client, {
+        filterBy: { requestId: request.id },
+        logger,
+      });
       const requestEnrichersToRestart = requestEnrichers.filter(
         (requestEnricher) =>
           requestEnricher.enricher.id === enricherId &&
           requestEnricherStatuses.includes(requestEnricher.status),
       );
       await map(requestEnrichersToRestart, async (requestEnricher) => {
-        await retryRequestEnricher(client, requestEnricher.id, { logger });
+        await retryRequestEnricher(client, { id: requestEnricher.id, logger });
         totalRestarted += 1;
       });
 

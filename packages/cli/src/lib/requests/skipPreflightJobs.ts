@@ -66,11 +66,10 @@ export async function skipPreflightJobs({
     requests,
     async (request) => {
       // TODO dont pull all in
-      const requestEnrichers = await fetchAllRequestEnrichers(
-        client,
-        { requestId: request.id },
-        { logger },
-      );
+      const requestEnrichers = await fetchAllRequestEnrichers(client, {
+        filterBy: { requestId: request.id },
+        logger,
+      });
       const requestEnrichersFiltered = requestEnrichers.filter(
         (enricher) =>
           enricherIds.includes(enricher.enricher.id) &&
