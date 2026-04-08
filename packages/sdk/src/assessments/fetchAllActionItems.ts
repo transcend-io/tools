@@ -105,7 +105,7 @@ export async function fetchAllActionItems(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter by */
     filterBy?: {
       /** Names of the action items to filter for */
@@ -119,7 +119,7 @@ export async function fetchAllActionItems(
       /** Filter for action items due after this date */
       endDueDate?: Date;
     };
-  },
+  } = {},
 ): Promise<ActionItem[]> {
   const { logger, filterBy = {} } = options;
   const actionItems: ActionItem[] = [];

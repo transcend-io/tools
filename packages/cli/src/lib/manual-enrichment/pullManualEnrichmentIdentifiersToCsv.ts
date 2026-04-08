@@ -2,8 +2,10 @@ import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
+  fetchAllRequestEnrichers,
   fetchAllRequestIdentifiers,
   validateSombraVersion,
+  type RequestEnricher,
   type RequestIdentifier,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
@@ -12,12 +14,7 @@ import { groupBy, uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  PrivacyRequest,
-  RequestEnricher,
-  fetchAllRequestEnrichers,
-  fetchAllRequests,
-} from '../graphql/index.js';
+import { type PrivacyRequest, fetchAllRequests } from '../graphql/index.js';
 import { writeCsv } from '../helpers/writeCsv.js';
 
 export interface PrivacyRequestWithIdentifiers extends PrivacyRequest {
@@ -85,7 +82,8 @@ export async function pullManualEnrichmentIdentifiersToCsv({
     async (request) => {
       // Fetch enrichers
       const requestEnrichers = await fetchAllRequestEnrichers(client, {
-        requestId: request.id,
+        filterBy: { requestId: request.id },
+        logger,
       });
 
       // Check if manual enrichment exists for that request

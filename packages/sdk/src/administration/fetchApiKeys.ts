@@ -2,7 +2,7 @@ import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, difference } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { API_KEYS } from './gqls/apiKey.js';
 
 export interface ApiKey {
@@ -39,13 +39,16 @@ const ADMIN_LINK = 'https://app.transcend.io/infrastructure/api-keys';
 export async function fetchAllApiKeys(
   client: GraphQLClient,
   options: {
-    /** Filter on titles */
-    titles?: string[];
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** Filter on titles */
+      titles?: string[];
+    };
+  } = {},
 ): Promise<ApiKey[]> {
-  const { titles, logger } = options;
+  const { logger = NOOP_LOGGER, filterBy: { titles } = {} } = options;
   const apiKeys: ApiKey[] = [];
   let offset = 0;
 
@@ -75,31 +78,37 @@ export async function fetchAllApiKeys(
  * Fetch all apiKeys and if any are found in the config that are
  * missing, create those apiKeys.
  *
- * @param apiKeyInputs - API keys to fetch metadata on
  * @param client - GraphQL client
- * @param fetchAll - When true, fetch all API keys
  * @param options - Options
  * @returns A map from apiKey title to Identifier
  */
 export async function fetchApiKeys(
-  { 'api-keys': apiKeyInputs = [], 'data-silos': dataSilos = [] }: FetchApiKeysInput,
   client: GraphQLClient,
-  fetchAll = false,
   options: {
+    /** API key input configuration */
+    apiKeyInputs?: FetchApiKeysInput;
+    /** When true, fetch all API keys */
+    fetchAll?: boolean;
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<{ [k in string]: ApiKey }> {
-  const { logger } = options;
-  logger.info(`Fetching ${fetchAll ? 'all' : apiKeyInputs.length} API keys...`);
-  const titles = apiKeyInputs.map(({ title }) => title);
+  const {
+    apiKeyInputs: { 'api-keys': apiKeyDefs = [], 'data-silos': dataSilos = [] } = {},
+    fetchAll = false,
+    logger = NOOP_LOGGER,
+  } = options;
+  logger.info(`Fetching ${fetchAll ? 'all' : apiKeyDefs.length} API keys...`);
+  const titles = apiKeyDefs.map(({ title }) => title);
   const expectedApiKeyTitles = uniq(
     dataSilos.map((silo) => silo['api-key-title']).filter((x): x is string => !!x),
   );
   const allTitlesExpected = [...expectedApiKeyTitles, ...titles];
   const apiKeys = await fetchAllApiKeys(client, {
-    titles: fetchAll ? undefined : [...expectedApiKeyTitles, ...titles],
     logger,
+    filterBy: {
+      titles: fetchAll ? undefined : [...expectedApiKeyTitles, ...titles],
+    },
   });
 
   // Create a map

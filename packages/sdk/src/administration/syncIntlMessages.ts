@@ -2,7 +2,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { UPDATE_INTL_MESSAGES } from './gqls/message.js';
 
 export interface IntlMessageInput {
@@ -24,19 +24,20 @@ const MAX_PAGE_SIZE = 100;
  * Update or create intl messages
  *
  * @param client - GraphQL client
- * @param messageInputs - List of message inputs
+ * @param options - Options
  */
 export async function updateIntlMessages(
   client: GraphQLClient,
-  messageInputs: IntlMessageInput[],
   options: {
+    /** List of message inputs */
+    input: IntlMessageInput[];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: messages, logger = NOOP_LOGGER } = options;
   // Batch update messages
-  await mapSeries(chunk(messageInputs, MAX_PAGE_SIZE), async (page) => {
+  await mapSeries(chunk(messages, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
       variables: {
         messages: page.map((message) => ({
@@ -68,10 +69,10 @@ export async function syncIntlMessages(
   messages: IntlMessageInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${messages.length}" messages...`);
 
@@ -89,7 +90,7 @@ export async function syncIntlMessages(
 
   try {
     logger.info(`Upserting "${messages.length}" new messages...`);
-    await updateIntlMessages(client, messages, { logger });
+    await updateIntlMessages(client, { input: messages, logger });
     logger.info(`Successfully synced ${messages.length} messages!`);
   } catch (err) {
     encounteredError = true;

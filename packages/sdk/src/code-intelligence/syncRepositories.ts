@@ -2,7 +2,7 @@ import { mapSeries, map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllRepositories, Repository } from './fetchAllRepositories.js';
 import { UPDATE_REPOSITORIES, CREATE_REPOSITORY } from './gqls/repository.js';
 
@@ -27,28 +27,29 @@ const CHUNK_SIZE = 100;
  */
 export async function createRepository(
   client: GraphQLClient,
-  input: {
-    /** Title of repository */
-    name: string;
-    /** Description of the repository */
-    description?: string;
-    /** Github repository */
-    url: string;
-    /** User IDs of owners */
-    ownerIds?: string[];
-    /** Emails of owners */
-    ownerEmails?: string[];
-    /** Team IDs */
-    teamIds?: string[];
-    /** Team names */
-    teamNames?: string[];
-  },
   options: {
+    /** Repository to create */
+    input: {
+      /** Title of repository */
+      name: string;
+      /** Description of the repository */
+      description?: string;
+      /** Github repository */
+      url: string;
+      /** User IDs of owners */
+      ownerIds?: string[];
+      /** Emails of owners */
+      ownerEmails?: string[];
+      /** Team IDs */
+      teamIds?: string[];
+      /** Team names */
+      teamNames?: string[];
+    };
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Repository> {
-  const { logger } = options;
+  const { input, logger = NOOP_LOGGER } = options;
   const {
     createRepository: { repository },
   } = await makeGraphQLRequest<{
@@ -69,38 +70,38 @@ export async function createRepository(
  * Update an existing repository
  *
  * @param client - GraphQL client
- * @param inputs - Repository input
  * @param options - Options
  * @returns Updated repositories
  */
 export async function updateRepositories(
   client: GraphQLClient,
-  inputs: {
-    /** ID of repository */
-    id: string;
-    /** Title of repository */
-    name?: string;
-    /** Description of the repository */
-    description?: string;
-    /** Github repository */
-    url?: string;
-    /** User IDs of owners */
-    ownerIds?: string[];
-    /** Emails of owners */
-    ownerEmails?: string[];
-    /** Team IDs */
-    teamIds?: string[];
-    /** Team names */
-    teamNames?: string[];
-  }[],
   options: {
+    /** Repository inputs to update */
+    input: {
+      /** ID of repository */
+      id: string;
+      /** Title of repository */
+      name?: string;
+      /** Description of the repository */
+      description?: string;
+      /** Github repository */
+      url?: string;
+      /** User IDs of owners */
+      ownerIds?: string[];
+      /** Emails of owners */
+      ownerEmails?: string[];
+      /** Team IDs */
+      teamIds?: string[];
+      /** Team names */
+      teamNames?: string[];
+    }[];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Repository[]> {
-  const { logger } = options;
+  const { input: repositories, logger = NOOP_LOGGER } = options;
   const {
-    updateRepositories: { repositories },
+    updateRepositories: { repositories: updatedRepositories },
   } = await makeGraphQLRequest<{
     /** updateRepositories mutation */
     updateRepositories: {
@@ -110,13 +111,13 @@ export async function updateRepositories(
   }>(client, UPDATE_REPOSITORIES, {
     variables: {
       input: {
-        repositories: inputs,
+        repositories,
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${inputs.length} repositories!`);
-  return repositories;
+  logger.info(`Successfully updated ${repositories.length} repositories!`);
+  return updatedRepositories;
 }
 
 /**
@@ -132,17 +133,17 @@ export async function syncRepositories(
   repositories: RepositoryInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<{
   /** The repositories that were upserted */
   repositories: Repository[];
   /** If successful */
   success: boolean;
 }> {
-  const { logger, concurrency = 20 } = options;
+  const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
   const repos: Repository[] = [];
 
@@ -165,7 +166,7 @@ export async function syncRepositories(
     await map(
       newRepositories,
       async (repo) => {
-        const newRepo = await createRepository(client, repo, { logger });
+        const newRepo = await createRepository(client, { input: repo, logger });
         repos.push(newRepo);
       },
       {
@@ -187,14 +188,13 @@ export async function syncRepositories(
 
   await mapSeries(chunks, async (chunk) => {
     try {
-      const updatedRepos = await updateRepositories(
-        client,
-        chunk.map(([input, id]) => ({
+      const updatedRepos = await updateRepositories(client, {
+        input: chunk.map(([input, id]) => ({
           ...input,
           id,
         })),
-        { logger },
-      );
+        logger,
+      });
       repos.push(...updatedRepos);
       logger.info(`Successfully updated "${existingRepositories.length}" repositories!`);
     } catch (err) {

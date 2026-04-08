@@ -44,14 +44,13 @@ export async function updateConsentManagerVersionToLatest({
         `Update Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}" to latest version...`,
       ),
     );
-    await updateConsentManagerToLatest(
-      client,
-      {
+    await updateConsentManagerToLatest(client, {
+      input: {
         id: consentManagerId,
         bundleType,
       },
-      { logger },
-    );
+      logger,
+    });
     logger.info(
       colors.green(
         `Updated Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}" to latest version!`,

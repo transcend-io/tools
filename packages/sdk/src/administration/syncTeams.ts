@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllTeams, Team } from './fetchAllTeams.js';
 import { UPDATE_TEAM, CREATE_TEAM } from './gqls/team.js';
 
@@ -34,13 +34,14 @@ export interface TeamInput {
  */
 export async function createTeam(
   client: GraphQLClient,
-  team: TeamInput,
   options: {
+    /** Team to create */
+    input: TeamInput;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Team, 'id' | 'name'>> {
-  const { logger } = options;
+  const { input: team, logger = NOOP_LOGGER } = options;
   const input = {
     name: team.name,
     description: team.description,
@@ -68,21 +69,23 @@ export async function createTeam(
  * Input to update teams
  *
  * @param client - GraphQL client
- * @param input - Team input to update
- * @param teamId - ID of team
  * @param options - Options
  * @returns Updated team
  */
 export async function updateTeam(
   client: GraphQLClient,
-  input: TeamInput,
-  teamId: string,
   options: {
+    /** Team input to update */
+    input: TeamInput & {
+      /** ID of team to update */
+      id: string;
+    };
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Team, 'id' | 'name'>> {
-  const { logger } = options;
+  const { input: team, logger = NOOP_LOGGER } = options;
+  const teamId = team.id;
   const { updateTeam } = await makeGraphQLRequest<{
     /** Update team mutation */
     updateTeam: {
@@ -93,13 +96,13 @@ export async function updateTeam(
     variables: {
       input: {
         id: teamId,
-        name: input.name,
-        description: input.description,
-        ssoTitle: input['sso-title'],
-        ssoDepartment: input['sso-department'],
-        ssoGroup: input['sso-group'],
-        scopes: input.scopes,
-        userEmails: input.users,
+        name: team.name,
+        description: team.description,
+        ssoTitle: team['sso-title'],
+        ssoDepartment: team['sso-department'],
+        ssoGroup: team['sso-group'],
+        scopes: team.scopes,
+        userEmails: team.users,
       },
     },
     logger,
@@ -120,10 +123,10 @@ export async function syncTeams(
   inputs: TeamInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   // Fetch existing
   logger.info(`Syncing "${inputs.length}" teams...`);
 
@@ -142,7 +145,7 @@ export async function syncTeams(
   // Create new teams
   await mapSeries(newTeams, async (team) => {
     try {
-      const newTeam = await createTeam(client, team, { logger });
+      const newTeam = await createTeam(client, { input: team, logger });
       teamsByName[newTeam.name] = newTeam;
       logger.info(`Successfully created team "${team.name}"!`);
     } catch (err) {
@@ -154,7 +157,10 @@ export async function syncTeams(
   // Update all teams
   await mapSeries(updatedTeams, async (input) => {
     try {
-      const newTeam = await updateTeam(client, input, teamsByName[input.name]!.id, { logger });
+      const newTeam = await updateTeam(client, {
+        input: { ...input, id: teamsByName[input.name]!.id },
+        logger,
+      });
       teamsByName[newTeam.name] = newTeam;
       logger.info(`Successfully updated team "${input.name}"!`);
     } catch (err) {

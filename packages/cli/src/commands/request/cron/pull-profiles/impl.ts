@@ -1,5 +1,5 @@
 import type { RequestAction } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, fetchRequestFilesForRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { uniq, chunk } from 'lodash-es';
@@ -10,7 +10,6 @@ import {
   pullChunkedCustomSiloOutstandingIdentifiers,
   type CsvFormattedIdentifier,
 } from '../../../../lib/cron/index.js';
-import { fetchRequestFilesForRequest } from '../../../../lib/graphql/index.js';
 import { parseFilePath, writeLargeCsv } from '../../../../lib/helpers/index.js';
 import { logger } from '../../../../logger.js';
 
@@ -86,9 +85,13 @@ export async function pullProfiles(
         logger.info(
           colors.magenta(`Fetching target identifiers for ${requestIds.length} requests`),
         );
-        const results = await fetchRequestFilesForRequest(client, pageLimit * 2, {
-          requestIds,
-          dataSiloIds: [targetDataSiloId],
+        const results = await fetchRequestFilesForRequest(client, {
+          logger,
+          pageSize: pageLimit * 2,
+          filterBy: {
+            requestIds,
+            dataSiloIds: [targetDataSiloId],
+          },
         });
         return results.map(({ fileName, remoteId }) => {
           if (!remoteId) {

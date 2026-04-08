@@ -1,10 +1,9 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { INITIALIZER, type Initializer, makeGraphQLRequest } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 import inquirer from 'inquirer';
 
 import { logger } from '../../logger.js';
-import { INITIALIZER, Initializer } from '../graphql/index.js';
 import { CachedFileState, IDENTIFIER_BLOCK_LIST } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
 

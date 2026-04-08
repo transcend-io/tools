@@ -1,13 +1,25 @@
-import { fetchPrivacyCenterId, makeGraphQLRequest } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import colors from 'colors';
+import type { LocaleValue } from '@transcend-io/internationalization';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
-import { PolicyInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
-import { UPDATE_POLICIES } from './gqls/index.js';
+import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
+import { UPDATE_POLICIES } from './gqls/policy.js';
+
+export interface PolicyInput {
+  /** The title of the policy */
+  title: string;
+  /** Effective date of policy */
+  effectiveOn?: string;
+  /** Whether or not to disable the effective date */
+  disableEffectiveOn?: boolean;
+  /** Content of the policy */
+  content?: string;
+  /** The languages for which the policy is disabled for */
+  disabledLocales?: LocaleValue[];
+}
 
 const MAX_PAGE_SIZE = 100;
 
@@ -15,15 +27,20 @@ const MAX_PAGE_SIZE = 100;
  * Update or create policies
  *
  * @param client - GraphQL client
- * @param policyInputs - List of policy input
+ * @param options - Options
  */
 export async function updatePolicies(
   client: GraphQLClient,
-  policyInputs: [PolicyInput, string | undefined][],
+  options: {
+    /** [PolicyInput, policyId] list */
+    input: [PolicyInput, string | undefined][];
+    /** Logger instance */
+    logger?: Logger;
+  },
 ): Promise<void> {
+  const { input: policyInputs, logger = NOOP_LOGGER } = options;
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
-  // Batch update policies
   await mapSeries(chunk(policyInputs, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_POLICIES, {
       variables: {
@@ -59,16 +76,21 @@ export async function updatePolicies(
  *
  * @param client - GraphQL client
  * @param policies - policies to sync
+ * @param options - Options
  * @returns True upon success, false upon failure
  */
 export async function syncPolicies(
   client: GraphQLClient,
   policies: PolicyInput[],
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
-  logger.info(colors.magenta(`Syncing "${policies.length}" policies...`));
+  logger.info(`Syncing "${policies.length}" policies...`);
 
-  // Ensure no duplicates are being uploaded
   const notUnique = policies.filter(
     (policy) => policies.filter((pol) => policy.title === pol.title).length > 1,
   );
@@ -80,20 +102,19 @@ export async function syncPolicies(
     );
   }
 
-  // Grab existing policies
-  const existingPolicies = await fetchAllPolicies(client);
+  const existingPolicies = await fetchAllPolicies(client, { logger });
   const policiesById = keyBy(existingPolicies, ({ title }) => title.defaultMessage);
 
   try {
-    logger.info(colors.magenta(`Upserting "${policies.length}" new policies...`));
-    await updatePolicies(
-      client,
-      policies.map((policy) => [policy, policiesById[policy.title]?.id]),
-    );
-    logger.info(colors.green(`Successfully synced ${policies.length} policies!`));
+    logger.info(`Upserting "${policies.length}" new policies...`);
+    await updatePolicies(client, {
+      input: policies.map((policy) => [policy, policiesById[policy.title]?.id]),
+      logger,
+    });
+    logger.info(`Successfully synced ${policies.length} policies!`);
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create policies! - ${err.message}`));
+    logger.error(`Failed to create policies! - ${(err as Error).message}`);
   }
 
   return !encounteredError;

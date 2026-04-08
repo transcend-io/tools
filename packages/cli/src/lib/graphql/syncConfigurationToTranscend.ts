@@ -17,10 +17,14 @@ import {
   syncCookies,
   syncDataFlows,
   syncDataSubject,
+  syncEnricher,
   syncIdentifier,
   syncIntlMessages,
   syncPartitions,
+  syncPolicies,
+  syncPrivacyCenter,
   syncProcessingActivities,
+  syncProcessingPurposes,
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
@@ -38,10 +42,6 @@ import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
-import { syncEnricher } from './syncEnrichers.js';
-import { syncPolicies } from './syncPolicies.js';
-import { syncPrivacyCenter } from './syncPrivacyCenter.js';
-import { syncProcessingPurposes } from './syncProcessingPurposes.js';
 
 const CONCURRENCY = 10;
 
@@ -125,7 +125,7 @@ export async function syncConfigurationToTranscend(
     dataSilos
       .map((dataSilo) => dataSilo['api-key-title'] || [])
       .reduce((acc, lst) => acc + lst.length, 0) > 0
-      ? fetchApiKeys(input, client, false, { logger })
+      ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
 
@@ -202,7 +202,9 @@ export async function syncConfigurationToTranscend(
 
   // Sync processing purposes
   if (processingPurposes) {
-    const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes);
+    const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes, {
+      logger,
+    });
     encounteredError = encounteredError || !processingPurposesSuccess;
   }
 
@@ -293,9 +295,10 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing enricher "${enricher.title}"...`));
         try {
           await syncEnricher(client, {
-            enricher,
+            input: enricher,
             identifierByName,
             dataSubjectsByName,
+            logger,
           });
           logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
         } catch (err) {
@@ -427,13 +430,13 @@ export async function syncConfigurationToTranscend(
 
   // Sync data flows
   if (dataFlows) {
-    const syncedDataFlows = await syncDataFlows(client, dataFlows, classifyService, { logger });
+    const syncedDataFlows = await syncDataFlows(client, dataFlows, { classifyService, logger });
     encounteredError = encounteredError || !syncedDataFlows;
   }
 
   // Sync privacy center
   if (privacyCenter) {
-    const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter);
+    const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter, { logger });
     encounteredError = encounteredError || !privacyCenterSuccess;
   }
 
@@ -445,7 +448,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync policies
   if (policies) {
-    const policiesSuccess = await syncPolicies(client, policies);
+    const policiesSuccess = await syncPolicies(client, policies, { logger });
     encounteredError = encounteredError || !policiesSuccess;
   }
 

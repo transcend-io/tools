@@ -83,8 +83,8 @@ export async function cancelPrivacyRequests({
   let cancelationTemplate: Template | undefined;
   if (cancellationTitle) {
     const matchingTemplates = await fetchAllTemplates(client, {
-      title: cancellationTitle,
       logger,
+      filterBy: { title: cancellationTitle },
     });
     const exactTitleMatch = matchingTemplates.find(
       (template) => template.title === cancellationTitle,

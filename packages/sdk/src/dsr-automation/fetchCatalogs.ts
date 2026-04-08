@@ -26,8 +26,8 @@ export async function fetchAllCatalogs(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<Catalog[]> {
   const { logger } = options;
   const catalogs: Catalog[] = [];
@@ -72,8 +72,8 @@ export async function fetchAndIndexCatalogs(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<
   {
     /** List of all catalogs */

@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllAgents, Agent } from './fetchAllAgents.js';
 import { UPDATE_AGENTS, CREATE_AGENT } from './gqls/agent.js';
 
@@ -37,13 +37,14 @@ export interface AgentInput {
  */
 export async function createAgent(
   client: GraphQLClient,
-  agent: AgentInput,
   options: {
+    /** Agent to create */
+    input: AgentInput;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Agent, 'id' | 'name' | 'agentId'>> {
-  const { logger } = options;
+  const { input: agent, logger = NOOP_LOGGER } = options;
   const input = {
     name: agent.name,
     description: agent.description,
@@ -73,22 +74,22 @@ export async function createAgent(
  * Update agents
  *
  * @param client - GraphQL client
- * @param agentIdPairs - [AgentInput, agentId] list
  * @param options - Options
  */
 export async function updateAgents(
   client: GraphQLClient,
-  agentIdPairs: [AgentInput, string][],
   options: {
+    /** [AgentInput, agentId] list */
+    input: [AgentInput, string][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: agents, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENTS, {
     variables: {
       input: {
-        agents: agentIdPairs.map(([agent, id]) => ({
+        agents: agents.map(([agent, id]) => ({
           id,
           name: agent.name,
           description: agent.description,
@@ -115,10 +116,10 @@ export async function syncAgents(
   inputs: AgentInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" agents...`);
 
   let encounteredError = false;
@@ -133,7 +134,7 @@ export async function syncAgents(
 
   await mapSeries(newAgents, async (agent) => {
     try {
-      const newAgent = await createAgent(client, agent, { logger });
+      const newAgent = await createAgent(client, { input: agent, logger });
       agentByName[newAgent.name] = newAgent;
       logger.info(`Successfully synced agent "${agent.name}"!`);
     } catch (err) {
@@ -144,11 +145,10 @@ export async function syncAgents(
 
   try {
     logger.info(`Updating "${inputs.length}" agents!`);
-    await updateAgents(
-      client,
-      inputs.map((input) => [input, agentByName[input.name]!.id]),
-      { logger },
-    );
+    await updateAgents(client, {
+      input: inputs.map((input) => [input, agentByName[input.name]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" agents!`);
   } catch (err) {
     encounteredError = true;

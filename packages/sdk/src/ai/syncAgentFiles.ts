@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllAgentFiles, AgentFile } from './fetchAllAgentFiles.js';
 import { UPDATE_AGENT_FILES, CREATE_AGENT_FILE } from './gqls/agentFile.js';
 
@@ -30,13 +30,14 @@ export interface AgentFileInput {
  */
 export async function createAgentFile(
   client: GraphQLClient,
-  agentFile: AgentFileInput,
   options: {
+    /** Agent file to create */
+    input: AgentFileInput;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<AgentFile, 'id' | 'name' | 'fileId'>> {
-  const { logger } = options;
+  const { input: agentFile, logger = NOOP_LOGGER } = options;
   const input = {
     name: agentFile.name,
     description: agentFile.description,
@@ -65,22 +66,22 @@ export async function createAgentFile(
  * Update agent files
  *
  * @param client - GraphQL client
- * @param agentFileIdPairs - [AgentFileInput, agentFileId] list
  * @param options - Options
  */
 export async function updateAgentFiles(
   client: GraphQLClient,
-  agentFileIdPairs: [AgentFileInput, string][],
   options: {
+    /** [AgentFileInput, agentFileId] list */
+    input: [AgentFileInput, string][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: agentFiles, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FILES, {
     variables: {
       input: {
-        agentFiles: agentFileIdPairs.map(([agentFile, id]) => ({
+        agentFiles: agentFiles.map(([agentFile, id]) => ({
           id,
           name: agentFile.name,
           description: agentFile.description,
@@ -107,10 +108,10 @@ export async function syncAgentFiles(
   inputs: AgentFileInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" agent files...`);
 
   let encounteredError = false;
@@ -125,7 +126,7 @@ export async function syncAgentFiles(
 
   await mapSeries(newAgentFiles, async (agentFile) => {
     try {
-      const newAgentFile = await createAgentFile(client, agentFile, { logger });
+      const newAgentFile = await createAgentFile(client, { input: agentFile, logger });
       agentFileByName[newAgentFile.name] = newAgentFile;
       logger.info(`Successfully synced agent file "${agentFile.name}"!`);
     } catch (err) {
@@ -136,11 +137,10 @@ export async function syncAgentFiles(
 
   try {
     logger.info(`Updating "${inputs.length}" agent files!`);
-    await updateAgentFiles(
-      client,
-      inputs.map((input) => [input, agentFileByName[input.name]!.id]),
-      { logger },
-    );
+    await updateAgentFiles(client, {
+      input: inputs.map((input) => [input, agentFileByName[input.name]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" agent files!`);
   } catch (err) {
     encounteredError = true;
