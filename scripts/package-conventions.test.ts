@@ -61,7 +61,12 @@ type RootTsconfig = {
 };
 
 type WorkspacePackage = {
+  /** Relative directory path from repo root (e.g. "packages/cli" or "packages/mcp/mcp-server-dsr") */
   directory: string;
+  /** Package basename used for name inference (last segment of directory path) */
+  basename: string;
+  /** Number of path segments — determines relative path depth to repo root */
+  depth: number;
   manifest: PackageManifest;
   tsconfig: PackageTsconfig;
   tsdownConfig: string;
@@ -125,8 +130,8 @@ describe('package conventions', () => {
 
   test.each(workspacePackages)(
     '$directory uses the shared manifest baseline',
-    ({ directory, manifest }) => {
-      const expectedName = `@transcend-io/${directory.replace(/^packages\//, '')}`;
+    ({ basename, manifest }) => {
+      const expectedName = `@transcend-io/${basename}`;
       const exportDot = manifest.exports?.['.'];
 
       expect(manifest.name).toBe(expectedName);
@@ -177,15 +182,19 @@ describe('package conventions', () => {
     expect(fileExists(`${directory}/CHANGELOG.md`)).toBe(true);
   });
 
-  test.each(workspacePackages)('$directory uses the shared tsconfig baseline', ({ tsconfig }) => {
-    expect(tsconfig.extends).toBe('../../tsconfig.base.json');
-    expect(tsconfig.compilerOptions?.outDir).toBe('dist');
-    expect(tsconfig.compilerOptions?.rootDir).toBe('src');
-    expect(tsconfig.compilerOptions?.types ?? []).toEqual(
-      expect.arrayContaining(['node', 'vitest/globals']),
-    );
-    expect(tsconfig.include ?? []).toEqual(expect.arrayContaining(['src/**/*.ts']));
-  });
+  test.each(workspacePackages)(
+    '$directory uses the shared tsconfig baseline',
+    ({ depth, tsconfig }) => {
+      const relativeRoot = '../'.repeat(depth);
+      expect(tsconfig.extends).toBe(`${relativeRoot}tsconfig.base.json`);
+      expect(tsconfig.compilerOptions?.outDir).toBe('dist');
+      expect(tsconfig.compilerOptions?.rootDir).toBe('src');
+      expect(tsconfig.compilerOptions?.types ?? []).toEqual(
+        expect.arrayContaining(['node', 'vitest/globals']),
+      );
+      expect(tsconfig.include ?? []).toEqual(expect.arrayContaining(['src/**/*.ts']));
+    },
+  );
 
   test.skip.each(workspacePackages)(
     '$directory relies on tsconfig.base.json for shared compilerOptions',
@@ -198,27 +207,47 @@ describe('package conventions', () => {
     },
   );
 
-  test.each(workspacePackages)('$directory uses the shared tsdown baseline', ({ tsdownConfig }) => {
-    expect(tsdownConfig).toContain("import sharedConfig from '../../tsdown.config.base.ts';");
-    expect(tsdownConfig).toContain('...sharedConfig');
-    expect(tsdownConfig).toContain("'src/index.ts'");
-  });
+  test.each(workspacePackages)(
+    '$directory uses the shared tsdown baseline',
+    ({ depth, tsdownConfig }) => {
+      const relativeRoot = '../'.repeat(depth);
+      expect(tsdownConfig).toContain(
+        `import sharedConfig from '${relativeRoot}tsdown.config.base.ts';`,
+      );
+      expect(tsdownConfig).toContain('...sharedConfig');
+      expect(tsdownConfig).toContain("'src/index.ts'");
+    },
+  );
 });
 
 function getWorkspacePackages(): WorkspacePackage[] {
   const packagesRoot = join(repoRoot, 'packages');
 
-  return readdirSync(packagesRoot, { withFileTypes: true })
+  const topLevel = readdirSync(packagesRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => `packages/${entry.name}`)
-    .filter((directory) => fileExists(`${directory}/package.json`))
+    .filter((directory) => fileExists(`${directory}/package.json`));
+
+  const mcpRoot = join(packagesRoot, 'mcp');
+  const nested = readdirSync(mcpRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `packages/mcp/${entry.name}`)
+    .filter((directory) => fileExists(`${directory}/package.json`));
+
+  return [...topLevel, ...nested]
     .sort((a, b) => a.localeCompare(b))
-    .map((directory) => ({
-      directory,
-      manifest: readJsonFile<PackageManifest>(`${directory}/package.json`),
-      tsconfig: readJsonFile<PackageTsconfig>(`${directory}/tsconfig.json`),
-      tsdownConfig: readRepoFile(`${directory}/tsdown.config.ts`),
-    }));
+    .map((directory) => {
+      const segments = directory.split('/');
+      const basename = segments.at(-1)!;
+      return {
+        directory,
+        basename,
+        depth: segments.length,
+        manifest: readJsonFile<PackageManifest>(`${directory}/package.json`),
+        tsconfig: readJsonFile<PackageTsconfig>(`${directory}/tsconfig.json`),
+        tsdownConfig: readRepoFile(`${directory}/tsdown.config.ts`),
+      };
+    });
 }
 
 function sortStrings(values: string[]): string[] {

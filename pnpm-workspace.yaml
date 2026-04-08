@@ -1,9 +1,11 @@
 packages:
   - packages/*
+  - packages/mcp/*
 
 catalog:
   '@arethetypeswrong/cli': ^0.18.2
   '@changesets/cli': ^2.30.0
+  '@modelcontextprotocol/sdk': ^1.0.0
   '@types/json-schema': ^7.0.15
   '@transcend-io/internationalization': ^2.3.2
   '@types/node': ^22.19.15
@@ -16,6 +18,7 @@ catalog:
   turbo: ^2.8.21
   typescript: ^5.9.3
   vitest: ^4.0.18
+  zod: ^4.3.6
 
 onlyBuiltDependencies:
   - esbuild

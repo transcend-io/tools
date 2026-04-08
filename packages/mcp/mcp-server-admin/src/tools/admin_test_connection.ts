@@ -1,0 +1,50 @@
+import {
+  createToolResult,
+  validateArgs,
+  type ToolDefinition,
+  type ToolClients,
+} from '@transcend-io/mcp-server-core';
+
+import type { AdminMixin } from '../graphql.js';
+import { EmptySchema } from '../schemas.js';
+
+export function createAdminTestConnectionTool(clients: ToolClients): ToolDefinition {
+  const { rest } = clients;
+  const graphql = clients.graphql as AdminMixin;
+  return {
+    name: 'admin_test_connection',
+    description: 'Test connectivity to both Transcend REST and GraphQL APIs',
+    category: 'Admin',
+    readOnly: true,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    inputSchema: { type: 'object', properties: {}, required: [] },
+    handler: async (args) => {
+      const parsed = validateArgs(EmptySchema, args);
+      if (!parsed.success) return parsed.error;
+      try {
+        const [graphqlConnected, restConnected] = await Promise.all([
+          graphql.testConnection(),
+          rest.testConnection(),
+        ]);
+        const allConnected = graphqlConnected && restConnected;
+        return createToolResult(true, {
+          connected: allConnected,
+          details: {
+            graphql: { connected: graphqlConnected, url: graphql.getBaseUrl() },
+            rest: { connected: restConnected, url: rest.getBaseUrl() },
+          },
+          message: allConnected
+            ? 'Successfully connected to all Transcend APIs'
+            : 'Some API connections failed - check details',
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        return createToolResult(
+          false,
+          undefined,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    },
+  };
+}

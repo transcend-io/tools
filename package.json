@@ -28,7 +28,7 @@
     "lint:fix:root": "oxlint --fix .",
     "format:root": "oxfmt --write .",
     "format:check:root": "oxfmt --check .",
-    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\"",
+    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\" --source \"packages/mcp/*/package.json\"",
     "prepare": "husky"
   },
   "devDependencies": {
