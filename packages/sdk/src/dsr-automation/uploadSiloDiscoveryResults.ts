@@ -2,7 +2,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { ADD_SILO_DISCOVERY_RESULTS } from './gqls/siloDiscovery.js';
 
 export interface SiloDiscoveryRawResult {
@@ -22,25 +22,20 @@ const CHUNK_SIZE = 1000;
  * Uploads silo discovery results for Transcend to classify
  *
  * @param client - GraphQL Client
- * @param pluginId - pluginID to associate with the results
- * @param results - The results
  * @param options - Options
  */
 export async function uploadSiloDiscoveryResults(
   client: GraphQLClient,
-  input: {
+  options: {
     /** Plugin ID to associate with the results */
     pluginId: string;
     /** The discovery results to upload */
     results: SiloDiscoveryRawResult[];
-  },
-  options: {
     /** Logger instance */
     logger?: Logger;
-  } = {},
+  },
 ): Promise<void> {
-  const { logger } = options;
-  const { pluginId, results } = input;
+  const { pluginId, results, logger = NOOP_LOGGER } = options;
   const chunks = chunk(results, CHUNK_SIZE);
 
   await mapSeries(chunks, async (rawResults) => {

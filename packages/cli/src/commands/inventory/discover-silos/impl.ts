@@ -53,7 +53,11 @@ export async function discoverSilos(
     config,
   });
 
-  await uploadSiloDiscoveryResults(client, { pluginId: plugin.id, results }, { logger });
+  await uploadSiloDiscoveryResults(client, {
+    pluginId: plugin.id,
+    results,
+    logger,
+  });
 
   const newUrl = new URL(ADMIN_DASH);
   newUrl.pathname = '/data-map/data-inventory/silo-discovery/triage';
