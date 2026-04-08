@@ -94,7 +94,7 @@ export async function pullManualEnrichmentIdentifiersToCsv({
       // Save request to queue
       if (hasManualEnrichment) {
         const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
-          requestId: request.id,
+          filterBy: { requestId: request.id },
           skipSombraCheck: true,
           logger,
         });

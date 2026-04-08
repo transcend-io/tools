@@ -163,7 +163,7 @@ export async function pullPrivacyRequests({
         requests,
         async (request) => {
           const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
-            requestId: request.id,
+            filterBy: { requestId: request.id },
             skipSombraCheck: true,
             logger,
           });

@@ -212,7 +212,7 @@ export async function streamPrivacyRequestsToCsv({
                   async (n) => ({
                     ...n,
                     requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
-                      requestId: n.id,
+                      filterBy: { requestId: n.id },
                       skipSombraCheck: true,
                       logger,
                     }),

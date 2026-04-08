@@ -174,7 +174,7 @@ export async function bulkRestartRequests({
         // Pull the request identifiers
         const requestIdentifiers = copyIdentifiers
           ? await fetchAllRequestIdentifiers(client, sombra, {
-              requestId: request.id,
+              filterBy: { requestId: request.id },
               skipSombraCheck: true,
               logger,
             })

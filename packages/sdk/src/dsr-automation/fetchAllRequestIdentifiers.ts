@@ -6,7 +6,7 @@ import { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 import semver from 'semver';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { SOMBRA_VERSION } from './gqls/sombraVersion.js';
 
 const MIN_SOMBRA_VERSION_TO_DECRYPT = '7.180.0';
@@ -43,10 +43,10 @@ export async function validateSombraVersion(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const {
     organization: {
       sombra: { version },
@@ -81,15 +81,22 @@ export async function fetchAllRequestIdentifiers(
   client: GraphQLClient,
   sombra: Got,
   options: {
-    /** ID of request to filter on */
-    requestId: string;
+    /** Filter options */
+    filterBy: {
+      /** ID of request to filter on */
+      requestId: string;
+    };
     /** Skip the Sombra version check (caller already validated) */
     skipSombraCheck?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<RequestIdentifier[]> {
-  const { requestId, skipSombraCheck = false, logger } = options;
+  const {
+    filterBy: { requestId },
+    skipSombraCheck = false,
+    logger = NOOP_LOGGER,
+  } = options;
   const requestIdentifiers: RequestIdentifier[] = [];
   let offset = 0;
   let shouldContinue = false;

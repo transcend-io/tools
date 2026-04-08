@@ -2,7 +2,7 @@ import { RequestActionObjectResolver } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { CREATE_DATA_SUBJECT, DATA_SUBJECTS } from './gqls/dataSubject.js';
 
 export interface DataSubject {
@@ -37,10 +37,10 @@ export async function fetchAllDataSubjects(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<DataSubject[]> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const { internalSubjects } = await makeGraphQLRequest<{
     /** Query response */
     internalSubjects: DataSubject[];
@@ -52,19 +52,19 @@ export async function fetchAllDataSubjects(
  * Create a single data subject
  *
  * @param client - GraphQL client
- * @param dataSubjectType - The type string for the new subject
  * @param options - Options
  * @returns Created data subject
  */
 export async function createDataSubject(
   client: GraphQLClient,
-  dataSubjectType: string,
   options: {
+    /** The type string for the new subject */
+    input: string;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<DataSubject> {
-  const { logger } = options;
+  const { input: dataSubjectType, logger = NOOP_LOGGER } = options;
   const { createSubject } = await makeGraphQLRequest<{
     /** Create Subject Response */
     createSubject: {

@@ -111,7 +111,8 @@ export async function syncConfigurationToTranscend(
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
     enrichers || identifiers
-      ? fetchIdentifiersAndCreateMissing(input, client, {
+      ? fetchIdentifiersAndCreateMissing(client, {
+          input,
           skipPublish: !publishToPrivacyCenter,
           logger,
         })
@@ -330,7 +331,7 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing identifier "${identifier.type}"...`));
         try {
           await syncIdentifier(client, {
-            identifier,
+            input: identifier,
             dataSubjectsByName,
             identifierId: existing.id,
             skipPublish: !publishToPrivacyCenter,
@@ -408,7 +409,7 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing data subject "${dataSubject.type}"...`));
         try {
           await syncDataSubject(client, {
-            dataSubject,
+            input: dataSubject,
             dataSubjectId: existing.id,
             skipPublish: !publishToPrivacyCenter,
             logger,

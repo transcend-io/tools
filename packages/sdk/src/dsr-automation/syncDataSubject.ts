@@ -2,7 +2,7 @@ import { RequestAction } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { TOGGLE_DATA_SUBJECT, UPDATE_DATA_SUBJECT } from './gqls/dataSubject.js';
 
 export interface DataSubjectInput {
@@ -28,16 +28,16 @@ export async function syncDataSubject(
   client: GraphQLClient,
   options: {
     /** DataSubject update input */
-    dataSubject: DataSubjectInput;
+    input: DataSubjectInput;
     /** Existing data subject Id */
     dataSubjectId: string;
     /** When true, skip publishing to privacy center */
     skipPublish?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { dataSubject, dataSubjectId, skipPublish = false, logger } = options;
+  const { input: dataSubject, dataSubjectId, skipPublish = false, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_DATA_SUBJECT, {
     variables: {
       input: {

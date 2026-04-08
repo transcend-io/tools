@@ -2,7 +2,7 @@ import { RequestAction } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import type { DataSubject } from './fetchDataSubjects.js';
 import { UPDATE_IDENTIFIER } from './gqls/dsrIdentifier.js';
 
@@ -43,7 +43,7 @@ export async function syncIdentifier(
   client: GraphQLClient,
   options: {
     /** Identifier update input */
-    identifier: IdentifierInput;
+    input: IdentifierInput;
     /** Data subject lookup by name */
     dataSubjectsByName: { [k in string]: DataSubject };
     /** Existing identifier Id */
@@ -51,10 +51,16 @@ export async function syncIdentifier(
     /** When true, skip publishing to privacy center */
     skipPublish?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { identifier, dataSubjectsByName, identifierId, skipPublish = false, logger } = options;
+  const {
+    input: identifier,
+    dataSubjectsByName,
+    identifierId,
+    skipPublish = false,
+    logger = NOOP_LOGGER,
+  } = options;
   await makeGraphQLRequest(client, UPDATE_IDENTIFIER, {
     variables: {
       input: {

@@ -2,7 +2,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, flatten, difference } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllIdentifiers, type Identifier } from '../data-inventory/fetchAllIdentifiers.js';
 import { CREATE_IDENTIFIER, NEW_IDENTIFIER_TYPES } from './gqls/dsrIdentifier.js';
 
@@ -30,23 +30,23 @@ export interface IdentifiersAndCreateMissingInput {
  * Fetch all identifiers and if any are found in the config that are
  * missing, create those identifiers.
  *
- * @param input - Transcend input
  * @param client - GraphQL client
  * @param options - Options
  * @returns A map from identifier name to Identifier
  */
 export async function fetchIdentifiersAndCreateMissing(
-  input: IdentifiersAndCreateMissingInput,
   client: GraphQLClient,
   options: {
+    /** Transcend input configuration */
+    input: IdentifiersAndCreateMissingInput;
     /** When true, skip publishing to privacy center */
     skipPublish?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<{ [k in string]: Identifier }> {
+  const { input, skipPublish = false, logger = NOOP_LOGGER } = options;
   const { enrichers = [], 'data-silos': dataSilos = [], identifiers = [] } = input;
-  const { skipPublish = false, logger } = options;
   const allIdentifiers = await fetchAllIdentifiers(client, { logger });
   const identifiersByName = keyBy(allIdentifiers, 'name');
 

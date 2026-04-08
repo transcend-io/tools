@@ -46,7 +46,7 @@ export async function ensureAllDataSubjectsExist(
     logger.info(colors.magenta(`Creating ${missingDataSubjects.length} new data subjects...`));
     for (const dataSubjectType of missingDataSubjects) {
       logger.info(colors.magenta(`Creating data subject ${dataSubjectType}...`));
-      const created = await createDataSubject(client, dataSubjectType, { logger });
+      const created = await createDataSubject(client, { input: dataSubjectType, logger });
       logger.info(colors.green(`Created data subject ${dataSubjectType}!`));
       dataSubjectByName[dataSubjectType] = created;
     }

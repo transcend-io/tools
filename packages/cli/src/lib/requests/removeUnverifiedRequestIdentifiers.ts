@@ -61,7 +61,7 @@ export async function removeUnverifiedRequestIdentifiers({
     allRequests,
     async (requestToRestart) => {
       const requestIdentifiers = await fetchAllRequestIdentifierMetadata(client, {
-        requestId: requestToRestart.id,
+        filterBy: { requestId: requestToRestart.id },
         logger,
       });
       const clearOut = requestIdentifiers
