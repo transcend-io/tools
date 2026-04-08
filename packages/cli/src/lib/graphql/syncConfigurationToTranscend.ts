@@ -17,6 +17,7 @@ import {
   syncCookies,
   syncDataFlows,
   syncDataSubject,
+  syncDataSiloDependencies,
   syncEnricher,
   syncIdentifier,
   syncIntlMessages,
@@ -41,7 +42,7 @@ import { GraphQLClient } from 'graphql-request';
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
-import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
+import { syncDataSilos } from './syncDataSilos.js';
 
 const CONCURRENCY = 10;
 
@@ -476,7 +477,7 @@ export async function syncConfigurationToTranscend(
 
   // Dependencies updated at the end after all data silos are created
   if (dependencyUpdates.length > 0) {
-    await syncDataSiloDependencies(client, dependencyUpdates);
+    await syncDataSiloDependencies(client, { input: dependencyUpdates, logger });
   }
 
   // Update processing activities
