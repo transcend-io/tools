@@ -67,8 +67,8 @@ export async function fetchConsentManager(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<ConsentManager> {
   const {
     consentManager: { consentManager },
@@ -93,10 +93,10 @@ export async function fetchConsentManagerId(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Max number of requests to send */
     maxRequests?: number;
-  },
+  } = {},
 ): Promise<string> {
   const {
     consentManager: { consentManager },
@@ -173,8 +173,8 @@ export async function fetchConsentManagerExperiences(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<ConsentExperience[]> {
   const experiences: ConsentExperience[] = [];
   let offset = 0;
@@ -252,8 +252,8 @@ export async function fetchConsentManagerAnalyticsData(
   },
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<ConsentManagerMetric[]> {
   const {
     analyticsData: { series },
@@ -291,10 +291,14 @@ export interface ConsentManagerTheme {
  */
 export async function fetchConsentManagerTheme(
   client: GraphQLClient,
-  airgapBundleId: string,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
+    /** Filter options */
+    filterBy: {
+      /** Airgap bundle ID to fetch for */
+      airgapBundleId: string;
+    };
   },
 ): Promise<ConsentManagerTheme> {
   const {
@@ -306,7 +310,7 @@ export async function fetchConsentManagerTheme(
       theme: ConsentManagerTheme;
     };
   }>(client, FETCH_CONSENT_MANAGER_THEME, {
-    variables: { airgapBundleId },
+    variables: { airgapBundleId: options.filterBy.airgapBundleId },
     logger: options.logger,
   });
   return theme;

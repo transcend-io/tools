@@ -11,7 +11,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   fetchAllProcessingActivities,
   ProcessingActivity,
@@ -98,10 +98,10 @@ async function createProcessingActivity(
   processingActivity: ProcessingActivityInput,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<Pick<ProcessingActivity, 'id' | 'title'>> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const input = {
     title: processingActivity.title,
     description: processingActivity.description,
@@ -132,10 +132,10 @@ async function updateProcessingActivities(
   processingActivityIdPairs: [ProcessingActivityInput, string][],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<void> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const invalidProcessingActivityTitles = processingActivityIdPairs
     .filter(([, id]) => id === undefined)
     .map(([{ title }]) => title);
@@ -188,10 +188,10 @@ export async function syncProcessingActivities(
   inputs: ProcessingActivityInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
 
   // Fetch existing

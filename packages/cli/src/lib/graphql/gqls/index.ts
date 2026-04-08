@@ -7,8 +7,5 @@ export * from './dataSubject.js';
 export * from './request.js';
 export * from './RequestEnricher.js';
 export * from './assessmentTemplate.js';
-export * from './RequestEnricher.js';
-export * from './RequestDataSilo.js';
 export * from './RequestIdentifier.js';
-export * from './requestFile.js';
 export * from './sombraVersion.js';

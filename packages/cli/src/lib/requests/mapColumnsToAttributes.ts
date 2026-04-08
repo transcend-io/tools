@@ -1,8 +1,8 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
+import type { AttributeKey } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 import inquirer from 'inquirer';
 
-import { AttributeKey } from '../graphql/index.js';
 import { CachedFileState } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
 

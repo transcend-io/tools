@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPolicies } from './fetchAllPolicies.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_POLICIES } from './gqls/policy.js';
@@ -27,18 +27,18 @@ const MAX_PAGE_SIZE = 100;
  * Update or create policies
  *
  * @param client - GraphQL client
- * @param policyInputs - List of policy input
  * @param options - Options
  */
 export async function updatePolicies(
   client: GraphQLClient,
-  policyInputs: [PolicyInput, string | undefined][],
   options: {
+    /** [PolicyInput, policyId] list */
+    input: [PolicyInput, string | undefined][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: policyInputs, logger = NOOP_LOGGER } = options;
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
   await mapSeries(chunk(policyInputs, MAX_PAGE_SIZE), async (page) => {
@@ -84,10 +84,10 @@ export async function syncPolicies(
   policies: PolicyInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${policies.length}" policies...`);
 
@@ -107,11 +107,10 @@ export async function syncPolicies(
 
   try {
     logger.info(`Upserting "${policies.length}" new policies...`);
-    await updatePolicies(
-      client,
-      policies.map((policy) => [policy, policiesById[policy.title]?.id]),
-      { logger },
-    );
+    await updatePolicies(client, {
+      input: policies.map((policy) => [policy, policiesById[policy.title]?.id]),
+      logger,
+    });
     logger.info(`Successfully synced ${policies.length} policies!`);
   } catch (err) {
     encounteredError = true;

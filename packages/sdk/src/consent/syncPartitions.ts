@@ -2,7 +2,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { difference } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { CONSENT_PARTITIONS, CREATE_CONSENT_PARTITION } from './gqls/consentManager.js';
 
@@ -35,10 +35,10 @@ export async function fetchPartitions(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<TranscendPartition[]> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const partitions: TranscendPartition[] = [];
   let offset = 0;
 
@@ -77,10 +77,10 @@ export async function syncPartitions(
   partitionInputs: PartitionInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
   let encounteredError = false;
   const partitions = await fetchPartitions(client, { logger });

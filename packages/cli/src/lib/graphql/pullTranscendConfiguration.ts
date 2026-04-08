@@ -37,6 +37,7 @@ import {
   fetchAllTeams,
   fetchAllVendors,
   fetchApiKeys,
+  formatAttributeValues,
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
@@ -88,7 +89,6 @@ import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
-import { formatAttributeValues } from './formatAttributeValues.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 import { fetchAllEnrichers } from './syncEnrichers.js';
 
@@ -191,7 +191,7 @@ export async function pullTranscendConfiguration(
       : [],
     // Grab API keys
     resources.includes(TranscendPullResource.ApiKeys)
-      ? fetchApiKeys({}, client, true, { logger })
+      ? fetchApiKeys(client, { fetchAll: true, logger })
       : [],
     // Fetch the data silos
     resources.includes(TranscendPullResource.DataSilos)
@@ -211,10 +211,16 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.DataFlows)
       ? [
           ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
-            ? await fetchAllDataFlows(client, ConsentTrackerStatus.Live, { logger })
+            ? await fetchAllDataFlows(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.Live },
+              })
             : []),
           ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
-            ? await fetchAllDataFlows(client, ConsentTrackerStatus.NeedsReview, { logger })
+            ? await fetchAllDataFlows(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.NeedsReview },
+              })
             : []),
         ]
       : [],
@@ -222,10 +228,16 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.Cookies)
       ? [
           ...(trackerStatuses.includes(ConsentTrackerStatus.Live)
-            ? await fetchAllCookies(client, ConsentTrackerStatus.Live, { logger })
+            ? await fetchAllCookies(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.Live },
+              })
             : []),
           ...(trackerStatuses.includes(ConsentTrackerStatus.NeedsReview)
-            ? await fetchAllCookies(client, ConsentTrackerStatus.NeedsReview, { logger })
+            ? await fetchAllCookies(client, {
+                logger,
+                filterBy: { status: ConsentTrackerStatus.NeedsReview },
+              })
             : []),
         ]
       : [],
@@ -332,7 +344,10 @@ export async function pullTranscendConfiguration(
 
   const consentManagerTheme =
     resources.includes(TranscendPullResource.ConsentManager) && consentManager
-      ? await fetchConsentManagerTheme(client, consentManager.id, { logger })
+      ? await fetchConsentManagerTheme(client, {
+          logger,
+          filterBy: { airgapBundleId: consentManager.id },
+        })
       : undefined;
 
   const result: TranscendInput = {};

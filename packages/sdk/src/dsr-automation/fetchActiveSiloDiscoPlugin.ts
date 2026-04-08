@@ -1,7 +1,7 @@
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { ENABLED_PLUGINS } from './gqls/siloDiscovery.js';
 
 export interface Plugin {
@@ -28,19 +28,25 @@ export interface PluginResponse {
  * Fetch a data silo discovery plugin
  *
  * @param client - GraphQL client
- * @param dataSiloId - The data silo to look up plugins for
  * @param options - Options
  * @returns An active data silo plugin (if multiple, returns the first)
  */
 export async function fetchActiveSiloDiscoPlugin(
   client: GraphQLClient,
-  dataSiloId: string,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
+    /** Filter options */
+    filterBy: {
+      /** The data silo to look up plugins for */
+      dataSiloId: string;
+    };
   },
 ): Promise<Plugin> {
-  const { logger } = options;
+  const {
+    logger = NOOP_LOGGER,
+    filterBy: { dataSiloId },
+  } = options;
   const response = await makeGraphQLRequest<PluginResponse>(client, ENABLED_PLUGINS, {
     variables: {
       dataSiloId,

@@ -121,7 +121,7 @@ export async function syncConfigurationToTranscend(
     dataSilos
       .map((dataSilo) => dataSilo['api-key-title'] || [])
       .reduce((acc, lst) => acc + lst.length, 0) > 0
-      ? fetchApiKeys(input, client, false, { logger })
+      ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
 
@@ -423,7 +423,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync data flows
   if (dataFlows) {
-    const syncedDataFlows = await syncDataFlows(client, dataFlows, classifyService, { logger });
+    const syncedDataFlows = await syncDataFlows(client, dataFlows, { classifyService, logger });
     encounteredError = encounteredError || !syncedDataFlows;
   }
 
