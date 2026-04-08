@@ -1,8 +1,8 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { REQUEST_IDENTIFIERS } from './gqls/index.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { REQUEST_IDENTIFIERS } from './gqls/requestIdentifier.js';
 
 export interface RequestIdentifierMetadata {
   /** ID of request identifier */
@@ -24,27 +24,28 @@ const PAGE_SIZE = 50;
  */
 export async function fetchAllRequestIdentifierMetadata(
   client: GraphQLClient,
-  {
-    requestId,
-    requestIds,
-    updatedAtBefore,
-    updatedAtAfter,
-  }: {
-    /** ID of request to filter on */
-    requestId?: string;
-    /** IDs of requests to filter on */
-    requestIds?: string[];
-    /** Filter for request identifiers updated before this date */
-    updatedAtBefore?: Date;
-    /** Filter for request identifiers updated after this date */
-    updatedAtAfter?: Date;
-  },
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** ID of request to filter on */
+      requestId?: string;
+      /** IDs of requests to filter on */
+      requestIds?: string[];
+      /** Filter for request identifiers updated before this date */
+      updatedAtBefore?: Date;
+      /** Filter for request identifiers updated after this date */
+      updatedAtAfter?: Date;
+    };
+  } = {},
 ): Promise<RequestIdentifierMetadata[]> {
+  const { logger = NOOP_LOGGER, filterBy } = options;
+  const { requestId, requestIds, updatedAtBefore, updatedAtAfter } = filterBy ?? {};
   const resolvedRequestIds = requestIds ?? (requestId ? [requestId] : undefined);
   const requestIdentifiers: RequestIdentifierMetadata[] = [];
   let offset = 0;
 
-  // Paginate
   let shouldContinue = false;
   do {
     const {

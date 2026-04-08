@@ -1,7 +1,9 @@
 import {
   fetchAllActions,
   fetchAllAttributes,
+  fetchAllDataSubjects,
   fetchApiKeys,
+  fetchIdentifiersAndCreateMissing,
   syncAction,
   syncActionItemCollections,
   syncActionItems,
@@ -14,7 +16,9 @@ import {
   syncConsentManager,
   syncCookies,
   syncDataFlows,
+  syncDataSubject,
   syncEnricher,
+  syncIdentifier,
   syncIntlMessages,
   syncPartitions,
   syncPolicies,
@@ -36,11 +40,8 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
-import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
+import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
-import { syncDataSubject } from './syncDataSubject.js';
-import { syncIdentifier } from './syncIdentifier.js';
 
 const CONCURRENCY = 10;
 
@@ -110,7 +111,11 @@ export async function syncConfigurationToTranscend(
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
     enrichers || identifiers
-      ? fetchIdentifiersAndCreateMissing(input, client, !publishToPrivacyCenter)
+      ? fetchIdentifiersAndCreateMissing(client, {
+          input,
+          skipPublish: !publishToPrivacyCenter,
+          logger,
+        })
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
     dataSilos || dataSubjects || enrichers || processingActivities
@@ -326,10 +331,11 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing identifier "${identifier.type}"...`));
         try {
           await syncIdentifier(client, {
-            identifier,
+            input: identifier,
             dataSubjectsByName,
             identifierId: existing.id,
             skipPublish: !publishToPrivacyCenter,
+            logger,
           });
           logger.info(colors.green(`Successfully synced identifier "${identifier.type}"!`));
         } catch (err) {
@@ -389,7 +395,7 @@ export async function syncConfigurationToTranscend(
   if (dataSubjects) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${dataSubjects.length}" data subjects...`));
-    const existingDataSubjects = await fetchAllDataSubjects(client);
+    const existingDataSubjects = await fetchAllDataSubjects(client, { logger });
     await map(
       dataSubjects,
       async (dataSubject) => {
@@ -403,9 +409,10 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing data subject "${dataSubject.type}"...`));
         try {
           await syncDataSubject(client, {
-            dataSubject,
+            input: dataSubject,
             dataSubjectId: existing.id,
             skipPublish: !publishToPrivacyCenter,
+            logger,
           });
           logger.info(colors.green(`Successfully synced data subject "${dataSubject.type}"!`));
         } catch (err) {

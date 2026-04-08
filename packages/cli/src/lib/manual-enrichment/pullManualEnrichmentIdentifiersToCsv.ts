@@ -3,7 +3,10 @@ import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllRequestEnrichers,
+  fetchAllRequestIdentifiers,
+  validateSombraVersion,
   type RequestEnricher,
+  type RequestIdentifier,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
@@ -11,13 +14,7 @@ import { groupBy, uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  type PrivacyRequest,
-  type RequestIdentifier,
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { type PrivacyRequest, fetchAllRequests } from '../graphql/index.js';
 import { writeCsv } from '../helpers/writeCsv.js';
 
 export interface PrivacyRequestWithIdentifiers extends PrivacyRequest {
@@ -74,7 +71,7 @@ export async function pullManualEnrichmentIdentifiersToCsv({
     statuses: [RequestStatus.Enriching],
   });
 
-  await validateSombraVersion(client);
+  await validateSombraVersion(client, { logger });
 
   // Requests to save
   const savedRequests: PrivacyRequestWithIdentifiers[] = [];
@@ -97,8 +94,9 @@ export async function pullManualEnrichmentIdentifiersToCsv({
       // Save request to queue
       if (hasManualEnrichment) {
         const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
-          requestId: request.id,
+          filterBy: { requestId: request.id },
           skipSombraCheck: true,
+          logger,
         });
         savedRequests.push({
           ...request,

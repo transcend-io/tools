@@ -42,6 +42,8 @@ import {
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
+  convertToDataSubjectAllowlist,
+  fetchAllDataSubjects,
   type AssessmentRule,
 } from '@transcend-io/sdk';
 import colors from 'colors';
@@ -89,7 +91,6 @@ import {
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
-import { convertToDataSubjectAllowlist, fetchAllDataSubjects } from './fetchDataSubjects.js';
 import { fetchEnrichedDataSilos } from './syncDataSilos.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
@@ -187,7 +188,7 @@ export async function pullTranscendConfiguration(
     // Grab all data subjects in the organization
     resources.includes(TranscendPullResource.DataSilos) ||
     resources.includes(TranscendPullResource.DataSubjects)
-      ? fetchAllDataSubjects(client)
+      ? fetchAllDataSubjects(client, { logger })
       : [],
     // Grab API keys
     resources.includes(TranscendPullResource.ApiKeys)
