@@ -193,7 +193,7 @@ describe('package conventions', () => {
     expect(tsconfig.include ?? []).toEqual(expect.arrayContaining(['src/**/*.ts']));
   });
 
-  // TODO: Remove this skip once we have a shared compilerOptions baseline for all packages
+  // TODO: https://linear.app/transcend/issue/LAK-1837/transcend-iotools-burn-down-tsconfig-overrides-across-monorepo
   test.skip.each(workspaceSharedCompilerOptionCases)(
     '$directory relies on tsconfig.base.json for shared compilerOption $compilerOptionKey',
     ({ compilerOptionKey, tsconfig }) => {
