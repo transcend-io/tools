@@ -51,8 +51,8 @@ export async function fetchAllTeams(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<Team[]> {
   const { logger } = options;
   const teams: Team[] = [];

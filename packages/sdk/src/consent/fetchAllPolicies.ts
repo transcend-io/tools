@@ -1,9 +1,10 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
-import { fetchPrivacyCenterUrl, makeGraphQLRequest } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { POLICIES } from './gqls/index.js';
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
+import { POLICIES } from './gqls/policy.js';
 
 export interface Policy {
   /** ID of policy */
@@ -29,9 +30,17 @@ export interface Policy {
  * Fetch all policies in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All policies in the organization
  */
-export async function fetchAllPolicies(client: GraphQLClient): Promise<Policy[]> {
+export async function fetchAllPolicies(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
+): Promise<Policy[]> {
+  const { logger } = options;
   const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client, { logger });
   const { privacyCenterPolicies } = await makeGraphQLRequest<{
     /** Policies */

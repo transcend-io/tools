@@ -273,8 +273,7 @@ export class TranscendPromptManager<
     const [response, largeLanguageModels, agents] = await Promise.all([
       fetchPromptsWithVariables(this.graphQLClient, {
         logger,
-        promptIds,
-        promptTitles,
+        filterBy: { ids: promptIds, titles: promptTitles },
       }),
       fetchAllLargeLanguageModels(this.graphQLClient, { logger }),
       fetchAllAgents(this.graphQLClient, { logger, filterBy: { names: agentNames } }),

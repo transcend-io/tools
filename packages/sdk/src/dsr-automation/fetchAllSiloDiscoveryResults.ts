@@ -48,8 +48,8 @@ export async function fetchAllSiloDiscoveryResults(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<SiloDiscoveryResult[]> {
   const { logger } = options;
   const siloDiscoveryResults: SiloDiscoveryResult[] = [];

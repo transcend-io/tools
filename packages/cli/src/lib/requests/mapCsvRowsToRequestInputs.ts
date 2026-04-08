@@ -8,12 +8,12 @@ import {
   IsoCountryCode,
   IsoCountrySubdivisionCode,
 } from '@transcend-io/privacy-types';
+import type { AttributeKey } from '@transcend-io/sdk';
 import { ObjByString, valuesOf } from '@transcend-io/type-utils';
 import { splitCsvToList } from '@transcend-io/utils';
 import * as t from 'io-ts';
 import { DateFromISOString } from 'io-ts-types';
 
-import { AttributeKey } from '../graphql/index.js';
 import { CachedFileState, BLANK, BULK_APPLY, ColumnName, NONE } from './constants.js';
 import { AttributeNameMap } from './mapColumnsToAttributes.js';
 import { IdentifierNameMap } from './mapColumnsToIdentifiers.js';

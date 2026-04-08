@@ -3,7 +3,7 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/consentManager.js';
@@ -48,27 +48,27 @@ const MAX_PAGE_SIZE = 100;
  * Update data flows that already existed
  *
  * @param client - GraphQL client
- * @param dataFlowInputs - [DataFlowInput, Data Flow ID] mappings to update
- * @param classifyService - Classify service if missing
  * @param options - Options
  */
 export async function updateDataFlows(
   client: GraphQLClient,
-  dataFlowInputs: [DataFlowInput, string][],
-  classifyService = false,
   options: {
+    /** [DataFlowInput, Data Flow ID] mappings to update */
+    input: [DataFlowInput, string][];
+    /** Classify service if missing */
+    classifyService?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: dataFlows, classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
   // const purposes = await fetchAllPurposes(client);
   // const purposeNameToId = keyBy(purposes, 'name');
 
-  await mapSeries(chunk(dataFlowInputs, MAX_PAGE_SIZE), async (page) => {
+  await mapSeries(chunk(dataFlows, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_DATA_FLOWS, {
       variables: {
         airgapBundleId,
@@ -106,19 +106,20 @@ export async function updateDataFlows(
  *
  * @param client - GraphQL client
  * @param dataFlowInputs - List of data flows to create
- * @param classifyService - Classify service if missing
  * @param options - Options
  */
 export async function createDataFlows(
   client: GraphQLClient,
-  dataFlowInputs: DataFlowInput[],
-  classifyService = false,
   options: {
+    /** Data flow inputs to create */
+    input: DataFlowInput[];
+    /** Classify service if missing */
+    classifyService?: boolean;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: dataFlowInputs, classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
@@ -162,20 +163,20 @@ export async function createDataFlows(
  *
  * @param client - GraphQL client
  * @param dataFlows - The data flows to upload
- * @param classifyService - When true, auto classify the service based on the data flow value
  * @param options - Options
  * @returns True if the command ran successfully, returns false if an error occurred
  */
 export async function syncDataFlows(
   client: GraphQLClient,
   dataFlows: DataFlowInput[],
-  classifyService: boolean,
   options: {
+    /** When true, auto classify the service based on the data flow value */
+    classifyService?: boolean;
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { classifyService = false, logger = NOOP_LOGGER } = options;
   let encounteredError = false;
   logger.info(`Syncing "${dataFlows.length}" data flows...`);
 
@@ -195,8 +196,14 @@ export async function syncDataFlows(
 
   logger.info('Fetching data flows...');
   const [existingLiveDataFlows, existingInReviewDataFlows] = await Promise.all([
-    fetchAllDataFlows(client, ConsentTrackerStatus.Live, { logger }),
-    fetchAllDataFlows(client, ConsentTrackerStatus.NeedsReview, { logger }),
+    fetchAllDataFlows(client, {
+      logger,
+      filterBy: { status: ConsentTrackerStatus.Live },
+    }),
+    fetchAllDataFlows(client, {
+      logger,
+      filterBy: { status: ConsentTrackerStatus.NeedsReview },
+    }),
   ]);
   const allDataFlows = [...existingLiveDataFlows, ...existingInReviewDataFlows];
 
@@ -210,7 +217,7 @@ export async function syncDataFlows(
     .map(([flow]) => flow as DataFlowInput);
   try {
     logger.info(`Creating "${newDataFlows.length}" new data flows...`);
-    await createDataFlows(client, newDataFlows, classifyService, { logger });
+    await createDataFlows(client, { input: newDataFlows, classifyService, logger });
     logger.info(`Successfully synced ${newDataFlows.length} data flows!`);
   } catch (err) {
     encounteredError = true;
@@ -222,7 +229,7 @@ export async function syncDataFlows(
   );
   try {
     logger.info(`Updating "${existingDataFlows.length}" data flows...`);
-    await updateDataFlows(client, existingDataFlows, classifyService, { logger });
+    await updateDataFlows(client, { input: existingDataFlows, classifyService, logger });
     logger.info(`Successfully updated "${existingDataFlows.length}" data flows!`);
   } catch (err) {
     encounteredError = true;

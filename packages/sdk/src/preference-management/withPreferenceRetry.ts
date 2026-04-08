@@ -1,5 +1,7 @@
 import { extractErrorMessage, sleepPromise, type Logger } from '@transcend-io/utils';
 
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+
 /**
  * Transient network / platform errors that merit a retry.
  * Keep this list short and specific to avoid masking real failures.
@@ -20,7 +22,7 @@ export const RETRY_PREFERENCE_MSGS: string[] = [
  * Options for retrying preference operations.
  */
 export type RetryOptions = {
-  logger: Logger;
+  logger?: Logger;
   /** Max attempts including the first try (default 12) */
   maxAttempts?: number;
   /** Initial backoff in ms (default 250) */
@@ -44,7 +46,7 @@ export async function withPreferenceRetry<T>(
   name: string,
   fn: () => Promise<T>,
   {
-    logger,
+    logger = NOOP_LOGGER,
     maxAttempts = 12,
     baseDelayMs = 250,
     isRetryable = (_err, msg) => RETRY_PREFERENCE_MSGS.some((m) => msg.toLowerCase().includes(m)),

@@ -1,4 +1,12 @@
-import type { DataSiloAttributeValue } from './syncDataSilos.js';
+export interface DataSiloAttributeValue {
+  /** Key associated to value */
+  attributeKey: {
+    /** Name of key */
+    name: string;
+  };
+  /** Name of value */
+  name: string;
+}
 
 export interface FormattedAttribute {
   /** Attribute key */

@@ -2,6 +2,7 @@ import { decodeCodec } from '@transcend-io/type-utils';
 import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { ConsentPreferenceResponse, PreferencesQueryFilter, ChunkMode } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
@@ -20,7 +21,7 @@ export async function consentWindowHasAny(
     baseFilter,
     afterISO,
     beforeISO,
-    logger,
+    logger = NOOP_LOGGER,
   }: {
     /** Partition */
     partition: string;
@@ -32,7 +33,7 @@ export async function consentWindowHasAny(
     afterISO: string;
     /** Before ISO date */
     beforeISO: string;
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
   const filter: PreferencesQueryFilter =
