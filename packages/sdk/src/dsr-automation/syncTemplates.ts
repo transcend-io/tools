@@ -38,13 +38,16 @@ const PAGE_SIZE = 20;
 export async function fetchAllTemplates(
   client: GraphQLClient,
   options: {
-    /** Filter by title */
-    title?: string;
     /** Logger instance */
     logger: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** Filter by title */
+      title?: string;
+    };
   },
 ): Promise<Template[]> {
-  const { title, logger } = options;
+  const { logger, filterBy: { title } = {} } = options;
   const templates: Template[] = [];
   let offset = 0;
 
@@ -86,7 +89,10 @@ export async function syncTemplate(
   },
 ): Promise<void> {
   const { logger } = options;
-  const matches = await fetchAllTemplates(client, { title: template.title, logger });
+  const matches = await fetchAllTemplates(client, {
+    logger,
+    filterBy: { title: template.title },
+  });
   const existingTemplate = matches.find(({ title }) => title === template.title);
 
   if (!existingTemplate) {

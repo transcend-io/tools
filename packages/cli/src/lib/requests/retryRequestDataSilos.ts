@@ -65,14 +65,10 @@ export async function retryRequestDataSilos({
     allRequests,
     async (requestToRestart) => {
       try {
-        const requestDataSilo = await fetchRequestDataSilo(
-          client,
-          {
-            requestId: requestToRestart.id,
-            dataSiloId,
-          },
-          { logger },
-        );
+        const requestDataSilo = await fetchRequestDataSilo(client, {
+          logger,
+          filterBy: { requestId: requestToRestart.id, dataSiloId },
+        });
 
         await makeGraphQLRequest<{
           /** Whether we successfully uploaded the results */

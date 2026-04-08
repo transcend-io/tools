@@ -37,26 +37,26 @@ export interface RequestFileResponse {
  * Fetch all RequestFiles for a single request
  *
  * @param client - GraphQL client
- * @param pageSize - How many request files to fetch per API call
- * @param filterBy - Filter by
  * @param options - Options
  * @returns All RequestFiles in the organization
  */
 export async function fetchRequestFilesForRequest(
   client: GraphQLClient,
-  pageSize: number,
-  filterBy: {
-    /** Filter by request IDs */
-    requestIds: string[];
-    /** Filter by data silo ID */
-    dataSiloIds: string[];
-  },
   options: {
     /** Logger instance */
     logger: Logger;
+    /** How many request files to fetch per API call */
+    pageSize?: number;
+    /** Filter options */
+    filterBy: {
+      /** Filter by request IDs */
+      requestIds: string[];
+      /** Filter by data silo ID */
+      dataSiloIds: string[];
+    };
   },
 ): Promise<RequestFile[]> {
-  const { logger } = options;
+  const { logger, pageSize = 100, filterBy } = options;
   const requestFiles: RequestFile[] = [];
   let cursor: string | null = null;
 

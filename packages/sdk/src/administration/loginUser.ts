@@ -26,20 +26,19 @@ export interface UserRole {
  * Log in as a user
  *
  * @param client - GraphQL client
- * @param options - Email/password
+ * @param credentials - Email and password
+ * @param options - Options
  * @returns Cookie and roles
  */
 export async function loginUser(
   client: GraphQLClient,
-  {
-    email,
-    password,
-    logger,
-  }: {
+  credentials: {
     /** Email of user */
     email: string;
     /** Password of user */
     password: string;
+  },
+  options: {
     /** Logger instance */
     logger: Logger;
   },
@@ -49,6 +48,9 @@ export async function loginUser(
   /** Roles of the user  */
   roles: UserRole[];
 }> {
+  const { email, password } = credentials;
+  const { logger } = options;
+
   const {
     determineLoginMethod: { loginMethod },
   } = await makeGraphQLRequest<{
@@ -101,23 +103,25 @@ export async function loginUser(
  * Assume role for user into another organization
  *
  * @param client - GraphQL client
- * @param options - Email/password
+ * @param params - Email and role ID
+ * @param options - Options
  */
 export async function assumeRole(
   client: GraphQLClient,
-  {
-    email,
-    roleId,
-    logger,
-  }: {
+  params: {
     /** Email of user */
     email: string;
     /** Role of user assuming into */
     roleId: string;
+  },
+  options: {
     /** Logger instance */
     logger: Logger;
   },
 ): Promise<void> {
+  const { email, roleId } = params;
+  const { logger } = options;
+
   const {
     determineLoginMethod: { loginMethod },
   } = await makeGraphQLRequest<{

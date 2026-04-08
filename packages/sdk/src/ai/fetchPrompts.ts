@@ -164,13 +164,16 @@ export async function fetchPromptsWithVariables(
   options: {
     /** Logger instance */
     logger: Logger;
-    /** Filter by prompt titles */
-    promptTitles?: string[];
-    /** Filter by prompt ids */
-    promptIds?: string[];
+    /** Filter options */
+    filterBy?: {
+      /** Filter by prompt titles */
+      titles?: string[];
+      /** Filter by prompt ids */
+      ids?: string[];
+    };
   },
 ): Promise<TranscendPromptsAndVariables> {
-  const { logger, promptTitles = [], promptIds = [] } = options;
+  const { logger, filterBy: { titles: promptTitles = [], ids: promptIds = [] } = {} } = options;
   const { promptsWithVariables } = await makeGraphQLRequest<{
     /** Prompts */
     promptsWithVariables: TranscendPromptsAndVariables;

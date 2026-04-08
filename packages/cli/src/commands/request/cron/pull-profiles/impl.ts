@@ -85,15 +85,14 @@ export async function pullProfiles(
         logger.info(
           colors.magenta(`Fetching target identifiers for ${requestIds.length} requests`),
         );
-        const results = await fetchRequestFilesForRequest(
-          client,
-          pageLimit * 2,
-          {
+        const results = await fetchRequestFilesForRequest(client, {
+          logger,
+          pageSize: pageLimit * 2,
+          filterBy: {
             requestIds,
             dataSiloIds: [targetDataSiloId],
           },
-          { logger },
-        );
+        });
         return results.map(({ fileName, remoteId }) => {
           if (!remoteId) {
             throw new Error(`Failed to find remoteId for ${fileName}`);

@@ -50,14 +50,10 @@ export async function skipRequestDataSilos({
   const t0 = new Date().getTime();
 
   // Determine total number of request data silos
-  const requestDataSiloCount = await fetchRequestDataSilosCount(
-    client,
-    {
-      dataSiloId,
-      requestStatuses,
-    },
-    { logger },
-  );
+  const requestDataSiloCount = await fetchRequestDataSilosCount(client, {
+    logger,
+    filterBy: { dataSiloId, requestStatuses },
+  });
   logger.info(
     colors.magenta(
       `Marking ${requestDataSiloCount} request data silos as completed${actionTypes.length > 0 ? ` for action types: ${actionTypes.join(',')}` : ''}`,
@@ -71,18 +67,14 @@ export async function skipRequestDataSilos({
   progressBar.start(requestDataSiloCount, 0);
 
   // Fetch all matching request data silos, updating progress as pages are fetched
-  const requestDataSilos = await fetchRequestDataSilos(
-    client,
-    {
-      dataSiloId,
-      requestStatuses,
-      onProgress: (numFetched) => {
-        total += numFetched / 2;
-        progressBar.update(total);
-      },
+  const requestDataSilos = await fetchRequestDataSilos(client, {
+    logger,
+    filterBy: { dataSiloId, requestStatuses },
+    onProgress: (numFetched) => {
+      total += numFetched / 2;
+      progressBar.update(total);
     },
-    { logger },
-  );
+  });
 
   await map(
     requestDataSilos,

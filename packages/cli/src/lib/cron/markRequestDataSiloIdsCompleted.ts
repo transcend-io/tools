@@ -59,14 +59,10 @@ export async function markRequestDataSiloIdsCompleted({
   await map(
     requestIds,
     async (requestId) => {
-      const requestDataSilo = await fetchRequestDataSilo(
-        client,
-        {
-          requestId,
-          dataSiloId,
-        },
-        { logger },
-      );
+      const requestDataSilo = await fetchRequestDataSilo(client, {
+        logger,
+        filterBy: { requestId, dataSiloId },
+      });
 
       try {
         await makeGraphQLRequest<{

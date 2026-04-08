@@ -54,19 +54,22 @@ const PAGE_SIZE = 20;
  * Fetch all Cookies in the organization
  *
  * @param client - GraphQL client
- * @param status - The status to fetch
  * @param options - Options
  * @returns All Cookies in the organization
  */
 export async function fetchAllCookies(
   client: GraphQLClient,
-  status = ConsentTrackerStatus.Live,
   options: {
     /** Logger instance */
     logger: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** The status to fetch */
+      status?: ConsentTrackerStatus;
+    };
   },
 ): Promise<Cookie[]> {
-  const { logger } = options;
+  const { logger, filterBy: { status = ConsentTrackerStatus.Live } = {} } = options;
   const cookies: Cookie[] = [];
   let offset = 0;
 

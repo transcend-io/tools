@@ -66,7 +66,7 @@ export async function generateCrossAccountApiKeys({
 
   // Login the user
   logger.info(colors.magenta('Logging in using email and password.'));
-  const { roles, loginCookie } = await loginUser(client, { email, password, logger });
+  const { roles, loginCookie } = await loginUser(client, { email, password }, { logger });
   logger.info(
     colors.green(
       `Successfully logged in and found ${roles.length} role${roles.length === 1 ? '' : 's'}!`,
@@ -100,7 +100,7 @@ export async function generateCrossAccountApiKeys({
   await mapSeries(filteredRoles, async (role) => {
     try {
       // Log into the other instance
-      await assumeRole(client, { roleId: role.id, email, logger });
+      await assumeRole(client, { roleId: role.id, email }, { logger });
 
       // Grab API keys with that title
       logger.info(
@@ -110,7 +110,10 @@ export async function generateCrossAccountApiKeys({
       );
 
       // Delete existing API key
-      const [apiKeyWithTitle] = await fetchAllApiKeys(client, { titles: [apiKeyTitle], logger });
+      const [apiKeyWithTitle] = await fetchAllApiKeys(client, {
+        logger,
+        filterBy: { titles: [apiKeyTitle] },
+      });
       if (apiKeyWithTitle && deleteExistingApiKey) {
         logger.info(
           colors.yellow(

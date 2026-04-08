@@ -58,19 +58,22 @@ const PAGE_SIZE = 20;
  * Fetch all DataFlows in the organization
  *
  * @param client - GraphQL client
- * @param status - The status to fetch
  * @param options - Options
  * @returns All DataFlows in the organization
  */
 export async function fetchAllDataFlows(
   client: GraphQLClient,
-  status = ConsentTrackerStatus.Live,
   options: {
     /** Logger instance */
     logger: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** The status to fetch */
+      status?: ConsentTrackerStatus;
+    };
   },
 ): Promise<DataFlow[]> {
-  const { logger } = options;
+  const { logger, filterBy: { status = ConsentTrackerStatus.Live } = {} } = options;
   const dataFlows: DataFlow[] = [];
   let offset = 0;
 
