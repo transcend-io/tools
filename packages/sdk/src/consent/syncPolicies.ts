@@ -27,18 +27,18 @@ const MAX_PAGE_SIZE = 100;
  * Update or create policies
  *
  * @param client - GraphQL client
- * @param policyInputs - List of policy input
  * @param options - Options
  */
 export async function updatePolicies(
   client: GraphQLClient,
-  policyInputs: [PolicyInput, string | undefined][],
   options: {
+    /** [PolicyInput, policyId] list */
+    policies: [PolicyInput, string | undefined][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { policies: policyInputs, logger = NOOP_LOGGER } = options;
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
   await mapSeries(chunk(policyInputs, MAX_PAGE_SIZE), async (page) => {
@@ -85,7 +85,7 @@ export async function syncPolicies(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
@@ -107,11 +107,10 @@ export async function syncPolicies(
 
   try {
     logger.info(`Upserting "${policies.length}" new policies...`);
-    await updatePolicies(
-      client,
-      policies.map((policy) => [policy, policiesById[policy.title]?.id]),
-      { logger },
-    );
+    await updatePolicies(client, {
+      policies: policies.map((policy) => [policy, policiesById[policy.title]?.id]),
+      logger,
+    });
     logger.info(`Successfully synced ${policies.length} policies!`);
   } catch (err) {
     encounteredError = true;

@@ -48,27 +48,27 @@ const MAX_PAGE_SIZE = 100;
  * Update data flows that already existed
  *
  * @param client - GraphQL client
- * @param dataFlowInputs - [DataFlowInput, Data Flow ID] mappings to update
  * @param options - Options
  */
 export async function updateDataFlows(
   client: GraphQLClient,
-  dataFlowInputs: [DataFlowInput, string][],
   options: {
+    /** [DataFlowInput, Data Flow ID] mappings to update */
+    dataFlows: [DataFlowInput, string][];
     /** Classify service if missing */
     classifyService?: boolean;
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { classifyService = false, logger = NOOP_LOGGER } = options;
+  const { dataFlows, classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
   // const purposes = await fetchAllPurposes(client);
   // const purposeNameToId = keyBy(purposes, 'name');
 
-  await mapSeries(chunk(dataFlowInputs, MAX_PAGE_SIZE), async (page) => {
+  await mapSeries(chunk(dataFlows, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_DATA_FLOWS, {
       variables: {
         airgapBundleId,
@@ -116,7 +116,7 @@ export async function createDataFlows(
     classifyService?: boolean;
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { classifyService = false, logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
@@ -173,7 +173,7 @@ export async function syncDataFlows(
     classifyService?: boolean;
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { classifyService = false, logger = NOOP_LOGGER } = options;
   let encounteredError = false;
@@ -228,7 +228,7 @@ export async function syncDataFlows(
   );
   try {
     logger.info(`Updating "${existingDataFlows.length}" data flows...`);
-    await updateDataFlows(client, existingDataFlows, { classifyService, logger });
+    await updateDataFlows(client, { dataFlows: existingDataFlows, classifyService, logger });
     logger.info(`Successfully updated "${existingDataFlows.length}" data flows!`);
   } catch (err) {
     encounteredError = true;

@@ -43,7 +43,7 @@ export async function fetchAllRepositories(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Repository[]> {
   const { logger } = options;
   const repositories: Repository[] = [];

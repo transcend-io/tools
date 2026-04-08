@@ -34,7 +34,7 @@ export async function createAgentFile(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<AgentFile, 'id' | 'name' | 'fileId'>> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -65,22 +65,22 @@ export async function createAgentFile(
  * Update agent files
  *
  * @param client - GraphQL client
- * @param agentFileIdPairs - [AgentFileInput, agentFileId] list
  * @param options - Options
  */
 export async function updateAgentFiles(
   client: GraphQLClient,
-  agentFileIdPairs: [AgentFileInput, string][],
   options: {
+    /** [AgentFileInput, agentFileId] list */
+    agentFiles: [AgentFileInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { agentFiles, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FILES, {
     variables: {
       input: {
-        agentFiles: agentFileIdPairs.map(([agentFile, id]) => ({
+        agentFiles: agentFiles.map(([agentFile, id]) => ({
           id,
           name: agentFile.name,
           description: agentFile.description,
@@ -108,7 +108,7 @@ export async function syncAgentFiles(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" agent files...`);
@@ -136,11 +136,10 @@ export async function syncAgentFiles(
 
   try {
     logger.info(`Updating "${inputs.length}" agent files!`);
-    await updateAgentFiles(
-      client,
-      inputs.map((input) => [input, agentFileByName[input.name]!.id]),
-      { logger },
-    );
+    await updateAgentFiles(client, {
+      agentFiles: inputs.map((input) => [input, agentFileByName[input.name]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" agent files!`);
   } catch (err) {
     encounteredError = true;

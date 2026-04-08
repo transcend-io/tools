@@ -35,7 +35,7 @@ export async function fetchAllActionItemCollections(
       /** Filter on location */
       location?: TranscendProduct;
     };
-  },
+  } = {},
 ): Promise<ActionItemCollection[]> {
   const { logger, filterBy = {} } = options;
   const {

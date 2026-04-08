@@ -32,7 +32,7 @@ export async function createPromptPartial(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<string> {
   const { logger = NOOP_LOGGER } = options;
   const {
@@ -58,30 +58,30 @@ export async function createPromptPartial(
  * Update a set of existing prompt partials
  *
  * @param client - GraphQL client
- * @param input - Prompt input
  * @param options - Options
  */
 export async function updatePromptPartials(
   client: GraphQLClient,
-  input: [PromptPartialInput, string][],
   options: {
+    /** [PromptPartialInput, promptPartialId] list */
+    promptPartials: [PromptPartialInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { promptPartials, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPT_PARTIALS, {
     variables: {
       input: {
-        promptPartials: input.map(([input, id]) => ({
-          ...input,
+        promptPartials: promptPartials.map(([promptPartial, id]) => ({
+          ...promptPartial,
           id,
         })),
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${input.length} prompt partials!`);
+  logger.info(`Successfully updated ${promptPartials.length} prompt partials!`);
 }
 
 /**
@@ -100,7 +100,7 @@ export async function syncPromptPartials(
     logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
@@ -143,7 +143,7 @@ export async function syncPromptPartials(
   );
   try {
     logger.info(`Updating "${existingPromptPartials.length}" prompt partials...`);
-    await updatePromptPartials(client, existingPromptPartials, { logger });
+    await updatePromptPartials(client, { promptPartials: existingPromptPartials, logger });
     logger.info(`Successfully updated "${existingPromptPartials.length}" prompt partials!`);
   } catch (err) {
     encounteredError = true;

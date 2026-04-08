@@ -68,7 +68,7 @@ export async function fetchConsentManager(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<ConsentManager> {
   const {
     consentManager: { consentManager },
@@ -96,7 +96,7 @@ export async function fetchConsentManagerId(
     logger?: Logger;
     /** Max number of requests to send */
     maxRequests?: number;
-  },
+  } = {},
 ): Promise<string> {
   const {
     consentManager: { consentManager },
@@ -174,7 +174,7 @@ export async function fetchConsentManagerExperiences(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<ConsentExperience[]> {
   const experiences: ConsentExperience[] = [];
   let offset = 0;
@@ -253,7 +253,7 @@ export async function fetchConsentManagerAnalyticsData(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<ConsentManagerMetric[]> {
   const {
     analyticsData: { series },

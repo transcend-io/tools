@@ -52,7 +52,7 @@ export async function fetchAllTeams(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Team[]> {
   const { logger } = options;
   const teams: Team[] = [];

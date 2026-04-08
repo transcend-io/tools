@@ -50,7 +50,7 @@ export async function fetchAllProcessingPurposes(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<ProcessingPurposeSubCategory[]> {
   const processingPurposeSubCategories: ProcessingPurposeSubCategory[] = [];
   let offset = 0;

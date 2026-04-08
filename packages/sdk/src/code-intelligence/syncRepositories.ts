@@ -46,7 +46,7 @@ export async function createRepository(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Repository> {
   const { logger = NOOP_LOGGER } = options;
   const {
@@ -69,38 +69,38 @@ export async function createRepository(
  * Update an existing repository
  *
  * @param client - GraphQL client
- * @param inputs - Repository input
  * @param options - Options
  * @returns Updated repositories
  */
 export async function updateRepositories(
   client: GraphQLClient,
-  inputs: {
-    /** ID of repository */
-    id: string;
-    /** Title of repository */
-    name?: string;
-    /** Description of the repository */
-    description?: string;
-    /** Github repository */
-    url?: string;
-    /** User IDs of owners */
-    ownerIds?: string[];
-    /** Emails of owners */
-    ownerEmails?: string[];
-    /** Team IDs */
-    teamIds?: string[];
-    /** Team names */
-    teamNames?: string[];
-  }[],
   options: {
+    /** Repository inputs to update */
+    repositories: {
+      /** ID of repository */
+      id: string;
+      /** Title of repository */
+      name?: string;
+      /** Description of the repository */
+      description?: string;
+      /** Github repository */
+      url?: string;
+      /** User IDs of owners */
+      ownerIds?: string[];
+      /** Emails of owners */
+      ownerEmails?: string[];
+      /** Team IDs */
+      teamIds?: string[];
+      /** Team names */
+      teamNames?: string[];
+    }[];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<Repository[]> {
-  const { logger = NOOP_LOGGER } = options;
+  const { repositories, logger = NOOP_LOGGER } = options;
   const {
-    updateRepositories: { repositories },
+    updateRepositories: { repositories: updatedRepositories },
   } = await makeGraphQLRequest<{
     /** updateRepositories mutation */
     updateRepositories: {
@@ -110,13 +110,13 @@ export async function updateRepositories(
   }>(client, UPDATE_REPOSITORIES, {
     variables: {
       input: {
-        repositories: inputs,
+        repositories,
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${inputs.length} repositories!`);
-  return repositories;
+  logger.info(`Successfully updated ${repositories.length} repositories!`);
+  return updatedRepositories;
 }
 
 /**
@@ -135,7 +135,7 @@ export async function syncRepositories(
     logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<{
   /** The repositories that were upserted */
   repositories: Repository[];
@@ -187,14 +187,13 @@ export async function syncRepositories(
 
   await mapSeries(chunks, async (chunk) => {
     try {
-      const updatedRepos = await updateRepositories(
-        client,
-        chunk.map(([input, id]) => ({
+      const updatedRepos = await updateRepositories(client, {
+        repositories: chunk.map(([input, id]) => ({
           ...input,
           id,
         })),
-        { logger },
-      );
+        logger,
+      });
       repos.push(...updatedRepos);
       logger.info(`Successfully updated "${existingRepositories.length}" repositories!`);
     } catch (err) {

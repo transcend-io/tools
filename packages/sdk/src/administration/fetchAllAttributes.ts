@@ -97,7 +97,7 @@ export async function fetchAllAttributes(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Attribute[]> {
   const { logger } = options;
   const attributes: Attribute[] = [];

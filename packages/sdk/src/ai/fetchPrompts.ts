@@ -45,7 +45,7 @@ export async function fetchAllPrompts(
       /** Filter by titles */
       titles?: string[];
     };
-  },
+  } = {},
 ): Promise<Prompt[]> {
   const { logger, filterBy: { text, ids = [], titles = [] } = {} } = options;
   const prompts: Prompt[] = [];
@@ -171,7 +171,7 @@ export async function fetchPromptsWithVariables(
       /** Filter by prompt ids */
       ids?: string[];
     };
-  },
+  } = {},
 ): Promise<TranscendPromptsAndVariables> {
   const { logger, filterBy: { titles: promptTitles = [], ids: promptIds = [] } = {} } = options;
   const { promptsWithVariables } = await makeGraphQLRequest<{

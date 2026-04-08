@@ -67,7 +67,7 @@ export async function fetchAllCookies(
       /** The status to fetch */
       status?: ConsentTrackerStatus;
     };
-  },
+  } = {},
 ): Promise<Cookie[]> {
   const { logger, filterBy: { status = ConsentTrackerStatus.Live } = {} } = options;
   const cookies: Cookie[] = [];

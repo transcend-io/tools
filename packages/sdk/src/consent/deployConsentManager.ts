@@ -23,7 +23,7 @@ export async function deployConsentManager(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   await makeGraphQLRequest(client, DEPLOY_CONSENT_MANAGER, {
     variables: { airgapBundleId: input.id, bundleType: input.bundleType },
@@ -35,24 +35,25 @@ export async function deployConsentManager(
  * Update the Consent Manager to the latest airgap.js version
  *
  * @param client - GraphQL client
- * @param input - Update input
  * @param options - Options
  */
 export async function updateConsentManagerToLatest(
   client: GraphQLClient,
-  input: {
-    /** ID of Consent Manager */
-    id: string;
-    /** Type of bundle */
-    bundleType: ConsentBundleType;
-  },
   options: {
+    /** Consent manager to update */
+    consentManager: {
+      /** ID of Consent Manager */
+      id: string;
+      /** Type of bundle */
+      bundleType: ConsentBundleType;
+    };
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
+  const { consentManager, logger } = options;
   await makeGraphQLRequest(client, UPDATE_CONSENT_MANAGER_TO_LATEST, {
-    variables: { airgapBundleId: input.id, bundleType: input.bundleType },
-    logger: options.logger,
+    variables: { airgapBundleId: consentManager.id, bundleType: consentManager.bundleType },
+    logger,
   });
 }

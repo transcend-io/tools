@@ -16,7 +16,7 @@ export async function fetchPrivacyCenterUrl(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<string> {
   const { organization } = await makeGraphQLRequest<{
     /** Organization */
@@ -45,7 +45,7 @@ export async function fetchPrivacyCenterId(
       /** URL to look up */
       url?: string;
     };
-  },
+  } = {},
 ): Promise<string> {
   const { logger, filterBy: { url } = {} } = options;
   let urlToUse = url;

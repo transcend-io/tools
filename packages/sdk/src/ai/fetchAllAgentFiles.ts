@@ -47,7 +47,7 @@ export async function fetchAllAgentFiles(
     logger?: Logger;
     /** Filter by */
     filterBy?: AgentFileFilterBy;
-  },
+  } = {},
 ): Promise<AgentFile[]> {
   const { logger, filterBy = {} } = options;
   const agentFiles: AgentFile[] = [];

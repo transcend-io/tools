@@ -47,7 +47,7 @@ export async function fetchAllBusinessEntities(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<BusinessEntity[]> {
   const { logger } = options;
   const businessEntities: BusinessEntity[] = [];

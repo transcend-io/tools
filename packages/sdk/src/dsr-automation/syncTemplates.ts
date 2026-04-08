@@ -45,7 +45,7 @@ export async function fetchAllTemplates(
       /** Filter by title */
       title?: string;
     };
-  },
+  } = {},
 ): Promise<Template[]> {
   const { logger, filterBy: { title } = {} } = options;
   const templates: Template[] = [];
@@ -86,7 +86,7 @@ export async function syncTemplate(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { logger } = options;
   const matches = await fetchAllTemplates(client, {

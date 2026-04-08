@@ -69,7 +69,7 @@ export async function createSoftwareDevelopmentKit(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<SoftwareDevelopmentKit> {
   const { logger = NOOP_LOGGER } = options;
   const {
@@ -92,44 +92,44 @@ export async function createSoftwareDevelopmentKit(
  * Update an existing software development kit
  *
  * @param client - GraphQL client
- * @param inputs - Software development kit input
  * @param options - Options
  * @returns Updated software development kits
  */
 export async function updateSoftwareDevelopmentKits(
   client: GraphQLClient,
-  inputs: {
-    /** ID of software development kit */
-    id: string;
-    /** Title of software development kit */
-    name?: string;
-    /** Description of the SDK */
-    description?: string;
-    /** Github repository */
-    repositoryUrl?: string;
-    /** Integration name */
-    catalogIntegrationName?: string;
-    /** Doc links */
-    documentationLinks?: string[];
-    /** Code package IDs */
-    codePackageIds?: string[];
-    /** Code package names */
-    codePackageNames?: string[];
-    /** User IDs of owners */
-    ownerIds?: string[];
-    /** Emails of owners */
-    ownerEmails?: string[];
-    /** Team IDs */
-    teamIds?: string[];
-    /** Team names */
-    teamNames?: string[];
-  }[],
   options: {
+    /** Software development kit inputs to update */
+    sdks: {
+      /** ID of software development kit */
+      id: string;
+      /** Title of software development kit */
+      name?: string;
+      /** Description of the SDK */
+      description?: string;
+      /** Github repository */
+      repositoryUrl?: string;
+      /** Integration name */
+      catalogIntegrationName?: string;
+      /** Doc links */
+      documentationLinks?: string[];
+      /** Code package IDs */
+      codePackageIds?: string[];
+      /** Code package names */
+      codePackageNames?: string[];
+      /** User IDs of owners */
+      ownerIds?: string[];
+      /** Emails of owners */
+      ownerEmails?: string[];
+      /** Team IDs */
+      teamIds?: string[];
+      /** Team names */
+      teamNames?: string[];
+    }[];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<SoftwareDevelopmentKit[]> {
-  const { logger = NOOP_LOGGER } = options;
+  const { sdks, logger = NOOP_LOGGER } = options;
   const {
     updateSoftwareDevelopmentKits: { softwareDevelopmentKits },
   } = await makeGraphQLRequest<{
@@ -141,12 +141,12 @@ export async function updateSoftwareDevelopmentKits(
   }>(client, UPDATE_SOFTWARE_DEVELOPMENT_KITS, {
     variables: {
       input: {
-        softwareDevelopmentKits: inputs,
+        softwareDevelopmentKits: sdks,
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${inputs.length} software development kits!`);
+  logger.info(`Successfully updated ${sdks.length} software development kits!`);
   return softwareDevelopmentKits;
 }
 
@@ -166,7 +166,7 @@ export async function syncSoftwareDevelopmentKits(
     logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<{
   /** The SDKs that were upserted */
   softwareDevelopmentKits: SoftwareDevelopmentKit[];
@@ -228,15 +228,14 @@ export async function syncSoftwareDevelopmentKits(
 
   await mapSeries(chunks, async (chunk) => {
     try {
-      const updatedSdks = await updateSoftwareDevelopmentKits(
-        client,
+      const updatedSdks = await updateSoftwareDevelopmentKits(client, {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        chunk.map(([{ codePackageType, ...input }, id]) => ({
+        sdks: chunk.map(([{ codePackageType, ...input }, id]) => ({
           ...input,
           id,
         })),
-        { logger },
-      );
+        logger,
+      });
       sdks.push(...updatedSdks);
       logger.info(
         `Successfully updated "${existingSoftwareDevelopmentKits.length}" software development kits!`,

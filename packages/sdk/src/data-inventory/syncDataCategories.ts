@@ -43,7 +43,7 @@ export async function createDataCategory(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<DataSubCategory, 'id' | 'name' | 'category'>> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -70,22 +70,22 @@ export async function createDataCategory(
  * Update data categories
  *
  * @param client - GraphQL client
- * @param dataCategoryIdPairs - [DataCategoryInput, dataCategoryId] list
  * @param options - Options
  */
 export async function updateDataCategories(
   client: GraphQLClient,
-  dataCategoryIdPairs: [DataCategoryInput, string][],
   options: {
+    /** [DataCategoryInput, dataCategoryId] list */
+    dataCategories: [DataCategoryInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { dataCategories, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_DATA_SUB_CATEGORIES, {
     variables: {
       input: {
-        dataSubCategories: dataCategoryIdPairs.map(([dataCategory, id]) => ({
+        dataSubCategories: dataCategories.map(([dataCategory, id]) => ({
           id,
           description: dataCategory.description,
           // TODO: https://transcend.height.app/T-31994 - add  teams, owners
@@ -111,7 +111,7 @@ export async function syncDataCategories(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" data categories...`);
@@ -149,11 +149,13 @@ export async function syncDataCategories(
   // Update all data categories
   try {
     logger.info(`Updating "${inputs.length}" data categories!`);
-    await updateDataCategories(
-      client,
-      inputs.map((input) => [input, dataCategoryByName[`${input.name}:${input.category}`]!.id]),
-      { logger },
-    );
+    await updateDataCategories(client, {
+      dataCategories: inputs.map((input) => [
+        input,
+        dataCategoryByName[`${input.name}:${input.category}`]!.id,
+      ]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" data categories!`);
   } catch (err) {
     encounteredError = true;

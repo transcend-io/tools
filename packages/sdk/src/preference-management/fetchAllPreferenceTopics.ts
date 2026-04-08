@@ -63,7 +63,7 @@ export async function fetchAllPreferenceTopics(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<PreferenceTopic[]> {
   const { logger } = options;
   const preferenceTopics: PreferenceTopic[] = [];

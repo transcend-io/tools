@@ -58,7 +58,7 @@ export async function fetchAllPurposes(
       /** Whether to include deleted purposes */
       includeDeleted?: boolean;
     };
-  },
+  } = {},
 ): Promise<Purpose[]> {
   const { logger, filterBy: { includeDeleted = false } = {} } = options;
   const purposes: Purpose[] = [];

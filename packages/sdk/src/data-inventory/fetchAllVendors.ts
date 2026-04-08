@@ -66,7 +66,7 @@ export async function fetchAllVendors(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Vendor[]> {
   const { logger } = options;
   const vendors: Vendor[] = [];

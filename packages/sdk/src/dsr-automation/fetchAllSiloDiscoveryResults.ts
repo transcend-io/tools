@@ -49,7 +49,7 @@ export async function fetchAllSiloDiscoveryResults(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<SiloDiscoveryResult[]> {
   const { logger } = options;
   const siloDiscoveryResults: SiloDiscoveryResult[] = [];

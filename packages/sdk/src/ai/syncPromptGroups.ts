@@ -39,7 +39,7 @@ export async function createPromptGroup(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<string> {
   const { logger = NOOP_LOGGER } = options;
   const {
@@ -65,30 +65,30 @@ export async function createPromptGroup(
  * Update a set of existing prompt groups
  *
  * @param client - GraphQL client
- * @param input - Prompt input
  * @param options - Options
  */
 export async function updatePromptGroups(
   client: GraphQLClient,
-  input: [EditPromptGroupInput, string][],
   options: {
+    /** [EditPromptGroupInput, promptGroupId] list */
+    promptGroups: [EditPromptGroupInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { promptGroups, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPT_GROUPS, {
     variables: {
       input: {
-        promptGroups: input.map(([input, id]) => ({
-          ...input,
+        promptGroups: promptGroups.map(([promptGroup, id]) => ({
+          ...promptGroup,
           id,
         })),
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${input.length} prompt groups!`);
+  logger.info(`Successfully updated ${promptGroups.length} prompt groups!`);
 }
 
 /**
@@ -107,7 +107,7 @@ export async function syncPromptGroups(
     logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
@@ -165,9 +165,8 @@ export async function syncPromptGroups(
   );
   try {
     logger.info(`Updating "${existingPromptGroupsMapped.length}" prompt groups...`);
-    await updatePromptGroups(
-      client,
-      existingPromptGroupsMapped.map(([{ prompts, ...input }, id]) => [
+    await updatePromptGroups(client, {
+      promptGroups: existingPromptGroupsMapped.map(([{ prompts, ...input }, id]) => [
         {
           ...input,
           promptIds: prompts.map((title) => {
@@ -180,8 +179,8 @@ export async function syncPromptGroups(
         },
         id,
       ]),
-      { logger },
-    );
+      logger,
+    });
     logger.info(`Successfully updated "${existingPromptGroupsMapped.length}" prompt groups!`);
   } catch (err) {
     encounteredError = true;

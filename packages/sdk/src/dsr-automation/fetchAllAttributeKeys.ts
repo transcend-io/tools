@@ -27,7 +27,7 @@ export async function fetchAllRequestAttributeKeys(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<AttributeKey[]> {
   const { logger } = options;
   const attributeKeys: AttributeKey[] = [];

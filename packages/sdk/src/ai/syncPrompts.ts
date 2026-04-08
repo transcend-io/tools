@@ -40,7 +40,7 @@ export async function createPrompt(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<string> {
   const { logger = NOOP_LOGGER } = options;
   const {
@@ -67,30 +67,30 @@ export async function createPrompt(
  * Update a set of existing prompts
  *
  * @param client - GraphQL client
- * @param input - Prompt input
  * @param options - Options
  */
 export async function updatePrompts(
   client: GraphQLClient,
-  input: [PromptInput, string][],
   options: {
+    /** [PromptInput, promptId] list */
+    prompts: [PromptInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { prompts, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPTS, {
     variables: {
       input: {
-        prompts: input.map(([input, id]) => ({
-          ...input,
+        prompts: prompts.map(([prompt, id]) => ({
+          ...prompt,
           id,
         })),
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${input.length} prompts!`);
+  logger.info(`Successfully updated ${prompts.length} prompts!`);
 }
 
 /**
@@ -109,7 +109,7 @@ export async function syncPrompts(
     logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
@@ -150,7 +150,7 @@ export async function syncPrompts(
   const existingPrompts = mapPromptsToExisting.filter((x): x is [PromptInput, string] => !!x[1]);
   try {
     logger.info(`Updating "${existingPrompts.length}" prompts...`);
-    await updatePrompts(client, existingPrompts, { logger });
+    await updatePrompts(client, { prompts: existingPrompts, logger });
     logger.info(`Successfully updated "${existingPrompts.length}" prompts!`);
   } catch (err) {
     encounteredError = true;

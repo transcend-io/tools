@@ -46,7 +46,7 @@ export async function fetchAllApiKeys(
       /** Filter on titles */
       titles?: string[];
     };
-  },
+  } = {},
 ): Promise<ApiKey[]> {
   const { logger = NOOP_LOGGER, filterBy: { titles } = {} } = options;
   const apiKeys: ApiKey[] = [];
@@ -91,7 +91,7 @@ export async function fetchApiKeys(
     fetchAll?: boolean;
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<{ [k in string]: ApiKey }> {
   const {
     apiKeyInputs: { 'api-keys': apiKeyDefs = [], 'data-silos': dataSilos = [] } = {},

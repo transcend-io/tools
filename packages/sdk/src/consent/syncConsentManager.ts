@@ -125,7 +125,7 @@ export async function syncConsentManagerExperiences(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { logger = NOOP_LOGGER } = options;
 
@@ -228,7 +228,7 @@ export async function syncConsentManager(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { logger = NOOP_LOGGER } = options;
   let airgapBundleId: string;

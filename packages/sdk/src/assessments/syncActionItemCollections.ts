@@ -38,7 +38,7 @@ export async function createActionItemCollection(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<ActionItemCollection, 'id' | 'title'>> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -65,30 +65,29 @@ export async function createActionItemCollection(
  * Update an action item collection
  *
  * @param client - GraphQL client
- * @param input - Input to update
- * @param actionItemCollectionId - ID of action item collection to update
  * @param options - Options
  */
 export async function updateActionItemCollection(
   client: GraphQLClient,
-  input: ActionItemCollectionInput & {
-    /** ID of action item collection to update */
-    id: string;
-  },
   options: {
+    /** Action item collection input to update */
+    actionItemCollection: ActionItemCollectionInput & {
+      /** ID of action item collection to update */
+      id: string;
+    };
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { actionItemCollection, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEM_COLLECTION, {
     variables: {
       input: {
-        id: input.id,
-        title: input.title,
-        description: input.description,
-        hidden: input.hidden,
-        productLine: input.productLine,
+        id: actionItemCollection.id,
+        title: actionItemCollection.title,
+        description: actionItemCollection.description,
+        hidden: actionItemCollection.hidden,
+        productLine: actionItemCollection.productLine,
       },
     },
     logger,
@@ -109,7 +108,7 @@ export async function syncActionItemCollections(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
@@ -141,7 +140,10 @@ export async function syncActionItemCollections(
     .filter((x): x is [ActionItemCollectionInput, string] => !!x[1]);
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
-      await updateActionItemCollection(client, { ...input, id: actionItemId }, { logger });
+      await updateActionItemCollection(client, {
+        actionItemCollection: { ...input, id: actionItemId },
+        logger,
+      });
       logger.info(`Successfully synced action item collection "${input.title}"!`);
     } catch (err) {
       encounteredError = true;

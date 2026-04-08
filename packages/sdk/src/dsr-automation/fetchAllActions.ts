@@ -43,7 +43,7 @@ export async function fetchAllActions(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Action[]> {
   const { logger } = options;
   const actions: Action[] = [];

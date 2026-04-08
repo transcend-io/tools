@@ -84,7 +84,7 @@ export async function reportPromptRun(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<string> {
   const { logger } = options;
   const {

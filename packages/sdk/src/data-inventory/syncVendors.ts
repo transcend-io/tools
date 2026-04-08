@@ -54,7 +54,7 @@ export async function createVendor(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<Vendor, 'id' | 'title'>> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -87,21 +87,22 @@ export async function createVendor(
  * Input to update vendors
  *
  * @param client - GraphQL client
- * @param vendorIdParis - [VendorInput, vendorId] list
+ * @param options - Options
  */
 export async function updateVendors(
   client: GraphQLClient,
-  vendorIdParis: [VendorInput, string][],
   options: {
+    /** [VendorInput, vendorId] list */
+    vendors: [VendorInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { vendors, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_VENDORS, {
     variables: {
       input: {
-        vendors: vendorIdParis.map(([vendor, id]) => ({
+        vendors: vendors.map(([vendor, id]) => ({
           id,
           title: vendor.title,
           description: vendor.description,
@@ -134,7 +135,7 @@ export async function syncVendors(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   // Fetch existing
@@ -169,11 +170,10 @@ export async function syncVendors(
   // Update all vendors
   try {
     logger.info(`Updating "${inputs.length}" vendors!`);
-    await updateVendors(
-      client,
-      inputs.map((input) => [input, vendorByTitle[input.title]!.id]),
-      { logger },
-    );
+    await updateVendors(client, {
+      vendors: inputs.map((input) => [input, vendorByTitle[input.title]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" vendors!`);
   } catch (err) {
     encounteredError = true;

@@ -99,7 +99,7 @@ async function createProcessingActivity(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<ProcessingActivity, 'id' | 'title'>> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -133,7 +133,7 @@ async function updateProcessingActivities(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { logger = NOOP_LOGGER } = options;
   const invalidProcessingActivityTitles = processingActivityIdPairs
@@ -189,7 +189,7 @@ export async function syncProcessingActivities(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;

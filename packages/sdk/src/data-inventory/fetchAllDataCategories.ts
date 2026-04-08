@@ -52,7 +52,7 @@ export async function fetchAllDataCategories(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<DataSubCategory[]> {
   const { logger } = options;
   const dataSubCategories: DataSubCategory[] = [];

@@ -36,7 +36,7 @@ export async function fetchPartitions(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<TranscendPartition[]> {
   const { logger = NOOP_LOGGER } = options;
   const partitions: TranscendPartition[] = [];
@@ -78,7 +78,7 @@ export async function syncPartitions(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });

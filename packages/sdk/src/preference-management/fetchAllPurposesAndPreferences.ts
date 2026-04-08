@@ -21,7 +21,7 @@ export async function fetchAllPurposesAndPreferences(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<PurposeWithPreferences[]> {
   const [purposes, topics] = await Promise.all([
     fetchAllPurposes(client, options),

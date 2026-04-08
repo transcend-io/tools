@@ -100,7 +100,7 @@ export async function fetchAllProcessingActivities(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<ProcessingActivity[]> {
   const { logger } = options;
   const processingActivities: ProcessingActivity[] = [];

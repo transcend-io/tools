@@ -38,7 +38,7 @@ export async function fetchAllPolicies(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Policy[]> {
   const { logger } = options;
   const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client, { logger });

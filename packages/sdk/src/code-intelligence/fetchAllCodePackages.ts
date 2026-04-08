@@ -62,7 +62,7 @@ export async function fetchAllCodePackages(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<CodePackage[]> {
   const { logger } = options;
   const codePackages: CodePackage[] = [];

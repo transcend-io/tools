@@ -27,7 +27,7 @@ export async function fetchAllCatalogs(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Catalog[]> {
   const { logger } = options;
   const catalogs: Catalog[] = [];
@@ -73,7 +73,7 @@ export async function fetchAndIndexCatalogs(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<
   {
     /** List of all catalogs */

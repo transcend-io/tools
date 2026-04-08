@@ -40,7 +40,7 @@ export async function fetchRequestDataSilosCount(
     logger?: Logger;
     /** Filter options */
     filterBy?: RequestDataSiloFilters;
-  },
+  } = {},
 ): Promise<number> {
   const { logger, filterBy: { requestId, dataSiloId, requestStatuses, statuses } = {} } = options;
   const {
@@ -90,7 +90,7 @@ export async function fetchRequestDataSilos(
     limit?: number;
     /** Handle progress updates */
     onProgress?: (numUpdated: number) => void;
-  },
+  } = {},
 ): Promise<RequestDataSilo[]> {
   const {
     logger,

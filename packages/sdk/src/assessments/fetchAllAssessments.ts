@@ -347,7 +347,7 @@ export async function fetchAllAssessments(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Assessment[]> {
   const { logger } = options;
   const assessments: Assessment[] = [];

@@ -32,7 +32,7 @@ export async function fetchAllPromptGroups(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<PromptGroup[]> {
   const { logger } = options;
   const promptGroups: PromptGroup[] = [];

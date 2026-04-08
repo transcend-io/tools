@@ -27,7 +27,7 @@ export async function fetchAllPromptPartials(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<PromptPartial[]> {
   const { logger } = options;
   const promptPartials: PromptPartial[] = [];

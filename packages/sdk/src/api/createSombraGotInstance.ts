@@ -24,7 +24,7 @@ export async function createSombraGotInstance(
     sombraApiKey?: string;
     /** Override Sombra URL (replaces process.env.SOMBRA_URL lookup) */
     sombraUrl?: string;
-  },
+  } = {},
 ): Promise<Got> {
   const { logger = NOOP_LOGGER, sombraApiKey, sombraUrl } = options;
 

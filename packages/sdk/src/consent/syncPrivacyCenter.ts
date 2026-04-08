@@ -68,7 +68,7 @@ export async function syncPrivacyCenter(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;

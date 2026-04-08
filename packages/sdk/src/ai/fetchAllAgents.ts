@@ -75,7 +75,7 @@ export async function fetchAllAgents(
       /** IDs of agents */
       agentIds?: string[];
     };
-  },
+  } = {},
 ): Promise<Agent[]> {
   const { logger, filterBy = {} } = options;
   const agents: Agent[] = [];

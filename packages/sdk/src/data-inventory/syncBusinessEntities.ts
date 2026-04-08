@@ -48,7 +48,7 @@ export async function createBusinessEntity(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<BusinessEntity> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -81,18 +81,19 @@ export async function createBusinessEntity(
  * Input to update business entities
  *
  * @param client - GraphQL client
- * @param businessEntityIdParis - [BusinessEntityInput, businessEntityId] list
+ * @param options - Options
  */
 export async function updateBusinessEntities(
   client: GraphQLClient,
-  businessEntityIdParis: [BusinessEntityInput, string][],
   options: {
+    /** [BusinessEntityInput, businessEntityId] list */
+    businessEntities: [BusinessEntityInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
-  const chunkedUpdates = chunk(businessEntityIdParis, 100);
+  const { businessEntities, logger = NOOP_LOGGER } = options;
+  const chunkedUpdates = chunk(businessEntities, 100);
   await mapSeries(chunkedUpdates, async (chunked) => {
     await makeGraphQLRequest(client, UPDATE_BUSINESS_ENTITIES, {
       variables: {
@@ -128,7 +129,7 @@ export async function syncBusinessEntities(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   // Fetch existing
@@ -162,11 +163,10 @@ export async function syncBusinessEntities(
   // Update all business entities
   try {
     logger.info(`Updating "${inputs.length}" business entities!`);
-    await updateBusinessEntities(
-      client,
-      inputs.map((input) => [input, businessEntityByTitle[input.title]!.id]),
-      { logger },
-    );
+    await updateBusinessEntities(client, {
+      businessEntities: inputs.map((input) => [input, businessEntityByTitle[input.title]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" business entities!`);
   } catch (err) {
     encounteredError = true;

@@ -34,7 +34,7 @@ export async function fetchAllMessages(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Message[]> {
   const { logger } = options;
   const { translatedMessages } = await makeGraphQLRequest<{

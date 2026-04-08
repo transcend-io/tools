@@ -48,7 +48,7 @@ export async function fetchAllSoftwareDevelopmentKits(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<SoftwareDevelopmentKit[]> {
   const { logger } = options;
   const softwareDevelopmentKits: SoftwareDevelopmentKit[] = [];

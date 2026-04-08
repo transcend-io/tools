@@ -119,7 +119,7 @@ export async function fetchAllActionItems(
       /** Filter for action items due after this date */
       endDueDate?: Date;
     };
-  },
+  } = {},
 ): Promise<ActionItem[]> {
   const { logger, filterBy = {} } = options;
   const actionItems: ActionItem[] = [];

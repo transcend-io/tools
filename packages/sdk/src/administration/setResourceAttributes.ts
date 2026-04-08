@@ -30,7 +30,7 @@ export async function setResourceAttributes(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { logger } = options;
   await makeGraphQLRequest(client, SET_RESOURCE_ATTRIBUTES, {

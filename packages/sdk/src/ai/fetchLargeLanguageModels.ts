@@ -30,7 +30,7 @@ export async function fetchAllLargeLanguageModels(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<LargeLanguageModel[]> {
   const { logger } = options;
   const largeLanguageModels: LargeLanguageModel[] = [];

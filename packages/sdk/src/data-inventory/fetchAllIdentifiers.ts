@@ -57,7 +57,7 @@ export async function fetchAllIdentifiers(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Identifier[]> {
   const { logger } = options;
   const identifiers: Identifier[] = [];

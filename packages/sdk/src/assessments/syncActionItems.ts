@@ -123,17 +123,16 @@ export async function createActionItems(
  * Update an action item
  *
  * @param client - GraphQL client
- * @param input - Input to update
- * @param actionItemId - ID of action item to update
  * @param options - Options
  */
 export async function updateActionItem(
   client: GraphQLClient,
-  input: ActionItemInput & {
-    /** ID of action item to update */
-    id: string;
-  },
   options: {
+    /** Action item input to update */
+    actionItem: ActionItemInput & {
+      /** ID of action item to update */
+      id: string;
+    };
     /** Logger instance */
     logger?: Logger;
     /** Attribute keys indexed by name */
@@ -142,7 +141,7 @@ export async function updateActionItem(
     };
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER, attributeKeysByName = {} } = options;
+  const { actionItem, logger = NOOP_LOGGER, attributeKeysByName = {} } = options;
   const getAttribute = (key: string): string => {
     const existing = attributeKeysByName[key];
     if (!existing) {
@@ -153,19 +152,19 @@ export async function updateActionItem(
   await makeGraphQLRequest(client, UPDATE_ACTION_ITEMS, {
     variables: {
       input: {
-        ids: [input.id],
-        title: input.title,
-        priorityOverride: input.priority,
-        dueDate: input.dueDate,
-        resolved: input.resolved,
-        customerExperienceActionItemId: input.customerExperienceActionItemId,
-        notes: input.notes,
-        link: input.link,
-        assigneesUserEmails: input.users,
-        assigneesTeamNames: input.teams,
-        ...(input.attributes
+        ids: [actionItem.id],
+        title: actionItem.title,
+        priorityOverride: actionItem.priority,
+        dueDate: actionItem.dueDate,
+        resolved: actionItem.resolved,
+        customerExperienceActionItemId: actionItem.customerExperienceActionItemId,
+        notes: actionItem.notes,
+        link: actionItem.link,
+        assigneesUserEmails: actionItem.users,
+        assigneesTeamNames: actionItem.teams,
+        ...(actionItem.attributes
           ? {
-              attributes: input.attributes.map(({ key, values }) => ({
+              attributes: actionItem.attributes.map(({ key, values }) => ({
                 attributeKeyId: getAttribute(key),
                 attributeValueNames: values,
               })),
@@ -222,7 +221,7 @@ export async function syncActionItems(
     logger?: Logger;
     /** Pre-fetched attribute keys (pass result of fetchAllAttributes) */
     attributeKeys?: ActionItemAttributeKey[];
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER, attributeKeys = [] } = options;
   let encounteredError = false;
@@ -288,11 +287,11 @@ export async function syncActionItems(
     .filter((x): x is [ActionItemInput, string] => !!x[1]);
   await mapSeries(actionItemsToUpdate, async ([input, actionItemId]) => {
     try {
-      await updateActionItem(
-        client,
-        { ...input, id: actionItemId },
-        { logger, attributeKeysByName },
-      );
+      await updateActionItem(client, {
+        actionItem: { ...input, id: actionItemId },
+        logger,
+        attributeKeysByName,
+      });
       logger.info(`Successfully synced action item "${input.title}"!`);
     } catch (err) {
       encounteredError = true;

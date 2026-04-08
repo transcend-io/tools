@@ -38,7 +38,7 @@ export async function createTeam(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<Team, 'id' | 'name'>> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -68,24 +68,23 @@ export async function createTeam(
  * Input to update teams
  *
  * @param client - GraphQL client
- * @param input - Team input to update
- * @param teamId - ID of team
  * @param options - Options
  * @returns Updated team
  */
 export async function updateTeam(
   client: GraphQLClient,
-  input: TeamInput & {
-    /** ID of team to update */
-    id: string;
-  },
   options: {
+    /** Team input to update */
+    team: TeamInput & {
+      /** ID of team to update */
+      id: string;
+    };
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<Pick<Team, 'id' | 'name'>> {
-  const { logger = NOOP_LOGGER } = options;
-  const teamId = input.id;
+  const { team, logger = NOOP_LOGGER } = options;
+  const teamId = team.id;
   const { updateTeam } = await makeGraphQLRequest<{
     /** Update team mutation */
     updateTeam: {
@@ -96,13 +95,13 @@ export async function updateTeam(
     variables: {
       input: {
         id: teamId,
-        name: input.name,
-        description: input.description,
-        ssoTitle: input['sso-title'],
-        ssoDepartment: input['sso-department'],
-        ssoGroup: input['sso-group'],
-        scopes: input.scopes,
-        userEmails: input.users,
+        name: team.name,
+        description: team.description,
+        ssoTitle: team['sso-title'],
+        ssoDepartment: team['sso-department'],
+        ssoGroup: team['sso-group'],
+        scopes: team.scopes,
+        userEmails: team.users,
       },
     },
     logger,
@@ -124,7 +123,7 @@ export async function syncTeams(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   // Fetch existing
@@ -157,11 +156,10 @@ export async function syncTeams(
   // Update all teams
   await mapSeries(updatedTeams, async (input) => {
     try {
-      const newTeam = await updateTeam(
-        client,
-        { ...input, id: teamsByName[input.name]!.id },
-        { logger },
-      );
+      const newTeam = await updateTeam(client, {
+        team: { ...input, id: teamsByName[input.name]!.id },
+        logger,
+      });
       teamsByName[newTeam.name] = newTeam;
       logger.info(`Successfully updated team "${input.name}"!`);
     } catch (err) {

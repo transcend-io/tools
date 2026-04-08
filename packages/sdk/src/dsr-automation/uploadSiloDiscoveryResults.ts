@@ -37,7 +37,7 @@ export async function uploadSiloDiscoveryResults(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { logger } = options;
   const { pluginId, results } = input;

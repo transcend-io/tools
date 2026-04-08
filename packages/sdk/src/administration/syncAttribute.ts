@@ -56,7 +56,7 @@ export async function syncAttribute(
     deleteExtraAttributeValues?: boolean;
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   // attribute key input
   const input = {

@@ -24,19 +24,20 @@ const MAX_PAGE_SIZE = 100;
  * Update or create intl messages
  *
  * @param client - GraphQL client
- * @param messageInputs - List of message inputs
+ * @param options - Options
  */
 export async function updateIntlMessages(
   client: GraphQLClient,
-  messageInputs: IntlMessageInput[],
   options: {
+    /** List of message inputs */
+    messages: IntlMessageInput[];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { messages, logger = NOOP_LOGGER } = options;
   // Batch update messages
-  await mapSeries(chunk(messageInputs, MAX_PAGE_SIZE), async (page) => {
+  await mapSeries(chunk(messages, MAX_PAGE_SIZE), async (page) => {
     await makeGraphQLRequest(client, UPDATE_INTL_MESSAGES, {
       variables: {
         messages: page.map((message) => ({
@@ -69,7 +70,7 @@ export async function syncIntlMessages(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   let encounteredError = false;
@@ -89,7 +90,7 @@ export async function syncIntlMessages(
 
   try {
     logger.info(`Upserting "${messages.length}" new messages...`);
-    await updateIntlMessages(client, messages, { logger });
+    await updateIntlMessages(client, { messages, logger });
     logger.info(`Successfully synced ${messages.length} messages!`);
   } catch (err) {
     encounteredError = true;

@@ -47,7 +47,7 @@ export async function createProcessingPurpose(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<ProcessingPurposeSubCategory, 'id' | 'name' | 'purpose'>> {
   const input = {
     name: processingPurpose.name,
@@ -73,21 +73,22 @@ export async function createProcessingPurpose(
  * Input to update processing purposes
  *
  * @param client - GraphQL client
- * @param processingPurposeIdPairs - [ProcessingPurposeInput, processingPurposeId] list
  * @param options - Options
  */
 export async function updateProcessingPurposes(
   client: GraphQLClient,
-  processingPurposeIdPairs: [ProcessingPurposeInput, string][],
   options: {
+    /** [ProcessingPurposeInput, processingPurposeId] list */
+    processingPurposes: [ProcessingPurposeInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
+  const { processingPurposes, logger } = options;
   await makeGraphQLRequest(client, UPDATE_PROCESSING_PURPOSE_SUB_CATEGORIES, {
     variables: {
       input: {
-        processingPurposeSubCategories: processingPurposeIdPairs.map(([processingPurpose, id]) => ({
+        processingPurposeSubCategories: processingPurposes.map(([processingPurpose, id]) => ({
           id,
           description: processingPurpose.description,
           // TODO: https://transcend.height.app/T-31994 - add  teams, owners
@@ -95,7 +96,7 @@ export async function updateProcessingPurposes(
         })),
       },
     },
-    logger: options.logger,
+    logger,
   });
 }
 
@@ -113,7 +114,7 @@ export async function syncProcessingPurposes(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
 
@@ -149,11 +150,13 @@ export async function syncProcessingPurposes(
 
   try {
     logger.info(`Updating "${inputs.length}" processing purposes!`);
-    await updateProcessingPurposes(
-      client,
-      inputs.map((input) => [input, processingPurposeByName[`${input.name}:${input.purpose}`]!.id]),
-      { logger },
-    );
+    await updateProcessingPurposes(client, {
+      processingPurposes: inputs.map((input) => [
+        input,
+        processingPurposeByName[`${input.name}:${input.purpose}`]!.id,
+      ]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" processing purposes!`);
   } catch (err) {
     encounteredError = true;

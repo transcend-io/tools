@@ -27,7 +27,7 @@ export async function fetchAllUsers(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<User[]> {
   const { logger } = options;
   const users: User[] = [];

@@ -30,7 +30,7 @@ export async function createAgentFunction(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<Pick<AgentFunction, 'id' | 'name'>> {
   const { logger = NOOP_LOGGER } = options;
   const input = {
@@ -58,22 +58,22 @@ export async function createAgentFunction(
  * Update agent functions
  *
  * @param client - GraphQL client
- * @param agentFunctionIdPairs - [AgentFunctionInput, agentFunctionId] list
  * @param options - Options
  */
 export async function updateAgentFunctions(
   client: GraphQLClient,
-  agentFunctionIdPairs: [AgentFunctionInput, string][],
   options: {
+    /** [AgentFunctionInput, agentFunctionId] list */
+    agentFunctions: [AgentFunctionInput, string][];
     /** Logger instance */
     logger?: Logger;
   },
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { agentFunctions, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_AGENT_FUNCTIONS, {
     variables: {
       input: {
-        agentFunctions: agentFunctionIdPairs.map(([agentFunction, id]) => ({
+        agentFunctions: agentFunctions.map(([agentFunction, id]) => ({
           id,
           name: agentFunction.name,
           description: agentFunction.description,
@@ -99,7 +99,7 @@ export async function syncAgentFunctions(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<boolean> {
   const { logger = NOOP_LOGGER } = options;
   logger.info(`Syncing "${inputs.length}" agent functions...`);
@@ -129,11 +129,10 @@ export async function syncAgentFunctions(
 
   try {
     logger.info(`Updating "${inputs.length}" agent functions!`);
-    await updateAgentFunctions(
-      client,
-      inputs.map((input) => [input, agentFunctionByName[input.name]!.id]),
-      { logger },
-    );
+    await updateAgentFunctions(client, {
+      agentFunctions: inputs.map((input) => [input, agentFunctionByName[input.name]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" agent functions!`);
   } catch (err) {
     encounteredError = true;

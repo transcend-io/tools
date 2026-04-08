@@ -71,7 +71,7 @@ export async function fetchAllDataFlows(
       /** The status to fetch */
       status?: ConsentTrackerStatus;
     };
-  },
+  } = {},
 ): Promise<DataFlow[]> {
   const { logger, filterBy: { status = ConsentTrackerStatus.Live } = {} } = options;
   const dataFlows: DataFlow[] = [];

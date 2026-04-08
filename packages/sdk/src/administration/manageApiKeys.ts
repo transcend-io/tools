@@ -33,7 +33,7 @@ export async function createApiKey(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<CreatedApiKey> {
   const { logger } = options;
   const {
@@ -65,7 +65,7 @@ export async function deleteApiKey(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<void> {
   const { logger } = options;
   await makeGraphQLRequest(client, DELETE_API_KEY, { variables: { id: input.id }, logger });

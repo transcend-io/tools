@@ -35,7 +35,7 @@ export async function fetchAllAgentFunctions(
   options: {
     /** Logger instance */
     logger?: Logger;
-  },
+  } = {},
 ): Promise<AgentFunction[]> {
   const { logger } = options;
   const agentFunctions: AgentFunction[] = [];
