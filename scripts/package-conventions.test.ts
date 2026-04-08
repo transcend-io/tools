@@ -97,6 +97,12 @@ const releasedPackages = publishablePackages.filter(
 );
 const baseCompilerOptions = readJsonFile<BaseTsconfig>('tsconfig.base.json').compilerOptions ?? {};
 const sharedCompilerOptionKeys = sortStrings(Object.keys(baseCompilerOptions));
+const workspaceSharedCompilerOptionCases = workspacePackages.flatMap((workspacePackage) =>
+  sharedCompilerOptionKeys.map((compilerOptionKey) => ({
+    ...workspacePackage,
+    compilerOptionKey,
+  })),
+);
 
 describe('package conventions', () => {
   test('root tsconfig references every workspace package', () => {
@@ -187,14 +193,12 @@ describe('package conventions', () => {
     expect(tsconfig.include ?? []).toEqual(expect.arrayContaining(['src/**/*.ts']));
   });
 
-  test.skip.each(workspacePackages)(
-    '$directory relies on tsconfig.base.json for shared compilerOptions',
-    ({ tsconfig }) => {
+  // TODO: Remove this skip once we have a shared compilerOptions baseline for all packages
+  test.skip.each(workspaceSharedCompilerOptionCases)(
+    '$directory relies on tsconfig.base.json for shared compilerOption $compilerOptionKey',
+    ({ compilerOptionKey, tsconfig }) => {
       const packageCompilerOptions = tsconfig.compilerOptions ?? {};
-
-      for (const compilerOptionKey of sharedCompilerOptionKeys) {
-        expect(packageCompilerOptions).not.toHaveProperty(compilerOptionKey);
-      }
+      expect(packageCompilerOptions).not.toHaveProperty(compilerOptionKey);
     },
   );
 
