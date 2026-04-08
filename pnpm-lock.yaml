@@ -276,12 +276,6 @@ importers:
 
   packages/privacy-types:
     dependencies:
-      '@transcend-io/internationalization':
-        specifier: 'catalog:'
-        version: 2.3.2
-      '@transcend-io/type-utils':
-        specifier: ^1.8.9
-        version: 1.8.9
       fp-ts:
         specifier: ^2.16.1
         version: 2.16.11
@@ -292,6 +286,12 @@ importers:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
         version: 0.18.2
+      '@transcend-io/internationalization':
+        specifier: 'catalog:'
+        version: 2.3.2
+      '@transcend-io/type-utils':
+        specifier: ^1.8.9
+        version: 1.8.9
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.15
