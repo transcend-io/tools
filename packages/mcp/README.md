@@ -7,7 +7,7 @@
 ## Prerequisites
 
 - **Node.js** ≥ 22.12 (see each CLI package’s `engines` in `package.json`).
-- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-core`), then `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` with `TRANSCEND_API_KEY` set (see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
+- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-core`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
 
 In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package).
 
@@ -114,6 +114,8 @@ All servers share the same environment variables:
 | `TRANSCEND_API_KEY`     | Yes      | —                                          | Transcend API key   |
 | `TRANSCEND_API_URL`     | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL |
 | `TRANSCEND_GRAPHQL_URL` | No       | `https://api.transcend.io`                 | GraphQL API URL     |
+
+**Monorepo:** store these in root **`secret.env`** (from [`secret.env.example`](../../secret.env.example)); load with `source` or [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh). See [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers).
 
 ## Contributing
 

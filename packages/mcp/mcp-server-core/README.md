@@ -12,6 +12,8 @@ This package is **not** a standalone MCP CLI: it has no `bin`. Domain servers an
 
 Until publication, use a checkout of this repository (see **Development** below).
 
+API keys for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers).
+
 ## What's inside
 
 - **`TranscendGraphQLBase`** — Base GraphQL client with query execution, pagination, and logging. Domain packages extend this via mixin classes.
@@ -43,6 +45,8 @@ From the repository root:
 pnpm -F @transcend-io/mcp-server-core build
 pnpm -F @transcend-io/mcp-server-core test
 ```
+
+To run a composed server against the real API, configure root **`secret.env`** and follow **Run from the monorepo** in [`mcp-server`](../mcp-server/README.md) or any domain package README.
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for working across MCP packages and adding tools.
 

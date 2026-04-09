@@ -6,6 +6,8 @@ Transcend MCP Server for privacy preference management. Provides tools for query
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
+For local runs from this repository, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** at the repo root (gitignored) and set your API key (see **Run from the monorepo**).
+
 ## Install
 
 When the package is available on npm, install the CLI globally:
@@ -19,6 +21,7 @@ Until then, run from a checkout of this repository (see **Run from the monorepo*
 ## Usage
 
 ```bash
+# With TRANSCEND_API_KEY in the environment; from the monorepo use secret.env (see Run from the monorepo)
 TRANSCEND_API_KEY=your-api-key transcend-mcp-preferences
 ```
 
@@ -42,15 +45,22 @@ The process speaks MCP over **stdio** and is meant to be launched by an MCP clie
 }
 ```
 
+When developing in this repository, reuse the same variable names from root **`secret.env`** in the `env` block, or use your client’s env-file support if it has one.
+
 ### Run from the monorepo
 
-After `build`, start the server with `node ./dist/cli.mjs` (same entry as the `transcend-mcp-preferences` `bin`; use `node` because in a pnpm workspace `pnpm exec transcend-mcp-preferences` may not resolve this package’s own binary):
+1. **Credentials** — From the repository root, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** and set `TRANSCEND_API_KEY` (and optional URL overrides).
+
+2. **Build and run** — `node ./dist/cli.mjs` matches the `transcend-mcp-preferences` `bin` (use `node` because `pnpm exec transcend-mcp-preferences` may not resolve this package’s own binary in a pnpm workspace):
 
 ```bash
 # from the repository root
 pnpm exec turbo run build --filter="@transcend-io/mcp-server-preferences..."
-TRANSCEND_API_KEY=your-api-key pnpm -F @transcend-io/mcp-server-preferences exec node ./dist/cli.mjs
+set -a && source ./secret.env && set +a
+pnpm -F @transcend-io/mcp-server-preferences exec node ./dist/cli.mjs
 ```
+
+**Alternative:** `./scripts/mcp-run.sh ./packages/mcp/mcp-server-preferences/dist/cli.mjs` (sources `secret.env` when present; run after build).
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout and `pnpm --filter` workflows.
 
@@ -61,6 +71,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 | `TRANSCEND_API_KEY`     | Yes      | —                                          | Transcend API key |
 | `TRANSCEND_API_URL`     | No       | `https://multi-tenant.sombra.transcend.io` | Sombra API URL    |
 | `TRANSCEND_GRAPHQL_URL` | No       | `https://api.transcend.io`                 | GraphQL API URL   |
+
+**Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 
 ## Tools
 
