@@ -13,12 +13,15 @@ const AssessmentStatusEnum = z.enum([
 ]);
 
 const UpdateAssessmentSchema = z.object({
-  assessment_id: z.string(),
-  title: z.string().optional(),
-  description: z.string().optional(),
-  reviewer_ids: z.array(z.string()).optional(),
-  due_date: z.string().optional(),
-  status: AssessmentStatusEnum.optional(),
+  assessment_id: z.string().describe('ID of the assessment to update'),
+  title: z.string().optional().describe('New title for the assessment'),
+  description: z.string().optional().describe('New description'),
+  reviewer_ids: z
+    .array(z.string())
+    .optional()
+    .describe('IDs of users assigned to review this assessment'),
+  due_date: z.string().optional().describe('New due date (ISO format)'),
+  status: AssessmentStatusEnum.optional().describe('New status'),
 });
 
 export function createAssessmentsUpdateTool(clients: ToolClients) {

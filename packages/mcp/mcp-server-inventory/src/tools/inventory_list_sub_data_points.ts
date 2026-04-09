@@ -9,9 +9,20 @@ import {
 import type { InventoryMixin } from '../graphql.js';
 
 const ListSubDataPointsSchema = z.object({
-  data_point_id: z.string(),
-  limit: z.coerce.number().min(1).max(100).optional().default(50),
-  offset: z.coerce.number().min(0).optional().default(0),
+  data_point_id: z.string().describe('ID of the parent data point'),
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(50)
+    .describe('Results per page (1-100, default: 50)'),
+  offset: z.coerce
+    .number()
+    .min(0)
+    .optional()
+    .default(0)
+    .describe('Number of results to skip (default: 0)'),
 });
 
 export function createInventoryListSubDataPointsTool(clients: ToolClients) {

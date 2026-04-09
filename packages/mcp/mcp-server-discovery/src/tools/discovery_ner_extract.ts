@@ -1,8 +1,11 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const NerExtractSchema = z.object({
-  text: z.string(),
-  entity_types: z.array(z.string()).optional(),
+  text: z.string().describe('Text to extract entities from'),
+  entity_types: z
+    .array(z.string())
+    .optional()
+    .describe('Specific entity types to extract (optional)'),
 });
 
 export function createDiscoveryNerExtractTool(clients: ToolClients) {

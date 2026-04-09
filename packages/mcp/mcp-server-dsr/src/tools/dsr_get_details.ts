@@ -3,7 +3,7 @@ import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io
 import type { DSRMixin } from '../graphql.js';
 
 const getDetailsSchema = z.object({
-  request_id: z.string(),
+  request_id: z.string().describe('ID of the DSR to retrieve'),
 });
 
 export function createDsrGetDetailsTool(clients: ToolClients) {

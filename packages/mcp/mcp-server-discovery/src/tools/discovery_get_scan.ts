@@ -3,7 +3,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { DiscoveryMixin } from '../graphql.js';
 
 const GetScanSchema = z.object({
-  scan_id: z.string(),
+  scan_id: z.string().describe('ID of the classification scan to retrieve'),
 });
 
 export function createDiscoveryGetScanTool(clients: ToolClients) {

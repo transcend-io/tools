@@ -4,10 +4,23 @@ import type { AssessmentsMixin } from '../graphql.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
 const CreateAssessmentSchema = z.object({
-  title: z.string(),
-  assessment_group_id: z.string().optional(),
-  template_id: z.string().optional(),
-  assignee_ids: z.array(z.string()).optional(),
+  title: z.string().describe('Title of the assessment'),
+  assessment_group_id: z
+    .string()
+    .optional()
+    .describe(
+      'ID of the assessment group to create the assessment in (preferred). Use assessments_list_groups to find available groups.',
+    ),
+  template_id: z
+    .string()
+    .optional()
+    .describe(
+      'ID of the assessment template. If assessment_group_id is not provided, the first group using this template will be used.',
+    ),
+  assignee_ids: z
+    .array(z.string())
+    .optional()
+    .describe('Array of user IDs to assign the assessment to'),
 });
 
 export function createAssessmentsCreateTool(clients: ToolClients) {

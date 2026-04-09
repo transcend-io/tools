@@ -1,7 +1,7 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const pollStatusSchema = z.object({
-  request_id: z.string(),
+  request_id: z.string().describe('ID of the DSR to check'),
 });
 
 export function createDsrPollStatusTool(clients: ToolClients) {

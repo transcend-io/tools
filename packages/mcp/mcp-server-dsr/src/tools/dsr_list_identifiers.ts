@@ -9,7 +9,7 @@ import {
 
 const listIdentifiersSchema = z
   .object({
-    request_id: z.string(),
+    request_id: z.string().describe('ID of the DSR'),
   })
   .merge(PaginationSchema);
 

@@ -3,9 +3,9 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { InventoryMixin } from '../graphql.js';
 
 const UpdateDataSiloSchema = z.object({
-  data_silo_id: z.string(),
-  title: z.string().optional(),
-  description: z.string().optional(),
+  data_silo_id: z.string().describe('ID of the data silo to update'),
+  title: z.string().optional().describe('New title for the data silo'),
+  description: z.string().optional().describe('New description'),
 });
 
 export function createInventoryUpdateDataSiloTool(clients: ToolClients) {

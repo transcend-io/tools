@@ -1,9 +1,12 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const respondErasureSchema = z.object({
-  request_id: z.string(),
-  data_silo_id: z.string(),
-  profile_ids: z.array(z.string()).optional(),
+  request_id: z.string().describe('ID of the DSR'),
+  data_silo_id: z.string().describe('ID of the data silo that completed erasure'),
+  profile_ids: z
+    .array(z.string())
+    .optional()
+    .describe('IDs of profiles that were erased (optional)'),
 });
 
 export function createDsrRespondErasureTool(clients: ToolClients) {

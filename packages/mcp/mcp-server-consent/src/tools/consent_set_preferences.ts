@@ -1,8 +1,8 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const PurposeConsentSchema = z.object({
-  purpose: z.string(),
-  enabled: z.boolean(),
+  purpose: z.string().describe('Purpose slug'),
+  enabled: z.boolean().describe('Whether consent is granted'),
 });
 
 const SetPreferencesSchema = z.object({

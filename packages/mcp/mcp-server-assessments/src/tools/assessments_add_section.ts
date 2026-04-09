@@ -9,9 +9,14 @@ import {
 import type { AssessmentsMixin } from '../graphql.js';
 
 const AddSectionSchema = z.object({
-  template_id: z.string(),
-  title: z.string(),
-  questions: z.array(z.record(z.string(), z.unknown())).optional(),
+  template_id: z.string().describe('ID of the assessment form template to add the section to'),
+  title: z.string().describe('Title of the new section'),
+  questions: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional()
+    .describe(
+      'Array of question objects: [{title, type, subType?, description?, placeholder?, isRequired?, referenceId?, answerOptions?: [{value}], allowSelectOther?, requireRiskEvaluation?}]',
+    ),
 });
 
 export function createAssessmentsAddSectionTool(clients: ToolClients) {

@@ -25,13 +25,20 @@ const REQUEST_TYPES = [
 const RequestTypeEnum = z.enum(REQUEST_TYPES);
 
 const submitDsrSchema = z.object({
-  type: RequestTypeEnum,
-  email: z.string(),
-  subjectType: z.string(),
-  coreIdentifier: z.string().optional(),
-  name: z.string().optional(),
-  locale: z.string().optional(),
-  isSilent: z.boolean().optional(),
+  type: RequestTypeEnum.describe('Type of DSR request'),
+  email: z.string().describe('Email address of the data subject'),
+  subjectType: z
+    .string()
+    .describe(
+      'Type of data subject (e.g., customer, employee, prospect). Required by the Transcend API.',
+    ),
+  coreIdentifier: z
+    .string()
+    .optional()
+    .describe('Core identifier for the data subject (defaults to email if not provided)'),
+  name: z.string().optional().describe('Name of the data subject (optional)'),
+  locale: z.string().optional().describe('Locale for communications (e.g., en-US)'),
+  isSilent: z.boolean().optional().describe('Whether to suppress email notifications'),
 });
 
 export function createDsrSubmitTool(clients: ToolClients) {

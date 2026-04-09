@@ -9,7 +9,12 @@ import {
 import type { DSRMixin } from '../graphql.js';
 
 const analyzeDsrSchema = z.object({
-  days: z.coerce.number().optional(),
+  days: z.coerce
+    .number()
+    .optional()
+    .describe(
+      'Filter analysis to requests within N days (default: 30). Only analyzes from the 100 most recent requests.',
+    ),
 });
 
 export function createDsrAnalyzeTool(clients: ToolClients) {

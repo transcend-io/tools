@@ -3,7 +3,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { AssessmentsMixin } from '../graphql.js';
 
 const ExportTemplateSchema = z.object({
-  template_id: z.string(),
+  template_id: z.string().describe('ID of the assessment form template to export'),
 });
 
 export function createAssessmentsExportTemplateTool(clients: ToolClients) {

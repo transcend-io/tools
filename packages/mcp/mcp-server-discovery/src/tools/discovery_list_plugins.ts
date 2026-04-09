@@ -9,7 +9,12 @@ import {
 
 import type { DiscoveryMixin } from '../graphql.js';
 
-const ListPluginsSchema = PaginationSchema;
+const ListPluginsSchema = PaginationSchema.extend({
+  cursor: z
+    .string()
+    .optional()
+    .describe('Pagination cursor from previous response (where supported)'),
+});
 
 export function createDiscoveryListPluginsTool(clients: ToolClients) {
   const graphql = clients.graphql as DiscoveryMixin;

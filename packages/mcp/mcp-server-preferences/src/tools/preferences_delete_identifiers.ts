@@ -1,10 +1,13 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-const IdentifierSchema = z.object({ value: z.string(), type: z.string().optional() });
+const IdentifierSchema = z.object({
+  value: z.string().describe('Identifier value'),
+  type: z.string().optional().describe('Identifier type (optional)'),
+});
 const DeleteIdentifiersSchema = z.object({
-  partition: z.string(),
-  user_id: z.string(),
-  identifiers: z.array(IdentifierSchema),
+  partition: z.string().describe('Partition/organization context'),
+  user_id: z.string().describe('User ID to delete identifiers from'),
+  identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to delete'),
 });
 
 export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {

@@ -1,15 +1,24 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const UpsertPreferencesSchema = z.object({
-  partition: z.string(),
-  records: z.array(
-    z.object({
-      identifier: z.string(),
-      identifierType: z.string().optional(),
-      purposes: z.array(z.object({ purpose: z.string(), enabled: z.boolean() })),
-      confirmed: z.boolean().optional(),
-    }),
-  ),
+  partition: z.string().describe('Partition/organization context'),
+  records: z
+    .array(
+      z.object({
+        identifier: z.string().describe('User identifier'),
+        identifierType: z.string().optional().describe('Identifier type (optional)'),
+        purposes: z
+          .array(
+            z.object({
+              purpose: z.string().describe('Purpose slug'),
+              enabled: z.boolean().describe('Whether consent is granted'),
+            }),
+          )
+          .describe('Array of purpose consent settings'),
+        confirmed: z.boolean().optional().describe('Whether consent was explicitly confirmed'),
+      }),
+    )
+    .describe('Array of preference records to upsert'),
 });
 
 export function createPreferencesUpsertTool(clients: ToolClients) {

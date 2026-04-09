@@ -1,9 +1,12 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const respondAccessSchema = z.object({
-  request_id: z.string(),
-  data_silo_id: z.string(),
-  profiles: z.array(z.record(z.string(), z.unknown())).optional(),
+  request_id: z.string().describe('ID of the DSR'),
+  data_silo_id: z.string().describe('ID of the data silo responding'),
+  profiles: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional()
+    .describe('Array of profile data objects to return'),
 });
 
 export function createDsrRespondAccessTool(clients: ToolClients) {

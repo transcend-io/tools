@@ -21,7 +21,7 @@ const AssessmentStatusEnum = z.enum([
 
 const ListAssessmentsSchema = z
   .object({
-    status: AssessmentStatusEnum.optional(),
+    status: AssessmentStatusEnum.optional().describe('Filter by assessment status'),
   })
   .merge(PaginationSchema);
 

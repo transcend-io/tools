@@ -10,10 +10,16 @@ import {
 import type { AssessmentsMixin } from '../graphql.js';
 
 const CreateTemplateSchema = z.object({
-  title: z.string(),
-  description: z.string().optional(),
-  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
-  sections: z.array(z.record(z.string(), z.unknown())).optional(),
+  title: z.string().describe('Title of the assessment form template'),
+  description: z.string().optional().describe('Description of the template'),
+  status: z
+    .enum(['DRAFT', 'PUBLISHED'])
+    .optional()
+    .describe('Template status: DRAFT or PUBLISHED (default: DRAFT)'),
+  sections: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional()
+    .describe('Array of section objects with title and optional questions array'),
 });
 
 export function createAssessmentsCreateTemplateTool(clients: ToolClients) {

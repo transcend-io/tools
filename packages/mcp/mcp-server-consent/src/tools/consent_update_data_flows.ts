@@ -13,7 +13,7 @@ const ConsentTrackerStatusEnum = z.enum(['LIVE', 'NEEDS_REVIEW']);
 const UpdateDataFlowItemSchema = z.object({
   id: z.string().describe('Data flow ID'),
   tracking_purposes: z.array(z.string()).optional().describe('Tracking purpose slugs'),
-  description: z.string().optional(),
+  description: z.string().optional().describe('Data flow description'),
   service: z.string().optional().describe('Service/integration name'),
   is_junk: z.boolean().optional().describe('Mark as junk'),
   status: ConsentTrackerStatusEnum.optional().describe(

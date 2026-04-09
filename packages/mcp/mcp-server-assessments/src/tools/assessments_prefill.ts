@@ -11,14 +11,37 @@ import type { AssessmentsMixin } from '../graphql.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
 const PrefillSchema = z.object({
-  title: z.string(),
-  template_id: z.string().optional(),
-  assessment_group_id: z.string().optional(),
-  answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
-  assignee_ids: z.array(z.string()).optional(),
-  assignee_emails: z.array(z.string()).optional(),
-  reviewer_ids: z.array(z.string()).optional(),
-  submit_for_review: z.boolean().optional(),
+  title: z.string().describe('Title for the new assessment form'),
+  template_id: z
+    .string()
+    .optional()
+    .describe(
+      'Template ID to create the form from. Will auto-resolve to the first matching assessment group.',
+    ),
+  assessment_group_id: z
+    .string()
+    .optional()
+    .describe('Assessment group ID (alternative to template_id)'),
+  answers: z
+    .record(z.string(), z.union([z.string(), z.array(z.string())]))
+    .describe(
+      'Map of answers keyed by question title or referenceId. Values should be strings for text/single-select, or arrays of strings for multi-select.',
+    ),
+  assignee_ids: z
+    .array(z.string())
+    .optional()
+    .describe('Internal user IDs to assign the form to (optional)'),
+  assignee_emails: z
+    .array(z.string())
+    .optional()
+    .describe('External email addresses to assign the form to (optional)'),
+  reviewer_ids: z.array(z.string()).optional().describe('User IDs to set as reviewers (optional)'),
+  submit_for_review: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether to automatically submit the form for review after prefilling (default: false)',
+    ),
 });
 
 export function createAssessmentsPrefillTool(clients: ToolClients) {

@@ -9,7 +9,12 @@ import {
 
 import type { WorkflowsMixin } from '../graphql.js';
 
-const ListWorkflowsSchema = PaginationSchema;
+const ListWorkflowsSchema = PaginationSchema.extend({
+  cursor: z
+    .string()
+    .optional()
+    .describe('Pagination cursor from previous response (where supported)'),
+});
 
 export function createWorkflowsListTool(clients: ToolClients) {
   const graphql = clients.graphql as WorkflowsMixin;

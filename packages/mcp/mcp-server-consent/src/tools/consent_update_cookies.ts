@@ -16,7 +16,7 @@ const UpdateCookieItemSchema = z.object({
     .array(z.string())
     .optional()
     .describe('Tracking purpose slugs (e.g., "Advertising", "Analytics")'),
-  description: z.string().optional(),
+  description: z.string().optional().describe('Cookie description'),
   service: z.string().optional().describe('Service/integration name'),
   is_junk: z.boolean().optional().describe('Mark as junk'),
   status: ConsentTrackerStatusEnum.optional().describe(

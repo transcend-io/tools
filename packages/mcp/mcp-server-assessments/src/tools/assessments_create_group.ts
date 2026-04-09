@@ -3,10 +3,13 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { AssessmentsMixin } from '../graphql.js';
 
 const CreateGroupSchema = z.object({
-  title: z.string(),
-  template_id: z.string(),
-  description: z.string().optional(),
-  reviewer_ids: z.array(z.string()).optional(),
+  title: z.string().describe('Title of the assessment group'),
+  template_id: z.string().describe('ID of the assessment template to link this group to'),
+  description: z.string().optional().describe('Description of the assessment group (optional)'),
+  reviewer_ids: z
+    .array(z.string())
+    .optional()
+    .describe('IDs of users assigned to review new assessments in this group (optional)'),
 });
 
 export function createAssessmentsCreateGroupTool(clients: ToolClients) {

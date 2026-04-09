@@ -3,11 +3,16 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { WorkflowsMixin } from '../graphql.js';
 
 const UpdateWorkflowConfigSchema = z.object({
-  workflow_config_id: z.string(),
-  title: z.string().optional(),
-  subtitle: z.string().optional(),
-  description: z.string().optional(),
-  show_in_privacy_center: z.boolean().optional(),
+  workflow_config_id: z
+    .string()
+    .describe('ID of the workflow config to update (use workflows_list to find config IDs)'),
+  title: z.string().optional().describe('New title for the workflow'),
+  subtitle: z.string().optional().describe('New subtitle for the workflow'),
+  description: z.string().optional().describe('New description for the workflow'),
+  show_in_privacy_center: z
+    .boolean()
+    .optional()
+    .describe('Whether to show this workflow in the Privacy Center'),
 });
 
 export function createWorkflowsUpdateConfigTool(clients: ToolClients) {

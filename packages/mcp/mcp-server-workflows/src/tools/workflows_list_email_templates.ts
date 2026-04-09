@@ -10,7 +10,16 @@ import {
 import type { WorkflowsMixin } from '../graphql.js';
 
 const ListEmailTemplatesSchema = PaginationSchema.extend({
-  offset: z.coerce.number().min(0).optional().default(0),
+  cursor: z
+    .string()
+    .optional()
+    .describe('Pagination cursor from previous response (where supported)'),
+  offset: z.coerce
+    .number()
+    .min(0)
+    .optional()
+    .default(0)
+    .describe('Number of results to skip (default: 0)'),
 });
 
 export function createWorkflowsListEmailTemplatesTool(clients: ToolClients) {
