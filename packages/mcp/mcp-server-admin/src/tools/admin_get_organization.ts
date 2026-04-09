@@ -1,8 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import {
+  createToolResult,
+  defineTool,
+  EmptySchema,
+  type ToolClients,
+} from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
-
-const EmptySchema = z.object({});
 
 export function createAdminGetOrganizationTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;

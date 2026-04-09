@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export const EmptySchema = z.object({});
+
 export const PaginationSchema = z.object({
   limit: z.coerce
     .number()

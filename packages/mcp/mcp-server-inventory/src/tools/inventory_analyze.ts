@@ -1,14 +1,12 @@
 import {
   createToolResult,
   defineTool,
+  EmptySchema,
   groupBy,
-  z,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-
-const InventoryAnalyzeSchema = z.object({});
 
 export function createInventoryAnalyzeTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
@@ -19,7 +17,7 @@ export function createInventoryAnalyzeTool(clients: ToolClients) {
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    zodSchema: InventoryAnalyzeSchema,
+    zodSchema: EmptySchema,
     handler: async (_args) => {
       try {
         const [dataSilosResult, vendorsResult, identifiersResult, categoriesResult] =
