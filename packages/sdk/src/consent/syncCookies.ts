@@ -5,7 +5,7 @@ import { chunk } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { UPDATE_OR_CREATE_COOKIES } from './gqls/consentManager.js';
+import { UPDATE_OR_CREATE_COOKIES } from './gqls/cookies.js';
 
 export interface CookieInput {
   /** Name of cookie */

@@ -5,10 +5,10 @@ import { uniq, keyBy, chunk } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
-  ActionItemCollection,
+  type ActionItemCollection,
   fetchAllActionItemCollections,
 } from './fetchAllActionItemCollections.js';
-import { fetchAllActionItems, ActionItem } from './fetchAllActionItems.js';
+import { fetchAllActionItems, type ActionItem } from './fetchAllActionItems.js';
 import { UPDATE_ACTION_ITEMS, CREATE_ACTION_ITEMS } from './gqls/actionItem.js';
 
 /** Minimal attribute key shape needed for action item sync */

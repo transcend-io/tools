@@ -1,13 +1,13 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
-import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sdk';
+import { COOKIES, type TranscendCliCookiesResponse } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
 const OrderDirectionEnum = z.nativeEnum(OrderDirection);
 
-export const ListDataFlowsSchema = z.object({
+export const ListCookiesSchema = z.object({
   limit: z.number().min(1).max(200).optional().default(50),
   offset: z.number().min(0).optional().default(0),
   status: ConsentTrackerStatusEnum.describe(
@@ -17,25 +17,22 @@ export const ListDataFlowsSchema = z.object({
   show_zero_activity: z.boolean().optional().describe('Include items with zero activity'),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
-  order_field: z
-    .string()
-    .optional()
-    .describe('Field to sort by: value, createdAt, updatedAt, occurrences, service'),
+  order_field: z.string().optional().describe('Field to sort by: name, createdAt, updatedAt'),
   order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
 });
-export type ListDataFlowsInput = z.infer<typeof ListDataFlowsSchema>;
+export type ListCookiesInput = z.infer<typeof ListCookiesSchema>;
 
-export function createConsentListDataFlowsTool(clients: ToolClients) {
+export function createConsentListCookiesTool(clients: ToolClients) {
   return defineTool({
-    name: 'consent_list_data_flows',
+    name: 'consent_list_cookies',
     description:
-      'List data flows (network requests) in your consent manager. ' +
-      'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved flows. ' +
-      'Returns value (URL/host), service, tracking purposes, activity (occurrences), and more.',
+      'List cookies in your consent manager. ' +
+      'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved cookies. ' +
+      'Returns name, service, tracking purposes, activity (occurrences), junk status, and more.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    zodSchema: ListDataFlowsSchema,
+    zodSchema: ListCookiesSchema,
     handler: async ({
       limit,
       offset,
@@ -48,7 +45,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       order_direction,
     }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
+      const data = await clients.graphql.makeRequest<TranscendCliCookiesResponse>(COOKIES, {
         input: { airgapBundleId },
         first: limit,
         offset,
@@ -63,9 +60,9 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
           ? { orderBy: [{ field: order_field, direction: order_direction }] }
           : {}),
       });
-      return createListResult(data.dataFlows.nodes, {
-        totalCount: data.dataFlows.totalCount,
-        hasNextPage: data.dataFlows.pageInfo.hasNextPage,
+      return createListResult(data.cookies.nodes, {
+        totalCount: data.cookies.totalCount,
+        hasNextPage: data.cookies.pageInfo.hasNextPage,
       });
     },
   });

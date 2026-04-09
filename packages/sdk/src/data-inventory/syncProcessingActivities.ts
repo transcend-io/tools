@@ -14,7 +14,7 @@ import { keyBy } from 'lodash-es';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   fetchAllProcessingActivities,
-  ProcessingActivity,
+  type ProcessingActivity,
 } from './fetchAllProcessingActivities.js';
 import {
   UPDATE_PROCESSING_ACTIVITIES,

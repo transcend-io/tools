@@ -17,7 +17,7 @@ import { keyBy } from 'lodash-es';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPurposes } from '../preference-management/fetchAllPurposes.js';
 import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
-import { fetchPrivacyCenterId, fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
+import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import {
   UPDATE_CONSENT_MANAGER_DOMAINS,
   CREATE_CONSENT_MANAGER,
@@ -28,10 +28,9 @@ import {
   TOGGLE_UNKNOWN_COOKIE_POLICY,
   TOGGLE_CONSENT_PRECEDENCE,
   TOGGLE_UNKNOWN_REQUEST_POLICY,
-  UPDATE_CONSENT_EXPERIENCE,
-  CREATE_CONSENT_EXPERIENCE,
   UPDATE_CONSENT_MANAGER_THEME,
 } from './gqls/consentManager.js';
+import { UPDATE_CONSENT_EXPERIENCE, CREATE_CONSENT_EXPERIENCE } from './gqls/experiences.js';
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';

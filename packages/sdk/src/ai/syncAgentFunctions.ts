@@ -4,7 +4,7 @@ import type { JSONSchema7 } from 'json-schema';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { fetchAllAgentFunctions, AgentFunction } from './fetchAllAgentFunctions.js';
+import { fetchAllAgentFunctions, type AgentFunction } from './fetchAllAgentFunctions.js';
 import { UPDATE_AGENT_FUNCTIONS, CREATE_AGENT_FUNCTION } from './gqls/agentFunction.js';
 
 export interface AgentFunctionInput {

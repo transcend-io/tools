@@ -77,7 +77,7 @@ export class TranscendGraphQLBase {
     this.lastRequestTime = Date.now();
   }
 
-  protected async makeRequest<T>(
+  async makeRequest<T>(
     query: string,
     variables?: Record<string, unknown>,
     options: RequestOptions = {},

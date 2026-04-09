@@ -417,6 +417,9 @@ importers:
       '@transcend-io/privacy-types':
         specifier: workspace:*
         version: link:../../privacy-types
+      '@transcend-io/sdk':
+        specifier: workspace:*
+        version: link:../../sdk
       zod:
         specifier: 'catalog:'
         version: 4.3.6

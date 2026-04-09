@@ -1,6 +1,5 @@
 import { AdminMixin } from '@transcend-io/mcp-server-admin';
 import { AssessmentsMixin } from '@transcend-io/mcp-server-assessments';
-import { ConsentMixin } from '@transcend-io/mcp-server-consent';
 import { TranscendGraphQLBase, type Logger } from '@transcend-io/mcp-server-core';
 import { DiscoveryMixin } from '@transcend-io/mcp-server-discovery';
 import { DSRMixin } from '@transcend-io/mcp-server-dsr';
@@ -52,17 +51,7 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listIdentifiers: InstanceType<typeof InventoryMixin>['listIdentifiers'];
   declare listDataCategories: InstanceType<typeof InventoryMixin>['listDataCategories'];
 
-  // Consent
-  declare listAirgapBundles: InstanceType<typeof ConsentMixin>['listAirgapBundles'];
-  declare listTrackingPurposes: InstanceType<typeof ConsentMixin>['listTrackingPurposes'];
-  declare listDataFlows: InstanceType<typeof ConsentMixin>['listDataFlows'];
-  declare listCookies: InstanceType<typeof ConsentMixin>['listCookies'];
-  declare listConsentDataFlows: InstanceType<typeof ConsentMixin>['listConsentDataFlows'];
-  declare getCookieStats: InstanceType<typeof ConsentMixin>['getCookieStats'];
-  declare updateCookies: InstanceType<typeof ConsentMixin>['updateCookies'];
-  declare updateConsentDataFlows: InstanceType<typeof ConsentMixin>['updateConsentDataFlows'];
-  declare deleteCookies: InstanceType<typeof ConsentMixin>['deleteCookies'];
-  declare deleteConsentDataFlows: InstanceType<typeof ConsentMixin>['deleteConsentDataFlows'];
+  // Consent tools now call makeRequest directly (no mixin needed)
 
   // Discovery
   declare listClassificationScans: InstanceType<typeof DiscoveryMixin>['listClassificationScans'];
@@ -107,7 +96,6 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
 applyMixin(TranscendGraphQLClient, AdminMixin);
 applyMixin(TranscendGraphQLClient, DSRMixin);
 applyMixin(TranscendGraphQLClient, InventoryMixin);
-applyMixin(TranscendGraphQLClient, ConsentMixin);
 applyMixin(TranscendGraphQLClient, DiscoveryMixin);
 applyMixin(TranscendGraphQLClient, AssessmentsMixin);
 applyMixin(TranscendGraphQLClient, WorkflowsMixin);

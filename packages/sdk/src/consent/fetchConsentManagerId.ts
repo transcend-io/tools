@@ -16,10 +16,12 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import {
   FETCH_CONSENT_MANAGER_ID,
   FETCH_CONSENT_MANAGER,
-  EXPERIENCES,
   FETCH_CONSENT_MANAGER_THEME,
+  type TranscendConsentManagerThemeGql,
+  type TranscendCliFetchConsentManagerThemeResponse,
 } from './gqls/consentManager.js';
 import { CONSENT_MANAGER_ANALYTICS_DATA } from './gqls/consentManagerMetrics.js';
+import { EXPERIENCES } from './gqls/experiences.js';
 
 export interface ConsentManager {
   /** ID of consent manager */
@@ -270,17 +272,6 @@ export async function fetchConsentManagerAnalyticsData(
   return series;
 }
 
-export interface ConsentManagerTheme {
-  /** Primary color */
-  primaryColor: string;
-  /** Font color */
-  fontColor: string;
-  /** Privacy policy URL */
-  privacyPolicy?: string;
-  /** Auto-prompt setting */
-  prompt: number;
-}
-
 /**
  * Fetch consent manager theme
  *
@@ -300,18 +291,16 @@ export async function fetchConsentManagerTheme(
       airgapBundleId: string;
     };
   },
-): Promise<ConsentManagerTheme> {
+): Promise<TranscendConsentManagerThemeGql> {
   const {
     consentManagerTheme: { theme },
-  } = await makeGraphQLRequest<{
-    /** Consent manager query */
-    consentManagerTheme: {
-      /** Consent manager object */
-      theme: ConsentManagerTheme;
-    };
-  }>(client, FETCH_CONSENT_MANAGER_THEME, {
-    variables: { airgapBundleId: options.filterBy.airgapBundleId },
-    logger: options.logger,
-  });
+  } = await makeGraphQLRequest<TranscendCliFetchConsentManagerThemeResponse>(
+    client,
+    FETCH_CONSENT_MANAGER_THEME,
+    {
+      variables: { airgapBundleId: options.filterBy.airgapBundleId },
+      logger: options.logger,
+    },
+  );
   return theme;
 }

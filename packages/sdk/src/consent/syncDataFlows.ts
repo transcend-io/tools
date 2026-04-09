@@ -6,7 +6,7 @@ import { chunk } from 'lodash-es';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataFlows } from './fetchAllDataFlows.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/consentManager.js';
+import { CREATE_DATA_FLOWS, UPDATE_DATA_FLOWS } from './gqls/dataFlows.js';
 
 /** Attribute key-value pair for a data flow */
 export interface DataFlowAttributeInput {

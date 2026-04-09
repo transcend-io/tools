@@ -58,7 +58,7 @@ export async function createSombraGotInstance(
   }
   logger.info(`Using sombra: ${sombraToUse}`);
 
-  return got.extend({
+  return (got as unknown as Got).extend({
     prefixUrl: sombraToUse,
     headers: {
       Authorization: `Bearer ${transcendApiKey}`,

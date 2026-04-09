@@ -4,7 +4,7 @@ import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { fetchAllDataCategories, DataSubCategory } from './fetchAllDataCategories.js';
+import { fetchAllDataCategories, type DataSubCategory } from './fetchAllDataCategories.js';
 import { UPDATE_DATA_SUB_CATEGORIES, CREATE_DATA_SUB_CATEGORY } from './gqls/dataCategory.js';
 
 export interface DataCategoryInput {

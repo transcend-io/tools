@@ -1,16 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { getConsentTools } from '../src/tools.js';
+import { getConsentTools } from '../src/tools/index.js';
 
 const EXPECTED_TOOL_NAMES = [
   'consent_get_preferences',
   'consent_set_preferences',
   'consent_list_purposes',
   'consent_list_data_flows',
+  'consent_list_cookies',
   'consent_list_airgap_bundles',
   'consent_list_regimes',
-  'consent_list_triage_cookies',
-  'consent_list_triage_data_flows',
   'consent_get_triage_stats',
   'consent_update_cookies',
   'consent_update_data_flows',
@@ -19,66 +18,49 @@ const EXPECTED_TOOL_NAMES = [
 
 describe('Consent Tools', () => {
   let mockGraphql: {
-    listAirgapBundles: ReturnType<typeof vi.fn>;
-    listTrackingPurposes: ReturnType<typeof vi.fn>;
-    listDataFlows: ReturnType<typeof vi.fn>;
-    listCookies: ReturnType<typeof vi.fn>;
-    listConsentDataFlows: ReturnType<typeof vi.fn>;
-    getCookieStats: ReturnType<typeof vi.fn>;
-    updateCookies: ReturnType<typeof vi.fn>;
-    updateConsentDataFlows: ReturnType<typeof vi.fn>;
-    deleteCookies: ReturnType<typeof vi.fn>;
-    deleteConsentDataFlows: ReturnType<typeof vi.fn>;
+    makeRequest: ReturnType<typeof vi.fn>;
+    testConnection: ReturnType<typeof vi.fn>;
+    getBaseUrl: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     mockGraphql = {
-      listAirgapBundles: vi.fn(),
-      listTrackingPurposes: vi.fn(),
-      listDataFlows: vi.fn(),
-      listCookies: vi.fn(),
-      listConsentDataFlows: vi.fn(),
-      getCookieStats: vi.fn(),
-      updateCookies: vi.fn(),
-      updateConsentDataFlows: vi.fn(),
-      deleteCookies: vi.fn(),
-      deleteConsentDataFlows: vi.fn(),
+      makeRequest: vi.fn(),
+      testConnection: vi.fn(),
+      getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
     };
   });
 
   const getTools = () =>
     getConsentTools({
       rest: {} as never,
-      graphql: mockGraphql,
+      graphql: mockGraphql as never,
     });
 
-  it('registers exactly 12 tools with expected names', () => {
+  it(`registers exactly ${EXPECTED_TOOL_NAMES.length} tools with expected names`, () => {
     const tools = getTools();
-    expect(tools).toHaveLength(12);
+    expect(tools).toHaveLength(EXPECTED_TOOL_NAMES.length);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
   describe('consent_update_cookies', () => {
-    it('zodSchema rejects input when required fields are missing', async () => {
+    it('zodSchema rejects input when required fields are missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_update_cookies')!;
 
       const result = tool.zodSchema.safeParse({});
       expect(result.success).toBe(false);
       expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
-        expect.arrayContaining(['airgap_bundle_id', 'cookies']),
+        expect.arrayContaining(['cookies']),
       );
-      expect(mockGraphql.updateCookies).not.toHaveBeenCalled();
     });
   });
 
   describe('consent_list_purposes', () => {
     it('returns list on success', async () => {
       const nodes = [{ id: 'p1', name: 'Analytics', trackingType: 'ANALYTICS' }];
-      mockGraphql.listTrackingPurposes.mockResolvedValue({
-        nodes,
-        totalCount: 1,
-        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      mockGraphql.makeRequest.mockResolvedValue({
+        purposes: { nodes, totalCount: 1, pageInfo: { hasNextPage: false } },
       });
 
       const tools = getTools();
@@ -89,8 +71,8 @@ describe('Consent Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('throws when client throws', async () => {
-      mockGraphql.listTrackingPurposes.mockRejectedValue(new Error('GraphQL error'));
+    it('returns error when client throws', async () => {
+      mockGraphql.makeRequest.mockRejectedValue(new Error('GraphQL error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_list_purposes')!;

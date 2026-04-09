@@ -1,197 +1,18 @@
-/* eslint-disable max-lines */
 import { gql } from 'graphql-request';
 
-// TODO: https://transcend.height.app/T-27909 - order by createdAt
-// TODO: https://transcend.height.app/T-27909 - enable optimizations
-// isExportCsv: true
-export const EXPERIENCES = gql`
-  query TranscendCliExperiences($first: Int!, $offset: Int!) {
-    experiences(first: $first, offset: $offset, useMaster: false) {
-      nodes {
-        id
-        name
-        displayName
-        regions {
-          countrySubDivision
-          country
-        }
-        operator
-        displayPriority
-        onConsentExpiry
-        consentExpiry
-        viewState
-        purposes {
-          name
-          trackingType
-        }
-        optedOutPurposes {
-          name
-          trackingType
-        }
-        browserLanguages
-        browserTimeZones
-      }
-    }
-  }
-`;
+// ---- FETCH_CONSENT_MANAGER_ID query ----
 
-// TODO: https://transcend.height.app/T-27909 - order by createdAt
-// TODO: https://transcend.height.app/T-27909 - enable optimizations
-// useMaster: false
-// isExportCsv: true
-export const CONSENT_PARTITIONS = gql`
-  query TranscendCliConsentPartitions($first: Int!, $offset: Int!) {
-    consentPartitions(first: $first, offset: $offset) {
-      nodes {
-        id
-        name
-        partition
-      }
-    }
-  }
-`;
-
-export const CREATE_DATA_FLOWS = gql`
-  mutation TranscendCliCreateDataFlows(
-    $dataFlows: [DataFlowInput!]!
-    $airgapBundleId: ID!
-    $classifyService: Boolean
-  ) {
-    createDataFlows(
-      input: {
-        airgapBundleId: $airgapBundleId
-        dataFlows: $dataFlows
-        classifyService: $classifyService
-      }
-    ) {
-      dataFlows {
-        id
-      }
-    }
-  }
-`;
-
-export const UPDATE_DATA_FLOWS = gql`
-  mutation TranscendCliUpdateDataFlows(
-    $airgapBundleId: ID!
-    $dataFlows: [UpdateDataFlowInput!]!
-    $classifyService: Boolean
-  ) {
-    updateDataFlows(
-      input: {
-        airgapBundleId: $airgapBundleId
-        dataFlows: $dataFlows
-        classifyService: $classifyService
-      }
-    ) {
-      dataFlows {
-        id
-      }
-    }
-  }
-`;
-
-export const UPDATE_OR_CREATE_COOKIES = gql`
-  mutation TranscendCliUpdateOrCreateCookies(
-    $cookies: [UpdateOrCreateCookieInput!]!
-    $airgapBundleId: ID!
-  ) {
-    updateOrCreateCookies(input: { airgapBundleId: $airgapBundleId, cookies: $cookies }) {
-      clientMutationId
-    }
-  }
-`;
-
-// TODO: https://transcend.height.app/T-27909 - enable optimizations
-// isExportCsv: true
-export const DATA_FLOWS = gql`
-  query TranscendCliDataFlows(
-    $first: Int!
-    $airgapBundleId: ID!
-    $offset: Int!
-    $status: ConsentTrackerStatus
-    $showZeroActivity: Boolean
-  ) {
-    dataFlows(
-      first: $first
-      offset: $offset
-      filterBy: { status: $status, showZeroActivity: $showZeroActivity }
-      input: { airgapBundleId: $airgapBundleId }
-      orderBy: [{ field: createdAt, direction: ASC }, { field: value, direction: ASC }]
-      useMaster: false
-    ) {
-      nodes {
-        id
-        value
-        type
-        description
-        trackingType
-        service {
-          integrationName
-        }
-        source
-        status
-        owners {
-          email
-        }
-        teams {
-          name
-        }
-        attributeValues {
-          name
-          attributeKey {
-            name
-          }
-        }
-      }
-    }
-  }
-`;
-
-// TODO: https://transcend.height.app/T-27909 - enable optimizations
-// isExportCsv: true
-export const COOKIES = gql`
-  query TranscendCliCookies(
-    $first: Int!
-    $offset: Int!
-    $airgapBundleId: ID!
-    $status: ConsentTrackerStatus
-  ) {
-    cookies(
-      first: $first
-      offset: $offset
-      filterBy: { status: $status }
-      input: { airgapBundleId: $airgapBundleId }
-      orderBy: [{ field: createdAt, direction: ASC }, { field: name, direction: ASC }]
-      useMaster: false
-    ) {
-      nodes {
-        id
-        name
-        isRegex
-        description
-        trackingPurposes
-        service {
-          integrationName
-        }
-        source
-        status
-        owners {
-          email
-        }
-        teams {
-          name
-        }
-        attributeValues {
-          name
-          attributeKey {
-            name
-          }
-        }
-      }
-    }
-  }
-`;
+/** Full response from FETCH_CONSENT_MANAGER_ID */
+export interface TranscendCliFetchConsentManagerIdResponse {
+  /** Consent manager wrapper */
+  consentManager: {
+    /** Consent manager object */
+    consentManager: {
+      /** Consent manager / airgap bundle ID */
+      id: string;
+    };
+  };
+}
 
 export const FETCH_CONSENT_MANAGER_ID = gql`
   query TranscendCliFetchConsentManagerId {
@@ -202,6 +23,56 @@ export const FETCH_CONSENT_MANAGER_ID = gql`
     }
   }
 `;
+
+// ---- FETCH_CONSENT_MANAGER query ----
+
+/** Consent manager configuration */
+export interface TranscendConsentManagerConfigGql {
+  /** Configured domains */
+  domains: string[];
+  /** Consent precedence setting */
+  consentPrecedence: string;
+  /** Unknown request policy */
+  unknownRequestPolicy: string;
+  /** Unknown cookie policy */
+  unknownCookiePolicy: string;
+  /** Sync endpoint URL */
+  syncEndpoint: string;
+  /** Telemetry partitioning strategy */
+  telemetryPartitioning: string;
+  /** Signed IAB agreement status */
+  signedIabAgreement: string;
+  /** Sync groups setting */
+  syncGroups: string;
+  /** Partition parameter */
+  partition: string;
+}
+
+/** Consent manager node */
+export interface TranscendConsentManagerGql {
+  /** Consent manager / airgap bundle ID */
+  id: string;
+  /** Production bundle URL */
+  bundleURL: string;
+  /** Test bundle URL */
+  testBundleURL: string;
+  /** Configuration settings */
+  configuration: TranscendConsentManagerConfigGql;
+  /** Partition info */
+  partition?: {
+    /** Partition value */
+    partition: string;
+  };
+}
+
+/** Full response from FETCH_CONSENT_MANAGER */
+export interface TranscendCliFetchConsentManagerResponse {
+  /** Consent manager wrapper */
+  consentManager: {
+    /** Consent manager object */
+    consentManager: TranscendConsentManagerGql;
+  };
+}
 
 export const FETCH_CONSENT_MANAGER = gql`
   query TranscendCliFetchConsentManager {
@@ -229,6 +100,29 @@ export const FETCH_CONSENT_MANAGER = gql`
   }
 `;
 
+// ---- FETCH_CONSENT_MANAGER_THEME query ----
+
+/** Consent manager theme fields */
+export interface TranscendConsentManagerThemeGql {
+  /** Primary color */
+  primaryColor: string;
+  /** Font color */
+  fontColor: string;
+  /** Privacy policy URL */
+  privacyPolicy?: string;
+  /** Auto-prompt setting */
+  prompt: number;
+}
+
+/** Full response from FETCH_CONSENT_MANAGER_THEME */
+export interface TranscendCliFetchConsentManagerThemeResponse {
+  /** Theme wrapper */
+  consentManagerTheme: {
+    /** Theme object */
+    theme: TranscendConsentManagerThemeGql;
+  };
+}
+
 export const FETCH_CONSENT_MANAGER_THEME = gql`
   query TranscendCliFetchConsentManagerTheme($airgapBundleId: ID!) {
     consentManagerTheme(input: { airgapBundleId: $airgapBundleId }) {
@@ -241,6 +135,17 @@ export const FETCH_CONSENT_MANAGER_THEME = gql`
     }
   }
 `;
+
+// ---- Consent Manager mutations ----
+
+/** Shared response type for mutations that return only clientMutationId */
+export interface TranscendClientMutationIdResponse {
+  /** Mutation result keyed by mutation name */
+  [key: string]: {
+    /** Client mutation ID */
+    clientMutationId: string | null;
+  };
+}
 
 export const CREATE_CONSENT_MANAGER = gql`
   mutation TranscendCliCreateConsentManager($privacyCenterId: ID!) {
@@ -344,28 +249,3 @@ export const UPDATE_CONSENT_MANAGER_THEME = gql`
     }
   }
 `;
-
-export const UPDATE_CONSENT_EXPERIENCE = gql`
-  mutation TranscendCliUpdateConsentExperience($input: UpdateExperienceInput!) {
-    updateExperience(input: $input) {
-      clientMutationId
-    }
-  }
-`;
-
-export const CREATE_CONSENT_EXPERIENCE = gql`
-  mutation TranscendCliCreateConsentExperience($input: CreateExperienceInput!) {
-    createExperience(input: $input) {
-      clientMutationId
-    }
-  }
-`;
-
-export const CREATE_CONSENT_PARTITION = gql`
-  mutation TranscendCliCreateConsentPartition($input: CreateConsentPartitionInput!) {
-    createConsentPartition(input: $input) {
-      clientMutationId
-    }
-  }
-`;
-/* eslint-enable max-lines */

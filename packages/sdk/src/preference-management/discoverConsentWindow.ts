@@ -7,7 +7,7 @@ import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { getComparisonTimeForRecord } from './getComparisonTimeForRecord.js';
 import { iterateConsentPages } from './iterateConsentPages.js';
 import { pickConsentChunkMode } from './pickConsentChunkMode.js';
-import { ChunkMode, PreferencesQueryFilter } from './types.js';
+import { type ChunkMode, type PreferencesQueryFilter } from './types.js';
 
 /**
  * Get after/before bounds from filter for the given mode

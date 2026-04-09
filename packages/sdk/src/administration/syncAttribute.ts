@@ -4,7 +4,7 @@ import { GraphQLClient } from 'graphql-request';
 import { keyBy, difference, groupBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { Attribute } from './fetchAllAttributes.js';
+import { type Attribute } from './fetchAllAttributes.js';
 import {
   CREATE_ATTRIBUTE,
   CREATE_ATTRIBUTE_VALUES,

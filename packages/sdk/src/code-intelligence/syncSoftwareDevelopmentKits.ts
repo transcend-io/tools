@@ -6,7 +6,7 @@ import { chunk, keyBy } from 'lodash-es';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   fetchAllSoftwareDevelopmentKits,
-  SoftwareDevelopmentKit,
+  type SoftwareDevelopmentKit,
 } from './fetchAllSoftwareDevelopmentKits.js';
 import {
   UPDATE_SOFTWARE_DEVELOPMENT_KITS,

@@ -1,15 +1,14 @@
-import {
-  createToolResult,
-  defineTool,
-  z,
-  type ToolClients,
-  type UpdateCookieInput,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import {
+  UPDATE_OR_CREATE_COOKIES,
+  type TranscendUpdateCookieInputGql,
+  type TranscendCliUpdateOrCreateCookiesResponse,
+} from '@transcend-io/sdk';
 
-import type { ConsentMixin } from '../graphql.js';
+import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-export const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
+const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
 
 export const UpdateCookieItemSchema = z.object({
   name: z.string().describe('Cookie name (used as the identifier for upsert)'),
@@ -27,13 +26,11 @@ export const UpdateCookieItemSchema = z.object({
 export type UpdateCookieItemInput = z.infer<typeof UpdateCookieItemSchema>;
 
 export const UpdateCookiesSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
   cookies: z.array(UpdateCookieItemSchema).min(1).describe('Cookies to update'),
 });
 export type UpdateCookiesInput = z.infer<typeof UpdateCookiesSchema>;
 
 export function createConsentUpdateCookiesTool(clients: ToolClients) {
-  const graphql = clients.graphql as ConsentMixin;
   return defineTool({
     name: 'consent_update_cookies',
     description:
@@ -45,8 +42,9 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
     confirmationHint: 'Updates cookies in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateCookiesSchema,
-    handler: async ({ airgap_bundle_id, cookies }) => {
-      const cookieInputs: UpdateCookieInput[] = cookies.map((c) => ({
+    handler: async ({ cookies }) => {
+      const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
+      const cookieInputs: TranscendUpdateCookieInputGql[] = cookies.map((c) => ({
         name: c.name,
         ...(c.tracking_purposes ? { trackingPurposes: c.tracking_purposes } : {}),
         ...(c.description !== undefined ? { description: c.description } : {}),
@@ -54,7 +52,13 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
         ...(c.is_junk !== undefined ? { isJunk: c.is_junk } : {}),
         ...(c.status !== undefined ? { status: c.status } : {}),
       }));
-      await graphql.updateCookies(airgap_bundle_id, cookieInputs);
+      await clients.graphql.makeRequest<TranscendCliUpdateOrCreateCookiesResponse>(
+        UPDATE_OR_CREATE_COOKIES,
+        {
+          airgapBundleId,
+          cookies: cookieInputs,
+        },
+      );
       return createToolResult(true, {
         updated: cookieInputs.length,
         cookies: cookieInputs.map((c) => ({

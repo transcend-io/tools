@@ -4,7 +4,7 @@ import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { fetchAllTeams, Team } from './fetchAllTeams.js';
+import { fetchAllTeams, type Team } from './fetchAllTeams.js';
 import { UPDATE_TEAM, CREATE_TEAM } from './gqls/team.js';
 
 export interface TeamInput {
