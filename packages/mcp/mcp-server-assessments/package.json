@@ -39,6 +39,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
     "@transcend-io/mcp-server-core": "workspace:*",
+    "@transcend-io/privacy-types": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
