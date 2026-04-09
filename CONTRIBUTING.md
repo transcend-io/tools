@@ -250,10 +250,10 @@ Each domain package provides a standalone CLI and can be installed independently
 
 ### Working on a Single MCP Package
 
-Use `pnpm --filter` the same way as any other package:
+Use `pnpm --filter` the same way as any other package. For `build`, prefer a Turbo filter with a trailing `...` so `mcp-server-core` and other dependencies are built when needed:
 
 ```bash
-pnpm -F @transcend-io/mcp-server-consent build
+pnpm exec turbo run build --filter="@transcend-io/mcp-server-consent..."
 pnpm -F @transcend-io/mcp-server-consent test
 pnpm -F @transcend-io/mcp-server-consent typecheck
 ```

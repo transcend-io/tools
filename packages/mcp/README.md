@@ -4,6 +4,13 @@
 
 [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers that let AI agents interact with the [Transcend](https://transcend.io) privacy platform. Every server speaks the same MCP stdio transport, so it works with any compliant client (Claude Desktop, Cursor, Cline, custom agents, etc.).
 
+## Prerequisites
+
+- **Node.js** ≥ 22.12 (see each CLI package’s `engines` in `package.json`).
+- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-core`), then `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` with `TRANSCEND_API_KEY` set (see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
+
+In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package).
+
 ## Choosing a server
 
 There are two ways to consume the MCP tools, and they can be mixed freely.

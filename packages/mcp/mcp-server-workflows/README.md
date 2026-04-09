@@ -4,11 +4,17 @@
 
 Transcend MCP Server for workflow configuration. Provides tools for listing workflows, email templates, and updating workflow settings.
 
+Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
+
 ## Install
+
+When the package is available on npm, install the CLI globally:
 
 ```bash
 npm install -g @transcend-io/mcp-server-workflows
 ```
+
+Until then, run from a checkout of this repository (see **Run from the monorepo** below).
 
 ## Usage
 
@@ -16,7 +22,11 @@ npm install -g @transcend-io/mcp-server-workflows
 TRANSCEND_API_KEY=your-api-key transcend-mcp-workflows
 ```
 
+The process speaks MCP over **stdio** and is meant to be launched by an MCP client (for example Cursor or Claude Desktop), not used as an interactive shell.
+
 ### MCP client configuration
+
+`npx` runs the package’s `transcend-mcp-workflows` binary (see `bin` in `package.json`).
 
 ```json
 {
@@ -31,6 +41,18 @@ TRANSCEND_API_KEY=your-api-key transcend-mcp-workflows
   }
 }
 ```
+
+### Run from the monorepo
+
+After `build`, start the server with `node ./dist/cli.mjs` (same entry as the `transcend-mcp-workflows` `bin`; use `node` because in a pnpm workspace `pnpm exec transcend-mcp-workflows` may not resolve this package’s own binary):
+
+```bash
+# from the repository root
+pnpm exec turbo run build --filter="@transcend-io/mcp-server-workflows..."
+TRANSCEND_API_KEY=your-api-key pnpm -F @transcend-io/mcp-server-workflows exec node ./dist/cli.mjs
+```
+
+See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout and `pnpm --filter` workflows.
 
 ### Environment variables
 

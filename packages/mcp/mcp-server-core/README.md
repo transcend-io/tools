@@ -4,6 +4,14 @@
 
 Shared infrastructure for all Transcend MCP Server packages. Provides the base GraphQL and REST clients, tool type definitions, validation helpers, error handling, and the `createMCPServer` factory used by each domain server.
 
+Requires **Node.js ≥ 22.12** (see `engines` in `package.json`) when building or importing this library.
+
+## Install
+
+This package is **not** a standalone MCP CLI: it has no `bin`. Domain servers and the unified `mcp-server` depend on it. In this repository it is consumed as `workspace:*`; when published to npm, downstream packages will list it as a normal dependency.
+
+Until publication, use a checkout of this repository (see **Development** below).
+
 ## What's inside
 
 - **`TranscendGraphQLBase`** — Base GraphQL client with query execution, pagination, and logging. Domain packages extend this via mixin classes.
@@ -26,6 +34,17 @@ import {
   z,
 } from '@transcend-io/mcp-server-core';
 ```
+
+## Development
+
+From the repository root:
+
+```bash
+pnpm -F @transcend-io/mcp-server-core build
+pnpm -F @transcend-io/mcp-server-core test
+```
+
+See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for working across MCP packages and adding tools.
 
 ## Related packages
 
