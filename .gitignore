@@ -7,3 +7,4 @@ mise.local.lock
 mise.local.toml
 node_modules
 *.tsbuildinfo
+secret.env
