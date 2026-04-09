@@ -20,26 +20,18 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: DeletePreferencesSchema,
     handler: async ({ partition, identifiers }) => {
-      try {
-        const result = await rest.deletePreferences(
-          partition,
-          identifiers.map((id) => ({
-            value: id.value,
-            type: id.type,
-          })),
-        );
+      const result = await rest.deletePreferences(
+        partition,
+        identifiers.map((id) => ({
+          value: id.value,
+          type: id.type,
+        })),
+      );
 
-        return createToolResult(true, {
-          ...result,
-          message: `Successfully deleted ${result.count} preference records`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        ...result,
+        message: `Successfully deleted ${result.count} preference records`,
+      });
     },
   });
 }

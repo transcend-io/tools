@@ -1,10 +1,4 @@
-import {
-  createListResult,
-  createToolResult,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const IdentifierSchema = z.object({
   value: z.string().describe('Identifier value'),
@@ -25,25 +19,17 @@ export function createPreferencesQueryTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: QueryPreferencesSchema,
     handler: async ({ partition, identifiers }) => {
-      try {
-        const result = await rest.queryPreferences({
-          partition,
-          identifiers: identifiers.map((id) => ({
-            value: id.value,
-            type: id.type,
-          })),
-        });
+      const result = await rest.queryPreferences({
+        partition,
+        identifiers: identifiers.map((id) => ({
+          value: id.value,
+          type: id.type,
+        })),
+      });
 
-        return createListResult(result, {
-          totalCount: result.length,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result, {
+        totalCount: result.length,
+      });
     },
   });
 }

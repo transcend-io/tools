@@ -21,28 +21,20 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AppendIdentifiersSchema,
     handler: async ({ partition, user_id, identifiers }) => {
-      try {
-        const result = await rest.appendIdentifiers(
-          partition,
-          user_id,
-          identifiers.map((id) => ({
-            value: id.value,
-            type: id.type,
-          })),
-        );
+      const result = await rest.appendIdentifiers(
+        partition,
+        user_id,
+        identifiers.map((id) => ({
+          value: id.value,
+          type: id.type,
+        })),
+      );
 
-        return createToolResult(true, {
-          ...result,
-          identifiersAdded: identifiers.length,
-          message: 'Identifiers appended successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        ...result,
+        identifiersAdded: identifiers.length,
+        message: 'Identifiers appended successfully',
+      });
     },
   });
 }

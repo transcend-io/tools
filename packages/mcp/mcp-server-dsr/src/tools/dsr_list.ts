@@ -1,6 +1,5 @@
 import {
   createListResult,
-  createToolResult,
   defineTool,
   PaginationSchema,
   type ToolClients,
@@ -20,27 +19,19 @@ export function createDsrListTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: PaginationSchema,
     handler: async ({ limit, cursor }) => {
-      try {
-        const result = await graphql.listRequests({
-          first: limit,
-          after: cursor,
-        });
+      const result = await graphql.listRequests({
+        first: limit,
+        after: cursor,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-          cursor: result.pageInfo?.endCursor,
-          paginationNote: result.pageInfo?.hasNextPage
-            ? 'More results available. Pass the cursor value to fetch the next page.'
-            : 'No more results.',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+        cursor: result.pageInfo?.endCursor,
+        paginationNote: result.pageInfo?.hasNextPage
+          ? 'More results available. Pass the cursor value to fetch the next page.'
+          : 'No more results.',
+      });
     },
   });
 }

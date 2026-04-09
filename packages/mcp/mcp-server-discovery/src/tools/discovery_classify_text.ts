@@ -20,25 +20,17 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ClassifyTextSchema,
     handler: async ({ texts, categories, model }) => {
-      try {
-        const results = await rest.classifyText({
-          texts,
-          categories,
-          model,
-        });
+      const results = await rest.classifyText({
+        texts,
+        categories,
+        model,
+      });
 
-        return createToolResult(true, {
-          results,
-          inputCount: texts.length,
-          message: `Classified ${texts.length} text(s) successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        results,
+        inputCount: texts.length,
+        message: `Classified ${texts.length} text(s) successfully`,
+      });
     },
   });
 }

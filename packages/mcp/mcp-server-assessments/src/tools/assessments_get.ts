@@ -17,16 +17,8 @@ export function createAssessmentsGetTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetAssessmentSchema,
     handler: async ({ assessment_id }) => {
-      try {
-        const result = await graphql.getAssessment(assessment_id);
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.getAssessment(assessment_id);
+      return createToolResult(true, result);
     },
   });
 }

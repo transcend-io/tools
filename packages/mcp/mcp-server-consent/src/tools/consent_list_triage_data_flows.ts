@@ -1,10 +1,4 @@
-import {
-  createListResult,
-  createToolResult,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 import type { ConsentMixin } from '../graphql.js';
@@ -63,32 +57,24 @@ export function createConsentListTriageDataFlowsTool(clients: ToolClients) {
       order_field,
       order_direction,
     }) => {
-      try {
-        const result = await graphql.listConsentDataFlows({
-          airgapBundleId: airgap_bundle_id,
-          first: limit,
-          offset,
-          status,
-          isJunk: is_junk,
-          showZeroActivity: show_zero_activity,
-          text,
-          service,
-          orderBy:
-            order_field && order_direction
-              ? [{ field: order_field, direction: order_direction }]
-              : undefined,
-        });
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.listConsentDataFlows({
+        airgapBundleId: airgap_bundle_id,
+        first: limit,
+        offset,
+        status,
+        isJunk: is_junk,
+        showZeroActivity: show_zero_activity,
+        text,
+        service,
+        orderBy:
+          order_field && order_direction
+            ? [{ field: order_field, direction: order_direction }]
+            : undefined,
+      });
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

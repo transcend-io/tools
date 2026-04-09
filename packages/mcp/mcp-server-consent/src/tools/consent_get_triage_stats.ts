@@ -18,16 +18,8 @@ export function createConsentGetTriageStatsTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetCookieStatsSchema,
     handler: async ({ airgap_bundle_id }) => {
-      try {
-        const stats = await graphql.getCookieStats(airgap_bundle_id);
-        return createToolResult(true, stats);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const stats = await graphql.getCookieStats(airgap_bundle_id);
+      return createToolResult(true, stats);
     },
   });
 }

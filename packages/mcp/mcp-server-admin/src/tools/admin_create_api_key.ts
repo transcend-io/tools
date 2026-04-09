@@ -23,25 +23,17 @@ export function createAdminCreateApiKeyTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateApiKeySchema,
     handler: async ({ title, scopes, data_silos }) => {
-      try {
-        const result = await graphql.createApiKey({
-          title,
-          scopes,
-          dataSilos: data_silos,
-        });
-        return createToolResult(true, {
-          apiKey: result.apiKey,
-          token: result.token,
-          warning: 'IMPORTANT: Save this token now! It will not be shown again.',
-          message: `API key "${title}" created successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.createApiKey({
+        title,
+        scopes,
+        dataSilos: data_silos,
+      });
+      return createToolResult(true, {
+        apiKey: result.apiKey,
+        token: result.token,
+        warning: 'IMPORTANT: Save this token now! It will not be shown again.',
+        message: `API key "${title}" created successfully`,
+      });
     },
   });
 }

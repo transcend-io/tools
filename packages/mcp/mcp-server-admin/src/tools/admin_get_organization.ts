@@ -17,16 +17,8 @@ export function createAdminGetOrganizationTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
     handler: async (_args) => {
-      try {
-        const result = await graphql.getOrganization();
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.getOrganization();
+      return createToolResult(true, result);
     },
   });
 }

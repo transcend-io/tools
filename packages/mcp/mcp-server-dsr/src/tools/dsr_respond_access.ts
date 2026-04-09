@@ -21,23 +21,15 @@ export function createDsrRespondAccessTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: respondAccessSchema,
     handler: async ({ request_id, data_silo_id, profiles }) => {
-      try {
-        const result = await rest.respondToAccess({
-          requestId: request_id,
-          dataSiloId: data_silo_id,
-          profiles: profiles as Record<string, unknown>[] | undefined,
-        });
-        return createToolResult(true, {
-          ...result,
-          message: 'Access response submitted successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await rest.respondToAccess({
+        requestId: request_id,
+        dataSiloId: data_silo_id,
+        profiles: profiles as Record<string, unknown>[] | undefined,
+      });
+      return createToolResult(true, {
+        ...result,
+        message: 'Access response submitted successfully',
+      });
     },
   });
 }

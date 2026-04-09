@@ -17,16 +17,8 @@ export function createInventoryGetDataSiloTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetDataSiloSchema,
     handler: async ({ data_silo_id }) => {
-      try {
-        const result = await graphql.getDataSilo(data_silo_id);
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.getDataSilo(data_silo_id);
+      return createToolResult(true, result);
     },
   });
 }

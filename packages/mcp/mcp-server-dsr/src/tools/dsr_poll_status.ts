@@ -15,16 +15,8 @@ export function createDsrPollStatusTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: pollStatusSchema,
     handler: async ({ request_id }) => {
-      try {
-        const result = await rest.getDSRStatus(request_id);
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await rest.getDSRStatus(request_id);
+      return createToolResult(true, result);
     },
   });
 }

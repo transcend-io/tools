@@ -2,7 +2,11 @@ import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-sc
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
-import type { ToolDefinition, TranscendRestClient } from '@transcend-io/mcp-server-core';
+import {
+  createErrorResult,
+  type ToolDefinition,
+  type TranscendRestClient,
+} from '@transcend-io/mcp-server-core';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
@@ -89,7 +93,11 @@ export class ToolRegistry {
       throw new Error(`Invalid input: ${issues}`);
     }
 
-    return tool.handler(parseResult.data);
+    try {
+      return await tool.handler(parseResult.data);
+    } catch (error) {
+      return createErrorResult(error);
+    }
   }
 
   getToolsByCategory(category: string): ToolDefinition[] {

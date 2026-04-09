@@ -1,5 +1,4 @@
 import {
-  createToolResult,
   createListResult,
   defineTool,
   PaginationSchema,
@@ -26,22 +25,14 @@ export function createDiscoveryListPluginsTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListPluginsSchema,
     handler: async ({ limit, cursor }) => {
-      try {
-        const result = await graphql.listDiscoveryPlugins({
-          first: limit,
-          after: cursor,
-        });
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.listDiscoveryPlugins({
+        first: limit,
+        after: cursor,
+      });
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

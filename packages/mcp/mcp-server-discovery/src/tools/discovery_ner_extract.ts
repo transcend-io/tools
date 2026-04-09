@@ -18,25 +18,17 @@ export function createDiscoveryNerExtractTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: NerExtractSchema,
     handler: async ({ text, entity_types }) => {
-      try {
-        const result = await rest.extractEntities({
-          text,
-          entityTypes: entity_types,
-        });
+      const result = await rest.extractEntities({
+        text,
+        entityTypes: entity_types,
+      });
 
-        return createToolResult(true, {
-          entities: result.entities,
-          entityCount: result.entities.length,
-          entityTypes: [...new Set(result.entities.map((e) => e.type))],
-          message: `Extracted ${result.entities.length} entities from text`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        entities: result.entities,
+        entityCount: result.entities.length,
+        entityTypes: [...new Set(result.entities.map((e) => e.type))],
+        message: `Extracted ${result.entities.length} entities from text`,
+      });
     },
   });
 }

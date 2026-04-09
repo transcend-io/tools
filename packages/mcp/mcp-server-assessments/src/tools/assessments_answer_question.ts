@@ -34,35 +34,27 @@ export function createAssessmentsAnswerQuestionTool(clients: ToolClients) {
       assessment_answer_ids,
       assessment_answer_values,
     }) => {
-      try {
-        const input: {
-          assessmentQuestionId: string;
-          assessmentAnswerIds?: string[];
-          assessmentAnswerValues?: { value: string; isUserCreated: boolean }[];
-        } = {
-          assessmentQuestionId: assessment_question_id,
-        };
+      const input: {
+        assessmentQuestionId: string;
+        assessmentAnswerIds?: string[];
+        assessmentAnswerValues?: { value: string; isUserCreated: boolean }[];
+      } = {
+        assessmentQuestionId: assessment_question_id,
+      };
 
-        if (assessment_answer_ids) {
-          input.assessmentAnswerIds = assessment_answer_ids;
-        }
-        if (assessment_answer_values) {
-          input.assessmentAnswerValues = assessment_answer_values;
-        }
-
-        const result = await graphql.selectAssessmentQuestionAnswers(input);
-
-        return createToolResult(true, {
-          selectedAnswers: result,
-          message: 'Assessment question answered successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
+      if (assessment_answer_ids) {
+        input.assessmentAnswerIds = assessment_answer_ids;
       }
+      if (assessment_answer_values) {
+        input.assessmentAnswerValues = assessment_answer_values;
+      }
+
+      const result = await graphql.selectAssessmentQuestionAnswers(input);
+
+      return createToolResult(true, {
+        selectedAnswers: result,
+        message: 'Assessment question answered successfully',
+      });
     },
   });
 }

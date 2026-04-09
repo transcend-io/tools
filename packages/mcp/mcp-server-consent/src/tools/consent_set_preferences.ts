@@ -23,27 +23,19 @@ export function createConsentSetPreferencesTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: SetPreferencesSchema,
     handler: async ({ partition, identifier, purposes, confirmed }) => {
-      try {
-        const result = await rest.syncConsent({
-          partition,
-          identifier,
-          purposes: purposes.map((p) => ({
-            purpose: p.purpose,
-            enabled: p.enabled,
-          })),
-          confirmed,
-        });
-        return createToolResult(true, {
-          ...result,
-          message: 'Consent preferences synced successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await rest.syncConsent({
+        partition,
+        identifier,
+        purposes: purposes.map((p) => ({
+          purpose: p.purpose,
+          enabled: p.enabled,
+        })),
+        confirmed,
+      });
+      return createToolResult(true, {
+        ...result,
+        message: 'Consent preferences synced successfully',
+      });
     },
   });
 }

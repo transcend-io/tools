@@ -21,23 +21,15 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: SubmitResponseSchema,
     handler: async ({ assessment_id, assessment_section_ids }) => {
-      try {
-        const result = await graphql.submitAssessmentForReview({
-          id: assessment_id,
-          assessmentSectionIds: assessment_section_ids,
-        });
+      const result = await graphql.submitAssessmentForReview({
+        id: assessment_id,
+        assessmentSectionIds: assessment_section_ids,
+      });
 
-        return createToolResult(true, {
-          assessment: result,
-          message: 'Assessment submitted for review successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        assessment: result,
+        message: 'Assessment submitted for review successfully',
+      });
     },
   });
 }

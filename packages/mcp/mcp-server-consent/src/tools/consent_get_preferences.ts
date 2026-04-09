@@ -15,25 +15,17 @@ export function createConsentGetPreferencesTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetPreferencesSchema,
     handler: async ({ identifier, partition }) => {
-      try {
-        const result = await rest.getConsentPreferences(identifier, partition);
-        if (!result) {
-          return createToolResult(true, {
-            found: false,
-            message: 'No consent preferences found for this identifier',
-          });
-        }
+      const result = await rest.getConsentPreferences(identifier, partition);
+      if (!result) {
         return createToolResult(true, {
-          found: true,
-          preferences: result,
+          found: false,
+          message: 'No consent preferences found for this identifier',
         });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
       }
+      return createToolResult(true, {
+        found: true,
+        preferences: result,
+      });
     },
   });
 }

@@ -33,40 +33,32 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients) {
       description,
       show_in_privacy_center,
     }) => {
-      try {
-        const updates: {
-          title?: string;
-          subtitle?: string;
-          description?: string;
-          showInPrivacyCenter?: boolean;
-        } = {};
+      const updates: {
+        title?: string;
+        subtitle?: string;
+        description?: string;
+        showInPrivacyCenter?: boolean;
+      } = {};
 
-        if (title !== undefined) {
-          updates.title = title;
-        }
-        if (subtitle !== undefined) {
-          updates.subtitle = subtitle;
-        }
-        if (description !== undefined) {
-          updates.description = description;
-        }
-        if (show_in_privacy_center !== undefined) {
-          updates.showInPrivacyCenter = show_in_privacy_center;
-        }
-
-        const result = await graphql.updateWorkflowConfig(workflow_config_id, updates);
-
-        return createToolResult(true, {
-          workflowConfig: result,
-          message: 'Workflow configuration updated successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
+      if (title !== undefined) {
+        updates.title = title;
       }
+      if (subtitle !== undefined) {
+        updates.subtitle = subtitle;
+      }
+      if (description !== undefined) {
+        updates.description = description;
+      }
+      if (show_in_privacy_center !== undefined) {
+        updates.showInPrivacyCenter = show_in_privacy_center;
+      }
+
+      const result = await graphql.updateWorkflowConfig(workflow_config_id, updates);
+
+      return createToolResult(true, {
+        workflowConfig: result,
+        message: 'Workflow configuration updated successfully',
+      });
     },
   });
 }

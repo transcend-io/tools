@@ -19,23 +19,15 @@ export function createDiscoveryStartScanTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: StartScanSchema,
     handler: async ({ name, data_silo_id, type }) => {
-      try {
-        const result = await graphql.startClassificationScan({
-          name,
-          dataSiloId: data_silo_id,
-          type,
-        });
-        return createToolResult(true, {
-          scan: result,
-          message: `Classification scan "${name}" started successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.startClassificationScan({
+        name,
+        dataSiloId: data_silo_id,
+        type,
+      });
+      return createToolResult(true, {
+        scan: result,
+        message: `Classification scan "${name}" started successfully`,
+      });
     },
   });
 }

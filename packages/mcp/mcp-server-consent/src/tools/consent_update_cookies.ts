@@ -44,33 +44,25 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateCookiesSchema,
     handler: async ({ airgap_bundle_id, cookies }) => {
-      try {
-        const cookieInputs: UpdateCookieInput[] = cookies.map((c) => ({
+      const cookieInputs: UpdateCookieInput[] = cookies.map((c) => ({
+        name: c.name,
+        ...(c.tracking_purposes ? { trackingPurposes: c.tracking_purposes } : {}),
+        ...(c.description !== undefined ? { description: c.description } : {}),
+        ...(c.service !== undefined ? { service: c.service } : {}),
+        ...(c.is_junk !== undefined ? { isJunk: c.is_junk } : {}),
+        ...(c.status !== undefined ? { status: c.status } : {}),
+      }));
+      await graphql.updateCookies(airgap_bundle_id, cookieInputs);
+      return createToolResult(true, {
+        updated: cookieInputs.length,
+        cookies: cookieInputs.map((c) => ({
           name: c.name,
-          ...(c.tracking_purposes ? { trackingPurposes: c.tracking_purposes } : {}),
-          ...(c.description !== undefined ? { description: c.description } : {}),
-          ...(c.service !== undefined ? { service: c.service } : {}),
-          ...(c.is_junk !== undefined ? { isJunk: c.is_junk } : {}),
-          ...(c.status !== undefined ? { status: c.status } : {}),
-        }));
-        await graphql.updateCookies(airgap_bundle_id, cookieInputs);
-        return createToolResult(true, {
-          updated: cookieInputs.length,
-          cookies: cookieInputs.map((c) => ({
-            name: c.name,
-            status: c.status,
-            isJunk: c.isJunk,
-            trackingPurposes: c.trackingPurposes,
-            service: c.service,
-          })),
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+          status: c.status,
+          isJunk: c.isJunk,
+          trackingPurposes: c.trackingPurposes,
+          service: c.service,
+        })),
+      });
     },
   });
 }

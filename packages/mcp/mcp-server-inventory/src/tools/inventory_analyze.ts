@@ -19,61 +19,53 @@ export function createInventoryAnalyzeTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
     handler: async (_args) => {
-      try {
-        const [dataSilosResult, vendorsResult, identifiersResult, categoriesResult] =
-          await Promise.all([
-            graphql.listDataSilos({ first: 100 }),
-            graphql.listVendors({ first: 100 }),
-            graphql.listIdentifiers({ first: 100 }),
-            graphql.listDataCategories({ first: 100 }),
-          ]);
+      const [dataSilosResult, vendorsResult, identifiersResult, categoriesResult] =
+        await Promise.all([
+          graphql.listDataSilos({ first: 100 }),
+          graphql.listVendors({ first: 100 }),
+          graphql.listIdentifiers({ first: 100 }),
+          graphql.listDataCategories({ first: 100 }),
+        ]);
 
-        const dataSilos = dataSilosResult.nodes;
-        const vendors = vendorsResult.nodes;
-        const identifiers = identifiersResult.nodes;
-        const categories = categoriesResult.nodes;
+      const dataSilos = dataSilosResult.nodes;
+      const vendors = vendorsResult.nodes;
+      const identifiers = identifiersResult.nodes;
+      const categories = categoriesResult.nodes;
 
-        const liveDataSilos = dataSilos.filter((ds) => ds.isLive);
+      const liveDataSilos = dataSilos.filter((ds) => ds.isLive);
 
-        return createToolResult(true, {
-          summary: {
-            totalDataSilos: dataSilos.length,
-            liveDataSilos: liveDataSilos.length,
-            totalVendors: vendors.length,
-            totalIdentifiers: identifiers.length,
-            totalCategories: categories.length,
-          },
-          breakdown: {
-            dataSilosByType: groupBy(dataSilos, 'type'),
-            dataSilosByOuterType: groupBy(
-              dataSilos.filter((ds) => ds.outerType),
-              'outerType' as keyof (typeof dataSilos)[0],
-            ),
-          },
-          topIdentifiers: identifiers.slice(0, 10).map((id) => ({
-            name: id.name,
-            type: id.type,
-            isRequired: id.isRequiredInForm,
-          })),
-          topCategories: categories.slice(0, 10).map((cat) => ({
-            name: cat.name,
-            category: cat.category,
-          })),
-          recommendations: [
-            dataSilos.length === 0 ? 'Add data silos to map your data landscape' : null,
-            liveDataSilos.length < dataSilos.length
-              ? `${dataSilos.length - liveDataSilos.length} data silos are not live - consider activating them`
-              : null,
-            vendors.length === 0 ? 'Add vendors to track third-party data processors' : null,
-          ].filter(Boolean),
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        summary: {
+          totalDataSilos: dataSilos.length,
+          liveDataSilos: liveDataSilos.length,
+          totalVendors: vendors.length,
+          totalIdentifiers: identifiers.length,
+          totalCategories: categories.length,
+        },
+        breakdown: {
+          dataSilosByType: groupBy(dataSilos, 'type'),
+          dataSilosByOuterType: groupBy(
+            dataSilos.filter((ds) => ds.outerType),
+            'outerType' as keyof (typeof dataSilos)[0],
+          ),
+        },
+        topIdentifiers: identifiers.slice(0, 10).map((id) => ({
+          name: id.name,
+          type: id.type,
+          isRequired: id.isRequiredInForm,
+        })),
+        topCategories: categories.slice(0, 10).map((cat) => ({
+          name: cat.name,
+          category: cat.category,
+        })),
+        recommendations: [
+          dataSilos.length === 0 ? 'Add data silos to map your data landscape' : null,
+          liveDataSilos.length < dataSilos.length
+            ? `${dataSilos.length - liveDataSilos.length} data silos are not live - consider activating them`
+            : null,
+          vendors.length === 0 ? 'Add vendors to track third-party data processors' : null,
+        ].filter(Boolean),
+      });
     },
   });
 }

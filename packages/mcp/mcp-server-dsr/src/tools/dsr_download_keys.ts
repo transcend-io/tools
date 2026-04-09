@@ -16,19 +16,11 @@ export function createDsrDownloadKeysTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: downloadKeysSchema,
     handler: async ({ request_id }) => {
-      try {
-        const keys = await rest.getDSRDownloadKeys(request_id);
-        return createToolResult(true, {
-          downloadKeys: keys,
-          count: keys.length,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const keys = await rest.getDSRDownloadKeys(request_id);
+      return createToolResult(true, {
+        downloadKeys: keys,
+        count: keys.length,
+      });
     },
   });
 }

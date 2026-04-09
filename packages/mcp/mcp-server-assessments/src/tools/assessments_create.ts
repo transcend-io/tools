@@ -35,40 +35,32 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateAssessmentSchema,
     handler: async ({ title, assessment_group_id, template_id, assignee_ids }) => {
-      try {
-        let assessmentGroupId = assessment_group_id;
+      let assessmentGroupId = assessment_group_id;
 
-        if (!assessmentGroupId && template_id) {
-          const resolved = await resolveTemplateToGroupId(graphql, template_id);
-          if ('error' in resolved) return resolved.error;
-          assessmentGroupId = resolved.groupId;
-        }
+      if (!assessmentGroupId && template_id) {
+        const resolved = await resolveTemplateToGroupId(graphql, template_id);
+        if ('error' in resolved) return resolved.error;
+        assessmentGroupId = resolved.groupId;
+      }
 
-        if (!assessmentGroupId) {
-          return createToolResult(
-            false,
-            undefined,
-            'Either assessment_group_id or template_id must be provided. Use assessments_list_groups to find available groups.',
-          );
-        }
-
-        const result = await graphql.createAssessment({
-          title,
-          assessmentGroupId,
-          assigneeIds: assignee_ids,
-        });
-
-        return createToolResult(true, {
-          assessment: result,
-          message: `Assessment "${title}" created successfully`,
-        });
-      } catch (error) {
+      if (!assessmentGroupId) {
         return createToolResult(
           false,
           undefined,
-          error instanceof Error ? error.message : String(error),
+          'Either assessment_group_id or template_id must be provided. Use assessments_list_groups to find available groups.',
         );
       }
+
+      const result = await graphql.createAssessment({
+        title,
+        assessmentGroupId,
+        assigneeIds: assignee_ids,
+      });
+
+      return createToolResult(true, {
+        assessment: result,
+        message: `Assessment "${title}" created successfully`,
+      });
     },
   });
 }

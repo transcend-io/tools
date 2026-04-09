@@ -21,28 +21,20 @@ export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: DeleteIdentifiersSchema,
     handler: async ({ partition, user_id, identifiers }) => {
-      try {
-        const result = await rest.deleteIdentifiers(
-          partition,
-          user_id,
-          identifiers.map((id) => ({
-            value: id.value,
-            type: id.type,
-          })),
-        );
+      const result = await rest.deleteIdentifiers(
+        partition,
+        user_id,
+        identifiers.map((id) => ({
+          value: id.value,
+          type: id.type,
+        })),
+      );
 
-        return createToolResult(true, {
-          ...result,
-          identifiersDeleted: identifiers.length,
-          message: 'Identifiers deleted successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        ...result,
+        identifiersDeleted: identifiers.length,
+        message: 'Identifiers deleted successfully',
+      });
     },
   });
 }

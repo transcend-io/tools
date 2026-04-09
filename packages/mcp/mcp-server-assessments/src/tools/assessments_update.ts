@@ -28,27 +28,19 @@ export function createAssessmentsUpdateTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssessmentSchema,
     handler: async ({ assessment_id, title, description, reviewer_ids, due_date, status }) => {
-      try {
-        const result = await graphql.updateAssessment({
-          id: assessment_id,
-          title,
-          description,
-          reviewerIds: reviewer_ids,
-          dueDate: due_date,
-          status,
-        });
+      const result = await graphql.updateAssessment({
+        id: assessment_id,
+        title,
+        description,
+        reviewerIds: reviewer_ids,
+        dueDate: due_date,
+        status,
+      });
 
-        return createToolResult(true, {
-          assessment: result,
-          message: 'Assessment updated successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        assessment: result,
+        message: 'Assessment updated successfully',
+      });
     },
   });
 }

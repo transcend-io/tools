@@ -76,18 +76,18 @@ describe('Preferences Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockRest.queryPreferences.mockRejectedValue(new Error('REST error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'preferences_query')!;
 
-      const result = await tool.handler({
-        partition: 'my-org',
-        identifiers: [{ value: 'user@example.com' }],
-      });
-
-      expect(result).toMatchObject({ success: false, error: 'REST error' });
+      await expect(
+        tool.handler({
+          partition: 'my-org',
+          identifiers: [{ value: 'user@example.com' }],
+        }),
+      ).rejects.toThrow('REST error');
     });
   });
 });

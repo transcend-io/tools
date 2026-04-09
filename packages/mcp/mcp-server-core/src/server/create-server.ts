@@ -5,7 +5,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { TranscendRestClient } from '../clients/rest-client.js';
-import { createToolResult } from '../tools/helpers.js';
+import { createErrorResult, createToolResult } from '../tools/helpers.js';
 import type { ToolDefinition, ToolClients } from '../tools/types.js';
 
 export interface MCPServerOptions {
@@ -110,25 +110,9 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Error executing tool ${name}:`, error);
-
       return {
-        content: [
-          {
-            type: 'text',
-            text: JSON.stringify(
-              {
-                success: false,
-                error: errorMessage,
-                tool: name,
-                timestamp: new Date().toISOString(),
-              },
-              null,
-              2,
-            ),
-          },
-        ],
+        content: [{ type: 'text', text: JSON.stringify(createErrorResult(error), null, 2) }],
         isError: true,
       };
     }

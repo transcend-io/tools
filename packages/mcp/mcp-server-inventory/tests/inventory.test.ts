@@ -110,18 +110,13 @@ describe('Inventory Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listDataSilos.mockRejectedValue(new Error('GraphQL error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'GraphQL error',
-      });
+      await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
   });
 });

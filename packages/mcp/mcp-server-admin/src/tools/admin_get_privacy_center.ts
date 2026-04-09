@@ -17,22 +17,14 @@ export function createAdminGetPrivacyCenterTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
     handler: async (_args) => {
-      try {
-        const result = await graphql.getPrivacyCenter();
-        if (!result) {
-          return createToolResult(true, {
-            found: false,
-            message: 'No privacy center configured for this organization',
-          });
-        }
-        return createToolResult(true, { found: true, privacyCenter: result });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
+      const result = await graphql.getPrivacyCenter();
+      if (!result) {
+        return createToolResult(true, {
+          found: false,
+          message: 'No privacy center configured for this organization',
+        });
       }
+      return createToolResult(true, { found: true, privacyCenter: result });
     },
   });
 }

@@ -16,16 +16,8 @@ export function createDiscoveryGetScanTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetScanSchema,
     handler: async ({ scan_id }) => {
-      try {
-        const result = await graphql.getClassificationScan(scan_id);
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.getClassificationScan(scan_id);
+      return createToolResult(true, result);
     },
   });
 }

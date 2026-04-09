@@ -18,30 +18,22 @@ export function createAdminTestConnectionTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
     handler: async (_args) => {
-      try {
-        const [graphqlConnected, restConnected] = await Promise.all([
-          graphql.testConnection(),
-          rest.testConnection(),
-        ]);
-        const allConnected = graphqlConnected && restConnected;
-        return createToolResult(true, {
-          connected: allConnected,
-          details: {
-            graphql: { connected: graphqlConnected, url: graphql.getBaseUrl() },
-            rest: { connected: restConnected, url: rest.getBaseUrl() },
-          },
-          message: allConnected
-            ? 'Successfully connected to all Transcend APIs'
-            : 'Some API connections failed - check details',
-          timestamp: new Date().toISOString(),
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const [graphqlConnected, restConnected] = await Promise.all([
+        graphql.testConnection(),
+        rest.testConnection(),
+      ]);
+      const allConnected = graphqlConnected && restConnected;
+      return createToolResult(true, {
+        connected: allConnected,
+        details: {
+          graphql: { connected: graphqlConnected, url: graphql.getBaseUrl() },
+          rest: { connected: restConnected, url: rest.getBaseUrl() },
+        },
+        message: allConnected
+          ? 'Successfully connected to all Transcend APIs'
+          : 'Some API connections failed - check details',
+        timestamp: new Date().toISOString(),
+      });
     },
   });
 }

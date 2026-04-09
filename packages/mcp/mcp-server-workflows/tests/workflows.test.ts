@@ -86,15 +86,13 @@ describe('Workflows Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listWorkflows.mockRejectedValue(new Error('API error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'workflows_list')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'API error' });
+      await expect(tool.handler({})).rejects.toThrow('API error');
     });
   });
 });

@@ -29,27 +29,19 @@ export function createDsrEmployeeSubmitTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: employeeSubmitDsrSchema,
     handler: async ({ type, email, subjectType, coreIdentifier, locale, isSilent }) => {
-      try {
-        const result = await graphql.employeeMakeDataSubjectRequest({
-          type,
-          email,
-          subjectType,
-          coreIdentifier,
-          locale,
-          isSilent,
-        });
-        return createToolResult(true, {
-          request: result.request,
-          clientMutationId: result.clientMutationId,
-          message: `Employee DSR of type ${type} submitted successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.employeeMakeDataSubjectRequest({
+        type,
+        email,
+        subjectType,
+        coreIdentifier,
+        locale,
+        isSilent,
+      });
+      return createToolResult(true, {
+        request: result.request,
+        clientMutationId: result.clientMutationId,
+        message: `Employee DSR of type ${type} submitted successfully`,
+      });
     },
   });
 }

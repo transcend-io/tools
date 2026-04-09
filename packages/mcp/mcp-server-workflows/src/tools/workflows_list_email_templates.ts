@@ -1,6 +1,5 @@
 import {
   createListResult,
-  createToolResult,
   defineTool,
   PaginationSchema,
   z,
@@ -33,23 +32,15 @@ export function createWorkflowsListEmailTemplatesTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListEmailTemplatesSchema,
     handler: async ({ limit, offset }) => {
-      try {
-        const result = await graphql.listEmailTemplates({
-          first: limit,
-          offset,
-        });
+      const result = await graphql.listEmailTemplates({
+        first: limit,
+        offset,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

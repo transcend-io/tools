@@ -33,27 +33,19 @@ export function createDsrSubmitTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: submitDsrSchema,
     handler: async ({ type, email, subjectType, coreIdentifier, name, locale, isSilent }) => {
-      try {
-        const result = await rest.submitDSR({
-          type,
-          email,
-          subjectType,
-          coreIdentifier,
-          name,
-          locale,
-          isSilent,
-        });
-        return createToolResult(true, {
-          request: result,
-          message: `DSR of type ${type} submitted successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await rest.submitDSR({
+        type,
+        email,
+        subjectType,
+        coreIdentifier,
+        name,
+        locale,
+        isSilent,
+      });
+      return createToolResult(true, {
+        request: result,
+        message: `DSR of type ${type} submitted successfully`,
+      });
     },
   });
 }

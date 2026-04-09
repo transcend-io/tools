@@ -17,16 +17,8 @@ export function createDsrGetDetailsTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: getDetailsSchema,
     handler: async ({ request_id }) => {
-      try {
-        const result = await graphql.getRequest(request_id);
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.getRequest(request_id);
+      return createToolResult(true, result);
     },
   });
 }

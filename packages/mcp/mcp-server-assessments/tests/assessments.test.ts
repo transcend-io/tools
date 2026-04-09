@@ -74,18 +74,13 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listAssessments.mockRejectedValue(new Error('API unavailable'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_list')!;
 
-      const result = await tool.handler({ limit: 50 });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'API unavailable',
-      });
+      await expect(tool.handler({ limit: 50 })).rejects.toThrow('API unavailable');
     });
   });
 
@@ -169,21 +164,18 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.createAssessment.mockRejectedValue(new Error('Group not found'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = await tool.handler({
-        title: 'Test',
-        assessment_group_id: 'grp-bad',
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Group not found',
-      });
+      await expect(
+        tool.handler({
+          title: 'Test',
+          assessment_group_id: 'grp-bad',
+        }),
+      ).rejects.toThrow('Group not found');
     });
   });
 
@@ -244,7 +236,7 @@ describe('Assessment Tools', () => {
       );
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.createAssessmentFormTemplate.mockRejectedValue(
         new Error('Template creation failed'),
       );
@@ -252,14 +244,11 @@ describe('Assessment Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create_template')!;
 
-      const result = await tool.handler({
-        title: 'Failing Template',
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Template creation failed',
-      });
+      await expect(
+        tool.handler({
+          title: 'Failing Template',
+        }),
+      ).rejects.toThrow('Template creation failed');
     });
   });
 
@@ -322,7 +311,7 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.selectAssessmentQuestionAnswers.mockRejectedValue(
         new Error('Question not found'),
       );
@@ -330,15 +319,12 @@ describe('Assessment Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_answer_question')!;
 
-      const result = await tool.handler({
-        assessment_question_id: 'q-bad',
-        assessment_answer_ids: ['ans-1'],
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Question not found',
-      });
+      await expect(
+        tool.handler({
+          assessment_question_id: 'q-bad',
+          assessment_answer_ids: ['ans-1'],
+        }),
+      ).rejects.toThrow('Question not found');
     });
   });
 
@@ -487,22 +473,19 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.selectAssessmentQuestionAnswers).not.toHaveBeenCalled();
     });
 
-    it('returns error when client throws during create', async () => {
+    it('throws when client throws during create', async () => {
       mockGraphql.createAssessment.mockRejectedValue(new Error('Create failed'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
-        title: 'Failing Prefill',
-        assessment_group_id: 'grp-1',
-        answers: { Q1: 'A1' },
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Create failed',
-      });
+      await expect(
+        tool.handler({
+          title: 'Failing Prefill',
+          assessment_group_id: 'grp-1',
+          answers: { Q1: 'A1' },
+        }),
+      ).rejects.toThrow('Create failed');
     });
   });
 });

@@ -112,15 +112,13 @@ describe('Admin Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listUsers.mockRejectedValue(new Error('Network error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'admin_list_users')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'Network error' });
+      await expect(tool.handler({})).rejects.toThrow('Network error');
     });
   });
 });

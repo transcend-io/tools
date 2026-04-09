@@ -25,29 +25,21 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateIdentifiersSchema,
     handler: async ({ partition, user_id, identifiers }) => {
-      try {
-        const result = await rest.updateIdentifiers(
-          partition,
-          user_id,
-          identifiers.map((id) => ({
-            oldValue: id.oldValue,
-            newValue: id.newValue,
-            type: id.type,
-          })),
-        );
+      const result = await rest.updateIdentifiers(
+        partition,
+        user_id,
+        identifiers.map((id) => ({
+          oldValue: id.oldValue,
+          newValue: id.newValue,
+          type: id.type,
+        })),
+      );
 
-        return createToolResult(true, {
-          ...result,
-          identifiersUpdated: identifiers.length,
-          message: 'Identifiers updated successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        ...result,
+        identifiersUpdated: identifiers.length,
+        message: 'Identifiers updated successfully',
+      });
     },
   });
 }

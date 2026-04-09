@@ -112,15 +112,13 @@ describe('DSR Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listRequests.mockRejectedValue(new Error('GraphQL error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'dsr_list')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'GraphQL error' });
+      await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
   });
 });

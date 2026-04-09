@@ -19,25 +19,17 @@ export function createDsrCancelTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: cancelDsrSchema,
     handler: async ({ request_id, reason }) => {
-      try {
-        const input: { requestId: string; template?: string; subject?: string } = {
-          requestId: request_id,
-        };
-        if (reason) {
-          input.subject = reason;
-        }
-        const result = await graphql.cancelRequest(input);
-        return createToolResult(true, {
-          request: result.request,
-          message: 'DSR canceled successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
+      const input: { requestId: string; template?: string; subject?: string } = {
+        requestId: request_id,
+      };
+      if (reason) {
+        input.subject = reason;
       }
+      const result = await graphql.cancelRequest(input);
+      return createToolResult(true, {
+        request: result.request,
+        message: 'DSR canceled successfully',
+      });
     },
   });
 }

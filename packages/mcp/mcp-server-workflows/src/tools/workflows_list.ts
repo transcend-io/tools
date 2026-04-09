@@ -1,6 +1,5 @@
 import {
   createListResult,
-  createToolResult,
   defineTool,
   PaginationSchema,
   z,
@@ -27,23 +26,15 @@ export function createWorkflowsListTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListWorkflowsSchema,
     handler: async ({ limit, cursor }) => {
-      try {
-        const result = await graphql.listWorkflows({
-          first: limit,
-          after: cursor,
-        });
+      const result = await graphql.listWorkflows({
+        first: limit,
+        after: cursor,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

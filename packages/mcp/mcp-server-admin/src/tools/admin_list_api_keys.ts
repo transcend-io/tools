@@ -1,10 +1,4 @@
-import {
-  createListResult,
-  createToolResult,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
 
@@ -39,22 +33,14 @@ export function createAdminListApiKeysTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListApiKeysSchema,
     handler: async ({ limit, offset }) => {
-      try {
-        const result = await graphql.listApiKeys({
-          first: limit,
-          offset,
-        });
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.listApiKeys({
+        first: limit,
+        offset,
+      });
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

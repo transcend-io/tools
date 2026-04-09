@@ -1,10 +1,4 @@
-import {
-  createListResult,
-  createToolResult,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -36,23 +30,15 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListSubDataPointsSchema,
     handler: async ({ data_point_id, limit, offset }) => {
-      try {
-        const result = await graphql.listSubDataPoints(data_point_id, {
-          first: limit,
-          offset,
-        });
+      const result = await graphql.listSubDataPoints(data_point_id, {
+        first: limit,
+        offset,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

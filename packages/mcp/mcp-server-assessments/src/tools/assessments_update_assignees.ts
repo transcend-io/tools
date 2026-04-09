@@ -26,24 +26,16 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssigneesSchema,
     handler: async ({ assessment_id, assignee_ids, external_assignee_emails }) => {
-      try {
-        const result = await graphql.updateAssessmentFormAssignees({
-          id: assessment_id,
-          assigneeIds: assignee_ids,
-          externalAssigneeEmails: external_assignee_emails,
-        });
+      const result = await graphql.updateAssessmentFormAssignees({
+        id: assessment_id,
+        assigneeIds: assignee_ids,
+        externalAssigneeEmails: external_assignee_emails,
+      });
 
-        return createToolResult(true, {
-          assessment: result,
-          message: `Assessment assignees updated successfully. Status: ${result.status}`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        assessment: result,
+        message: `Assessment assignees updated successfully. Status: ${result.status}`,
+      });
     },
   });
 }

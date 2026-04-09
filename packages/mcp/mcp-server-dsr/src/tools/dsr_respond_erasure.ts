@@ -21,23 +21,15 @@ export function createDsrRespondErasureTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: respondErasureSchema,
     handler: async ({ request_id, data_silo_id, profile_ids }) => {
-      try {
-        const result = await rest.confirmErasure({
-          requestId: request_id,
-          dataSiloId: data_silo_id,
-          profileIds: profile_ids,
-        });
-        return createToolResult(true, {
-          ...result,
-          message: 'Erasure confirmation submitted successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await rest.confirmErasure({
+        requestId: request_id,
+        dataSiloId: data_silo_id,
+        profileIds: profile_ids,
+      });
+      return createToolResult(true, {
+        ...result,
+        message: 'Erasure confirmation submitted successfully',
+      });
     },
   });
 }

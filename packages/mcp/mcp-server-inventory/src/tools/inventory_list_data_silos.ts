@@ -1,10 +1,4 @@
-import {
-  createListResult,
-  createToolResult,
-  defineTool,
-  z,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -33,23 +27,15 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataSilosSchema,
     handler: async ({ limit, cursor }) => {
-      try {
-        const result = await graphql.listDataSilos({
-          first: limit,
-          after: cursor,
-        });
+      const result = await graphql.listDataSilos({
+        first: limit,
+        after: cursor,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

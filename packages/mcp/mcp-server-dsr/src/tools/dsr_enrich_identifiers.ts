@@ -20,22 +20,14 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: enrichIdentifiersSchema,
     handler: async ({ request_id, identifiers }) => {
-      try {
-        const result = await rest.enrichIdentifiers({
-          requestId: request_id,
-          identifiers,
-        });
-        return createToolResult(true, {
-          ...result,
-          message: 'Identifiers enriched successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await rest.enrichIdentifiers({
+        requestId: request_id,
+        identifiers,
+      });
+      return createToolResult(true, {
+        ...result,
+        message: 'Identifiers enriched successfully',
+      });
     },
   });
 }

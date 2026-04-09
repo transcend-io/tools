@@ -32,32 +32,24 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpsertPreferencesSchema,
     handler: async ({ partition, records }) => {
-      try {
-        const result = await rest.upsertPreferences({
-          partition,
-          records: records.map((record) => ({
-            identifier: record.identifier,
-            identifierType: record.identifierType,
-            purposes: record.purposes.map((p) => ({
-              purpose: p.purpose,
-              enabled: p.enabled,
-            })),
-            confirmed: record.confirmed,
+      const result = await rest.upsertPreferences({
+        partition,
+        records: records.map((record) => ({
+          identifier: record.identifier,
+          identifierType: record.identifierType,
+          purposes: record.purposes.map((p) => ({
+            purpose: p.purpose,
+            enabled: p.enabled,
           })),
-        });
+          confirmed: record.confirmed,
+        })),
+      });
 
-        return createToolResult(true, {
-          ...result,
-          recordsProcessed: records.length,
-          message: `Successfully upserted ${result.count} preference records`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        ...result,
+        recordsProcessed: records.length,
+        message: `Successfully upserted ${result.count} preference records`,
+      });
     },
   });
 }

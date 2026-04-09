@@ -41,61 +41,53 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: BulkTriageSchema,
     handler: async ({ airgap_bundle_id, items }) => {
-      try {
-        const bundleId = airgap_bundle_id;
-        const cookieItems = items.filter((i) => i.type === 'cookie');
-        const dfItems = items.filter((i) => i.type === 'data_flow');
+      const bundleId = airgap_bundle_id;
+      const cookieItems = items.filter((i) => i.type === 'cookie');
+      const dfItems = items.filter((i) => i.type === 'data_flow');
 
-        const results: {
-          cookies: { name: string; action: string; status: string }[];
-          dataFlows: { id: string; action: string; status: string }[];
-        } = { cookies: [], dataFlows: [] };
+      const results: {
+        cookies: { name: string; action: string; status: string }[];
+        dataFlows: { id: string; action: string; status: string }[];
+      } = { cookies: [], dataFlows: [] };
 
-        if (cookieItems.length > 0) {
-          const cookieInputs: UpdateCookieInput[] = cookieItems.map((item) => ({
-            name: item.id,
-            ...(item.action === 'APPROVE'
-              ? { status: 'LIVE' as const, isJunk: false }
-              : { status: 'LIVE' as const, isJunk: true }),
-            ...(item.tracking_purposes ? { trackingPurposes: item.tracking_purposes } : {}),
-            ...(item.service ? { service: item.service } : {}),
-          }));
-          await graphql.updateCookies(bundleId, cookieInputs);
-          results.cookies = cookieInputs.map((c) => ({
-            name: c.name,
-            action: c.isJunk ? 'JUNKED' : 'APPROVED',
-            status: c.status || 'LIVE',
-          }));
-        }
-
-        if (dfItems.length > 0) {
-          const dfInputs: UpdateConsentDataFlowInput[] = dfItems.map((item) => ({
-            id: item.id,
-            ...(item.action === 'APPROVE'
-              ? { status: 'LIVE' as const, isJunk: false }
-              : { status: 'LIVE' as const, isJunk: true }),
-            ...(item.tracking_purposes ? { purposeIds: item.tracking_purposes } : {}),
-            ...(item.service ? { service: item.service } : {}),
-          }));
-          const dfResult = await graphql.updateConsentDataFlows(bundleId, dfInputs);
-          results.dataFlows = dfResult.dataFlows.map((df) => ({
-            id: df.id,
-            action: df.isJunk ? 'JUNKED' : 'APPROVED',
-            status: df.status,
-          }));
-        }
-
-        return createToolResult(true, {
-          totalProcessed: cookieItems.length + dfItems.length,
-          ...results,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
+      if (cookieItems.length > 0) {
+        const cookieInputs: UpdateCookieInput[] = cookieItems.map((item) => ({
+          name: item.id,
+          ...(item.action === 'APPROVE'
+            ? { status: 'LIVE' as const, isJunk: false }
+            : { status: 'LIVE' as const, isJunk: true }),
+          ...(item.tracking_purposes ? { trackingPurposes: item.tracking_purposes } : {}),
+          ...(item.service ? { service: item.service } : {}),
+        }));
+        await graphql.updateCookies(bundleId, cookieInputs);
+        results.cookies = cookieInputs.map((c) => ({
+          name: c.name,
+          action: c.isJunk ? 'JUNKED' : 'APPROVED',
+          status: c.status || 'LIVE',
+        }));
       }
+
+      if (dfItems.length > 0) {
+        const dfInputs: UpdateConsentDataFlowInput[] = dfItems.map((item) => ({
+          id: item.id,
+          ...(item.action === 'APPROVE'
+            ? { status: 'LIVE' as const, isJunk: false }
+            : { status: 'LIVE' as const, isJunk: true }),
+          ...(item.tracking_purposes ? { purposeIds: item.tracking_purposes } : {}),
+          ...(item.service ? { service: item.service } : {}),
+        }));
+        const dfResult = await graphql.updateConsentDataFlows(bundleId, dfInputs);
+        results.dataFlows = dfResult.dataFlows.map((df) => ({
+          id: df.id,
+          action: df.isJunk ? 'JUNKED' : 'APPROVED',
+          status: df.status,
+        }));
+      }
+
+      return createToolResult(true, {
+        totalProcessed: cookieItems.length + dfItems.length,
+        ...results,
+      });
     },
   });
 }

@@ -1,6 +1,5 @@
 import {
   createListResult,
-  createToolResult,
   defineTool,
   PaginationSchema,
   type ToolClients,
@@ -24,16 +23,8 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: listIdentifiersSchema,
     handler: async ({ request_id }) => {
-      try {
-        const identifiers = await rest.listRequestIdentifiers(request_id);
-        return createListResult(identifiers);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const identifiers = await rest.listRequestIdentifiers(request_id);
+      return createListResult(identifiers);
     },
   });
 }

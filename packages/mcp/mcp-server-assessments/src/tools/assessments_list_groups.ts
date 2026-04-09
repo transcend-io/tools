@@ -1,5 +1,4 @@
 import {
-  createToolResult,
   createListResult,
   defineTool,
   PaginationSchema,
@@ -21,23 +20,15 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListGroupsSchema,
     handler: async ({ limit, cursor }) => {
-      try {
-        const result = await graphql.listAssessmentGroups({
-          first: limit,
-          after: cursor,
-        });
+      const result = await graphql.listAssessmentGroups({
+        first: limit,
+        after: cursor,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

@@ -1,5 +1,4 @@
 import {
-  createToolResult,
   createListResult,
   defineTool,
   z,
@@ -29,24 +28,16 @@ export function createAssessmentsListTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAssessmentsSchema,
     handler: async ({ status, limit, cursor }) => {
-      try {
-        const result = await graphql.listAssessments({
-          first: limit,
-          after: cursor,
-          filterBy: status ? { statuses: [status] } : undefined,
-        });
+      const result = await graphql.listAssessments({
+        first: limit,
+        after: cursor,
+        filterBy: status ? { statuses: [status] } : undefined,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
   });
 }

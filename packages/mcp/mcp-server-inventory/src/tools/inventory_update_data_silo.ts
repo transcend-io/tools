@@ -19,23 +19,15 @@ export function createInventoryUpdateDataSiloTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateDataSiloSchema,
     handler: async ({ data_silo_id, title, description }) => {
-      try {
-        const result = await graphql.updateDataSilo({
-          id: data_silo_id,
-          title,
-          description,
-        });
-        return createToolResult(true, {
-          dataSilo: result,
-          message: 'Data silo updated successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.updateDataSilo({
+        id: data_silo_id,
+        title,
+        description,
+      });
+      return createToolResult(true, {
+        dataSilo: result,
+        message: 'Data silo updated successfully',
+      });
     },
   });
 }

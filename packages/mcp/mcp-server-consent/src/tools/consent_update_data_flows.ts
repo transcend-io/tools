@@ -40,34 +40,26 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateDataFlowsSchema,
     handler: async ({ airgap_bundle_id, data_flows }) => {
-      try {
-        const dfInputs: UpdateConsentDataFlowInput[] = data_flows.map((df) => ({
+      const dfInputs: UpdateConsentDataFlowInput[] = data_flows.map((df) => ({
+        id: df.id,
+        ...(df.tracking_purposes ? { purposeIds: df.tracking_purposes } : {}),
+        ...(df.description !== undefined ? { description: df.description } : {}),
+        ...(df.service !== undefined ? { service: df.service } : {}),
+        ...(df.is_junk !== undefined ? { isJunk: df.is_junk } : {}),
+        ...(df.status !== undefined ? { status: df.status } : {}),
+      }));
+      const result = await graphql.updateConsentDataFlows(airgap_bundle_id, dfInputs);
+      return createToolResult(true, {
+        updated: result.dataFlows.length,
+        dataFlows: result.dataFlows.map((df) => ({
           id: df.id,
-          ...(df.tracking_purposes ? { purposeIds: df.tracking_purposes } : {}),
-          ...(df.description !== undefined ? { description: df.description } : {}),
-          ...(df.service !== undefined ? { service: df.service } : {}),
-          ...(df.is_junk !== undefined ? { isJunk: df.is_junk } : {}),
-          ...(df.status !== undefined ? { status: df.status } : {}),
-        }));
-        const result = await graphql.updateConsentDataFlows(airgap_bundle_id, dfInputs);
-        return createToolResult(true, {
-          updated: result.dataFlows.length,
-          dataFlows: result.dataFlows.map((df) => ({
-            id: df.id,
-            value: df.value,
-            status: df.status,
-            isJunk: df.isJunk,
-            purposes: df.purposes.map((p) => p.name),
-            service: df.service?.title,
-          })),
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+          value: df.value,
+          status: df.status,
+          isJunk: df.isJunk,
+          purposes: df.purposes.map((p) => p.name),
+          service: df.service?.title,
+        })),
+      });
     },
   });
 }

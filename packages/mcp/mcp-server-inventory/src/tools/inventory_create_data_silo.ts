@@ -22,21 +22,13 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateDataSiloSchema,
     handler: async ({ title }) => {
-      try {
-        const result = await graphql.createDataSilo({
-          name: title,
-        });
-        return createToolResult(true, {
-          dataSilo: result,
-          message: `Data silo "${title}" created successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      const result = await graphql.createDataSilo({
+        name: title,
+      });
+      return createToolResult(true, {
+        dataSilo: result,
+        message: `Data silo "${title}" created successfully`,
+      });
     },
   });
 }
