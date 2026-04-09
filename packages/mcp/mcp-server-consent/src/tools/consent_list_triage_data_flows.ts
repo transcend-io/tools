@@ -6,7 +6,7 @@ import type { ConsentMixin } from '../graphql.js';
 const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
 const OrderDirectionEnum = z.enum(['ASC', 'DESC']);
 
-const ListTriageDataFlowsSchema = z.object({
+export const ListTriageDataFlowsSchema = z.object({
   airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
   limit: z
     .number()
@@ -32,6 +32,7 @@ const ListTriageDataFlowsSchema = z.object({
     .describe('Field to sort by: value, createdAt, updatedAt, occurrences, service'),
   order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
 });
+export type ListTriageDataFlowsInput = z.infer<typeof ListTriageDataFlowsSchema>;
 
 export function createConsentListTriageDataFlowsTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

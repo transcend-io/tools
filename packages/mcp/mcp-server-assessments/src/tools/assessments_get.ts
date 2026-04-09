@@ -2,9 +2,10 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const GetAssessmentSchema = z.object({
+export const GetAssessmentSchema = z.object({
   assessment_id: z.string().describe('ID of the assessment to retrieve'),
 });
+export type GetAssessmentInput = z.infer<typeof GetAssessmentSchema>;
 
 export function createAssessmentsGetTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

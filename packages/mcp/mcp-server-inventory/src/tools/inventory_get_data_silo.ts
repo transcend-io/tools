@@ -2,9 +2,10 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { InventoryMixin } from '../graphql.js';
 
-const GetDataSiloSchema = z.object({
+export const GetDataSiloSchema = z.object({
   data_silo_id: z.string().describe('ID of the data silo to retrieve'),
 });
+export type GetDataSiloInput = z.infer<typeof GetDataSiloSchema>;
 
 export function createInventoryGetDataSiloTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;

@@ -1,9 +1,10 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-const GetPreferencesSchema = z.object({
+export const GetPreferencesSchema = z.object({
   identifier: z.string().describe('User identifier (e.g., email, user ID)'),
   partition: z.string().optional().describe('Partition/organization context (optional)'),
 });
+export type GetPreferencesInput = z.infer<typeof GetPreferencesSchema>;
 
 export function createConsentGetPreferencesTool(clients: ToolClients) {
   const { rest } = clients;

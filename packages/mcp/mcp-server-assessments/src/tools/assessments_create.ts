@@ -3,7 +3,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { AssessmentsMixin } from '../graphql.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
-const CreateAssessmentSchema = z.object({
+export const CreateAssessmentSchema = z.object({
   title: z.string().describe('Title of the assessment'),
   assessment_group_id: z
     .string()
@@ -22,6 +22,7 @@ const CreateAssessmentSchema = z.object({
     .optional()
     .describe('Array of user IDs to assign the assessment to'),
 });
+export type CreateAssessmentInput = z.infer<typeof CreateAssessmentSchema>;
 
 export function createAssessmentsCreateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

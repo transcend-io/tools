@@ -1,14 +1,13 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-const IdentifierSchema = z.object({
-  value: z.string().describe('Identifier value'),
-  type: z.string().optional().describe('Identifier type (optional)'),
-});
-const AppendIdentifiersSchema = z.object({
+import { IdentifierSchema } from './preferences_query.js';
+
+export const AppendIdentifiersSchema = z.object({
   partition: z.string().describe('Partition/organization context'),
   user_id: z.string().describe('User ID to append identifiers to'),
   identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to append'),
 });
+export type AppendIdentifiersInput = z.infer<typeof AppendIdentifiersSchema>;
 
 export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;

@@ -14,7 +14,8 @@ const PaginationSchema = z.object({
     .describe('Pagination cursor from previous response (where supported)'),
 });
 
-const ListRegimesSchema = PaginationSchema;
+export const ListRegimesSchema = PaginationSchema;
+export type ListRegimesInput = z.infer<typeof ListRegimesSchema>;
 
 export function createConsentListRegimesTool(_clients: ToolClients) {
   return defineTool({

@@ -2,7 +2,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { AdminMixin } from '../graphql.js';
 
-const CreateApiKeySchema = z.object({
+export const CreateApiKeySchema = z.object({
   title: z.string().describe('Name/title for the API key'),
   scopes: z.array(z.string()).describe('Array of permission scopes for the key (ScopeName values)'),
   data_silos: z
@@ -10,6 +10,7 @@ const CreateApiKeySchema = z.object({
     .optional()
     .describe('Array of data silo IDs to assign the key to (optional)'),
 });
+export type CreateApiKeyInput = z.infer<typeof CreateApiKeySchema>;
 
 export function createAdminCreateApiKeyTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;

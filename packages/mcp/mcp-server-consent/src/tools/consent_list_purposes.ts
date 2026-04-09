@@ -16,7 +16,8 @@ const PaginationSchema = z.object({
     .describe('Pagination cursor from previous response (where supported)'),
 });
 
-const ListPurposesSchema = PaginationSchema;
+export const ListPurposesSchema = PaginationSchema;
+export type ListPurposesInput = z.infer<typeof ListPurposesSchema>;
 
 export function createConsentListPurposesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

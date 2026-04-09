@@ -3,9 +3,9 @@ import { RequestAction } from '@transcend-io/privacy-types';
 
 import type { DSRMixin } from '../graphql.js';
 
-const RequestTypeEnum = z.nativeEnum(RequestAction);
+export const RequestTypeEnum = z.nativeEnum(RequestAction);
 
-const employeeSubmitDsrSchema = z.object({
+export const employeeSubmitDsrSchema = z.object({
   type: RequestTypeEnum.describe('Type of DSR request'),
   email: z.string().describe('Email address of the data subject'),
   subjectType: z
@@ -15,6 +15,7 @@ const employeeSubmitDsrSchema = z.object({
   locale: z.string().optional().describe('Locale for communications (e.g., en-US)'),
   isSilent: z.boolean().optional().describe('Whether to suppress email notifications'),
 });
+export type EmployeeSubmitDsrInput = z.infer<typeof employeeSubmitDsrSchema>;
 
 export function createDsrEmployeeSubmitTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;

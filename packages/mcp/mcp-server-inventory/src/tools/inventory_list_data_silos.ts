@@ -2,7 +2,7 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { InventoryMixin } from '../graphql.js';
 
-const ListDataSilosSchema = z.object({
+export const ListDataSilosSchema = z.object({
   limit: z.coerce
     .number()
     .min(1)
@@ -15,6 +15,7 @@ const ListDataSilosSchema = z.object({
     .optional()
     .describe('Pagination cursor from previous response (where supported)'),
 });
+export type ListDataSilosInput = z.infer<typeof ListDataSilosSchema>;
 
 export function createInventoryListDataSilosTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;

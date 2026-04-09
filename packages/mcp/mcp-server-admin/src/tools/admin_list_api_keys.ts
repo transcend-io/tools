@@ -2,7 +2,7 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { AdminMixin } from '../graphql.js';
 
-const ListApiKeysSchema = z.object({
+export const ListApiKeysSchema = z.object({
   limit: z.coerce
     .number()
     .min(1)
@@ -21,6 +21,7 @@ const ListApiKeysSchema = z.object({
     .default(0)
     .describe('Number of results to skip (default: 0)'),
 });
+export type ListApiKeysInput = z.infer<typeof ListApiKeysSchema>;
 
 export function createAdminListApiKeysTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;

@@ -2,7 +2,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const UpdateAssigneesSchema = z.object({
+export const UpdateAssigneesSchema = z.object({
   assessment_id: z.string().describe('ID of the assessment form to update assignees for'),
   assignee_ids: z
     .array(z.string())
@@ -13,6 +13,7 @@ const UpdateAssigneesSchema = z.object({
     .optional()
     .describe('Array of external email addresses to assign to the assessment'),
 });
+export type UpdateAssigneesInput = z.infer<typeof UpdateAssigneesSchema>;
 
 export function createAssessmentsUpdateAssigneesTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

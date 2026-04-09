@@ -2,12 +2,13 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const SubmitResponseSchema = z.object({
+export const SubmitResponseSchema = z.object({
   assessment_id: z.string().describe('ID of the assessment to submit for review'),
   assessment_section_ids: z
     .array(z.string())
     .describe('Array of section IDs to submit for review. Required by the API.'),
 });
+export type SubmitResponseInput = z.infer<typeof SubmitResponseSchema>;
 
 export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

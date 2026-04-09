@@ -2,7 +2,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { WorkflowsMixin } from '../graphql.js';
 
-const UpdateWorkflowConfigSchema = z.object({
+export const UpdateWorkflowConfigSchema = z.object({
   workflow_config_id: z
     .string()
     .describe('ID of the workflow config to update (use workflows_list to find config IDs)'),
@@ -14,6 +14,7 @@ const UpdateWorkflowConfigSchema = z.object({
     .optional()
     .describe('Whether to show this workflow in the Privacy Center'),
 });
+export type UpdateWorkflowConfigInput = z.infer<typeof UpdateWorkflowConfigSchema>;
 
 export function createWorkflowsUpdateConfigTool(clients: ToolClients) {
   const graphql = clients.graphql as WorkflowsMixin;

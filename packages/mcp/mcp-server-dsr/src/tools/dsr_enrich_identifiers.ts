@@ -1,11 +1,12 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
-const enrichIdentifiersSchema = z.object({
+export const enrichIdentifiersSchema = z.object({
   request_id: z.string().describe('ID of the DSR to enrich'),
   identifiers: z
     .record(z.string(), z.string())
     .describe('Key-value pairs of identifier names and values to add'),
 });
+export type EnrichIdentifiersInput = z.infer<typeof enrichIdentifiersSchema>;
 
 export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;

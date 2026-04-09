@@ -2,7 +2,13 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const AnswerQuestionSchema = z.object({
+export const AnswerQuestionValueSchema = z.object({
+  value: z.string(),
+  isUserCreated: z.boolean(),
+});
+export type AnswerQuestionValueInput = z.infer<typeof AnswerQuestionValueSchema>;
+
+export const AnswerQuestionSchema = z.object({
   assessment_question_id: z.string().describe('ID of the assessment question to answer'),
   assessment_answer_ids: z
     .array(z.string())
@@ -11,12 +17,13 @@ const AnswerQuestionSchema = z.object({
       'IDs of existing answer options to select (for SINGLE_SELECT/MULTI_SELECT questions)',
     ),
   assessment_answer_values: z
-    .array(z.object({ value: z.string(), isUserCreated: z.boolean() }))
+    .array(AnswerQuestionValueSchema)
     .optional()
     .describe(
       'Free-text answer values to create and select (for text questions). Each item: {value: string, isUserCreated: boolean}',
     ),
 });
+export type AnswerQuestionInput = z.infer<typeof AnswerQuestionSchema>;
 
 export function createAssessmentsAnswerQuestionTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

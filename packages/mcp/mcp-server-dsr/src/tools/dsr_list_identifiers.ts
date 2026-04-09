@@ -6,11 +6,12 @@ import {
   z,
 } from '@transcend-io/mcp-server-core';
 
-const listIdentifiersSchema = z
+export const listIdentifiersSchema = z
   .object({
     request_id: z.string().describe('ID of the DSR'),
   })
   .merge(PaginationSchema);
+export type ListIdentifiersInput = z.infer<typeof listIdentifiersSchema>;
 
 export function createDsrListIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;

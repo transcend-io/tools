@@ -8,7 +8,7 @@ import {
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const AddSectionSchema = z.object({
+export const AddSectionSchema = z.object({
   template_id: z.string().describe('ID of the assessment form template to add the section to'),
   title: z.string().describe('Title of the new section'),
   questions: z
@@ -18,6 +18,7 @@ const AddSectionSchema = z.object({
       'Array of question objects: [{title, type, subType?, description?, placeholder?, isRequired?, referenceId?, answerOptions?: [{value}], allowSelectOther?, requireRiskEvaluation?}]',
     ),
 });
+export type AddSectionInput = z.infer<typeof AddSectionSchema>;
 
 export function createAssessmentsAddSectionTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

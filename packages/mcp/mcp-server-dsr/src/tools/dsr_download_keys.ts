@@ -1,8 +1,9 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
-const downloadKeysSchema = z.object({
+export const downloadKeysSchema = z.object({
   request_id: z.string().describe('ID of the completed DSR'),
 });
+export type DownloadKeysInput = z.infer<typeof downloadKeysSchema>;
 
 export function createDsrDownloadKeysTool(clients: ToolClients) {
   const { rest } = clients;

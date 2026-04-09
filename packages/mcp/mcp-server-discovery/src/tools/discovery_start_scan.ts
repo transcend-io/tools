@@ -2,11 +2,12 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { DiscoveryMixin } from '../graphql.js';
 
-const StartScanSchema = z.object({
+export const StartScanSchema = z.object({
   name: z.string().describe('Name for the classification scan'),
   data_silo_id: z.string().optional().describe('ID of the data silo to scan (optional)'),
   type: z.string().optional().describe('Type of scan (optional)'),
 });
+export type StartScanInput = z.infer<typeof StartScanSchema>;
 
 export function createDiscoveryStartScanTool(clients: ToolClients) {
   const graphql = clients.graphql as DiscoveryMixin;

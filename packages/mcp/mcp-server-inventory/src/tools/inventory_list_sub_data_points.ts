@@ -2,7 +2,7 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { InventoryMixin } from '../graphql.js';
 
-const ListSubDataPointsSchema = z.object({
+export const ListSubDataPointsSchema = z.object({
   data_point_id: z.string().describe('ID of the parent data point'),
   limit: z.coerce
     .number()
@@ -18,6 +18,7 @@ const ListSubDataPointsSchema = z.object({
     .default(0)
     .describe('Number of results to skip (default: 0)'),
 });
+export type ListSubDataPointsInput = z.infer<typeof ListSubDataPointsSchema>;
 
 export function createInventoryListSubDataPointsTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;

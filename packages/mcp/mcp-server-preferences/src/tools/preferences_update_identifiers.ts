@@ -1,18 +1,20 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-const UpdateIdentifiersSchema = z.object({
+export const UpdateIdentifiersItemSchema = z.object({
+  oldValue: z.string().describe('Old identifier value'),
+  newValue: z.string().describe('New identifier value'),
+  type: z.string().optional().describe('Identifier type (optional)'),
+});
+export type UpdateIdentifiersItemInput = z.infer<typeof UpdateIdentifiersItemSchema>;
+
+export const UpdateIdentifiersSchema = z.object({
   partition: z.string().describe('Partition/organization context'),
   user_id: z.string().describe('User ID to update identifiers for'),
   identifiers: z
-    .array(
-      z.object({
-        oldValue: z.string().describe('Old identifier value'),
-        newValue: z.string().describe('New identifier value'),
-        type: z.string().optional().describe('Identifier type (optional)'),
-      }),
-    )
+    .array(UpdateIdentifiersItemSchema)
     .describe('Array of identifier update objects with old and new values'),
 });
+export type UpdateIdentifiersInput = z.infer<typeof UpdateIdentifiersSchema>;
 
 export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;

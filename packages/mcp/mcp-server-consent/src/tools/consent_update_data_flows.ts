@@ -9,9 +9,9 @@ import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 import type { ConsentMixin } from '../graphql.js';
 
-const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
+export const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
 
-const UpdateDataFlowItemSchema = z.object({
+export const UpdateDataFlowItemSchema = z.object({
   id: z.string().describe('Data flow ID'),
   tracking_purposes: z.array(z.string()).optional().describe('Tracking purpose slugs'),
   description: z.string().optional().describe('Data flow description'),
@@ -21,11 +21,13 @@ const UpdateDataFlowItemSchema = z.object({
     'Set status to LIVE (approve) or NEEDS_REVIEW',
   ),
 });
+export type UpdateDataFlowItemInput = z.infer<typeof UpdateDataFlowItemSchema>;
 
-const UpdateDataFlowsSchema = z.object({
+export const UpdateDataFlowsSchema = z.object({
   airgap_bundle_id: z.string().describe('Airgap bundle ID'),
   data_flows: z.array(UpdateDataFlowItemSchema).min(1).describe('Data flows to update'),
 });
+export type UpdateDataFlowsInput = z.infer<typeof UpdateDataFlowsSchema>;
 
 export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

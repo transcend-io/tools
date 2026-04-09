@@ -9,13 +9,15 @@ import { AssessmentFormStatus } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const AssessmentStatusEnum = z.nativeEnum(AssessmentFormStatus);
+export const AssessmentStatusEnum = z.nativeEnum(AssessmentFormStatus);
+export type AssessmentStatusEnumInput = z.infer<typeof AssessmentStatusEnum>;
 
-const ListAssessmentsSchema = z
+export const ListAssessmentsSchema = z
   .object({
     status: AssessmentStatusEnum.optional().describe('Filter by assessment status'),
   })
   .merge(PaginationSchema);
+export type ListAssessmentsInput = z.infer<typeof ListAssessmentsSchema>;
 
 export function createAssessmentsListTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

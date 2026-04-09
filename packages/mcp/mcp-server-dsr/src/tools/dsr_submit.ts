@@ -1,9 +1,10 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 import { RequestAction } from '@transcend-io/privacy-types';
 
-const RequestTypeEnum = z.nativeEnum(RequestAction);
+export const RequestTypeEnum = z.nativeEnum(RequestAction);
+export type RequestTypeInput = z.infer<typeof RequestTypeEnum>;
 
-const submitDsrSchema = z.object({
+export const submitDsrSchema = z.object({
   type: RequestTypeEnum.describe('Type of DSR request'),
   email: z.string().describe('Email address of the data subject'),
   subjectType: z
@@ -19,6 +20,7 @@ const submitDsrSchema = z.object({
   locale: z.string().optional().describe('Locale for communications (e.g., en-US)'),
   isSilent: z.boolean().optional().describe('Whether to suppress email notifications'),
 });
+export type SubmitDsrInput = z.infer<typeof submitDsrSchema>;
 
 export function createDsrSubmitTool(clients: ToolClients) {
   const { rest } = clients;

@@ -1,13 +1,16 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-const IdentifierSchema = z.object({
+export const IdentifierSchema = z.object({
   value: z.string().describe('Identifier value'),
   type: z.string().optional().describe('Identifier type (optional)'),
 });
-const QueryPreferencesSchema = z.object({
+export type IdentifierInput = z.infer<typeof IdentifierSchema>;
+
+export const QueryPreferencesSchema = z.object({
   partition: z.string().describe('Partition/organization context'),
   identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to query'),
 });
+export type QueryPreferencesInput = z.infer<typeof QueryPreferencesSchema>;
 
 export function createPreferencesQueryTool(clients: ToolClients) {
   const { rest } = clients;

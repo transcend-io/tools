@@ -8,12 +8,13 @@ import {
 
 import type { DiscoveryMixin } from '../graphql.js';
 
-const ListScansSchema = PaginationSchema.extend({
+export const ListScansSchema = PaginationSchema.extend({
   cursor: z
     .string()
     .optional()
     .describe('Pagination cursor from previous response (where supported)'),
 });
+export type ListScansInput = z.infer<typeof ListScansSchema>;
 
 export function createDiscoveryListScansTool(clients: ToolClients) {
   const graphql = clients.graphql as DiscoveryMixin;

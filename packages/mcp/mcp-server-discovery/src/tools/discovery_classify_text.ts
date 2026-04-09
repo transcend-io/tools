@@ -1,6 +1,6 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-const ClassifyTextSchema = z.object({
+export const ClassifyTextSchema = z.object({
   texts: z.array(z.string()).describe('Array of text strings to classify'),
   categories: z
     .array(z.string())
@@ -8,6 +8,7 @@ const ClassifyTextSchema = z.object({
     .describe('Specific categories to classify against (optional)'),
   model: z.string().optional().describe('LLM model to use for classification (optional)'),
 });
+export type ClassifyTextInput = z.infer<typeof ClassifyTextSchema>;
 
 export function createDiscoveryClassifyTextTool(clients: ToolClients) {
   const { rest } = clients;

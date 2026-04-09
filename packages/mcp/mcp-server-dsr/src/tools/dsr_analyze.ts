@@ -8,7 +8,7 @@ import {
 
 import type { DSRMixin } from '../graphql.js';
 
-const analyzeDsrSchema = z.object({
+export const analyzeDsrSchema = z.object({
   days: z.coerce
     .number()
     .optional()
@@ -16,6 +16,7 @@ const analyzeDsrSchema = z.object({
       'Filter analysis to requests within N days (default: 30). Only analyzes from the 100 most recent requests.',
     ),
 });
+export type AnalyzeDsrInput = z.infer<typeof analyzeDsrSchema>;
 
 export function createDsrAnalyzeTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;

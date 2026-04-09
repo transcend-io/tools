@@ -9,9 +9,9 @@ import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 import type { ConsentMixin } from '../graphql.js';
 
-const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
+export const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
 
-const UpdateCookieItemSchema = z.object({
+export const UpdateCookieItemSchema = z.object({
   name: z.string().describe('Cookie name (used as the identifier for upsert)'),
   tracking_purposes: z
     .array(z.string())
@@ -24,11 +24,13 @@ const UpdateCookieItemSchema = z.object({
     'Set status to LIVE (approve) or NEEDS_REVIEW',
   ),
 });
+export type UpdateCookieItemInput = z.infer<typeof UpdateCookieItemSchema>;
 
-const UpdateCookiesSchema = z.object({
+export const UpdateCookiesSchema = z.object({
   airgap_bundle_id: z.string().describe('Airgap bundle ID'),
   cookies: z.array(UpdateCookieItemSchema).min(1).describe('Cookies to update'),
 });
+export type UpdateCookiesInput = z.infer<typeof UpdateCookiesSchema>;
 
 export function createConsentUpdateCookiesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

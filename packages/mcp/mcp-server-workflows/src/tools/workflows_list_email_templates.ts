@@ -8,7 +8,7 @@ import {
 
 import type { WorkflowsMixin } from '../graphql.js';
 
-const ListEmailTemplatesSchema = PaginationSchema.extend({
+export const ListEmailTemplatesSchema = PaginationSchema.extend({
   cursor: z
     .string()
     .optional()
@@ -20,6 +20,7 @@ const ListEmailTemplatesSchema = PaginationSchema.extend({
     .default(0)
     .describe('Number of results to skip (default: 0)'),
 });
+export type ListEmailTemplatesInput = z.infer<typeof ListEmailTemplatesSchema>;
 
 export function createWorkflowsListEmailTemplatesTool(clients: ToolClients) {
   const graphql = clients.graphql as WorkflowsMixin;

@@ -16,7 +16,8 @@ const PaginationSchema = z.object({
     .describe('Pagination cursor from previous response (where supported)'),
 });
 
-const ListAirgapBundlesSchema = PaginationSchema;
+export const ListAirgapBundlesSchema = PaginationSchema;
+export type ListAirgapBundlesInput = z.infer<typeof ListAirgapBundlesSchema>;
 
 export function createConsentListAirgapBundlesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

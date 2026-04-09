@@ -2,7 +2,7 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { InventoryMixin } from '../graphql.js';
 
-const ListCategoriesSchema = z.object({
+export const ListCategoriesSchema = z.object({
   limit: z.coerce
     .number()
     .min(1)
@@ -15,6 +15,7 @@ const ListCategoriesSchema = z.object({
     .optional()
     .describe('Pagination cursor from previous response (where supported)'),
 });
+export type ListCategoriesInput = z.infer<typeof ListCategoriesSchema>;
 
 export function createInventoryListCategoriesTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;

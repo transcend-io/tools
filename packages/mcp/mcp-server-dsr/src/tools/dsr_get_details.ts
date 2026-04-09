@@ -2,9 +2,10 @@ import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io
 
 import type { DSRMixin } from '../graphql.js';
 
-const getDetailsSchema = z.object({
+export const getDetailsSchema = z.object({
   request_id: z.string().describe('ID of the DSR to retrieve'),
 });
+export type GetDetailsInput = z.infer<typeof getDetailsSchema>;
 
 export function createDsrGetDetailsTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;

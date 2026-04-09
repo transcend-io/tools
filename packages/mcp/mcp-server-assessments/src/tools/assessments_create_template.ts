@@ -9,7 +9,7 @@ import {
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const CreateTemplateSchema = z.object({
+export const CreateTemplateSchema = z.object({
   title: z.string().describe('Title of the assessment form template'),
   description: z.string().optional().describe('Description of the template'),
   status: z
@@ -21,6 +21,7 @@ const CreateTemplateSchema = z.object({
     .optional()
     .describe('Array of section objects with title and optional questions array'),
 });
+export type CreateTemplateInput = z.infer<typeof CreateTemplateSchema>;
 
 export function createAssessmentsCreateTemplateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

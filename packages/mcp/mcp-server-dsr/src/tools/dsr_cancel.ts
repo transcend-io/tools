@@ -2,10 +2,11 @@ import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io
 
 import type { DSRMixin } from '../graphql.js';
 
-const cancelDsrSchema = z.object({
+export const cancelDsrSchema = z.object({
   request_id: z.string().describe('ID of the DSR to cancel'),
   reason: z.string().optional().describe('Reason for cancellation (optional)'),
 });
+export type CancelDsrInput = z.infer<typeof cancelDsrSchema>;
 
 export function createDsrCancelTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;

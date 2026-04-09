@@ -10,7 +10,7 @@ import {
 import type { AssessmentsMixin } from '../graphql.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
-const PrefillSchema = z.object({
+export const PrefillSchema = z.object({
   title: z.string().describe('Title for the new assessment form'),
   template_id: z
     .string()
@@ -43,6 +43,7 @@ const PrefillSchema = z.object({
       'Whether to automatically submit the form for review after prefilling (default: false)',
     ),
 });
+export type PrefillInput = z.infer<typeof PrefillSchema>;
 
 export function createAssessmentsPrefillTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;

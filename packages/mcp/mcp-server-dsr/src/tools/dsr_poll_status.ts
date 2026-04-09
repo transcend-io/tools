@@ -1,8 +1,9 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
-const pollStatusSchema = z.object({
+export const pollStatusSchema = z.object({
   request_id: z.string().describe('ID of the DSR to check'),
 });
+export type PollStatusInput = z.infer<typeof pollStatusSchema>;
 
 export function createDsrPollStatusTool(clients: ToolClients) {
   const { rest } = clients;

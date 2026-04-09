@@ -2,9 +2,10 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { ConsentMixin } from '../graphql.js';
 
-const GetCookieStatsSchema = z.object({
+export const GetCookieStatsSchema = z.object({
   airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
 });
+export type GetCookieStatsInput = z.infer<typeof GetCookieStatsSchema>;
 
 export function createConsentGetTriageStatsTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

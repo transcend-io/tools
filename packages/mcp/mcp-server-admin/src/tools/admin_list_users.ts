@@ -2,7 +2,7 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 
 import type { AdminMixin } from '../graphql.js';
 
-const ListUsersSchema = z.object({
+export const ListUsersSchema = z.object({
   limit: z.coerce
     .number()
     .min(1)
@@ -15,6 +15,7 @@ const ListUsersSchema = z.object({
     .optional()
     .describe('Pagination cursor from previous response (where supported)'),
 });
+export type ListUsersInput = z.infer<typeof ListUsersSchema>;
 
 export function createAdminListUsersTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;

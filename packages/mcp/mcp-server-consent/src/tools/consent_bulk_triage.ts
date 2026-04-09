@@ -9,9 +9,10 @@ import {
 
 import type { ConsentMixin } from '../graphql.js';
 
-const TriageActionEnum = z.enum(['APPROVE', 'JUNK']);
+export const TriageActionEnum = z.enum(['APPROVE', 'JUNK']);
+export type TriageActionInput = z.infer<typeof TriageActionEnum>;
 
-const BulkTriageItemSchema = z.object({
+export const BulkTriageItemSchema = z.object({
   type: z.enum(['cookie', 'data_flow']).describe('Item type'),
   id: z.string().describe('Item ID (for data flows) or cookie name (for cookies)'),
   action: TriageActionEnum.describe('Action to take: APPROVE or JUNK'),
@@ -21,11 +22,13 @@ const BulkTriageItemSchema = z.object({
     .describe('Tracking purposes to assign (required when approving)'),
   service: z.string().optional().describe('Service name to assign'),
 });
+export type BulkTriageItemInput = z.infer<typeof BulkTriageItemSchema>;
 
-const BulkTriageSchema = z.object({
+export const BulkTriageSchema = z.object({
   airgap_bundle_id: z.string().describe('Airgap bundle ID'),
   items: z.array(BulkTriageItemSchema).min(1).describe('Items to triage'),
 });
+export type BulkTriageInput = z.infer<typeof BulkTriageSchema>;
 
 export function createConsentBulkTriageTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

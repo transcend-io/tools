@@ -3,10 +3,12 @@ import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 import type { ConsentMixin } from '../graphql.js';
 
-const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
-const OrderDirectionEnum = z.enum(['ASC', 'DESC']);
+export const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
+export type ConsentTrackerStatusInput = z.infer<typeof ConsentTrackerStatusEnum>;
+export const OrderDirectionEnum = z.enum(['ASC', 'DESC']);
+export type OrderDirectionInput = z.infer<typeof OrderDirectionEnum>;
 
-const ListTriageCookiesSchema = z.object({
+export const ListTriageCookiesSchema = z.object({
   airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
   limit: z
     .number()
@@ -29,6 +31,7 @@ const ListTriageCookiesSchema = z.object({
   order_field: z.string().optional().describe('Field to sort by: name, createdAt, updatedAt'),
   order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
 });
+export type ListTriageCookiesInput = z.infer<typeof ListTriageCookiesSchema>;
 
 export function createConsentListTriageCookiesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;

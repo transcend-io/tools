@@ -2,12 +2,14 @@ import {
   createListResult,
   defineTool,
   PaginationSchema,
+  z,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const ListGroupsSchema = PaginationSchema;
+export const ListGroupsSchema = PaginationSchema;
+export type ListGroupsInput = z.infer<typeof ListGroupsSchema>;
 
 export function createAssessmentsListGroupsTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
