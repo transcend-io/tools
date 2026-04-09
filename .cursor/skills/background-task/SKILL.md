@@ -177,14 +177,14 @@ type worktree-rm &>/dev/null || echo "ERROR: worktree-rm not loaded - check hook
 
 **`worktree-git` and `worktree-rm` should be auto-approved in Cursor settings**, meaning they run without requiring user intervention. This is safe because they only work inside `.worktrees/` directories.
 
-| Command           | User Approval Required | Why                                |
-| ----------------- | ---------------------- | ---------------------------------- |
-| `worktree-git`    | No (auto-approved)     | Safe - only works in `.worktrees/` |
-| `worktree-rm`     | No (auto-approved)     | Safe - only works in `.worktrees/` |
-| `tools-git`       | No (auto-approved)     | Safe - only works in tools repo    |
-| `tools-rm`        | No (auto-approved)     | Safe - only works in tools repo    |
-| `git`             | Yes                    | Could modify main workspace        |
-| `rm`              | Yes                    | Could delete important files       |
+| Command        | User Approval Required | Why                                |
+| -------------- | ---------------------- | ---------------------------------- |
+| `worktree-git` | No (auto-approved)     | Safe - only works in `.worktrees/` |
+| `worktree-rm`  | No (auto-approved)     | Safe - only works in `.worktrees/` |
+| `tools-git`    | No (auto-approved)     | Safe - only works in tools repo    |
+| `tools-rm`     | No (auto-approved)     | Safe - only works in tools repo    |
+| `git`          | Yes                    | Could modify main workspace        |
+| `rm`           | Yes                    | Could delete important files       |
 
 **Always use `worktree-git` and `worktree-rm` in worktrees to maximize speed.**
 
