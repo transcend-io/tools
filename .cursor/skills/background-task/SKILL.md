@@ -17,7 +17,6 @@ Last Edited: April 9, 2026
 | `worktree-rm {name}`                                     | Remove worktree or files within worktrees |
 | `pnpm install --frozen-lockfile`                         | Install deps (no lockfile changes)        |
 | `pnpm install`                                           | Install deps (lockfile update needed)     |
-| `gempty-branches {branch}`                               | Re-trigger CI via empty commit            |
 
 ## Critical Rules (NEVER Violate)
 
@@ -165,14 +164,13 @@ worktree-rm fix-{name}
 
 ## Mandatory Functions
 
-**`worktree-git`, `worktree-rm`, and `gempty-branches` are auto-loaded via the Cursor preToolUse hook** (`.cursor/hooks/preload-shell-functions.sh`). They are available in every Shell tool call automatically.
+**`worktree-git` and `worktree-rm` are auto-loaded via the Cursor preToolUse hook** (`.cursor/hooks/preload-shell-functions.sh`). They are available in every Shell tool call automatically.
 
 If they're not available, verify:
 
 ```bash
 type worktree-git &>/dev/null || echo "ERROR: worktree-git not loaded - check hook"
 type worktree-rm &>/dev/null || echo "ERROR: worktree-rm not loaded - check hook"
-type gempty-branches &>/dev/null || echo "ERROR: gempty-branches not loaded - check hook"
 ```
 
 ## Auto-Approval for Speed
@@ -183,7 +181,6 @@ type gempty-branches &>/dev/null || echo "ERROR: gempty-branches not loaded - ch
 | ----------------- | ---------------------- | ---------------------------------- |
 | `worktree-git`    | No (auto-approved)     | Safe - only works in `.worktrees/` |
 | `worktree-rm`     | No (auto-approved)     | Safe - only works in `.worktrees/` |
-| `gempty-branches` | No (auto-approved)     | Safe - uses temp worktrees in /tmp |
 | `tools-git`       | No (auto-approved)     | Safe - only works in tools repo    |
 | `tools-rm`        | No (auto-approved)     | Safe - only works in tools repo    |
 | `git`             | Yes                    | Could modify main workspace        |
@@ -240,12 +237,6 @@ If `worktree-git push origin {branch}` pushes old commits, the worktree is detac
 
 ```bash
 worktree-git push origin HEAD:{branch}
-```
-
-### CI needs re-triggering
-
-```bash
-gempty-branches {branch}
 ```
 
 ### Build errors across packages

@@ -28,14 +28,12 @@ Use `worktree-git` and `worktree-rm` instead — `tools-git` will NOT work in wo
 
 - `worktree-git` — safe git that only runs inside `.worktrees/` directories
 - `worktree-rm` — safe rm that only operates on `.worktrees/` paths
-- `gempty-branches` — re-trigger CI on branches via empty commits (uses temp worktrees)
 
 Examples:
 ```
 cd .worktrees/fix-branch && worktree-git add -A && worktree-git commit -m "fix: message"
 cd .worktrees/fix-branch && worktree-git push origin HEAD:branch-name
 worktree-rm fix-branch
-gempty-branches branch-name
 ```
 
 See `/background-task` skill for the full worktree workflow.
