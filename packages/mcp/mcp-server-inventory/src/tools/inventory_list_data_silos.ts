@@ -1,57 +1,42 @@
-import {
-  createListResult,
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { ListDataSilosSchema } from '../schemas.js';
 
-export function createInventoryListDataSilosTool(clients: ToolClients): ToolDefinition {
+export const ListDataSilosSchema = z.object({
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(50)
+    .describe('Results per page (1-100, default: 50)'),
+  cursor: z
+    .string()
+    .optional()
+    .describe('Pagination cursor from previous response (where supported)'),
+});
+export type ListDataSilosInput = z.infer<typeof ListDataSilosSchema>;
+
+export function createInventoryListDataSilosTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_list_data_silos',
     description:
       'List all data silos (data systems and integrations) in your organization. Note: API does not support cursor pagination (max ~100 results).',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListDataSilosSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const result = await graphql.listDataSilos({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
-        });
+    zodSchema: ListDataSilosSchema,
+    handler: async ({ limit, cursor }) => {
+      const result = await graphql.listDataSilos({
+        first: limit,
+        after: cursor,
+      });
 
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
-  };
+  });
 }

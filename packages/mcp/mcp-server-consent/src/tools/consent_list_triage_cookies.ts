@@ -1,17 +1,41 @@
-import {
-  createListResult,
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 import type { ConsentMixin } from '../graphql.js';
-import { ListTriageCookiesSchema } from '../schemas.js';
 
-export function createConsentListTriageCookiesTool(clients: ToolClients): ToolDefinition {
+export const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
+export type ConsentTrackerStatusInput = z.infer<typeof ConsentTrackerStatusEnum>;
+export const OrderDirectionEnum = z.enum(['ASC', 'DESC']);
+export type OrderDirectionInput = z.infer<typeof OrderDirectionEnum>;
+
+export const ListTriageCookiesSchema = z.object({
+  airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
+  limit: z
+    .number()
+    .min(1)
+    .max(200)
+    .optional()
+    .default(50)
+    .describe('Results per page (1-200, default: 50)'),
+  offset: z.number().min(0).optional().default(0).describe('Offset for pagination (default: 0)'),
+  status: ConsentTrackerStatusEnum.optional().describe(
+    'Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)',
+  ),
+  is_junk: z.boolean().optional().describe('Filter by junk status'),
+  show_zero_activity: z
+    .boolean()
+    .optional()
+    .describe('Include items with zero activity (default: false)'),
+  text: z.string().optional().describe('Search text filter'),
+  service: z.string().optional().describe('Filter by service name'),
+  order_field: z.string().optional().describe('Field to sort by: name, createdAt, updatedAt'),
+  order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
+});
+export type ListTriageCookiesInput = z.infer<typeof ListTriageCookiesSchema>;
+
+export function createConsentListTriageCookiesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_list_triage_cookies',
     description:
       'List cookies in your consent manager. Use status=NEEDS_REVIEW to see cookies awaiting triage. ' +
@@ -20,69 +44,37 @@ export function createConsentListTriageCookiesTool(clients: ToolClients): ToolDe
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        airgap_bundle_id: {
-          type: 'string',
-          description: 'Airgap bundle ID (from consent_list_airgap_bundles)',
-        },
-        limit: { type: 'number', description: 'Results per page (1-200, default: 50)' },
-        offset: { type: 'number', description: 'Offset for pagination (default: 0)' },
-        status: {
-          type: 'string',
-          enum: ['NEEDS_REVIEW', 'LIVE'],
-          description: 'Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)',
-        },
-        is_junk: { type: 'boolean', description: 'Filter by junk status' },
-        show_zero_activity: {
-          type: 'boolean',
-          description: 'Include items with zero activity (default: false)',
-        },
-        text: { type: 'string', description: 'Search text filter' },
-        service: { type: 'string', description: 'Filter by service name' },
-        order_field: {
-          type: 'string',
-          enum: ['name', 'createdAt', 'updatedAt'],
-          description: 'Field to sort by',
-        },
-        order_direction: {
-          type: 'string',
-          enum: ['ASC', 'DESC'],
-          description: 'Sort direction',
-        },
-      },
-      required: ['airgap_bundle_id'],
+    zodSchema: ListTriageCookiesSchema,
+    handler: async ({
+      airgap_bundle_id,
+      limit,
+      offset,
+      status,
+      is_junk,
+      show_zero_activity,
+      text,
+      service,
+      order_field,
+      order_direction,
+    }) => {
+      const result = await graphql.listCookies({
+        airgapBundleId: airgap_bundle_id,
+        first: limit,
+        offset,
+        status,
+        isJunk: is_junk,
+        showZeroActivity: show_zero_activity,
+        text,
+        service,
+        orderBy:
+          order_field && order_direction
+            ? [{ field: order_field, direction: order_direction }]
+            : undefined,
+      });
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
-    handler: async (args) => {
-      const parsed = validateArgs(ListTriageCookiesSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const result = await graphql.listCookies({
-          airgapBundleId: parsed.data.airgap_bundle_id,
-          first: parsed.data.limit,
-          offset: parsed.data.offset,
-          status: parsed.data.status,
-          isJunk: parsed.data.is_junk,
-          showZeroActivity: parsed.data.show_zero_activity,
-          text: parsed.data.text,
-          service: parsed.data.service,
-          orderBy:
-            parsed.data.order_field && parsed.data.order_direction
-              ? [{ field: parsed.data.order_field, direction: parsed.data.order_direction }]
-              : undefined,
-        });
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

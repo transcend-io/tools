@@ -1,69 +1,39 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-import { DeleteIdentifiersSchema } from '../schemas.js';
+import { IdentifierSchema } from './preferences_query.js';
 
-export function createPreferencesDeleteIdentifiersTool(clients: ToolClients): ToolDefinition {
+export const DeleteIdentifiersSchema = z.object({
+  partition: z.string().describe('Partition/organization context'),
+  user_id: z.string().describe('User ID to delete identifiers from'),
+  identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to delete'),
+});
+export type DeleteIdentifiersInput = z.infer<typeof DeleteIdentifiersSchema>;
+
+export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'preferences_delete_identifiers',
     description: 'Delete specific identifiers from a user preference record',
     category: 'Preference Management',
     readOnly: false,
     confirmationHint: 'Deletes identifiers from the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        user_id: {
-          type: 'string',
-          description: 'User ID to delete identifiers from',
-        },
-        identifiers: {
-          type: 'array',
-          description: 'Array of identifier objects to delete',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['partition', 'user_id', 'identifiers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(DeleteIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const identifiers = parsed.data.identifiers.map((id) => ({
+    zodSchema: DeleteIdentifiersSchema,
+    handler: async ({ partition, user_id, identifiers }) => {
+      const result = await rest.deleteIdentifiers(
+        partition,
+        user_id,
+        identifiers.map((id) => ({
           value: id.value,
           type: id.type,
-        }));
+        })),
+      );
 
-        const result = await rest.deleteIdentifiers(
-          parsed.data.partition,
-          parsed.data.user_id,
-          identifiers,
-        );
-
-        return createToolResult(true, {
-          ...result,
-          identifiersDeleted: identifiers.length,
-          message: 'Identifiers deleted successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        ...result,
+        identifiersDeleted: identifiers.length,
+        message: 'Identifiers deleted successfully',
+      });
     },
-  };
+  });
 }

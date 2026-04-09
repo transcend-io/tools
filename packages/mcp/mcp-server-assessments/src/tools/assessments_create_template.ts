@@ -1,18 +1,31 @@
 import {
   createToolResult,
-  validateArgs,
-  type ToolDefinition,
+  defineTool,
+  z,
   type ToolClients,
   type AssessmentTemplateCreateInput,
   type AssessmentSectionInput,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { CreateTemplateSchema } from '../schemas.js';
 
-export function createAssessmentsCreateTemplateTool(clients: ToolClients): ToolDefinition {
+export const CreateTemplateSchema = z.object({
+  title: z.string().describe('Title of the assessment form template'),
+  description: z.string().optional().describe('Description of the template'),
+  status: z
+    .enum(['DRAFT', 'PUBLISHED'])
+    .optional()
+    .describe('Template status: DRAFT or PUBLISHED (default: DRAFT)'),
+  sections: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional()
+    .describe('Array of section objects with title and optional questions array'),
+});
+export type CreateTemplateInput = z.infer<typeof CreateTemplateSchema>;
+
+export function createAssessmentsCreateTemplateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_create_template',
     description:
       'Create a new assessment form template with sections and questions inline. ' +
@@ -27,60 +40,21 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients): ToolD
     readOnly: false,
     confirmationHint: 'Creates a new assessment form template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Title of the assessment form template',
-        },
-        description: {
-          type: 'string',
-          description: 'Description of the template',
-        },
-        status: {
-          type: 'string',
-          description: 'Template status: DRAFT or PUBLISHED (default: DRAFT)',
-          enum: ['DRAFT', 'PUBLISHED'],
-        },
-        sections: {
-          type: 'array',
-          description:
-            'Array of section objects. Each section: {title: string, questions?: [{title, type, subType?, description?, placeholder?, isRequired?, referenceId?, answerOptions?: [{value}], allowSelectOther?, requireRiskEvaluation?}]}. ' +
-            'Question types: LONG_ANSWER_TEXT, SHORT_ANSWER_TEXT, SINGLE_SELECT, MULTI_SELECT, FILE. ' +
-            'SubTypes: NONE, CUSTOM, USER, TEAM, DATA_SUB_CATEGORY, HAS_PERSONAL_DATA, ATTRIBUTE_KEY, SENSITIVE_CATEGORY. ' +
-            'referenceId is optional (auto-generated UUID if omitted or not UUID format). ' +
-            'allowSelectOther auto-sets subType to CUSTOM. requireRiskEvaluation requires riskFrameworkId.',
-          items: { type: 'object' },
-        },
-      },
-      required: ['title'],
+    zodSchema: CreateTemplateSchema,
+    handler: async ({ title, description, status, sections }) => {
+      const input: AssessmentTemplateCreateInput = {
+        title,
+        description,
+        status: status ?? 'DRAFT',
+        sections: sections as AssessmentSectionInput[] | undefined,
+      };
+
+      const result = await graphql.createAssessmentFormTemplate(input);
+
+      return createToolResult(true, {
+        template: result,
+        message: `Assessment template "${title}" created successfully`,
+      });
     },
-    handler: async (args) => {
-      const parsed = validateArgs(CreateTemplateSchema, args);
-      if (!parsed.success) return parsed.error;
-
-      try {
-        const input: AssessmentTemplateCreateInput = {
-          title: parsed.data.title,
-          description: parsed.data.description,
-          status: parsed.data.status ?? 'DRAFT',
-          sections: parsed.data.sections as AssessmentSectionInput[] | undefined,
-        };
-
-        const result = await graphql.createAssessmentFormTemplate(input);
-
-        return createToolResult(true, {
-          template: result,
-          message: `Assessment template "${parsed.data.title}" created successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

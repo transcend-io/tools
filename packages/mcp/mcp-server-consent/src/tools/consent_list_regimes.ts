@@ -1,36 +1,31 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-import { ListRegimesSchema } from '../schemas.js';
+const PaginationSchema = z.object({
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(50)
+    .describe('Results per page (1-100, default: 50)'),
+  cursor: z
+    .string()
+    .optional()
+    .describe('Pagination cursor from previous response (where supported)'),
+});
 
-export function createConsentListRegimesTool(_clients: ToolClients): ToolDefinition {
-  return {
+export const ListRegimesSchema = PaginationSchema;
+export type ListRegimesInput = z.infer<typeof ListRegimesSchema>;
+
+export function createConsentListRegimesTool(_clients: ToolClients) {
+  return defineTool({
     name: 'consent_list_regimes',
     description: 'List all supported privacy regimes (GDPR, CCPA, etc.) and their configurations',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListRegimesSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ListRegimesSchema,
+    handler: async (_args) => {
       return createToolResult(true, {
         regimes: [
           { code: 'GDPR', name: 'General Data Protection Regulation', region: 'EU' },
@@ -49,5 +44,5 @@ export function createConsentListRegimesTool(_clients: ToolClients): ToolDefinit
         note: 'Contact your administrator for organization-specific regime configurations',
       });
     },
-  };
+  });
 }

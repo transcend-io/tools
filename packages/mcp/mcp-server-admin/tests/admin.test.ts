@@ -62,16 +62,15 @@ describe('Admin Tools', () => {
   });
 
   describe('admin_create_api_key', () => {
-    it('returns validation error when args are empty', async () => {
+    it('zodSchema rejects when title and scopes are missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
+        expect.arrayContaining(['title', 'scopes']),
+      );
       expect(mockGraphql.createApiKey).not.toHaveBeenCalled();
     });
 
@@ -113,15 +112,13 @@ describe('Admin Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listUsers.mockRejectedValue(new Error('Network error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'admin_list_users')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'Network error' });
+      await expect(tool.handler({})).rejects.toThrow('Network error');
     });
   });
 });

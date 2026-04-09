@@ -1,16 +1,18 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { SubmitResponseSchema } from '../schemas.js';
 
-export function createAssessmentsSubmitResponseTool(clients: ToolClients): ToolDefinition {
+export const SubmitResponseSchema = z.object({
+  assessment_id: z.string().describe('ID of the assessment to submit for review'),
+  assessment_section_ids: z
+    .array(z.string())
+    .describe('Array of section IDs to submit for review. Required by the API.'),
+});
+export type SubmitResponseInput = z.infer<typeof SubmitResponseSchema>;
+
+export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_submit_response',
     description:
       'Submit an assessment form for review. Optionally specify which sections to submit. This transitions the assessment toward the IN_REVIEW status.',
@@ -18,42 +20,17 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients): ToolD
     readOnly: false,
     confirmationHint: 'Submits assessment for review — cannot be undone',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        assessment_id: {
-          type: 'string',
-          description: 'ID of the assessment to submit for review',
-        },
-        assessment_section_ids: {
-          type: 'array',
-          description: 'Array of section IDs to submit for review. Required by the API.',
-          items: { type: 'string' },
-        },
-      },
-      required: ['assessment_id', 'assessment_section_ids'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(SubmitResponseSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: SubmitResponseSchema,
+    handler: async ({ assessment_id, assessment_section_ids }) => {
+      const result = await graphql.submitAssessmentForReview({
+        id: assessment_id,
+        assessmentSectionIds: assessment_section_ids,
+      });
 
-      try {
-        const result = await graphql.submitAssessmentForReview({
-          id: parsed.data.assessment_id,
-          assessmentSectionIds: parsed.data.assessment_section_ids,
-        });
-
-        return createToolResult(true, {
-          assessment: result,
-          message: 'Assessment submitted for review successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        assessment: result,
+        message: 'Assessment submitted for review successfully',
+      });
     },
-  };
+  });
 }

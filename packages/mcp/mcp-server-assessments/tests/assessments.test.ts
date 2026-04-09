@@ -36,17 +36,13 @@ describe('Assessment Tools', () => {
     });
 
   describe('assessments_list', () => {
-    it('returns validation error when status is invalid', async () => {
+    it('zodSchema rejects invalid status', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_list')!;
 
-      const result = await tool.handler({ status: 'INVALID_STATUS' });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.listAssessments).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({ status: 'INVALID_STATUS' });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['status']);
     });
 
     it('returns assessments on success', async () => {
@@ -78,35 +74,24 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listAssessments.mockRejectedValue(new Error('API unavailable'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_list')!;
 
-      const result = await tool.handler({ limit: 50 });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'API unavailable',
-      });
+      await expect(tool.handler({ limit: 50 })).rejects.toThrow('API unavailable');
     });
   });
 
   describe('assessments_create', () => {
-    it('returns validation error when title is missing', async () => {
+    it('zodSchema rejects when title is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = await tool.handler({
-        assessment_group_id: 'grp-1',
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({ assessment_group_id: 'grp-1' });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['title']);
     });
 
     it('creates assessment with group_id on success', async () => {
@@ -179,38 +164,31 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.createAssessment.mockRejectedValue(new Error('Group not found'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = await tool.handler({
-        title: 'Test',
-        assessment_group_id: 'grp-bad',
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Group not found',
-      });
+      await expect(
+        tool.handler({
+          title: 'Test',
+          assessment_group_id: 'grp-bad',
+        }),
+      ).rejects.toThrow('Group not found');
     });
   });
 
   describe('assessments_create_template', () => {
-    it('returns validation error when title is missing', async () => {
+    it('zodSchema rejects when title is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create_template')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         sections: [{ title: 'Section 1', questions: [] }],
       });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessmentFormTemplate).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['title']);
     });
 
     it('creates template on success', async () => {
@@ -258,7 +236,7 @@ describe('Assessment Tools', () => {
       );
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.createAssessmentFormTemplate.mockRejectedValue(
         new Error('Template creation failed'),
       );
@@ -266,31 +244,22 @@ describe('Assessment Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create_template')!;
 
-      const result = await tool.handler({
-        title: 'Failing Template',
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Template creation failed',
-      });
+      await expect(
+        tool.handler({
+          title: 'Failing Template',
+        }),
+      ).rejects.toThrow('Template creation failed');
     });
   });
 
   describe('assessments_answer_question', () => {
-    it('returns validation error when assessment_question_id is missing', async () => {
+    it('zodSchema rejects when assessment_question_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_answer_question')!;
 
-      const result = await tool.handler({
-        assessment_answer_ids: ['ans-1'],
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.selectAssessmentQuestionAnswers).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({ assessment_answer_ids: ['ans-1'] });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['assessment_question_id']);
     });
 
     it('answers question with answer IDs on success', async () => {
@@ -342,7 +311,7 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.selectAssessmentQuestionAnswers.mockRejectedValue(
         new Error('Question not found'),
       );
@@ -350,49 +319,38 @@ describe('Assessment Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_answer_question')!;
 
-      const result = await tool.handler({
-        assessment_question_id: 'q-bad',
-        assessment_answer_ids: ['ans-1'],
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Question not found',
-      });
+      await expect(
+        tool.handler({
+          assessment_question_id: 'q-bad',
+          assessment_answer_ids: ['ans-1'],
+        }),
+      ).rejects.toThrow('Question not found');
     });
   });
 
   describe('assessments_prefill', () => {
-    it('returns validation error when title is missing', async () => {
+    it('zodSchema rejects when title is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         assessment_group_id: 'grp-1',
         answers: { Q1: 'A1' },
       });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['title']);
     });
 
-    it('returns validation error when answers is missing', async () => {
+    it('zodSchema rejects when answers is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         title: 'Prefill Test',
         assessment_group_id: 'grp-1',
       });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['answers']);
     });
 
     it('returns error when neither template_id nor assessment_group_id provided', async () => {
@@ -515,22 +473,19 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.selectAssessmentQuestionAnswers).not.toHaveBeenCalled();
     });
 
-    it('returns error when client throws during create', async () => {
+    it('throws when client throws during create', async () => {
       mockGraphql.createAssessment.mockRejectedValue(new Error('Create failed'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
-        title: 'Failing Prefill',
-        assessment_group_id: 'grp-1',
-        answers: { Q1: 'A1' },
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'Create failed',
-      });
+      await expect(
+        tool.handler({
+          title: 'Failing Prefill',
+          assessment_group_id: 'grp-1',
+          answers: { Q1: 'A1' },
+        }),
+      ).rejects.toThrow('Create failed');
     });
   });
 });

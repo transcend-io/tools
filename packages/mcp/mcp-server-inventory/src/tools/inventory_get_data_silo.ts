@@ -1,45 +1,25 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { GetDataSiloSchema } from '../schemas.js';
 
-export function createInventoryGetDataSiloTool(clients: ToolClients): ToolDefinition {
+export const GetDataSiloSchema = z.object({
+  data_silo_id: z.string().describe('ID of the data silo to retrieve'),
+});
+export type GetDataSiloInput = z.infer<typeof GetDataSiloSchema>;
+
+export function createInventoryGetDataSiloTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_get_data_silo',
     description:
       'Get detailed information about a specific data silo including its data points and identifiers',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        data_silo_id: {
-          type: 'string',
-          description: 'ID of the data silo to retrieve',
-        },
-      },
-      required: ['data_silo_id'],
+    zodSchema: GetDataSiloSchema,
+    handler: async ({ data_silo_id }) => {
+      const result = await graphql.getDataSilo(data_silo_id);
+      return createToolResult(true, result);
     },
-    handler: async (args) => {
-      const parsed = validateArgs(GetDataSiloSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const result = await graphql.getDataSilo(parsed.data.data_silo_id);
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

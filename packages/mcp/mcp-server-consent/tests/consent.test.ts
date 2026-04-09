@@ -59,16 +59,15 @@ describe('Consent Tools', () => {
   });
 
   describe('consent_update_cookies', () => {
-    it('returns validation error when required fields are missing', async () => {
+    it('zodSchema rejects input when required fields are missing', async () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_update_cookies')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
+        expect.arrayContaining(['airgap_bundle_id', 'cookies']),
+      );
       expect(mockGraphql.updateCookies).not.toHaveBeenCalled();
     });
   });
@@ -90,15 +89,13 @@ describe('Consent Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listTrackingPurposes.mockRejectedValue(new Error('GraphQL error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_list_purposes')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'GraphQL error' });
+      await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
   });
 });

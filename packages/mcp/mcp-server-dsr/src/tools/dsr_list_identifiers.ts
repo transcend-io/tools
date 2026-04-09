@@ -1,53 +1,31 @@
 import {
   createListResult,
-  createToolResult,
-  validateArgs,
+  defineTool,
+  PaginationSchema,
   type ToolClients,
-  type ToolDefinition,
+  z,
 } from '@transcend-io/mcp-server-core';
 
-import { ListIdentifiersSchema } from '../schemas.js';
+export const listIdentifiersSchema = z
+  .object({
+    request_id: z.string().describe('ID of the DSR'),
+  })
+  .merge(PaginationSchema);
+export type ListIdentifiersInput = z.infer<typeof listIdentifiersSchema>;
 
-export function createDsrListIdentifiersTool(clients: ToolClients): ToolDefinition {
+export function createDsrListIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
 
-  return {
+  return defineTool({
     name: 'dsr_list_identifiers',
     description: 'List all identifiers attached to a Data Subject Request',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        request_id: {
-          type: 'string',
-          description: 'ID of the DSR',
-        },
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (not supported by REST API)',
-        },
-      },
-      required: ['request_id'],
+    zodSchema: listIdentifiersSchema,
+    handler: async ({ request_id }) => {
+      const identifiers = await rest.listRequestIdentifiers(request_id);
+      return createListResult(identifiers);
     },
-    handler: async (args) => {
-      const parsed = validateArgs(ListIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const identifiers = await rest.listRequestIdentifiers(parsed.data.request_id);
-        return createListResult(identifiers);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

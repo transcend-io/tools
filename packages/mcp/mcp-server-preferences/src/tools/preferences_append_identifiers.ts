@@ -1,69 +1,39 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-import { AppendIdentifiersSchema } from '../schemas.js';
+import { IdentifierSchema } from './preferences_query.js';
 
-export function createPreferencesAppendIdentifiersTool(clients: ToolClients): ToolDefinition {
+export const AppendIdentifiersSchema = z.object({
+  partition: z.string().describe('Partition/organization context'),
+  user_id: z.string().describe('User ID to append identifiers to'),
+  identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to append'),
+});
+export type AppendIdentifiersInput = z.infer<typeof AppendIdentifiersSchema>;
+
+export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'preferences_append_identifiers',
     description: 'Append additional identifiers to an existing user preference record',
     category: 'Preference Management',
     readOnly: false,
     confirmationHint: 'Appends identifiers to the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        user_id: {
-          type: 'string',
-          description: 'User ID to append identifiers to',
-        },
-        identifiers: {
-          type: 'array',
-          description: 'Array of identifier objects to append',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['partition', 'user_id', 'identifiers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(AppendIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const identifiers = parsed.data.identifiers.map((id) => ({
+    zodSchema: AppendIdentifiersSchema,
+    handler: async ({ partition, user_id, identifiers }) => {
+      const result = await rest.appendIdentifiers(
+        partition,
+        user_id,
+        identifiers.map((id) => ({
           value: id.value,
           type: id.type,
-        }));
+        })),
+      );
 
-        const result = await rest.appendIdentifiers(
-          parsed.data.partition,
-          parsed.data.user_id,
-          identifiers,
-        );
-
-        return createToolResult(true, {
-          ...result,
-          identifiersAdded: identifiers.length,
-          message: 'Identifiers appended successfully',
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        ...result,
+        identifiersAdded: identifiers.length,
+        message: 'Identifiers appended successfully',
+      });
     },
-  };
+  });
 }

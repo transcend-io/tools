@@ -1,19 +1,53 @@
 import {
   createToolResult,
-  validateArgs,
-  type ToolDefinition,
+  defineTool,
+  z,
   type ToolClients,
   type Assessment,
   type AssessmentSection,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { PrefillSchema } from '../schemas.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
-export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefinition {
+export const PrefillSchema = z.object({
+  title: z.string().describe('Title for the new assessment form'),
+  template_id: z
+    .string()
+    .optional()
+    .describe(
+      'Template ID to create the form from. Will auto-resolve to the first matching assessment group.',
+    ),
+  assessment_group_id: z
+    .string()
+    .optional()
+    .describe('Assessment group ID (alternative to template_id)'),
+  answers: z
+    .record(z.string(), z.union([z.string(), z.array(z.string())]))
+    .describe(
+      'Map of answers keyed by question title or referenceId. Values should be strings for text/single-select, or arrays of strings for multi-select.',
+    ),
+  assignee_ids: z
+    .array(z.string())
+    .optional()
+    .describe('Internal user IDs to assign the form to (optional)'),
+  assignee_emails: z
+    .array(z.string())
+    .optional()
+    .describe('External email addresses to assign the form to (optional)'),
+  reviewer_ids: z.array(z.string()).optional().describe('User IDs to set as reviewers (optional)'),
+  submit_for_review: z
+    .boolean()
+    .optional()
+    .describe(
+      'Whether to automatically submit the form for review after prefilling (default: false)',
+    ),
+});
+export type PrefillInput = z.infer<typeof PrefillSchema>;
+
+export function createAssessmentsPrefillTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_prefill',
     description:
       'Convenience tool: Create a new assessment form, AI-prefill all the answers, and assign it to a reviewer. ' +
@@ -26,239 +60,190 @@ export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefiniti
     readOnly: false,
     confirmationHint: 'Creates assessment, prefills answers, assigns reviewers',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Title for the new assessment form',
-        },
-        template_id: {
-          type: 'string',
-          description:
-            'Template ID to create the form from. Will auto-resolve to the first matching assessment group.',
-        },
-        assessment_group_id: {
-          type: 'string',
-          description: 'Assessment group ID (alternative to template_id)',
-        },
-        answers: {
-          type: 'object',
-          description:
-            'Map of answers keyed by question title or referenceId. ' +
-            'Values should be strings for text/single-select, or arrays of strings for multi-select. ' +
-            'For select questions, values must match existing answer option text exactly.',
-        },
-        assignee_ids: {
-          type: 'array',
-          description: 'Internal user IDs to assign the form to (optional)',
-          items: { type: 'string' },
-        },
-        assignee_emails: {
-          type: 'array',
-          description: 'External email addresses to assign the form to (optional)',
-          items: { type: 'string' },
-        },
-        reviewer_ids: {
-          type: 'array',
-          description: 'User IDs to set as reviewers (optional)',
-          items: { type: 'string' },
-        },
-        submit_for_review: {
-          type: 'boolean',
-          description:
-            'Whether to automatically submit the form for review after prefilling (default: false)',
-        },
-      },
-      required: ['title', 'answers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(PrefillSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: PrefillSchema,
+    handler: async ({
+      answers,
+      title,
+      assessment_group_id,
+      template_id,
+      assignee_ids,
+      assignee_emails,
+      reviewer_ids,
+      submit_for_review,
+    }) => {
+      let assessmentGroupId = assessment_group_id;
+      if (!assessmentGroupId && template_id) {
+        const resolved = await resolveTemplateToGroupId(graphql, template_id);
+        if ('error' in resolved) return resolved.error;
+        assessmentGroupId = resolved.groupId;
+      }
+      if (!assessmentGroupId) {
+        return createToolResult(
+          false,
+          undefined,
+          'Either template_id or assessment_group_id is required.',
+        );
+      }
 
-      try {
-        const { answers, title } = parsed.data;
+      const assessment = await graphql.createAssessment({
+        title,
+        assessmentGroupId,
+      });
+      const assessmentId = assessment.id;
 
-        let assessmentGroupId = parsed.data.assessment_group_id;
-        if (!assessmentGroupId && parsed.data.template_id) {
-          const resolved = await resolveTemplateToGroupId(graphql, parsed.data.template_id);
-          if ('error' in resolved) return resolved.error;
-          assessmentGroupId = resolved.groupId;
-        }
-        if (!assessmentGroupId) {
-          return createToolResult(
-            false,
-            undefined,
-            'Either template_id or assessment_group_id is required.',
-          );
-        }
-
-        const assessment = await graphql.createAssessment({
-          title,
-          assessmentGroupId,
+      const fullForm = await graphql.getAssessment(assessmentId);
+      if (!fullForm.sections || fullForm.sections.length === 0) {
+        return createToolResult(true, {
+          assessment: fullForm,
+          message: 'Assessment created but has no sections/questions to prefill.',
+          answersApplied: 0,
         });
-        const assessmentId = assessment.id;
+      }
 
-        const fullForm = await graphql.getAssessment(assessmentId);
-        if (!fullForm.sections || fullForm.sections.length === 0) {
-          return createToolResult(true, {
-            assessment: fullForm,
-            message: 'Assessment created but has no sections/questions to prefill.',
-            answersApplied: 0,
-          });
-        }
+      const results: { question: string; status: string; answer?: string }[] = [];
+      let answersApplied = 0;
+      let answersSkipped = 0;
 
-        const results: { question: string; status: string; answer?: string }[] = [];
-        let answersApplied = 0;
-        let answersSkipped = 0;
+      for (const section of fullForm.sections as AssessmentSection[]) {
+        if (!section.questions) continue;
 
-        for (const section of fullForm.sections as AssessmentSection[]) {
-          if (!section.questions) continue;
+        for (const question of section.questions) {
+          const answerKey = Object.keys(answers).find(
+            (key) =>
+              key === question.referenceId ||
+              key.toLowerCase() === (question.title || '').toLowerCase() ||
+              key === question.id,
+          );
 
-          for (const question of section.questions) {
-            const answerKey = Object.keys(answers).find(
-              (key) =>
-                key === question.referenceId ||
-                key.toLowerCase() === (question.title || '').toLowerCase() ||
-                key === question.id,
-            );
+          if (!answerKey) {
+            results.push({
+              question: question.title || question.id,
+              status: 'skipped',
+            });
+            answersSkipped++;
+            continue;
+          }
 
-            if (!answerKey) {
-              results.push({
-                question: question.title || question.id,
-                status: 'skipped',
-              });
-              answersSkipped++;
-              continue;
-            }
+          const answerValue = answers[answerKey];
+          if (answerValue === undefined) {
+            results.push({
+              question: question.title || question.id,
+              status: 'skipped',
+            });
+            answersSkipped++;
+            continue;
+          }
 
-            const answerValue = answers[answerKey];
-            if (answerValue === undefined) {
-              results.push({
-                question: question.title || question.id,
-                status: 'skipped',
-              });
-              answersSkipped++;
-              continue;
-            }
+          try {
+            const qType = (question.type || '').toUpperCase();
 
-            try {
-              const qType = (question.type || '').toUpperCase();
+            if (qType === 'SINGLE_SELECT' || qType === 'MULTI_SELECT') {
+              const answerValues = Array.isArray(answerValue) ? answerValue : [answerValue];
+              const matchedIds: string[] = [];
 
-              if (qType === 'SINGLE_SELECT' || qType === 'MULTI_SELECT') {
-                const answerValues = Array.isArray(answerValue) ? answerValue : [answerValue];
-                const matchedIds: string[] = [];
-
-                for (const val of answerValues) {
-                  const matchedOption = (question.answerOptions || []).find(
-                    (opt) => opt.value.toLowerCase() === val.toLowerCase(),
-                  );
-                  if (matchedOption) {
-                    matchedIds.push(matchedOption.id);
-                  }
+              for (const val of answerValues) {
+                const matchedOption = (question.answerOptions || []).find(
+                  (opt) => opt.value.toLowerCase() === val.toLowerCase(),
+                );
+                if (matchedOption) {
+                  matchedIds.push(matchedOption.id);
                 }
+              }
 
-                if (matchedIds.length > 0) {
-                  await graphql.selectAssessmentQuestionAnswers({
-                    assessmentQuestionId: question.id,
-                    assessmentAnswerIds: matchedIds,
-                  });
-                  answersApplied++;
-                  results.push({
-                    question: question.title || question.id,
-                    status: 'answered',
-                    answer: answerValues.join(', '),
-                  });
-                } else {
-                  await graphql.selectAssessmentQuestionAnswers({
-                    assessmentQuestionId: question.id,
-                    assessmentAnswerValues: answerValues.map((v) => ({
-                      value: v,
-                      isUserCreated: true,
-                    })),
-                  });
-                  answersApplied++;
-                  results.push({
-                    question: question.title || question.id,
-                    status: 'answered (custom value)',
-                    answer: answerValues.join(', '),
-                  });
-                }
-              } else {
-                const textValue = Array.isArray(answerValue) ? answerValue.join('\n') : answerValue;
+              if (matchedIds.length > 0) {
                 await graphql.selectAssessmentQuestionAnswers({
                   assessmentQuestionId: question.id,
-                  assessmentAnswerValues: [{ value: textValue, isUserCreated: true }],
+                  assessmentAnswerIds: matchedIds,
                 });
                 answersApplied++;
                 results.push({
                   question: question.title || question.id,
                   status: 'answered',
-                  answer: textValue.length > 100 ? textValue.substring(0, 100) + '...' : textValue,
+                  answer: answerValues.join(', '),
+                });
+              } else {
+                await graphql.selectAssessmentQuestionAnswers({
+                  assessmentQuestionId: question.id,
+                  assessmentAnswerValues: answerValues.map((v) => ({
+                    value: v,
+                    isUserCreated: true,
+                  })),
+                });
+                answersApplied++;
+                results.push({
+                  question: question.title || question.id,
+                  status: 'answered (custom value)',
+                  answer: answerValues.join(', '),
                 });
               }
-            } catch (err) {
+            } else {
+              const textValue = Array.isArray(answerValue) ? answerValue.join('\n') : answerValue;
+              await graphql.selectAssessmentQuestionAnswers({
+                assessmentQuestionId: question.id,
+                assessmentAnswerValues: [{ value: textValue, isUserCreated: true }],
+              });
+              answersApplied++;
               results.push({
                 question: question.title || question.id,
-                status: `error: ${err instanceof Error ? err.message : String(err)}`,
+                status: 'answered',
+                answer: textValue.length > 100 ? textValue.substring(0, 100) + '...' : textValue,
               });
             }
-          }
-        }
-
-        let assignmentResult: Record<string, unknown> | null = null;
-        if (parsed.data.assignee_ids || parsed.data.assignee_emails) {
-          assignmentResult = await graphql.updateAssessmentFormAssignees({
-            id: assessmentId,
-            assigneeIds: parsed.data.assignee_ids,
-            externalAssigneeEmails: parsed.data.assignee_emails,
-          });
-        }
-
-        if (parsed.data.reviewer_ids) {
-          await graphql.updateAssessment({
-            id: assessmentId,
-            reviewerIds: parsed.data.reviewer_ids,
-          });
-        }
-
-        let submitResult: Assessment | null = null;
-        if (parsed.data.submit_for_review) {
-          const sectionIds = (fullForm.sections as AssessmentSection[]).map((s) => s.id);
-          if (sectionIds.length > 0) {
-            submitResult = await graphql.submitAssessmentForReview({
-              id: assessmentId,
-              assessmentSectionIds: sectionIds,
+          } catch (err) {
+            results.push({
+              question: question.title || question.id,
+              status: `error: ${err instanceof Error ? err.message : String(err)}`,
             });
           }
         }
-
-        return createToolResult(true, {
-          assessmentId,
-          title,
-          answersApplied,
-          answersSkipped,
-          totalQuestions: results.length,
-          results,
-          assignment: assignmentResult
-            ? {
-                status: assignmentResult.status,
-                message: 'Assignees updated',
-              }
-            : null,
-          submittedForReview: !!submitResult,
-          message:
-            `Assessment "${title}" created and prefilled with ${answersApplied}/${results.length} answers. ` +
-            (assignmentResult ? `Assigned to reviewers. ` : '') +
-            (submitResult ? 'Submitted for review.' : 'Ready for manual submission.'),
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
       }
+
+      let assignmentResult: Record<string, unknown> | null = null;
+      if (assignee_ids || assignee_emails) {
+        assignmentResult = await graphql.updateAssessmentFormAssignees({
+          id: assessmentId,
+          assigneeIds: assignee_ids,
+          externalAssigneeEmails: assignee_emails,
+        });
+      }
+
+      if (reviewer_ids) {
+        await graphql.updateAssessment({
+          id: assessmentId,
+          reviewerIds: reviewer_ids,
+        });
+      }
+
+      let submitResult: Assessment | null = null;
+      if (submit_for_review) {
+        const sectionIds = (fullForm.sections as AssessmentSection[]).map((s) => s.id);
+        if (sectionIds.length > 0) {
+          submitResult = await graphql.submitAssessmentForReview({
+            id: assessmentId,
+            assessmentSectionIds: sectionIds,
+          });
+        }
+      }
+
+      return createToolResult(true, {
+        assessmentId,
+        title,
+        answersApplied,
+        answersSkipped,
+        totalQuestions: results.length,
+        results,
+        assignment: assignmentResult
+          ? {
+              status: assignmentResult.status,
+              message: 'Assignees updated',
+            }
+          : null,
+        submittedForReview: !!submitResult,
+        message:
+          `Assessment "${title}" created and prefilled with ${answersApplied}/${results.length} answers. ` +
+          (assignmentResult ? `Assigned to reviewers. ` : '') +
+          (submitResult ? 'Submitted for review.' : 'Ready for manual submission.'),
+      });
     },
-  };
+  });
 }

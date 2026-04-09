@@ -1,16 +1,15 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
-import { GetCookieStatsSchema } from '../schemas.js';
 
-export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefinition {
+export const GetCookieStatsSchema = z.object({
+  airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
+});
+export type GetCookieStatsInput = z.infer<typeof GetCookieStatsSchema>;
+
+export function createConsentGetTriageStatsTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_get_triage_stats',
     description:
       'Get statistics on cookies and data flows: total, live (approved), needs review (triage), ' +
@@ -18,29 +17,10 @@ export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefin
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        airgap_bundle_id: {
-          type: 'string',
-          description: 'Airgap bundle ID (from consent_list_airgap_bundles)',
-        },
-      },
-      required: ['airgap_bundle_id'],
+    zodSchema: GetCookieStatsSchema,
+    handler: async ({ airgap_bundle_id }) => {
+      const stats = await graphql.getCookieStats(airgap_bundle_id);
+      return createToolResult(true, stats);
     },
-    handler: async (args) => {
-      const parsed = validateArgs(GetCookieStatsSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const stats = await graphql.getCookieStats(parsed.data.airgap_bundle_id);
-        return createToolResult(true, stats);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

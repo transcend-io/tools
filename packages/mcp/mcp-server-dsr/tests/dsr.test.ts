@@ -66,17 +66,13 @@ describe('DSR Tools', () => {
   });
 
   describe('dsr_get_details', () => {
-    it('returns validation error when request_id is missing', async () => {
+    it('zodSchema rejects when request_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'dsr_get_details')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.getRequest).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['request_id']);
     });
 
     it('returns request details on success', async () => {
@@ -116,15 +112,13 @@ describe('DSR Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listRequests.mockRejectedValue(new Error('GraphQL error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'dsr_list')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'GraphQL error' });
+      await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
   });
 });

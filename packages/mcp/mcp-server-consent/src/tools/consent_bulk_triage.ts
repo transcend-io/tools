@@ -1,18 +1,38 @@
 import {
   createToolResult,
-  validateArgs,
+  defineTool,
+  z,
   type ToolClients,
-  type ToolDefinition,
   type UpdateConsentDataFlowInput,
   type UpdateCookieInput,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
-import { BulkTriageSchema } from '../schemas.js';
 
-export function createConsentBulkTriageTool(clients: ToolClients): ToolDefinition {
+export const TriageActionEnum = z.enum(['APPROVE', 'JUNK']);
+export type TriageActionInput = z.infer<typeof TriageActionEnum>;
+
+export const BulkTriageItemSchema = z.object({
+  type: z.enum(['cookie', 'data_flow']).describe('Item type'),
+  id: z.string().describe('Item ID (for data flows) or cookie name (for cookies)'),
+  action: TriageActionEnum.describe('Action to take: APPROVE or JUNK'),
+  tracking_purposes: z
+    .array(z.string())
+    .optional()
+    .describe('Tracking purposes to assign (required when approving)'),
+  service: z.string().optional().describe('Service name to assign'),
+});
+export type BulkTriageItemInput = z.infer<typeof BulkTriageItemSchema>;
+
+export const BulkTriageSchema = z.object({
+  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
+  items: z.array(BulkTriageItemSchema).min(1).describe('Items to triage'),
+});
+export type BulkTriageInput = z.infer<typeof BulkTriageSchema>;
+
+export function createConsentBulkTriageTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_bulk_triage',
     description:
       'Bulk triage action: approve or junk multiple cookies and data flows in a single call. ' +
@@ -22,101 +42,55 @@ export function createConsentBulkTriageTool(clients: ToolClients): ToolDefinitio
     readOnly: false,
     confirmationHint: 'Bulk approves or junks cookies and data flows',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        airgap_bundle_id: { type: 'string', description: 'Airgap bundle ID' },
-        items: {
-          type: 'array',
-          description: 'Items to triage',
-          items: {
-            type: 'object',
-            properties: {
-              type: {
-                type: 'string',
-                enum: ['cookie', 'data_flow'],
-                description: 'Item type',
-              },
-              id: {
-                type: 'string',
-                description: 'Cookie name (for cookies) or data flow ID (for data flows)',
-              },
-              action: {
-                type: 'string',
-                enum: ['APPROVE', 'JUNK'],
-                description: 'Triage action',
-              },
-              tracking_purposes: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Tracking purposes (recommended when approving)',
-              },
-              service: { type: 'string', description: 'Service name to assign' },
-            },
-            required: ['type', 'id', 'action'],
-          },
-        },
-      },
-      required: ['airgap_bundle_id', 'items'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(BulkTriageSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const bundleId = parsed.data.airgap_bundle_id;
-        const cookieItems = parsed.data.items.filter((i) => i.type === 'cookie');
-        const dfItems = parsed.data.items.filter((i) => i.type === 'data_flow');
+    zodSchema: BulkTriageSchema,
+    handler: async ({ airgap_bundle_id, items }) => {
+      const bundleId = airgap_bundle_id;
+      const cookieItems = items.filter((i) => i.type === 'cookie');
+      const dfItems = items.filter((i) => i.type === 'data_flow');
 
-        const results: {
-          cookies: { name: string; action: string; status: string }[];
-          dataFlows: { id: string; action: string; status: string }[];
-        } = { cookies: [], dataFlows: [] };
+      const results: {
+        cookies: { name: string; action: string; status: string }[];
+        dataFlows: { id: string; action: string; status: string }[];
+      } = { cookies: [], dataFlows: [] };
 
-        if (cookieItems.length > 0) {
-          const cookieInputs: UpdateCookieInput[] = cookieItems.map((item) => ({
-            name: item.id,
-            ...(item.action === 'APPROVE'
-              ? { status: 'LIVE' as const, isJunk: false }
-              : { status: 'LIVE' as const, isJunk: true }),
-            ...(item.tracking_purposes ? { trackingPurposes: item.tracking_purposes } : {}),
-            ...(item.service ? { service: item.service } : {}),
-          }));
-          await graphql.updateCookies(bundleId, cookieInputs);
-          results.cookies = cookieInputs.map((c) => ({
-            name: c.name,
-            action: c.isJunk ? 'JUNKED' : 'APPROVED',
-            status: c.status || 'LIVE',
-          }));
-        }
-
-        if (dfItems.length > 0) {
-          const dfInputs: UpdateConsentDataFlowInput[] = dfItems.map((item) => ({
-            id: item.id,
-            ...(item.action === 'APPROVE'
-              ? { status: 'LIVE' as const, isJunk: false }
-              : { status: 'LIVE' as const, isJunk: true }),
-            ...(item.tracking_purposes ? { purposeIds: item.tracking_purposes } : {}),
-            ...(item.service ? { service: item.service } : {}),
-          }));
-          const dfResult = await graphql.updateConsentDataFlows(bundleId, dfInputs);
-          results.dataFlows = dfResult.dataFlows.map((df) => ({
-            id: df.id,
-            action: df.isJunk ? 'JUNKED' : 'APPROVED',
-            status: df.status,
-          }));
-        }
-
-        return createToolResult(true, {
-          totalProcessed: cookieItems.length + dfItems.length,
-          ...results,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
+      if (cookieItems.length > 0) {
+        const cookieInputs: UpdateCookieInput[] = cookieItems.map((item) => ({
+          name: item.id,
+          ...(item.action === 'APPROVE'
+            ? { status: 'LIVE' as const, isJunk: false }
+            : { status: 'LIVE' as const, isJunk: true }),
+          ...(item.tracking_purposes ? { trackingPurposes: item.tracking_purposes } : {}),
+          ...(item.service ? { service: item.service } : {}),
+        }));
+        await graphql.updateCookies(bundleId, cookieInputs);
+        results.cookies = cookieInputs.map((c) => ({
+          name: c.name,
+          action: c.isJunk ? 'JUNKED' : 'APPROVED',
+          status: c.status || 'LIVE',
+        }));
       }
+
+      if (dfItems.length > 0) {
+        const dfInputs: UpdateConsentDataFlowInput[] = dfItems.map((item) => ({
+          id: item.id,
+          ...(item.action === 'APPROVE'
+            ? { status: 'LIVE' as const, isJunk: false }
+            : { status: 'LIVE' as const, isJunk: true }),
+          ...(item.tracking_purposes ? { purposeIds: item.tracking_purposes } : {}),
+          ...(item.service ? { service: item.service } : {}),
+        }));
+        const dfResult = await graphql.updateConsentDataFlows(bundleId, dfInputs);
+        results.dataFlows = dfResult.dataFlows.map((df) => ({
+          id: df.id,
+          action: df.isJunk ? 'JUNKED' : 'APPROVED',
+          status: df.status,
+        }));
+      }
+
+      return createToolResult(true, {
+        totalProcessed: cookieItems.length + dfItems.length,
+        ...results,
+      });
     },
-  };
+  });
 }
