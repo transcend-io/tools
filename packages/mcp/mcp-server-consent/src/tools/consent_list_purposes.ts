@@ -20,7 +20,7 @@ export function createConsentListPurposesTool(clients: ToolClients) {
       });
       return createListResult(data.purposes.nodes, {
         totalCount: data.purposes.totalCount,
-        hasNextPage: data.purposes.nodes.length < data.purposes.totalCount,
+        hasNextPage: data.purposes.pageInfo.hasNextPage,
       });
     },
   });

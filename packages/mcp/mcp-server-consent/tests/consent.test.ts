@@ -60,7 +60,7 @@ describe('Consent Tools', () => {
     it('returns list on success', async () => {
       const nodes = [{ id: 'p1', name: 'Analytics', trackingType: 'ANALYTICS' }];
       mockGraphql.makeRequest.mockResolvedValue({
-        purposes: { nodes, totalCount: 1 },
+        purposes: { nodes, totalCount: 1, pageInfo: { hasNextPage: false } },
       });
 
       const tools = getTools();

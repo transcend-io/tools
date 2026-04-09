@@ -183,6 +183,11 @@ export interface TranscendCliDataFlowsResponse {
     nodes: TranscendDataFlowGql[];
     /** Total count of matching data flows */
     totalCount: number;
+    /** Pagination info */
+    pageInfo: {
+      /** Whether more results exist */
+      hasNextPage: boolean;
+    };
   };
 }
 
@@ -205,6 +210,9 @@ export const DATA_FLOWS = gql`
       useMaster: false
     ) {
       totalCount
+      pageInfo {
+        hasNextPage
+      }
       nodes {
         id
         value

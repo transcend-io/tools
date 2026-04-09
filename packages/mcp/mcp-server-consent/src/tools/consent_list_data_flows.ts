@@ -65,7 +65,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       });
       return createListResult(data.dataFlows.nodes, {
         totalCount: data.dataFlows.totalCount,
-        hasNextPage: (offset ?? 0) + data.dataFlows.nodes.length < data.dataFlows.totalCount,
+        hasNextPage: data.dataFlows.pageInfo.hasNextPage,
       });
     },
   });

@@ -106,6 +106,11 @@ export interface TranscendCliCookiesResponse {
     nodes: TranscendCookieGql[];
     /** Total count of matching cookies */
     totalCount: number;
+    /** Pagination info */
+    pageInfo: {
+      /** Whether more results exist */
+      hasNextPage: boolean;
+    };
   };
 }
 
@@ -128,6 +133,9 @@ export const COOKIES = gql`
       useMaster: false
     ) {
       totalCount
+      pageInfo {
+        hasNextPage
+      }
       nodes {
         id
         name

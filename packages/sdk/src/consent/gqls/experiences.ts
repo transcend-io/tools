@@ -56,6 +56,11 @@ export interface TranscendCliExperiencesResponse {
   experiences: {
     /** Total count of experiences */
     totalCount: number;
+    /** Pagination info */
+    pageInfo: {
+      /** Whether more results exist */
+      hasNextPage: boolean;
+    };
     /** List of experience nodes */
     nodes: TranscendExperienceGql[];
   };
@@ -68,6 +73,9 @@ export const EXPERIENCES = gql`
   query TranscendCliExperiences($first: Int!, $offset: Int!) {
     experiences(first: $first, offset: $offset, useMaster: false) {
       totalCount
+      pageInfo {
+        hasNextPage
+      }
       nodes {
         id
         name
