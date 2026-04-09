@@ -1,54 +1,29 @@
-import { ConsentTrackerSource, ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { COOKIES } from './gqls/consentManager.js';
+import {
+  COOKIES,
+  type TranscendCookieGql,
+  type TranscendCliCookiesResponse,
+} from './gqls/cookies.js';
 
-export interface Cookie {
-  /** ID of the cookie */
-  id: string;
-  /** Name of the cookie */
-  name: string;
-  /** Whether cookie is a regular expression */
-  isRegex: boolean;
-  /** Description of cookie */
-  description: string;
-  /** Enabled tracking purposes for the cookie */
-  trackingPurposes: string[];
-  /** The consent service */
-  service: {
-    /** Integration name of service */
-    integrationName: string;
-  };
-  /** Source of how tracker was added */
-  source: ConsentTrackerSource;
-  /** Status of cookie labeling */
-  status: ConsentTrackerStatus;
-  /** Owners of that cookie */
-  owners: {
-    /** Email address of owner */
-    email: string;
-  }[];
-  /** Teams assigned to that cookie */
-  teams: {
-    /** Name of team */
-    name: string;
-  }[];
-  /** Attributes assigned to that cookie */
-  attributeValues: {
-    /** Name of attribute value */
-    name: string;
-    /** Attribute key that the value represents */
-    attributeKey: {
-      /** Name of attribute key */
-      name: string;
-    };
-  }[];
+/** Sort order for cookie queries */
+export interface CookieOrder {
+  /** Field to sort by */
+  field: string;
+  /** Sort direction */
+  direction: OrderDirection;
 }
 
 const PAGE_SIZE = 20;
+
+const DEFAULT_COOKIE_ORDER: CookieOrder[] = [
+  { field: 'createdAt', direction: OrderDirection.Asc },
+  { field: 'name', direction: OrderDirection.Asc },
+];
 
 /**
  * Fetch all Cookies in the organization
@@ -67,10 +42,16 @@ export async function fetchAllCookies(
       /** The status to fetch */
       status?: ConsentTrackerStatus;
     };
+    /** Sort ordering (defaults to createdAt ASC, name ASC) */
+    orderBy?: CookieOrder[];
   } = {},
-): Promise<Cookie[]> {
-  const { logger, filterBy: { status = ConsentTrackerStatus.Live } = {} } = options;
-  const cookies: Cookie[] = [];
+): Promise<TranscendCookieGql[]> {
+  const {
+    logger,
+    filterBy: { status = ConsentTrackerStatus.Live } = {},
+    orderBy = DEFAULT_COOKIE_ORDER,
+  } = options;
+  const cookies: TranscendCookieGql[] = [];
   let offset = 0;
 
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
@@ -79,14 +60,14 @@ export async function fetchAllCookies(
   do {
     const {
       cookies: { nodes },
-    } = await makeGraphQLRequest<{
-      /** Query response */
-      cookies: {
-        /** List of matches */
-        nodes: Cookie[];
-      };
-    }>(client, COOKIES, {
-      variables: { first: PAGE_SIZE, offset, airgapBundleId, status },
+    } = await makeGraphQLRequest<TranscendCliCookiesResponse>(client, COOKIES, {
+      variables: {
+        input: { airgapBundleId },
+        first: PAGE_SIZE,
+        offset,
+        filterBy: { status },
+        orderBy,
+      },
       logger,
     });
     cookies.push(...nodes);

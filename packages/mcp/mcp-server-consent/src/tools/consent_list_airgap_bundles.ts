@@ -1,49 +1,40 @@
 import {
-  createListResult,
   createToolResult,
   validateArgs,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
+import {
+  FETCH_CONSENT_MANAGER,
+  type TranscendCliFetchConsentManagerResponse,
+} from '@transcend-io/sdk';
 
-import type { ConsentMixin } from '../graphql.js';
 import { ListAirgapBundlesSchema } from '../schemas.js';
 
 export function createConsentListAirgapBundlesTool(clients: ToolClients): ToolDefinition {
-  const graphql = clients.graphql as ConsentMixin;
   return {
     name: 'consent_list_airgap_bundles',
     description:
-      'List all consent manager UI bundles (Airgap bundles) configured in your organization.',
+      'Get the consent manager (airgap bundle) configured for your organization. ' +
+      'Returns the bundle ID, URLs, configuration, and domains.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     inputSchema: {
       type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
+      properties: {},
       required: [],
     },
     handler: async (args) => {
       const parsed = validateArgs(ListAirgapBundlesSchema, args);
       if (!parsed.success) return parsed.error;
       try {
-        const result = await graphql.listAirgapBundles({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
-        });
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
+        const data = await clients.graphql.makeRequest<TranscendCliFetchConsentManagerResponse>(
+          FETCH_CONSENT_MANAGER,
+          {},
+        );
+
+        return createToolResult(true, data.consentManager.consentManager);
       } catch (error) {
         return createToolResult(
           false,

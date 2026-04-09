@@ -1,4 +1,8 @@
-import { z, PaginationSchema } from '@transcend-io/mcp-server-core';
+import { z } from '@transcend-io/mcp-server-core';
+import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
+
+export const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
+export const OrderDirectionEnum = z.nativeEnum(OrderDirection);
 
 export const GetPreferencesSchema = z.object({
   identifier: z.string(),
@@ -17,19 +21,19 @@ export const SetPreferencesSchema = z.object({
   confirmed: z.boolean().optional(),
 });
 
-export const ListPurposesSchema = PaginationSchema;
-export const ListDataFlowsSchema = PaginationSchema;
-export const ListAirgapBundlesSchema = PaginationSchema;
-export const ListRegimesSchema = PaginationSchema;
+export const ListPurposesSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+});
 
-export const ConsentTrackerStatusEnum = z.enum(['LIVE', 'NEEDS_REVIEW']);
-export const OrderDirectionEnum = z.enum(['ASC', 'DESC']);
+export const ListRegimesSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().min(0).optional().default(0),
+});
 
-export const ListTriageCookiesSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
+export const ListCookiesSchema = z.object({
   limit: z.number().min(1).max(200).optional().default(50),
   offset: z.number().min(0).optional().default(0),
-  status: ConsentTrackerStatusEnum.optional().describe(
+  status: ConsentTrackerStatusEnum.describe(
     'Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)',
   ),
   is_junk: z.boolean().optional().describe('Filter by junk status'),
@@ -40,11 +44,10 @@ export const ListTriageCookiesSchema = z.object({
   order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
 });
 
-export const ListTriageDataFlowsSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
+export const ListDataFlowsSchema = z.object({
   limit: z.number().min(1).max(200).optional().default(50),
   offset: z.number().min(0).optional().default(0),
-  status: ConsentTrackerStatusEnum.optional().describe(
+  status: ConsentTrackerStatusEnum.describe(
     'Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)',
   ),
   is_junk: z.boolean().optional().describe('Filter by junk status'),
@@ -59,7 +62,7 @@ export const ListTriageDataFlowsSchema = z.object({
 });
 
 export const GetCookieStatsSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
+  show_zero_activity: z.boolean().optional().describe('Include items with zero activity in counts'),
 });
 
 export const UpdateCookieItemSchema = z.object({
@@ -77,7 +80,6 @@ export const UpdateCookieItemSchema = z.object({
 });
 
 export const UpdateCookiesSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
   cookies: z.array(UpdateCookieItemSchema).min(1).describe('Cookies to update'),
 });
 
@@ -93,7 +95,6 @@ export const UpdateDataFlowItemSchema = z.object({
 });
 
 export const UpdateDataFlowsSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
   data_flows: z.array(UpdateDataFlowItemSchema).min(1).describe('Data flows to update'),
 });
 
@@ -111,30 +112,7 @@ export const BulkTriageItemSchema = z.object({
 });
 
 export const BulkTriageSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
   items: z.array(BulkTriageItemSchema).min(1).describe('Items to triage'),
 });
 
-export const DeleteCookiesSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
-  ids: z.array(z.string()).min(1).describe('Cookie IDs to delete'),
-});
-
-export const DeleteDataFlowsSchema = z.object({
-  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
-  ids: z.array(z.string()).min(1).describe('Data flow IDs to delete'),
-});
-
-export type GetPreferencesInput = z.infer<typeof GetPreferencesSchema>;
-export type PurposeConsentInput = z.infer<typeof PurposeConsentSchema>;
-export type SetPreferencesInput = z.infer<typeof SetPreferencesSchema>;
-export type ListPurposesInput = z.infer<typeof ListPurposesSchema>;
-export type ListDataFlowsInput = z.infer<typeof ListDataFlowsSchema>;
-export type ListAirgapBundlesInput = z.infer<typeof ListAirgapBundlesSchema>;
-export type ListRegimesInput = z.infer<typeof ListRegimesSchema>;
-export type ListTriageCookiesInput = z.infer<typeof ListTriageCookiesSchema>;
-export type ListTriageDataFlowsInput = z.infer<typeof ListTriageDataFlowsSchema>;
-export type GetCookieStatsInput = z.infer<typeof GetCookieStatsSchema>;
-export type UpdateCookiesInput = z.infer<typeof UpdateCookiesSchema>;
-export type UpdateDataFlowsInput = z.infer<typeof UpdateDataFlowsSchema>;
-export type BulkTriageInput = z.infer<typeof BulkTriageSchema>;
+export const ListAirgapBundlesSchema = z.object({});

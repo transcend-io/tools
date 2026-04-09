@@ -6,7 +6,7 @@ import { keyBy } from 'lodash-es';
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
   fetchAllProcessingPurposes,
-  ProcessingPurposeSubCategory,
+  type ProcessingPurposeSubCategory,
 } from './fetchAllProcessingPurposes.js';
 import {
   UPDATE_PROCESSING_PURPOSE_SUB_CATEGORIES,

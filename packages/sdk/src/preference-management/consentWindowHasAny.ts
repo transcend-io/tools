@@ -3,7 +3,7 @@ import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
 import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { ConsentPreferenceResponse, PreferencesQueryFilter, ChunkMode } from './types.js';
+import { ConsentPreferenceResponse, type PreferencesQueryFilter, type ChunkMode } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**

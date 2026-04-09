@@ -1,4 +1,4 @@
-import got, { Got } from 'got';
+import got, { type Got } from 'got';
 
 /**
  * Instantiate an instance of got that is capable of making requests
@@ -8,7 +8,7 @@ import got, { Got } from 'got';
  * @returns The instance of got that is capable of making requests to the customer ingress
  */
 export function createTranscendConsentGotInstance(transcendUrl: string): Got {
-  return got.extend({
+  return (got as unknown as Got).extend({
     prefixUrl: transcendUrl,
   });
 }

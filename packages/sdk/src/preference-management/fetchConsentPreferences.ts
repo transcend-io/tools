@@ -4,7 +4,7 @@ import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
 import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { ConsentPreferenceResponse, PreferencesQueryFilter } from './types.js';
+import { ConsentPreferenceResponse, type PreferencesQueryFilter } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**

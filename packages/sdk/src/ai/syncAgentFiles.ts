@@ -4,7 +4,7 @@ import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { fetchAllAgentFiles, AgentFile } from './fetchAllAgentFiles.js';
+import { fetchAllAgentFiles, type AgentFile } from './fetchAllAgentFiles.js';
 import { UPDATE_AGENT_FILES, CREATE_AGENT_FILE } from './gqls/agentFile.js';
 
 export interface AgentFileInput {

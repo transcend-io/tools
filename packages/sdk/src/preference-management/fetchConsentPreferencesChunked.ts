@@ -11,7 +11,7 @@ import {
 } from './discoverConsentWindow.js';
 import { iterateConsentPages } from './iterateConsentPages.js';
 import { pickConsentChunkMode } from './pickConsentChunkMode.js';
-import { PreferencesQueryFilter, ChunkMode } from './types.js';
+import { type PreferencesQueryFilter, type ChunkMode } from './types.js';
 
 /**
  * Merge baseFilter with a window filter, taking care not to mix timestamp/updated fields improperly.

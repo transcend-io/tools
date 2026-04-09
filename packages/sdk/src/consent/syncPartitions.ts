@@ -4,18 +4,14 @@ import { difference } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { CONSENT_PARTITIONS, CREATE_CONSENT_PARTITION } from './gqls/consentManager.js';
+import {
+  CONSENT_PARTITIONS,
+  CREATE_CONSENT_PARTITION,
+  type TranscendConsentPartitionGql,
+  type TranscendCliConsentPartitionsResponse,
+} from './gqls/partitions.js';
 
 const PAGE_SIZE = 50;
-
-export interface TranscendPartition {
-  /** ID of the partition */
-  id: string;
-  /** Name of partition */
-  name: string;
-  /** Partition value */
-  partition: string;
-}
 
 export interface PartitionInput {
   /** Name of partition */
@@ -37,25 +33,23 @@ export async function fetchPartitions(
     /** Logger instance */
     logger?: Logger;
   } = {},
-): Promise<TranscendPartition[]> {
+): Promise<TranscendConsentPartitionGql[]> {
   const { logger = NOOP_LOGGER } = options;
-  const partitions: TranscendPartition[] = [];
+  const partitions: TranscendConsentPartitionGql[] = [];
   let offset = 0;
 
   let shouldContinue = false;
   do {
     const {
       consentPartitions: { nodes },
-    } = await makeGraphQLRequest<{
-      /** Consent partitions */
-      consentPartitions: {
-        /** List */
-        nodes: TranscendPartition[];
-      };
-    }>(client, CONSENT_PARTITIONS, {
-      variables: { first: PAGE_SIZE, offset },
-      logger,
-    });
+    } = await makeGraphQLRequest<TranscendCliConsentPartitionsResponse>(
+      client,
+      CONSENT_PARTITIONS,
+      {
+        variables: { first: PAGE_SIZE, offset },
+        logger,
+      },
+    );
     partitions.push(...nodes);
     offset += PAGE_SIZE;
     shouldContinue = nodes.length === PAGE_SIZE;

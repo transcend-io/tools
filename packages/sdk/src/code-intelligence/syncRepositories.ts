@@ -3,7 +3,7 @@ import { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { fetchAllRepositories, Repository } from './fetchAllRepositories.js';
+import { fetchAllRepositories, type Repository } from './fetchAllRepositories.js';
 import { UPDATE_REPOSITORIES, CREATE_REPOSITORY } from './gqls/repository.js';
 
 export interface RepositoryInput {

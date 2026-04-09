@@ -6,18 +6,18 @@ import {
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
-import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sdk';
+import { COOKIES, type TranscendCliCookiesResponse } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-import { ListDataFlowsSchema } from '../schemas.js';
+import { ListCookiesSchema } from '../schemas.js';
 
-export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefinition {
+export function createConsentListCookiesTool(clients: ToolClients): ToolDefinition {
   return {
-    name: 'consent_list_data_flows',
+    name: 'consent_list_cookies',
     description:
-      'List data flows (network requests) in your consent manager. ' +
-      'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved flows. ' +
-      'Returns value (URL/host), service, tracking purposes, activity (occurrences), and more.',
+      'List cookies in your consent manager. ' +
+      'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved cookies. ' +
+      'Returns name, service, tracking purposes, activity (occurrences), junk status, and more.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -40,7 +40,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefini
         service: { type: 'string', description: 'Filter by service name' },
         order_field: {
           type: 'string',
-          enum: ['value', 'createdAt', 'updatedAt', 'occurrences', 'service'],
+          enum: ['name', 'createdAt', 'updatedAt'],
           description: 'Field to sort by',
         },
         order_direction: {
@@ -52,7 +52,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefini
       required: ['status'],
     },
     handler: async (args) => {
-      const parsed = validateArgs(ListDataFlowsSchema, args);
+      const parsed = validateArgs(ListCookiesSchema, args);
       if (!parsed.success) return parsed.error;
       const {
         limit,
@@ -67,7 +67,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefini
       } = parsed.data;
       try {
         const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-        const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
+        const data = await clients.graphql.makeRequest<TranscendCliCookiesResponse>(COOKIES, {
           input: { airgapBundleId },
           first: limit,
           offset,
@@ -83,9 +83,9 @@ export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefini
             : {}),
         });
 
-        return createListResult(data.dataFlows.nodes, {
-          totalCount: data.dataFlows.totalCount,
-          hasNextPage: (offset ?? 0) + data.dataFlows.nodes.length < data.dataFlows.totalCount,
+        return createListResult(data.cookies.nodes, {
+          totalCount: data.cookies.totalCount,
+          hasNextPage: (offset ?? 0) + data.cookies.nodes.length < data.cookies.totalCount,
         });
       } catch (error) {
         return createToolResult(

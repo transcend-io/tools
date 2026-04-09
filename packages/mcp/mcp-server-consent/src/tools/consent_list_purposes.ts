@@ -5,16 +5,14 @@ import {
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
+import { PURPOSES, type TranscendCliPurposesResponse } from '@transcend-io/sdk';
 
-import type { ConsentMixin } from '../graphql.js';
 import { ListPurposesSchema } from '../schemas.js';
 
 export function createConsentListPurposesTool(clients: ToolClients): ToolDefinition {
-  const graphql = clients.graphql as ConsentMixin;
   return {
     name: 'consent_list_purposes',
-    description:
-      'List all tracking purposes configured for consent management. Note: API does not support cursor pagination (max ~100 results).',
+    description: 'List all tracking purposes configured for consent management (max ~100 results).',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -25,24 +23,21 @@ export function createConsentListPurposesTool(clients: ToolClients): ToolDefinit
           type: 'number',
           description: 'Results per page (1-100, default: 50)',
         },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
       },
       required: [],
     },
     handler: async (args) => {
       const parsed = validateArgs(ListPurposesSchema, args);
       if (!parsed.success) return parsed.error;
+      const { limit } = parsed.data;
       try {
-        const result = await graphql.listTrackingPurposes({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+        const data = await clients.graphql.makeRequest<TranscendCliPurposesResponse>(PURPOSES, {
+          first: Math.min(limit, 100),
         });
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
+
+        return createListResult(data.purposes.nodes, {
+          totalCount: data.purposes.totalCount,
+          hasNextPage: data.purposes.nodes.length < data.purposes.totalCount,
         });
       } catch (error) {
         return createToolResult(

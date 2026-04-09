@@ -4,7 +4,7 @@ import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { fetchAllVendors, Vendor } from './fetchAllVendors.js';
+import { fetchAllVendors, type Vendor } from './fetchAllVendors.js';
 import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/vendor.js';
 
 export interface VendorInput {

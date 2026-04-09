@@ -185,6 +185,17 @@ export const LocalSyncOption = makeEnum({
 export type LocalSyncOption = (typeof LocalSyncOption)[keyof typeof LocalSyncOption];
 
 /**
+ * Sort direction for GraphQL order-by queries
+ */
+export const OrderDirection = makeEnum({
+  Asc: 'ASC',
+  Desc: 'DESC',
+});
+
+/** Override type */
+export type OrderDirection = (typeof OrderDirection)[keyof typeof OrderDirection];
+
+/**
  * The possible options for configuring default consent
  *
  * These options are simplified for the UI.

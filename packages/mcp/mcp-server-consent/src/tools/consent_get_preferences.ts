@@ -32,11 +32,9 @@ export function createConsentGetPreferencesTool(clients: ToolClients): ToolDefin
     handler: async (args) => {
       const parsed = validateArgs(GetPreferencesSchema, args);
       if (!parsed.success) return parsed.error;
+      const { identifier, partition } = parsed.data;
       try {
-        const result = await rest.getConsentPreferences(
-          parsed.data.identifier,
-          parsed.data.partition,
-        );
+        const result = await rest.getConsentPreferences(identifier, partition);
         if (!result) {
           return createToolResult(true, {
             found: false,

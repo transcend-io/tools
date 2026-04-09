@@ -1,58 +1,29 @@
-import {
-  DataFlowScope,
-  ConsentTrackerSource,
-  ConsentTrackerStatus,
-} from '@transcend-io/privacy-types';
+import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { DATA_FLOWS } from './gqls/consentManager.js';
+import {
+  DATA_FLOWS,
+  type TranscendDataFlowGql,
+  type TranscendCliDataFlowsResponse,
+} from './gqls/dataFlows.js';
 
-export interface DataFlow {
-  /** ID of data flow */
-  id: string;
-  /** Value of data flow */
-  value: string;
-  /** Type of data flow */
-  type: DataFlowScope;
-  /** Description of data flow */
-  description: string;
-  /** Enabled tracking purposes */
-  trackingType: string[];
-  /** The consent service */
-  service: {
-    /** Integration name of service */
-    integrationName: string;
-  };
-  /** Source of how tracker was added */
-  source: ConsentTrackerSource;
-  /** Status of data flow labeling */
-  status: ConsentTrackerStatus;
-  /** Owners of that data flow */
-  owners: {
-    /** Email address of owner */
-    email: string;
-  }[];
-  /** Teams assigned to that data flow */
-  teams: {
-    /** Name of team */
-    name: string;
-  }[];
-  /** Attributes assigned to that data flow */
-  attributeValues: {
-    /** Name of attribute value */
-    name: string;
-    /** Attribute key that the value represents */
-    attributeKey: {
-      /** Name of attribute key */
-      name: string;
-    };
-  }[];
+/** Sort order for data flow queries */
+export interface DataFlowOrder {
+  /** Field to sort by */
+  field: string;
+  /** Sort direction */
+  direction: OrderDirection;
 }
 
 const PAGE_SIZE = 20;
+
+const DEFAULT_DATA_FLOW_ORDER: DataFlowOrder[] = [
+  { field: 'createdAt', direction: OrderDirection.Asc },
+  { field: 'value', direction: OrderDirection.Asc },
+];
 
 /**
  * Fetch all DataFlows in the organization
@@ -71,10 +42,16 @@ export async function fetchAllDataFlows(
       /** The status to fetch */
       status?: ConsentTrackerStatus;
     };
+    /** Sort ordering (defaults to createdAt ASC, value ASC) */
+    orderBy?: DataFlowOrder[];
   } = {},
-): Promise<DataFlow[]> {
-  const { logger, filterBy: { status = ConsentTrackerStatus.Live } = {} } = options;
-  const dataFlows: DataFlow[] = [];
+): Promise<TranscendDataFlowGql[]> {
+  const {
+    logger,
+    filterBy: { status = ConsentTrackerStatus.Live } = {},
+    orderBy = DEFAULT_DATA_FLOW_ORDER,
+  } = options;
+  const dataFlows: TranscendDataFlowGql[] = [];
   let offset = 0;
 
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
@@ -83,19 +60,16 @@ export async function fetchAllDataFlows(
   do {
     const {
       dataFlows: { nodes },
-    } = await makeGraphQLRequest<{
-      /** Query response */
-      dataFlows: {
-        /** List of matches */
-        nodes: DataFlow[];
-      };
-    }>(client, DATA_FLOWS, {
+    } = await makeGraphQLRequest<TranscendCliDataFlowsResponse>(client, DATA_FLOWS, {
       variables: {
+        input: { airgapBundleId },
         first: PAGE_SIZE,
         offset,
-        airgapBundleId,
-        status,
-        ...(status === ConsentTrackerStatus.NeedsReview ? { showZeroActivity: true } : {}),
+        filterBy: {
+          status,
+          ...(status === ConsentTrackerStatus.NeedsReview ? { showZeroActivity: true } : {}),
+        },
+        orderBy,
       },
       logger,
     });

@@ -32,6 +32,11 @@ export function createConsentSetPreferencesTool(clients: ToolClients): ToolDefin
           description: 'Array of purpose consent settings',
           items: {
             type: 'object',
+            properties: {
+              purpose: { type: 'string', description: 'Purpose slug (e.g. "Analytics")' },
+              enabled: { type: 'boolean', description: 'Whether consent is granted' },
+            },
+            required: ['purpose', 'enabled'],
           },
         },
         confirmed: {
@@ -44,15 +49,16 @@ export function createConsentSetPreferencesTool(clients: ToolClients): ToolDefin
     handler: async (args) => {
       const parsed = validateArgs(SetPreferencesSchema, args);
       if (!parsed.success) return parsed.error;
+      const { partition, identifier, purposes, confirmed } = parsed.data;
       try {
         const result = await rest.syncConsent({
-          partition: parsed.data.partition,
-          identifier: parsed.data.identifier,
-          purposes: parsed.data.purposes.map((p) => ({
+          partition,
+          identifier,
+          purposes: purposes.map((p) => ({
             purpose: p.purpose,
             enabled: p.enabled,
           })),
-          confirmed: parsed.data.confirmed,
+          confirmed,
         });
         return createToolResult(true, {
           ...result,

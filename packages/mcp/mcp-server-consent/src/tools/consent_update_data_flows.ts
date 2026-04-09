@@ -3,14 +3,18 @@ import {
   validateArgs,
   type ToolClients,
   type ToolDefinition,
-  type UpdateConsentDataFlowInput,
 } from '@transcend-io/mcp-server-core';
+import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import {
+  UPDATE_DATA_FLOWS,
+  type TranscendUpdateDataFlowInputGql,
+  type TranscendCliUpdateDataFlowsResponse,
+} from '@transcend-io/sdk';
 
-import type { ConsentMixin } from '../graphql.js';
+import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 import { UpdateDataFlowsSchema } from '../schemas.js';
 
 export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefinition {
-  const graphql = clients.graphql as ConsentMixin;
   return {
     name: 'consent_update_data_flows',
     description:
@@ -23,7 +27,6 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
     inputSchema: {
       type: 'object',
       properties: {
-        airgap_bundle_id: { type: 'string', description: 'Airgap bundle ID' },
         data_flows: {
           type: 'array',
           description: 'Data flows to update',
@@ -41,7 +44,7 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
               is_junk: { type: 'boolean', description: 'Mark as junk' },
               status: {
                 type: 'string',
-                enum: ['LIVE', 'NEEDS_REVIEW'],
+                enum: Object.values(ConsentTrackerStatus),
                 description: 'Set status',
               },
             },
@@ -49,13 +52,15 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
           },
         },
       },
-      required: ['airgap_bundle_id', 'data_flows'],
+      required: ['data_flows'],
     },
     handler: async (args) => {
       const parsed = validateArgs(UpdateDataFlowsSchema, args);
       if (!parsed.success) return parsed.error;
+      const { data_flows } = parsed.data;
       try {
-        const dfInputs: UpdateConsentDataFlowInput[] = parsed.data.data_flows.map((df) => ({
+        const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
+        const dfInputs: TranscendUpdateDataFlowInputGql[] = data_flows.map((df) => ({
           id: df.id,
           ...(df.tracking_purposes ? { purposeIds: df.tracking_purposes } : {}),
           ...(df.description !== undefined ? { description: df.description } : {}),
@@ -63,10 +68,18 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
           ...(df.is_junk !== undefined ? { isJunk: df.is_junk } : {}),
           ...(df.status !== undefined ? { status: df.status } : {}),
         }));
-        const result = await graphql.updateConsentDataFlows(parsed.data.airgap_bundle_id, dfInputs);
+
+        const data = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(
+          UPDATE_DATA_FLOWS,
+          {
+            airgapBundleId,
+            dataFlows: dfInputs,
+          },
+        );
+
         return createToolResult(true, {
-          updated: result.dataFlows.length,
-          dataFlows: result.dataFlows.map((df) => ({
+          updated: data.updateDataFlows.dataFlows.length,
+          dataFlows: data.updateDataFlows.dataFlows.map((df) => ({
             id: df.id,
             value: df.value,
             status: df.status,

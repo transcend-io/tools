@@ -4,7 +4,7 @@ import { GraphQLClient } from 'graphql-request';
 import { keyBy, chunk } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { fetchAllBusinessEntities, BusinessEntity } from './fetchAllBusinessEntities.js';
+import { fetchAllBusinessEntities, type BusinessEntity } from './fetchAllBusinessEntities.js';
 import { UPDATE_BUSINESS_ENTITIES, CREATE_BUSINESS_ENTITY } from './gqls/businessEntity.js';
 
 export interface BusinessEntityInput {

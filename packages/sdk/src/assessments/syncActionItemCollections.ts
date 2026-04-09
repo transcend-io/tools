@@ -5,7 +5,7 @@ import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import {
-  ActionItemCollection,
+  type ActionItemCollection,
   fetchAllActionItemCollections,
 } from './fetchAllActionItemCollections.js';
 import {
