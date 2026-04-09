@@ -72,6 +72,9 @@ describe('DSR Tools', () => {
 
       const result = tool.zodSchema.safeParse({});
       expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toEqual(['request_id']);
+      }
     });
 
     it('returns request details on success', async () => {

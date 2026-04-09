@@ -5,10 +5,11 @@ import {
   type ToolClients,
   type UpdateConsentDataFlowInput,
 } from '@transcend-io/mcp-server-core';
+import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 import type { ConsentMixin } from '../graphql.js';
 
-const ConsentTrackerStatusEnum = z.enum(['LIVE', 'NEEDS_REVIEW']);
+const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
 
 const UpdateDataFlowItemSchema = z.object({
   id: z.string().describe('Data flow ID'),

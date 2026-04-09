@@ -62,12 +62,17 @@ describe('Admin Tools', () => {
   });
 
   describe('admin_create_api_key', () => {
-    it('zodSchema rejects empty input (validation is centralized on the server)', () => {
+    it('zodSchema rejects when title and scopes are missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
 
-      const parsed = tool.zodSchema.safeParse({});
-      expect(parsed.success).toBe(false);
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues.map((i) => i.path[0])).toEqual(
+          expect.arrayContaining(['title', 'scopes']),
+        );
+      }
       expect(mockGraphql.createApiKey).not.toHaveBeenCalled();
     });
 

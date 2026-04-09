@@ -61,6 +61,9 @@ describe('Inventory Tools', () => {
 
       const result = tool.zodSchema.safeParse({});
       expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toEqual(['data_silo_id']);
+      }
     });
 
     it('returns data silo on success', async () => {

@@ -40,9 +40,12 @@ describe('Workflows Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'workflows_update_config')!;
 
-      const parsed = tool.zodSchema.safeParse({});
+      const result = tool.zodSchema.safeParse({});
 
-      expect(parsed.success).toBe(false);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toEqual(['workflow_config_id']);
+      }
     });
 
     it('updates workflow config on success', async () => {

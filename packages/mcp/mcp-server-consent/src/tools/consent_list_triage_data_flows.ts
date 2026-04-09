@@ -5,10 +5,11 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
+import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 
 import type { ConsentMixin } from '../graphql.js';
 
-const ConsentTrackerStatusEnum = z.enum(['LIVE', 'NEEDS_REVIEW']);
+const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
 const OrderDirectionEnum = z.enum(['ASC', 'DESC']);
 
 const ListTriageDataFlowsSchema = z.object({

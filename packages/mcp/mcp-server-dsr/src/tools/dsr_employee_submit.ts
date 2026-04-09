@@ -1,30 +1,9 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
+import { RequestAction } from '@transcend-io/privacy-types';
 
 import type { DSRMixin } from '../graphql.js';
 
-const REQUEST_TYPES = [
-  'ACCESS',
-  'ERASURE',
-  'RECTIFICATION',
-  'RESTRICTION',
-  'SALE_OPT_OUT',
-  'SALE_OPT_IN',
-  'CONTACT_OPT_OUT',
-  'CONTACT_OPT_IN',
-  'AUTOMATED_DECISION_MAKING_OPT_OUT',
-  'AUTOMATED_DECISION_MAKING_OPT_IN',
-  'USE_OF_SENSITIVE_INFORMATION_OPT_OUT',
-  'USE_OF_SENSITIVE_INFORMATION_OPT_IN',
-  'TRACKING_OPT_OUT',
-  'TRACKING_OPT_IN',
-  'CUSTOM_OPT_OUT',
-  'CUSTOM_OPT_IN',
-  'BUSINESS_PURPOSE',
-  'PLACE_ON_LEGAL_HOLD',
-  'REMOVE_FROM_LEGAL_HOLD',
-] as const;
-
-const RequestTypeEnum = z.enum(REQUEST_TYPES);
+const RequestTypeEnum = z.nativeEnum(RequestAction);
 
 const employeeSubmitDsrSchema = z.object({
   type: RequestTypeEnum.describe('Type of DSR request'),

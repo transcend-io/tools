@@ -63,8 +63,13 @@ describe('Consent Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_update_cookies')!;
 
-      const parseResult = tool.zodSchema.safeParse({});
-      expect(parseResult.success).toBe(false);
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues.map((i) => i.path[0])).toEqual(
+          expect.arrayContaining(['airgap_bundle_id', 'cookies']),
+        );
+      }
       expect(mockGraphql.updateCookies).not.toHaveBeenCalled();
     });
   });

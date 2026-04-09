@@ -1,16 +1,9 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { AssessmentFormStatus } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-const AssessmentStatusEnum = z.enum([
-  'DRAFT',
-  'SHARED',
-  'IN_PROGRESS',
-  'IN_REVIEW',
-  'CHANGES_REQUESTED',
-  'REJECTED',
-  'APPROVED',
-]);
+const AssessmentStatusEnum = z.nativeEnum(AssessmentFormStatus);
 
 const UpdateAssessmentSchema = z.object({
   assessment_id: z.string().describe('ID of the assessment to update'),
