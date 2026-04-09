@@ -65,11 +65,9 @@ describe('Consent Tools', () => {
 
       const result = tool.zodSchema.safeParse({});
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues.map((i) => i.path[0])).toEqual(
-          expect.arrayContaining(['airgap_bundle_id', 'cookies']),
-        );
-      }
+      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
+        expect.arrayContaining(['airgap_bundle_id', 'cookies']),
+      );
       expect(mockGraphql.updateCookies).not.toHaveBeenCalled();
     });
   });

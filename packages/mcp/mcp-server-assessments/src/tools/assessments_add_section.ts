@@ -32,17 +32,17 @@ export function createAssessmentsAddSectionTool(clients: ToolClients) {
     confirmationHint: 'Adds a section to the assessment template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AddSectionSchema,
-    handler: async (args) => {
+    handler: async ({ template_id, title, questions }) => {
       try {
         const result = await graphql.createAssessmentSection({
-          assessmentFormTemplateId: args.template_id,
-          title: args.title,
-          questions: args.questions as AssessmentSectionInput['questions'],
+          assessmentFormTemplateId: template_id,
+          title,
+          questions: questions as AssessmentSectionInput['questions'],
         });
 
         return createToolResult(true, {
           section: result,
-          message: `Section "${args.title}" added to template successfully`,
+          message: `Section "${title}" added to template successfully`,
         });
       } catch (error) {
         return createToolResult(

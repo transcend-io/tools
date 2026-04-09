@@ -34,12 +34,12 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
     confirmationHint: 'Creates a new privacy assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateAssessmentSchema,
-    handler: async (args) => {
+    handler: async ({ title, assessment_group_id, template_id, assignee_ids }) => {
       try {
-        let assessmentGroupId = args.assessment_group_id;
+        let assessmentGroupId = assessment_group_id;
 
-        if (!assessmentGroupId && args.template_id) {
-          const resolved = await resolveTemplateToGroupId(graphql, args.template_id);
+        if (!assessmentGroupId && template_id) {
+          const resolved = await resolveTemplateToGroupId(graphql, template_id);
           if ('error' in resolved) return resolved.error;
           assessmentGroupId = resolved.groupId;
         }
@@ -53,14 +53,14 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
         }
 
         const result = await graphql.createAssessment({
-          title: args.title,
+          title,
           assessmentGroupId,
-          assigneeIds: args.assignee_ids,
+          assigneeIds: assignee_ids,
         });
 
         return createToolResult(true, {
           assessment: result,
-          message: `Assessment "${args.title}" created successfully`,
+          message: `Assessment "${title}" created successfully`,
         });
       } catch (error) {
         return createToolResult(

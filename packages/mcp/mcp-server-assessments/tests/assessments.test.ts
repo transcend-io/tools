@@ -42,9 +42,7 @@ describe('Assessment Tools', () => {
 
       const result = tool.zodSchema.safeParse({ status: 'INVALID_STATUS' });
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(['status']);
-      }
+      expect((result as any).error.issues[0].path).toEqual(['status']);
     });
 
     it('returns assessments on success', async () => {
@@ -98,9 +96,7 @@ describe('Assessment Tools', () => {
 
       const result = tool.zodSchema.safeParse({ assessment_group_id: 'grp-1' });
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(['title']);
-      }
+      expect((result as any).error.issues[0].path).toEqual(['title']);
     });
 
     it('creates assessment with group_id on success', async () => {
@@ -200,9 +196,7 @@ describe('Assessment Tools', () => {
         sections: [{ title: 'Section 1', questions: [] }],
       });
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(['title']);
-      }
+      expect((result as any).error.issues[0].path).toEqual(['title']);
     });
 
     it('creates template on success', async () => {
@@ -276,9 +270,7 @@ describe('Assessment Tools', () => {
 
       const result = tool.zodSchema.safeParse({ assessment_answer_ids: ['ans-1'] });
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(['assessment_question_id']);
-      }
+      expect((result as any).error.issues[0].path).toEqual(['assessment_question_id']);
     });
 
     it('answers question with answer IDs on success', async () => {
@@ -360,9 +352,7 @@ describe('Assessment Tools', () => {
         answers: { Q1: 'A1' },
       });
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(['title']);
-      }
+      expect((result as any).error.issues[0].path).toEqual(['title']);
     });
 
     it('zodSchema rejects when answers is missing', () => {
@@ -374,9 +364,7 @@ describe('Assessment Tools', () => {
         assessment_group_id: 'grp-1',
       });
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(['answers']);
-      }
+      expect((result as any).error.issues[0].path).toEqual(['answers']);
     });
 
     it('returns error when neither template_id nor assessment_group_id provided', async () => {

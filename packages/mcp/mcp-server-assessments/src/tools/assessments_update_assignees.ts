@@ -25,12 +25,12 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients) {
     confirmationHint: 'Assigns users to the assessment form',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssigneesSchema,
-    handler: async (args) => {
+    handler: async ({ assessment_id, assignee_ids, external_assignee_emails }) => {
       try {
         const result = await graphql.updateAssessmentFormAssignees({
-          id: args.assessment_id,
-          assigneeIds: args.assignee_ids,
-          externalAssigneeEmails: args.external_assignee_emails,
+          id: assessment_id,
+          assigneeIds: assignee_ids,
+          externalAssigneeEmails: external_assignee_emails,
         });
 
         return createToolResult(true, {

@@ -19,14 +19,15 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
     confirmationHint: 'Deletes preference data for the identifiers',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: DeletePreferencesSchema,
-    handler: async (args) => {
+    handler: async ({ partition, identifiers }) => {
       try {
-        const identifiers = args.identifiers.map((id) => ({
-          value: id.value,
-          type: id.type,
-        }));
-
-        const result = await rest.deletePreferences(args.partition, identifiers);
+        const result = await rest.deletePreferences(
+          partition,
+          identifiers.map((id) => ({
+            value: id.value,
+            type: id.type,
+          })),
+        );
 
         return createToolResult(true, {
           ...result,

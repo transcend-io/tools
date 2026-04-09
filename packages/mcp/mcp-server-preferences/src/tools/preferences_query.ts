@@ -24,16 +24,14 @@ export function createPreferencesQueryTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: QueryPreferencesSchema,
-    handler: async (args) => {
+    handler: async ({ partition, identifiers }) => {
       try {
-        const identifiers = args.identifiers.map((id) => ({
-          value: id.value,
-          type: id.type,
-        }));
-
         const result = await rest.queryPreferences({
-          partition: args.partition,
-          identifiers,
+          partition,
+          identifiers: identifiers.map((id) => ({
+            value: id.value,
+            type: id.type,
+          })),
         });
 
         return createListResult(result, {

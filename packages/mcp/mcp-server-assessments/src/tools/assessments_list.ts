@@ -28,12 +28,12 @@ export function createAssessmentsListTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAssessmentsSchema,
-    handler: async (args) => {
+    handler: async ({ status, limit, cursor }) => {
       try {
         const result = await graphql.listAssessments({
-          first: args.limit,
-          after: args.cursor,
-          filterBy: args.status ? { statuses: [args.status] } : undefined,
+          first: limit,
+          after: cursor,
+          filterBy: status ? { statuses: [status] } : undefined,
         });
 
         return createListResult(result.nodes, {

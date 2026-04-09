@@ -20,11 +20,11 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
     confirmationHint: 'Submits assessment for review — cannot be undone',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: SubmitResponseSchema,
-    handler: async (args) => {
+    handler: async ({ assessment_id, assessment_section_ids }) => {
       try {
         const result = await graphql.submitAssessmentForReview({
-          id: args.assessment_id,
-          assessmentSectionIds: args.assessment_section_ids,
+          id: assessment_id,
+          assessmentSectionIds: assessment_section_ids,
         });
 
         return createToolResult(true, {

@@ -20,11 +20,11 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTemplatesSchema,
-    handler: async (args) => {
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listAssessmentTemplates({
-          first: args.limit,
-          after: args.cursor,
+          first: limit,
+          after: cursor,
         });
 
         return createListResult(result.nodes, {

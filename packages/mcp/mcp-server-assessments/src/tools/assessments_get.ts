@@ -16,9 +16,9 @@ export function createAssessmentsGetTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetAssessmentSchema,
-    handler: async (args) => {
+    handler: async ({ assessment_id }) => {
       try {
-        const result = await graphql.getAssessment(args.assessment_id);
+        const result = await graphql.getAssessment(assessment_id);
         return createToolResult(true, result);
       } catch (error) {
         return createToolResult(

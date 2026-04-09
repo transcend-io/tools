@@ -40,20 +40,20 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients) {
     confirmationHint: 'Creates a new assessment form template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateTemplateSchema,
-    handler: async (args) => {
+    handler: async ({ title, description, status, sections }) => {
       try {
         const input: AssessmentTemplateCreateInput = {
-          title: args.title,
-          description: args.description,
-          status: args.status ?? 'DRAFT',
-          sections: args.sections as AssessmentSectionInput[] | undefined,
+          title,
+          description,
+          status: status ?? 'DRAFT',
+          sections: sections as AssessmentSectionInput[] | undefined,
         };
 
         const result = await graphql.createAssessmentFormTemplate(input);
 
         return createToolResult(true, {
           template: result,
-          message: `Assessment template "${args.title}" created successfully`,
+          message: `Assessment template "${title}" created successfully`,
         });
       } catch (error) {
         return createToolResult(

@@ -29,21 +29,25 @@ export function createAssessmentsAnswerQuestionTool(clients: ToolClients) {
     confirmationHint: 'Records answer to the assessment question',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: AnswerQuestionSchema,
-    handler: async (args) => {
+    handler: async ({
+      assessment_question_id,
+      assessment_answer_ids,
+      assessment_answer_values,
+    }) => {
       try {
         const input: {
           assessmentQuestionId: string;
           assessmentAnswerIds?: string[];
           assessmentAnswerValues?: { value: string; isUserCreated: boolean }[];
         } = {
-          assessmentQuestionId: args.assessment_question_id,
+          assessmentQuestionId: assessment_question_id,
         };
 
-        if (args.assessment_answer_ids) {
-          input.assessmentAnswerIds = args.assessment_answer_ids;
+        if (assessment_answer_ids) {
+          input.assessmentAnswerIds = assessment_answer_ids;
         }
-        if (args.assessment_answer_values) {
-          input.assessmentAnswerValues = args.assessment_answer_values;
+        if (assessment_answer_values) {
+          input.assessmentAnswerValues = assessment_answer_values;
         }
 
         const result = await graphql.selectAssessmentQuestionAnswers(input);

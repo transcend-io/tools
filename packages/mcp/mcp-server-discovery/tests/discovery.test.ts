@@ -57,9 +57,7 @@ describe('Discovery Tools', () => {
       const result = tool.zodSchema.safeParse({});
 
       expect(result.success).toBe(false);
-      if (!result.success) {
-        expect(result.error.issues[0].path).toEqual(['scan_id']);
-      }
+      expect((result as any).error.issues[0].path).toEqual(['scan_id']);
     });
 
     it('returns scan on success', async () => {

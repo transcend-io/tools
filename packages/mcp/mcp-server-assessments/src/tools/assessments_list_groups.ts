@@ -20,11 +20,11 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListGroupsSchema,
-    handler: async (args) => {
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listAssessmentGroups({
-          first: args.limit,
-          after: args.cursor,
+          first: limit,
+          after: cursor,
         });
 
         return createListResult(result.nodes, {

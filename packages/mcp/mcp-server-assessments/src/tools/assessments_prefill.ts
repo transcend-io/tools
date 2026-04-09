@@ -60,13 +60,20 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
     confirmationHint: 'Creates assessment, prefills answers, assigns reviewers',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: PrefillSchema,
-    handler: async (args) => {
+    handler: async ({
+      answers,
+      title,
+      assessment_group_id,
+      template_id,
+      assignee_ids,
+      assignee_emails,
+      reviewer_ids,
+      submit_for_review,
+    }) => {
       try {
-        const { answers, title } = args;
-
-        let assessmentGroupId = args.assessment_group_id;
-        if (!assessmentGroupId && args.template_id) {
-          const resolved = await resolveTemplateToGroupId(graphql, args.template_id);
+        let assessmentGroupId = assessment_group_id;
+        if (!assessmentGroupId && template_id) {
+          const resolved = await resolveTemplateToGroupId(graphql, template_id);
           if ('error' in resolved) return resolved.error;
           assessmentGroupId = resolved.groupId;
         }
@@ -192,23 +199,23 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         }
 
         let assignmentResult: Record<string, unknown> | null = null;
-        if (args.assignee_ids || args.assignee_emails) {
+        if (assignee_ids || assignee_emails) {
           assignmentResult = await graphql.updateAssessmentFormAssignees({
             id: assessmentId,
-            assigneeIds: args.assignee_ids,
-            externalAssigneeEmails: args.assignee_emails,
+            assigneeIds: assignee_ids,
+            externalAssigneeEmails: assignee_emails,
           });
         }
 
-        if (args.reviewer_ids) {
+        if (reviewer_ids) {
           await graphql.updateAssessment({
             id: assessmentId,
-            reviewerIds: args.reviewer_ids,
+            reviewerIds: reviewer_ids,
           });
         }
 
         let submitResult: Assessment | null = null;
-        if (args.submit_for_review) {
+        if (submit_for_review) {
           const sectionIds = (fullForm.sections as AssessmentSection[]).map((s) => s.id);
           if (sectionIds.length > 0) {
             submitResult = await graphql.submitAssessmentForReview({

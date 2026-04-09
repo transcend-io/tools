@@ -31,21 +31,19 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
     confirmationHint: 'Creates or updates preference records for users',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpsertPreferencesSchema,
-    handler: async (args) => {
+    handler: async ({ partition, records }) => {
       try {
-        const records = args.records.map((record) => ({
-          identifier: record.identifier,
-          identifierType: record.identifierType,
-          purposes: record.purposes.map((p) => ({
-            purpose: p.purpose,
-            enabled: p.enabled,
-          })),
-          confirmed: record.confirmed,
-        }));
-
         const result = await rest.upsertPreferences({
-          partition: args.partition,
-          records,
+          partition,
+          records: records.map((record) => ({
+            identifier: record.identifier,
+            identifierType: record.identifierType,
+            purposes: record.purposes.map((p) => ({
+              purpose: p.purpose,
+              enabled: p.enabled,
+            })),
+            confirmed: record.confirmed,
+          })),
         });
 
         return createToolResult(true, {

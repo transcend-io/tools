@@ -23,18 +23,18 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients) {
     confirmationHint: 'Creates a new assessment group',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateGroupSchema,
-    handler: async (args) => {
+    handler: async ({ title, template_id, description, reviewer_ids }) => {
       try {
         const result = await graphql.createAssessmentGroup({
-          title: args.title,
-          assessmentFormTemplateId: args.template_id,
-          description: args.description,
-          reviewerIds: args.reviewer_ids,
+          title,
+          assessmentFormTemplateId: template_id,
+          description,
+          reviewerIds: reviewer_ids,
         });
 
         return createToolResult(true, {
           assessmentGroup: result,
-          message: `Assessment group "${args.title}" created successfully`,
+          message: `Assessment group "${title}" created successfully`,
         });
       } catch (error) {
         return createToolResult(

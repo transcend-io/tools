@@ -20,14 +20,16 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Appends identifiers to the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AppendIdentifiersSchema,
-    handler: async (args) => {
+    handler: async ({ partition, user_id, identifiers }) => {
       try {
-        const identifiers = args.identifiers.map((id) => ({
-          value: id.value,
-          type: id.type,
-        }));
-
-        const result = await rest.appendIdentifiers(args.partition, args.user_id, identifiers);
+        const result = await rest.appendIdentifiers(
+          partition,
+          user_id,
+          identifiers.map((id) => ({
+            value: id.value,
+            type: id.type,
+          })),
+        );
 
         return createToolResult(true, {
           ...result,

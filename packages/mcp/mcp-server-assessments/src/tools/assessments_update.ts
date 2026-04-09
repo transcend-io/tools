@@ -27,15 +27,15 @@ export function createAssessmentsUpdateTool(clients: ToolClients) {
     confirmationHint: 'Updates the assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssessmentSchema,
-    handler: async (args) => {
+    handler: async ({ assessment_id, title, description, reviewer_ids, due_date, status }) => {
       try {
         const result = await graphql.updateAssessment({
-          id: args.assessment_id,
-          title: args.title,
-          description: args.description,
-          reviewerIds: args.reviewer_ids,
-          dueDate: args.due_date,
-          status: args.status,
+          id: assessment_id,
+          title,
+          description,
+          reviewerIds: reviewer_ids,
+          dueDate: due_date,
+          status,
         });
 
         return createToolResult(true, {

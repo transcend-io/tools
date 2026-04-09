@@ -24,15 +24,17 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Updates identifiers for the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateIdentifiersSchema,
-    handler: async (args) => {
+    handler: async ({ partition, user_id, identifiers }) => {
       try {
-        const identifiers = args.identifiers.map((id) => ({
-          oldValue: id.oldValue,
-          newValue: id.newValue,
-          type: id.type,
-        }));
-
-        const result = await rest.updateIdentifiers(args.partition, args.user_id, identifiers);
+        const result = await rest.updateIdentifiers(
+          partition,
+          user_id,
+          identifiers.map((id) => ({
+            oldValue: id.oldValue,
+            newValue: id.newValue,
+            type: id.type,
+          })),
+        );
 
         return createToolResult(true, {
           ...result,

@@ -18,9 +18,9 @@ export function createAssessmentsExportTemplateTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ExportTemplateSchema,
-    handler: async (args) => {
+    handler: async ({ template_id }) => {
       try {
-        const template = await graphql.getAssessmentFormTemplate(args.template_id);
+        const template = await graphql.getAssessmentFormTemplate(template_id);
 
         const exportData = {
           _exportedAt: new Date().toISOString(),
