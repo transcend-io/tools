@@ -13,3 +13,5 @@ The packages in `packages/` are the public developer tools for Transcend.
   infrastructure and data.
 - [`packages/privacy-types`](./packages/privacy-types/) (`@transcend-io/privacy-types`): shared enums, codecs, and type
   definitions for Transcend APIs and product surfaces.
+- [`packages/mcp`](./packages/mcp/): [Model Context Protocol](https://modelcontextprotocol.io/) servers (`@transcend-io/mcp-server` and
+  per-domain packages) so AI agents can work with Transcend.

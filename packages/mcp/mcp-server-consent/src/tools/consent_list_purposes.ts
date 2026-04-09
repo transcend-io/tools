@@ -1,0 +1,56 @@
+import {
+  createListResult,
+  createToolResult,
+  validateArgs,
+  type ToolClients,
+  type ToolDefinition,
+} from '@transcend-io/mcp-server-core';
+
+import type { ConsentMixin } from '../graphql.js';
+import { ListPurposesSchema } from '../schemas.js';
+
+export function createConsentListPurposesTool(clients: ToolClients): ToolDefinition {
+  const graphql = clients.graphql as ConsentMixin;
+  return {
+    name: 'consent_list_purposes',
+    description:
+      'List all tracking purposes configured for consent management. Note: API does not support cursor pagination (max ~100 results).',
+    category: 'Consent Management',
+    readOnly: true,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        limit: {
+          type: 'number',
+          description: 'Results per page (1-100, default: 50)',
+        },
+        cursor: {
+          type: 'string',
+          description: 'Pagination cursor from previous response (where supported)',
+        },
+      },
+      required: [],
+    },
+    handler: async (args) => {
+      const parsed = validateArgs(ListPurposesSchema, args);
+      if (!parsed.success) return parsed.error;
+      try {
+        const result = await graphql.listTrackingPurposes({
+          first: parsed.data.limit,
+          after: parsed.data.cursor,
+        });
+        return createListResult(result.nodes, {
+          totalCount: result.totalCount,
+          hasNextPage: result.pageInfo?.hasNextPage,
+        });
+      } catch (error) {
+        return createToolResult(
+          false,
+          undefined,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    },
+  };
+}

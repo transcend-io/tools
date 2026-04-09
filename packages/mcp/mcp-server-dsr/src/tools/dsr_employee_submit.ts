@@ -1,0 +1,100 @@
+import {
+  createToolResult,
+  validateArgs,
+  type ToolClients,
+  type ToolDefinition,
+} from '@transcend-io/mcp-server-core';
+
+import type { DSRMixin } from '../graphql.js';
+import { EmployeeSubmitDSRSchema } from '../schemas.js';
+
+export function createDsrEmployeeSubmitTool(clients: ToolClients): ToolDefinition {
+  const graphql = clients.graphql as DSRMixin;
+
+  return {
+    name: 'dsr_employee_submit',
+    description:
+      'Submit a Data Subject Request as an employee on behalf of a data subject. Requires subjectType to be specified.',
+    category: 'DSR Automation',
+    readOnly: false,
+    confirmationHint: 'Creates a new data subject request (employee)',
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          description: 'Type of DSR request',
+          enum: [
+            'ACCESS',
+            'ERASURE',
+            'RECTIFICATION',
+            'RESTRICTION',
+            'SALE_OPT_OUT',
+            'SALE_OPT_IN',
+            'CONTACT_OPT_OUT',
+            'CONTACT_OPT_IN',
+            'AUTOMATED_DECISION_MAKING_OPT_OUT',
+            'AUTOMATED_DECISION_MAKING_OPT_IN',
+            'USE_OF_SENSITIVE_INFORMATION_OPT_OUT',
+            'USE_OF_SENSITIVE_INFORMATION_OPT_IN',
+            'TRACKING_OPT_OUT',
+            'TRACKING_OPT_IN',
+            'CUSTOM_OPT_OUT',
+            'CUSTOM_OPT_IN',
+            'BUSINESS_PURPOSE',
+            'PLACE_ON_LEGAL_HOLD',
+            'REMOVE_FROM_LEGAL_HOLD',
+          ],
+        },
+        email: {
+          type: 'string',
+          description: 'Email address of the data subject',
+        },
+        subjectType: {
+          type: 'string',
+          description:
+            'Type of data subject (e.g., customer, employee). Required by the Transcend API.',
+        },
+        coreIdentifier: {
+          type: 'string',
+          description: 'Core identifier for the data subject (optional)',
+        },
+        locale: {
+          type: 'string',
+          description: 'Locale for communications (e.g., en-US)',
+        },
+        isSilent: {
+          type: 'boolean',
+          description: 'Whether to suppress email notifications',
+        },
+      },
+      required: ['type', 'email', 'subjectType'],
+    },
+    handler: async (args) => {
+      const parsed = validateArgs(EmployeeSubmitDSRSchema, args);
+      if (!parsed.success) return parsed.error;
+      try {
+        const result = await graphql.employeeMakeDataSubjectRequest({
+          type: parsed.data.type,
+          email: parsed.data.email,
+          subjectType: parsed.data.subjectType,
+          coreIdentifier: parsed.data.coreIdentifier,
+          locale: parsed.data.locale,
+          isSilent: parsed.data.isSilent,
+        });
+        return createToolResult(true, {
+          request: result.request,
+          clientMutationId: result.clientMutationId,
+          message: `Employee DSR of type ${parsed.data.type} submitted successfully`,
+        });
+      } catch (error) {
+        return createToolResult(
+          false,
+          undefined,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
+    },
+  };
+}

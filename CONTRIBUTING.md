@@ -225,3 +225,60 @@ Current package conventions:
 - `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
 - publishable packages include `homepage`, `repository`, and `author` metadata
 - released publishable packages keep a `CHANGELOG.md`
+
+## MCP Servers
+
+MCP (Model Context Protocol) server packages live under `packages/mcp/`. They let AI agents interact with the Transcend platform. See the root [`README.md`](./README.md) for a full list of packages and their purpose.
+
+### Layout
+
+```
+packages/mcp/
+  mcp-server-core/       # Shared infrastructure (GraphQL base, REST client, validation, types)
+  mcp-server-admin/      # Domain: org, users, API keys
+  mcp-server-assessments/
+  mcp-server-consent/
+  mcp-server-discovery/
+  mcp-server-dsr/
+  mcp-server-inventory/
+  mcp-server-preferences/
+  mcp-server-workflows/
+  mcp-server/            # Unified server that re-exports all domain tools
+```
+
+Each domain package provides a standalone CLI and can be installed independently. The unified `mcp-server` package composes all domains via `ToolRegistry`.
+
+### Working on a Single MCP Package
+
+Use `pnpm --filter` the same way as any other package:
+
+```bash
+pnpm -F @transcend-io/mcp-server-consent build
+pnpm -F @transcend-io/mcp-server-consent test
+pnpm -F @transcend-io/mcp-server-consent typecheck
+```
+
+### Environment Variables
+
+All MCP servers require:
+
+- `TRANSCEND_API_KEY` — your Transcend API key
+
+Optional overrides:
+
+- `TRANSCEND_API_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`)
+- `TRANSCEND_GRAPHQL_URL` — GraphQL API base URL (default: `https://api.transcend.io`)
+
+### Adding a Tool
+
+1. Create a new file under the domain's `src/tools/` directory (e.g. `src/tools/consent_new_tool.ts`).
+2. Export a `create*Tool(clients: ToolClients): ToolDefinition` factory function following the existing pattern.
+3. Register it in the domain's `src/tools/index.ts` by importing and adding it to the returned array.
+4. If the tool needs new input validation, add a Zod schema to `src/schemas.ts`.
+5. If the tool calls a new API endpoint, extend the domain's GraphQL mixin (`src/graphql.ts`) or the shared REST client in `mcp-server-core`.
+6. Add or extend tests in the domain package's `tests/` directory.
+7. The unified `mcp-server` package picks up the new tool automatically through its `ToolRegistry`.
+
+### Changesets
+
+MCP packages are publishable. Run `pnpm changeset` when your change modifies package code under `packages/mcp/`, just like any other publishable package.
