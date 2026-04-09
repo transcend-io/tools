@@ -7,4 +7,5 @@ mise.local.lock
 mise.local.toml
 node_modules
 *.tsbuildinfo
+.worktrees
 secret.env
