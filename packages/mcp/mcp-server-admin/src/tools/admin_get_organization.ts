@@ -1,35 +1,24 @@
 import {
   createToolResult,
-  validateArgs,
-  type ToolDefinition,
+  defineTool,
+  EmptySchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
-import { EmptySchema } from '../schemas.js';
 
-export function createAdminGetOrganizationTool(clients: ToolClients): ToolDefinition {
+export function createAdminGetOrganizationTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
-  return {
+  return defineTool({
     name: 'admin_get_organization',
     description: 'Get information about your Transcend organization',
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: { type: 'object', properties: {}, required: [] },
-    handler: async (args) => {
-      const parsed = validateArgs(EmptySchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const result = await graphql.getOrganization();
-        return createToolResult(true, result);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+    zodSchema: EmptySchema,
+    handler: async (_args) => {
+      const result = await graphql.getOrganization();
+      return createToolResult(true, result);
     },
-  };
+  });
 }

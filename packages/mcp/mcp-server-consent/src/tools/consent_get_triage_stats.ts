@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 import {
   COOKIE_STATS,
   DATA_FLOW_STATS,
@@ -12,10 +7,14 @@ import {
 } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-import { GetCookieStatsSchema } from '../schemas.js';
 
-export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefinition {
-  return {
+export const GetCookieStatsSchema = z.object({
+  show_zero_activity: z.boolean().optional().describe('Include items with zero activity in counts'),
+});
+export type GetCookieStatsInput = z.infer<typeof GetCookieStatsSchema>;
+
+export function createConsentGetTriageStatsTool(clients: ToolClients) {
+  return defineTool({
     name: 'consent_get_triage_stats',
     description:
       'Get statistics on cookies and data flows: live (approved), needs review (triage), ' +
@@ -24,48 +23,23 @@ export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefin
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        show_zero_activity: {
-          type: 'boolean',
-          description: 'Include items with zero activity in counts (default: server default)',
-        },
-      },
-      required: [],
+    zodSchema: GetCookieStatsSchema,
+    handler: async ({ show_zero_activity }) => {
+      const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
+      const variables = {
+        input: { airgapBundleId },
+        ...(show_zero_activity !== undefined
+          ? { filterBy: { showZeroActivity: show_zero_activity } }
+          : {}),
+      };
+      const [cookieData, dfData] = await Promise.all([
+        clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, variables),
+        clients.graphql.makeRequest<TranscendCliDataFlowStatsResponse>(DATA_FLOW_STATS, variables),
+      ]);
+      return createToolResult(true, {
+        cookies: cookieData.cookieStats,
+        dataFlows: dfData.dataFlowStats,
+      });
     },
-    handler: async (args) => {
-      const parsed = validateArgs(GetCookieStatsSchema, args);
-      if (!parsed.success) return parsed.error;
-      const { show_zero_activity } = parsed.data;
-      try {
-        const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-        const variables = {
-          input: { airgapBundleId },
-          ...(show_zero_activity !== undefined
-            ? { filterBy: { showZeroActivity: show_zero_activity } }
-            : {}),
-        };
-
-        const [cookieData, dfData] = await Promise.all([
-          clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, variables),
-          clients.graphql.makeRequest<TranscendCliDataFlowStatsResponse>(
-            DATA_FLOW_STATS,
-            variables,
-          ),
-        ]);
-
-        return createToolResult(true, {
-          cookies: cookieData.cookieStats,
-          dataFlows: dfData.dataFlowStats,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

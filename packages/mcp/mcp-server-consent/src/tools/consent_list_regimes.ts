@@ -1,16 +1,14 @@
-import {
-  createListResult,
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 import { EXPERIENCES, type TranscendCliExperiencesResponse } from '@transcend-io/sdk';
 
-import { ListRegimesSchema } from '../schemas.js';
+export const ListRegimesSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().min(0).optional().default(0),
+});
+export type ListRegimesInput = z.infer<typeof ListRegimesSchema>;
 
-export function createConsentListRegimesTool(clients: ToolClients): ToolDefinition {
-  return {
+export function createConsentListRegimesTool(clients: ToolClients) {
+  return defineTool({
     name: 'consent_list_regimes',
     description:
       'List all consent experiences (regional regimes) configured for your organization. ' +
@@ -18,45 +16,17 @@ export function createConsentListRegimesTool(clients: ToolClients): ToolDefiniti
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        offset: {
-          type: 'number',
-          description: 'Offset for pagination (default: 0)',
-        },
-      },
-      required: [],
+    zodSchema: ListRegimesSchema,
+    handler: async ({ limit, offset }) => {
+      const data = await clients.graphql.makeRequest<TranscendCliExperiencesResponse>(EXPERIENCES, {
+        first: limit,
+        offset,
+      });
+      const { totalCount, nodes } = data.experiences;
+      return createListResult(nodes, {
+        totalCount,
+        hasNextPage: (offset ?? 0) + nodes.length < totalCount,
+      });
     },
-    handler: async (args) => {
-      const parsed = validateArgs(ListRegimesSchema, args);
-      if (!parsed.success) return parsed.error;
-      const { limit, offset } = parsed.data;
-      try {
-        const data = await clients.graphql.makeRequest<TranscendCliExperiencesResponse>(
-          EXPERIENCES,
-          {
-            first: limit,
-            offset,
-          },
-        );
-
-        const { totalCount, nodes } = data.experiences;
-        return createListResult(nodes, {
-          totalCount,
-          hasNextPage: (offset ?? 0) + nodes.length < totalCount,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

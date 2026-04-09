@@ -1,18 +1,32 @@
-import {
-  createListResult,
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
 import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-import { ListDataFlowsSchema } from '../schemas.js';
 
-export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefinition {
-  return {
+const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
+const OrderDirectionEnum = z.nativeEnum(OrderDirection);
+
+export const ListDataFlowsSchema = z.object({
+  limit: z.number().min(1).max(200).optional().default(50),
+  offset: z.number().min(0).optional().default(0),
+  status: ConsentTrackerStatusEnum.describe(
+    'Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)',
+  ),
+  is_junk: z.boolean().optional().describe('Filter by junk status'),
+  show_zero_activity: z.boolean().optional().describe('Include items with zero activity'),
+  text: z.string().optional().describe('Search text filter'),
+  service: z.string().optional().describe('Filter by service name'),
+  order_field: z
+    .string()
+    .optional()
+    .describe('Field to sort by: value, createdAt, updatedAt, occurrences, service'),
+  order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
+});
+export type ListDataFlowsInput = z.infer<typeof ListDataFlowsSchema>;
+
+export function createConsentListDataFlowsTool(clients: ToolClients) {
+  return defineTool({
     name: 'consent_list_data_flows',
     description:
       'List data flows (network requests) in your consent manager. ' +
@@ -21,79 +35,38 @@ export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefini
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: { type: 'number', description: 'Results per page (1-200, default: 50)' },
-        offset: { type: 'number', description: 'Offset for pagination (default: 0)' },
-        status: {
-          type: 'string',
-          enum: Object.values(ConsentTrackerStatus),
-          description: 'Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)',
-        },
-        is_junk: { type: 'boolean', description: 'Filter by junk status' },
-        show_zero_activity: {
-          type: 'boolean',
-          description: 'Include items with zero activity (default: false)',
-        },
-        text: { type: 'string', description: 'Search text filter' },
-        service: { type: 'string', description: 'Filter by service name' },
-        order_field: {
-          type: 'string',
-          enum: ['value', 'createdAt', 'updatedAt', 'occurrences', 'service'],
-          description: 'Field to sort by',
-        },
-        order_direction: {
-          type: 'string',
-          enum: Object.values(OrderDirection),
-          description: 'Sort direction',
-        },
-      },
-      required: ['status'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListDataFlowsSchema, args);
-      if (!parsed.success) return parsed.error;
-      const {
-        limit,
+    zodSchema: ListDataFlowsSchema,
+    handler: async ({
+      limit,
+      offset,
+      status,
+      is_junk,
+      show_zero_activity,
+      text,
+      service,
+      order_field,
+      order_direction,
+    }) => {
+      const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
+      const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
+        input: { airgapBundleId },
+        first: limit,
         offset,
-        status,
-        is_junk,
-        show_zero_activity,
-        text,
-        service,
-        order_field,
-        order_direction,
-      } = parsed.data;
-      try {
-        const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-        const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
-          input: { airgapBundleId },
-          first: limit,
-          offset,
-          filterBy: {
-            status,
-            ...(is_junk !== undefined ? { isJunk: is_junk } : {}),
-            ...(show_zero_activity !== undefined ? { showZeroActivity: show_zero_activity } : {}),
-            ...(text ? { text } : {}),
-            ...(service ? { service } : {}),
-          },
-          ...(order_field && order_direction
-            ? { orderBy: [{ field: order_field, direction: order_direction }] }
-            : {}),
-        });
-
-        return createListResult(data.dataFlows.nodes, {
-          totalCount: data.dataFlows.totalCount,
-          hasNextPage: (offset ?? 0) + data.dataFlows.nodes.length < data.dataFlows.totalCount,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+        filterBy: {
+          status,
+          ...(is_junk !== undefined ? { isJunk: is_junk } : {}),
+          ...(show_zero_activity !== undefined ? { showZeroActivity: show_zero_activity } : {}),
+          ...(text ? { text } : {}),
+          ...(service ? { service } : {}),
+        },
+        ...(order_field && order_direction
+          ? { orderBy: [{ field: order_field, direction: order_direction }] }
+          : {}),
+      });
+      return createListResult(data.dataFlows.nodes, {
+        totalCount: data.dataFlows.totalCount,
+        hasNextPage: (offset ?? 0) + data.dataFlows.nodes.length < data.dataFlows.totalCount,
+      });
     },
-  };
+  });
 }

@@ -45,17 +45,16 @@ describe('Preferences Tools', () => {
   });
 
   describe('preferences_query', () => {
-    it('returns validation error when required fields are missing', async () => {
+    it('zodSchema rejects input when required fields are missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'preferences_query')!;
 
-      const result = await tool.handler({});
+      const result = tool.zodSchema.safeParse({});
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockRest.queryPreferences).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
+        expect.arrayContaining(['partition', 'identifiers']),
+      );
     });
 
     it('returns preferences on success', async () => {
@@ -77,18 +76,18 @@ describe('Preferences Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockRest.queryPreferences.mockRejectedValue(new Error('REST error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'preferences_query')!;
 
-      const result = await tool.handler({
-        partition: 'my-org',
-        identifiers: [{ value: 'user@example.com' }],
-      });
-
-      expect(result).toMatchObject({ success: false, error: 'REST error' });
+      await expect(
+        tool.handler({
+          partition: 'my-org',
+          identifiers: [{ value: 'user@example.com' }],
+        }),
+      ).rejects.toThrow('REST error');
     });
   });
 });

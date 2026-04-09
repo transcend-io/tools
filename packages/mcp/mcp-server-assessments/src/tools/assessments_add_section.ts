@@ -1,17 +1,28 @@
 import {
   createToolResult,
-  validateArgs,
-  type ToolDefinition,
+  defineTool,
+  z,
   type ToolClients,
   type AssessmentSectionInput,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { AddSectionSchema } from '../schemas.js';
 
-export function createAssessmentsAddSectionTool(clients: ToolClients): ToolDefinition {
+export const AddSectionSchema = z.object({
+  template_id: z.string().describe('ID of the assessment form template to add the section to'),
+  title: z.string().describe('Title of the new section'),
+  questions: z
+    .array(z.record(z.string(), z.unknown()))
+    .optional()
+    .describe(
+      'Array of question objects: [{title, type, subType?, description?, placeholder?, isRequired?, referenceId?, answerOptions?: [{value}], allowSelectOther?, requireRiskEvaluation?}]',
+    ),
+});
+export type AddSectionInput = z.infer<typeof AddSectionSchema>;
+
+export function createAssessmentsAddSectionTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_add_section',
     description:
       'Add a new section (with optional inline questions) to an existing assessment form template. ' +
@@ -21,51 +32,18 @@ export function createAssessmentsAddSectionTool(clients: ToolClients): ToolDefin
     readOnly: false,
     confirmationHint: 'Adds a section to the assessment template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        template_id: {
-          type: 'string',
-          description: 'ID of the assessment form template to add the section to',
-        },
-        title: {
-          type: 'string',
-          description: 'Title of the new section',
-        },
-        questions: {
-          type: 'array',
-          description:
-            'Array of question objects: [{title, type, subType?, description?, placeholder?, isRequired?, referenceId?, answerOptions?: [{value}], allowSelectOther?, requireRiskEvaluation?}]. ' +
-            'Types: LONG_ANSWER_TEXT, SHORT_ANSWER_TEXT, SINGLE_SELECT, MULTI_SELECT, FILE. ' +
-            'SubTypes: NONE, CUSTOM, USER, TEAM, DATA_SUB_CATEGORY, HAS_PERSONAL_DATA, ATTRIBUTE_KEY, SENSITIVE_CATEGORY. ' +
-            'referenceId is optional (auto-generated UUID if omitted). allowSelectOther auto-sets subType to CUSTOM.',
-          items: { type: 'object' },
-        },
-      },
-      required: ['template_id', 'title'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(AddSectionSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: AddSectionSchema,
+    handler: async ({ template_id, title, questions }) => {
+      const result = await graphql.createAssessmentSection({
+        assessmentFormTemplateId: template_id,
+        title,
+        questions: questions as AssessmentSectionInput['questions'],
+      });
 
-      try {
-        const result = await graphql.createAssessmentSection({
-          assessmentFormTemplateId: parsed.data.template_id,
-          title: parsed.data.title,
-          questions: parsed.data.questions as AssessmentSectionInput['questions'],
-        });
-
-        return createToolResult(true, {
-          section: result,
-          message: `Section "${parsed.data.title}" added to template successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        section: result,
+        message: `Section "${title}" added to template successfully`,
+      });
     },
-  };
+  });
 }

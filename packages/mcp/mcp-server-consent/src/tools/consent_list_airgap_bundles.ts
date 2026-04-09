@@ -1,18 +1,19 @@
 import {
   createToolResult,
-  validateArgs,
+  defineTool,
+  EmptySchema,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 import {
   FETCH_CONSENT_MANAGER,
   type TranscendCliFetchConsentManagerResponse,
 } from '@transcend-io/sdk';
 
-import { ListAirgapBundlesSchema } from '../schemas.js';
+export const ListAirgapBundlesSchema = EmptySchema;
+export type ListAirgapBundlesInput = Record<string, never>;
 
-export function createConsentListAirgapBundlesTool(clients: ToolClients): ToolDefinition {
-  return {
+export function createConsentListAirgapBundlesTool(clients: ToolClients) {
+  return defineTool({
     name: 'consent_list_airgap_bundles',
     description:
       'Get the consent manager (airgap bundle) configured for your organization. ' +
@@ -20,28 +21,13 @@ export function createConsentListAirgapBundlesTool(clients: ToolClients): ToolDe
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {},
-      required: [],
+    zodSchema: ListAirgapBundlesSchema,
+    handler: async (_args) => {
+      const data = await clients.graphql.makeRequest<TranscendCliFetchConsentManagerResponse>(
+        FETCH_CONSENT_MANAGER,
+        {},
+      );
+      return createToolResult(true, data.consentManager.consentManager);
     },
-    handler: async (args) => {
-      const parsed = validateArgs(ListAirgapBundlesSchema, args);
-      if (!parsed.success) return parsed.error;
-      try {
-        const data = await clients.graphql.makeRequest<TranscendCliFetchConsentManagerResponse>(
-          FETCH_CONSENT_MANAGER,
-          {},
-        );
-
-        return createToolResult(true, data.consentManager.consentManager);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
-    },
-  };
+  });
 }

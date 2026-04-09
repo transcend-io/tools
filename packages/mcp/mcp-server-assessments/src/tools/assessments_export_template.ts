@@ -1,16 +1,15 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { ExportTemplateSchema } from '../schemas.js';
 
-export function createAssessmentsExportTemplateTool(clients: ToolClients): ToolDefinition {
+export const ExportTemplateSchema = z.object({
+  template_id: z.string().describe('ID of the assessment form template to export'),
+});
+export type ExportTemplateInput = z.infer<typeof ExportTemplateSchema>;
+
+export function createAssessmentsExportTemplateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_export_template',
     description:
       'Export a full assessment form template as JSON, including all sections, questions, answer options, ' +
@@ -19,59 +18,39 @@ export function createAssessmentsExportTemplateTool(clients: ToolClients): ToolD
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        template_id: {
-          type: 'string',
-          description: 'ID of the assessment form template to export',
-        },
-      },
-      required: ['template_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ExportTemplateSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ExportTemplateSchema,
+    handler: async ({ template_id }) => {
+      const template = await graphql.getAssessmentFormTemplate(template_id);
 
-      try {
-        const template = await graphql.getAssessmentFormTemplate(parsed.data.template_id);
-
-        const exportData = {
-          _exportedAt: new Date().toISOString(),
-          _format: 'transcend-assessment-template-v1',
-          template: {
-            title: template.title,
-            description: template.description,
-            status: template.status,
-            sections: template.sections.map((section) => ({
-              title: section.title,
-              questions: section.questions.map((q) => ({
-                title: q.title,
-                type: q.type,
-                subType: q.subType,
-                description: q.description,
-                placeholder: q.placeholder,
-                isRequired: q.isRequired,
-                referenceId: q.referenceId,
-                allowSelectOther: q.allowSelectOther,
-                requireRiskEvaluation: q.requireRiskEvaluation,
-                answerOptions: q.answerOptions.map((opt) => ({
-                  value: opt.value,
-                })),
+      const exportData = {
+        _exportedAt: new Date().toISOString(),
+        _format: 'transcend-assessment-template-v1',
+        template: {
+          title: template.title,
+          description: template.description,
+          status: template.status,
+          sections: template.sections.map((section) => ({
+            title: section.title,
+            questions: section.questions.map((q) => ({
+              title: q.title,
+              type: q.type,
+              subType: q.subType,
+              description: q.description,
+              placeholder: q.placeholder,
+              isRequired: q.isRequired,
+              referenceId: q.referenceId,
+              allowSelectOther: q.allowSelectOther,
+              requireRiskEvaluation: q.requireRiskEvaluation,
+              answerOptions: q.answerOptions.map((opt) => ({
+                value: opt.value,
               })),
             })),
-          },
-          _raw: template,
-        };
+          })),
+        },
+        _raw: template,
+      };
 
-        return createToolResult(true, exportData);
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, exportData);
     },
-  };
+  });
 }

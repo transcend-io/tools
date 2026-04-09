@@ -36,17 +36,14 @@ describe('Workflows Tools', () => {
   });
 
   describe('workflows_update_config', () => {
-    it('returns validation error when workflow_config_id is missing', async () => {
+    it('zodSchema rejects input when workflow_config_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'workflows_update_config')!;
 
-      const result = await tool.handler({});
+      const result = tool.zodSchema.safeParse({});
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.updateWorkflowConfig).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['workflow_config_id']);
     });
 
     it('updates workflow config on success', async () => {
@@ -89,15 +86,13 @@ describe('Workflows Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listWorkflows.mockRejectedValue(new Error('API error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'workflows_list')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'API error' });
+      await expect(tool.handler({})).rejects.toThrow('API error');
     });
   });
 });

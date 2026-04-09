@@ -380,6 +380,9 @@ importers:
       '@transcend-io/mcp-server-core':
         specifier: workspace:*
         version: link:../mcp-server-core
+      '@transcend-io/privacy-types':
+        specifier: workspace:*
+        version: link:../../privacy-types
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -507,6 +510,9 @@ importers:
       '@transcend-io/mcp-server-core':
         specifier: workspace:*
         version: link:../mcp-server-core
+      '@transcend-io/privacy-types':
+        specifier: workspace:*
+        version: link:../../privacy-types
       zod:
         specifier: 'catalog:'
         version: 4.3.6

@@ -22,13 +22,11 @@ describe('validateArgs', () => {
     });
     const result = validateArgs(schema, { name: 'Alice' });
     expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toBeDefined();
-      expect(typeof result.error).toBe('object');
-      const err = result.error as { error?: string };
-      expect(err.error).toContain('Invalid input');
-      expect(err.error).toMatch(/age|required/i);
-    }
+    expect((result as any).error).toBeDefined();
+    expect(typeof (result as any).error).toBe('object');
+    const err = (result as any).error as { error?: string };
+    expect(err.error).toContain('Invalid input');
+    expect(err.error).toMatch(/age|required/i);
   });
 
   it('wrong type (string instead of number) returns validation error', () => {
@@ -37,11 +35,9 @@ describe('validateArgs', () => {
     });
     const result = validateArgs(schema, { count: 'not-a-number' });
     expect(result.success).toBe(false);
-    if (!result.success) {
-      const err = result.error as { error?: string };
-      expect(err.error).toContain('Invalid input');
-      expect(err.error).toMatch(/count|number/i);
-    }
+    const err = (result as any).error as { error?: string };
+    expect(err.error).toContain('Invalid input');
+    expect(err.error).toMatch(/count|number/i);
   });
 
   it('extra fields are stripped (default Zod behavior)', () => {

@@ -1,72 +1,45 @@
 import {
-  createToolResult,
   createListResult,
-  validateArgs,
-  type ToolDefinition,
+  defineTool,
+  z,
+  PaginationSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
+import { AssessmentFormStatus } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { ListAssessmentsSchema } from '../schemas.js';
 
-export function createAssessmentsListTool(clients: ToolClients): ToolDefinition {
+export const AssessmentStatusEnum = z.nativeEnum(AssessmentFormStatus);
+export type AssessmentStatusEnumInput = z.infer<typeof AssessmentStatusEnum>;
+
+export const ListAssessmentsSchema = z
+  .object({
+    status: AssessmentStatusEnum.optional().describe('Filter by assessment status'),
+  })
+  .merge(PaginationSchema);
+export type ListAssessmentsInput = z.infer<typeof ListAssessmentsSchema>;
+
+export function createAssessmentsListTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_list',
     description:
       'List all privacy assessments in your organization. Supports filtering by status. Note: Cursor pagination is not supported (max 100 results).',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          description: 'Filter by assessment status',
-          enum: [
-            'DRAFT',
-            'SHARED',
-            'IN_PROGRESS',
-            'IN_REVIEW',
-            'CHANGES_REQUESTED',
-            'REJECTED',
-            'APPROVED',
-          ],
-        },
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListAssessmentsSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ListAssessmentsSchema,
+    handler: async ({ status, limit, cursor }) => {
+      const result = await graphql.listAssessments({
+        first: limit,
+        after: cursor,
+        filterBy: status ? { statuses: [status] } : undefined,
+      });
 
-      try {
-        const result = await graphql.listAssessments({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
-          filterBy: parsed.data.status ? { statuses: [parsed.data.status] } : undefined,
-        });
-
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
-  };
+  });
 }

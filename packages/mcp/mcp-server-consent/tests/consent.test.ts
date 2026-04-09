@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { getConsentTools } from '../src/tools.js';
+import { getConsentTools } from '../src/tools/index.js';
 
 const EXPECTED_TOOL_NAMES = [
   'consent_get_preferences',
@@ -44,17 +44,15 @@ describe('Consent Tools', () => {
   });
 
   describe('consent_update_cookies', () => {
-    it('returns validation error when required fields are missing', async () => {
+    it('zodSchema rejects input when required fields are missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_update_cookies')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.makeRequest).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
+        expect.arrayContaining(['cookies']),
+      );
     });
   });
 
@@ -79,9 +77,7 @@ describe('Consent Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_list_purposes')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'GraphQL error' });
+      await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
   });
 });

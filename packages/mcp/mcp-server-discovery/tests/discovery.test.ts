@@ -50,17 +50,14 @@ describe('Discovery Tools', () => {
   });
 
   describe('discovery_get_scan', () => {
-    it('returns validation error when scan_id is missing', async () => {
+    it('zodSchema rejects input when scan_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'discovery_get_scan')!;
 
-      const result = await tool.handler({});
+      const result = tool.zodSchema.safeParse({});
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.getClassificationScan).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['scan_id']);
     });
 
     it('returns scan on success', async () => {
@@ -100,15 +97,13 @@ describe('Discovery Tools', () => {
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listClassificationScans.mockRejectedValue(new Error('API error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'discovery_list_scans')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({ success: false, error: 'API error' });
+      await expect(tool.handler({})).rejects.toThrow('API error');
     });
   });
 });

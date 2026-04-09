@@ -55,17 +55,13 @@ describe('Inventory Tools', () => {
   });
 
   describe('inventory_get_data_silo', () => {
-    it('returns validation error when data_silo_id is missing', async () => {
+    it('zodSchema rejects when data_silo_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_get_data_silo')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.getDataSilo).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['data_silo_id']);
     });
 
     it('returns data silo on success', async () => {
@@ -114,18 +110,13 @@ describe('Inventory Tools', () => {
       });
     });
 
-    it('returns error when client throws', async () => {
+    it('throws when client throws', async () => {
       mockGraphql.listDataSilos.mockRejectedValue(new Error('GraphQL error'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'GraphQL error',
-      });
+      await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
   });
 });

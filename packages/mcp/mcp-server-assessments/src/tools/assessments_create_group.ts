@@ -1,16 +1,21 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { CreateGroupSchema } from '../schemas.js';
 
-export function createAssessmentsCreateGroupTool(clients: ToolClients): ToolDefinition {
+export const CreateGroupSchema = z.object({
+  title: z.string().describe('Title of the assessment group'),
+  template_id: z.string().describe('ID of the assessment template to link this group to'),
+  description: z.string().optional().describe('Description of the assessment group (optional)'),
+  reviewer_ids: z
+    .array(z.string())
+    .optional()
+    .describe('IDs of users assigned to review new assessments in this group (optional)'),
+});
+export type CreateGroupInput = z.infer<typeof CreateGroupSchema>;
+
+export function createAssessmentsCreateGroupTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_create_group',
     description:
       'Create a new assessment group linked to a template. Assessment groups are containers for assessments.',
@@ -18,52 +23,19 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients): ToolDefi
     readOnly: false,
     confirmationHint: 'Creates a new assessment group',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Title of the assessment group',
-        },
-        template_id: {
-          type: 'string',
-          description: 'ID of the assessment template to link this group to',
-        },
-        description: {
-          type: 'string',
-          description: 'Description of the assessment group (optional)',
-        },
-        reviewer_ids: {
-          type: 'array',
-          description: 'IDs of users assigned to review new assessments in this group (optional)',
-          items: { type: 'string' },
-        },
-      },
-      required: ['title', 'template_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(CreateGroupSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: CreateGroupSchema,
+    handler: async ({ title, template_id, description, reviewer_ids }) => {
+      const result = await graphql.createAssessmentGroup({
+        title,
+        assessmentFormTemplateId: template_id,
+        description,
+        reviewerIds: reviewer_ids,
+      });
 
-      try {
-        const result = await graphql.createAssessmentGroup({
-          title: parsed.data.title,
-          assessmentFormTemplateId: parsed.data.template_id,
-          description: parsed.data.description,
-          reviewerIds: parsed.data.reviewer_ids,
-        });
-
-        return createToolResult(true, {
-          assessmentGroup: result,
-          message: `Assessment group "${parsed.data.title}" created successfully`,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createToolResult(true, {
+        assessmentGroup: result,
+        message: `Assessment group "${title}" created successfully`,
+      });
     },
-  };
+  });
 }

@@ -1,58 +1,36 @@
 import {
-  createToolResult,
   createListResult,
-  validateArgs,
-  type ToolDefinition,
+  defineTool,
+  PaginationSchema,
+  z,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { ListTemplatesSchema } from '../schemas.js';
 
-export function createAssessmentsListTemplatesTool(clients: ToolClients): ToolDefinition {
+export const ListTemplatesSchema = PaginationSchema;
+export type ListTemplatesInput = z.infer<typeof ListTemplatesSchema>;
+
+export function createAssessmentsListTemplatesTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_list_templates',
     description:
       'List all available assessment templates. Note: Cursor pagination is not supported by the Transcend API for templates - use limit to control results (max 100).',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListTemplatesSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ListTemplatesSchema,
+    handler: async ({ limit, cursor }) => {
+      const result = await graphql.listAssessmentTemplates({
+        first: limit,
+        after: cursor,
+      });
 
-      try {
-        const result = await graphql.listAssessmentTemplates({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
-        });
-
-        return createListResult(result.nodes, {
-          totalCount: result.totalCount,
-          hasNextPage: result.pageInfo?.hasNextPage,
-        });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
-      }
+      return createListResult(result.nodes, {
+        totalCount: result.totalCount,
+        hasNextPage: result.pageInfo?.hasNextPage,
+      });
     },
-  };
+  });
 }

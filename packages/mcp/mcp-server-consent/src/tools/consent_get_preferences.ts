@@ -1,57 +1,32 @@
-import {
-  createToolResult,
-  validateArgs,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
-import { GetPreferencesSchema } from '../schemas.js';
+export const GetPreferencesSchema = z.object({
+  identifier: z.string().describe('User identifier (e.g., email, user ID)'),
+  partition: z.string().optional().describe('Partition/organization context (optional)'),
+});
+export type GetPreferencesInput = z.infer<typeof GetPreferencesSchema>;
 
-export function createConsentGetPreferencesTool(clients: ToolClients): ToolDefinition {
+export function createConsentGetPreferencesTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'consent_get_preferences',
     description: 'Get consent preferences for a specific user/identifier',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        identifier: {
-          type: 'string',
-          description: 'User identifier (e.g., email, user ID)',
-        },
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context (optional)',
-        },
-      },
-      required: ['identifier'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(GetPreferencesSchema, args);
-      if (!parsed.success) return parsed.error;
-      const { identifier, partition } = parsed.data;
-      try {
-        const result = await rest.getConsentPreferences(identifier, partition);
-        if (!result) {
-          return createToolResult(true, {
-            found: false,
-            message: 'No consent preferences found for this identifier',
-          });
-        }
+    zodSchema: GetPreferencesSchema,
+    handler: async ({ identifier, partition }) => {
+      const result = await rest.getConsentPreferences(identifier, partition);
+      if (!result) {
         return createToolResult(true, {
-          found: true,
-          preferences: result,
+          found: false,
+          message: 'No consent preferences found for this identifier',
         });
-      } catch (error) {
-        return createToolResult(
-          false,
-          undefined,
-          error instanceof Error ? error.message : String(error),
-        );
       }
+      return createToolResult(true, {
+        found: true,
+        preferences: result,
+      });
     },
-  };
+  });
 }
