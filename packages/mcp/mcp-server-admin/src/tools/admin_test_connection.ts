@@ -1,12 +1,13 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
-import { EmptySchema } from '../schemas.js';
+
+const EmptySchema = z.object({});
 
 export function createAdminTestConnectionTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -17,10 +18,8 @@ export function createAdminTestConnectionTool(clients: ToolClients): ToolDefinit
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: { type: 'object', properties: {}, required: [] },
-    handler: async (args) => {
-      const parsed = validateArgs(EmptySchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: EmptySchema,
+    handler: async (_args) => {
       try {
         const [graphqlConnected, restConnected] = await Promise.all([
           graphql.testConnection(),

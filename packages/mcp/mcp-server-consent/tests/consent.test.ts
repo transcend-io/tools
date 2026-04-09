@@ -59,16 +59,12 @@ describe('Consent Tools', () => {
   });
 
   describe('consent_update_cookies', () => {
-    it('returns validation error when required fields are missing', async () => {
+    it('zodSchema rejects input when required fields are missing', async () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_update_cookies')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
+      const parseResult = tool.zodSchema.safeParse({});
+      expect(parseResult.success).toBe(false);
       expect(mockGraphql.updateCookies).not.toHaveBeenCalled();
     });
   });

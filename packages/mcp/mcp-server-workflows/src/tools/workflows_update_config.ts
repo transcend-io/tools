@@ -1,12 +1,19 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { WorkflowsMixin } from '../graphql.js';
-import { UpdateWorkflowConfigSchema } from '../schemas.js';
+
+const UpdateWorkflowConfigSchema = z.object({
+  workflow_config_id: z.string(),
+  title: z.string().optional(),
+  subtitle: z.string().optional(),
+  description: z.string().optional(),
+  show_in_privacy_center: z.boolean().optional(),
+});
 
 export function createWorkflowsUpdateConfigTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as WorkflowsMixin;
@@ -18,36 +25,9 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients): ToolDefin
     readOnly: false,
     confirmationHint: 'Updates the workflow configuration',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        workflow_config_id: {
-          type: 'string',
-          description:
-            'ID of the workflow config to update (use workflows_list to find config IDs)',
-        },
-        title: {
-          type: 'string',
-          description: 'New title for the workflow',
-        },
-        subtitle: {
-          type: 'string',
-          description: 'New subtitle for the workflow',
-        },
-        description: {
-          type: 'string',
-          description: 'New description for the workflow',
-        },
-        show_in_privacy_center: {
-          type: 'boolean',
-          description: 'Whether to show this workflow in the Privacy Center',
-        },
-      },
-      required: ['workflow_config_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(UpdateWorkflowConfigSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: UpdateWorkflowConfigSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof UpdateWorkflowConfigSchema>;
       try {
         const updates: {
           title?: string;
@@ -56,20 +36,20 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients): ToolDefin
           showInPrivacyCenter?: boolean;
         } = {};
 
-        if (parsed.data.title !== undefined) {
-          updates.title = parsed.data.title;
+        if (args.title !== undefined) {
+          updates.title = args.title;
         }
-        if (parsed.data.subtitle !== undefined) {
-          updates.subtitle = parsed.data.subtitle;
+        if (args.subtitle !== undefined) {
+          updates.subtitle = args.subtitle;
         }
-        if (parsed.data.description !== undefined) {
-          updates.description = parsed.data.description;
+        if (args.description !== undefined) {
+          updates.description = args.description;
         }
-        if (parsed.data.show_in_privacy_center !== undefined) {
-          updates.showInPrivacyCenter = parsed.data.show_in_privacy_center;
+        if (args.show_in_privacy_center !== undefined) {
+          updates.showInPrivacyCenter = args.show_in_privacy_center;
         }
 
-        const result = await graphql.updateWorkflowConfig(parsed.data.workflow_config_id, updates);
+        const result = await graphql.updateWorkflowConfig(args.workflow_config_id, updates);
 
         return createToolResult(true, {
           workflowConfig: result,

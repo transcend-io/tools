@@ -1,12 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { CreateDataSiloSchema } from '../schemas.js';
+
+const CreateDataSiloSchema = z.object({
+  title: z.string(),
+});
 
 export function createInventoryCreateDataSiloTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as InventoryMixin;
@@ -18,27 +21,16 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients): ToolDef
     readOnly: false,
     confirmationHint: 'Creates a new data silo in the inventory',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description:
-            'Name/title of the data silo (must match an integrationName in the Transcend catalog, e.g. "Salesforce", "Stripe")',
-        },
-      },
-      required: ['title'],
-    },
+    zodSchema: CreateDataSiloSchema,
     handler: async (args) => {
-      const parsed = validateArgs(CreateDataSiloSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { title } = args as z.infer<typeof CreateDataSiloSchema>;
       try {
         const result = await graphql.createDataSilo({
-          name: parsed.data.title,
+          name: title,
         });
         return createToolResult(true, {
           dataSilo: result,
-          message: `Data silo "${parsed.data.title}" created successfully`,
+          message: `Data silo "${title}" created successfully`,
         });
       } catch (error) {
         return createToolResult(

@@ -55,17 +55,12 @@ describe('Inventory Tools', () => {
   });
 
   describe('inventory_get_data_silo', () => {
-    it('returns validation error when data_silo_id is missing', async () => {
+    it('zodSchema rejects when data_silo_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_get_data_silo')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.getDataSilo).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
     });
 
     it('returns data silo on success', async () => {

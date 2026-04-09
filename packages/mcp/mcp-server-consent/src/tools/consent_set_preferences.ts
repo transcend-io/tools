@@ -1,11 +1,21 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { SetPreferencesSchema } from '../schemas.js';
+const PurposeConsentSchema = z.object({
+  purpose: z.string(),
+  enabled: z.boolean(),
+});
+
+const SetPreferencesSchema = z.object({
+  identifier: z.string().optional().describe('User identifier'),
+  partition: z.string().describe('Partition/organization context'),
+  purposes: z.array(PurposeConsentSchema).describe('Array of purpose consent settings'),
+  confirmed: z.boolean().optional().describe('Whether consent was explicitly confirmed'),
+});
 
 export function createConsentSetPreferencesTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -16,43 +26,20 @@ export function createConsentSetPreferencesTool(clients: ToolClients): ToolDefin
     readOnly: false,
     confirmationHint: 'Updates consent preferences for the user',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        identifier: {
-          type: 'string',
-          description: 'User identifier',
-        },
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        purposes: {
-          type: 'array',
-          description: 'Array of purpose consent settings',
-          items: {
-            type: 'object',
-          },
-        },
-        confirmed: {
-          type: 'boolean',
-          description: 'Whether consent was explicitly confirmed',
-        },
-      },
-      required: ['partition', 'purposes'],
-    },
+    zodSchema: SetPreferencesSchema,
     handler: async (args) => {
-      const parsed = validateArgs(SetPreferencesSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { partition, identifier, purposes, confirmed } = args as z.infer<
+        typeof SetPreferencesSchema
+      >;
       try {
         const result = await rest.syncConsent({
-          partition: parsed.data.partition,
-          identifier: parsed.data.identifier,
-          purposes: parsed.data.purposes.map((p) => ({
+          partition,
+          identifier,
+          purposes: purposes.map((p) => ({
             purpose: p.purpose,
             enabled: p.enabled,
           })),
-          confirmed: parsed.data.confirmed,
+          confirmed,
         });
         return createToolResult(true, {
           ...result,

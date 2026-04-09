@@ -1,13 +1,18 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
   type AssessmentSectionInput,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { AddSectionSchema } from '../schemas.js';
+
+const AddSectionSchema = z.object({
+  template_id: z.string(),
+  title: z.string(),
+  questions: z.array(z.record(z.string(), z.unknown())).optional(),
+});
 
 export function createAssessmentsAddSectionTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -21,43 +26,18 @@ export function createAssessmentsAddSectionTool(clients: ToolClients): ToolDefin
     readOnly: false,
     confirmationHint: 'Adds a section to the assessment template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        template_id: {
-          type: 'string',
-          description: 'ID of the assessment form template to add the section to',
-        },
-        title: {
-          type: 'string',
-          description: 'Title of the new section',
-        },
-        questions: {
-          type: 'array',
-          description:
-            'Array of question objects: [{title, type, subType?, description?, placeholder?, isRequired?, referenceId?, answerOptions?: [{value}], allowSelectOther?, requireRiskEvaluation?}]. ' +
-            'Types: LONG_ANSWER_TEXT, SHORT_ANSWER_TEXT, SINGLE_SELECT, MULTI_SELECT, FILE. ' +
-            'SubTypes: NONE, CUSTOM, USER, TEAM, DATA_SUB_CATEGORY, HAS_PERSONAL_DATA, ATTRIBUTE_KEY, SENSITIVE_CATEGORY. ' +
-            'referenceId is optional (auto-generated UUID if omitted). allowSelectOther auto-sets subType to CUSTOM.',
-          items: { type: 'object' },
-        },
-      },
-      required: ['template_id', 'title'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(AddSectionSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: AddSectionSchema,
+    handler: async (args: z.infer<typeof AddSectionSchema>) => {
       try {
         const result = await graphql.createAssessmentSection({
-          assessmentFormTemplateId: parsed.data.template_id,
-          title: parsed.data.title,
-          questions: parsed.data.questions as AssessmentSectionInput['questions'],
+          assessmentFormTemplateId: args.template_id,
+          title: args.title,
+          questions: args.questions as AssessmentSectionInput['questions'],
         });
 
         return createToolResult(true, {
           section: result,
-          message: `Section "${parsed.data.title}" added to template successfully`,
+          message: `Section "${args.title}" added to template successfully`,
         });
       } catch (error) {
         return createToolResult(

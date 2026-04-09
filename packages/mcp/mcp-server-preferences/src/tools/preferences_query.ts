@@ -1,12 +1,16 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { QueryPreferencesSchema } from '../schemas.js';
+const IdentifierSchema = z.object({ value: z.string(), type: z.string().optional() });
+const QueryPreferencesSchema = z.object({
+  partition: z.string(),
+  identifiers: z.array(IdentifierSchema),
+});
 
 export function createPreferencesQueryTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -16,34 +20,17 @@ export function createPreferencesQueryTool(clients: ToolClients): ToolDefinition
     category: 'Preference Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        identifiers: {
-          type: 'array',
-          description: 'Array of identifier objects to query',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['partition', 'identifiers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(QueryPreferencesSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: QueryPreferencesSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof QueryPreferencesSchema>;
       try {
-        const identifiers = parsed.data.identifiers.map((id) => ({
+        const identifiers = args.identifiers.map((id) => ({
           value: id.value,
           type: id.type,
         }));
 
         const result = await rest.queryPreferences({
-          partition: parsed.data.partition,
+          partition: args.partition,
           identifiers,
         });
 

@@ -1,12 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { GetAssessmentSchema } from '../schemas.js';
+
+const GetAssessmentSchema = z.object({
+  assessment_id: z.string(),
+});
 
 export function createAssessmentsGetTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -17,22 +20,10 @@ export function createAssessmentsGetTool(clients: ToolClients): ToolDefinition {
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        assessment_id: {
-          type: 'string',
-          description: 'ID of the assessment to retrieve',
-        },
-      },
-      required: ['assessment_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(GetAssessmentSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: GetAssessmentSchema,
+    handler: async (args: z.infer<typeof GetAssessmentSchema>) => {
       try {
-        const result = await graphql.getAssessment(parsed.data.assessment_id);
+        const result = await graphql.getAssessment(args.assessment_id);
         return createToolResult(true, result);
       } catch (error) {
         return createToolResult(

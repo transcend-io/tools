@@ -1,12 +1,17 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { UpdateAssigneesSchema } from '../schemas.js';
+
+const UpdateAssigneesSchema = z.object({
+  assessment_id: z.string(),
+  assignee_ids: z.array(z.string()).optional(),
+  external_assignee_emails: z.array(z.string()).optional(),
+});
 
 export function createAssessmentsUpdateAssigneesTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -18,35 +23,13 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients): Tool
     readOnly: false,
     confirmationHint: 'Assigns users to the assessment form',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        assessment_id: {
-          type: 'string',
-          description: 'ID of the assessment form to update assignees for',
-        },
-        assignee_ids: {
-          type: 'array',
-          description: 'Array of internal user IDs to assign to the assessment',
-          items: { type: 'string' },
-        },
-        external_assignee_emails: {
-          type: 'array',
-          description: 'Array of external email addresses to assign to the assessment',
-          items: { type: 'string' },
-        },
-      },
-      required: ['assessment_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(UpdateAssigneesSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: UpdateAssigneesSchema,
+    handler: async (args: z.infer<typeof UpdateAssigneesSchema>) => {
       try {
         const result = await graphql.updateAssessmentFormAssignees({
-          id: parsed.data.assessment_id,
-          assigneeIds: parsed.data.assignee_ids,
-          externalAssigneeEmails: parsed.data.external_assignee_emails,
+          id: args.assessment_id,
+          assigneeIds: args.assignee_ids,
+          externalAssigneeEmails: args.external_assignee_emails,
         });
 
         return createToolResult(true, {

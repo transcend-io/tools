@@ -1,13 +1,13 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  PaginationSchema,
   type ToolClients,
   type ToolDefinition,
+  z,
 } from '@transcend-io/mcp-server-core';
 
 import type { DSRMixin } from '../graphql.js';
-import { ListDSRSchema } from '../schemas.js';
 
 export function createDsrListTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as DSRMixin;
@@ -19,27 +19,12 @@ export function createDsrListTool(clients: ToolClients): ToolDefinition {
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response to fetch next page',
-        },
-      },
-      required: [],
-    },
+    zodSchema: PaginationSchema,
     handler: async (args) => {
-      const parsed = validateArgs(ListDSRSchema, args);
-      if (!parsed.success) return parsed.error;
       try {
         const result = await graphql.listRequests({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+          first: args.limit,
+          after: args.cursor,
         });
 
         return createListResult(result.nodes, {

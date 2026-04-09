@@ -1,13 +1,19 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { CreateAssessmentSchema } from '../schemas.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
+
+const CreateAssessmentSchema = z.object({
+  title: z.string(),
+  assessment_group_id: z.string().optional(),
+  template_id: z.string().optional(),
+  assignee_ids: z.array(z.string()).optional(),
+});
 
 export function createAssessmentsCreateTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -19,40 +25,13 @@ export function createAssessmentsCreateTool(clients: ToolClients): ToolDefinitio
     readOnly: false,
     confirmationHint: 'Creates a new privacy assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Title of the assessment',
-        },
-        assessment_group_id: {
-          type: 'string',
-          description:
-            'ID of the assessment group to create the assessment in (preferred). Use assessments_list_groups to find available groups.',
-        },
-        template_id: {
-          type: 'string',
-          description:
-            'ID of the assessment template. If assessment_group_id is not provided, the first group using this template will be used.',
-        },
-        assignee_ids: {
-          type: 'array',
-          description: 'Array of user IDs to assign the assessment to',
-          items: { type: 'string' },
-        },
-      },
-      required: ['title'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(CreateAssessmentSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: CreateAssessmentSchema,
+    handler: async (args: z.infer<typeof CreateAssessmentSchema>) => {
       try {
-        let assessmentGroupId = parsed.data.assessment_group_id;
+        let assessmentGroupId = args.assessment_group_id;
 
-        if (!assessmentGroupId && parsed.data.template_id) {
-          const resolved = await resolveTemplateToGroupId(graphql, parsed.data.template_id);
+        if (!assessmentGroupId && args.template_id) {
+          const resolved = await resolveTemplateToGroupId(graphql, args.template_id);
           if ('error' in resolved) return resolved.error;
           assessmentGroupId = resolved.groupId;
         }
@@ -66,14 +45,14 @@ export function createAssessmentsCreateTool(clients: ToolClients): ToolDefinitio
         }
 
         const result = await graphql.createAssessment({
-          title: parsed.data.title,
+          title: args.title,
           assessmentGroupId,
-          assigneeIds: parsed.data.assignee_ids,
+          assigneeIds: args.assignee_ids,
         });
 
         return createToolResult(true, {
           assessment: result,
-          message: `Assessment "${parsed.data.title}" created successfully`,
+          message: `Assessment "${args.title}" created successfully`,
         });
       } catch (error) {
         return createToolResult(

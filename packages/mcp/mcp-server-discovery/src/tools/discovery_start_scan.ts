@@ -1,12 +1,17 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { DiscoveryMixin } from '../graphql.js';
-import { StartScanSchema } from '../schemas.js';
+
+const StartScanSchema = z.object({
+  name: z.string(),
+  data_silo_id: z.string().optional(),
+  type: z.string().optional(),
+});
 
 export function createDiscoveryStartScanTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as DiscoveryMixin;
@@ -17,36 +22,18 @@ export function createDiscoveryStartScanTool(clients: ToolClients): ToolDefiniti
     readOnly: false,
     confirmationHint: 'Starts a new classification scan on the data silo',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Name for the classification scan',
-        },
-        data_silo_id: {
-          type: 'string',
-          description: 'ID of the data silo to scan (optional)',
-        },
-        type: {
-          type: 'string',
-          description: 'Type of scan (optional)',
-        },
-      },
-      required: ['name'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(StartScanSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: StartScanSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof StartScanSchema>;
       try {
         const result = await graphql.startClassificationScan({
-          name: parsed.data.name,
-          dataSiloId: parsed.data.data_silo_id,
-          type: parsed.data.type,
+          name: args.name,
+          dataSiloId: args.data_silo_id,
+          type: args.type,
         });
         return createToolResult(true, {
           scan: result,
-          message: `Classification scan "${parsed.data.name}" started successfully`,
+          message: `Classification scan "${args.name}" started successfully`,
         });
       } catch (error) {
         return createToolResult(

@@ -1,11 +1,14 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { GetPreferencesSchema } from '../schemas.js';
+const GetPreferencesSchema = z.object({
+  identifier: z.string().describe('User identifier (e.g., email, user ID)'),
+  partition: z.string().optional().describe('Partition/organization context (optional)'),
+});
 
 export function createConsentGetPreferencesTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -15,28 +18,11 @@ export function createConsentGetPreferencesTool(clients: ToolClients): ToolDefin
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        identifier: {
-          type: 'string',
-          description: 'User identifier (e.g., email, user ID)',
-        },
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context (optional)',
-        },
-      },
-      required: ['identifier'],
-    },
+    zodSchema: GetPreferencesSchema,
     handler: async (args) => {
-      const parsed = validateArgs(GetPreferencesSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { identifier, partition } = args as z.infer<typeof GetPreferencesSchema>;
       try {
-        const result = await rest.getConsentPreferences(
-          parsed.data.identifier,
-          parsed.data.partition,
-        );
+        const result = await rest.getConsentPreferences(identifier, partition);
         if (!result) {
           return createToolResult(true, {
             found: false,

@@ -1,12 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { ExportTemplateSchema } from '../schemas.js';
+
+const ExportTemplateSchema = z.object({
+  template_id: z.string(),
+});
 
 export function createAssessmentsExportTemplateTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -19,22 +22,10 @@ export function createAssessmentsExportTemplateTool(clients: ToolClients): ToolD
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        template_id: {
-          type: 'string',
-          description: 'ID of the assessment form template to export',
-        },
-      },
-      required: ['template_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ExportTemplateSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: ExportTemplateSchema,
+    handler: async (args: z.infer<typeof ExportTemplateSchema>) => {
       try {
-        const template = await graphql.getAssessmentFormTemplate(parsed.data.template_id);
+        const template = await graphql.getAssessmentFormTemplate(args.template_id);
 
         const exportData = {
           _exportedAt: new Date().toISOString(),

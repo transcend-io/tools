@@ -50,17 +50,13 @@ describe('Discovery Tools', () => {
   });
 
   describe('discovery_get_scan', () => {
-    it('returns validation error when scan_id is missing', async () => {
+    it('zodSchema rejects input when scan_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'discovery_get_scan')!;
 
-      const result = await tool.handler({});
+      const parsed = tool.zodSchema.safeParse({});
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.getClassificationScan).not.toHaveBeenCalled();
+      expect(parsed.success).toBe(false);
     });
 
     it('returns scan on success', async () => {

@@ -1,13 +1,30 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
   type UpdateConsentDataFlowInput,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
-import { UpdateDataFlowsSchema } from '../schemas.js';
+
+const ConsentTrackerStatusEnum = z.enum(['LIVE', 'NEEDS_REVIEW']);
+
+const UpdateDataFlowItemSchema = z.object({
+  id: z.string().describe('Data flow ID'),
+  tracking_purposes: z.array(z.string()).optional().describe('Tracking purpose slugs'),
+  description: z.string().optional(),
+  service: z.string().optional().describe('Service/integration name'),
+  is_junk: z.boolean().optional().describe('Mark as junk'),
+  status: ConsentTrackerStatusEnum.optional().describe(
+    'Set status to LIVE (approve) or NEEDS_REVIEW',
+  ),
+});
+
+const UpdateDataFlowsSchema = z.object({
+  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
+  data_flows: z.array(UpdateDataFlowItemSchema).min(1).describe('Data flows to update'),
+});
 
 export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as ConsentMixin;
@@ -20,42 +37,11 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
     readOnly: false,
     confirmationHint: 'Updates data flows in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        airgap_bundle_id: { type: 'string', description: 'Airgap bundle ID' },
-        data_flows: {
-          type: 'array',
-          description: 'Data flows to update',
-          items: {
-            type: 'object',
-            properties: {
-              id: { type: 'string', description: 'Data flow ID' },
-              tracking_purposes: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Tracking purpose slugs',
-              },
-              description: { type: 'string', description: 'Data flow description' },
-              service: { type: 'string', description: 'Service name' },
-              is_junk: { type: 'boolean', description: 'Mark as junk' },
-              status: {
-                type: 'string',
-                enum: ['LIVE', 'NEEDS_REVIEW'],
-                description: 'Set status',
-              },
-            },
-            required: ['id'],
-          },
-        },
-      },
-      required: ['airgap_bundle_id', 'data_flows'],
-    },
+    zodSchema: UpdateDataFlowsSchema,
     handler: async (args) => {
-      const parsed = validateArgs(UpdateDataFlowsSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { airgap_bundle_id, data_flows } = args as z.infer<typeof UpdateDataFlowsSchema>;
       try {
-        const dfInputs: UpdateConsentDataFlowInput[] = parsed.data.data_flows.map((df) => ({
+        const dfInputs: UpdateConsentDataFlowInput[] = data_flows.map((df) => ({
           id: df.id,
           ...(df.tracking_purposes ? { purposeIds: df.tracking_purposes } : {}),
           ...(df.description !== undefined ? { description: df.description } : {}),
@@ -63,7 +49,7 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
           ...(df.is_junk !== undefined ? { isJunk: df.is_junk } : {}),
           ...(df.status !== undefined ? { status: df.status } : {}),
         }));
-        const result = await graphql.updateConsentDataFlows(parsed.data.airgap_bundle_id, dfInputs);
+        const result = await graphql.updateConsentDataFlows(airgap_bundle_id, dfInputs);
         return createToolResult(true, {
           updated: result.dataFlows.length,
           dataFlows: result.dataFlows.map((df) => ({

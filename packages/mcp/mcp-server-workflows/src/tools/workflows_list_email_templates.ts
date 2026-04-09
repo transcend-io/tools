@@ -1,13 +1,17 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  PaginationSchema,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { WorkflowsMixin } from '../graphql.js';
-import { ListEmailTemplatesSchema } from '../schemas.js';
+
+const ListEmailTemplatesSchema = PaginationSchema.extend({
+  offset: z.coerce.number().min(0).optional().default(0),
+});
 
 export function createWorkflowsListEmailTemplatesTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as WorkflowsMixin;
@@ -18,31 +22,13 @@ export function createWorkflowsListEmailTemplatesTool(clients: ToolClients): Too
     category: 'Workflows',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-        offset: {
-          type: 'number',
-          description: 'Number of results to skip (default: 0)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListEmailTemplatesSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ListEmailTemplatesSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof ListEmailTemplatesSchema>;
       try {
         const result = await graphql.listEmailTemplates({
-          first: parsed.data.limit,
-          offset: parsed.data.offset,
+          first: args.limit,
+          offset: args.offset,
         });
 
         return createListResult(result.nodes, {

@@ -1,15 +1,21 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { TranscendRestClient } from '../clients/rest-client.js';
+import { createToolResult } from '../tools/helpers.js';
 import type { ToolDefinition, ToolClients } from '../tools/types.js';
 
 export interface MCPServerOptions {
+  /** Server display name */
   name: string;
+  /** Server version */
   version: string;
+  /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
+  /** Optional custom client factory */
   createClients?: (apiKey: string, sombraUrl: string, graphqlUrl: string) => ToolClients;
 }
 
@@ -39,12 +45,18 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
 
   const tools = options.getTools(clients);
   const toolMap = new Map<string, ToolDefinition>();
+  const jsonSchemaCache = new Map<string, Record<string, unknown>>();
+
   for (const tool of tools) {
     if (toolMap.has(tool.name)) {
       logger.warn(`Duplicate tool name "${tool.name}" — skipping`);
       continue;
     }
     toolMap.set(tool.name, tool);
+    jsonSchemaCache.set(
+      tool.name,
+      toJsonSchemaCompat(tool.zodSchema as any) as Record<string, unknown>,
+    );
   }
 
   logger.info(`Registered ${toolMap.size} tools`, { toolCount: toolMap.size });
@@ -56,10 +68,10 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     logger.debug('Listing MCP tools');
-    const toolList = Array.from(toolMap.values()).map((t) => ({
+    const toolList = Array.from(toolMap.entries()).map(([name, t]) => ({
       name: t.name,
       description: t.description,
-      inputSchema: t.inputSchema,
+      inputSchema: jsonSchemaCache.get(name) || { type: 'object', properties: {} },
       annotations: t.annotations,
     }));
     logger.info(`Returning ${toolList.length} tools`);
@@ -75,7 +87,23 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
       if (!tool) {
         throw new Error(`Unknown tool: ${name}`);
       }
-      const result = await tool.handler((args || {}) as Record<string, unknown>);
+
+      const parseResult = tool.zodSchema.safeParse(args || {});
+      if (!parseResult.success) {
+        const issues = parseResult.error.issues
+          .map((i: any) => `${i.path.join('.') || 'input'}: ${i.message}`)
+          .join('; ');
+        const errorResult = createToolResult(false, undefined, `Invalid input: ${issues}`, {
+          code: 'VALIDATION_ERROR',
+          retryable: false,
+        });
+        return {
+          content: [{ type: 'text', text: JSON.stringify(errorResult, null, 2) }],
+          isError: true,
+        };
+      }
+
+      const result = await tool.handler(parseResult.data);
       logger.debug(`Tool ${name} completed successfully`);
 
       return {

@@ -1,11 +1,14 @@
 import {
   createToolResult,
-  validateArgs,
   type ToolClients,
   type ToolDefinition,
+  z,
 } from '@transcend-io/mcp-server-core';
 
-import { EnrichIdentifiersSchema } from '../schemas.js';
+const enrichIdentifiersSchema = z.object({
+  request_id: z.string(),
+  identifiers: z.record(z.string(), z.string()),
+});
 
 export function createDsrEnrichIdentifiersTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -18,27 +21,12 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients): ToolDefini
     readOnly: false,
     confirmationHint: 'Adds identifiers to the DSR during preflight',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        request_id: {
-          type: 'string',
-          description: 'ID of the DSR to enrich',
-        },
-        identifiers: {
-          type: 'object',
-          description: 'Key-value pairs of identifier names and values to add',
-        },
-      },
-      required: ['request_id', 'identifiers'],
-    },
+    zodSchema: enrichIdentifiersSchema,
     handler: async (args) => {
-      const parsed = validateArgs(EnrichIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
       try {
         const result = await rest.enrichIdentifiers({
-          requestId: parsed.data.request_id,
-          identifiers: parsed.data.identifiers,
+          requestId: args.request_id,
+          identifiers: args.identifiers,
         });
         return createToolResult(true, {
           ...result,

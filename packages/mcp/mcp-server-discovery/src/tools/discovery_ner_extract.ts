@@ -1,11 +1,14 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
-import { NerExtractSchema } from '../schemas.js';
+const NerExtractSchema = z.object({
+  text: z.string(),
+  entity_types: z.array(z.string()).optional(),
+});
 
 export function createDiscoveryNerExtractTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -15,28 +18,13 @@ export function createDiscoveryNerExtractTool(clients: ToolClients): ToolDefinit
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        text: {
-          type: 'string',
-          description: 'Text to extract entities from',
-        },
-        entity_types: {
-          type: 'array',
-          description: 'Specific entity types to extract (optional)',
-          items: { type: 'string' },
-        },
-      },
-      required: ['text'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(NerExtractSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: NerExtractSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof NerExtractSchema>;
       try {
         const result = await rest.extractEntities({
-          text: parsed.data.text,
-          entityTypes: parsed.data.entity_types,
+          text: args.text,
+          entityTypes: args.entity_types,
         });
 
         return createToolResult(true, {

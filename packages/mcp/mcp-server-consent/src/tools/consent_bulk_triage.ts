@@ -1,6 +1,6 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
   type UpdateConsentDataFlowInput,
@@ -8,7 +8,24 @@ import {
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
-import { BulkTriageSchema } from '../schemas.js';
+
+const TriageActionEnum = z.enum(['APPROVE', 'JUNK']);
+
+const BulkTriageItemSchema = z.object({
+  type: z.enum(['cookie', 'data_flow']).describe('Item type'),
+  id: z.string().describe('Item ID (for data flows) or cookie name (for cookies)'),
+  action: TriageActionEnum.describe('Action to take: APPROVE or JUNK'),
+  tracking_purposes: z
+    .array(z.string())
+    .optional()
+    .describe('Tracking purposes to assign (required when approving)'),
+  service: z.string().optional().describe('Service name to assign'),
+});
+
+const BulkTriageSchema = z.object({
+  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
+  items: z.array(BulkTriageItemSchema).min(1).describe('Items to triage'),
+});
 
 export function createConsentBulkTriageTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as ConsentMixin;
@@ -22,50 +39,13 @@ export function createConsentBulkTriageTool(clients: ToolClients): ToolDefinitio
     readOnly: false,
     confirmationHint: 'Bulk approves or junks cookies and data flows',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        airgap_bundle_id: { type: 'string', description: 'Airgap bundle ID' },
-        items: {
-          type: 'array',
-          description: 'Items to triage',
-          items: {
-            type: 'object',
-            properties: {
-              type: {
-                type: 'string',
-                enum: ['cookie', 'data_flow'],
-                description: 'Item type',
-              },
-              id: {
-                type: 'string',
-                description: 'Cookie name (for cookies) or data flow ID (for data flows)',
-              },
-              action: {
-                type: 'string',
-                enum: ['APPROVE', 'JUNK'],
-                description: 'Triage action',
-              },
-              tracking_purposes: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Tracking purposes (recommended when approving)',
-              },
-              service: { type: 'string', description: 'Service name to assign' },
-            },
-            required: ['type', 'id', 'action'],
-          },
-        },
-      },
-      required: ['airgap_bundle_id', 'items'],
-    },
+    zodSchema: BulkTriageSchema,
     handler: async (args) => {
-      const parsed = validateArgs(BulkTriageSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { airgap_bundle_id, items } = args as z.infer<typeof BulkTriageSchema>;
       try {
-        const bundleId = parsed.data.airgap_bundle_id;
-        const cookieItems = parsed.data.items.filter((i) => i.type === 'cookie');
-        const dfItems = parsed.data.items.filter((i) => i.type === 'data_flow');
+        const bundleId = airgap_bundle_id;
+        const cookieItems = items.filter((i) => i.type === 'cookie');
+        const dfItems = items.filter((i) => i.type === 'data_flow');
 
         const results: {
           cookies: { name: string; action: string; status: string }[];

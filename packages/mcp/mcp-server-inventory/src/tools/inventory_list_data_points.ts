@@ -1,13 +1,17 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { ListDataPointsSchema } from '../schemas.js';
+
+const ListDataPointsSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  cursor: z.string().optional(),
+});
 
 export function createInventoryListDataPointsTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as InventoryMixin;
@@ -18,29 +22,15 @@ export function createInventoryListDataPointsTool(clients: ToolClients): ToolDef
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
+    zodSchema: ListDataPointsSchema,
     handler: async (args) => {
-      const parsed = validateArgs(ListDataPointsSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { limit, cursor } = args as z.infer<typeof ListDataPointsSchema>;
       try {
         const result = await graphql.listDataPoints(
           undefined, // dataSiloId not supported by API
           {
-            first: parsed.data.limit,
-            after: parsed.data.cursor,
+            first: limit,
+            after: cursor,
           },
         );
 

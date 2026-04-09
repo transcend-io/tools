@@ -1,12 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { DiscoveryMixin } from '../graphql.js';
-import { GetScanSchema } from '../schemas.js';
+
+const GetScanSchema = z.object({
+  scan_id: z.string(),
+});
 
 export function createDiscoveryGetScanTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as DiscoveryMixin;
@@ -16,21 +19,11 @@ export function createDiscoveryGetScanTool(clients: ToolClients): ToolDefinition
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        scan_id: {
-          type: 'string',
-          description: 'ID of the classification scan to retrieve',
-        },
-      },
-      required: ['scan_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(GetScanSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: GetScanSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof GetScanSchema>;
       try {
-        const result = await graphql.getClassificationScan(parsed.data.scan_id);
+        const result = await graphql.getClassificationScan(args.scan_id);
         return createToolResult(true, result);
       } catch (error) {
         return createToolResult(

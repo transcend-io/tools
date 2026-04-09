@@ -1,12 +1,30 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { UpdateAssessmentSchema } from '../schemas.js';
+
+const AssessmentStatusEnum = z.enum([
+  'DRAFT',
+  'SHARED',
+  'IN_PROGRESS',
+  'IN_REVIEW',
+  'CHANGES_REQUESTED',
+  'REJECTED',
+  'APPROVED',
+]);
+
+const UpdateAssessmentSchema = z.object({
+  assessment_id: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  reviewer_ids: z.array(z.string()).optional(),
+  due_date: z.string().optional(),
+  status: AssessmentStatusEnum.optional(),
+});
 
 export function createAssessmentsUpdateTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -17,58 +35,16 @@ export function createAssessmentsUpdateTool(clients: ToolClients): ToolDefinitio
     readOnly: false,
     confirmationHint: 'Updates the assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        assessment_id: {
-          type: 'string',
-          description: 'ID of the assessment to update',
-        },
-        title: {
-          type: 'string',
-          description: 'New title for the assessment',
-        },
-        description: {
-          type: 'string',
-          description: 'New description',
-        },
-        reviewer_ids: {
-          type: 'array',
-          description: 'IDs of users assigned to review this assessment',
-          items: { type: 'string' },
-        },
-        due_date: {
-          type: 'string',
-          description: 'New due date (ISO format)',
-        },
-        status: {
-          type: 'string',
-          description: 'New status',
-          enum: [
-            'DRAFT',
-            'SHARED',
-            'IN_PROGRESS',
-            'IN_REVIEW',
-            'CHANGES_REQUESTED',
-            'REJECTED',
-            'APPROVED',
-          ],
-        },
-      },
-      required: ['assessment_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(UpdateAssessmentSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: UpdateAssessmentSchema,
+    handler: async (args: z.infer<typeof UpdateAssessmentSchema>) => {
       try {
         const result = await graphql.updateAssessment({
-          id: parsed.data.assessment_id,
-          title: parsed.data.title,
-          description: parsed.data.description,
-          reviewerIds: parsed.data.reviewer_ids,
-          dueDate: parsed.data.due_date,
-          status: parsed.data.status,
+          id: args.assessment_id,
+          title: args.title,
+          description: args.description,
+          reviewerIds: args.reviewer_ids,
+          dueDate: args.due_date,
+          status: args.status,
         });
 
         return createToolResult(true, {

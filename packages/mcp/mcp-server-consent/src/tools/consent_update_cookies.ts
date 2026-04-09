@@ -1,13 +1,33 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
   type UpdateCookieInput,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
-import { UpdateCookiesSchema } from '../schemas.js';
+
+const ConsentTrackerStatusEnum = z.enum(['LIVE', 'NEEDS_REVIEW']);
+
+const UpdateCookieItemSchema = z.object({
+  name: z.string().describe('Cookie name (used as the identifier for upsert)'),
+  tracking_purposes: z
+    .array(z.string())
+    .optional()
+    .describe('Tracking purpose slugs (e.g., "Advertising", "Analytics")'),
+  description: z.string().optional(),
+  service: z.string().optional().describe('Service/integration name'),
+  is_junk: z.boolean().optional().describe('Mark as junk'),
+  status: ConsentTrackerStatusEnum.optional().describe(
+    'Set status to LIVE (approve) or NEEDS_REVIEW',
+  ),
+});
+
+const UpdateCookiesSchema = z.object({
+  airgap_bundle_id: z.string().describe('Airgap bundle ID'),
+  cookies: z.array(UpdateCookieItemSchema).min(1).describe('Cookies to update'),
+});
 
 export function createConsentUpdateCookiesTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as ConsentMixin;
@@ -21,42 +41,11 @@ export function createConsentUpdateCookiesTool(clients: ToolClients): ToolDefini
     readOnly: false,
     confirmationHint: 'Updates cookies in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        airgap_bundle_id: { type: 'string', description: 'Airgap bundle ID' },
-        cookies: {
-          type: 'array',
-          description: 'Cookies to update',
-          items: {
-            type: 'object',
-            properties: {
-              name: { type: 'string', description: 'Cookie name (identifier)' },
-              tracking_purposes: {
-                type: 'array',
-                items: { type: 'string' },
-                description: 'Tracking purpose slugs',
-              },
-              description: { type: 'string', description: 'Cookie description' },
-              service: { type: 'string', description: 'Service name' },
-              is_junk: { type: 'boolean', description: 'Mark as junk' },
-              status: {
-                type: 'string',
-                enum: ['LIVE', 'NEEDS_REVIEW'],
-                description: 'Set status',
-              },
-            },
-            required: ['name'],
-          },
-        },
-      },
-      required: ['airgap_bundle_id', 'cookies'],
-    },
+    zodSchema: UpdateCookiesSchema,
     handler: async (args) => {
-      const parsed = validateArgs(UpdateCookiesSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { airgap_bundle_id, cookies } = args as z.infer<typeof UpdateCookiesSchema>;
       try {
-        const cookieInputs: UpdateCookieInput[] = parsed.data.cookies.map((c) => ({
+        const cookieInputs: UpdateCookieInput[] = cookies.map((c) => ({
           name: c.name,
           ...(c.tracking_purposes ? { trackingPurposes: c.tracking_purposes } : {}),
           ...(c.description !== undefined ? { description: c.description } : {}),
@@ -64,7 +53,7 @@ export function createConsentUpdateCookiesTool(clients: ToolClients): ToolDefini
           ...(c.is_junk !== undefined ? { isJunk: c.is_junk } : {}),
           ...(c.status !== undefined ? { status: c.status } : {}),
         }));
-        await graphql.updateCookies(parsed.data.airgap_bundle_id, cookieInputs);
+        await graphql.updateCookies(airgap_bundle_id, cookieInputs);
         return createToolResult(true, {
           updated: cookieInputs.length,
           cookies: cookieInputs.map((c) => ({

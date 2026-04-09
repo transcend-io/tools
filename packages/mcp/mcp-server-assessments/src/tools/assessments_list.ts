@@ -1,13 +1,29 @@
 import {
   createToolResult,
   createListResult,
-  validateArgs,
+  z,
+  PaginationSchema,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { ListAssessmentsSchema } from '../schemas.js';
+
+const AssessmentStatusEnum = z.enum([
+  'DRAFT',
+  'SHARED',
+  'IN_PROGRESS',
+  'IN_REVIEW',
+  'CHANGES_REQUESTED',
+  'REJECTED',
+  'APPROVED',
+]);
+
+const ListAssessmentsSchema = z
+  .object({
+    status: AssessmentStatusEnum.optional(),
+  })
+  .merge(PaginationSchema);
 
 export function createAssessmentsListTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -18,42 +34,13 @@ export function createAssessmentsListTool(clients: ToolClients): ToolDefinition 
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          description: 'Filter by assessment status',
-          enum: [
-            'DRAFT',
-            'SHARED',
-            'IN_PROGRESS',
-            'IN_REVIEW',
-            'CHANGES_REQUESTED',
-            'REJECTED',
-            'APPROVED',
-          ],
-        },
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListAssessmentsSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: ListAssessmentsSchema,
+    handler: async (args: z.infer<typeof ListAssessmentsSchema>) => {
       try {
         const result = await graphql.listAssessments({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
-          filterBy: parsed.data.status ? { statuses: [parsed.data.status] } : undefined,
+          first: args.limit,
+          after: args.cursor,
+          filterBy: args.status ? { statuses: [args.status] } : undefined,
         });
 
         return createListResult(result.nodes, {

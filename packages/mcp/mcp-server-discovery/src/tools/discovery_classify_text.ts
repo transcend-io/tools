@@ -1,11 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
-import { ClassifyTextSchema } from '../schemas.js';
+const ClassifyTextSchema = z.object({
+  texts: z.array(z.string()),
+  categories: z.array(z.string()).optional(),
+  model: z.string().optional(),
+});
 
 export function createDiscoveryClassifyTextTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -16,40 +20,20 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients): ToolDefin
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        texts: {
-          type: 'array',
-          description: 'Array of text strings to classify',
-          items: { type: 'string' },
-        },
-        categories: {
-          type: 'array',
-          description: 'Specific categories to classify against (optional)',
-          items: { type: 'string' },
-        },
-        model: {
-          type: 'string',
-          description: 'LLM model to use for classification (optional)',
-        },
-      },
-      required: ['texts'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ClassifyTextSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ClassifyTextSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof ClassifyTextSchema>;
       try {
         const results = await rest.classifyText({
-          texts: parsed.data.texts,
-          categories: parsed.data.categories,
-          model: parsed.data.model,
+          texts: args.texts,
+          categories: args.categories,
+          model: args.model,
         });
 
         return createToolResult(true, {
           results,
-          inputCount: parsed.data.texts.length,
-          message: `Classified ${parsed.data.texts.length} text(s) successfully`,
+          inputCount: args.texts.length,
+          message: `Classified ${args.texts.length} text(s) successfully`,
         });
       } catch (error) {
         return createToolResult(

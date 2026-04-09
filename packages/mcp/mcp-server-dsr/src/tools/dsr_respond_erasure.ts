@@ -1,11 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
   type ToolClients,
   type ToolDefinition,
+  z,
 } from '@transcend-io/mcp-server-core';
 
-import { RespondErasureSchema } from '../schemas.js';
+const respondErasureSchema = z.object({
+  request_id: z.string(),
+  data_silo_id: z.string(),
+  profile_ids: z.array(z.string()).optional(),
+});
 
 export function createDsrRespondErasureTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -17,33 +21,13 @@ export function createDsrRespondErasureTool(clients: ToolClients): ToolDefinitio
     readOnly: false,
     confirmationHint: 'Confirms erasure completion for the data silo',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        request_id: {
-          type: 'string',
-          description: 'ID of the DSR',
-        },
-        data_silo_id: {
-          type: 'string',
-          description: 'ID of the data silo that completed erasure',
-        },
-        profile_ids: {
-          type: 'array',
-          description: 'IDs of profiles that were erased (optional)',
-          items: { type: 'string' },
-        },
-      },
-      required: ['request_id', 'data_silo_id'],
-    },
+    zodSchema: respondErasureSchema,
     handler: async (args) => {
-      const parsed = validateArgs(RespondErasureSchema, args);
-      if (!parsed.success) return parsed.error;
       try {
         const result = await rest.confirmErasure({
-          requestId: parsed.data.request_id,
-          dataSiloId: parsed.data.data_silo_id,
-          profileIds: parsed.data.profile_ids,
+          requestId: args.request_id,
+          dataSiloId: args.data_silo_id,
+          profileIds: args.profile_ids,
         });
         return createToolResult(true, {
           ...result,

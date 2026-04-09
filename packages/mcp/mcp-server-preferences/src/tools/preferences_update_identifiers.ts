@@ -1,11 +1,21 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { UpdateIdentifiersSchema } from '../schemas.js';
+const UpdateIdentifiersSchema = z.object({
+  partition: z.string(),
+  user_id: z.string(),
+  identifiers: z.array(
+    z.object({
+      oldValue: z.string(),
+      newValue: z.string(),
+      type: z.string().optional(),
+    }),
+  ),
+});
 
 export function createPreferencesUpdateIdentifiersTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -16,42 +26,17 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients): To
     readOnly: false,
     confirmationHint: 'Updates identifiers for the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        user_id: {
-          type: 'string',
-          description: 'User ID to update identifiers for',
-        },
-        identifiers: {
-          type: 'array',
-          description: 'Array of identifier update objects with old and new values',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['partition', 'user_id', 'identifiers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(UpdateIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: UpdateIdentifiersSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof UpdateIdentifiersSchema>;
       try {
-        const identifiers = parsed.data.identifiers.map((id) => ({
+        const identifiers = args.identifiers.map((id) => ({
           oldValue: id.oldValue,
           newValue: id.newValue,
           type: id.type,
         }));
 
-        const result = await rest.updateIdentifiers(
-          parsed.data.partition,
-          parsed.data.user_id,
-          identifiers,
-        );
+        const result = await rest.updateIdentifiers(args.partition, args.user_id, identifiers);
 
         return createToolResult(true, {
           ...result,

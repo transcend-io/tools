@@ -1,6 +1,6 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
   type AssessmentTemplateCreateInput,
@@ -8,7 +8,13 @@ import {
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { CreateTemplateSchema } from '../schemas.js';
+
+const CreateTemplateSchema = z.object({
+  title: z.string(),
+  description: z.string().optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED']).optional(),
+  sections: z.array(z.record(z.string(), z.unknown())).optional(),
+});
 
 export function createAssessmentsCreateTemplateTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -27,52 +33,21 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients): ToolD
     readOnly: false,
     confirmationHint: 'Creates a new assessment form template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Title of the assessment form template',
-        },
-        description: {
-          type: 'string',
-          description: 'Description of the template',
-        },
-        status: {
-          type: 'string',
-          description: 'Template status: DRAFT or PUBLISHED (default: DRAFT)',
-          enum: ['DRAFT', 'PUBLISHED'],
-        },
-        sections: {
-          type: 'array',
-          description:
-            'Array of section objects. Each section: {title: string, questions?: [{title, type, subType?, description?, placeholder?, isRequired?, referenceId?, answerOptions?: [{value}], allowSelectOther?, requireRiskEvaluation?}]}. ' +
-            'Question types: LONG_ANSWER_TEXT, SHORT_ANSWER_TEXT, SINGLE_SELECT, MULTI_SELECT, FILE. ' +
-            'SubTypes: NONE, CUSTOM, USER, TEAM, DATA_SUB_CATEGORY, HAS_PERSONAL_DATA, ATTRIBUTE_KEY, SENSITIVE_CATEGORY. ' +
-            'referenceId is optional (auto-generated UUID if omitted or not UUID format). ' +
-            'allowSelectOther auto-sets subType to CUSTOM. requireRiskEvaluation requires riskFrameworkId.',
-          items: { type: 'object' },
-        },
-      },
-      required: ['title'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(CreateTemplateSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: CreateTemplateSchema,
+    handler: async (args: z.infer<typeof CreateTemplateSchema>) => {
       try {
         const input: AssessmentTemplateCreateInput = {
-          title: parsed.data.title,
-          description: parsed.data.description,
-          status: parsed.data.status ?? 'DRAFT',
-          sections: parsed.data.sections as AssessmentSectionInput[] | undefined,
+          title: args.title,
+          description: args.description,
+          status: args.status ?? 'DRAFT',
+          sections: args.sections as AssessmentSectionInput[] | undefined,
         };
 
         const result = await graphql.createAssessmentFormTemplate(input);
 
         return createToolResult(true, {
           template: result,
-          message: `Assessment template "${parsed.data.title}" created successfully`,
+          message: `Assessment template "${args.title}" created successfully`,
         });
       } catch (error) {
         return createToolResult(

@@ -1,11 +1,13 @@
 import {
   createToolResult,
-  validateArgs,
   type ToolClients,
   type ToolDefinition,
+  z,
 } from '@transcend-io/mcp-server-core';
 
-import { DownloadKeysSchema } from '../schemas.js';
+const downloadKeysSchema = z.object({
+  request_id: z.string(),
+});
 
 export function createDsrDownloadKeysTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -17,21 +19,10 @@ export function createDsrDownloadKeysTool(clients: ToolClients): ToolDefinition 
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        request_id: {
-          type: 'string',
-          description: 'ID of the completed DSR',
-        },
-      },
-      required: ['request_id'],
-    },
+    zodSchema: downloadKeysSchema,
     handler: async (args) => {
-      const parsed = validateArgs(DownloadKeysSchema, args);
-      if (!parsed.success) return parsed.error;
       try {
-        const keys = await rest.getDSRDownloadKeys(parsed.data.request_id);
+        const keys = await rest.getDSRDownloadKeys(args.request_id);
         return createToolResult(true, {
           downloadKeys: keys,
           count: keys.length,

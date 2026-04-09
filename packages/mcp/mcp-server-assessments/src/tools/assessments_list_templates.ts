@@ -1,13 +1,15 @@
 import {
   createToolResult,
   createListResult,
-  validateArgs,
+  z,
+  PaginationSchema,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { ListTemplatesSchema } from '../schemas.js';
+
+const ListTemplatesSchema = PaginationSchema;
 
 export function createAssessmentsListTemplatesTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -18,28 +20,12 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients): ToolDe
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListTemplatesSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: ListTemplatesSchema,
+    handler: async (args: z.infer<typeof ListTemplatesSchema>) => {
       try {
         const result = await graphql.listAssessmentTemplates({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+          first: args.limit,
+          after: args.cursor,
         });
 
         return createListResult(result.nodes, {

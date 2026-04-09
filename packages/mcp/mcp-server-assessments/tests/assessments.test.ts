@@ -36,17 +36,12 @@ describe('Assessment Tools', () => {
     });
 
   describe('assessments_list', () => {
-    it('returns validation error when status is invalid', async () => {
+    it('zodSchema rejects invalid status', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_list')!;
 
-      const result = await tool.handler({ status: 'INVALID_STATUS' });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.listAssessments).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({ status: 'INVALID_STATUS' });
+      expect(result.success).toBe(false);
     });
 
     it('returns assessments on success', async () => {
@@ -94,19 +89,12 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_create', () => {
-    it('returns validation error when title is missing', async () => {
+    it('zodSchema rejects when title is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = await tool.handler({
-        assessment_group_id: 'grp-1',
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({ assessment_group_id: 'grp-1' });
+      expect(result.success).toBe(false);
     });
 
     it('creates assessment with group_id on success', async () => {
@@ -198,19 +186,14 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_create_template', () => {
-    it('returns validation error when title is missing', async () => {
+    it('zodSchema rejects when title is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create_template')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         sections: [{ title: 'Section 1', questions: [] }],
       });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessmentFormTemplate).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
     });
 
     it('creates template on success', async () => {
@@ -278,19 +261,12 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_answer_question', () => {
-    it('returns validation error when assessment_question_id is missing', async () => {
+    it('zodSchema rejects when assessment_question_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_answer_question')!;
 
-      const result = await tool.handler({
-        assessment_answer_ids: ['ans-1'],
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.selectAssessmentQuestionAnswers).not.toHaveBeenCalled();
+      const result = tool.zodSchema.safeParse({ assessment_answer_ids: ['ans-1'] });
+      expect(result.success).toBe(false);
     });
 
     it('answers question with answer IDs on success', async () => {
@@ -363,36 +339,26 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_prefill', () => {
-    it('returns validation error when title is missing', async () => {
+    it('zodSchema rejects when title is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         assessment_group_id: 'grp-1',
         answers: { Q1: 'A1' },
       });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
     });
 
-    it('returns validation error when answers is missing', async () => {
+    it('zodSchema rejects when answers is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
+      const result = tool.zodSchema.safeParse({
         title: 'Prefill Test',
         assessment_group_id: 'grp-1',
       });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+      expect(result.success).toBe(false);
     });
 
     it('returns error when neither template_id nor assessment_group_id provided', async () => {

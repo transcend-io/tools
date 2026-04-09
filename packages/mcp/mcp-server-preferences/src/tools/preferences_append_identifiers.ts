@@ -1,11 +1,16 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { AppendIdentifiersSchema } from '../schemas.js';
+const IdentifierSchema = z.object({ value: z.string(), type: z.string().optional() });
+const AppendIdentifiersSchema = z.object({
+  partition: z.string(),
+  user_id: z.string(),
+  identifiers: z.array(IdentifierSchema),
+});
 
 export function createPreferencesAppendIdentifiersTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -16,41 +21,16 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients): To
     readOnly: false,
     confirmationHint: 'Appends identifiers to the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        user_id: {
-          type: 'string',
-          description: 'User ID to append identifiers to',
-        },
-        identifiers: {
-          type: 'array',
-          description: 'Array of identifier objects to append',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['partition', 'user_id', 'identifiers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(AppendIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: AppendIdentifiersSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof AppendIdentifiersSchema>;
       try {
-        const identifiers = parsed.data.identifiers.map((id) => ({
+        const identifiers = args.identifiers.map((id) => ({
           value: id.value,
           type: id.type,
         }));
 
-        const result = await rest.appendIdentifiers(
-          parsed.data.partition,
-          parsed.data.user_id,
-          identifiers,
-        );
+        const result = await rest.appendIdentifiers(args.partition, args.user_id, identifiers);
 
         return createToolResult(true, {
           ...result,

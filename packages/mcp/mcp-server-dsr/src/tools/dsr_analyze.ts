@@ -1,13 +1,16 @@
 import {
   createToolResult,
   groupBy,
-  validateArgs,
   type ToolClients,
   type ToolDefinition,
+  z,
 } from '@transcend-io/mcp-server-core';
 
 import type { DSRMixin } from '../graphql.js';
-import { AnalyzeDSRSchema } from '../schemas.js';
+
+const analyzeDsrSchema = z.object({
+  days: z.coerce.number().optional(),
+});
 
 export function createDsrAnalyzeTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as DSRMixin;
@@ -19,24 +22,12 @@ export function createDsrAnalyzeTool(clients: ToolClients): ToolDefinition {
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        days: {
-          type: 'number',
-          description:
-            'Filter analysis to requests within N days (default: 30). Only analyzes from the 100 most recent requests.',
-        },
-      },
-      required: [],
-    },
+    zodSchema: analyzeDsrSchema,
     handler: async (args) => {
-      const parsed = validateArgs(AnalyzeDSRSchema, args);
-      if (!parsed.success) return parsed.error;
       try {
         const result = await graphql.listRequests({ first: 100 });
         const requests = result.nodes;
-        const days = parsed.data.days ?? 30;
+        const days = args.days ?? 30;
         const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
         const recentRequests = requests.filter((r) => new Date(r.createdAt) > cutoffDate);

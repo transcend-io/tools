@@ -1,11 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
   type ToolClients,
   type ToolDefinition,
+  z,
 } from '@transcend-io/mcp-server-core';
 
-import { RespondAccessSchema } from '../schemas.js';
+const respondAccessSchema = z.object({
+  request_id: z.string(),
+  data_silo_id: z.string(),
+  profiles: z.array(z.record(z.string(), z.unknown())).optional(),
+});
 
 export function createDsrRespondAccessTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -17,33 +21,13 @@ export function createDsrRespondAccessTool(clients: ToolClients): ToolDefinition
     readOnly: false,
     confirmationHint: 'Uploads access response data for the DSR',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        request_id: {
-          type: 'string',
-          description: 'ID of the DSR',
-        },
-        data_silo_id: {
-          type: 'string',
-          description: 'ID of the data silo responding',
-        },
-        profiles: {
-          type: 'array',
-          description: 'Array of profile data objects to return',
-          items: { type: 'object' },
-        },
-      },
-      required: ['request_id', 'data_silo_id'],
-    },
+    zodSchema: respondAccessSchema,
     handler: async (args) => {
-      const parsed = validateArgs(RespondAccessSchema, args);
-      if (!parsed.success) return parsed.error;
       try {
         const result = await rest.respondToAccess({
-          requestId: parsed.data.request_id,
-          dataSiloId: parsed.data.data_silo_id,
-          profiles: parsed.data.profiles as Record<string, unknown>[] | undefined,
+          requestId: args.request_id,
+          dataSiloId: args.data_silo_id,
+          profiles: args.profiles as Record<string, unknown>[] | undefined,
         });
         return createToolResult(true, {
           ...result,

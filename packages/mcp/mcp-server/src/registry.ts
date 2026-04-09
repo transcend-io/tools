@@ -1,3 +1,4 @@
+import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
@@ -19,6 +20,7 @@ export interface UmbrellaToolClients {
 
 export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
+  private jsonSchemaCache: Map<string, Record<string, unknown>> = new Map();
   private clients: UmbrellaToolClients;
 
   constructor(clients: UmbrellaToolClients) {
@@ -44,17 +46,17 @@ export class ToolRegistry {
         continue;
       }
       this.tools.set(tool.name, tool);
+      this.jsonSchemaCache.set(
+        tool.name,
+        toJsonSchemaCompat(tool.zodSchema as any) as Record<string, unknown>,
+      );
     }
   }
 
   getToolList(): Array<{
     name: string;
     description: string;
-    inputSchema: {
-      type: 'object';
-      properties: Record<string, unknown>;
-      required: string[];
-    };
+    inputSchema: Record<string, unknown>;
     annotations: {
       readOnlyHint: boolean;
       destructiveHint: boolean;
@@ -64,7 +66,7 @@ export class ToolRegistry {
     return Array.from(this.tools.values()).map((tool) => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      inputSchema: this.jsonSchemaCache.get(tool.name) || { type: 'object', properties: {} },
       annotations: tool.annotations,
     }));
   }
@@ -78,7 +80,16 @@ export class ToolRegistry {
     if (!tool) {
       throw new Error(`Unknown tool: ${name}`);
     }
-    return tool.handler(args);
+
+    const parseResult = tool.zodSchema.safeParse(args);
+    if (!parseResult.success) {
+      const issues = parseResult.error.issues
+        .map((i: any) => `${i.path.join('.') || 'input'}: ${i.message}`)
+        .join('; ');
+      throw new Error(`Invalid input: ${issues}`);
+    }
+
+    return tool.handler(parseResult.data);
   }
 
   getToolsByCategory(category: string): ToolDefinition[] {

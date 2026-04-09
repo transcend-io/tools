@@ -1,13 +1,17 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { ListDataSilosSchema } from '../schemas.js';
+
+const ListDataSilosSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  cursor: z.string().optional(),
+});
 
 export function createInventoryListDataSilosTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as InventoryMixin;
@@ -18,27 +22,13 @@ export function createInventoryListDataSilosTool(clients: ToolClients): ToolDefi
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
+    zodSchema: ListDataSilosSchema,
     handler: async (args) => {
-      const parsed = validateArgs(ListDataSilosSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { limit, cursor } = args as z.infer<typeof ListDataSilosSchema>;
       try {
         const result = await graphql.listDataSilos({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+          first: limit,
+          after: cursor,
         });
 
         return createListResult(result.nodes, {

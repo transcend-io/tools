@@ -36,17 +36,13 @@ describe('Workflows Tools', () => {
   });
 
   describe('workflows_update_config', () => {
-    it('returns validation error when workflow_config_id is missing', async () => {
+    it('zodSchema rejects input when workflow_config_id is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'workflows_update_config')!;
 
-      const result = await tool.handler({});
+      const parsed = tool.zodSchema.safeParse({});
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockGraphql.updateWorkflowConfig).not.toHaveBeenCalled();
+      expect(parsed.success).toBe(false);
     });
 
     it('updates workflow config on success', async () => {

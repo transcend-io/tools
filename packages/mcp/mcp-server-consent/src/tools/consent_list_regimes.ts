@@ -1,11 +1,25 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { ListRegimesSchema } from '../schemas.js';
+const PaginationSchema = z.object({
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(50)
+    .describe('Results per page (1-100, default: 50)'),
+  cursor: z
+    .string()
+    .optional()
+    .describe('Pagination cursor from previous response (where supported)'),
+});
+
+const ListRegimesSchema = PaginationSchema;
 
 export function createConsentListRegimesTool(_clients: ToolClients): ToolDefinition {
   return {
@@ -14,23 +28,8 @@ export function createConsentListRegimesTool(_clients: ToolClients): ToolDefinit
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListRegimesSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ListRegimesSchema,
+    handler: async (_args) => {
       return createToolResult(true, {
         regimes: [
           { code: 'GDPR', name: 'General Data Protection Regulation', region: 'EU' },

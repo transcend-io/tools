@@ -1,13 +1,17 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
-import { ListTeamsSchema } from '../schemas.js';
+
+const ListTeamsSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  cursor: z.string().optional(),
+});
 
 export function createAdminListTeamsTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AdminMixin;
@@ -18,24 +22,13 @@ export function createAdminListTeamsTool(clients: ToolClients): ToolDefinition {
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: { type: 'number', description: 'Results per page (1-100, default: 50)' },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
+    zodSchema: ListTeamsSchema,
     handler: async (args) => {
-      const parsed = validateArgs(ListTeamsSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { limit, cursor } = args as z.infer<typeof ListTeamsSchema>;
       try {
         const result = await graphql.listTeams({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+          first: limit,
+          after: cursor,
         });
         return createListResult(result.nodes, {
           totalCount: result.totalCount,

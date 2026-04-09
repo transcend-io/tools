@@ -1,12 +1,13 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
-import { EmptySchema } from '../schemas.js';
+
+const EmptySchema = z.object({});
 
 export function createAdminGetCurrentUserTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AdminMixin;
@@ -16,10 +17,8 @@ export function createAdminGetCurrentUserTool(clients: ToolClients): ToolDefinit
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: { type: 'object', properties: {}, required: [] },
-    handler: async (args) => {
-      const parsed = validateArgs(EmptySchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: EmptySchema,
+    handler: async (_args) => {
       try {
         const result = await graphql.getCurrentUser();
         return createToolResult(true, result);

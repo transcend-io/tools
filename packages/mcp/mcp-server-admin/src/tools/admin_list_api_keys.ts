@@ -1,13 +1,18 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
-import { ListApiKeysSchema } from '../schemas.js';
+
+const ListApiKeysSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  cursor: z.string().optional(),
+  offset: z.coerce.number().min(0).optional().default(0),
+});
 
 export function createAdminListApiKeysTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AdminMixin;
@@ -18,25 +23,13 @@ export function createAdminListApiKeysTool(clients: ToolClients): ToolDefinition
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: { type: 'number', description: 'Results per page (1-100, default: 50)' },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-        offset: { type: 'number', description: 'Number of results to skip (default: 0)' },
-      },
-      required: [],
-    },
+    zodSchema: ListApiKeysSchema,
     handler: async (args) => {
-      const parsed = validateArgs(ListApiKeysSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { limit, offset } = args as z.infer<typeof ListApiKeysSchema>;
       try {
         const result = await graphql.listApiKeys({
-          first: parsed.data.limit,
-          offset: parsed.data.offset,
+          first: limit,
+          offset,
         });
         return createListResult(result.nodes, {
           totalCount: result.totalCount,

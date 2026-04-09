@@ -45,17 +45,13 @@ describe('Preferences Tools', () => {
   });
 
   describe('preferences_query', () => {
-    it('returns validation error when required fields are missing', async () => {
+    it('zodSchema rejects input when required fields are missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'preferences_query')!;
 
-      const result = await tool.handler({});
+      const parsed = tool.zodSchema.safeParse({});
 
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
-      expect(mockRest.queryPreferences).not.toHaveBeenCalled();
+      expect(parsed.success).toBe(false);
     });
 
     it('returns preferences on success', async () => {

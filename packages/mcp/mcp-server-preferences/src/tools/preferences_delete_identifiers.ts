@@ -1,11 +1,16 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { DeleteIdentifiersSchema } from '../schemas.js';
+const IdentifierSchema = z.object({ value: z.string(), type: z.string().optional() });
+const DeleteIdentifiersSchema = z.object({
+  partition: z.string(),
+  user_id: z.string(),
+  identifiers: z.array(IdentifierSchema),
+});
 
 export function createPreferencesDeleteIdentifiersTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -16,41 +21,16 @@ export function createPreferencesDeleteIdentifiersTool(clients: ToolClients): To
     readOnly: false,
     confirmationHint: 'Deletes identifiers from the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        user_id: {
-          type: 'string',
-          description: 'User ID to delete identifiers from',
-        },
-        identifiers: {
-          type: 'array',
-          description: 'Array of identifier objects to delete',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['partition', 'user_id', 'identifiers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(DeleteIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: DeleteIdentifiersSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof DeleteIdentifiersSchema>;
       try {
-        const identifiers = parsed.data.identifiers.map((id) => ({
+        const identifiers = args.identifiers.map((id) => ({
           value: id.value,
           type: id.type,
         }));
 
-        const result = await rest.deleteIdentifiers(
-          parsed.data.partition,
-          parsed.data.user_id,
-          identifiers,
-        );
+        const result = await rest.deleteIdentifiers(args.partition, args.user_id, identifiers);
 
         return createToolResult(true, {
           ...result,

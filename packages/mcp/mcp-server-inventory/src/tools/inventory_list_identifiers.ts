@@ -1,13 +1,17 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { ListIdentifiersSchema } from '../schemas.js';
+
+const ListIdentifiersSchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  cursor: z.string().optional(),
+});
 
 export function createInventoryListIdentifiersTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as InventoryMixin;
@@ -18,27 +22,13 @@ export function createInventoryListIdentifiersTool(clients: ToolClients): ToolDe
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
+    zodSchema: ListIdentifiersSchema,
     handler: async (args) => {
-      const parsed = validateArgs(ListIdentifiersSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { limit, cursor } = args as z.infer<typeof ListIdentifiersSchema>;
       try {
         const result = await graphql.listIdentifiers({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+          first: limit,
+          after: cursor,
         });
 
         return createListResult(result.nodes, {

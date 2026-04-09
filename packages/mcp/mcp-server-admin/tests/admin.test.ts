@@ -62,16 +62,12 @@ describe('Admin Tools', () => {
   });
 
   describe('admin_create_api_key', () => {
-    it('returns validation error when args are empty', async () => {
+    it('zodSchema rejects empty input (validation is centralized on the server)', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
 
-      const result = await tool.handler({});
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('Invalid input'),
-      });
+      const parsed = tool.zodSchema.safeParse({});
+      expect(parsed.success).toBe(false);
       expect(mockGraphql.createApiKey).not.toHaveBeenCalled();
     });
 

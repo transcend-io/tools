@@ -1,11 +1,21 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
-import { UpsertPreferencesSchema } from '../schemas.js';
+const UpsertPreferencesSchema = z.object({
+  partition: z.string(),
+  records: z.array(
+    z.object({
+      identifier: z.string(),
+      identifierType: z.string().optional(),
+      purposes: z.array(z.object({ purpose: z.string(), enabled: z.boolean() })),
+      confirmed: z.boolean().optional(),
+    }),
+  ),
+});
 
 export function createPreferencesUpsertTool(clients: ToolClients): ToolDefinition {
   const { rest } = clients;
@@ -16,28 +26,11 @@ export function createPreferencesUpsertTool(clients: ToolClients): ToolDefinitio
     readOnly: false,
     confirmationHint: 'Creates or updates preference records for users',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        partition: {
-          type: 'string',
-          description: 'Partition/organization context',
-        },
-        records: {
-          type: 'array',
-          description: 'Array of preference records to upsert',
-          items: {
-            type: 'object',
-          },
-        },
-      },
-      required: ['partition', 'records'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(UpsertPreferencesSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: UpsertPreferencesSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof UpsertPreferencesSchema>;
       try {
-        const records = parsed.data.records.map((record) => ({
+        const records = args.records.map((record) => ({
           identifier: record.identifier,
           identifierType: record.identifierType,
           purposes: record.purposes.map((p) => ({
@@ -48,7 +41,7 @@ export function createPreferencesUpsertTool(clients: ToolClients): ToolDefinitio
         }));
 
         const result = await rest.upsertPreferences({
-          partition: parsed.data.partition,
+          partition: args.partition,
           records,
         });
 

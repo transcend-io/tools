@@ -1,6 +1,6 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
   type Assessment,
@@ -8,8 +8,18 @@ import {
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { PrefillSchema } from '../schemas.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
+
+const PrefillSchema = z.object({
+  title: z.string(),
+  template_id: z.string().optional(),
+  assessment_group_id: z.string().optional(),
+  answers: z.record(z.string(), z.union([z.string(), z.array(z.string())])),
+  assignee_ids: z.array(z.string()).optional(),
+  assignee_emails: z.array(z.string()).optional(),
+  reviewer_ids: z.array(z.string()).optional(),
+  submit_for_review: z.boolean().optional(),
+});
 
 export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -26,62 +36,14 @@ export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefiniti
     readOnly: false,
     confirmationHint: 'Creates assessment, prefills answers, assigns reviewers',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Title for the new assessment form',
-        },
-        template_id: {
-          type: 'string',
-          description:
-            'Template ID to create the form from. Will auto-resolve to the first matching assessment group.',
-        },
-        assessment_group_id: {
-          type: 'string',
-          description: 'Assessment group ID (alternative to template_id)',
-        },
-        answers: {
-          type: 'object',
-          description:
-            'Map of answers keyed by question title or referenceId. ' +
-            'Values should be strings for text/single-select, or arrays of strings for multi-select. ' +
-            'For select questions, values must match existing answer option text exactly.',
-        },
-        assignee_ids: {
-          type: 'array',
-          description: 'Internal user IDs to assign the form to (optional)',
-          items: { type: 'string' },
-        },
-        assignee_emails: {
-          type: 'array',
-          description: 'External email addresses to assign the form to (optional)',
-          items: { type: 'string' },
-        },
-        reviewer_ids: {
-          type: 'array',
-          description: 'User IDs to set as reviewers (optional)',
-          items: { type: 'string' },
-        },
-        submit_for_review: {
-          type: 'boolean',
-          description:
-            'Whether to automatically submit the form for review after prefilling (default: false)',
-        },
-      },
-      required: ['title', 'answers'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(PrefillSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: PrefillSchema,
+    handler: async (args: z.infer<typeof PrefillSchema>) => {
       try {
-        const { answers, title } = parsed.data;
+        const { answers, title } = args;
 
-        let assessmentGroupId = parsed.data.assessment_group_id;
-        if (!assessmentGroupId && parsed.data.template_id) {
-          const resolved = await resolveTemplateToGroupId(graphql, parsed.data.template_id);
+        let assessmentGroupId = args.assessment_group_id;
+        if (!assessmentGroupId && args.template_id) {
+          const resolved = await resolveTemplateToGroupId(graphql, args.template_id);
           if ('error' in resolved) return resolved.error;
           assessmentGroupId = resolved.groupId;
         }
@@ -207,23 +169,23 @@ export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefiniti
         }
 
         let assignmentResult: Record<string, unknown> | null = null;
-        if (parsed.data.assignee_ids || parsed.data.assignee_emails) {
+        if (args.assignee_ids || args.assignee_emails) {
           assignmentResult = await graphql.updateAssessmentFormAssignees({
             id: assessmentId,
-            assigneeIds: parsed.data.assignee_ids,
-            externalAssigneeEmails: parsed.data.assignee_emails,
+            assigneeIds: args.assignee_ids,
+            externalAssigneeEmails: args.assignee_emails,
           });
         }
 
-        if (parsed.data.reviewer_ids) {
+        if (args.reviewer_ids) {
           await graphql.updateAssessment({
             id: assessmentId,
-            reviewerIds: parsed.data.reviewer_ids,
+            reviewerIds: args.reviewer_ids,
           });
         }
 
         let submitResult: Assessment | null = null;
-        if (parsed.data.submit_for_review) {
+        if (args.submit_for_review) {
           const sectionIds = (fullForm.sections as AssessmentSection[]).map((s) => s.id);
           if (sectionIds.length > 0) {
             submitResult = await graphql.submitAssessmentForReview({

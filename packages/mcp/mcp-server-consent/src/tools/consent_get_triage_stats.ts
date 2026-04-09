@@ -1,12 +1,15 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
-import { GetCookieStatsSchema } from '../schemas.js';
+
+const GetCookieStatsSchema = z.object({
+  airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
+});
 
 export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as ConsentMixin;
@@ -18,21 +21,11 @@ export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefin
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        airgap_bundle_id: {
-          type: 'string',
-          description: 'Airgap bundle ID (from consent_list_airgap_bundles)',
-        },
-      },
-      required: ['airgap_bundle_id'],
-    },
+    zodSchema: GetCookieStatsSchema,
     handler: async (args) => {
-      const parsed = validateArgs(GetCookieStatsSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { airgap_bundle_id } = args as z.infer<typeof GetCookieStatsSchema>;
       try {
-        const stats = await graphql.getCookieStats(parsed.data.airgap_bundle_id);
+        const stats = await graphql.getCookieStats(airgap_bundle_id);
         return createToolResult(true, stats);
       } catch (error) {
         return createToolResult(

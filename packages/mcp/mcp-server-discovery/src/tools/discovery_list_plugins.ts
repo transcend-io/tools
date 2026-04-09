@@ -1,13 +1,15 @@
 import {
   createToolResult,
   createListResult,
-  validateArgs,
+  PaginationSchema,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { DiscoveryMixin } from '../graphql.js';
-import { ListPluginsSchema } from '../schemas.js';
+
+const ListPluginsSchema = PaginationSchema;
 
 export function createDiscoveryListPluginsTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as DiscoveryMixin;
@@ -17,27 +19,13 @@ export function createDiscoveryListPluginsTool(clients: ToolClients): ToolDefini
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListPluginsSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ListPluginsSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof ListPluginsSchema>;
       try {
         const result = await graphql.listDiscoveryPlugins({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+          first: args.limit,
+          after: args.cursor,
         });
         return createListResult(result.nodes, {
           totalCount: result.totalCount,

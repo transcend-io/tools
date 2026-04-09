@@ -1,13 +1,15 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  PaginationSchema,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { WorkflowsMixin } from '../graphql.js';
-import { ListWorkflowsSchema } from '../schemas.js';
+
+const ListWorkflowsSchema = PaginationSchema;
 
 export function createWorkflowsListTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as WorkflowsMixin;
@@ -18,27 +20,13 @@ export function createWorkflowsListTool(clients: ToolClients): ToolDefinition {
     category: 'Workflows',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        cursor: {
-          type: 'string',
-          description: 'Pagination cursor from previous response (where supported)',
-        },
-      },
-      required: [],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(ListWorkflowsSchema, args);
-      if (!parsed.success) return parsed.error;
+    zodSchema: ListWorkflowsSchema,
+    handler: async (rawArgs) => {
+      const args = rawArgs as z.infer<typeof ListWorkflowsSchema>;
       try {
         const result = await graphql.listWorkflows({
-          first: parsed.data.limit,
-          after: parsed.data.cursor,
+          first: args.limit,
+          after: args.cursor,
         });
 
         return createListResult(result.nodes, {

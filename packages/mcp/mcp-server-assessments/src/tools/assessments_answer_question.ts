@@ -1,12 +1,19 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { AnswerQuestionSchema } from '../schemas.js';
+
+const AnswerQuestionSchema = z.object({
+  assessment_question_id: z.string(),
+  assessment_answer_ids: z.array(z.string()).optional(),
+  assessment_answer_values: z
+    .array(z.object({ value: z.string(), isUserCreated: z.boolean() }))
+    .optional(),
+});
 
 export function createAssessmentsAnswerQuestionTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as AssessmentsMixin;
@@ -18,46 +25,22 @@ export function createAssessmentsAnswerQuestionTool(clients: ToolClients): ToolD
     readOnly: false,
     confirmationHint: 'Records answer to the assessment question',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        assessment_question_id: {
-          type: 'string',
-          description: 'ID of the assessment question to answer',
-        },
-        assessment_answer_ids: {
-          type: 'array',
-          description:
-            'IDs of existing answer options to select (for SINGLE_SELECT/MULTI_SELECT questions)',
-          items: { type: 'string' },
-        },
-        assessment_answer_values: {
-          type: 'array',
-          description:
-            'Free-text answer values to create and select (for text questions). Each item: {value: string, isUserCreated: boolean}',
-          items: { type: 'object' },
-        },
-      },
-      required: ['assessment_question_id'],
-    },
-    handler: async (args) => {
-      const parsed = validateArgs(AnswerQuestionSchema, args);
-      if (!parsed.success) return parsed.error;
-
+    zodSchema: AnswerQuestionSchema,
+    handler: async (args: z.infer<typeof AnswerQuestionSchema>) => {
       try {
         const input: {
           assessmentQuestionId: string;
           assessmentAnswerIds?: string[];
           assessmentAnswerValues?: { value: string; isUserCreated: boolean }[];
         } = {
-          assessmentQuestionId: parsed.data.assessment_question_id,
+          assessmentQuestionId: args.assessment_question_id,
         };
 
-        if (parsed.data.assessment_answer_ids) {
-          input.assessmentAnswerIds = parsed.data.assessment_answer_ids;
+        if (args.assessment_answer_ids) {
+          input.assessmentAnswerIds = args.assessment_answer_ids;
         }
-        if (parsed.data.assessment_answer_values) {
-          input.assessmentAnswerValues = parsed.data.assessment_answer_values;
+        if (args.assessment_answer_values) {
+          input.assessmentAnswerValues = args.assessment_answer_values;
         }
 
         const result = await graphql.selectAssessmentQuestionAnswers(input);

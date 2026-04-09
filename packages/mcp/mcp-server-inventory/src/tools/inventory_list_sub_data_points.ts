@@ -1,13 +1,18 @@
 import {
   createListResult,
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { ListSubDataPointsSchema } from '../schemas.js';
+
+const ListSubDataPointsSchema = z.object({
+  data_point_id: z.string(),
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().min(0).optional().default(0),
+});
 
 export function createInventoryListSubDataPointsTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as InventoryMixin;
@@ -18,31 +23,13 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients): Tool
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        data_point_id: {
-          type: 'string',
-          description: 'ID of the parent data point',
-        },
-        limit: {
-          type: 'number',
-          description: 'Results per page (1-100, default: 50)',
-        },
-        offset: {
-          type: 'number',
-          description: 'Number of results to skip (default: 0)',
-        },
-      },
-      required: ['data_point_id'],
-    },
+    zodSchema: ListSubDataPointsSchema,
     handler: async (args) => {
-      const parsed = validateArgs(ListSubDataPointsSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { data_point_id, limit, offset } = args as z.infer<typeof ListSubDataPointsSchema>;
       try {
-        const result = await graphql.listSubDataPoints(parsed.data.data_point_id, {
-          first: parsed.data.limit,
-          offset: parsed.data.offset,
+        const result = await graphql.listSubDataPoints(data_point_id, {
+          first: limit,
+          offset,
         });
 
         return createListResult(result.nodes, {

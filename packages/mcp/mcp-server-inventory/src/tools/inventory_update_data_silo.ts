@@ -1,12 +1,17 @@
 import {
   createToolResult,
-  validateArgs,
+  z,
   type ToolClients,
   type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
-import { UpdateDataSiloSchema } from '../schemas.js';
+
+const UpdateDataSiloSchema = z.object({
+  data_silo_id: z.string(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+});
 
 export function createInventoryUpdateDataSiloTool(clients: ToolClients): ToolDefinition {
   const graphql = clients.graphql as InventoryMixin;
@@ -17,32 +22,14 @@ export function createInventoryUpdateDataSiloTool(clients: ToolClients): ToolDef
     readOnly: false,
     confirmationHint: 'Updates the data silo configuration',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
-    inputSchema: {
-      type: 'object',
-      properties: {
-        data_silo_id: {
-          type: 'string',
-          description: 'ID of the data silo to update',
-        },
-        title: {
-          type: 'string',
-          description: 'New title for the data silo',
-        },
-        description: {
-          type: 'string',
-          description: 'New description',
-        },
-      },
-      required: ['data_silo_id'],
-    },
+    zodSchema: UpdateDataSiloSchema,
     handler: async (args) => {
-      const parsed = validateArgs(UpdateDataSiloSchema, args);
-      if (!parsed.success) return parsed.error;
+      const { data_silo_id, title, description } = args as z.infer<typeof UpdateDataSiloSchema>;
       try {
         const result = await graphql.updateDataSilo({
-          id: parsed.data.data_silo_id,
-          title: parsed.data.title,
-          description: parsed.data.description,
+          id: data_silo_id,
+          title,
+          description,
         });
         return createToolResult(true, {
           dataSilo: result,
