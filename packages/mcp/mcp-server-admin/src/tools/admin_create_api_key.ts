@@ -1,10 +1,11 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { ScopeName } from '@transcend-io/privacy-types';
 
 import type { AdminMixin } from '../graphql.js';
 
 export const CreateApiKeySchema = z.object({
   title: z.string().describe('Name/title for the API key'),
-  scopes: z.array(z.string()).describe('Array of permission scopes for the key (ScopeName values)'),
+  scopes: z.array(z.nativeEnum(ScopeName)).describe('Array of permission scopes for the key'),
   data_silos: z
     .array(z.string())
     .optional()

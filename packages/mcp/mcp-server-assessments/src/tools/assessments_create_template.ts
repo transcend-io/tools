@@ -6,6 +6,7 @@ import {
   type AssessmentTemplateCreateInput,
   type AssessmentSectionInput,
 } from '@transcend-io/mcp-server-core';
+import { AssessmentFormTemplateStatus } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -13,7 +14,7 @@ export const CreateTemplateSchema = z.object({
   title: z.string().describe('Title of the assessment form template'),
   description: z.string().optional().describe('Description of the template'),
   status: z
-    .enum(['DRAFT', 'PUBLISHED'])
+    .nativeEnum(AssessmentFormTemplateStatus)
     .optional()
     .describe('Template status: DRAFT or PUBLISHED (default: DRAFT)'),
   sections: z

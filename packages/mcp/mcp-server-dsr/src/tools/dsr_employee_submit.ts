@@ -1,9 +1,7 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
-import { RequestAction } from '@transcend-io/privacy-types';
 
 import type { DSRMixin } from '../graphql.js';
-
-export const RequestTypeEnum = z.nativeEnum(RequestAction);
+import { RequestTypeEnum } from '../schemas.js';
 
 export const employeeSubmitDsrSchema = z.object({
   type: RequestTypeEnum.describe('Type of DSR request'),

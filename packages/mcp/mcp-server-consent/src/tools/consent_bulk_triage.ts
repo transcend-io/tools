@@ -10,12 +10,10 @@ import {
 } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-
-export const TriageActionEnum = z.enum(['APPROVE', 'JUNK']);
-export type TriageActionInput = z.infer<typeof TriageActionEnum>;
+import { ConsentTrackerTypeEnum, TriageActionEnum } from '../schemas.js';
 
 export const BulkTriageItemSchema = z.object({
-  type: z.enum(['cookie', 'data_flow']).describe('Item type'),
+  type: ConsentTrackerTypeEnum.describe('Item type'),
   id: z.string().describe('Item ID (for data flows) or cookie name (for cookies)'),
   action: TriageActionEnum.describe('Action to take: APPROVE or JUNK'),
   tracking_purposes: z

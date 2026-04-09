@@ -1,4 +1,5 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { IdentifierType } from '@transcend-io/privacy-types';
 
 export const UpsertPreferencesPurposeSchema = z.object({
   purpose: z.string().describe('Purpose slug'),
@@ -8,7 +9,7 @@ export type UpsertPreferencesPurposeInput = z.infer<typeof UpsertPreferencesPurp
 
 export const UpsertPreferencesRecordSchema = z.object({
   identifier: z.string().describe('User identifier'),
-  identifierType: z.string().optional().describe('Identifier type (optional)'),
+  identifierType: z.nativeEnum(IdentifierType).optional().describe('Identifier type'),
   purposes: z.array(UpsertPreferencesPurposeSchema).describe('Array of purpose consent settings'),
   confirmed: z.boolean().optional().describe('Whether consent was explicitly confirmed'),
 });

@@ -1,11 +1,12 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
-import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
 import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-
-const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
-const OrderDirectionEnum = z.nativeEnum(OrderDirection);
+import {
+  ConsentTrackerStatusEnum,
+  DataFlowOrderFieldEnum,
+  OrderDirectionEnum,
+} from '../schemas.js';
 
 export const ListDataFlowsSchema = z.object({
   limit: z.number().min(1).max(200).optional().default(50),
@@ -17,10 +18,7 @@ export const ListDataFlowsSchema = z.object({
   show_zero_activity: z.boolean().optional().describe('Include items with zero activity'),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
-  order_field: z
-    .string()
-    .optional()
-    .describe('Field to sort by: value, createdAt, updatedAt, occurrences, service'),
+  order_field: DataFlowOrderFieldEnum.optional().describe('Field to sort by'),
   order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
 });
 export type ListDataFlowsInput = z.infer<typeof ListDataFlowsSchema>;

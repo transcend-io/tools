@@ -1,12 +1,8 @@
 export { getDSRTools } from './tools/index.js';
 export { DSRMixin } from './graphql.js';
+export { RequestTypeEnum, type RequestTypeInput } from './schemas.js';
 
-export {
-  RequestTypeEnum,
-  type RequestTypeInput,
-  submitDsrSchema,
-  type SubmitDsrInput,
-} from './tools/dsr_submit.js';
+export { submitDsrSchema, type SubmitDsrInput } from './tools/dsr_submit.js';
 export {
   employeeSubmitDsrSchema,
   type EmployeeSubmitDsrInput,
