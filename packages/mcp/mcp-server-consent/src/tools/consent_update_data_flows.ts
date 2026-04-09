@@ -1,8 +1,8 @@
 import {
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
   type UpdateConsentDataFlowInput,
 } from '@transcend-io/mcp-server-core';
 
@@ -26,9 +26,9 @@ const UpdateDataFlowsSchema = z.object({
   data_flows: z.array(UpdateDataFlowItemSchema).min(1).describe('Data flows to update'),
 });
 
-export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefinition {
+export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_update_data_flows',
     description:
       'Update one or more data flows. Use to approve (status=LIVE), junk (is_junk=true), ' +
@@ -38,8 +38,7 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
     confirmationHint: 'Updates data flows in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateDataFlowsSchema,
-    handler: async (args) => {
-      const { airgap_bundle_id, data_flows } = args as z.infer<typeof UpdateDataFlowsSchema>;
+    handler: async ({ airgap_bundle_id, data_flows }) => {
       try {
         const dfInputs: UpdateConsentDataFlowInput[] = data_flows.map((df) => ({
           id: df.id,
@@ -69,5 +68,5 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients): ToolDefi
         );
       }
     },
-  };
+  });
 }

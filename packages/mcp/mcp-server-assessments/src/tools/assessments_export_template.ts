@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -11,9 +6,9 @@ const ExportTemplateSchema = z.object({
   template_id: z.string(),
 });
 
-export function createAssessmentsExportTemplateTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsExportTemplateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_export_template',
     description:
       'Export a full assessment form template as JSON, including all sections, questions, answer options, ' +
@@ -23,7 +18,7 @@ export function createAssessmentsExportTemplateTool(clients: ToolClients): ToolD
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ExportTemplateSchema,
-    handler: async (args: z.infer<typeof ExportTemplateSchema>) => {
+    handler: async (args) => {
       try {
         const template = await graphql.getAssessmentFormTemplate(args.template_id);
 
@@ -64,5 +59,5 @@ export function createAssessmentsExportTemplateTool(clients: ToolClients): ToolD
         );
       }
     },
-  };
+  });
 }

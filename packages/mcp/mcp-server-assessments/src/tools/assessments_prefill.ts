@@ -1,7 +1,7 @@
 import {
   createToolResult,
+  defineTool,
   z,
-  type ToolDefinition,
   type ToolClients,
   type Assessment,
   type AssessmentSection,
@@ -21,9 +21,9 @@ const PrefillSchema = z.object({
   submit_for_review: z.boolean().optional(),
 });
 
-export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsPrefillTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_prefill',
     description:
       'Convenience tool: Create a new assessment form, AI-prefill all the answers, and assign it to a reviewer. ' +
@@ -37,7 +37,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefiniti
     confirmationHint: 'Creates assessment, prefills answers, assigns reviewers',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: PrefillSchema,
-    handler: async (args: z.infer<typeof PrefillSchema>) => {
+    handler: async (args) => {
       try {
         const { answers, title } = args;
 
@@ -222,5 +222,5 @@ export function createAssessmentsPrefillTool(clients: ToolClients): ToolDefiniti
         );
       }
     },
-  };
+  });
 }

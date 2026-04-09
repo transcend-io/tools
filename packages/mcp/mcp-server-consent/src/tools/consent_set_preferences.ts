@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const PurposeConsentSchema = z.object({
   purpose: z.string(),
@@ -17,9 +12,9 @@ const SetPreferencesSchema = z.object({
   confirmed: z.boolean().optional().describe('Whether consent was explicitly confirmed'),
 });
 
-export function createConsentSetPreferencesTool(clients: ToolClients): ToolDefinition {
+export function createConsentSetPreferencesTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'consent_set_preferences',
     description: 'Set consent preferences for a user (client-side sync)',
     category: 'Consent Management',
@@ -27,10 +22,7 @@ export function createConsentSetPreferencesTool(clients: ToolClients): ToolDefin
     confirmationHint: 'Updates consent preferences for the user',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: SetPreferencesSchema,
-    handler: async (args) => {
-      const { partition, identifier, purposes, confirmed } = args as z.infer<
-        typeof SetPreferencesSchema
-      >;
+    handler: async ({ partition, identifier, purposes, confirmed }) => {
       try {
         const result = await rest.syncConsent({
           partition,
@@ -53,5 +45,5 @@ export function createConsentSetPreferencesTool(clients: ToolClients): ToolDefin
         );
       }
     },
-  };
+  });
 }

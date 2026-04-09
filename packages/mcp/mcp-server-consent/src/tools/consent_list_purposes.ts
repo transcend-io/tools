@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
@@ -24,9 +24,9 @@ const PaginationSchema = z.object({
 
 const ListPurposesSchema = PaginationSchema;
 
-export function createConsentListPurposesTool(clients: ToolClients): ToolDefinition {
+export function createConsentListPurposesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_list_purposes',
     description:
       'List all tracking purposes configured for consent management. Note: API does not support cursor pagination (max ~100 results).',
@@ -34,8 +34,7 @@ export function createConsentListPurposesTool(clients: ToolClients): ToolDefinit
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListPurposesSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListPurposesSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listTrackingPurposes({
           first: limit,
@@ -53,5 +52,5 @@ export function createConsentListPurposesTool(clients: ToolClients): ToolDefinit
         );
       }
     },
-  };
+  });
 }

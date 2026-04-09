@@ -1,17 +1,12 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
 
 const EmptySchema = z.object({});
 
-export function createAdminGetCurrentUserTool(clients: ToolClients): ToolDefinition {
+export function createAdminGetCurrentUserTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
-  return {
+  return defineTool({
     name: 'admin_get_current_user',
     description: 'Get information about the currently authenticated user (the API key owner)',
     category: 'Admin',
@@ -30,5 +25,5 @@ export function createAdminGetCurrentUserTool(clients: ToolClients): ToolDefinit
         );
       }
     },
-  };
+  });
 }

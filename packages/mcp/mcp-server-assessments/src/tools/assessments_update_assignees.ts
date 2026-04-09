@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -13,9 +8,9 @@ const UpdateAssigneesSchema = z.object({
   external_assignee_emails: z.array(z.string()).optional(),
 });
 
-export function createAssessmentsUpdateAssigneesTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsUpdateAssigneesTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_update_assignees',
     description:
       'Assign internal users (by ID) or external users (by email) to an assessment form. This also transitions DRAFT assessments to SHARED status.',
@@ -24,7 +19,7 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients): Tool
     confirmationHint: 'Assigns users to the assessment form',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssigneesSchema,
-    handler: async (args: z.infer<typeof UpdateAssigneesSchema>) => {
+    handler: async (args) => {
       try {
         const result = await graphql.updateAssessmentFormAssignees({
           id: args.assessment_id,
@@ -44,5 +39,5 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients): Tool
         );
       }
     },
-  };
+  });
 }

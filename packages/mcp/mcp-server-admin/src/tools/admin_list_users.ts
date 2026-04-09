@@ -1,8 +1,8 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
-  type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
@@ -13,9 +13,9 @@ const ListUsersSchema = z.object({
   cursor: z.string().optional(),
 });
 
-export function createAdminListUsersTool(clients: ToolClients): ToolDefinition {
+export function createAdminListUsersTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
-  return {
+  return defineTool({
     name: 'admin_list_users',
     description:
       'List all users in your Transcend organization. Note: API does not support cursor pagination (max ~100 results).',
@@ -23,8 +23,7 @@ export function createAdminListUsersTool(clients: ToolClients): ToolDefinition {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListUsersSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListUsersSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listUsers({
           first: limit,
@@ -42,5 +41,5 @@ export function createAdminListUsersTool(clients: ToolClients): ToolDefinition {
         );
       }
     },
-  };
+  });
 }

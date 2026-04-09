@@ -1,7 +1,7 @@
 import {
   createToolResult,
+  defineTool,
   z,
-  type ToolDefinition,
   type ToolClients,
   type AssessmentTemplateCreateInput,
   type AssessmentSectionInput,
@@ -16,9 +16,9 @@ const CreateTemplateSchema = z.object({
   sections: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
-export function createAssessmentsCreateTemplateTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsCreateTemplateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_create_template',
     description:
       'Create a new assessment form template with sections and questions inline. ' +
@@ -34,7 +34,7 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients): ToolD
     confirmationHint: 'Creates a new assessment form template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateTemplateSchema,
-    handler: async (args: z.infer<typeof CreateTemplateSchema>) => {
+    handler: async (args) => {
       try {
         const input: AssessmentTemplateCreateInput = {
           title: args.title,
@@ -57,5 +57,5 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients): ToolD
         );
       }
     },
-  };
+  });
 }

@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  type ToolClients,
-  type ToolDefinition,
-  z,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const REQUEST_TYPES = [
   'ACCESS',
@@ -39,10 +34,10 @@ const submitDsrSchema = z.object({
   isSilent: z.boolean().optional(),
 });
 
-export function createDsrSubmitTool(clients: ToolClients): ToolDefinition {
+export function createDsrSubmitTool(clients: ToolClients) {
   const { rest } = clients;
 
-  return {
+  return defineTool({
     name: 'dsr_submit',
     description:
       'Submit a new Data Subject Request (DSR). Supports ACCESS, ERASURE, RECTIFICATION, and other request types. The coreIdentifier defaults to the email if not provided.',
@@ -51,20 +46,20 @@ export function createDsrSubmitTool(clients: ToolClients): ToolDefinition {
     confirmationHint: 'Creates a new data subject request',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: submitDsrSchema,
-    handler: async (args) => {
+    handler: async ({ type, email, subjectType, coreIdentifier, name, locale, isSilent }) => {
       try {
         const result = await rest.submitDSR({
-          type: args.type,
-          email: args.email,
-          subjectType: args.subjectType,
-          coreIdentifier: args.coreIdentifier,
-          name: args.name,
-          locale: args.locale,
-          isSilent: args.isSilent,
+          type,
+          email,
+          subjectType,
+          coreIdentifier,
+          name,
+          locale,
+          isSilent,
         });
         return createToolResult(true, {
           request: result,
-          message: `DSR of type ${args.type} submitted successfully`,
+          message: `DSR of type ${type} submitted successfully`,
         });
       } catch (error) {
         return createToolResult(
@@ -74,5 +69,5 @@ export function createDsrSubmitTool(clients: ToolClients): ToolDefinition {
         );
       }
     },
-  };
+  });
 }

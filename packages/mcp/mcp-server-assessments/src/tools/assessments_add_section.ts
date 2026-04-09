@@ -1,7 +1,7 @@
 import {
   createToolResult,
+  defineTool,
   z,
-  type ToolDefinition,
   type ToolClients,
   type AssessmentSectionInput,
 } from '@transcend-io/mcp-server-core';
@@ -14,9 +14,9 @@ const AddSectionSchema = z.object({
   questions: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
-export function createAssessmentsAddSectionTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsAddSectionTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_add_section',
     description:
       'Add a new section (with optional inline questions) to an existing assessment form template. ' +
@@ -27,7 +27,7 @@ export function createAssessmentsAddSectionTool(clients: ToolClients): ToolDefin
     confirmationHint: 'Adds a section to the assessment template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AddSectionSchema,
-    handler: async (args: z.infer<typeof AddSectionSchema>) => {
+    handler: async (args) => {
       try {
         const result = await graphql.createAssessmentSection({
           assessmentFormTemplateId: args.template_id,
@@ -47,5 +47,5 @@ export function createAssessmentsAddSectionTool(clients: ToolClients): ToolDefin
         );
       }
     },
-  };
+  });
 }

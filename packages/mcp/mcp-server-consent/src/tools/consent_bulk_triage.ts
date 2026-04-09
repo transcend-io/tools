@@ -1,8 +1,8 @@
 import {
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
   type UpdateConsentDataFlowInput,
   type UpdateCookieInput,
 } from '@transcend-io/mcp-server-core';
@@ -27,9 +27,9 @@ const BulkTriageSchema = z.object({
   items: z.array(BulkTriageItemSchema).min(1).describe('Items to triage'),
 });
 
-export function createConsentBulkTriageTool(clients: ToolClients): ToolDefinition {
+export function createConsentBulkTriageTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_bulk_triage',
     description:
       'Bulk triage action: approve or junk multiple cookies and data flows in a single call. ' +
@@ -40,8 +40,7 @@ export function createConsentBulkTriageTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Bulk approves or junks cookies and data flows',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: BulkTriageSchema,
-    handler: async (args) => {
-      const { airgap_bundle_id, items } = args as z.infer<typeof BulkTriageSchema>;
+    handler: async ({ airgap_bundle_id, items }) => {
       try {
         const bundleId = airgap_bundle_id;
         const cookieItems = items.filter((i) => i.type === 'cookie');
@@ -98,5 +97,5 @@ export function createConsentBulkTriageTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

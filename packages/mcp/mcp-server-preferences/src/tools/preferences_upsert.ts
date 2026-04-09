@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const UpsertPreferencesSchema = z.object({
   partition: z.string(),
@@ -17,9 +12,9 @@ const UpsertPreferencesSchema = z.object({
   ),
 });
 
-export function createPreferencesUpsertTool(clients: ToolClients): ToolDefinition {
+export function createPreferencesUpsertTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'preferences_upsert',
     description: 'Batch upsert consent preference records for multiple users',
     category: 'Preference Management',
@@ -27,8 +22,7 @@ export function createPreferencesUpsertTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Creates or updates preference records for users',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpsertPreferencesSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof UpsertPreferencesSchema>;
+    handler: async (args) => {
       try {
         const records = args.records.map((record) => ({
           identifier: record.identifier,
@@ -58,5 +52,5 @@ export function createPreferencesUpsertTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

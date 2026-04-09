@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const ClassifyTextSchema = z.object({
   texts: z.array(z.string()),
@@ -11,9 +6,9 @@ const ClassifyTextSchema = z.object({
   model: z.string().optional(),
 });
 
-export function createDiscoveryClassifyTextTool(clients: ToolClients): ToolDefinition {
+export function createDiscoveryClassifyTextTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'discovery_classify_text',
     description:
       "Classify text content using Transcend's LLM classifier to identify data categories",
@@ -21,19 +16,18 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients): ToolDefin
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ClassifyTextSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof ClassifyTextSchema>;
+    handler: async ({ texts, categories, model }) => {
       try {
         const results = await rest.classifyText({
-          texts: args.texts,
-          categories: args.categories,
-          model: args.model,
+          texts,
+          categories,
+          model,
         });
 
         return createToolResult(true, {
           results,
-          inputCount: args.texts.length,
-          message: `Classified ${args.texts.length} text(s) successfully`,
+          inputCount: texts.length,
+          message: `Classified ${texts.length} text(s) successfully`,
         });
       } catch (error) {
         return createToolResult(
@@ -43,5 +37,5 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients): ToolDefin
         );
       }
     },
-  };
+  });
 }

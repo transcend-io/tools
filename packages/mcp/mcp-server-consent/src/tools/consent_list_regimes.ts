@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const PaginationSchema = z.object({
   limit: z.coerce
@@ -21,8 +16,8 @@ const PaginationSchema = z.object({
 
 const ListRegimesSchema = PaginationSchema;
 
-export function createConsentListRegimesTool(_clients: ToolClients): ToolDefinition {
-  return {
+export function createConsentListRegimesTool(_clients: ToolClients) {
+  return defineTool({
     name: 'consent_list_regimes',
     description: 'List all supported privacy regimes (GDPR, CCPA, etc.) and their configurations',
     category: 'Consent Management',
@@ -48,5 +43,5 @@ export function createConsentListRegimesTool(_clients: ToolClients): ToolDefinit
         note: 'Contact your administrator for organization-specific regime configurations',
       });
     },
-  };
+  });
 }

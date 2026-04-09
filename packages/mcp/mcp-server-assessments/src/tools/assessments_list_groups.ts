@@ -1,9 +1,8 @@
 import {
   createToolResult,
   createListResult,
-  z,
+  defineTool,
   PaginationSchema,
-  type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
@@ -11,9 +10,9 @@ import type { AssessmentsMixin } from '../graphql.js';
 
 const ListGroupsSchema = PaginationSchema;
 
-export function createAssessmentsListGroupsTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsListGroupsTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_list_groups',
     description:
       'List all assessment groups. Groups are containers for assessments and are linked to templates. Use this to find the right group ID for creating assessments.',
@@ -21,7 +20,7 @@ export function createAssessmentsListGroupsTool(clients: ToolClients): ToolDefin
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListGroupsSchema,
-    handler: async (args: z.infer<typeof ListGroupsSchema>) => {
+    handler: async (args) => {
       try {
         const result = await graphql.listAssessmentGroups({
           first: args.limit,
@@ -40,5 +39,5 @@ export function createAssessmentsListGroupsTool(clients: ToolClients): ToolDefin
         );
       }
     },
-  };
+  });
 }

@@ -1,18 +1,13 @@
-import {
-  createToolResult,
-  type ToolClients,
-  type ToolDefinition,
-  z,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const downloadKeysSchema = z.object({
   request_id: z.string(),
 });
 
-export function createDsrDownloadKeysTool(clients: ToolClients): ToolDefinition {
+export function createDsrDownloadKeysTool(clients: ToolClients) {
   const { rest } = clients;
 
-  return {
+  return defineTool({
     name: 'dsr_download_keys',
     description:
       'Get download keys for a completed Data Subject Request. These keys can be used to download the DSR results.',
@@ -20,9 +15,9 @@ export function createDsrDownloadKeysTool(clients: ToolClients): ToolDefinition 
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: downloadKeysSchema,
-    handler: async (args) => {
+    handler: async ({ request_id }) => {
       try {
-        const keys = await rest.getDSRDownloadKeys(args.request_id);
+        const keys = await rest.getDSRDownloadKeys(request_id);
         return createToolResult(true, {
           downloadKeys: keys,
           count: keys.length,
@@ -35,5 +30,5 @@ export function createDsrDownloadKeysTool(clients: ToolClients): ToolDefinition 
         );
       }
     },
-  };
+  });
 }

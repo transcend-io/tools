@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
@@ -13,9 +13,9 @@ const ListDataSilosSchema = z.object({
   cursor: z.string().optional(),
 });
 
-export function createInventoryListDataSilosTool(clients: ToolClients): ToolDefinition {
+export function createInventoryListDataSilosTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_list_data_silos',
     description:
       'List all data silos (data systems and integrations) in your organization. Note: API does not support cursor pagination (max ~100 results).',
@@ -23,8 +23,7 @@ export function createInventoryListDataSilosTool(clients: ToolClients): ToolDefi
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataSilosSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListDataSilosSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listDataSilos({
           first: limit,
@@ -43,5 +42,5 @@ export function createInventoryListDataSilosTool(clients: ToolClients): ToolDefi
         );
       }
     },
-  };
+  });
 }

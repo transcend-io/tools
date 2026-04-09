@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
@@ -35,9 +35,9 @@ const ListTriageCookiesSchema = z.object({
   order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
 });
 
-export function createConsentListTriageCookiesTool(clients: ToolClients): ToolDefinition {
+export function createConsentListTriageCookiesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_list_triage_cookies',
     description:
       'List cookies in your consent manager. Use status=NEEDS_REVIEW to see cookies awaiting triage. ' +
@@ -47,19 +47,18 @@ export function createConsentListTriageCookiesTool(clients: ToolClients): ToolDe
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTriageCookiesSchema,
-    handler: async (args) => {
-      const {
-        airgap_bundle_id,
-        limit,
-        offset,
-        status,
-        is_junk,
-        show_zero_activity,
-        text,
-        service,
-        order_field,
-        order_direction,
-      } = args as z.infer<typeof ListTriageCookiesSchema>;
+    handler: async ({
+      airgap_bundle_id,
+      limit,
+      offset,
+      status,
+      is_junk,
+      show_zero_activity,
+      text,
+      service,
+      order_field,
+      order_direction,
+    }) => {
       try {
         const result = await graphql.listCookies({
           airgapBundleId: airgap_bundle_id,
@@ -87,5 +86,5 @@ export function createConsentListTriageCookiesTool(clients: ToolClients): ToolDe
         );
       }
     },
-  };
+  });
 }

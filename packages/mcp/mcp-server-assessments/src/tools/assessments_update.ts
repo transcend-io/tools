@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -26,9 +21,9 @@ const UpdateAssessmentSchema = z.object({
   status: AssessmentStatusEnum.optional(),
 });
 
-export function createAssessmentsUpdateTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsUpdateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_update',
     description: 'Update an existing assessment',
     category: 'Assessments',
@@ -36,7 +31,7 @@ export function createAssessmentsUpdateTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Updates the assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssessmentSchema,
-    handler: async (args: z.infer<typeof UpdateAssessmentSchema>) => {
+    handler: async (args) => {
       try {
         const result = await graphql.updateAssessment({
           id: args.assessment_id,
@@ -59,5 +54,5 @@ export function createAssessmentsUpdateTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

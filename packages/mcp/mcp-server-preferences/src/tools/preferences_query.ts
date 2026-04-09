@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 const IdentifierSchema = z.object({ value: z.string(), type: z.string().optional() });
@@ -12,17 +12,16 @@ const QueryPreferencesSchema = z.object({
   identifiers: z.array(IdentifierSchema),
 });
 
-export function createPreferencesQueryTool(clients: ToolClients): ToolDefinition {
+export function createPreferencesQueryTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'preferences_query',
     description: 'Query consent preferences for multiple users by their identifiers',
     category: 'Preference Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: QueryPreferencesSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof QueryPreferencesSchema>;
+    handler: async (args) => {
       try {
         const identifiers = args.identifiers.map((id) => ({
           value: id.value,
@@ -45,5 +44,5 @@ export function createPreferencesQueryTool(clients: ToolClients): ToolDefinition
         );
       }
     },
-  };
+  });
 }

@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
@@ -15,9 +10,9 @@ const CreateAssessmentSchema = z.object({
   assignee_ids: z.array(z.string()).optional(),
 });
 
-export function createAssessmentsCreateTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsCreateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_create',
     description:
       'Create a new privacy assessment within an assessment group. Assessment groups are linked to templates. You can provide either an assessment_group_id directly, or a template_id to auto-resolve the first matching group. Use assessments_list_groups to find available groups.',
@@ -26,7 +21,7 @@ export function createAssessmentsCreateTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Creates a new privacy assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateAssessmentSchema,
-    handler: async (args: z.infer<typeof CreateAssessmentSchema>) => {
+    handler: async (args) => {
       try {
         let assessmentGroupId = args.assessment_group_id;
 
@@ -62,5 +57,5 @@ export function createAssessmentsCreateTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

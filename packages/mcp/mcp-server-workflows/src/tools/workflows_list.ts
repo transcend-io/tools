@@ -1,19 +1,19 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   PaginationSchema,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { WorkflowsMixin } from '../graphql.js';
 
 const ListWorkflowsSchema = PaginationSchema;
 
-export function createWorkflowsListTool(clients: ToolClients): ToolDefinition {
+export function createWorkflowsListTool(clients: ToolClients) {
   const graphql = clients.graphql as WorkflowsMixin;
-  return {
+  return defineTool({
     name: 'workflows_list',
     description:
       'List all workflows configured in your organization. Note: API does not support cursor pagination (max ~100 results).',
@@ -21,12 +21,11 @@ export function createWorkflowsListTool(clients: ToolClients): ToolDefinition {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListWorkflowsSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof ListWorkflowsSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listWorkflows({
-          first: args.limit,
-          after: args.cursor,
+          first: limit,
+          after: cursor,
         });
 
         return createListResult(result.nodes, {
@@ -41,5 +40,5 @@ export function createWorkflowsListTool(clients: ToolClients): ToolDefinition {
         );
       }
     },
-  };
+  });
 }

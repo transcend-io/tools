@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const IdentifierSchema = z.object({ value: z.string(), type: z.string().optional() });
 const DeletePreferencesSchema = z.object({
@@ -11,9 +6,9 @@ const DeletePreferencesSchema = z.object({
   identifiers: z.array(IdentifierSchema),
 });
 
-export function createPreferencesDeleteTool(clients: ToolClients): ToolDefinition {
+export function createPreferencesDeleteTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'preferences_delete',
     description: 'Delete consent preferences for specified users',
     category: 'Preference Management',
@@ -21,8 +16,7 @@ export function createPreferencesDeleteTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Deletes preference data for the identifiers',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: DeletePreferencesSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof DeletePreferencesSchema>;
+    handler: async (args) => {
       try {
         const identifiers = args.identifiers.map((id) => ({
           value: id.value,
@@ -43,5 +37,5 @@ export function createPreferencesDeleteTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

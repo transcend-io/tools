@@ -1,8 +1,8 @@
 import {
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
   type UpdateCookieInput,
 } from '@transcend-io/mcp-server-core';
 
@@ -29,9 +29,9 @@ const UpdateCookiesSchema = z.object({
   cookies: z.array(UpdateCookieItemSchema).min(1).describe('Cookies to update'),
 });
 
-export function createConsentUpdateCookiesTool(clients: ToolClients): ToolDefinition {
+export function createConsentUpdateCookiesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_update_cookies',
     description:
       'Update one or more cookies. Use to approve (status=LIVE), junk (is_junk=true), ' +
@@ -42,8 +42,7 @@ export function createConsentUpdateCookiesTool(clients: ToolClients): ToolDefini
     confirmationHint: 'Updates cookies in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateCookiesSchema,
-    handler: async (args) => {
-      const { airgap_bundle_id, cookies } = args as z.infer<typeof UpdateCookiesSchema>;
+    handler: async ({ airgap_bundle_id, cookies }) => {
       try {
         const cookieInputs: UpdateCookieInput[] = cookies.map((c) => ({
           name: c.name,
@@ -72,5 +71,5 @@ export function createConsentUpdateCookiesTool(clients: ToolClients): ToolDefini
         );
       }
     },
-  };
+  });
 }

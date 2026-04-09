@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
@@ -24,9 +24,9 @@ const PaginationSchema = z.object({
 
 const ListAirgapBundlesSchema = PaginationSchema;
 
-export function createConsentListAirgapBundlesTool(clients: ToolClients): ToolDefinition {
+export function createConsentListAirgapBundlesTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_list_airgap_bundles',
     description:
       'List all consent manager UI bundles (Airgap bundles) configured in your organization.',
@@ -34,8 +34,7 @@ export function createConsentListAirgapBundlesTool(clients: ToolClients): ToolDe
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAirgapBundlesSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListAirgapBundlesSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listAirgapBundles({
           first: limit,
@@ -53,5 +52,5 @@ export function createConsentListAirgapBundlesTool(clients: ToolClients): ToolDe
         );
       }
     },
-  };
+  });
 }

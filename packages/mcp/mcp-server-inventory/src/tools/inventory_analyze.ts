@@ -1,18 +1,18 @@
 import {
   createToolResult,
+  defineTool,
   groupBy,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
 
 const InventoryAnalyzeSchema = z.object({});
 
-export function createInventoryAnalyzeTool(clients: ToolClients): ToolDefinition {
+export function createInventoryAnalyzeTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_analyze',
     description:
       'Analyze your data inventory including data silos by type, vendor distribution, and data point coverage',
@@ -77,5 +77,5 @@ export function createInventoryAnalyzeTool(clients: ToolClients): ToolDefinition
         );
       }
     },
-  };
+  });
 }

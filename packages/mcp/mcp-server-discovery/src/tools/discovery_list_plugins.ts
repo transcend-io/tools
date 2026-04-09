@@ -1,9 +1,9 @@
 import {
   createToolResult,
   createListResult,
+  defineTool,
   PaginationSchema,
   z,
-  type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
@@ -11,21 +11,20 @@ import type { DiscoveryMixin } from '../graphql.js';
 
 const ListPluginsSchema = PaginationSchema;
 
-export function createDiscoveryListPluginsTool(clients: ToolClients): ToolDefinition {
+export function createDiscoveryListPluginsTool(clients: ToolClients) {
   const graphql = clients.graphql as DiscoveryMixin;
-  return {
+  return defineTool({
     name: 'discovery_list_plugins',
     description: 'List all available discovery plugins (integration types) in your organization.',
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListPluginsSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof ListPluginsSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listDiscoveryPlugins({
-          first: args.limit,
-          after: args.cursor,
+          first: limit,
+          after: cursor,
         });
         return createListResult(result.nodes, {
           totalCount: result.totalCount,
@@ -39,5 +38,5 @@ export function createDiscoveryListPluginsTool(clients: ToolClients): ToolDefini
         );
       }
     },
-  };
+  });
 }

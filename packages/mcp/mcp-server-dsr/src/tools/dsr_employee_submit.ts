@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  type ToolClients,
-  type ToolDefinition,
-  z,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 import type { DSRMixin } from '../graphql.js';
 
@@ -40,10 +35,10 @@ const employeeSubmitDsrSchema = z.object({
   isSilent: z.boolean().optional(),
 });
 
-export function createDsrEmployeeSubmitTool(clients: ToolClients): ToolDefinition {
+export function createDsrEmployeeSubmitTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;
 
-  return {
+  return defineTool({
     name: 'dsr_employee_submit',
     description:
       'Submit a Data Subject Request as an employee on behalf of a data subject. Requires subjectType to be specified.',
@@ -52,20 +47,20 @@ export function createDsrEmployeeSubmitTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Creates a new data subject request (employee)',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: employeeSubmitDsrSchema,
-    handler: async (args) => {
+    handler: async ({ type, email, subjectType, coreIdentifier, locale, isSilent }) => {
       try {
         const result = await graphql.employeeMakeDataSubjectRequest({
-          type: args.type,
-          email: args.email,
-          subjectType: args.subjectType,
-          coreIdentifier: args.coreIdentifier,
-          locale: args.locale,
-          isSilent: args.isSilent,
+          type,
+          email,
+          subjectType,
+          coreIdentifier,
+          locale,
+          isSilent,
         });
         return createToolResult(true, {
           request: result.request,
           clientMutationId: result.clientMutationId,
-          message: `Employee DSR of type ${args.type} submitted successfully`,
+          message: `Employee DSR of type ${type} submitted successfully`,
         });
       } catch (error) {
         return createToolResult(
@@ -75,5 +70,5 @@ export function createDsrEmployeeSubmitTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

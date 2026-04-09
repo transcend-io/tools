@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -12,9 +7,9 @@ const SubmitResponseSchema = z.object({
   assessment_section_ids: z.array(z.string()),
 });
 
-export function createAssessmentsSubmitResponseTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_submit_response',
     description:
       'Submit an assessment form for review. Optionally specify which sections to submit. This transitions the assessment toward the IN_REVIEW status.',
@@ -23,7 +18,7 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients): ToolD
     confirmationHint: 'Submits assessment for review — cannot be undone',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: SubmitResponseSchema,
-    handler: async (args: z.infer<typeof SubmitResponseSchema>) => {
+    handler: async (args) => {
       try {
         const result = await graphql.submitAssessmentForReview({
           id: args.assessment_id,
@@ -42,5 +37,5 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients): ToolD
         );
       }
     },
-  };
+  });
 }

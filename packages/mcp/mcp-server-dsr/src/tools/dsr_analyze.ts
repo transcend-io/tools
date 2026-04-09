@@ -1,8 +1,8 @@
 import {
   createToolResult,
+  defineTool,
   groupBy,
   type ToolClients,
-  type ToolDefinition,
   z,
 } from '@transcend-io/mcp-server-core';
 
@@ -12,10 +12,10 @@ const analyzeDsrSchema = z.object({
   days: z.coerce.number().optional(),
 });
 
-export function createDsrAnalyzeTool(clients: ToolClients): ToolDefinition {
+export function createDsrAnalyzeTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;
 
-  return {
+  return defineTool({
     name: 'dsr_analyze',
     description:
       'Analyze DSR metrics from most recent 100 requests. Note: For complete analysis of all requests, use dsr_list with pagination to fetch all data first.',
@@ -23,12 +23,12 @@ export function createDsrAnalyzeTool(clients: ToolClients): ToolDefinition {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: analyzeDsrSchema,
-    handler: async (args) => {
+    handler: async ({ days }) => {
       try {
         const result = await graphql.listRequests({ first: 100 });
         const requests = result.nodes;
-        const days = args.days ?? 30;
-        const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+        const periodDays = days ?? 30;
+        const cutoffDate = new Date(Date.now() - periodDays * 24 * 60 * 60 * 1000);
 
         const recentRequests = requests.filter((r) => new Date(r.createdAt) > cutoffDate);
         const completedRequests = requests.filter((r) => r.status === 'COMPLETED');
@@ -65,7 +65,7 @@ export function createDsrAnalyzeTool(clients: ToolClients): ToolDefinition {
             recentByStatus: groupBy(recentRequests, 'status'),
           },
           period: {
-            days,
+            days: periodDays,
             startDate: cutoffDate.toISOString(),
             endDate: new Date().toISOString(),
           },
@@ -82,5 +82,5 @@ export function createDsrAnalyzeTool(clients: ToolClients): ToolDefinition {
         );
       }
     },
-  };
+  });
 }

@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -11,9 +6,9 @@ const GetDataSiloSchema = z.object({
   data_silo_id: z.string(),
 });
 
-export function createInventoryGetDataSiloTool(clients: ToolClients): ToolDefinition {
+export function createInventoryGetDataSiloTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_get_data_silo',
     description:
       'Get detailed information about a specific data silo including its data points and identifiers',
@@ -21,8 +16,7 @@ export function createInventoryGetDataSiloTool(clients: ToolClients): ToolDefini
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetDataSiloSchema,
-    handler: async (args) => {
-      const { data_silo_id } = args as z.infer<typeof GetDataSiloSchema>;
+    handler: async ({ data_silo_id }) => {
       try {
         const result = await graphql.getDataSilo(data_silo_id);
         return createToolResult(true, result);
@@ -34,5 +28,5 @@ export function createInventoryGetDataSiloTool(clients: ToolClients): ToolDefini
         );
       }
     },
-  };
+  });
 }

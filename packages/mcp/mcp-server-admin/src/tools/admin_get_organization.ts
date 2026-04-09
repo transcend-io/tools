@@ -1,17 +1,12 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
 
 const EmptySchema = z.object({});
 
-export function createAdminGetOrganizationTool(clients: ToolClients): ToolDefinition {
+export function createAdminGetOrganizationTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
-  return {
+  return defineTool({
     name: 'admin_get_organization',
     description: 'Get information about your Transcend organization',
     category: 'Admin',
@@ -30,5 +25,5 @@ export function createAdminGetOrganizationTool(clients: ToolClients): ToolDefini
         );
       }
     },
-  };
+  });
 }

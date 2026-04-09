@@ -1,9 +1,9 @@
 import {
   createToolResult,
   createListResult,
+  defineTool,
   z,
   PaginationSchema,
-  type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
@@ -25,9 +25,9 @@ const ListAssessmentsSchema = z
   })
   .merge(PaginationSchema);
 
-export function createAssessmentsListTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsListTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_list',
     description:
       'List all privacy assessments in your organization. Supports filtering by status. Note: Cursor pagination is not supported (max 100 results).',
@@ -35,7 +35,7 @@ export function createAssessmentsListTool(clients: ToolClients): ToolDefinition 
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAssessmentsSchema,
-    handler: async (args: z.infer<typeof ListAssessmentsSchema>) => {
+    handler: async (args) => {
       try {
         const result = await graphql.listAssessments({
           first: args.limit,
@@ -55,5 +55,5 @@ export function createAssessmentsListTool(clients: ToolClients): ToolDefinition 
         );
       }
     },
-  };
+  });
 }

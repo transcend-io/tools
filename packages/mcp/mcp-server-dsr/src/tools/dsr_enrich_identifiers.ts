@@ -1,19 +1,14 @@
-import {
-  createToolResult,
-  type ToolClients,
-  type ToolDefinition,
-  z,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const enrichIdentifiersSchema = z.object({
   request_id: z.string(),
   identifiers: z.record(z.string(), z.string()),
 });
 
-export function createDsrEnrichIdentifiersTool(clients: ToolClients): ToolDefinition {
+export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
 
-  return {
+  return defineTool({
     name: 'dsr_enrich_identifiers',
     description:
       'Enrich a Data Subject Request with additional identifiers during preflight processing',
@@ -22,11 +17,11 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients): ToolDefini
     confirmationHint: 'Adds identifiers to the DSR during preflight',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: enrichIdentifiersSchema,
-    handler: async (args) => {
+    handler: async ({ request_id, identifiers }) => {
       try {
         const result = await rest.enrichIdentifiers({
-          requestId: args.request_id,
-          identifiers: args.identifiers,
+          requestId: request_id,
+          identifiers,
         });
         return createToolResult(true, {
           ...result,
@@ -40,5 +35,5 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients): ToolDefini
         );
       }
     },
-  };
+  });
 }

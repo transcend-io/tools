@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
 
@@ -13,9 +8,9 @@ const CreateApiKeySchema = z.object({
   data_silos: z.array(z.string()).optional(),
 });
 
-export function createAdminCreateApiKeyTool(clients: ToolClients): ToolDefinition {
+export function createAdminCreateApiKeyTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
-  return {
+  return defineTool({
     name: 'admin_create_api_key',
     description:
       'Create a new API key with specified scopes. WARNING: The token is only shown once!',
@@ -24,8 +19,7 @@ export function createAdminCreateApiKeyTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Creates a new API key with the specified scopes',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateApiKeySchema,
-    handler: async (args) => {
-      const { title, scopes, data_silos } = args as z.infer<typeof CreateApiKeySchema>;
+    handler: async ({ title, scopes, data_silos }) => {
       try {
         const result = await graphql.createApiKey({
           title,
@@ -46,5 +40,5 @@ export function createAdminCreateApiKeyTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
@@ -14,9 +14,9 @@ const ListSubDataPointsSchema = z.object({
   offset: z.coerce.number().min(0).optional().default(0),
 });
 
-export function createInventoryListSubDataPointsTool(clients: ToolClients): ToolDefinition {
+export function createInventoryListSubDataPointsTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_list_sub_data_points',
     description:
       'List sub-data points (individual data fields) for a specific data point. Note: This feature may have limited availability.',
@@ -24,8 +24,7 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients): Tool
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListSubDataPointsSchema,
-    handler: async (args) => {
-      const { data_point_id, limit, offset } = args as z.infer<typeof ListSubDataPointsSchema>;
+    handler: async ({ data_point_id, limit, offset }) => {
       try {
         const result = await graphql.listSubDataPoints(data_point_id, {
           first: limit,
@@ -44,5 +43,5 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients): Tool
         );
       }
     },
-  };
+  });
 }

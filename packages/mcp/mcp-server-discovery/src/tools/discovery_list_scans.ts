@@ -1,9 +1,9 @@
 import {
   createToolResult,
   createListResult,
+  defineTool,
   PaginationSchema,
   z,
-  type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
@@ -11,21 +11,20 @@ import type { DiscoveryMixin } from '../graphql.js';
 
 const ListScansSchema = PaginationSchema;
 
-export function createDiscoveryListScansTool(clients: ToolClients): ToolDefinition {
+export function createDiscoveryListScansTool(clients: ToolClients) {
   const graphql = clients.graphql as DiscoveryMixin;
-  return {
+  return defineTool({
     name: 'discovery_list_scans',
     description: 'List all data classification scans. Returns data silos with classification info.',
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListScansSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof ListScansSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listClassificationScans({
-          first: args.limit,
-          after: args.cursor,
+          first: limit,
+          after: cursor,
         });
         return createListResult(result.nodes, {
           totalCount: result.totalCount,
@@ -39,5 +38,5 @@ export function createDiscoveryListScansTool(clients: ToolClients): ToolDefiniti
         );
       }
     },
-  };
+  });
 }

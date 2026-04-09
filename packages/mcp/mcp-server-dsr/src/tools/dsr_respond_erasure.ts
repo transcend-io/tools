@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  type ToolClients,
-  type ToolDefinition,
-  z,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const respondErasureSchema = z.object({
   request_id: z.string(),
@@ -11,10 +6,10 @@ const respondErasureSchema = z.object({
   profile_ids: z.array(z.string()).optional(),
 });
 
-export function createDsrRespondErasureTool(clients: ToolClients): ToolDefinition {
+export function createDsrRespondErasureTool(clients: ToolClients) {
   const { rest } = clients;
 
-  return {
+  return defineTool({
     name: 'dsr_respond_erasure',
     description: 'Confirm that data erasure has been completed for a data silo',
     category: 'DSR Automation',
@@ -22,12 +17,12 @@ export function createDsrRespondErasureTool(clients: ToolClients): ToolDefinitio
     confirmationHint: 'Confirms erasure completion for the data silo',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: respondErasureSchema,
-    handler: async (args) => {
+    handler: async ({ request_id, data_silo_id, profile_ids }) => {
       try {
         const result = await rest.confirmErasure({
-          requestId: args.request_id,
-          dataSiloId: args.data_silo_id,
-          profileIds: args.profile_ids,
+          requestId: request_id,
+          dataSiloId: data_silo_id,
+          profileIds: profile_ids,
         });
         return createToolResult(true, {
           ...result,
@@ -41,5 +36,5 @@ export function createDsrRespondErasureTool(clients: ToolClients): ToolDefinitio
         );
       }
     },
-  };
+  });
 }

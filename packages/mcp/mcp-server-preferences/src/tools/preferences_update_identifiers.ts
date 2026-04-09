@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const UpdateIdentifiersSchema = z.object({
   partition: z.string(),
@@ -17,9 +12,9 @@ const UpdateIdentifiersSchema = z.object({
   ),
 });
 
-export function createPreferencesUpdateIdentifiersTool(clients: ToolClients): ToolDefinition {
+export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'preferences_update_identifiers',
     description: 'Update existing identifiers for a user (e.g., when email changes)',
     category: 'Preference Management',
@@ -27,8 +22,7 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients): To
     confirmationHint: 'Updates identifiers for the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateIdentifiersSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof UpdateIdentifiersSchema>;
+    handler: async (args) => {
       try {
         const identifiers = args.identifiers.map((id) => ({
           oldValue: id.oldValue,
@@ -51,5 +45,5 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients): To
         );
       }
     },
-  };
+  });
 }

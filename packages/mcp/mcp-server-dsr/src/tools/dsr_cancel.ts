@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  type ToolClients,
-  type ToolDefinition,
-  z,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 import type { DSRMixin } from '../graphql.js';
 
@@ -12,10 +7,10 @@ const cancelDsrSchema = z.object({
   reason: z.string().optional(),
 });
 
-export function createDsrCancelTool(clients: ToolClients): ToolDefinition {
+export function createDsrCancelTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;
 
-  return {
+  return defineTool({
     name: 'dsr_cancel',
     description: 'Cancel a Data Subject Request',
     category: 'DSR Automation',
@@ -23,13 +18,13 @@ export function createDsrCancelTool(clients: ToolClients): ToolDefinition {
     confirmationHint: 'Cancels the specified request permanently',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: cancelDsrSchema,
-    handler: async (args) => {
+    handler: async ({ request_id, reason }) => {
       try {
         const input: { requestId: string; template?: string; subject?: string } = {
-          requestId: args.request_id,
+          requestId: request_id,
         };
-        if (args.reason) {
-          input.subject = args.reason;
+        if (reason) {
+          input.subject = reason;
         }
         const result = await graphql.cancelRequest(input);
         return createToolResult(true, {
@@ -44,5 +39,5 @@ export function createDsrCancelTool(clients: ToolClients): ToolDefinition {
         );
       }
     },
-  };
+  });
 }

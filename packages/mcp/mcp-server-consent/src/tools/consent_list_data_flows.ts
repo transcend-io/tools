@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
@@ -24,9 +24,9 @@ const PaginationSchema = z.object({
 
 const ListDataFlowsSchema = PaginationSchema;
 
-export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefinition {
+export function createConsentListDataFlowsTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_list_data_flows',
     description:
       'List all data flows (tracking data flows/purposes) configured in your organization.',
@@ -34,8 +34,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefini
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataFlowsSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListDataFlowsSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listDataFlows({
           first: limit,
@@ -53,5 +52,5 @@ export function createConsentListDataFlowsTool(clients: ToolClients): ToolDefini
         );
       }
     },
-  };
+  });
 }

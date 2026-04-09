@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  type ToolClients,
-  type ToolDefinition,
-  z,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
 
 const respondAccessSchema = z.object({
   request_id: z.string(),
@@ -11,10 +6,10 @@ const respondAccessSchema = z.object({
   profiles: z.array(z.record(z.string(), z.unknown())).optional(),
 });
 
-export function createDsrRespondAccessTool(clients: ToolClients): ToolDefinition {
+export function createDsrRespondAccessTool(clients: ToolClients) {
   const { rest } = clients;
 
-  return {
+  return defineTool({
     name: 'dsr_respond_access',
     description: 'Respond to an ACCESS request by uploading user data',
     category: 'DSR Automation',
@@ -22,12 +17,12 @@ export function createDsrRespondAccessTool(clients: ToolClients): ToolDefinition
     confirmationHint: 'Uploads access response data for the DSR',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: respondAccessSchema,
-    handler: async (args) => {
+    handler: async ({ request_id, data_silo_id, profiles }) => {
       try {
         const result = await rest.respondToAccess({
-          requestId: args.request_id,
-          dataSiloId: args.data_silo_id,
-          profiles: args.profiles as Record<string, unknown>[] | undefined,
+          requestId: request_id,
+          dataSiloId: data_silo_id,
+          profiles: profiles as Record<string, unknown>[] | undefined,
         });
         return createToolResult(true, {
           ...result,
@@ -41,5 +36,5 @@ export function createDsrRespondAccessTool(clients: ToolClients): ToolDefinition
         );
       }
     },
-  };
+  });
 }

@@ -1,18 +1,17 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   PaginationSchema,
   type ToolClients,
-  type ToolDefinition,
-  z,
 } from '@transcend-io/mcp-server-core';
 
 import type { DSRMixin } from '../graphql.js';
 
-export function createDsrListTool(clients: ToolClients): ToolDefinition {
+export function createDsrListTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;
 
-  return {
+  return defineTool({
     name: 'dsr_list',
     description:
       'List all Data Subject Requests. Use cursor pagination to retrieve all results (max 100 per page). Note: Server-side date filtering is not available - filter results client-side if needed.',
@@ -20,11 +19,11 @@ export function createDsrListTool(clients: ToolClients): ToolDefinition {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: PaginationSchema,
-    handler: async (args) => {
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listRequests({
-          first: args.limit,
-          after: args.cursor,
+          first: limit,
+          after: cursor,
         });
 
         return createListResult(result.nodes, {
@@ -43,5 +42,5 @@ export function createDsrListTool(clients: ToolClients): ToolDefinition {
         );
       }
     },
-  };
+  });
 }

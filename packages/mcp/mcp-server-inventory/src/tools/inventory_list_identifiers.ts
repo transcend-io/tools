@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
@@ -13,9 +13,9 @@ const ListIdentifiersSchema = z.object({
   cursor: z.string().optional(),
 });
 
-export function createInventoryListIdentifiersTool(clients: ToolClients): ToolDefinition {
+export function createInventoryListIdentifiersTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_list_identifiers',
     description:
       'List all identifier types (email, user ID, etc.) configured in your organization. Note: API does not support cursor pagination (max ~100 results).',
@@ -23,8 +23,7 @@ export function createInventoryListIdentifiersTool(clients: ToolClients): ToolDe
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListIdentifiersSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListIdentifiersSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listIdentifiers({
           first: limit,
@@ -43,5 +42,5 @@ export function createInventoryListIdentifiersTool(clients: ToolClients): ToolDe
         );
       }
     },
-  };
+  });
 }

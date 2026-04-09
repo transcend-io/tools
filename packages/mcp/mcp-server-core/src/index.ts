@@ -9,6 +9,7 @@ export type { ValidationResult } from './validation/index.js';
 export { PaginationSchema } from './validation/schemas.js';
 
 export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
+export { defineTool } from './tools/types.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
 

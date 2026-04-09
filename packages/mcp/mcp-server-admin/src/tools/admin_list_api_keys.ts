@@ -1,8 +1,8 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
-  type ToolDefinition,
   type ToolClients,
 } from '@transcend-io/mcp-server-core';
 
@@ -14,9 +14,9 @@ const ListApiKeysSchema = z.object({
   offset: z.coerce.number().min(0).optional().default(0),
 });
 
-export function createAdminListApiKeysTool(clients: ToolClients): ToolDefinition {
+export function createAdminListApiKeysTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
-  return {
+  return defineTool({
     name: 'admin_list_api_keys',
     description:
       'List all API keys configured for your organization (tokens are not shown). Note: API does not support cursor pagination (max ~100 results).',
@@ -24,8 +24,7 @@ export function createAdminListApiKeysTool(clients: ToolClients): ToolDefinition
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListApiKeysSchema,
-    handler: async (args) => {
-      const { limit, offset } = args as z.infer<typeof ListApiKeysSchema>;
+    handler: async ({ limit, offset }) => {
       try {
         const result = await graphql.listApiKeys({
           first: limit,
@@ -43,5 +42,5 @@ export function createAdminListApiKeysTool(clients: ToolClients): ToolDefinition
         );
       }
     },
-  };
+  });
 }

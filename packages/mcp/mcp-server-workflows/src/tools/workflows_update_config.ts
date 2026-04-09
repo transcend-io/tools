@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { WorkflowsMixin } from '../graphql.js';
 
@@ -15,9 +10,9 @@ const UpdateWorkflowConfigSchema = z.object({
   show_in_privacy_center: z.boolean().optional(),
 });
 
-export function createWorkflowsUpdateConfigTool(clients: ToolClients): ToolDefinition {
+export function createWorkflowsUpdateConfigTool(clients: ToolClients) {
   const graphql = clients.graphql as WorkflowsMixin;
-  return {
+  return defineTool({
     name: 'workflows_update_config',
     description:
       'Update the configuration for a workflow (title, subtitle, description, privacy center visibility)',
@@ -26,8 +21,13 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients): ToolDefin
     confirmationHint: 'Updates the workflow configuration',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateWorkflowConfigSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof UpdateWorkflowConfigSchema>;
+    handler: async ({
+      workflow_config_id,
+      title,
+      subtitle,
+      description,
+      show_in_privacy_center,
+    }) => {
       try {
         const updates: {
           title?: string;
@@ -36,20 +36,20 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients): ToolDefin
           showInPrivacyCenter?: boolean;
         } = {};
 
-        if (args.title !== undefined) {
-          updates.title = args.title;
+        if (title !== undefined) {
+          updates.title = title;
         }
-        if (args.subtitle !== undefined) {
-          updates.subtitle = args.subtitle;
+        if (subtitle !== undefined) {
+          updates.subtitle = subtitle;
         }
-        if (args.description !== undefined) {
-          updates.description = args.description;
+        if (description !== undefined) {
+          updates.description = description;
         }
-        if (args.show_in_privacy_center !== undefined) {
-          updates.showInPrivacyCenter = args.show_in_privacy_center;
+        if (show_in_privacy_center !== undefined) {
+          updates.showInPrivacyCenter = show_in_privacy_center;
         }
 
-        const result = await graphql.updateWorkflowConfig(args.workflow_config_id, updates);
+        const result = await graphql.updateWorkflowConfig(workflow_config_id, updates);
 
         return createToolResult(true, {
           workflowConfig: result,
@@ -63,5 +63,5 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients): ToolDefin
         );
       }
     },
-  };
+  });
 }

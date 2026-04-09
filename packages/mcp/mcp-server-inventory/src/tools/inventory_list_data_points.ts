@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
@@ -13,9 +13,9 @@ const ListDataPointsSchema = z.object({
   cursor: z.string().optional(),
 });
 
-export function createInventoryListDataPointsTool(clients: ToolClients): ToolDefinition {
+export function createInventoryListDataPointsTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_list_data_points',
     description:
       'List data points (collections of personal data). Note: API does not support cursor pagination or data_silo filtering (max ~100 results).',
@@ -23,8 +23,7 @@ export function createInventoryListDataPointsTool(clients: ToolClients): ToolDef
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataPointsSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListDataPointsSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listDataPoints(
           undefined, // dataSiloId not supported by API
@@ -46,5 +45,5 @@ export function createInventoryListDataPointsTool(clients: ToolClients): ToolDef
         );
       }
     },
-  };
+  });
 }

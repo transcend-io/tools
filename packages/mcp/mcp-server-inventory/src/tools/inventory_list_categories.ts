@@ -1,9 +1,9 @@
 import {
   createListResult,
   createToolResult,
+  defineTool,
   z,
   type ToolClients,
-  type ToolDefinition,
 } from '@transcend-io/mcp-server-core';
 
 import type { InventoryMixin } from '../graphql.js';
@@ -13,9 +13,9 @@ const ListCategoriesSchema = z.object({
   cursor: z.string().optional(),
 });
 
-export function createInventoryListCategoriesTool(clients: ToolClients): ToolDefinition {
+export function createInventoryListCategoriesTool(clients: ToolClients) {
   const graphql = clients.graphql as InventoryMixin;
-  return {
+  return defineTool({
     name: 'inventory_list_categories',
     description:
       'List all data categories (PII types) configured in your organization. Note: API does not support cursor pagination (max ~100 results).',
@@ -23,8 +23,7 @@ export function createInventoryListCategoriesTool(clients: ToolClients): ToolDef
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListCategoriesSchema,
-    handler: async (args) => {
-      const { limit, cursor } = args as z.infer<typeof ListCategoriesSchema>;
+    handler: async ({ limit, cursor }) => {
       try {
         const result = await graphql.listDataCategories({
           first: limit,
@@ -43,5 +42,5 @@ export function createInventoryListCategoriesTool(clients: ToolClients): ToolDef
         );
       }
     },
-  };
+  });
 }

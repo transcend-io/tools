@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -14,9 +9,9 @@ const CreateGroupSchema = z.object({
   reviewer_ids: z.array(z.string()).optional(),
 });
 
-export function createAssessmentsCreateGroupTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsCreateGroupTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_create_group',
     description:
       'Create a new assessment group linked to a template. Assessment groups are containers for assessments.',
@@ -25,7 +20,7 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients): ToolDefi
     confirmationHint: 'Creates a new assessment group',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateGroupSchema,
-    handler: async (args: z.infer<typeof CreateGroupSchema>) => {
+    handler: async (args) => {
       try {
         const result = await graphql.createAssessmentGroup({
           title: args.title,
@@ -46,5 +41,5 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients): ToolDefi
         );
       }
     },
-  };
+  });
 }

@@ -1,30 +1,24 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 const NerExtractSchema = z.object({
   text: z.string(),
   entity_types: z.array(z.string()).optional(),
 });
 
-export function createDiscoveryNerExtractTool(clients: ToolClients): ToolDefinition {
+export function createDiscoveryNerExtractTool(clients: ToolClients) {
   const { rest } = clients;
-  return {
+  return defineTool({
     name: 'discovery_ner_extract',
     description: 'Extract named entities (PII, organizations, locations, etc.) from text using NER',
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: NerExtractSchema,
-    handler: async (rawArgs) => {
-      const args = rawArgs as z.infer<typeof NerExtractSchema>;
+    handler: async ({ text, entity_types }) => {
       try {
         const result = await rest.extractEntities({
-          text: args.text,
-          entityTypes: args.entity_types,
+          text,
+          entityTypes: entity_types,
         });
 
         return createToolResult(true, {
@@ -41,5 +35,5 @@ export function createDiscoveryNerExtractTool(clients: ToolClients): ToolDefinit
         );
       }
     },
-  };
+  });
 }

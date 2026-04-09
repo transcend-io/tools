@@ -1,18 +1,13 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AdminMixin } from '../graphql.js';
 
 const EmptySchema = z.object({});
 
-export function createAdminTestConnectionTool(clients: ToolClients): ToolDefinition {
+export function createAdminTestConnectionTool(clients: ToolClients) {
   const { rest } = clients;
   const graphql = clients.graphql as AdminMixin;
-  return {
+  return defineTool({
     name: 'admin_test_connection',
     description: 'Test connectivity to both Transcend REST and GraphQL APIs',
     category: 'Admin',
@@ -45,5 +40,5 @@ export function createAdminTestConnectionTool(clients: ToolClients): ToolDefinit
         );
       }
     },
-  };
+  });
 }

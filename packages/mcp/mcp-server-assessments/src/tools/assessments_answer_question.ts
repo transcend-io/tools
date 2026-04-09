@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolDefinition,
-  type ToolClients,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -15,9 +10,9 @@ const AnswerQuestionSchema = z.object({
     .optional(),
 });
 
-export function createAssessmentsAnswerQuestionTool(clients: ToolClients): ToolDefinition {
+export function createAssessmentsAnswerQuestionTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
-  return {
+  return defineTool({
     name: 'assessments_answer_question',
     description:
       'Answer an assessment question by selecting existing answer options or providing free-text values. For SINGLE_SELECT/MULTI_SELECT questions, provide assessmentAnswerIds from the answerOptions. For SHORT_ANSWER_TEXT/LONG_ANSWER_TEXT, provide assessmentAnswerValues with {value, isUserCreated: true}.',
@@ -26,7 +21,7 @@ export function createAssessmentsAnswerQuestionTool(clients: ToolClients): ToolD
     confirmationHint: 'Records answer to the assessment question',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: AnswerQuestionSchema,
-    handler: async (args: z.infer<typeof AnswerQuestionSchema>) => {
+    handler: async (args) => {
       try {
         const input: {
           assessmentQuestionId: string;
@@ -57,5 +52,5 @@ export function createAssessmentsAnswerQuestionTool(clients: ToolClients): ToolD
         );
       }
     },
-  };
+  });
 }

@@ -1,9 +1,4 @@
-import {
-  createToolResult,
-  z,
-  type ToolClients,
-  type ToolDefinition,
-} from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
 
 import type { ConsentMixin } from '../graphql.js';
 
@@ -11,9 +6,9 @@ const GetCookieStatsSchema = z.object({
   airgap_bundle_id: z.string().describe('Airgap bundle ID (from consent_list_airgap_bundles)'),
 });
 
-export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefinition {
+export function createConsentGetTriageStatsTool(clients: ToolClients) {
   const graphql = clients.graphql as ConsentMixin;
-  return {
+  return defineTool({
     name: 'consent_get_triage_stats',
     description:
       'Get statistics on cookies and data flows: total, live (approved), needs review (triage), ' +
@@ -22,8 +17,7 @@ export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefin
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetCookieStatsSchema,
-    handler: async (args) => {
-      const { airgap_bundle_id } = args as z.infer<typeof GetCookieStatsSchema>;
+    handler: async ({ airgap_bundle_id }) => {
       try {
         const stats = await graphql.getCookieStats(airgap_bundle_id);
         return createToolResult(true, stats);
@@ -35,5 +29,5 @@ export function createConsentGetTriageStatsTool(clients: ToolClients): ToolDefin
         );
       }
     },
-  };
+  });
 }
