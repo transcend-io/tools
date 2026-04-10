@@ -61,9 +61,10 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
           ? { orderBy: [{ field: order_field, direction: order_direction }] }
           : {}),
       });
-      return createListResult(data.dataFlows.nodes, {
-        totalCount: data.dataFlows.totalCount,
-        hasNextPage: data.dataFlows.pageInfo.hasNextPage,
+      const { nodes, totalCount } = data.dataFlows;
+      return createListResult(nodes, {
+        totalCount,
+        hasNextPage: offset + nodes.length < totalCount,
       });
     },
   });

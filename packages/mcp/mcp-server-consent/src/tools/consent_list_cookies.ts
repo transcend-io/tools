@@ -61,9 +61,10 @@ export function createConsentListCookiesTool(clients: ToolClients) {
           ? { orderBy: [{ field: order_field, direction: order_direction }] }
           : {}),
       });
-      return createListResult(data.cookies.nodes, {
-        totalCount: data.cookies.totalCount,
-        hasNextPage: data.cookies.pageInfo.hasNextPage,
+      const { nodes, totalCount } = data.cookies;
+      return createListResult(nodes, {
+        totalCount,
+        hasNextPage: offset + nodes.length < totalCount,
       });
     },
   });
