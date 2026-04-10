@@ -44,4 +44,6 @@ and resources registered in the consent server:
 
 - `consent-inspect-site` prompt -- URL overrides, console commands, JS evaluation snippets
 - `consent-research-tracker` prompt -- CMP databases, research methodology
-- `consent://classification-guide` resource -- purpose definitions, junk indicators, confidence levels
+
+MCP resources fetch live content from the docs links above with static fallback.
+Use `FetchMcpResource` to pull any of them into context.

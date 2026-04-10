@@ -25,9 +25,16 @@ the canonical source of truth:
 - **`consent-triage`** prompt -- the full 6-phase workflow (setup, fetch, research, review, push, loop)
 - **`consent-research-tracker`** prompt -- research methodology for classifying a tracker
 - **`consent-inspect-site`** prompt -- live site investigation via browser DevTools
-- **`consent://classification-guide`** resource -- tracking purpose definitions, junk indicators, confidence levels
 
-Invoke these with `CallMcpTool` to get detailed guidance for each phase.
+Resources (fetched live from docs.transcend.io with static fallback):
+
+- **Tracking Purposes** -- purpose definitions and classification reference
+- **Triage Guide** -- full triage workflow documentation
+- **Debugging & Testing** -- URL overrides, console commands, testing methodology
+- **Data Flows & Cookies** -- how telemetry discovers and regulates trackers
+- **Telemetry Overview** -- collection methods and data flow types
+
+Use `FetchMcpResource` to pull these into context, or invoke prompts with `CallMcpTool`.
 
 ## Cursor-Specific Orchestration
 
