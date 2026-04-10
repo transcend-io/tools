@@ -1,4 +1,8 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import {
+  createGraphqlIntrospectTool,
+  type ToolDefinition,
+  type ToolClients,
+} from '@transcend-io/mcp-server-core';
 
 import { createAdminCreateApiKeyTool } from './admin_create_api_key.js';
 import { createAdminGetCurrentUserTool } from './admin_get_current_user.js';
@@ -19,5 +23,6 @@ export function getAdminTools(clients: ToolClients): ToolDefinition[] {
     createAdminCreateApiKeyTool(clients),
     createAdminGetPrivacyCenterTool(clients),
     createAdminTestConnectionTool(clients),
+    createGraphqlIntrospectTool(clients.graphql),
   ];
 }

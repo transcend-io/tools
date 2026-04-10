@@ -21,6 +21,7 @@ export type {
 export type { ResourceDefinition } from './resources/types.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
+export { createGraphqlIntrospectTool } from './tools/graphql-introspect.js';
 
 export { createMCPServer } from './server/create-server.js';
 export type { MCPServerOptions } from './server/create-server.js';
