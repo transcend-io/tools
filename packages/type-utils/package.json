@@ -1,14 +1,14 @@
 {
-  "name": "@transcend-io/privacy-types",
-  "version": "5.1.0",
-  "description": "Core enums and types for interacting with Transcend's public APIs.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/privacy-types",
+  "name": "@transcend-io/type-utils",
+  "version": "2.0.1",
+  "description": "Typed runtime and compile-time utilities for the Transcend developer tools monorepo.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/type-utils",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/privacy-types"
+    "directory": "packages/type-utils"
   },
   "files": [
     "dist"
@@ -34,13 +34,12 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@transcend-io/internationalization": "workspace:*",
-    "@transcend-io/type-utils": "workspace:*",
     "fp-ts": "^2.16.1",
     "io-ts": "^2.2.21"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@types/json-schema": "catalog:",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",

@@ -37,7 +37,7 @@
     "@transcend-io/airgap.js-types": "^12.16.0",
     "@transcend-io/internationalization": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
-    "@transcend-io/type-utils": "^1.8.9",
+    "@transcend-io/type-utils": "workspace:*",
     "@transcend-io/utils": "workspace:*",
     "got": "^11.8.5",
     "graphql": "^16.6.0",

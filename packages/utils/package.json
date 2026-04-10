@@ -34,7 +34,7 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@transcend-io/type-utils": "^1.8.9",
+    "@transcend-io/type-utils": "workspace:*",
     "bluebird": "^3.7.2",
     "csv-parse": "^5.6.0",
     "fast-csv": "^4.3.6"
