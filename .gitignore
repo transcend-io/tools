@@ -1,6 +1,7 @@
 .DS_Store
 .pnpm-store
 .turbo
+.worktrees
 coverage
 dist
 mise.local.lock
