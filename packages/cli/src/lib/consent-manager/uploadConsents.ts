@@ -1,4 +1,5 @@
 import { ConsentPreferencesBody } from '@transcend-io/airgap.js-types';
+import { createTranscendConsentGotInstance } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -7,7 +8,6 @@ import * as t from 'io-ts';
 
 import { DEFAULT_TRANSCEND_CONSENT_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { createTranscendConsentGotInstance } from '../graphql/index.js';
 import { createConsentToken } from './createConsentToken.js';
 import type { ConsentPreferenceUpload } from './types.js';
 

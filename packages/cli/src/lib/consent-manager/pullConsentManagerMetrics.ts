@@ -1,11 +1,12 @@
-import type { GraphQLClient } from 'graphql-request';
-
 import {
-  ConsentManagerMetric,
+  type ConsentManagerMetric,
   ConsentManagerMetricBin,
   fetchConsentManagerAnalyticsData,
   fetchConsentManagerId,
-} from '../graphql/index.js';
+} from '@transcend-io/sdk';
+import type { GraphQLClient } from 'graphql-request';
+
+import { logger } from '../../logger.js';
 
 /**
  * One second of time in ms
@@ -46,7 +47,7 @@ export async function pullConsentManagerMetrics(
   CONSENT_SESSIONS_BY_REGIME: ConsentManagerMetric[];
 }> {
   // Grab the bundleId associated with this API key
-  const airgapBundleId = await fetchConsentManagerId(client);
+  const airgapBundleId = await fetchConsentManagerId(client, { logger });
 
   // convert start and end to times
   const startTime = Math.floor(start.getTime() / 1000);
@@ -64,33 +65,45 @@ export async function pullConsentManagerMetrics(
   const startDate = start.toISOString();
   const endDate = end.toISOString();
   const [privacySignalData, consentChangesData, consentSessionsByRegimeData] = await Promise.all([
-    fetchConsentManagerAnalyticsData(client, {
-      dataSource: 'PRIVACY_SIGNAL_TIMESERIES',
-      startDate,
-      endDate,
-      forceRefetch: true,
-      airgapBundleId,
-      binInterval: bin,
-      smoothTimeseries: false,
-    }),
-    fetchConsentManagerAnalyticsData(client, {
-      dataSource: 'CONSENT_CHANGES_TIMESERIES',
-      startDate,
-      endDate,
-      forceRefetch: true,
-      airgapBundleId,
-      binInterval: bin,
-      smoothTimeseries: false,
-    }),
-    fetchConsentManagerAnalyticsData(client, {
-      dataSource: 'CONSENT_SESSIONS_BY_REGIME',
-      startDate,
-      endDate,
-      forceRefetch: true,
-      airgapBundleId,
-      binInterval: bin,
-      smoothTimeseries: false,
-    }),
+    fetchConsentManagerAnalyticsData(
+      client,
+      {
+        dataSource: 'PRIVACY_SIGNAL_TIMESERIES',
+        startDate,
+        endDate,
+        forceRefetch: true,
+        airgapBundleId,
+        binInterval: bin,
+        smoothTimeseries: false,
+      },
+      { logger },
+    ),
+    fetchConsentManagerAnalyticsData(
+      client,
+      {
+        dataSource: 'CONSENT_CHANGES_TIMESERIES',
+        startDate,
+        endDate,
+        forceRefetch: true,
+        airgapBundleId,
+        binInterval: bin,
+        smoothTimeseries: false,
+      },
+      { logger },
+    ),
+    fetchConsentManagerAnalyticsData(
+      client,
+      {
+        dataSource: 'CONSENT_SESSIONS_BY_REGIME',
+        startDate,
+        endDate,
+        forceRefetch: true,
+        airgapBundleId,
+        binInterval: bin,
+        smoothTimeseries: false,
+      },
+      { logger },
+    ),
   ]);
 
   return {

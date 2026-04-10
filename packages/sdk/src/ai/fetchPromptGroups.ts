@@ -31,8 +31,8 @@ export async function fetchAllPromptGroups(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<PromptGroup[]> {
   const { logger } = options;
   const promptGroups: PromptGroup[] = [];

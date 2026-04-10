@@ -1,0 +1,57 @@
+{
+  "mcpServers": {
+    "transcend": {
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server/dist/cli.mjs"]
+    },
+    "transcend-admin": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-admin/dist/cli.mjs"]
+    },
+    "transcend-assessments": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-assessments/dist/cli.mjs"]
+    },
+    "transcend-consent": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-consent/dist/cli.mjs"]
+    },
+    "transcend-discovery": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-discovery/dist/cli.mjs"]
+    },
+    "transcend-dsr": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-dsr/dist/cli.mjs"]
+    },
+    "transcend-inventory": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-inventory/dist/cli.mjs"]
+    },
+    "transcend-preferences": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-preferences/dist/cli.mjs"]
+    },
+    "transcend-workflows": {
+      "disabled": true,
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-workflows/dist/cli.mjs"]
+    },
+    "cursor-ide-browser": {
+      "command": "npx",
+      "args": ["-y", "@browsermcp/mcp@latest"],
+      "alwaysAllow": ["navigate", "evaluate", "screenshot"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest", "--slim", "--no-usage-statistics"]
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "name": "@transcend-io/mcp-server-dsr",
+  "version": "0.0.1",
+  "description": "Transcend MCP Server — DSR Automation tools.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-dsr",
+  "license": "Apache-2.0",
+  "author": "Transcend Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transcend-io/tools.git",
+    "directory": "packages/mcp/mcp-server-dsr"
+  },
+  "bin": {
+    "transcend-mcp-dsr": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "catalog:",
+    "@transcend-io/mcp-server-core": "workspace:*",
+    "@transcend-io/privacy-types": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@types/node": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

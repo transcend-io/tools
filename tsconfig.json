@@ -2,9 +2,19 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "files": [],
   "references": [
-    { "path": "./packages/utils" },
-    { "path": "./packages/sdk" },
+    { "path": "./packages/cli" },
+    { "path": "./packages/mcp/mcp-server" },
+    { "path": "./packages/mcp/mcp-server-admin" },
+    { "path": "./packages/mcp/mcp-server-assessments" },
+    { "path": "./packages/mcp/mcp-server-consent" },
+    { "path": "./packages/mcp/mcp-server-core" },
+    { "path": "./packages/mcp/mcp-server-discovery" },
+    { "path": "./packages/mcp/mcp-server-dsr" },
+    { "path": "./packages/mcp/mcp-server-inventory" },
+    { "path": "./packages/mcp/mcp-server-preferences" },
+    { "path": "./packages/mcp/mcp-server-workflows" },
     { "path": "./packages/privacy-types" },
-    { "path": "./packages/cli" }
+    { "path": "./packages/sdk" },
+    { "path": "./packages/utils" }
   ]
 }

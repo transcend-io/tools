@@ -1,15 +1,36 @@
 import {
+  fetchAllActions,
   fetchAllAttributes,
+  fetchAllDataSubjects,
   fetchApiKeys,
+  fetchIdentifiersAndCreateMissing,
+  syncAction,
   syncActionItemCollections,
   syncActionItems,
+  syncAgentFiles,
+  syncAgentFunctions,
+  syncAgents,
   syncAttribute,
   syncBusinessEntities,
+  syncDataCategories,
+  syncConsentManager,
+  syncCookies,
+  syncDataFlows,
+  syncDataSubject,
+  syncDataSiloDependencies,
+  syncEnricher,
+  syncIdentifier,
   syncIntlMessages,
+  syncPartitions,
+  syncPolicies,
+  syncPrivacyCenter,
+  syncProcessingActivities,
+  syncProcessingPurposes,
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
   syncTeams,
+  syncTemplate,
   syncVendors,
   type Identifier,
 } from '@transcend-io/sdk';
@@ -20,27 +41,8 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { fetchAllActions } from './fetchAllActions.js';
-import { fetchAllDataSubjects, ensureAllDataSubjectsExist } from './fetchDataSubjects.js';
-import { fetchIdentifiersAndCreateMissing } from './fetchIdentifiers.js';
-import { syncAction } from './syncAction.js';
-import { syncAgentFiles } from './syncAgentFiles.js';
-import { syncAgentFunctions } from './syncAgentFunctions.js';
-import { syncAgents } from './syncAgents.js';
-import { syncConsentManager } from './syncConsentManager.js';
-import { syncCookies } from './syncCookies.js';
-import { syncDataCategories } from './syncDataCategories.js';
-import { syncDataFlows } from './syncDataFlows.js';
-import { syncDataSiloDependencies, syncDataSilos } from './syncDataSilos.js';
-import { syncDataSubject } from './syncDataSubject.js';
-import { syncEnricher } from './syncEnrichers.js';
-import { syncIdentifier } from './syncIdentifier.js';
-import { syncPartitions } from './syncPartitions.js';
-import { syncPolicies } from './syncPolicies.js';
-import { syncPrivacyCenter } from './syncPrivacyCenter.js';
-import { syncProcessingActivities } from './syncProcessingActivities.js';
-import { syncProcessingPurposes } from './syncProcessingPurposes.js';
-import { syncTemplate } from './syncTemplates.js';
+import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
+import { syncDataSilos } from './syncDataSilos.js';
 
 const CONCURRENCY = 10;
 
@@ -110,7 +112,11 @@ export async function syncConfigurationToTranscend(
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
     enrichers || identifiers
-      ? fetchIdentifiersAndCreateMissing(input, client, !publishToPrivacyCenter)
+      ? fetchIdentifiersAndCreateMissing(client, {
+          input,
+          skipPublish: !publishToPrivacyCenter,
+          logger,
+        })
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
     dataSilos || dataSubjects || enrichers || processingActivities
@@ -121,7 +127,7 @@ export async function syncConfigurationToTranscend(
     dataSilos
       .map((dataSilo) => dataSilo['api-key-title'] || [])
       .reduce((acc, lst) => acc + lst.length, 0) > 0
-      ? fetchApiKeys(input, client, false, { logger })
+      ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
 
@@ -129,7 +135,7 @@ export async function syncConfigurationToTranscend(
   if (consentManager) {
     logger.info(colors.magenta('Syncing consent manager...'));
     try {
-      await syncConsentManager(client, consentManager);
+      await syncConsentManager(client, consentManager, { logger });
       logger.info(colors.green('Successfully synced consent manager!'));
     } catch (err) {
       encounteredError = true;
@@ -164,7 +170,7 @@ export async function syncConfigurationToTranscend(
       async (template) => {
         logger.info(colors.magenta(`Syncing template "${template.title}"...`));
         try {
-          await syncTemplate(template, client);
+          await syncTemplate(client, template, { logger });
           logger.info(colors.green(`Successfully synced template "${template.title}"!`));
         } catch (err) {
           encounteredError = true;
@@ -192,43 +198,45 @@ export async function syncConfigurationToTranscend(
 
   // Sync data categories
   if (dataCategories) {
-    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories);
+    const dataCategoriesSuccess = await syncDataCategories(client, dataCategories, { logger });
     encounteredError = encounteredError || !dataCategoriesSuccess;
   }
 
   // Sync processing purposes
   if (processingPurposes) {
-    const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes);
+    const processingPurposesSuccess = await syncProcessingPurposes(client, processingPurposes, {
+      logger,
+    });
     encounteredError = encounteredError || !processingPurposesSuccess;
   }
 
   // Sync partitions
   if (partitions) {
-    const partitionsSuccess = await syncPartitions(client, partitions);
+    const partitionsSuccess = await syncPartitions(client, partitions, { logger });
     encounteredError = encounteredError || !partitionsSuccess;
   }
 
   // Sync agents
   if (agents) {
-    const agentsSuccess = await syncAgents(client, agents);
+    const agentsSuccess = await syncAgents(client, agents, { logger });
     encounteredError = encounteredError || !agentsSuccess;
   }
 
   // Sync agent functions
   if (agentFunctions) {
-    const agentFunctionsSuccess = await syncAgentFunctions(client, agentFunctions);
+    const agentFunctionsSuccess = await syncAgentFunctions(client, agentFunctions, { logger });
     encounteredError = encounteredError || !agentFunctionsSuccess;
   }
 
   // Sync agent files
   if (agentFiles) {
-    const agentFilesSuccess = await syncAgentFiles(client, agentFiles);
+    const agentFilesSuccess = await syncAgentFiles(client, agentFiles, { logger });
     encounteredError = encounteredError || !agentFilesSuccess;
   }
 
   // Sync cookies
   if (cookies) {
-    const cookiesSuccess = await syncCookies(client, cookies);
+    const cookiesSuccess = await syncCookies(client, cookies, { logger });
     encounteredError = encounteredError || !cookiesSuccess;
   }
 
@@ -289,9 +297,10 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing enricher "${enricher.title}"...`));
         try {
           await syncEnricher(client, {
-            enricher,
+            input: enricher,
             identifierByName,
             dataSubjectsByName,
+            logger,
           });
           logger.info(colors.green(`Successfully synced enricher "${enricher.title}"!`));
         } catch (err) {
@@ -323,10 +332,11 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing identifier "${identifier.type}"...`));
         try {
           await syncIdentifier(client, {
-            identifier,
+            input: identifier,
             dataSubjectsByName,
             identifierId: existing.id,
             skipPublish: !publishToPrivacyCenter,
+            logger,
           });
           logger.info(colors.green(`Successfully synced identifier "${identifier.type}"!`));
         } catch (err) {
@@ -347,7 +357,7 @@ export async function syncConfigurationToTranscend(
   if (actions) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${actions.length}" actions...`));
-    const existingActions = await fetchAllActions(client);
+    const existingActions = await fetchAllActions(client, { logger });
     await map(
       actions,
       async (action) => {
@@ -360,11 +370,15 @@ export async function syncConfigurationToTranscend(
 
         logger.info(colors.magenta(`Syncing action "${action.type}"...`));
         try {
-          await syncAction(client, {
-            action,
-            actionId: existing.id,
-            skipPublish: !publishToPrivacyCenter,
-          });
+          await syncAction(
+            client,
+            {
+              action,
+              actionId: existing.id,
+              skipPublish: !publishToPrivacyCenter,
+            },
+            { logger },
+          );
           logger.info(colors.green(`Successfully synced action "${action.type}"!`));
         } catch (err) {
           encounteredError = true;
@@ -382,7 +396,7 @@ export async function syncConfigurationToTranscend(
   if (dataSubjects) {
     // Fetch existing
     logger.info(colors.magenta(`Syncing "${dataSubjects.length}" data subjects...`));
-    const existingDataSubjects = await fetchAllDataSubjects(client);
+    const existingDataSubjects = await fetchAllDataSubjects(client, { logger });
     await map(
       dataSubjects,
       async (dataSubject) => {
@@ -396,9 +410,10 @@ export async function syncConfigurationToTranscend(
         logger.info(colors.magenta(`Syncing data subject "${dataSubject.type}"...`));
         try {
           await syncDataSubject(client, {
-            dataSubject,
+            input: dataSubject,
             dataSubjectId: existing.id,
             skipPublish: !publishToPrivacyCenter,
+            logger,
           });
           logger.info(colors.green(`Successfully synced data subject "${dataSubject.type}"!`));
         } catch (err) {
@@ -417,13 +432,13 @@ export async function syncConfigurationToTranscend(
 
   // Sync data flows
   if (dataFlows) {
-    const syncedDataFlows = await syncDataFlows(client, dataFlows, classifyService);
+    const syncedDataFlows = await syncDataFlows(client, dataFlows, { classifyService, logger });
     encounteredError = encounteredError || !syncedDataFlows;
   }
 
   // Sync privacy center
   if (privacyCenter) {
-    const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter);
+    const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter, { logger });
     encounteredError = encounteredError || !privacyCenterSuccess;
   }
 
@@ -435,7 +450,7 @@ export async function syncConfigurationToTranscend(
 
   // Sync policies
   if (policies) {
-    const policiesSuccess = await syncPolicies(client, policies);
+    const policiesSuccess = await syncPolicies(client, policies, { logger });
     encounteredError = encounteredError || !policiesSuccess;
   }
 
@@ -462,12 +477,14 @@ export async function syncConfigurationToTranscend(
 
   // Dependencies updated at the end after all data silos are created
   if (dependencyUpdates.length > 0) {
-    await syncDataSiloDependencies(client, dependencyUpdates);
+    await syncDataSiloDependencies(client, { input: dependencyUpdates, logger });
   }
 
   // Update processing activities
   if (processingActivities) {
-    const processingActivitySuccess = await syncProcessingActivities(client, processingActivities);
+    const processingActivitySuccess = await syncProcessingActivities(client, processingActivities, {
+      logger,
+    });
     encounteredError = encounteredError || !processingActivitySuccess;
   }
 

@@ -3,7 +3,8 @@ import { decodeCodec } from '@transcend-io/type-utils';
 import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
-import { ConsentPreferenceResponse, PreferencesQueryFilter } from './types.js';
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { ConsentPreferenceResponse, type PreferencesQueryFilter } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**
@@ -25,7 +26,7 @@ export async function fetchConsentPreferences(
     filterBy = {},
     limit = 50,
     onItems,
-    logger,
+    logger = NOOP_LOGGER,
   }: {
     /** Partition key to fetch (moved to URL path on new endpoint) */
     partition: string;
@@ -35,7 +36,7 @@ export async function fetchConsentPreferences(
     limit?: number;
     /** Optional streaming sink; if provided, pages are not accumulated */
     onItems?: (items: PreferenceQueryResponseItem[]) => Promise<void> | void;
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<PreferenceQueryResponseItem[]> {
   const collected: PreferenceQueryResponseItem[] = [];

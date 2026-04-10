@@ -110,14 +110,17 @@ export async function generateCrossAccountApiKeys({
       );
 
       // Delete existing API key
-      const [apiKeyWithTitle] = await fetchAllApiKeys(client, { titles: [apiKeyTitle], logger });
+      const [apiKeyWithTitle] = await fetchAllApiKeys(client, {
+        logger,
+        filterBy: { titles: [apiKeyTitle] },
+      });
       if (apiKeyWithTitle && deleteExistingApiKey) {
         logger.info(
           colors.yellow(
             `Deleting existing API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,
           ),
         );
-        await deleteApiKey(client, apiKeyWithTitle.id, { logger });
+        await deleteApiKey(client, { id: apiKeyWithTitle.id, logger });
         logger.info(
           colors.green(
             `Successfully deleted API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,
@@ -135,7 +138,10 @@ export async function generateCrossAccountApiKeys({
             `Creating API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,
           ),
         );
-        const { apiKey } = await createApiKey(client, { title: apiKeyTitle, scopes }, { logger });
+        const { apiKey } = await createApiKey(client, {
+          input: { title: apiKeyTitle, scopes },
+          logger,
+        });
         results.push({
           organizationName: role.organization.name,
           organizationId: role.organization.id,

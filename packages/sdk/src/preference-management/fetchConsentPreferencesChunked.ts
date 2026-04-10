@@ -2,6 +2,7 @@ import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import { addDaysUtc, clampPageSize, map as pmap, type Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { buildConsentChunks } from './buildConsentChunks.js';
 import {
   findEarliestDayWithData,
@@ -10,7 +11,7 @@ import {
 } from './discoverConsentWindow.js';
 import { iterateConsentPages } from './iterateConsentPages.js';
 import { pickConsentChunkMode } from './pickConsentChunkMode.js';
-import { PreferencesQueryFilter, ChunkMode } from './types.js';
+import { type PreferencesQueryFilter, type ChunkMode } from './types.js';
 
 /**
  * Merge baseFilter with a window filter, taking care not to mix timestamp/updated fields improperly.
@@ -69,7 +70,7 @@ export async function fetchConsentPreferencesChunked(
     maxChunks = 5000,
     maxLookbackDays = 3650,
     onItems,
-    logger,
+    logger = NOOP_LOGGER,
     onProgress,
   }: {
     /** Partition */
@@ -88,7 +89,7 @@ export async function fetchConsentPreferencesChunked(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onItems?: (items: PreferenceQueryResponseItem[]) => Promise<any> | any;
     /** Logger */
-    logger: Logger;
+    logger?: Logger;
     /** Optional progress: completed chunks, total chunks, records fetched so far */
     onProgress?: (completed: number, total: number, fetched: number) => void;
   },

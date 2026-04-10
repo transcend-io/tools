@@ -3,7 +3,7 @@ import { decodeCodec } from '@transcend-io/type-utils';
 import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
-import { ConsentPreferenceResponse, PreferencesQueryFilter } from './types.js';
+import { ConsentPreferenceResponse, type PreferencesQueryFilter } from './types.js';
 import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**

@@ -5,6 +5,8 @@ import {
   fetchAllCodePackages,
   type CodePackage,
   makeGraphQLRequest,
+  syncRepositories,
+  syncSoftwareDevelopmentKits,
 } from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
@@ -13,8 +15,6 @@ import { chunk, uniq, keyBy, uniqBy } from 'lodash-es';
 
 import { CodePackageInput, RepositoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { syncRepositories } from './syncRepositories.js';
-import { syncSoftwareDevelopmentKits } from './syncSoftwareDevelopmentKits.js';
 
 const CHUNK_SIZE = 100;
 
@@ -158,7 +158,7 @@ export async function syncCodePackages(
             .flat(),
           ({ name, codePackageType }) => `${name}${LOOKUP_SPLIT_KEY}${codePackageType}`,
         ),
-        concurrency,
+        { logger, concurrency },
       ),
       // make sure all Repositories exist
       syncRepositories(
@@ -170,6 +170,7 @@ export async function syncCodePackages(
               url: `https://github.com/${repositoryName}`,
             }) as RepositoryInput,
         ),
+        { logger },
       ),
     ]);
 

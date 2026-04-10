@@ -1,15 +1,15 @@
 import { ConsentBundleType } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  deployConsentManager,
+  fetchConsentManagerId,
+  updateConsentManagerToLatest,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  updateConsentManagerToLatest,
-  fetchConsentManagerId,
-  deployConsentManager,
-} from '../graphql/index.js';
 
 /**
  * Update the consent manager to latest version
@@ -35,7 +35,7 @@ export async function updateConsentManagerVersionToLatest({
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Grab Consent Manager ID
-  const consentManagerId = await fetchConsentManagerId(client);
+  const consentManagerId = await fetchConsentManagerId(client, { logger });
 
   // Update each bundle type to latest version
   await mapSeries(bundleTypes, async (bundleType) => {
@@ -45,8 +45,11 @@ export async function updateConsentManagerVersionToLatest({
       ),
     );
     await updateConsentManagerToLatest(client, {
-      id: consentManagerId,
-      bundleType,
+      input: {
+        id: consentManagerId,
+        bundleType,
+      },
+      logger,
     });
     logger.info(
       colors.green(
@@ -64,10 +67,14 @@ export async function updateConsentManagerVersionToLatest({
           `Deploying Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}"...`,
         ),
       );
-      await deployConsentManager(client, {
-        id: consentManagerId,
-        bundleType,
-      });
+      await deployConsentManager(
+        client,
+        {
+          id: consentManagerId,
+          bundleType,
+        },
+        { logger },
+      );
       logger.info(
         colors.green(
           `Deployed Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}"!`,

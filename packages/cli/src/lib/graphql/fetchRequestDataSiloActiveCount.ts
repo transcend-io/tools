@@ -1,8 +1,7 @@
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { makeGraphQLRequest, REDUCED_REQUESTS_FOR_DATA_SILO_COUNT } from '@transcend-io/sdk';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { REDUCED_REQUESTS_FOR_DATA_SILO_COUNT } from './gqls/index.js';
 
 /**
  * Get number of open requests for a data silo

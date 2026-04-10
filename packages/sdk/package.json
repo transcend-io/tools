@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/sdk",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Transcend SDK — shared GraphQL/REST API clients and preference management utilities.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/sdk",
   "license": "Apache-2.0",
@@ -43,12 +43,15 @@
     "graphql": "^16.6.0",
     "graphql-request": "^5.0.0",
     "io-ts": "^2.2.21",
-    "lodash-es": "^4.17.21"
+    "lodash-es": "^4.17.21",
+    "semver": "catalog:"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@types/json-schema": "catalog:",
     "@types/lodash-es": "^4.17.12",
     "@types/node": "catalog:",
+    "@types/semver": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

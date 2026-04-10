@@ -3,10 +3,11 @@ import { startOfUtcDay, DAY_MS, type Logger } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import type { Got } from 'got';
 
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { getComparisonTimeForRecord } from './getComparisonTimeForRecord.js';
 import { iterateConsentPages } from './iterateConsentPages.js';
 import { pickConsentChunkMode } from './pickConsentChunkMode.js';
-import { ChunkMode, PreferencesQueryFilter } from './types.js';
+import { type ChunkMode, type PreferencesQueryFilter } from './types.js';
 
 /**
  * Get after/before bounds from filter for the given mode
@@ -127,10 +128,10 @@ export async function findEarliestDayWithData(
     /** Optional safety cap in days to avoid unbounded lookback (default ~10 years) */
     maxLookbackDays?: number;
     /** Logger */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Date> {
-  const { partition, mode, baseFilter, maxLookbackDays = 3650, logger } = opts;
+  const { partition, mode, baseFilter, maxLookbackDays = 3650, logger = NOOP_LOGGER } = opts;
 
   // 1) Find newest record (anchors our backtracking).
   const newest = await fetchOne(sombra, partition, withBeforeBound(mode, baseFilter), logger);
@@ -304,10 +305,10 @@ export async function findLatestDayWithData(
     /** Earliest date */
     earliest: Date; // inclusive day start
     /** Logger */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Date> {
-  const { partition, mode, baseFilter, logger } = opts;
+  const { partition, mode, baseFilter, logger = NOOP_LOGGER } = opts;
 
   logger.info('Latest-day discovery: probing newest record…');
   const latest = await fetchOne(sombra, partition, withBeforeBound(mode, baseFilter), logger);
