@@ -9,3 +9,4 @@ mise.local.toml
 node_modules
 *.tsbuildinfo
 secret.env
+.worktrees
