@@ -15,6 +15,7 @@
     { "path": "./packages/mcp/mcp-server-workflows" },
     { "path": "./packages/privacy-types" },
     { "path": "./packages/sdk" },
+    { "path": "./packages/type-utils" },
     { "path": "./packages/utils" }
   ]
 }

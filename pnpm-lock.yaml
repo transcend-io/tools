@@ -126,8 +126,8 @@ importers:
         specifier: ^1.2.3
         version: 1.2.3
       '@transcend-io/type-utils':
-        specifier: ^1.8.9
-        version: 1.8.9
+        specifier: workspace:*
+        version: link:../type-utils
       '@transcend-io/utils':
         specifier: workspace:*
         version: link:../utils
@@ -638,8 +638,8 @@ importers:
         specifier: 'catalog:'
         version: 3.0.0
       '@transcend-io/type-utils':
-        specifier: ^1.8.9
-        version: 1.8.9
+        specifier: workspace:*
+        version: link:../type-utils
       fp-ts:
         specifier: ^2.16.1
         version: 2.16.11
@@ -678,8 +678,8 @@ importers:
         specifier: workspace:*
         version: link:../privacy-types
       '@transcend-io/type-utils':
-        specifier: ^1.8.9
-        version: 1.8.9
+        specifier: workspace:*
+        version: link:../type-utils
       '@transcend-io/utils':
         specifier: workspace:*
         version: link:../utils
@@ -730,11 +730,42 @@ importers:
         specifier: 'catalog:'
         version: 4.0.18(@types/node@22.19.15)(tsx@4.21.0)
 
+  packages/type-utils:
+    dependencies:
+      fp-ts:
+        specifier: ^2.16.1
+        version: 2.16.11
+      io-ts:
+        specifier: ^2.2.21
+        version: 2.2.22(fp-ts@2.16.11)
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: 'catalog:'
+        version: 0.18.2
+      '@types/json-schema':
+        specifier: 'catalog:'
+        version: 7.0.15
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.15
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.18
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.2(@arethetypeswrong/core@0.18.2)(publint@0.3.18)(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@22.19.15)(tsx@4.21.0)
+
   packages/utils:
     dependencies:
       '@transcend-io/type-utils':
-        specifier: ^1.8.9
-        version: 1.8.9
+        specifier: workspace:*
+        version: link:../type-utils
       bluebird:
         specifier: ^3.7.2
         version: 3.7.2
