@@ -3,10 +3,8 @@ import { RequestAction } from '@transcend-io/privacy-types';
 
 import type { DSRMixin } from '../graphql.js';
 
-export const RequestTypeEnum = z.nativeEnum(RequestAction);
-
 export const employeeSubmitDsrSchema = z.object({
-  type: RequestTypeEnum.describe('Type of DSR request'),
+  type: z.nativeEnum(RequestAction).describe('Type of DSR request'),
   email: z.string().describe('Email address of the data subject'),
   subjectType: z
     .string()
