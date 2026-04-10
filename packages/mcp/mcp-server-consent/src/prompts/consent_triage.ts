@@ -69,8 +69,20 @@ Present triage stats:
 
 Fetch the next batch of items needing review, sorted by highest traffic:
 
-${triageType === 'cookies' || triageType === 'both' ? '- `consent_list_cookies { status: "NEEDS_REVIEW", limit: ' + batchSize + ', order_field: "occurrences", order_direction: "DESC" }`' : ''}
-${triageType === 'data_flows' || triageType === 'both' ? '- `consent_list_data_flows { status: "NEEDS_REVIEW", limit: ' + batchSize + ', order_field: "occurrences", order_direction: "DESC" }`' : ''}
+${[
+  triageType === 'cookies' || triageType === 'both'
+    ? '- `consent_list_cookies { status: "NEEDS_REVIEW", limit: ' +
+      batchSize +
+      ', order_field: "occurrences", order_direction: "DESC" }`'
+    : '',
+  triageType === 'data_flows' || triageType === 'both'
+    ? '- `consent_list_data_flows { status: "NEEDS_REVIEW", limit: ' +
+      batchSize +
+      ', order_field: "occurrences", order_direction: "DESC" }`'
+    : '',
+]
+  .filter(Boolean)
+  .join('\n')}
 
 Present in this table format:
 

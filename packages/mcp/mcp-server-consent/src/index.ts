@@ -1,4 +1,6 @@
 export { getConsentTools } from './tools/index.js';
+export { getConsentPrompts } from './prompts/index.js';
+export { getConsentResources } from './resources/index.js';
 export { resolveAirgapBundleId } from './resolveAirgapBundleId.js';
 
 export { GetPreferencesSchema, type GetPreferencesInput } from './tools/consent_get_preferences.js';

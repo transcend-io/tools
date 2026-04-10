@@ -9,7 +9,6 @@ import { consentTriagePrompt } from './consent_triage.js';
  * The clients arg is accepted for API consistency with getTools,
  * but prompts don't currently need API access (they return static guidance).
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getConsentPrompts(_clients: ToolClients): PromptDefinition[] {
   return [consentTriagePrompt, consentResearchTrackerPrompt, consentInspectSitePrompt];
 }
