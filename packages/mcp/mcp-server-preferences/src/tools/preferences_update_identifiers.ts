@@ -1,10 +1,9 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
-import { IdentifierType } from '@transcend-io/privacy-types';
 
 export const UpdateIdentifiersItemSchema = z.object({
   oldValue: z.string().describe('Old identifier value'),
   newValue: z.string().describe('New identifier value'),
-  type: z.nativeEnum(IdentifierType).optional().describe('Identifier type'),
+  type: z.string().optional().describe('Identifier type (optional)'),
 });
 export type UpdateIdentifiersItemInput = z.infer<typeof UpdateIdentifiersItemSchema>;
 

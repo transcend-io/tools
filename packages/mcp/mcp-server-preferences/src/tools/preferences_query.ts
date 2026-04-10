@@ -1,9 +1,8 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
-import { IdentifierType } from '@transcend-io/privacy-types';
 
 export const IdentifierSchema = z.object({
   value: z.string().describe('Identifier value'),
-  type: z.nativeEnum(IdentifierType).optional().describe('Identifier type'),
+  type: z.string().optional().describe('Identifier type (optional)'),
 });
 export type IdentifierInput = z.infer<typeof IdentifierSchema>;
 
