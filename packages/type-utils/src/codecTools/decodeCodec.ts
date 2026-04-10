@@ -1,14 +1,13 @@
-import { fold, isLeft } from 'fp-ts/Either';
-import { pipe } from 'fp-ts/function';
+import { either, function as fpFunction } from 'fp-ts';
 import * as t from 'io-ts';
 
 /**
  * Determine the codec paths that are invalid.
  */
 function getPaths<A>(validation: t.Validation<A>): string[] {
-  return pipe(
+  return fpFunction.pipe(
     validation,
-    fold(
+    either.fold(
       (errors) =>
         errors.map((error) => {
           const lastContext = error.context.at(-1);
@@ -27,9 +26,9 @@ function getCustomErrors<A>(
   validation: t.Validation<A>,
   customErrorFromContext: (validationContext: t.Context) => string,
 ): string[] {
-  return pipe(
+  return fpFunction.pipe(
     validation,
-    fold(
+    either.fold(
       (errors) => errors.map((error) => customErrorFromContext(error.context)),
       () => ['no errors'],
     ),
@@ -49,7 +48,7 @@ export function decodeCodec<TCodec extends t.Any>(
 ): t.TypeOf<TCodec> {
   const decoded = codec.decode(parse && typeof txt === 'string' ? JSON.parse(txt) : txt);
 
-  if (isLeft(decoded)) {
+  if (either.isLeft(decoded)) {
     const errorPaths = getPaths(decoded);
     const customError =
       customErrorFromContext !== undefined

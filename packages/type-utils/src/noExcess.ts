@@ -1,4 +1,4 @@
-import { either, isRight, left, right, type Either, type Right } from 'fp-ts/Either';
+import { either, function as fpFunction } from 'fp-ts';
 import * as t from 'io-ts';
 
 /**
@@ -63,7 +63,7 @@ const getNoExcessTypeName = (codec: t.Any): string => {
  * Compare an object's keys against expected properties and return either the
  * object or a list of excess keys.
  */
-const stripKeys = <T = any>(obj: T, props: t.Props): Either<string[], T> => {
+const stripKeys = <T = any>(obj: T, props: t.Props): either.Either<string[], T> => {
   const keys = Object.getOwnPropertyNames(obj);
   const propKeys = Object.getOwnPropertyNames(props);
 
@@ -74,7 +74,7 @@ const stripKeys = <T = any>(obj: T, props: t.Props): Either<string[], T> => {
     }
   });
 
-  return keys.length ? left(keys) : right(obj);
+  return keys.length ? either.left(keys) : either.right(obj);
 };
 
 /**
@@ -88,20 +88,30 @@ export const noExcess = <C extends t.HasProps>(
 
   return new NoExcessType<C>(
     name,
-    (value): value is C => isRight(stripKeys(value, props)) && codec.is(value),
-    (value, context) =>
-      either.chain(t.UnknownRecord.validate(value, context), () =>
-        either.chain(codec.validate(value, context), (decoded) =>
-          either.mapLeft(stripKeys<C>(decoded, props), (keys) =>
-            keys.map((key) => ({
-              value: decoded[key],
-              context,
-              message: `excess key "${key}" found`,
-            })),
-          ),
+    (value): value is C => either.isRight(stripKeys(value, props)) && codec.is(value),
+    (value, context) => {
+      const unknownRecordValidation = t.UnknownRecord.validate(value, context);
+      if (either.isLeft(unknownRecordValidation)) {
+        return unknownRecordValidation;
+      }
+
+      const codecValidation = codec.validate(value, context);
+      if (either.isLeft(codecValidation)) {
+        return codecValidation;
+      }
+
+      return fpFunction.pipe(
+        stripKeys<C>(codecValidation.right, props),
+        either.mapLeft((keys) =>
+          keys.map((key) => ({
+            value: codecValidation.right[key],
+            context,
+            message: `excess key "${key}" found`,
+          })),
         ),
-      ),
-    (value) => codec.encode((stripKeys(value, props) as Right<any>).right),
+      );
+    },
+    (value) => codec.encode((stripKeys(value, props) as either.Right<any>).right),
     codec,
   );
 };

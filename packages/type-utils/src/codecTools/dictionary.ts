@@ -1,4 +1,4 @@
-import { unsafeCoerce } from 'fp-ts/function';
+import { function as fpFunction } from 'fp-ts';
 import * as t from 'io-ts';
 
 /**
@@ -23,4 +23,5 @@ export const dictionary = <D extends t.Mixed, C extends t.Mixed>(
   keys: D,
   values: C,
   name?: string,
-): DictionaryC<D, C> => unsafeCoerce(t.record(t.union([keys, t.undefined]), values, name));
+): DictionaryC<D, C> =>
+  fpFunction.unsafeCoerce(t.record(t.union([keys, t.undefined]), values, name));
