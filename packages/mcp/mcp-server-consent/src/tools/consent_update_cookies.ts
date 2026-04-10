@@ -8,8 +8,6 @@ import {
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
-
 export const UpdateCookieItemSchema = z.object({
   name: z.string().describe('Cookie name (used as the identifier for upsert)'),
   tracking_purposes: z
@@ -19,9 +17,10 @@ export const UpdateCookieItemSchema = z.object({
   description: z.string().optional().describe('Cookie description'),
   service: z.string().optional().describe('Service/integration name'),
   is_junk: z.boolean().optional().describe('Mark as junk'),
-  status: ConsentTrackerStatusEnum.optional().describe(
-    'Set status to LIVE (approve) or NEEDS_REVIEW',
-  ),
+  status: z
+    .nativeEnum(ConsentTrackerStatus)
+    .optional()
+    .describe('Set status to LIVE (approve) or NEEDS_REVIEW'),
 });
 export type UpdateCookieItemInput = z.infer<typeof UpdateCookieItemSchema>;
 
