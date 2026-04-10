@@ -78,20 +78,12 @@ export interface TranscendCliPurposesResponse {
     nodes: TranscendPurposeGql[];
     /** Total count of purposes */
     totalCount: number;
-    /** Pagination info */
-    pageInfo: {
-      /** Whether more results exist */
-      hasNextPage: boolean;
-    };
   };
 }
 
 export const PURPOSES = gql`
   query TranscendCliPurposes($first: Int!) {
     purposes(first: $first) {
-      pageInfo {
-        hasNextPage
-      }
       nodes {
         id
         name

@@ -17,8 +17,8 @@ export interface TranscendCliCookieStatsResponse {
 }
 
 export const COOKIE_STATS = gql`
-  query TranscendCliCookieStats($input: AirgapBundleInput!, $filterBy: CookiesFiltersInput) {
-    cookieStats(input: $input, filterBy: $filterBy) {
+  query TranscendCliCookieStats($input: AirgapBundleInput!) {
+    cookieStats(input: $input) {
       liveCount
       needReviewCount
       junkCount
@@ -33,8 +33,8 @@ export interface TranscendCliDataFlowStatsResponse {
 }
 
 export const DATA_FLOW_STATS = gql`
-  query TranscendCliDataFlowStats($input: AirgapBundleInput!, $filterBy: DataFlowsFiltersInput) {
-    dataFlowStats(input: $input, filterBy: $filterBy) {
+  query TranscendCliDataFlowStats($input: AirgapBundleInput!) {
+    dataFlowStats(input: $input) {
       liveCount
       needReviewCount
       junkCount

@@ -18,9 +18,10 @@ export function createConsentListPurposesTool(clients: ToolClients) {
       const data = await clients.graphql.makeRequest<TranscendCliPurposesResponse>(PURPOSES, {
         first: Math.min(limit, 100),
       });
-      return createListResult(data.purposes.nodes, {
-        totalCount: data.purposes.totalCount,
-        hasNextPage: data.purposes.pageInfo.hasNextPage,
+      const { nodes, totalCount } = data.purposes;
+      return createListResult(nodes, {
+        totalCount,
+        hasNextPage: nodes.length < totalCount,
       });
     },
   });

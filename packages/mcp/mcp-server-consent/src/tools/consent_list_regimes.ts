@@ -22,10 +22,10 @@ export function createConsentListRegimesTool(clients: ToolClients) {
         first: limit,
         offset,
       });
-      const { totalCount, pageInfo, nodes } = data.experiences;
+      const { totalCount, nodes } = data.experiences;
       return createListResult(nodes, {
         totalCount,
-        hasNextPage: pageInfo.hasNextPage,
+        hasNextPage: offset + nodes.length < totalCount,
       });
     },
   });
