@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@transcend-io/internationalization": "catalog:",
-    "@transcend-io/type-utils": "^1.8.9",
+    "@transcend-io/type-utils": "workspace:*",
     "fp-ts": "^2.16.1",
     "io-ts": "^2.2.21"
   },
