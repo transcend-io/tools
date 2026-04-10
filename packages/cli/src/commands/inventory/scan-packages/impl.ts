@@ -1,13 +1,12 @@
 import { execSync } from 'child_process';
 
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, syncCodePackages } from '@transcend-io/sdk';
 import colors from 'colors';
 
 import { ADMIN_DASH } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { findCodePackagesInFolder } from '../../../lib/code-scanning/index.js';
-import { syncCodePackages } from '../../../lib/graphql/index.js';
 import { logger } from '../../../logger.js';
 
 const REPO_ERROR =
@@ -60,7 +59,7 @@ export async function scanPackages(
   });
 
   // Report scan to Transcend
-  await syncCodePackages(client, results);
+  await syncCodePackages(client, results, { logger });
 
   const newUrl = new URL(ADMIN_DASH);
   newUrl.pathname = '/code-scanning/code-packages';
