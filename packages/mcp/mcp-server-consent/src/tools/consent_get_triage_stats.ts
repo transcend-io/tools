@@ -8,9 +8,7 @@ import {
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-export const GetCookieStatsSchema = z.object({
-  show_zero_activity: z.boolean().optional().describe('Include items with zero activity in counts'),
-});
+export const GetCookieStatsSchema = z.object({});
 export type GetCookieStatsInput = z.infer<typeof GetCookieStatsSchema>;
 
 export function createConsentGetTriageStatsTool(clients: ToolClients) {
@@ -18,20 +16,14 @@ export function createConsentGetTriageStatsTool(clients: ToolClients) {
     name: 'consent_get_triage_stats',
     description:
       'Get statistics on cookies and data flows: live (approved), needs review (triage), ' +
-      'and junk counts. Optionally filter by show_zero_activity to include/exclude ' +
-      'items with no telemetry activity.',
+      'and junk counts.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetCookieStatsSchema,
-    handler: async ({ show_zero_activity }) => {
+    handler: async () => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const variables = {
-        input: { airgapBundleId },
-        ...(show_zero_activity !== undefined
-          ? { filterBy: { showZeroActivity: show_zero_activity } }
-          : {}),
-      };
+      const variables = { input: { airgapBundleId } };
       const [cookieData, dfData] = await Promise.all([
         clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, variables),
         clients.graphql.makeRequest<TranscendCliDataFlowStatsResponse>(DATA_FLOW_STATS, variables),
