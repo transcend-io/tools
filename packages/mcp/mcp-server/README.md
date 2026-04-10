@@ -2,7 +2,7 @@
 
 > **Alpha** — this package is under active development and has not yet been published to npm. APIs may change without notice.
 
-Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 70+ Transcend tools at once.
+Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all Transcend tools at once.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
@@ -29,7 +29,7 @@ The process speaks MCP over **stdio** and is meant to be launched by an MCP clie
 
 ### MCP client configuration
 
-`npx` runs the package’s `transcend-mcp` binary (see `bin` in `package.json`). Add to your MCP client config (for example Claude Desktop or Cursor):
+`npx` runs the package's `transcend-mcp` binary (see `bin` in `package.json`). Add to your MCP client config (for example Claude Desktop or Cursor):
 
 ```json
 {
@@ -45,13 +45,13 @@ The process speaks MCP over **stdio** and is meant to be launched by an MCP clie
 }
 ```
 
-When developing in this repository, reuse the same variable names from root **`secret.env`** in the `env` block, or use your client’s env-file support if it has one.
+When developing in this repository, reuse the same variable names from root **`secret.env`** in the `env` block, or use your client's env-file support if it has one.
 
 ### Run from the monorepo
 
 1. **Credentials** — From the repository root, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** and set `TRANSCEND_API_KEY` (and optional URL overrides).
 
-2. **Build and run** — `node ./dist/cli.mjs` matches the `transcend-mcp` `bin` (use `node` because `pnpm exec transcend-mcp` may not resolve this package’s own binary in a pnpm workspace):
+2. **Build and run** — `node ./dist/cli.mjs` matches the `transcend-mcp` `bin` (use `node` because `pnpm exec transcend-mcp` may not resolve this package's own binary in a pnpm workspace):
 
 ```bash
 # from the repository root — builds the unified server, all domain packages, and mcp-server-core
@@ -66,11 +66,10 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable                | Required | Default                                    | Description       |
-| ----------------------- | -------- | ------------------------------------------ | ----------------- |
-| `TRANSCEND_API_KEY`     | Yes      | —                                          | Transcend API key |
-| `TRANSCEND_API_URL`     | No       | `https://multi-tenant.sombra.transcend.io` | Sombra API URL    |
-| `TRANSCEND_GRAPHQL_URL` | No       | `https://api.transcend.io`                 | GraphQL API URL   |
+| Variable                | Required | Default                    | Description       |
+| ----------------------- | -------- | -------------------------- | ----------------- |
+| `TRANSCEND_API_KEY`     | Yes      | —                          | Transcend API key |
+| `TRANSCEND_GRAPHQL_URL` | No       | `https://api.transcend.io` | GraphQL API URL   |
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 
@@ -78,7 +77,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 This package composes all domain MCP packages via `ToolRegistry`, which aggregates tools from each domain (`getConsentTools`, `getDSRTools`, etc.) into a single tool namespace. A composed `TranscendGraphQLClient` mixes in all domain GraphQL capabilities so each tool has access to the API surface it needs.
 
-If 70+ tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
+If the tool count is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
 
 ## Related packages
 

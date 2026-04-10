@@ -2,66 +2,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { getDSRTools } from '../src/tools.js';
 
-const EXPECTED_TOOL_NAMES = [
-  'dsr_submit',
-  'dsr_poll_status',
-  'dsr_list',
-  'dsr_get_details',
-  'dsr_download_keys',
-  'dsr_list_identifiers',
-  'dsr_enrich_identifiers',
-  'dsr_respond_access',
-  'dsr_respond_erasure',
-  'dsr_cancel',
-  'dsr_employee_submit',
-  'dsr_analyze',
-] as const;
+const EXPECTED_TOOL_NAMES = ['dsr_list', 'dsr_get_details', 'dsr_cancel', 'dsr_analyze'] as const;
 
 describe('DSR Tools', () => {
   let mockGraphql: {
     listRequests: ReturnType<typeof vi.fn>;
     getRequest: ReturnType<typeof vi.fn>;
-    employeeMakeDataSubjectRequest: ReturnType<typeof vi.fn>;
     cancelRequest: ReturnType<typeof vi.fn>;
-  };
-
-  let mockRest: {
-    submitDSR: ReturnType<typeof vi.fn>;
-    pollDSRStatus: ReturnType<typeof vi.fn>;
-    downloadKeys: ReturnType<typeof vi.fn>;
-    listDSRIdentifiers: ReturnType<typeof vi.fn>;
-    enrichIdentifiers: ReturnType<typeof vi.fn>;
-    respondAccess: ReturnType<typeof vi.fn>;
-    respondErasure: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     mockGraphql = {
       listRequests: vi.fn(),
       getRequest: vi.fn(),
-      employeeMakeDataSubjectRequest: vi.fn(),
       cancelRequest: vi.fn(),
-    };
-    mockRest = {
-      submitDSR: vi.fn(),
-      pollDSRStatus: vi.fn(),
-      downloadKeys: vi.fn(),
-      listDSRIdentifiers: vi.fn(),
-      enrichIdentifiers: vi.fn(),
-      respondAccess: vi.fn(),
-      respondErasure: vi.fn(),
     };
   });
 
   const getTools = () =>
     getDSRTools({
-      rest: mockRest as never,
       graphql: mockGraphql,
     });
 
-  it('registers exactly 12 tools with expected names', () => {
+  it('registers exactly 4 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(12);
+    expect(tools).toHaveLength(4);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 

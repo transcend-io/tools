@@ -1,7 +1,6 @@
 import { type z } from 'zod';
 
 import type { TranscendGraphQLBase } from '../clients/graphql/base.js';
-import type { TranscendRestClient } from '../clients/rest-client.js';
 
 export interface ToolAnnotations {
   /** Whether this tool only reads data */
@@ -33,8 +32,6 @@ export interface ToolDefinition {
 }
 
 export interface ToolClients {
-  /** REST API client */
-  rest: TranscendRestClient;
   /** GraphQL API client */
   graphql: TranscendGraphQLBase;
 }

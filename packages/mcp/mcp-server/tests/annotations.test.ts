@@ -14,7 +14,6 @@ import { EXPECTED_UMBRELLA_TOOL_COUNT } from './umbrella-tool-count.js';
 const stubFn = () => vi.fn();
 
 const mockClients: ToolClients = {
-  rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({} as ToolClients['graphql'], { get: stubFn }),
 };
 
@@ -79,8 +78,6 @@ describe('MCP Tool Annotations', () => {
       'dsr_cancel',
       'admin_create_api_key',
       'inventory_create_data_silo',
-      'preferences_delete',
-      'preferences_delete_identifiers',
       'assessments_submit_response',
     ];
 
@@ -101,14 +98,10 @@ describe('MCP Tool Annotations', () => {
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
       'workflows_update_config',
-      'consent_set_preferences',
-      'preferences_upsert',
-      'preferences_update_identifiers',
       'inventory_update_data_silo',
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',
-      'dsr_respond_erasure',
     ];
 
     it.each(expectedIdempotentMutative)(

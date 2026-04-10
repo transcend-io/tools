@@ -1,6 +1,5 @@
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
-export { TranscendRestClient } from './clients/rest-client.js';
 
 export { ToolError, ErrorCode, classifyHttpError } from './errors.js';
 

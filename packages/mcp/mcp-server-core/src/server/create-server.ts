@@ -4,7 +4,6 @@ import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-sc
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { SimpleLogger } from '../clients/graphql/base.js';
-import { TranscendRestClient } from '../clients/rest-client.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
 import type { ToolDefinition, ToolClients } from '../tools/types.js';
 
@@ -16,14 +15,13 @@ export interface MCPServerOptions {
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
   /** Optional custom client factory */
-  createClients?: (apiKey: string, sombraUrl: string, graphqlUrl: string) => ToolClients;
+  createClients?: (apiKey: string, graphqlUrl: string) => ToolClients;
 }
 
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
   const logger = new SimpleLogger();
 
   const apiKey = process.env.TRANSCEND_API_KEY;
-  const sombraUrl = process.env.TRANSCEND_API_URL || 'https://multi-tenant.sombra.transcend.io';
   const graphqlUrl = process.env.TRANSCEND_GRAPHQL_URL || 'https://api.transcend.io';
 
   if (!apiKey) {
@@ -31,12 +29,11 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
     process.exit(1);
   }
 
-  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl });
+  logger.info('Initializing Transcend API clients...', { graphqlUrl });
 
   const clients = options.createClients
-    ? options.createClients(apiKey, sombraUrl, graphqlUrl)
+    ? options.createClients(apiKey, graphqlUrl)
     : {
-        rest: new TranscendRestClient(apiKey, sombraUrl),
         graphql: new (await import('../clients/graphql/base.js')).TranscendGraphQLBase(
           apiKey,
           graphqlUrl,
@@ -124,7 +121,6 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   await server.connect(transport);
 
   logger.info(`${options.name} started successfully`, {
-    sombraUrl,
     graphqlUrl,
     tools: toolMap.size,
   });

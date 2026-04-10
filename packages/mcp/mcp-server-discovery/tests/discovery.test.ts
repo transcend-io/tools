@@ -3,8 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getDiscoveryTools } from '../src/tools.js';
 
 const EXPECTED_TOOL_NAMES = [
-  'discovery_classify_text',
-  'discovery_ner_extract',
   'discovery_list_scans',
   'discovery_start_scan',
   'discovery_get_scan',
@@ -19,11 +17,6 @@ describe('Discovery Tools', () => {
     listDiscoveryPlugins: ReturnType<typeof vi.fn>;
   };
 
-  let mockRest: {
-    classifyText: ReturnType<typeof vi.fn>;
-    nerExtract: ReturnType<typeof vi.fn>;
-  };
-
   beforeEach(() => {
     mockGraphql = {
       listClassificationScans: vi.fn(),
@@ -31,21 +24,16 @@ describe('Discovery Tools', () => {
       getClassificationScan: vi.fn(),
       listDiscoveryPlugins: vi.fn(),
     };
-    mockRest = {
-      classifyText: vi.fn(),
-      nerExtract: vi.fn(),
-    };
   });
 
   const getTools = () =>
     getDiscoveryTools({
-      rest: mockRest as never,
       graphql: mockGraphql,
     });
 
-  it('registers exactly 6 tools with expected names', () => {
+  it('registers exactly 4 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(6);
+    expect(tools).toHaveLength(4);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
