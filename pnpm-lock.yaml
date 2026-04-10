@@ -15,9 +15,6 @@ catalogs:
     '@modelcontextprotocol/sdk':
       specifier: ^1.0.0
       version: 1.29.0
-    '@transcend-io/internationalization':
-      specifier: ^3.0.0
-      version: 3.0.0
     '@types/json-schema':
       specifier: ^7.0.15
       version: 7.0.15
@@ -111,8 +108,8 @@ importers:
         specifier: ^1.3.2
         version: 1.3.2
       '@transcend-io/internationalization':
-        specifier: 'catalog:'
-        version: 3.0.0
+        specifier: workspace:*
+        version: link:../internationalization
       '@transcend-io/persisted-state':
         specifier: ^1.0.6
         version: 1.0.6
@@ -279,6 +276,27 @@ importers:
       tsx:
         specifier: ^4.20.3
         version: 4.21.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.18(@types/node@22.19.15)(tsx@4.21.0)
+
+  packages/internationalization:
+    devDependencies:
+      '@arethetypeswrong/cli':
+        specifier: 'catalog:'
+        version: 0.18.2
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.15
+      publint:
+        specifier: 'catalog:'
+        version: 0.3.18
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.21.2(@arethetypeswrong/core@0.18.2)(publint@0.3.18)(typescript@5.9.3)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -635,8 +653,8 @@ importers:
   packages/privacy-types:
     dependencies:
       '@transcend-io/internationalization':
-        specifier: 'catalog:'
-        version: 3.0.0
+        specifier: workspace:*
+        version: link:../internationalization
       '@transcend-io/type-utils':
         specifier: workspace:*
         version: link:../type-utils
@@ -672,8 +690,8 @@ importers:
         specifier: ^12.16.0
         version: 12.16.0
       '@transcend-io/internationalization':
-        specifier: 'catalog:'
-        version: 3.0.0
+        specifier: workspace:*
+        version: link:../internationalization
       '@transcend-io/privacy-types':
         specifier: workspace:*
         version: link:../privacy-types
@@ -1691,9 +1709,6 @@ packages:
 
   '@transcend-io/handlebars-utils@1.3.2':
     resolution: {integrity: sha512-DvH+SZvYOr7wsPcbcNiIZXvGSgzZvPMzUkjmS4OY4jiWcBAu7XNiy6saguDZ51NUduUdQv9K8QZ5EhhZqU9NlQ==}
-
-  '@transcend-io/internationalization@3.0.0':
-    resolution: {integrity: sha512-doH7AhHm23RCsoVXklhfz7PfkwaVy+bMStkwxqVkfO95US27GQy5DpXESVRU4o8OiEvziiYnI8hk8kU+dzAunQ==}
 
   '@transcend-io/persisted-state@1.0.6':
     resolution: {integrity: sha512-yqexuEznCnQaHAUjL6ktK+wYi5g5+NFKb4qoezf37uTJzBEP40FhNZTIiMBE1HG0ZgWghqyocAFz0UuVrBq6nw==}
@@ -4769,8 +4784,6 @@ snapshots:
       handlebars: 4.7.8
       lodash: 4.17.23
       pluralize: 8.0.0
-
-  '@transcend-io/internationalization@3.0.0': {}
 
   '@transcend-io/persisted-state@1.0.6':
     dependencies:

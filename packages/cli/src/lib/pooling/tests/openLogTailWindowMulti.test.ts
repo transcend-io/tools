@@ -11,6 +11,7 @@ import { openLogTailWindowMulti } from '../openTerminal.js';
  */
 vi.mock('colors', () => ({
   default: {
+    green: vi.fn((s: string) => `[green]${s}`),
     red: vi.fn((s: string) => `[red]${s}`),
   },
 }));

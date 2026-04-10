@@ -3,6 +3,7 @@
   "files": [],
   "references": [
     { "path": "./packages/cli" },
+    { "path": "./packages/internationalization" },
     { "path": "./packages/mcp/mcp-server" },
     { "path": "./packages/mcp/mcp-server-admin" },
     { "path": "./packages/mcp/mcp-server-assessments" },
