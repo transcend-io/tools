@@ -1,8 +1,8 @@
-# @transcend-io/privacy-types
+# @transcend-io/mcp-server-consent
 
-## 5.1.0
+## 1.0.0
 
-### Minor Changes
+### Major Changes
 
 - 8185679: feat(sdk): split consent GQL queries into domain files with shared types
 
@@ -40,35 +40,21 @@
 
   **Future work:** Reuse SDK fetch functions (`fetchAllDataFlows`, `fetchConsentManagerExperiences`) directly once `TranscendGraphQLBase` is compatible with `graphql-request`'s `GraphQLClient` interface.
 
+### Patch Changes
+
+- d3f8140: fix: remove unsupported pageInfo from consent GQL queries and unused filterBy from stats queries
 - 29868af: refactor: deduplicate enums and replace inline strings with shared privacy-types
 
   Add CookieOrderField, DataFlowOrderField, DataFlowType, TriageAction, and ConsentTrackerType enums to privacy-types. Replace z.string() tool params with proper enum types (ScopeName, AssessmentFormTemplateStatus). Enrich admin_create_api_key with TRANSCEND_SCOPES metadata.
 
-### Patch Changes
-
-- a15fed8: Bump `@transcend-io/internationalization` from ^2.3.2 to ^3.0.0.
-
-## 5.0.1
-
-### Patch Changes
-
-- f08af44: Add `URL` and `EMAIL` variants to `AssessmentQuestionType` for assessment form questions, and regenerate `transcend.yml` JSON schema.
-- 415887f: Move code package fetch functions from CLI to SDK
-  - Add `code-intelligence/` module to SDK: `fetchAllCodePackages`
-  - Add `dsr-automation/` module to SDK: actions, templates, catalogs, silo discovery
-  - Migrated: `fetchAllActions`, `syncAction`, `fetchAllTemplates`, `syncTemplate`, `fetchAllCatalogs`, `fetchAndIndexCatalogs`, `uploadSiloDiscoveryResults`, `fetchAllSiloDiscoveryResults`, `fetchActiveSiloDiscoPlugin`
-  - All imports updated to use `@transcend-io/sdk` directly
-
-- cac80a5: Add publint
-- 7816fc0: make css LoadOption optional
-
-## 5.0.0
-
-### Major Changes
-
-- 20d052a: Migrate `@transcend-io/privacy-types` into the tools monorepo and align it with the shared package conventions.
-
-  Material changes:
-  - the published package now uses the monorepo's ESM-first distribution shape, with an `exports` map and `dist/index.mjs` entrypoint instead of the legacy `build/index` layout
-  - the package now ships from `dist/` rather than `build/`, so consumers relying on package-internal paths or deep imports to the old filesystem layout will need to update
-  - the top-level flat API surface is preserved, but the package is now built, tested, and versioned from the tools monorepo
+- Updated dependencies [a15fed8]
+- Updated dependencies [8185679]
+- Updated dependencies [d3f8140]
+- Updated dependencies [29868af]
+- Updated dependencies [6f2a059]
+- Updated dependencies [f7a5c54]
+- Updated dependencies [00b9d23]
+- Updated dependencies [896364c]
+  - @transcend-io/sdk@1.0.0
+  - @transcend-io/privacy-types@5.1.0
+  - @transcend-io/mcp-server-core@0.1.0
