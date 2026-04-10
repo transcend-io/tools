@@ -1,4 +1,5 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import {
   UPDATE_DATA_FLOWS,
   type TranscendUpdateDataFlowInputGql,
@@ -6,7 +7,6 @@ import {
 } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-import { ConsentTrackerStatusEnum } from '../schemas.js';
 
 export const UpdateDataFlowItemSchema = z.object({
   id: z.string().describe('Data flow ID'),
@@ -14,9 +14,10 @@ export const UpdateDataFlowItemSchema = z.object({
   description: z.string().optional().describe('Data flow description'),
   service: z.string().optional().describe('Service/integration name'),
   is_junk: z.boolean().optional().describe('Mark as junk'),
-  status: ConsentTrackerStatusEnum.optional().describe(
-    'Set status to LIVE (approve) or NEEDS_REVIEW',
-  ),
+  status: z
+    .nativeEnum(ConsentTrackerStatus)
+    .optional()
+    .describe('Set status to LIVE (approve) or NEEDS_REVIEW'),
 });
 export type UpdateDataFlowItemInput = z.infer<typeof UpdateDataFlowItemSchema>;
 

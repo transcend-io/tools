@@ -1,7 +1,14 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
-import { ScopeName } from '@transcend-io/privacy-types';
+import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 
 import type { AdminMixin } from '../graphql.js';
+
+const scopeSummary = Object.entries(TRANSCEND_SCOPES)
+  .map(([name, def]) => {
+    const deps = def.dependencies.length > 0 ? ` (requires: ${def.dependencies.join(', ')})` : '';
+    return `- ${name}: ${def.title} — ${def.description}${deps}`;
+  })
+  .join('\n');
 
 export const CreateApiKeySchema = z.object({
   title: z.string().describe('Name/title for the API key'),
@@ -18,7 +25,14 @@ export function createAdminCreateApiKeyTool(clients: ToolClients) {
   return defineTool({
     name: 'admin_create_api_key',
     description:
-      'Create a new API key with specified scopes. WARNING: The token is only shown once!',
+      'Create a new API key with specified scopes. WARNING: The token is only shown once! ' +
+      'Scopes control what the key can access. Some scopes inherit dependencies — ' +
+      'for example, manageDataMap requires viewDataMap. ' +
+      'Use "readOnly" for view-only access to all resources, or "fullAdmin" for unrestricted access. ' +
+      'Common scopes: manageApiKeys, manageDataMap, manageConsentManager, makeDataSubjectRequest, ' +
+      'connectDataSilos, manageAssessments, manageDataInventory.\n\n' +
+      'Available scopes:\n' +
+      scopeSummary,
     category: 'Admin',
     readOnly: false,
     confirmationHint: 'Creates a new API key with the specified scopes',

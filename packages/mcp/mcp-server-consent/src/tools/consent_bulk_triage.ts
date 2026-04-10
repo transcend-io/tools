@@ -1,5 +1,9 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
-import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import {
+  ConsentTrackerStatus,
+  ConsentTrackerType,
+  TriageAction,
+} from '@transcend-io/privacy-types';
 import {
   UPDATE_OR_CREATE_COOKIES,
   UPDATE_DATA_FLOWS,
@@ -10,12 +14,11 @@ import {
 } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-import { ConsentTrackerTypeEnum, TriageActionEnum } from '../schemas.js';
 
 export const BulkTriageItemSchema = z.object({
-  type: ConsentTrackerTypeEnum.describe('Item type'),
+  type: z.nativeEnum(ConsentTrackerType).describe('Item type'),
   id: z.string().describe('Item ID (for data flows) or cookie name (for cookies)'),
-  action: TriageActionEnum.describe('Action to take: APPROVE or JUNK'),
+  action: z.nativeEnum(TriageAction).describe('Action to take: APPROVE or JUNK'),
   tracking_purposes: z
     .array(z.string())
     .optional()

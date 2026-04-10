@@ -38,11 +38,3 @@ export {
   BulkTriageSchema,
   type BulkTriageInput,
 } from './tools/consent_bulk_triage.js';
-export {
-  ConsentTrackerStatusEnum,
-  ConsentTrackerTypeEnum,
-  CookieOrderFieldEnum,
-  DataFlowOrderFieldEnum,
-  OrderDirectionEnum,
-  TriageActionEnum,
-} from './schemas.js';
