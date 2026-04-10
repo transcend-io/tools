@@ -2,7 +2,7 @@
 
 > **Alpha** — these packages are under active development and have not yet been published to npm. APIs may change without notice.
 
-[Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers that let AI agents interact with the [Transcend](https://transcend.io) privacy platform. Every server speaks the same MCP stdio transport, so it works with any compliant client (Claude Desktop, Cursor, Cline, custom agents, etc.).
+[Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers that let AI agents interact with the [Transcend](https://transcend.io) privacy platform. Every server supports both **stdio** (local process) and **Streamable HTTP** (remote hosting) transports, so it works with any compliant client (Claude Desktop, Cursor, Cline, custom agents, etc.).
 
 ## Choosing a server
 
@@ -53,6 +53,19 @@ Install only the domains you need. Smaller tool counts help AI agents stay focus
 | Production agent with a narrow task (e.g. cookie triage)      | Single domain server (e.g. `mcp-server-consent`) |
 | Agent that spans a few domains (e.g. inventory + assessments) | Multiple domain servers running side by side     |
 | Minimizing token usage / tool-selection errors                | Domain servers — fewer tools means less noise    |
+| Remote hosting / multi-user deployment                        | Any server with `--transport http`               |
+
+## Remote HTTP transport
+
+Any server can be started in HTTP mode for remote hosting:
+
+```bash
+TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp-server --transport http --port 3000
+```
+
+This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a health check at `/health`. Each client connection gets its own session with automatic cleanup after idle timeout.
+
+For Docker, reverse proxy, and cloud deployment patterns, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Packages
 
@@ -93,7 +106,9 @@ Each domain package (admin, consent, dsr, ...) is a self-contained MCP server wi
 
 - **`TranscendGraphQLBase`** — base class extended by each domain's GraphQL mixin
 - **`TranscendRestClient`** — REST client for the Sombra API (used by DSR, preferences, and discovery)
-- **`createMCPServer`** — factory that bootstraps a stdio MCP server from tool definitions
+- **`createMCPServer`** — factory that bootstraps an MCP server from tool definitions (stdio or HTTP, selected via `--transport`)
+- **`buildMcpServer`** — lower-level factory that creates a `Server` with tool handlers (no transport)
+- **`runMcpHttp`** — starts an Express-based Streamable HTTP server with session management
 - **Validation & helpers** — Zod schemas, `validateArgs`, `createToolResult`, `createListResult`
 
 The unified `mcp-server` package aggregates tools via `ToolRegistry` and composes a `TranscendGraphQLClient` that mixes in all domain GraphQL capabilities.
@@ -102,11 +117,15 @@ The unified `mcp-server` package aggregates tools via `ToolRegistry` and compose
 
 All servers share the same environment variables:
 
-| Variable                | Required | Default                                    | Description         |
-| ----------------------- | -------- | ------------------------------------------ | ------------------- |
-| `TRANSCEND_API_KEY`     | Yes      | —                                          | Transcend API key   |
-| `TRANSCEND_API_URL`     | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL |
-| `TRANSCEND_GRAPHQL_URL` | No       | `https://api.transcend.io`                 | GraphQL API URL     |
+| Variable                       | Required    | Default                                    | Description                                     |
+| ------------------------------ | ----------- | ------------------------------------------ | ----------------------------------------------- |
+| `TRANSCEND_API_KEY`            | Yes (stdio) | —                                          | Transcend API key (HTTP: fallback if no header) |
+| `TRANSCEND_API_URL`            | No          | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL                             |
+| `TRANSCEND_GRAPHQL_URL`        | No          | `https://api.transcend.io`                 | GraphQL API URL                                 |
+| `TRANSCEND_HTTP_PORT`          | No          | `3000`                                     | HTTP listen port                                |
+| `TRANSCEND_HTTP_HOST`          | No          | `127.0.0.1`                                | HTTP listen host                                |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | No          | —                                          | Comma-separated allowed CORS origins            |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | No          | `1800000`                                  | Idle session timeout (ms)                       |
 
 ## Contributing
 

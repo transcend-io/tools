@@ -112,6 +112,10 @@ export class ToolRegistry {
     return Array.from(categories);
   }
 
+  getAllTools(): ToolDefinition[] {
+    return Array.from(this.tools.values());
+  }
+
   getToolCount(): number {
     return this.tools.size;
   }

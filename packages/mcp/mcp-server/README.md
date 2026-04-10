@@ -12,19 +12,33 @@ npm install -g @transcend-io/mcp-server
 
 ## Usage
 
+### stdio (local, default)
+
 ```bash
 TRANSCEND_API_KEY=your-api-key transcend-mcp
 ```
 
+### HTTP (remote hosting)
+
+```bash
+TRANSCEND_API_KEY=your-api-key transcend-mcp --transport http --port 3000
+```
+
+This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a health check at `/health`. See [DEPLOYMENT.md](../DEPLOYMENT.md) for Docker, reverse proxy, and production deployment patterns.
+
 ### Environment variables
 
-| Variable                | Required | Default                                    | Description       |
-| ----------------------- | -------- | ------------------------------------------ | ----------------- |
-| `TRANSCEND_API_KEY`     | Yes      | —                                          | Transcend API key |
-| `TRANSCEND_API_URL`     | No       | `https://multi-tenant.sombra.transcend.io` | Sombra API URL    |
-| `TRANSCEND_GRAPHQL_URL` | No       | `https://api.transcend.io`                 | GraphQL API URL   |
+| Variable                       | Required    | Default                                    | Description                                     |
+| ------------------------------ | ----------- | ------------------------------------------ | ----------------------------------------------- |
+| `TRANSCEND_API_KEY`            | Yes (stdio) | —                                          | Transcend API key (HTTP: fallback if no header) |
+| `TRANSCEND_API_URL`            | No          | `https://multi-tenant.sombra.transcend.io` | Sombra API URL                                  |
+| `TRANSCEND_GRAPHQL_URL`        | No          | `https://api.transcend.io`                 | GraphQL API URL                                 |
+| `TRANSCEND_HTTP_PORT`          | No          | `3000`                                     | HTTP listen port                                |
+| `TRANSCEND_HTTP_HOST`          | No          | `127.0.0.1`                                | HTTP listen host                                |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | No          | —                                          | Comma-separated allowed CORS origins            |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | No          | `1800000`                                  | Idle session timeout (ms)                       |
 
-### MCP client configuration
+### MCP client configuration (stdio)
 
 Add to your MCP client config (e.g. Claude Desktop, Cursor):
 

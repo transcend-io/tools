@@ -35,10 +35,14 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
