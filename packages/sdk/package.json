@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@transcend-io/airgap.js-types": "^12.16.0",
-    "@transcend-io/internationalization": "catalog:",
+    "@transcend-io/internationalization": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
     "@transcend-io/type-utils": "^1.8.9",
     "@transcend-io/utils": "workspace:*",
