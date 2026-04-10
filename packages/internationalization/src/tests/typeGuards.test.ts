@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { LOCALE_KEY, NATIVE_LANGUAGE_NAMES } from './enums.js';
-import { isKnownLocale } from './typeGuards.js';
+import { LOCALE_KEY, NATIVE_LANGUAGE_NAMES } from '../enums.js';
+import { isKnownLocale } from '../typeGuards.js';
 
 describe('isKnownLocale', () => {
   it('accepts known locale values and rejects unknown inputs', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { defineMessages } from './defineMessages.js';
+import { defineMessages } from '../defineMessages.js';
 
 describe('defineMessages', () => {
   it('adds namespaced ids to each message definition', () => {
