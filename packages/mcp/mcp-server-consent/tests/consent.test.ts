@@ -3,8 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getConsentTools } from '../src/tools/index.js';
 
 const EXPECTED_TOOL_NAMES = [
-  'consent_get_preferences',
-  'consent_set_preferences',
   'consent_list_purposes',
   'consent_list_data_flows',
   'consent_list_cookies',
@@ -33,7 +31,6 @@ describe('Consent Tools', () => {
 
   const getTools = () =>
     getConsentTools({
-      rest: {} as never,
       graphql: mockGraphql as never,
     });
 

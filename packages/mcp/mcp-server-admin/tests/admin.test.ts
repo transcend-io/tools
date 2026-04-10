@@ -26,11 +26,6 @@ describe('Admin Tools', () => {
     getBaseUrl: ReturnType<typeof vi.fn>;
   };
 
-  let mockRest: {
-    testConnection: ReturnType<typeof vi.fn>;
-    getBaseUrl: ReturnType<typeof vi.fn>;
-  };
-
   beforeEach(() => {
     mockGraphql = {
       getOrganization: vi.fn(),
@@ -43,15 +38,10 @@ describe('Admin Tools', () => {
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
     };
-    mockRest = {
-      testConnection: vi.fn(),
-      getBaseUrl: vi.fn().mockReturnValue('https://multi-tenant.sombra.transcend.io'),
-    };
   });
 
   const getTools = () =>
     getAdminTools({
-      rest: mockRest as never,
       graphql: mockGraphql,
     });
 
