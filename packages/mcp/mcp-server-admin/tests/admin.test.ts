@@ -11,7 +11,6 @@ const EXPECTED_TOOL_NAMES = [
   'admin_create_api_key',
   'admin_get_privacy_center',
   'admin_test_connection',
-  'graphql_introspect',
 ] as const;
 
 describe('Admin Tools', () => {
@@ -43,7 +42,6 @@ describe('Admin Tools', () => {
       getPrivacyCenter: vi.fn(),
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
-      validateQuery: vi.fn(),
     };
     mockRest = {
       testConnection: vi.fn(),
@@ -57,9 +55,9 @@ describe('Admin Tools', () => {
       graphql: mockGraphql,
     });
 
-  it(`registers exactly ${EXPECTED_TOOL_NAMES.length} tools with expected names`, () => {
+  it('registers exactly 8 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(EXPECTED_TOOL_NAMES.length);
+    expect(tools).toHaveLength(8);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
