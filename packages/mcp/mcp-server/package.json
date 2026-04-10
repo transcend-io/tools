@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Transcend MCP Server — unified server with all domain tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server",
   "license": "Apache-2.0",

@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-assessments",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Transcend MCP Server — Assessments tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-assessments",
   "license": "Apache-2.0",

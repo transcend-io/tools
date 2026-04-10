@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/internationalization",
-  "version": "3.0.1",
+  "version": "4.0.0",
   "description": "Shared locale constants, translation maps, and message helpers for Transcend internationalization.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/internationalization",
   "license": "Apache-2.0",
