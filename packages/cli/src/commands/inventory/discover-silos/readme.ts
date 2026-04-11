@@ -13,9 +13,9 @@ const examples = buildExamples<DiscoverSilosCommandFlags>(
       },
     },
     {
-      description: 'Scan multiple file types (Podfile, Gradle, etc.) in examples directory',
+      description: 'Scan multiple file types (Podfile, Gradle, etc.) in a mobile app repository',
       flags: {
-        scanPath: './examples/',
+        scanPath: './packages/mobile-app/',
         auth: '$TRANSCEND_API_KEY',
         dataSiloId: 'b6776589-0b7d-466f-8aad-4378ffd3a321',
       },
@@ -29,4 +29,4 @@ ${examples}
 
 This call will look for all the package.json files in the scan path \`./myJavascriptProject\`, parse each of the dependencies into their individual package names, and send it to our Transcend backend for classification. These classifications can then be viewed [here](https://app.transcend.io/data-map/data-inventory/silo-discovery/triage). The process is the same for scanning requirements.txt, podfiles and build.gradle files.
 
-Here are some examples of a [Podfile](./examples/code-scanning/test-cocoa-pods/Podfile) and [Gradle file](./examples/code-scanning/test-gradle/build.gradle).`;
+The same approach also works for Podfiles, Gradle files, Gemfiles, requirements.txt files, and other supported dependency manifests anywhere under the scan path.`;
