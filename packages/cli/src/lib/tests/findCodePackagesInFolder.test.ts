@@ -1,10 +1,9 @@
-import { join } from 'node:path';
-
 /* eslint-disable max-lines */
 import { expect, describe, it } from 'vitest';
 
 import type { CodePackageInput } from '../../codecs.js';
 import { findCodePackagesInFolder } from '../code-scanning/findCodePackagesInFolder.js';
+import { withCodeScanningFixtureTree } from './fixtures/codeScanningFixtures.js';
 
 const expected: CodePackageInput[] = [
   {
@@ -1105,10 +1104,13 @@ function sortCodePackages(codePackages: CodePackageInput[]): CodePackageInput[] 
 // not easy to test this but can uncomment to run against current commit
 describe('findCodePackagesInFolder', () => {
   it('should remove links', async () => {
-    const result = await findCodePackagesInFolder({
-      repositoryName: 'transcend-io/cli',
-      scanPath: join(__dirname, '../../../examples/code-scanning'),
-    });
+    const result = await withCodeScanningFixtureTree((scanPath) =>
+      findCodePackagesInFolder({
+        repositoryName: 'transcend-io/cli',
+        scanPath,
+      }),
+    );
+
     expect(sortCodePackages(result)).to.deep.equal(sortCodePackages(expected));
   });
 });

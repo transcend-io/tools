@@ -14,7 +14,7 @@ const examples = buildExamples<ScanPackagesCommandFlags>(
       description: 'Scan a specific directory',
       flags: {
         auth: '$TRANSCEND_API_KEY',
-        scanPath: './examples/',
+        scanPath: './packages/mobile-app/',
       },
     },
     {
