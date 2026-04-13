@@ -4,7 +4,7 @@ import type { StringKeys } from './types.js';
  * `Object.keys` for string keys only.
  */
 export function getStringKeys<T extends {}>(obj: T): StringKeys<T>[] {
-  return Object.keys(obj) as StringKeys<T>[];
+  return Object.keys(obj).filter((key) => typeof key === 'string') as StringKeys<T>[];
 }
 
 /**
