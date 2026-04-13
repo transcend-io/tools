@@ -3,6 +3,7 @@
   "files": [],
   "references": [
     { "path": "./packages/cli" },
+    { "path": "./packages/internationalization" },
     { "path": "./packages/mcp/mcp-server" },
     { "path": "./packages/mcp/mcp-server-admin" },
     { "path": "./packages/mcp/mcp-server-assessments" },
@@ -15,6 +16,7 @@
     { "path": "./packages/mcp/mcp-server-workflows" },
     { "path": "./packages/privacy-types" },
     { "path": "./packages/sdk" },
+    { "path": "./packages/type-utils" },
     { "path": "./packages/utils" }
   ]
 }

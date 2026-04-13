@@ -1,0 +1,52 @@
+{
+  "name": "@transcend-io/type-utils",
+  "version": "3.0.0",
+  "description": "Typed runtime and compile-time utilities for the Transcend developer tools monorepo.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/type-utils",
+  "license": "Apache-2.0",
+  "author": "Transcend Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transcend-io/tools.git",
+    "directory": "packages/type-utils"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "dependencies": {
+    "fp-ts": "^2.16.1",
+    "io-ts": "^2.2.21"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@types/json-schema": "catalog:",
+    "@types/node": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
