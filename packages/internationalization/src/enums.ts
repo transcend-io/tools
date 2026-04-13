@@ -1475,7 +1475,7 @@ type BrowserLocaleMapKey =
   | 'zu'
   | 'zu-ZA';
 
-const localeBrowserMap: Record<BrowserLocaleMapKey, LocaleValue> = {
+const localeBrowserMap = {
   af: LOCALE_KEY.AfZz, // Afrikaans Afrikaans
   'af-NA': LOCALE_KEY.AfZz, // Afrikaans (Namibia) Afrikaans (Namibië)
   'af-ZA': LOCALE_KEY.AfZz, // Afrikaans (South Africa) Afrikaans (Suid-Afrika)
@@ -2198,9 +2198,11 @@ const localeBrowserMap: Record<BrowserLocaleMapKey, LocaleValue> = {
   'zh-Hant-TW': LOCALE_KEY.ZhTw, // Chinese (Traditional, Taiwan) 中文（繁體，台灣） Traditional Chinese (Taiwan)
   zu: LOCALE_KEY.ZuZa, // Zulu isiZulu
   'zu-ZA': LOCALE_KEY.ZuZa, // Zulu (South Africa) isiZulu (iNingizimu Afrika)
-};
+} as const satisfies Record<BrowserLocaleMapKey, LocaleValue>;
 
-export const LOCALE_BROWSER_MAP: Record<string, LocaleValue> = localeBrowserMap;
+type BrowserLocaleMap = Record<BrowserLocaleMapKey, LocaleValue>;
+
+export const LOCALE_BROWSER_MAP: BrowserLocaleMap = localeBrowserMap;
 
 /** Union of Browser locale keys */
 export type BrowserLocaleKey = keyof typeof LOCALE_BROWSER_MAP;

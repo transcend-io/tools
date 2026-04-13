@@ -1,4 +1,6 @@
-import { either, function as fpFunction } from 'fp-ts';
+import type { Either, Right } from 'fp-ts/lib/Either.js';
+import * as either from 'fp-ts/lib/Either.js';
+import { pipe } from 'fp-ts/lib/function.js';
 import * as t from 'io-ts';
 
 /**
@@ -63,7 +65,7 @@ const getNoExcessTypeName = (codec: t.Any): string => {
  * Compare an object's keys against expected properties and return either the
  * object or a list of excess keys.
  */
-const stripKeys = <T = any>(obj: T, props: t.Props): either.Either<string[], T> => {
+const stripKeys = <T = any>(obj: T, props: t.Props): Either<string[], T> => {
   const keys = Object.getOwnPropertyNames(obj);
   const propKeys = Object.getOwnPropertyNames(props);
 
@@ -100,7 +102,7 @@ export const noExcess = <C extends t.HasProps>(
         return codecValidation;
       }
 
-      return fpFunction.pipe(
+      return pipe(
         stripKeys<C>(codecValidation.right, props),
         either.mapLeft((keys) =>
           keys.map((key) => ({
@@ -111,7 +113,7 @@ export const noExcess = <C extends t.HasProps>(
         ),
       );
     },
-    (value) => codec.encode((stripKeys(value, props) as either.Right<any>).right),
+    (value) => codec.encode((stripKeys(value, props) as Right<any>).right),
     codec,
   );
 };
