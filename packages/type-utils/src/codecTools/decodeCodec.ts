@@ -1,5 +1,5 @@
-import * as either from 'fp-ts/lib/Either.js';
-import { pipe } from 'fp-ts/lib/function.js';
+import * as either from 'fp-ts/Either';
+import { pipe } from 'fp-ts/function';
 import * as t from 'io-ts';
 
 /**

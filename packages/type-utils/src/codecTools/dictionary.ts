@@ -1,4 +1,4 @@
-import { unsafeCoerce } from 'fp-ts/lib/function.js';
+import { unsafeCoerce } from 'fp-ts/function';
 import * as t from 'io-ts';
 
 /**
