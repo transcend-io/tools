@@ -1,4 +1,4 @@
-import * as fpFunction from 'fp-ts/function';
+import * as fpFunction from 'fp-ts/lib/function.js';
 import * as t from 'io-ts';
 
 /**

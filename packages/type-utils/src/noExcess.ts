@@ -1,5 +1,5 @@
-import * as either from 'fp-ts/Either';
-import * as fpFunction from 'fp-ts/function';
+import * as either from 'fp-ts/lib/Either.js';
+import * as fpFunction from 'fp-ts/lib/function.js';
 import * as t from 'io-ts';
 
 /**
