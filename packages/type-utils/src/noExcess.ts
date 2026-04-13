@@ -1,4 +1,5 @@
-import { either, function as fpFunction } from 'fp-ts';
+import * as either from 'fp-ts/Either';
+import * as fpFunction from 'fp-ts/function';
 import * as t from 'io-ts';
 
 /**

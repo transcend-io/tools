@@ -1,4 +1,4 @@
-import { function as fpFunction } from 'fp-ts';
+import * as fpFunction from 'fp-ts/function';
 import * as t from 'io-ts';
 
 /**
