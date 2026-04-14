@@ -1,5 +1,12 @@
 # @transcend-io/utils
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [f252484]
+  - @transcend-io/type-utils@3.0.1
+
 ## 0.1.1
 
 ### Patch Changes

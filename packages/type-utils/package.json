@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/type-utils",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Typed runtime and compile-time utilities for the Transcend developer tools monorepo.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/type-utils",
   "license": "Apache-2.0",

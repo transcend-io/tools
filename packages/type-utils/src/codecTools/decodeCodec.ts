@@ -1,11 +1,12 @@
-import { either, function as fpFunction } from 'fp-ts';
+import * as either from 'fp-ts/lib/Either.js';
+import { pipe } from 'fp-ts/lib/function.js';
 import * as t from 'io-ts';
 
 /**
  * Determine the codec paths that are invalid.
  */
 function getPaths<A>(validation: t.Validation<A>): string[] {
-  return fpFunction.pipe(
+  return pipe(
     validation,
     either.fold(
       (errors) =>
@@ -26,7 +27,7 @@ function getCustomErrors<A>(
   validation: t.Validation<A>,
   customErrorFromContext: (validationContext: t.Context) => string,
 ): string[] {
-  return fpFunction.pipe(
+  return pipe(
     validation,
     either.fold(
       (errors) => errors.map((error) => customErrorFromContext(error.context)),
