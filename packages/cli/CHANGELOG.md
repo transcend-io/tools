@@ -1,5 +1,16 @@
 # @transcend-io/cli
 
+## 10.2.2
+
+### Patch Changes
+
+- Updated dependencies [f252484]
+  - @transcend-io/internationalization@4.0.1
+  - @transcend-io/type-utils@3.0.1
+  - @transcend-io/privacy-types@5.1.2
+  - @transcend-io/sdk@1.0.2
+  - @transcend-io/utils@0.1.2
+
 ## 10.2.1
 
 ### Patch Changes
