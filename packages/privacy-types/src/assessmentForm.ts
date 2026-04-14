@@ -163,6 +163,8 @@ export const ComparisonOperator = makeEnum({
   IsShown: 'IS_SHOWN',
   /** is not shown */
   IsNotShown: 'IS_NOT_SHOWN',
+  /** does not contain */
+  DoesNotContain: 'DOES_NOT_CONTAIN',
 });
 
 /**
