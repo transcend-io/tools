@@ -20,6 +20,15 @@ const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_MCP_PATH = '/mcp';
 const DEFAULT_SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
+function parseIntOrDefault(raw: string | undefined, fallback: number): number {
+  if (raw == null) return fallback;
+  const n = parseInt(raw, 10);
+  if (Number.isNaN(n)) {
+    throw new Error(`Invalid numeric value: "${raw}"`);
+  }
+  return n;
+}
+
 /**
  * Parses CLI flags and environment variables for transport configuration.
  *
@@ -42,12 +51,10 @@ export function parseTransportArgs(): TransportConfig {
 
   const transport = values.transport === 'http' ? 'http' : 'stdio';
 
-  const port =
-    values.port != null
-      ? parseInt(values.port as string, 10)
-      : process.env.TRANSCEND_HTTP_PORT
-        ? parseInt(process.env.TRANSCEND_HTTP_PORT, 10)
-        : DEFAULT_PORT;
+  const port = parseIntOrDefault(
+    (values.port as string | undefined) ?? process.env.TRANSCEND_HTTP_PORT,
+    DEFAULT_PORT,
+  );
 
   const host = (values.host as string) || process.env.TRANSCEND_HTTP_HOST || DEFAULT_HOST;
 
@@ -60,9 +67,10 @@ export function parseTransportArgs(): TransportConfig {
     corsOrigins.push(...process.env.TRANSCEND_MCP_CORS_ORIGINS.split(',').map((s) => s.trim()));
   }
 
-  const sessionTtlMs = process.env.TRANSCEND_MCP_SESSION_TTL_MS
-    ? parseInt(process.env.TRANSCEND_MCP_SESSION_TTL_MS, 10)
-    : DEFAULT_SESSION_TTL_MS;
+  const sessionTtlMs = parseIntOrDefault(
+    process.env.TRANSCEND_MCP_SESSION_TTL_MS,
+    DEFAULT_SESSION_TTL_MS,
+  );
 
   return { transport, port, host, mcpPath, corsOrigins, sessionTtlMs };
 }
