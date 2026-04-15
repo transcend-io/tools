@@ -237,10 +237,10 @@ export async function runMcpHttp(
     for (const [sid, session] of sessions) {
       if (now - session.lastActivityAt > config.sessionTtlMs) {
         logger.info(`Session expired (idle ${config.sessionTtlMs}ms): ${sid}`);
+        sessions.delete(sid);
         session.transport.close().catch((err) => {
           logger.error(`Error closing expired session ${sid}:`, err);
         });
-        sessions.delete(sid);
       }
     }
   }, sweepIntervalMs);
