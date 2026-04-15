@@ -11,6 +11,15 @@ export { EmptySchema, PaginationSchema } from './validation/schemas.js';
 export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
 export { defineTool } from './tools/types.js';
 
+export type {
+  PromptDefinition,
+  PromptMessage,
+  PromptMessageContent,
+  PromptArgument,
+} from './prompts/types.js';
+
+export type { ResourceDefinition } from './resources/types.js';
+
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
 
 export { createMCPServer } from './server/create-server.js';
