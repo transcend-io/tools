@@ -22,13 +22,18 @@ export type { MCPServerOptions } from './server/create-server.js';
 export { buildMcpServer } from './server/build-server.js';
 export type { BuildMcpServerOptions } from './server/build-server.js';
 
-export { resolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
+export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';
 
 export { runMcpHttp } from './server/run-http.js';
-export type { McpHttpServerOptions, McpHttpServer } from './server/run-http.js';
+export type {
+  McpHttpServerOptions,
+  McpHttpServer,
+  McpServerWithAuthUpdate,
+  CreateServerResult,
+} from './server/run-http.js';
 
 export { InMemoryEventStore } from './server/event-store.js';
 export type { EventStore, StreamId, EventId } from './server/event-store.js';

@@ -53,7 +53,7 @@ export interface ListOptions {
 }
 
 export class TranscendGraphQLBase {
-  protected auth: AuthCredentials;
+  protected auth: AuthCredentials | null;
   protected baseUrl: string;
   protected logger: Logger;
   protected defaultTimeout: number;
@@ -62,7 +62,7 @@ export class TranscendGraphQLBase {
   private minRequestInterval: number = 200;
 
   constructor(
-    auth: AuthCredentials,
+    auth: AuthCredentials | null,
     baseUrl: string = 'https://api.transcend.io',
     logger?: Logger,
   ) {
@@ -71,6 +71,15 @@ export class TranscendGraphQLBase {
     this.logger = logger || new SimpleLogger();
     this.defaultTimeout = 30000;
     this.defaultRetries = 3;
+  }
+
+  /**
+   * Replace the credentials used for subsequent requests. This enables
+   * per-request auth in HTTP transport where different users' session
+   * cookies arrive on each request to the same MCP session.
+   */
+  updateAuth(auth: AuthCredentials): void {
+    this.auth = auth;
   }
 
   private async rateLimitWait(): Promise<void> {
@@ -104,6 +113,14 @@ export class TranscendGraphQLBase {
           operationType: query.includes('mutation') ? 'mutation' : 'query',
           attempt,
         });
+
+        if (!this.auth) {
+          throw new ToolError(
+            ErrorCode.AUTH_ERROR,
+            'No authentication configured. Provide an API key or session cookie.',
+            false,
+          );
+        }
 
         const response = await fetch(url, {
           method: 'POST',

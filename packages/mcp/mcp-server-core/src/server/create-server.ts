@@ -17,11 +17,15 @@ export interface MCPServerOptions {
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
   /** Optional custom client factory */
-  createClients?: (auth: AuthCredentials, sombraUrl: string, graphqlUrl: string) => ToolClients;
+  createClients?: (
+    auth: AuthCredentials | null,
+    sombraUrl: string,
+    graphqlUrl: string,
+  ) => ToolClients;
 }
 
 async function buildClients(
-  auth: AuthCredentials,
+  auth: AuthCredentials | null,
   sombraUrl: string,
   graphqlUrl: string,
   factory?: MCPServerOptions['createClients'],
@@ -58,11 +62,19 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
           logger.info('Creating MCP server for new HTTP session...', {
             sombraUrl,
             graphqlUrl,
-            authType: auth.type,
+            authType: auth?.type ?? 'none',
           });
           const clients = await buildClients(auth, sombraUrl, graphqlUrl, options.createClients);
           const tools = options.getTools(clients);
-          return buildMcpServer({ name: options.name, version: options.version, tools });
+          const server = buildMcpServer({ name: options.name, version: options.version, tools });
+
+          return {
+            server,
+            updateAuth: (newAuth: AuthCredentials) => {
+              clients.graphql.updateAuth(newAuth);
+              clients.rest.updateAuth(newAuth);
+            },
+          };
         },
       },
       config,

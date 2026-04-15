@@ -441,4 +441,52 @@ describe('TranscendGraphQLBase', () => {
       );
     });
   });
+
+  describe('null auth (sidecar pattern)', () => {
+    it('constructs without error when auth is null', () => {
+      expect(() => new TestGraphQLClient(null)).not.toThrow();
+    });
+
+    it('throws AUTH_ERROR on makeRequest when auth is null', async () => {
+      const client = new TestGraphQLClient(null);
+      await expect(client.query('query { __typename }')).rejects.toThrow(
+        /No authentication configured/,
+      );
+    });
+  });
+
+  describe('updateAuth', () => {
+    it('switches from null to API key auth', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(null);
+
+      await expect(client.query('query { __typename }')).rejects.toThrow();
+
+      client.updateAuth(API_KEY_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
+    });
+
+    it('switches from API key to session cookie auth', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      client.updateAuth(SESSION_COOKIE_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Cookie).toBe('laravel_session=abc123');
+      expect(calledHeaders['x-transcend-active-organization-id']).toBe('org-uuid-456');
+      expect(calledHeaders).not.toHaveProperty('Authorization');
+    });
+  });
 });

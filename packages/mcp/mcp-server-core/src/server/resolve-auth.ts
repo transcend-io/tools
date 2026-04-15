@@ -21,8 +21,9 @@ export function extractApiKeyFromHeaders(
 }
 
 /**
- * Resolves authentication credentials from HTTP request headers
- * and/or environment variables.
+ * Attempts to resolve authentication credentials from HTTP request
+ * headers and/or environment variables. Returns `null` when no
+ * credentials are found.
  *
  * Priority order:
  * 1. Session cookie + organization ID headers (in-app dashboard flow)
@@ -31,9 +32,9 @@ export function extractApiKeyFromHeaders(
  *
  * @param headers - Inbound HTTP request headers (omit for stdio mode)
  */
-export function resolveAuth(
+export function tryResolveAuth(
   headers?: Record<string, string | string[] | undefined>,
-): AuthCredentials {
+): AuthCredentials | null {
   if (headers) {
     const cookie = headers.cookie;
     const orgId = headers['x-transcend-active-organization-id'];
@@ -51,6 +52,22 @@ export function resolveAuth(
   if (envKey) {
     return { type: 'apiKey', apiKey: envKey };
   }
+
+  return null;
+}
+
+/**
+ * Resolves authentication credentials from HTTP request headers
+ * and/or environment variables. Throws when no credentials are found.
+ *
+ * @see {@link tryResolveAuth} for a non-throwing variant.
+ * @param headers - Inbound HTTP request headers (omit for stdio mode)
+ */
+export function resolveAuth(
+  headers?: Record<string, string | string[] | undefined>,
+): AuthCredentials {
+  const auth = tryResolveAuth(headers);
+  if (auth) return auth;
 
   throw new Error(
     'No authentication provided. Set TRANSCEND_API_KEY, ' +

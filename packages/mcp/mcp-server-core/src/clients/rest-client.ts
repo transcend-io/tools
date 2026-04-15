@@ -18,7 +18,7 @@ import type {
 import { SimpleLogger, type Logger } from './graphql/base.js';
 
 export class TranscendRestClient {
-  private auth: AuthCredentials;
+  private auth: AuthCredentials | null;
   private baseUrl: string;
   private logger: Logger;
   private defaultTimeout: number;
@@ -27,7 +27,7 @@ export class TranscendRestClient {
   private minRequestInterval: number = 200;
 
   constructor(
-    auth: AuthCredentials,
+    auth: AuthCredentials | null,
     baseUrl: string = 'https://multi-tenant.sombra.transcend.io',
     logger?: Logger,
   ) {
@@ -36,6 +36,15 @@ export class TranscendRestClient {
     this.logger = logger || new SimpleLogger();
     this.defaultTimeout = 30000;
     this.defaultRetries = 3;
+  }
+
+  /**
+   * Replace the credentials used for subsequent requests. This enables
+   * per-request auth in HTTP transport where different users' session
+   * cookies arrive on each request to the same MCP session.
+   */
+  updateAuth(auth: AuthCredentials): void {
+    this.auth = auth;
   }
 
   private async rateLimitWait(): Promise<void> {
@@ -51,6 +60,10 @@ export class TranscendRestClient {
     endpoint: string,
     options: RequestInit & RequestOptions = {},
   ): Promise<T> {
+    if (!this.auth) {
+      throw new Error('No authentication configured. Provide an API key or session cookie.');
+    }
+
     await this.rateLimitWait();
 
     const url = `${this.baseUrl}${endpoint}`;
@@ -180,6 +193,9 @@ export class TranscendRestClient {
   }
 
   async downloadDSRFiles(downloadKey: string): Promise<ArrayBuffer> {
+    if (!this.auth) {
+      throw new Error('No authentication configured. Provide an API key or session cookie.');
+    }
     const url = `${this.baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
     const response = await fetch(url, {
       headers: {

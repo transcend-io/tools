@@ -1,7 +1,8 @@
 import type { AddressInfo } from 'node:net';
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 
+import type { AuthCredentials } from '../src/auth.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
@@ -385,6 +386,160 @@ describe('HTTP Transport', () => {
       expect(sessionA).toBeTruthy();
       expect(sessionB).toBeTruthy();
       expect(sessionA).not.toBe(sessionB);
+    });
+  });
+
+  describe('auth-free initialization (sidecar pattern)', () => {
+    let sidecarServer: McpHttpServer;
+    let sidecarUrl: string;
+    let updateAuthSpy: ReturnType<typeof vi.fn>;
+
+    beforeAll(async () => {
+      delete process.env.TRANSCEND_API_KEY;
+
+      updateAuthSpy = vi.fn();
+
+      sidecarServer = await runMcpHttp(
+        {
+          name: 'sidecar-test',
+          version: '0.0.1',
+          createServer: (_auth) => ({
+            server: buildMcpServer({
+              name: 'sidecar-test',
+              version: '0.0.1',
+              tools: [echoTool],
+            }),
+            updateAuth: updateAuthSpy,
+          }),
+        },
+        testConfig(0),
+      );
+
+      const addr = sidecarServer.httpServer.address() as AddressInfo;
+      sidecarUrl = `http://127.0.0.1:${addr.port}`;
+    });
+
+    afterAll(async () => {
+      await sidecarServer.shutdown();
+      process.env.TRANSCEND_API_KEY = TEST_API_KEY;
+    });
+
+    it('initializes without any auth credentials', async () => {
+      const res = await fetch(`${sidecarUrl}/mcp`, {
+        method: 'POST',
+        headers: MCP_HEADERS,
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-11-25',
+            capabilities: {},
+            clientInfo: { name: 'sidecar-client', version: '0.1.0' },
+          },
+          id: 1,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('mcp-session-id')).toBeTruthy();
+    });
+
+    it('calls updateAuth when session request carries auth headers', async () => {
+      const initRes = await fetch(`${sidecarUrl}/mcp`, {
+        method: 'POST',
+        headers: MCP_HEADERS,
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-11-25',
+            capabilities: {},
+            clientInfo: { name: 'per-req-auth-test', version: '0.1.0' },
+          },
+          id: 1,
+        }),
+      });
+
+      const sessionId = initRes.headers.get('mcp-session-id')!;
+      expect(sessionId).toBeTruthy();
+
+      await fetch(`${sidecarUrl}/mcp`, {
+        method: 'POST',
+        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'notifications/initialized',
+        }),
+      });
+
+      updateAuthSpy.mockClear();
+
+      await fetch(`${sidecarUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          ...MCP_HEADERS,
+          'mcp-session-id': sessionId,
+          Cookie: 'laravel_session=user-a-session',
+          'x-transcend-active-organization-id': 'org-a-uuid',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: { name: 'echo', arguments: { message: 'per-request-auth' } },
+          id: 2,
+        }),
+      });
+
+      expect(updateAuthSpy).toHaveBeenCalledOnce();
+      const calledWith: AuthCredentials = updateAuthSpy.mock.calls[0][0];
+      expect(calledWith).toEqual({
+        type: 'sessionCookie',
+        cookie: 'laravel_session=user-a-session',
+        organizationId: 'org-a-uuid',
+      });
+    });
+
+    it('does not call updateAuth when request has no auth headers', async () => {
+      const initRes = await fetch(`${sidecarUrl}/mcp`, {
+        method: 'POST',
+        headers: MCP_HEADERS,
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-11-25',
+            capabilities: {},
+            clientInfo: { name: 'no-auth-update-test', version: '0.1.0' },
+          },
+          id: 1,
+        }),
+      });
+
+      const sessionId = initRes.headers.get('mcp-session-id')!;
+
+      await fetch(`${sidecarUrl}/mcp`, {
+        method: 'POST',
+        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'notifications/initialized',
+        }),
+      });
+
+      updateAuthSpy.mockClear();
+
+      await fetch(`${sidecarUrl}/mcp`, {
+        method: 'POST',
+        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'tools/list',
+          params: {},
+          id: 2,
+        }),
+      });
+
+      expect(updateAuthSpy).not.toHaveBeenCalled();
     });
   });
 });

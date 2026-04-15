@@ -12,15 +12,44 @@ import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { InMemoryEventStore } from './event-store.js';
 import type { TransportConfig } from './parse-args.js';
-import { resolveAuth } from './resolve-auth.js';
+import { tryResolveAuth } from './resolve-auth.js';
+
+/**
+ * Return type from {@link McpHttpServerOptions.createServer}.
+ *
+ * When the caller can support per-request auth updates (e.g. the
+ * Prometheus sidecar pattern where different users' session cookies
+ * arrive on the same MCP session), return this object instead of a
+ * bare {@link Server}.
+ */
+export interface McpServerWithAuthUpdate {
+  server: Server;
+  /**
+   * Called before each request on an existing session with credentials
+   * resolved from the inbound HTTP headers. Implementations should
+   * update their GraphQL/REST clients' auth so the ensuing tool calls
+   * execute in the correct user context.
+   */
+  updateAuth: (auth: AuthCredentials) => void;
+}
+
+export type CreateServerResult = Server | McpServerWithAuthUpdate;
 
 export interface McpHttpServerOptions {
   /** Server display name */
   name: string;
   /** Server version */
   version: string;
-  /** Factory to create a new MCP Server for each HTTP session */
-  createServer: (auth: AuthCredentials) => Server | Promise<Server>;
+  /**
+   * Factory to create a new MCP Server for each HTTP session.
+   *
+   * `auth` is `null` when the client's initialization request carries
+   * no credentials (e.g. MCPClient handshake at startup). In this case
+   * the server can still serve `tools/list` but tool calls that hit the
+   * backend will fail until auth is provided via per-request headers
+   * (see {@link McpServerWithAuthUpdate}).
+   */
+  createServer: (auth: AuthCredentials | null) => CreateServerResult | Promise<CreateServerResult>;
 }
 
 export interface McpHttpServer {
@@ -37,6 +66,8 @@ interface SessionEntry {
   server: Server;
   /** Timestamp of last activity */
   lastActivityAt: number;
+  /** Per-request auth updater (set when createServer returns McpServerWithAuthUpdate) */
+  updateAuth?: (auth: AuthCredentials) => void;
 }
 
 /**
@@ -89,24 +120,46 @@ export async function runMcpHttp(
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
     try {
-      // Existing session
+      // Existing session — update auth from current request headers
       if (sessionId && sessions.has(sessionId)) {
         const session = sessions.get(sessionId)!;
         session.lastActivityAt = Date.now();
+
+        if (session.updateAuth) {
+          const auth = tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
+          if (auth) {
+            session.updateAuth(auth);
+          }
+        }
+
         await session.transport.handleRequest(req, res, req.body);
         return;
       }
 
-      // New initialization request
+      // New initialization request — auth is optional (MCPClient handshake)
       if (!sessionId && isInitializeRequest(req.body)) {
-        const auth = resolveAuth(req.headers as Record<string, string | string[] | undefined>);
-        const server = await options.createServer(auth);
+        const auth = tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
+        const result = await options.createServer(auth);
+        const server =
+          result !== null && typeof result === 'object' && 'server' in result
+            ? result.server
+            : (result as Server);
+        const updateAuth =
+          result !== null && typeof result === 'object' && 'updateAuth' in result
+            ? result.updateAuth
+            : undefined;
+
         const eventStore = new InMemoryEventStore();
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
           eventStore,
           onsessioninitialized: (sid: string) => {
-            sessions.set(sid, { transport, server, lastActivityAt: Date.now() });
+            sessions.set(sid, {
+              transport,
+              server,
+              lastActivityAt: Date.now(),
+              updateAuth,
+            });
             logger.info(`Session initialized: ${sid}`);
           },
         });

@@ -85,7 +85,9 @@ For the Transcend dashboard's internal MCP integration, the server accepts sessi
 - `Cookie: laravel_session=<session-token>`
 - `x-transcend-active-organization-id: <org-uuid>`
 
-Each HTTP session is isolated: different customers get separate server instances with their own clients, ensuring session cookies never leak across tenants. When both cookie and API key headers are present, the session cookie takes priority.
+When both cookie and API key headers are present, the session cookie takes priority.
+
+**Sidecar pattern (Prometheus):** The MCP server supports auth-free initialization for use as a sidecar process. In this mode, the server starts without any credentials, allowing the MCPClient to connect and list tools at startup. Per-request auth headers (Cookie + org ID) are then resolved from each subsequent `tools/call` request and applied to the session's clients via `updateAuth()`. This enables multi-tenant auth where different users' sessions flow through a single MCP connection.
 
 ## Packages
 

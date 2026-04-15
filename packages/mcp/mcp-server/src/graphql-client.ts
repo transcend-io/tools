@@ -10,7 +10,7 @@ import { DSRMixin } from '@transcend-io/mcp-server-dsr';
 import { InventoryMixin } from '@transcend-io/mcp-server-inventory';
 import { WorkflowsMixin } from '@transcend-io/mcp-server-workflows';
 
-type Constructor<T = object> = new (...args: [AuthCredentials, string?, Logger?]) => T;
+type Constructor<T = object> = new (...args: [AuthCredentials | null, string?, Logger?]) => T;
 
 function applyMixin(target: Constructor, mixin: Constructor): void {
   Object.getOwnPropertyNames(mixin.prototype).forEach((name) => {
@@ -23,7 +23,7 @@ function applyMixin(target: Constructor, mixin: Constructor): void {
 }
 
 export class TranscendGraphQLClient extends TranscendGraphQLBase {
-  constructor(auth: AuthCredentials, baseUrl?: string, logger?: Logger) {
+  constructor(auth: AuthCredentials | null, baseUrl?: string, logger?: Logger) {
     super(auth, baseUrl, logger);
   }
 

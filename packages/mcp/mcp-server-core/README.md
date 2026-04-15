@@ -7,12 +7,12 @@ Shared infrastructure for all Transcend MCP Server packages. Provides the base G
 ## What's inside
 
 - **`AuthCredentials`** — Discriminated union type representing API key or session cookie authentication. The `authHeaders()` helper converts credentials into the correct outbound HTTP headers.
-- **`resolveAuth` / `extractApiKeyFromHeaders`** — Resolves `AuthCredentials` from inbound HTTP headers (session cookie, API key) or `TRANSCEND_API_KEY` env var. Used by both HTTP and stdio transport paths.
-- **`TranscendGraphQLBase`** — Base GraphQL client with query execution, pagination, and logging. Accepts `AuthCredentials` and delegates header generation to `authHeaders()`. Domain packages extend this via mixin classes.
-- **`TranscendRestClient`** — REST client for the Sombra API. Also accepts `AuthCredentials`.
+- **`resolveAuth` / `tryResolveAuth`** — Resolves `AuthCredentials` from inbound HTTP headers (session cookie, API key) or `TRANSCEND_API_KEY` env var. `resolveAuth` throws when no auth is found; `tryResolveAuth` returns `null` (used during auth-free MCP initialization).
+- **`TranscendGraphQLBase`** — Base GraphQL client with query execution, pagination, and logging. Accepts `AuthCredentials | null` and delegates header generation to `authHeaders()`. Supports `updateAuth()` for per-request credential updates in HTTP transport. Domain packages extend this via mixin classes.
+- **`TranscendRestClient`** — REST client for the Sombra API. Also accepts `AuthCredentials | null` with `updateAuth()` support.
 - **`createMCPServer`** — Bootstraps an MCP server (stdio or HTTP) from a list of tool definitions and client factories.
 - **`buildMcpServer`** — Creates an MCP `Server` with ListTools/CallTool handlers from `ToolDefinition[]` without connecting a transport.
-- **`runMcpHttp`** — Starts an Express-based Streamable HTTP server with per-session Server instances, SSE resume, health check, and CORS. Supports session cookie forwarding with `credentials: true`.
+- **`runMcpHttp`** — Starts an Express-based Streamable HTTP server with per-session Server instances, SSE resume, health check, and CORS. Supports session cookie forwarding (`credentials: true`), auth-free initialization, and per-request auth updates via `McpServerWithAuthUpdate`.
 - **`parseTransportArgs`** — Parses `--transport`, `--port`, `--host`, and related CLI flags / env vars.
 - **`InMemoryEventStore`** — In-memory SSE event store for session resumability.
 - **Tool helpers** — `validateArgs`, `createToolResult`, `createListResult`, common Zod schemas (`PaginationSchema`), and shared TypeScript types (`ToolDefinition`, `ToolClients`, `ToolAnnotations`).

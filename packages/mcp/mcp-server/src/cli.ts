@@ -16,14 +16,24 @@ import { ToolRegistry } from './registry.js';
 
 const VERSION = '3.0.2';
 
+interface ToolRegistryWithClients {
+  registry: ToolRegistry;
+  restClient: TranscendRestClient;
+  graphqlClient: TranscendGraphQLClient;
+}
+
 function createToolRegistry(
-  auth: AuthCredentials,
+  auth: AuthCredentials | null,
   sombraUrl: string,
   graphqlUrl: string,
-): ToolRegistry {
+): ToolRegistryWithClients {
   const restClient = new TranscendRestClient(auth, sombraUrl);
   const graphqlClient = new TranscendGraphQLClient(auth, graphqlUrl);
-  return new ToolRegistry({ rest: restClient, graphql: graphqlClient });
+  return {
+    registry: new ToolRegistry({ rest: restClient, graphql: graphqlClient }),
+    restClient,
+    graphqlClient,
+  };
 }
 
 async function main(): Promise<void> {
@@ -41,14 +51,26 @@ async function main(): Promise<void> {
           logger.info('Creating unified MCP server for new HTTP session...', {
             sombraUrl,
             graphqlUrl,
-            authType: auth.type,
+            authType: auth?.type ?? 'none',
           });
-          const registry = createToolRegistry(auth, sombraUrl, graphqlUrl);
-          return buildMcpServer({
+          const { registry, restClient, graphqlClient } = createToolRegistry(
+            auth,
+            sombraUrl,
+            graphqlUrl,
+          );
+          const server = buildMcpServer({
             name: 'transcend-mcp-server',
             version: VERSION,
             tools: registry.getAllTools(),
           });
+
+          return {
+            server,
+            updateAuth: (newAuth: AuthCredentials) => {
+              graphqlClient.updateAuth(newAuth);
+              restClient.updateAuth(newAuth);
+            },
+          };
         },
       },
       config,
@@ -60,7 +82,7 @@ async function main(): Promise<void> {
   const auth = resolveAuth();
   logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl });
 
-  const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl);
+  const { registry: toolRegistry } = createToolRegistry(auth, sombraUrl, graphqlUrl);
 
   logger.info(
     `Registered ${toolRegistry.getToolCount()} tools across ${toolRegistry.getCategories().length} categories`,

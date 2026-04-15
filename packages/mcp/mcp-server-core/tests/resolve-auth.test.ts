@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
-import { resolveAuth, extractApiKeyFromHeaders } from '../src/server/resolve-auth.js';
+import {
+  resolveAuth,
+  tryResolveAuth,
+  extractApiKeyFromHeaders,
+} from '../src/server/resolve-auth.js';
 
 describe('extractApiKeyFromHeaders', () => {
   it('extracts key from Authorization: Bearer header', () => {
@@ -117,5 +121,47 @@ describe('resolveAuth', () => {
       authorization: 'Bearer api-key',
     });
     expect(auth).toEqual({ type: 'apiKey', apiKey: 'api-key' });
+  });
+});
+
+describe('tryResolveAuth', () => {
+  let savedApiKey: string | undefined;
+
+  beforeEach(() => {
+    savedApiKey = process.env.TRANSCEND_API_KEY;
+    delete process.env.TRANSCEND_API_KEY;
+  });
+
+  afterEach(() => {
+    if (savedApiKey !== undefined) {
+      process.env.TRANSCEND_API_KEY = savedApiKey;
+    } else {
+      delete process.env.TRANSCEND_API_KEY;
+    }
+  });
+
+  it('returns null when no auth is available', () => {
+    expect(tryResolveAuth()).toBeNull();
+  });
+
+  it('returns null when headers have no auth and no env var', () => {
+    expect(tryResolveAuth({ 'content-type': 'application/json' })).toBeNull();
+  });
+
+  it('returns sessionCookie credentials when cookie + org ID present', () => {
+    const auth = tryResolveAuth({
+      cookie: 'laravel_session=abc123',
+      'x-transcend-active-organization-id': 'org-uuid',
+    });
+    expect(auth).toEqual({
+      type: 'sessionCookie',
+      cookie: 'laravel_session=abc123',
+      organizationId: 'org-uuid',
+    });
+  });
+
+  it('returns apiKey from env var as fallback', () => {
+    process.env.TRANSCEND_API_KEY = 'env-key';
+    expect(tryResolveAuth()).toEqual({ type: 'apiKey', apiKey: 'env-key' });
   });
 });
