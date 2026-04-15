@@ -258,11 +258,14 @@ pnpm -F @transcend-io/mcp-server-consent test
 pnpm -F @transcend-io/mcp-server-consent typecheck
 ```
 
-### Environment Variables
+### Environment Variables & Authentication
 
-All MCP servers require:
+MCP servers support two authentication modes:
 
-- `TRANSCEND_API_KEY` — your Transcend API key (required for stdio; optional for HTTP if provided per-request via headers)
+- **API key** — set `TRANSCEND_API_KEY` env var (required for stdio; optional for HTTP if using session cookie or per-request API key headers)
+- **Session cookie** — in HTTP mode, forward `Cookie` and `x-transcend-active-organization-id` headers for in-app dashboard auth
+
+The `AuthCredentials` discriminated union (`'apiKey' | 'sessionCookie'`) is the internal representation. See `mcp-server-core/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
 
 Optional overrides:
 

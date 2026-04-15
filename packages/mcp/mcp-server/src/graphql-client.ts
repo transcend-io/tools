@@ -1,12 +1,16 @@
 import { AdminMixin } from '@transcend-io/mcp-server-admin';
 import { AssessmentsMixin } from '@transcend-io/mcp-server-assessments';
-import { TranscendGraphQLBase, type Logger } from '@transcend-io/mcp-server-core';
+import {
+  TranscendGraphQLBase,
+  type AuthCredentials,
+  type Logger,
+} from '@transcend-io/mcp-server-core';
 import { DiscoveryMixin } from '@transcend-io/mcp-server-discovery';
 import { DSRMixin } from '@transcend-io/mcp-server-dsr';
 import { InventoryMixin } from '@transcend-io/mcp-server-inventory';
 import { WorkflowsMixin } from '@transcend-io/mcp-server-workflows';
 
-type Constructor<T = object> = new (...args: [string, string?, Logger?]) => T;
+type Constructor<T = object> = new (...args: [AuthCredentials, string?, Logger?]) => T;
 
 function applyMixin(target: Constructor, mixin: Constructor): void {
   Object.getOwnPropertyNames(mixin.prototype).forEach((name) => {
@@ -19,8 +23,8 @@ function applyMixin(target: Constructor, mixin: Constructor): void {
 }
 
 export class TranscendGraphQLClient extends TranscendGraphQLBase {
-  constructor(apiKey: string, baseUrl?: string, logger?: Logger) {
-    super(apiKey, baseUrl, logger);
+  constructor(auth: AuthCredentials, baseUrl?: string, logger?: Logger) {
+    super(auth, baseUrl, logger);
   }
 
   // Admin

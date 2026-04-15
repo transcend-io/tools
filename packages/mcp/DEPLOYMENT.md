@@ -28,31 +28,47 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 
 ### Environment variables
 
-| Variable                       | Default                                    | Description                                                                     |
-| ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | —                                          | Default API key (required for stdio, optional for HTTP if provided per-request) |
-| `TRANSCEND_API_URL`            | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL                                                             |
-| `TRANSCEND_GRAPHQL_URL`        | `https://api.transcend.io`                 | GraphQL API URL                                                                 |
-| `TRANSCEND_HTTP_PORT`          | `3000`                                     | HTTP listen port (overridden by `--port`)                                       |
-| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                                | HTTP listen host (overridden by `--host`)                                       |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | —                                          | Comma-separated allowed CORS origins                                            |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)                         | Idle session timeout in milliseconds                                            |
+| Variable                       | Default                                    | Description                                                                                                    |
+| ------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`            | —                                          | Default API key. Required for stdio; optional for HTTP if using session cookie or per-request API key headers. |
+| `TRANSCEND_API_URL`            | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL                                                                                            |
+| `TRANSCEND_GRAPHQL_URL`        | `https://api.transcend.io`                 | GraphQL API URL                                                                                                |
+| `TRANSCEND_HTTP_PORT`          | `3000`                                     | HTTP listen port (overridden by `--port`)                                                                      |
+| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                                | HTTP listen host (overridden by `--host`)                                                                      |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | —                                          | Comma-separated allowed CORS origins                                                                           |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)                         | Idle session timeout in milliseconds                                                                           |
 
 ## Authentication
 
-### Default (environment variable)
+HTTP mode supports two authentication methods. The server resolves credentials from each incoming initialization request in this priority order:
 
-Set `TRANSCEND_API_KEY` at deploy time. All sessions use this key.
+### 1. Session cookie (in-app dashboard)
 
-### Per-request override
+When the MCP server is deployed as a sidecar or colocated service alongside the Transcend backend, the dashboard can forward the user's session cookie directly:
 
-HTTP mode supports per-request API key override via headers, checked in this order:
+| Header                               | Description                                        |
+| ------------------------------------ | -------------------------------------------------- |
+| `Cookie: laravel_session=<token>`    | Session cookie from the Transcend dashboard        |
+| `x-transcend-active-organization-id` | Organization UUID (required companion for cookies) |
+
+Both headers must be present for cookie auth to activate. Each HTTP session gets its own isolated server instance, so different customers' sessions never share state.
+
+For cookie-based auth to work, CORS must be configured to allow credentials. If the dashboard origin differs from the MCP server origin, set `--cors-origin` or `TRANSCEND_MCP_CORS_ORIGINS` to the dashboard's origin. The server automatically sets `credentials: true` and allows the `Cookie` and `x-transcend-active-organization-id` headers.
+
+### 2. API key (external customers)
+
+For programmatic access (Claude Enterprise, Cursor, custom agents), send an API key via headers:
 
 1. `Authorization: Bearer <api-key>`
 2. `X-Transcend-Api-Key: <api-key>`
-3. `TRANSCEND_API_KEY` environment variable (fallback)
 
-This enables multi-tenant deployments where different clients use different API keys without restarting the server.
+### 3. Environment variable fallback
+
+If no auth headers are present (or for stdio mode), the server falls back to the `TRANSCEND_API_KEY` environment variable.
+
+### Multi-tenant deployments
+
+Both cookie-based and API key-based auth support multi-tenancy. Each client session gets its own MCP `Server` instance with isolated API clients, so credentials from one session never leak to another.
 
 ## Endpoints
 
@@ -111,6 +127,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Cookie $http_cookie;
 
         # SSE support — disable buffering
         proxy_buffering off;

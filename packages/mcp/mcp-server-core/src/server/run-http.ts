@@ -8,10 +8,11 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import cors from 'cors';
 import type { Request, Response } from 'express';
 
+import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { InMemoryEventStore } from './event-store.js';
 import type { TransportConfig } from './parse-args.js';
-import { extractApiKeyFromHeaders, resolveApiKey } from './resolve-api-key.js';
+import { resolveAuth } from './resolve-auth.js';
 
 export interface McpHttpServerOptions {
   /** Server display name */
@@ -19,7 +20,7 @@ export interface McpHttpServerOptions {
   /** Server version */
   version: string;
   /** Factory to create a new MCP Server for each HTTP session */
-  createServer: (apiKey: string) => Server | Promise<Server>;
+  createServer: (auth: AuthCredentials) => Server | Promise<Server>;
 }
 
 export interface McpHttpServer {
@@ -58,12 +59,15 @@ export async function runMcpHttp(
     app.use(
       cors({
         origin: config.corsOrigins,
+        credentials: true,
         methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
         allowedHeaders: [
           'Content-Type',
+          'Cookie',
           'mcp-session-id',
           'Authorization',
           'X-Transcend-Api-Key',
+          'x-transcend-active-organization-id',
           'Last-Event-ID',
         ],
         exposedHeaders: ['mcp-session-id'],
@@ -95,10 +99,8 @@ export async function runMcpHttp(
 
       // New initialization request
       if (!sessionId && isInitializeRequest(req.body)) {
-        const apiKey = resolveApiKey(
-          extractApiKeyFromHeaders(req.headers as Record<string, string | string[] | undefined>),
-        );
-        const server = await options.createServer(apiKey);
+        const auth = resolveAuth(req.headers as Record<string, string | string[] | undefined>);
+        const server = await options.createServer(auth);
         const eventStore = new InMemoryEventStore();
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),

@@ -55,7 +55,7 @@ describe('HTTP Transport', () => {
       {
         name: 'test-server',
         version: '0.0.1',
-        createServer: () =>
+        createServer: (_auth) =>
           buildMcpServer({ name: 'test-server', version: '0.0.1', tools: [echoTool] }),
       },
       testConfig(0),
@@ -258,6 +258,133 @@ describe('HTTP Transport', () => {
 
       expect(res.status).toBe(200);
       expect(res.headers.get('mcp-session-id')).toBeTruthy();
+    });
+  });
+
+  describe('session cookie authentication', () => {
+    it('initializes a session with Cookie + x-transcend-active-organization-id headers', async () => {
+      const res = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          ...MCP_HEADERS,
+          Cookie: 'laravel_session=session-token-abc',
+          'x-transcend-active-organization-id': 'org-uuid-123',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-11-25',
+            capabilities: {},
+            clientInfo: { name: 'cookie-test', version: '0.1.0' },
+          },
+          id: 1,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get('mcp-session-id')).toBeTruthy();
+    });
+
+    it('cookie-authed session can call tools', async () => {
+      const initRes = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          ...MCP_HEADERS,
+          Cookie: 'laravel_session=session-for-tool-call',
+          'x-transcend-active-organization-id': 'org-uuid-456',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-11-25',
+            capabilities: {},
+            clientInfo: { name: 'cookie-tool-test', version: '0.1.0' },
+          },
+          id: 1,
+        }),
+      });
+
+      const sessionId = initRes.headers.get('mcp-session-id')!;
+      expect(sessionId).toBeTruthy();
+
+      // Send initialized notification
+      await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'notifications/initialized',
+        }),
+      });
+
+      // Call a tool
+      const res = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'tools/call',
+          params: { name: 'echo', arguments: { message: 'cookie-test' } },
+          id: 2,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const text = await res.text();
+      const dataLines = parseSseData(text);
+      const callResponse = dataLines.find((d: any) => d.id === 2) as any;
+      expect(callResponse).toBeDefined();
+      const content = JSON.parse(callResponse.result.content[0].text);
+      expect(content.echo).toBe('cookie-test');
+    });
+
+    it('different customers get isolated sessions', async () => {
+      const initA = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          ...MCP_HEADERS,
+          Cookie: 'laravel_session=customer-a-session',
+          'x-transcend-active-organization-id': 'org-a',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-11-25',
+            capabilities: {},
+            clientInfo: { name: 'customer-a', version: '0.1.0' },
+          },
+          id: 1,
+        }),
+      });
+
+      const initB = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          ...MCP_HEADERS,
+          Cookie: 'laravel_session=customer-b-session',
+          'x-transcend-active-organization-id': 'org-b',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-11-25',
+            capabilities: {},
+            clientInfo: { name: 'customer-b', version: '0.1.0' },
+          },
+          id: 1,
+        }),
+      });
+
+      const sessionA = initA.headers.get('mcp-session-id')!;
+      const sessionB = initB.headers.get('mcp-session-id')!;
+
+      expect(sessionA).toBeTruthy();
+      expect(sessionB).toBeTruthy();
+      expect(sessionA).not.toBe(sessionB);
     });
   });
 });

@@ -1,7 +1,11 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
-import { TranscendRestClient, type ToolClients } from '@transcend-io/mcp-server-core';
+import {
+  TranscendRestClient,
+  type AuthCredentials,
+  type ToolClients,
+} from '@transcend-io/mcp-server-core';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
@@ -12,6 +16,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { TranscendGraphQLClient } from '../src/graphql-client.js';
 import { ToolRegistry } from '../src/registry.js';
 import { EXPECTED_UMBRELLA_TOOL_COUNT } from './umbrella-tool-count.js';
+
+const TEST_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-key' };
 
 const stubFn = () => vi.fn();
 
@@ -41,8 +47,8 @@ describe('ToolRegistry', () => {
   });
 
   it('ToolRegistry registers all tools with correct count', () => {
-    const rest = new TranscendRestClient('test-key', 'http://localhost:0');
-    const graphql = new TranscendGraphQLClient('test-key', 'http://localhost:0');
+    const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
+    const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
     const registry = new ToolRegistry({ rest, graphql });
 
     expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
@@ -50,8 +56,8 @@ describe('ToolRegistry', () => {
   });
 
   it('getToolList returns well-formed tool descriptors', () => {
-    const rest = new TranscendRestClient('test-key', 'http://localhost:0');
-    const graphql = new TranscendGraphQLClient('test-key', 'http://localhost:0');
+    const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
+    const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
     const registry = new ToolRegistry({ rest, graphql });
 
     for (const tool of registry.getToolList()) {
@@ -63,16 +69,16 @@ describe('ToolRegistry', () => {
   });
 
   it('getTool returns undefined for unknown tools', () => {
-    const rest = new TranscendRestClient('test-key', 'http://localhost:0');
-    const graphql = new TranscendGraphQLClient('test-key', 'http://localhost:0');
+    const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
+    const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
     const registry = new ToolRegistry({ rest, graphql });
 
     expect(registry.getTool('nonexistent_tool')).toBeUndefined();
   });
 
   it('executeTool throws for unknown tools', async () => {
-    const rest = new TranscendRestClient('test-key', 'http://localhost:0');
-    const graphql = new TranscendGraphQLClient('test-key', 'http://localhost:0');
+    const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
+    const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
     const registry = new ToolRegistry({ rest, graphql });
 
     await expect(registry.executeTool('nonexistent_tool', {})).rejects.toThrow('Unknown tool');

@@ -8,8 +8,8 @@ createMCPServer({
   name: 'transcend-mcp-assessments',
   version: '1.0.0',
   getTools: getAssessmentTools,
-  createClients: (apiKey, sombraUrl, graphqlUrl) => ({
-    rest: new TranscendRestClient(apiKey, sombraUrl),
-    graphql: new AssessmentsMixin(apiKey, graphqlUrl),
+  createClients: (auth, sombraUrl, graphqlUrl) => ({
+    rest: new TranscendRestClient(auth, sombraUrl),
+    graphql: new AssessmentsMixin(auth, graphqlUrl),
   }),
 });

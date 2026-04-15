@@ -8,8 +8,8 @@ createMCPServer({
   name: 'transcend-mcp-admin',
   version: '1.0.0',
   getTools: getAdminTools,
-  createClients: (apiKey, sombraUrl, graphqlUrl) => ({
-    rest: new TranscendRestClient(apiKey, sombraUrl),
-    graphql: new AdminMixin(apiKey, graphqlUrl),
+  createClients: (auth, sombraUrl, graphqlUrl) => ({
+    rest: new TranscendRestClient(auth, sombraUrl),
+    graphql: new AdminMixin(auth, graphqlUrl),
   }),
 });

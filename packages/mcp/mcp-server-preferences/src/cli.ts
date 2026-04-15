@@ -11,8 +11,8 @@ createMCPServer({
   name: 'transcend-mcp-preferences',
   version: '1.0.0',
   getTools: getPreferenceTools,
-  createClients: (apiKey, sombraUrl, graphqlUrl) => ({
-    rest: new TranscendRestClient(apiKey, sombraUrl),
-    graphql: new TranscendGraphQLBase(apiKey, graphqlUrl),
+  createClients: (auth, sombraUrl, graphqlUrl) => ({
+    rest: new TranscendRestClient(auth, sombraUrl),
+    graphql: new TranscendGraphQLBase(auth, graphqlUrl),
   }),
 });

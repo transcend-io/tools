@@ -4,10 +4,11 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   buildMcpServer,
   parseTransportArgs,
-  resolveApiKey,
+  resolveAuth,
   runMcpHttp,
   SimpleLogger,
   TranscendRestClient,
+  type AuthCredentials,
 } from '@transcend-io/mcp-server-core';
 
 import { TranscendGraphQLClient } from './graphql-client.js';
@@ -15,9 +16,13 @@ import { ToolRegistry } from './registry.js';
 
 const VERSION = '3.0.2';
 
-function createToolRegistry(apiKey: string, sombraUrl: string, graphqlUrl: string): ToolRegistry {
-  const restClient = new TranscendRestClient(apiKey, sombraUrl);
-  const graphqlClient = new TranscendGraphQLClient(apiKey, graphqlUrl);
+function createToolRegistry(
+  auth: AuthCredentials,
+  sombraUrl: string,
+  graphqlUrl: string,
+): ToolRegistry {
+  const restClient = new TranscendRestClient(auth, sombraUrl);
+  const graphqlClient = new TranscendGraphQLClient(auth, graphqlUrl);
   return new ToolRegistry({ rest: restClient, graphql: graphqlClient });
 }
 
@@ -32,12 +37,13 @@ async function main(): Promise<void> {
       {
         name: 'transcend-mcp-server',
         version: VERSION,
-        createServer: async (apiKey: string) => {
+        createServer: async (auth) => {
           logger.info('Creating unified MCP server for new HTTP session...', {
             sombraUrl,
             graphqlUrl,
+            authType: auth.type,
           });
-          const registry = createToolRegistry(apiKey, sombraUrl, graphqlUrl);
+          const registry = createToolRegistry(auth, sombraUrl, graphqlUrl);
           return buildMcpServer({
             name: 'transcend-mcp-server',
             version: VERSION,
@@ -51,10 +57,10 @@ async function main(): Promise<void> {
   }
 
   // stdio mode
-  const apiKey = resolveApiKey();
+  const auth = resolveAuth();
   logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl });
 
-  const toolRegistry = createToolRegistry(apiKey, sombraUrl, graphqlUrl);
+  const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl);
 
   logger.info(
     `Registered ${toolRegistry.getToolCount()} tools across ${toolRegistry.getCategories().length} categories`,

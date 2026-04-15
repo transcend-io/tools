@@ -67,6 +67,26 @@ This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a healt
 
 For Docker, reverse proxy, and cloud deployment patterns, see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
+## Authentication
+
+The MCP server supports two authentication modes that can be used independently or simultaneously:
+
+### API key (external customers)
+
+For external consumers (Claude Enterprise, Cursor, etc.), provide a Transcend API key:
+
+- **Stdio**: Set the `TRANSCEND_API_KEY` environment variable
+- **HTTP**: Send `Authorization: Bearer <key>` or `X-Transcend-Api-Key: <key>` header, or fall back to `TRANSCEND_API_KEY` env var
+
+### Session cookie (in-app dashboard)
+
+For the Transcend dashboard's internal MCP integration, the server accepts session cookie authentication over HTTP transport. The dashboard forwards the user's `laravel_session` cookie and organization ID to the MCP server:
+
+- `Cookie: laravel_session=<session-token>`
+- `x-transcend-active-organization-id: <org-uuid>`
+
+Each HTTP session is isolated: different customers get separate server instances with their own clients, ensuring session cookies never leak across tenants. When both cookie and API key headers are present, the session cookie takes priority.
+
 ## Packages
 
 | Package                                               | Binary                      | Tools | Description                                      |
@@ -117,15 +137,15 @@ The unified `mcp-server` package aggregates tools via `ToolRegistry` and compose
 
 All servers share the same environment variables:
 
-| Variable                       | Required    | Default                                    | Description                                     |
-| ------------------------------ | ----------- | ------------------------------------------ | ----------------------------------------------- |
-| `TRANSCEND_API_KEY`            | Yes (stdio) | —                                          | Transcend API key (HTTP: fallback if no header) |
-| `TRANSCEND_API_URL`            | No          | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL                             |
-| `TRANSCEND_GRAPHQL_URL`        | No          | `https://api.transcend.io`                 | GraphQL API URL                                 |
-| `TRANSCEND_HTTP_PORT`          | No          | `3000`                                     | HTTP listen port                                |
-| `TRANSCEND_HTTP_HOST`          | No          | `127.0.0.1`                                | HTTP listen host                                |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | No          | —                                          | Comma-separated allowed CORS origins            |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | No          | `1800000`                                  | Idle session timeout (ms)                       |
+| Variable                       | Required               | Default                                    | Description                                                                                       |
+| ------------------------------ | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`            | Yes (stdio), No (HTTP) | —                                          | Transcend API key. In HTTP mode, optional if using session cookie or per-request API key headers. |
+| `TRANSCEND_API_URL`            | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL                                                                               |
+| `TRANSCEND_GRAPHQL_URL`        | No                     | `https://api.transcend.io`                 | GraphQL API URL                                                                                   |
+| `TRANSCEND_HTTP_PORT`          | No                     | `3000`                                     | HTTP listen port                                                                                  |
+| `TRANSCEND_HTTP_HOST`          | No                     | `127.0.0.1`                                | HTTP listen host                                                                                  |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | No                     | —                                          | Comma-separated allowed CORS origins                                                              |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | No                     | `1800000`                                  | Idle session timeout (ms)                                                                         |
 
 ## Contributing
 

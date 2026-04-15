@@ -1,3 +1,4 @@
+import type { AuthCredentials } from '@transcend-io/mcp-server-core';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { AssessmentsMixin } from '../src/graphql.js';
@@ -13,7 +14,7 @@ function createMockFetchResponse<T>(data: T) {
 }
 
 describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
-  const API_KEY = 'test-api-key-12345';
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -32,7 +33,7 @@ describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    const client = new AssessmentsMixin(API_KEY);
+    const client = new AssessmentsMixin(API_KEY_AUTH);
     await client.createAssessmentFormTemplate({
       title: 'Test Template',
       sections: [
@@ -69,7 +70,7 @@ describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    const client = new AssessmentsMixin(API_KEY);
+    const client = new AssessmentsMixin(API_KEY_AUTH);
     await client.createAssessmentFormTemplate({
       title: 'Test Template',
       sections: [
@@ -107,7 +108,7 @@ describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
     });
     vi.stubGlobal('fetch', mockFetch);
 
-    const client = new AssessmentsMixin(API_KEY);
+    const client = new AssessmentsMixin(API_KEY_AUTH);
     await client.createAssessmentFormTemplate({
       title: 'Test Template',
       sections: [

@@ -1,11 +1,12 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 
+import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { TranscendRestClient } from '../clients/rest-client.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
-import { resolveApiKey } from './resolve-api-key.js';
+import { resolveAuth } from './resolve-auth.js';
 import { runMcpHttp } from './run-http.js';
 
 export interface MCPServerOptions {
@@ -16,20 +17,20 @@ export interface MCPServerOptions {
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
   /** Optional custom client factory */
-  createClients?: (apiKey: string, sombraUrl: string, graphqlUrl: string) => ToolClients;
+  createClients?: (auth: AuthCredentials, sombraUrl: string, graphqlUrl: string) => ToolClients;
 }
 
 async function buildClients(
-  apiKey: string,
+  auth: AuthCredentials,
   sombraUrl: string,
   graphqlUrl: string,
   factory?: MCPServerOptions['createClients'],
 ): Promise<ToolClients> {
-  if (factory) return factory(apiKey, sombraUrl, graphqlUrl);
+  if (factory) return factory(auth, sombraUrl, graphqlUrl);
   return {
-    rest: new TranscendRestClient(apiKey, sombraUrl),
+    rest: new TranscendRestClient(auth, sombraUrl),
     graphql: new (await import('../clients/graphql/base.js')).TranscendGraphQLBase(
-      apiKey,
+      auth,
       graphqlUrl,
     ),
   };
@@ -40,7 +41,7 @@ async function buildClients(
  *
  * Transport is selected via `--transport stdio|http` CLI flag (default: stdio).
  * In HTTP mode, each client session gets its own Server and transport instance,
- * with optional per-request API key override via headers.
+ * authenticated via session cookie or API key header.
  */
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
   const logger = new SimpleLogger();
@@ -53,9 +54,13 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
       {
         name: options.name,
         version: options.version,
-        createServer: async (apiKey: string) => {
-          logger.info('Creating MCP server for new HTTP session...', { sombraUrl, graphqlUrl });
-          const clients = await buildClients(apiKey, sombraUrl, graphqlUrl, options.createClients);
+        createServer: async (auth) => {
+          logger.info('Creating MCP server for new HTTP session...', {
+            sombraUrl,
+            graphqlUrl,
+            authType: auth.type,
+          });
+          const clients = await buildClients(auth, sombraUrl, graphqlUrl, options.createClients);
           const tools = options.getTools(clients);
           return buildMcpServer({ name: options.name, version: options.version, tools });
         },
@@ -66,9 +71,9 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const apiKey = resolveApiKey();
+  const auth = resolveAuth();
   logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl });
-  const clients = await buildClients(apiKey, sombraUrl, graphqlUrl, options.createClients);
+  const clients = await buildClients(auth, sombraUrl, graphqlUrl, options.createClients);
   const tools = options.getTools(clients);
   const server = buildMcpServer({ name: options.name, version: options.version, tools });
 

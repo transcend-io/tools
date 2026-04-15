@@ -1,3 +1,4 @@
+import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
 import type { RequestOptions } from '../../types/transcend.js';
 
@@ -52,7 +53,7 @@ export interface ListOptions {
 }
 
 export class TranscendGraphQLBase {
-  protected apiKey: string;
+  protected auth: AuthCredentials;
   protected baseUrl: string;
   protected logger: Logger;
   protected defaultTimeout: number;
@@ -60,8 +61,12 @@ export class TranscendGraphQLBase {
   private lastRequestTime: number = 0;
   private minRequestInterval: number = 200;
 
-  constructor(apiKey: string, baseUrl: string = 'https://api.transcend.io', logger?: Logger) {
-    this.apiKey = apiKey;
+  constructor(
+    auth: AuthCredentials,
+    baseUrl: string = 'https://api.transcend.io',
+    logger?: Logger,
+  ) {
+    this.auth = auth;
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.logger = logger || new SimpleLogger();
     this.defaultTimeout = 30000;
@@ -103,7 +108,7 @@ export class TranscendGraphQLBase {
         const response = await fetch(url, {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${this.apiKey}`,
+            ...authHeaders(this.auth),
             'Content-Type': 'application/json',
             Accept: 'application/json',
           },

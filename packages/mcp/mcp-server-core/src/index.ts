@@ -1,3 +1,6 @@
+export { authHeaders } from './auth.js';
+export type { AuthCredentials, ApiKeyAuth, SessionCookieAuth } from './auth.js';
+
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { TranscendRestClient } from './clients/rest-client.js';
@@ -19,7 +22,7 @@ export type { MCPServerOptions } from './server/create-server.js';
 export { buildMcpServer } from './server/build-server.js';
 export type { BuildMcpServerOptions } from './server/build-server.js';
 
-export { resolveApiKey, extractApiKeyFromHeaders } from './server/resolve-api-key.js';
+export { resolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';
