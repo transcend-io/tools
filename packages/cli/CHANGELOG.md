@@ -1,5 +1,41 @@
 # @transcend-io/cli
 
+## 10.2.2
+
+### Patch Changes
+
+- Updated dependencies [f252484]
+  - @transcend-io/internationalization@4.0.1
+  - @transcend-io/type-utils@3.0.1
+  - @transcend-io/privacy-types@5.1.2
+  - @transcend-io/sdk@1.0.2
+  - @transcend-io/utils@0.1.2
+
+## 10.2.1
+
+### Patch Changes
+
+- ebc2e91: Migrate `@transcend-io/internationalization` into the tools monorepo and align it with the
+  shared package conventions.
+
+  Material changes:
+  - the package is now built, tested, versioned, and released from the tools monorepo
+  - the top-level API stays compatible, but the published filesystem layout now follows the
+    monorepo's `dist/` plus `exports` structure instead of the legacy `build/` output
+  - CLI, SDK, and privacy-types now consume the package from the local workspace
+
+- 8984fb5: Migrate `@transcend-io/type-utils` into the tools monorepo as a first-party workspace package. The package now uses the monorepo's standard build, test, and export conventions while preserving the existing utility and `io-ts` helper surface for internal consumers.
+
+  Update the dependent workspace packages to consume the monorepo-managed `@transcend-io/type-utils` package instead of the previously external dependency reference.
+
+- Updated dependencies [ebc2e91]
+- Updated dependencies [8984fb5]
+  - @transcend-io/internationalization@4.0.0
+  - @transcend-io/privacy-types@5.1.1
+  - @transcend-io/sdk@1.0.1
+  - @transcend-io/type-utils@3.0.0
+  - @transcend-io/utils@0.1.1
+
 ## 10.2.0
 
 ### Minor Changes
