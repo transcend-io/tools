@@ -8,32 +8,12 @@ import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import cors from 'cors';
 import type { Request, Response } from 'express';
 
+import { requestAuthContext } from '../auth-context.js';
 import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { InMemoryEventStore } from './event-store.js';
 import type { TransportConfig } from './parse-args.js';
 import { tryResolveAuth } from './resolve-auth.js';
-
-/**
- * Return type from {@link McpHttpServerOptions.createServer}.
- *
- * When the caller can support per-request auth updates (e.g. the
- * Prometheus sidecar pattern where different users' session cookies
- * arrive on the same MCP session), return this object instead of a
- * bare {@link Server}.
- */
-export interface McpServerWithAuthUpdate {
-  server: Server;
-  /**
-   * Called before each request on an existing session with credentials
-   * resolved from the inbound HTTP headers. Implementations should
-   * update their GraphQL/REST clients' auth so the ensuing tool calls
-   * execute in the correct user context.
-   */
-  updateAuth: (auth: AuthCredentials) => void;
-}
-
-export type CreateServerResult = Server | McpServerWithAuthUpdate;
 
 export interface McpHttpServerOptions {
   /** Server display name */
@@ -47,9 +27,9 @@ export interface McpHttpServerOptions {
    * no credentials (e.g. MCPClient handshake at startup). In this case
    * the server can still serve `tools/list` but tool calls that hit the
    * backend will fail until auth is provided via per-request headers
-   * (see {@link McpServerWithAuthUpdate}).
+   * (resolved automatically via {@link requestAuthContext}).
    */
-  createServer: (auth: AuthCredentials | null) => CreateServerResult | Promise<CreateServerResult>;
+  createServer: (auth: AuthCredentials | null) => Server | Promise<Server>;
 }
 
 export interface McpHttpServer {
@@ -66,8 +46,6 @@ interface SessionEntry {
   server: Server;
   /** Timestamp of last activity */
   lastActivityAt: number;
-  /** Per-request auth updater (set when createServer returns McpServerWithAuthUpdate) */
-  updateAuth?: (auth: AuthCredentials) => void;
 }
 
 /**
@@ -76,6 +54,10 @@ interface SessionEntry {
  * Each client session gets its own {@link Server} and
  * {@link StreamableHTTPServerTransport}. Sessions are identified by the
  * `mcp-session-id` header and cleaned up after an idle TTL.
+ *
+ * Per-request auth is propagated via {@link requestAuthContext} so that
+ * concurrent requests on the same session each use their own credentials
+ * without shared mutable state.
  */
 export async function runMcpHttp(
   options: McpHttpServerOptions,
@@ -120,34 +102,21 @@ export async function runMcpHttp(
     const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
     try {
-      // Existing session — update auth from current request headers
+      // Existing session — resolve per-request auth into AsyncLocalStorage
       if (sessionId && sessions.has(sessionId)) {
         const session = sessions.get(sessionId)!;
         session.lastActivityAt = Date.now();
 
-        if (session.updateAuth) {
-          const auth = tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
-          if (auth) {
-            session.updateAuth(auth);
-          }
-        }
-
-        await session.transport.handleRequest(req, res, req.body);
+        const auth = tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
+        const handleReq = () => session.transport.handleRequest(req, res, req.body);
+        await (auth ? requestAuthContext.run(auth, handleReq) : handleReq());
         return;
       }
 
       // New initialization request — auth is optional (MCPClient handshake)
       if (!sessionId && isInitializeRequest(req.body)) {
         const auth = tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
-        const result = await options.createServer(auth);
-        const server =
-          result !== null && typeof result === 'object' && 'server' in result
-            ? result.server
-            : (result as Server);
-        const updateAuth =
-          result !== null && typeof result === 'object' && 'updateAuth' in result
-            ? result.updateAuth
-            : undefined;
+        const server = await options.createServer(auth);
 
         const eventStore = new InMemoryEventStore();
         const transport = new StreamableHTTPServerTransport({
@@ -158,7 +127,6 @@ export async function runMcpHttp(
               transport,
               server,
               lastActivityAt: Date.now(),
-              updateAuth,
             });
             logger.info(`Session initialized: ${sid}`);
           },
@@ -173,7 +141,8 @@ export async function runMcpHttp(
         };
 
         await server.connect(transport);
-        await transport.handleRequest(req, res, req.body);
+        const handleReq = () => transport.handleRequest(req, res, req.body);
+        await (auth ? requestAuthContext.run(auth, handleReq) : handleReq());
         return;
       }
 

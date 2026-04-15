@@ -2,7 +2,7 @@ import type { AddressInfo } from 'node:net';
 
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 
-import type { AuthCredentials } from '../src/auth.js';
+import { getRequestAuth, requestAuthContext } from '../src/auth-context.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
@@ -392,25 +392,37 @@ describe('HTTP Transport', () => {
   describe('auth-free initialization (sidecar pattern)', () => {
     let sidecarServer: McpHttpServer;
     let sidecarUrl: string;
-    let updateAuthSpy: ReturnType<typeof vi.fn>;
+    let capturedAuthSpy: ReturnType<typeof vi.fn>;
+
+    const authCaptureTool: ToolDefinition = {
+      name: 'capture_auth',
+      description: 'Captures the per-request auth from AsyncLocalStorage',
+      category: 'test',
+      readOnly: true,
+      annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+      zodSchema: z.object({ message: z.string() }),
+      handler: async (args: { message: string }) => {
+        const auth = getRequestAuth();
+        capturedAuthSpy(auth);
+        return { echo: args.message, hasAuth: auth !== null };
+      },
+    };
 
     beforeAll(async () => {
       delete process.env.TRANSCEND_API_KEY;
 
-      updateAuthSpy = vi.fn();
+      capturedAuthSpy = vi.fn();
 
       sidecarServer = await runMcpHttp(
         {
           name: 'sidecar-test',
           version: '0.0.1',
-          createServer: (_auth) => ({
-            server: buildMcpServer({
+          createServer: (_auth) =>
+            buildMcpServer({
               name: 'sidecar-test',
               version: '0.0.1',
-              tools: [echoTool],
+              tools: [authCaptureTool],
             }),
-            updateAuth: updateAuthSpy,
-          }),
         },
         testConfig(0),
       );
@@ -444,7 +456,7 @@ describe('HTTP Transport', () => {
       expect(res.headers.get('mcp-session-id')).toBeTruthy();
     });
 
-    it('calls updateAuth when session request carries auth headers', async () => {
+    it('propagates per-request auth via AsyncLocalStorage when headers present', async () => {
       const initRes = await fetch(`${sidecarUrl}/mcp`, {
         method: 'POST',
         headers: MCP_HEADERS,
@@ -472,7 +484,7 @@ describe('HTTP Transport', () => {
         }),
       });
 
-      updateAuthSpy.mockClear();
+      capturedAuthSpy.mockClear();
 
       await fetch(`${sidecarUrl}/mcp`, {
         method: 'POST',
@@ -485,21 +497,20 @@ describe('HTTP Transport', () => {
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'tools/call',
-          params: { name: 'echo', arguments: { message: 'per-request-auth' } },
+          params: { name: 'capture_auth', arguments: { message: 'per-request-auth' } },
           id: 2,
         }),
       });
 
-      expect(updateAuthSpy).toHaveBeenCalledOnce();
-      const calledWith: AuthCredentials = updateAuthSpy.mock.calls[0][0];
-      expect(calledWith).toEqual({
+      expect(capturedAuthSpy).toHaveBeenCalledOnce();
+      expect(capturedAuthSpy.mock.calls[0][0]).toEqual({
         type: 'sessionCookie',
         cookie: 'laravel_session=user-a-session',
         organizationId: 'org-a-uuid',
       });
     });
 
-    it('does not call updateAuth when request has no auth headers', async () => {
+    it('does not set auth context when request has no auth headers', async () => {
       const initRes = await fetch(`${sidecarUrl}/mcp`, {
         method: 'POST',
         headers: MCP_HEADERS,
@@ -509,7 +520,7 @@ describe('HTTP Transport', () => {
           params: {
             protocolVersion: '2025-11-25',
             capabilities: {},
-            clientInfo: { name: 'no-auth-update-test', version: '0.1.0' },
+            clientInfo: { name: 'no-auth-context-test', version: '0.1.0' },
           },
           id: 1,
         }),
@@ -526,20 +537,21 @@ describe('HTTP Transport', () => {
         }),
       });
 
-      updateAuthSpy.mockClear();
+      capturedAuthSpy.mockClear();
 
       await fetch(`${sidecarUrl}/mcp`, {
         method: 'POST',
         headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
         body: JSON.stringify({
           jsonrpc: '2.0',
-          method: 'tools/list',
-          params: {},
+          method: 'tools/call',
+          params: { name: 'capture_auth', arguments: { message: 'no-auth' } },
           id: 2,
         }),
       });
 
-      expect(updateAuthSpy).not.toHaveBeenCalled();
+      expect(capturedAuthSpy).toHaveBeenCalledOnce();
+      expect(capturedAuthSpy.mock.calls[0][0]).toBeNull();
     });
   });
 });

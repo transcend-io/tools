@@ -1,3 +1,4 @@
+import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
 import type { RequestOptions } from '../../types/transcend.js';
@@ -73,15 +74,6 @@ export class TranscendGraphQLBase {
     this.defaultRetries = 3;
   }
 
-  /**
-   * Replace the credentials used for subsequent requests. This enables
-   * per-request auth in HTTP transport where different users' session
-   * cookies arrive on each request to the same MCP session.
-   */
-  updateAuth(auth: AuthCredentials): void {
-    this.auth = auth;
-  }
-
   private async rateLimitWait(): Promise<void> {
     const now = Date.now();
     const elapsed = now - this.lastRequestTime;
@@ -114,7 +106,8 @@ export class TranscendGraphQLBase {
           attempt,
         });
 
-        if (!this.auth) {
+        const effectiveAuth = getRequestAuth() ?? this.auth;
+        if (!effectiveAuth) {
           throw new ToolError(
             ErrorCode.AUTH_ERROR,
             'No authentication configured. Provide an API key or session cookie.',
@@ -125,7 +118,7 @@ export class TranscendGraphQLBase {
         const response = await fetch(url, {
           method: 'POST',
           headers: {
-            ...authHeaders(this.auth),
+            ...authHeaders(effectiveAuth),
             'Content-Type': 'application/json',
             Accept: 'application/json',
           },

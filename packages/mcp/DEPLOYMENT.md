@@ -72,7 +72,7 @@ Both cookie-based and API key-based auth support multi-tenancy. Each client sess
 
 ### Sidecar pattern (auth-free init + per-request auth)
 
-When the MCP server runs as a sidecar alongside Prometheus (Mastra), the server starts without any credentials — no `TRANSCEND_API_KEY` is needed. The MCPClient connects at startup to retrieve the tool catalog (auth-free initialization), and each subsequent `tools/call` request carries the calling user's session cookie and organization ID injected by Mastra's `buildMcpFetch`. The HTTP transport resolves auth from these per-request headers and calls `updateAuth()` on the session's GraphQL/REST clients before the tool handler executes.
+When the MCP server runs as a sidecar alongside Prometheus (Mastra), the server starts without any credentials — no `TRANSCEND_API_KEY` is needed. The MCPClient connects at startup to retrieve the tool catalog (auth-free initialization), and each subsequent `tools/call` request carries the calling user's session cookie and organization ID injected by Mastra's `buildMcpFetch`. The HTTP transport resolves auth from these per-request headers and stores them in `AsyncLocalStorage` so that the downstream GraphQL/REST clients automatically use the correct credentials for that request.
 
 ```
 Dashboard → Backend BFF → Prometheus (Mastra) → MCP Server (sidecar)
@@ -82,9 +82,7 @@ Dashboard → Backend BFF → Prometheus (Mastra) → MCP Server (sidecar)
                                     on each tools/call request
 ```
 
-The `createServer` callback returns `{ server, updateAuth }` (a `McpServerWithAuthUpdate`), enabling the transport to propagate credentials on every request.
-
-> **Concurrency note:** `updateAuth()` mutates the session's shared clients. If concurrent requests on the same MCP session carry different users' credentials, they will race. For true per-user isolation, use separate MCP sessions or ensure the upstream orchestrator serializes tool calls per session.
+Per-request auth is propagated via Node.js `AsyncLocalStorage` (`requestAuthContext`), so each inbound request carries its own isolated credentials through the entire async call chain. Concurrent requests on the same MCP session with different users' cookies are safe — no shared mutable auth state exists.
 
 ## Endpoints
 

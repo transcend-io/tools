@@ -1,3 +1,4 @@
+import { getRequestAuth } from '../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../auth.js';
 import type {
   DSRSubmission,
@@ -38,15 +39,6 @@ export class TranscendRestClient {
     this.defaultRetries = 3;
   }
 
-  /**
-   * Replace the credentials used for subsequent requests. This enables
-   * per-request auth in HTTP transport where different users' session
-   * cookies arrive on each request to the same MCP session.
-   */
-  updateAuth(auth: AuthCredentials): void {
-    this.auth = auth;
-  }
-
   private async rateLimitWait(): Promise<void> {
     const now = Date.now();
     const elapsed = now - this.lastRequestTime;
@@ -60,7 +52,8 @@ export class TranscendRestClient {
     endpoint: string,
     options: RequestInit & RequestOptions = {},
   ): Promise<T> {
-    if (!this.auth) {
+    const effectiveAuth = getRequestAuth() ?? this.auth;
+    if (!effectiveAuth) {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
 
@@ -74,7 +67,7 @@ export class TranscendRestClient {
     } = options;
 
     const headers: Record<string, string> = {
-      ...authHeaders(this.auth),
+      ...authHeaders(effectiveAuth),
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-Transcend-Version': '2021-11-15',
@@ -193,13 +186,14 @@ export class TranscendRestClient {
   }
 
   async downloadDSRFiles(downloadKey: string): Promise<ArrayBuffer> {
-    if (!this.auth) {
+    const effectiveAuth = getRequestAuth() ?? this.auth;
+    if (!effectiveAuth) {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
     const url = `${this.baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
     const response = await fetch(url, {
       headers: {
-        ...authHeaders(this.auth),
+        ...authHeaders(effectiveAuth),
         Accept: 'application/octet-stream',
       },
     });

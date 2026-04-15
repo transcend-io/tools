@@ -66,15 +66,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
           });
           const clients = await buildClients(auth, sombraUrl, graphqlUrl, options.createClients);
           const tools = options.getTools(clients);
-          const server = buildMcpServer({ name: options.name, version: options.version, tools });
-
-          return {
-            server,
-            updateAuth: (newAuth: AuthCredentials) => {
-              clients.graphql.updateAuth(newAuth);
-              clients.rest.updateAuth(newAuth);
-            },
-          };
+          return buildMcpServer({ name: options.name, version: options.version, tools });
         },
       },
       config,

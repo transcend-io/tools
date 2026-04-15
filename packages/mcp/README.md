@@ -87,7 +87,7 @@ For the Transcend dashboard's internal MCP integration, the server accepts sessi
 
 When both cookie and API key headers are present, the session cookie takes priority.
 
-**Sidecar pattern (Prometheus):** The MCP server supports auth-free initialization for use as a sidecar process. In this mode, the server starts without any credentials, allowing the MCPClient to connect and list tools at startup. Per-request auth headers (Cookie + org ID) are then resolved from each subsequent `tools/call` request and applied to the session's clients via `updateAuth()`. This enables multi-tenant auth where different users' sessions flow through a single MCP connection.
+**Sidecar pattern (Prometheus):** The MCP server supports auth-free initialization for use as a sidecar process. In this mode, the server starts without any credentials, allowing the MCPClient to connect and list tools at startup. Per-request auth headers (Cookie + org ID) are then resolved from each subsequent `tools/call` request and propagated through `AsyncLocalStorage` so that concurrent requests from different users never share credentials.
 
 ## Packages
 

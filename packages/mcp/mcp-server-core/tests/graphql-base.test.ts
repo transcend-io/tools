@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+import { requestAuthContext } from '../src/auth-context.js';
 import type { AuthCredentials } from '../src/auth.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import { ToolError, ErrorCode } from '../src/errors.js';
@@ -455,8 +456,26 @@ describe('TranscendGraphQLBase', () => {
     });
   });
 
-  describe('updateAuth', () => {
-    it('switches from null to API key auth', async () => {
+  describe('requestAuthContext (per-request auth)', () => {
+    it('overrides constructor auth when context is active', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      await requestAuthContext.run(SESSION_COOKIE_AUTH, async () => {
+        await client.query('query { __typename }');
+      });
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Cookie).toBe('laravel_session=abc123');
+      expect(calledHeaders['x-transcend-active-organization-id']).toBe('org-uuid-456');
+      expect(calledHeaders).not.toHaveProperty('Authorization');
+    });
+
+    it('provides auth for null-auth client (sidecar pattern)', async () => {
       const mockFetch = createMockFetchResponse({
         data: { __typename: 'Query' },
       });
@@ -466,27 +485,25 @@ describe('TranscendGraphQLBase', () => {
 
       await expect(client.query('query { __typename }')).rejects.toThrow();
 
-      client.updateAuth(API_KEY_AUTH);
-      await client.query('query { __typename }');
+      await requestAuthContext.run(API_KEY_AUTH, async () => {
+        await client.query('query { __typename }');
+      });
 
       const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
       expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
     });
 
-    it('switches from API key to session cookie auth', async () => {
+    it('falls back to constructor auth when no context is active', async () => {
       const mockFetch = createMockFetchResponse({
         data: { __typename: 'Query' },
       });
       vi.stubGlobal('fetch', mockFetch);
 
       const client = new TestGraphQLClient(API_KEY_AUTH);
-      client.updateAuth(SESSION_COOKIE_AUTH);
       await client.query('query { __typename }');
 
       const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
-      expect(calledHeaders.Cookie).toBe('laravel_session=abc123');
-      expect(calledHeaders['x-transcend-active-organization-id']).toBe('org-uuid-456');
-      expect(calledHeaders).not.toHaveProperty('Authorization');
+      expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
     });
   });
 });
