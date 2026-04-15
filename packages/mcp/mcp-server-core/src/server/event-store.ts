@@ -16,9 +16,10 @@ export type { EventStore, StreamId, EventId };
  */
 export class InMemoryEventStore implements EventStore {
   private events = new Map<EventId, { streamId: StreamId; message: JSONRPCMessage }>();
+  private seq = 0;
 
   async storeEvent(streamId: StreamId, message: JSONRPCMessage): Promise<EventId> {
-    const eventId = `${streamId}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const eventId = `${streamId}_${String(this.seq++).padStart(10, '0')}`;
     this.events.set(eventId, { streamId, message });
     return eventId;
   }
