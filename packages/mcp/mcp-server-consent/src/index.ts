@@ -1,13 +1,6 @@
 export { getConsentTools } from './tools/index.js';
 export { resolveAirgapBundleId } from './resolveAirgapBundleId.js';
 
-export { GetPreferencesSchema, type GetPreferencesInput } from './tools/consent_get_preferences.js';
-export {
-  PurposeConsentSchema,
-  type PurposeConsentInput,
-  SetPreferencesSchema,
-  type SetPreferencesInput,
-} from './tools/consent_set_preferences.js';
 export {
   ListAirgapBundlesSchema,
   type ListAirgapBundlesInput,

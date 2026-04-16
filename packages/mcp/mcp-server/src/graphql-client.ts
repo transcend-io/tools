@@ -35,9 +35,6 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   // DSR
   declare listRequests: InstanceType<typeof DSRMixin>['listRequests'];
   declare getRequest: InstanceType<typeof DSRMixin>['getRequest'];
-  declare employeeMakeDataSubjectRequest: InstanceType<
-    typeof DSRMixin
-  >['employeeMakeDataSubjectRequest'];
   declare cancelRequest: InstanceType<typeof DSRMixin>['cancelRequest'];
 
   // Inventory

@@ -2,11 +2,7 @@ import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-sc
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
-import {
-  createErrorResult,
-  type ToolDefinition,
-  type TranscendRestClient,
-} from '@transcend-io/mcp-server-core';
+import { createErrorResult, type ToolDefinition } from '@transcend-io/mcp-server-core';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
@@ -16,8 +12,6 @@ import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import type { TranscendGraphQLClient } from './graphql-client.js';
 
 export interface UmbrellaToolClients {
-  /** REST client for Sombra API */
-  rest: TranscendRestClient;
   /** Composed GraphQL client with all domain mixins */
   graphql: TranscendGraphQLClient;
 }

@@ -3,7 +3,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { SimpleLogger, TranscendRestClient } from '@transcend-io/mcp-server-core';
+import { SimpleLogger } from '@transcend-io/mcp-server-core';
 
 import { TranscendGraphQLClient } from './graphql-client.js';
 import { ToolRegistry } from './registry.js';
@@ -13,7 +13,6 @@ const VERSION = '3.0.2';
 const logger = new SimpleLogger();
 
 const apiKey = process.env.TRANSCEND_API_KEY;
-const sombraUrl = process.env.TRANSCEND_API_URL || 'https://multi-tenant.sombra.transcend.io';
 const graphqlUrl = process.env.TRANSCEND_GRAPHQL_URL || 'https://api.transcend.io';
 
 if (!apiKey) {
@@ -21,13 +20,11 @@ if (!apiKey) {
   process.exit(1);
 }
 
-logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl });
+logger.info('Initializing Transcend API clients...', { graphqlUrl });
 
-const restClient = new TranscendRestClient(apiKey, sombraUrl);
 const graphqlClient = new TranscendGraphQLClient(apiKey, graphqlUrl);
 
 const toolRegistry = new ToolRegistry({
-  rest: restClient,
   graphql: graphqlClient,
 });
 
@@ -95,7 +92,6 @@ async function main(): Promise<void> {
   await server.connect(transport);
 
   logger.info('Transcend MCP Server started successfully', {
-    sombraUrl,
     graphqlUrl,
     tools: toolRegistry.getToolCount(),
   });

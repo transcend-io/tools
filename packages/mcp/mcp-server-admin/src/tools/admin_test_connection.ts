@@ -8,30 +8,24 @@ import {
 import type { AdminMixin } from '../graphql.js';
 
 export function createAdminTestConnectionTool(clients: ToolClients) {
-  const { rest } = clients;
   const graphql = clients.graphql as AdminMixin;
   return defineTool({
     name: 'admin_test_connection',
-    description: 'Test connectivity to both Transcend REST and GraphQL APIs',
+    description: 'Test connectivity to the Transcend GraphQL API',
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
     handler: async (_args) => {
-      const [graphqlConnected, restConnected] = await Promise.all([
-        graphql.testConnection(),
-        rest.testConnection(),
-      ]);
-      const allConnected = graphqlConnected && restConnected;
+      const connected = await graphql.testConnection();
       return createToolResult(true, {
-        connected: allConnected,
+        connected,
         details: {
-          graphql: { connected: graphqlConnected, url: graphql.getBaseUrl() },
-          rest: { connected: restConnected, url: rest.getBaseUrl() },
+          graphql: { connected, url: graphql.getBaseUrl() },
         },
-        message: allConnected
-          ? 'Successfully connected to all Transcend APIs'
-          : 'Some API connections failed - check details',
+        message: connected
+          ? 'Successfully connected to Transcend GraphQL API'
+          : 'GraphQL API connection failed - check details',
         timestamp: new Date().toISOString(),
       });
     },
