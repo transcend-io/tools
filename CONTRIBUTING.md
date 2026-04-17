@@ -248,12 +248,35 @@ packages/mcp/
 
 Each domain package provides a standalone CLI and can be installed independently. The unified `mcp-server` package composes all domains via `ToolRegistry`.
 
-### Working on a Single MCP Package
+### Local credentials (`secret.env`)
 
-Use `pnpm --filter` the same way as any other package:
+MCP servers read `TRANSCEND_API_KEY` (and optional URL overrides) from the environment. For local runs from this repository, use root **`secret.env`** (gitignored):
 
 ```bash
-pnpm -F @transcend-io/mcp-server-consent build
+cp secret.env.example secret.env
+# Edit secret.env — set at least TRANSCEND_API_KEY
+```
+
+Load variables into your shell before `pnpm` (from the repository root):
+
+```bash
+set -a && source ./secret.env && set +a
+```
+
+Or run a built CLI via [`scripts/mcp-run.sh`](./scripts/mcp-run.sh), which sources `secret.env` when the file exists:
+
+```bash
+./scripts/mcp-run.sh ./packages/mcp/mcp-server-consent/dist/cli.mjs
+```
+
+Use the path to the `dist/cli.mjs` for the server you built. See each package README under `packages/mcp/` for Turbo `build` filters.
+
+### Working on a Single MCP Package
+
+Use `pnpm --filter` the same way as any other package. For `build`, prefer a Turbo filter with a trailing `...` so `mcp-server-core` and other dependencies are built when needed:
+
+```bash
+pnpm exec turbo run build --filter="@transcend-io/mcp-server-consent..."
 pnpm -F @transcend-io/mcp-server-consent test
 pnpm -F @transcend-io/mcp-server-consent typecheck
 ```
@@ -271,6 +294,8 @@ Optional overrides:
 
 - `TRANSCEND_API_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`)
 - `TRANSCEND_GRAPHQL_URL` — GraphQL API base URL (default: `https://api.transcend.io`)
+
+For local development, define these in **`secret.env`** (copy from `secret.env.example` at the repository root). Do not commit `secret.env`.
 
 HTTP transport variables (only used with `--transport http`):
 

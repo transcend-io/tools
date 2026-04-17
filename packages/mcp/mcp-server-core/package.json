@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Shared infrastructure for Transcend MCP Server packages.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-core",
   "license": "Apache-2.0",

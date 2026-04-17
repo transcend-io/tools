@@ -1,5 +1,99 @@
 # @transcend-io/cli
 
+## 10.2.2
+
+### Patch Changes
+
+- Updated dependencies [f252484]
+  - @transcend-io/internationalization@4.0.1
+  - @transcend-io/type-utils@3.0.1
+  - @transcend-io/privacy-types@5.1.2
+  - @transcend-io/sdk@1.0.2
+  - @transcend-io/utils@0.1.2
+
+## 10.2.1
+
+### Patch Changes
+
+- ebc2e91: Migrate `@transcend-io/internationalization` into the tools monorepo and align it with the
+  shared package conventions.
+
+  Material changes:
+  - the package is now built, tested, versioned, and released from the tools monorepo
+  - the top-level API stays compatible, but the published filesystem layout now follows the
+    monorepo's `dist/` plus `exports` structure instead of the legacy `build/` output
+  - CLI, SDK, and privacy-types now consume the package from the local workspace
+
+- 8984fb5: Migrate `@transcend-io/type-utils` into the tools monorepo as a first-party workspace package. The package now uses the monorepo's standard build, test, and export conventions while preserving the existing utility and `io-ts` helper surface for internal consumers.
+
+  Update the dependent workspace packages to consume the monorepo-managed `@transcend-io/type-utils` package instead of the previously external dependency reference.
+
+- Updated dependencies [ebc2e91]
+- Updated dependencies [8984fb5]
+  - @transcend-io/internationalization@4.0.0
+  - @transcend-io/privacy-types@5.1.1
+  - @transcend-io/sdk@1.0.1
+  - @transcend-io/type-utils@3.0.0
+  - @transcend-io/utils@0.1.1
+
+## 10.2.0
+
+### Minor Changes
+
+- f7a5c54: Move enricher functions from CLI to SDK + standardize function signatures
+  - Add `dsr-automation/` module to SDK: `fetchAllRequestEnrichers`, `retryRequestEnricher`, `fetchAllEnrichers`, `syncEnricher`
+  - Migrate GQL definitions: `ENRICHERS`, `CREATE_ENRICHER`, `UPDATE_ENRICHER`, `INITIALIZER`, `REQUEST_ENRICHERS`, `RETRY_REQUEST_ENRICHER`, `SKIP_REQUEST_ENRICHER`
+  - **BREAKING**: Standardize all new SDK function signatures to the `(client, options)` convention
+    - `fetchAllRequestEnrichers`: `(client, filterOptions, opts)` → `(client, { filterBy, logger? })`
+    - `fetchAllEnrichers`: `(client, { title?, logger })` → `(client, { filterBy?: { title? }, logger? })`
+    - `retryRequestEnricher`: `(client, id, opts)` → `(client, { id, logger? })`
+    - `syncEnricher`: `(client, syncOptions, opts)` → `(client, { input, identifierByName, dataSubjectsByName, logger? })`
+  - Make `logger` optional across every SDK function; default to `NOOP_LOGGER`
+  - All CLI imports updated to use `@transcend-io/sdk` directly
+
+- 00b9d23: Move identifier & data subject functions from CLI to SDK + standardize signatures
+  - Add `dsr-automation/` module to SDK: `fetchAllRequestIdentifiers`, `fetchAllRequestIdentifierMetadata`, `fetchDataSubjects`, `syncDataSubject`, `fetchIdentifiers`, `syncIdentifier`
+  - **Standardize all new SDK function signatures** to the `(client, options)` convention
+  - Make `logger` optional across every new SDK function; use `NOOP_LOGGER` default
+  - Filters nested under `filterBy`; create/update data nested under `input`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 896364c: Standardize SDK function signatures to follow `(client, options)` convention
+
+  BREAKING CHANGES:
+  - `fetchRequestDataSilosCount`, `fetchRequestDataSilos`, `fetchRequestDataSilo`: collapse separate filter + options params into single `options: { logger, filterBy? }`
+  - `fetchRequestFilesForRequest`: collapse 4 positional params into `(client, options: { logger, pageSize?, filterBy })`
+  - `fetchAllCookies`, `fetchAllDataFlows`: move `status` param into `options.filterBy.status`
+  - `updateDataFlows`, `createDataFlows`, `syncDataFlows`: move `classifyService` boolean into options object
+  - `loginUser`, `assumeRole`: separate logger from domain data into `(client, credentials, { logger })`
+  - `fetchAllTemplates`: move `title` filter into `options.filterBy.title`
+  - `fetchPromptsWithVariables`: move `promptTitles`/`promptIds` into `options.filterBy.titles`/`options.filterBy.ids`
+  - `fetchAllApiKeys`: move `titles` filter into `options.filterBy.titles`
+  - `fetchApiKeys`: move `client` to first param, collapse `apiKeyInputs`/`fetchAll` into options
+
+### Patch Changes
+
+- a15fed8: Bump `@transcend-io/internationalization` from ^2.3.2 to ^3.0.0.
+- 6f2a059: feat(sdk): move data silo & datapoint GraphQL helpers to SDK
+  - Move `fetchAllDataSilos`, `fetchAllDataPoints`, `fetchAllSubDataPoints`, `fetchEnrichedDataSilos` from CLI to SDK `data-inventory/` module
+  - Move `syncDataSiloDependencies` from CLI to SDK `data-inventory/` module
+  - Move data silo and datapoint GQL queries (`DATA_SILOS`, `DATA_SILO_EXPORT`, `DATA_SILOS_ENRICHED`, `CREATE_DATA_SILOS`, `UPDATE_DATA_SILOS`, `DATA_POINTS`, `DATA_POINT_COUNT`, `SUB_DATA_POINTS`, `SUB_DATA_POINTS_COUNT`, `SUB_DATA_POINTS_WITH_GUESSES`, `UPDATE_OR_CREATE_DATA_POINT`, `DATAPOINT_EXPORT`) from CLI to SDK
+  - Move types (`DataSilo`, `DataSiloEnriched`, `DataSiloAttributeValue`, `SubDataPoint`, `DataPoint`, `DataPointWithSubDataPoint`) to SDK
+  - Standardize all new SDK function signatures to `(client, options)` convention with optional `logger`
+  - Delete `cli/src/lib/graphql/gqls/dataSilo.ts` and `cli/src/lib/graphql/gqls/dataPoint.ts`
+  - CLI re-exports moved symbols from `@transcend-io/sdk` for backward compatibility
+
+- Updated dependencies [a15fed8]
+- Updated dependencies [8185679]
+- Updated dependencies [d3f8140]
+- Updated dependencies [29868af]
+- Updated dependencies [6f2a059]
+- Updated dependencies [f7a5c54]
+- Updated dependencies [00b9d23]
+- Updated dependencies [896364c]
+  - @transcend-io/sdk@1.0.0
+  - @transcend-io/privacy-types@5.1.0
+
 ## 10.1.0
 
 ### Minor Changes

@@ -1,24 +1,25 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
-import { ConsentTrackerStatus, OrderDirection } from '@transcend-io/privacy-types';
+import {
+  ConsentTrackerStatus,
+  CookieOrderField,
+  OrderDirection,
+} from '@transcend-io/privacy-types';
 import { COOKIES, type TranscendCliCookiesResponse } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-const ConsentTrackerStatusEnum = z.nativeEnum(ConsentTrackerStatus);
-const OrderDirectionEnum = z.nativeEnum(OrderDirection);
-
 export const ListCookiesSchema = z.object({
   limit: z.number().min(1).max(200).optional().default(50),
   offset: z.number().min(0).optional().default(0),
-  status: ConsentTrackerStatusEnum.describe(
-    'Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)',
-  ),
+  status: z
+    .nativeEnum(ConsentTrackerStatus)
+    .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),
   is_junk: z.boolean().optional().describe('Filter by junk status'),
   show_zero_activity: z.boolean().optional().describe('Include items with zero activity'),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
-  order_field: z.string().optional().describe('Field to sort by: name, createdAt, updatedAt'),
-  order_direction: OrderDirectionEnum.optional().describe('Sort direction: ASC or DESC'),
+  order_field: z.nativeEnum(CookieOrderField).optional().describe('Field to sort by'),
+  order_direction: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
 });
 export type ListCookiesInput = z.infer<typeof ListCookiesSchema>;
 
@@ -60,9 +61,10 @@ export function createConsentListCookiesTool(clients: ToolClients) {
           ? { orderBy: [{ field: order_field, direction: order_direction }] }
           : {}),
       });
-      return createListResult(data.cookies.nodes, {
-        totalCount: data.cookies.totalCount,
-        hasNextPage: data.cookies.pageInfo.hasNextPage,
+      const { nodes, totalCount } = data.cookies;
+      return createListResult(nodes, {
+        totalCount,
+        hasNextPage: offset + nodes.length < totalCount,
       });
     },
   });
