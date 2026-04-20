@@ -1,3 +1,5 @@
+import { getRequestAuth } from '../auth-context.js';
+import { type AuthCredentials, authHeaders } from '../auth.js';
 import type {
   DSRSubmission,
   DSRResponse,
@@ -17,7 +19,7 @@ import type {
 import { SimpleLogger, type Logger } from './graphql/base.js';
 
 export class TranscendRestClient {
-  private apiKey: string;
+  private auth: AuthCredentials | null;
   private baseUrl: string;
   private logger: Logger;
   private defaultTimeout: number;
@@ -26,11 +28,11 @@ export class TranscendRestClient {
   private minRequestInterval: number = 200;
 
   constructor(
-    apiKey: string,
+    auth: AuthCredentials | null,
     baseUrl: string = 'https://multi-tenant.sombra.transcend.io',
     logger?: Logger,
   ) {
-    this.apiKey = apiKey;
+    this.auth = auth;
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.logger = logger || new SimpleLogger();
     this.defaultTimeout = 30000;
@@ -50,6 +52,11 @@ export class TranscendRestClient {
     endpoint: string,
     options: RequestInit & RequestOptions = {},
   ): Promise<T> {
+    const effectiveAuth = getRequestAuth() ?? this.auth;
+    if (!effectiveAuth) {
+      throw new Error('No authentication configured. Provide an API key or session cookie.');
+    }
+
     await this.rateLimitWait();
 
     const url = `${this.baseUrl}${endpoint}`;
@@ -60,7 +67,7 @@ export class TranscendRestClient {
     } = options;
 
     const headers: Record<string, string> = {
-      Authorization: `Bearer ${this.apiKey}`,
+      ...authHeaders(effectiveAuth),
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-Transcend-Version': '2021-11-15',
@@ -179,10 +186,14 @@ export class TranscendRestClient {
   }
 
   async downloadDSRFiles(downloadKey: string): Promise<ArrayBuffer> {
+    const effectiveAuth = getRequestAuth() ?? this.auth;
+    if (!effectiveAuth) {
+      throw new Error('No authentication configured. Provide an API key or session cookie.');
+    }
     const url = `${this.baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${this.apiKey}`,
+        ...authHeaders(effectiveAuth),
         Accept: 'application/octet-stream',
       },
     });

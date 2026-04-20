@@ -281,11 +281,14 @@ pnpm -F @transcend-io/mcp-server-consent test
 pnpm -F @transcend-io/mcp-server-consent typecheck
 ```
 
-### Environment Variables
+### Environment Variables & Authentication
 
-All MCP servers require:
+MCP servers support two authentication modes:
 
-- `TRANSCEND_API_KEY` — your Transcend API key
+- **API key** — set `TRANSCEND_API_KEY` env var (required for stdio; optional for HTTP if using session cookie or per-request API key headers)
+- **Session cookie** — in HTTP mode, forward `Cookie` and `x-transcend-active-organization-id` headers for in-app dashboard auth
+
+The `AuthCredentials` discriminated union (`'apiKey' | 'sessionCookie'`) is the internal representation. See `mcp-server-core/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
 
 Optional overrides:
 
@@ -293,6 +296,30 @@ Optional overrides:
 - `TRANSCEND_GRAPHQL_URL` — GraphQL API base URL (default: `https://api.transcend.io`)
 
 For local development, define these in **`secret.env`** (copy from `secret.env.example` at the repository root). Do not commit `secret.env`.
+
+HTTP transport variables (only used with `--transport http`):
+
+- `TRANSCEND_HTTP_PORT` — listen port (default: `3000`)
+- `TRANSCEND_HTTP_HOST` — listen host (default: `127.0.0.1`)
+- `TRANSCEND_MCP_CORS_ORIGINS` — comma-separated allowed CORS origins
+- `TRANSCEND_MCP_SESSION_TTL_MS` — idle session timeout in milliseconds (default: `1800000`)
+
+### Running in HTTP mode locally
+
+```bash
+TRANSCEND_API_KEY=your-key pnpm -F @transcend-io/mcp-server-consent dev -- --transport http --port 3001
+```
+
+The server listens at `http://127.0.0.1:3001/mcp` with a health check at `/health`. You can send JSON-RPC requests with `curl`:
+
+```bash
+# Initialize a session
+curl -X POST http://127.0.0.1:3001/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"0.1"}},"id":1}'
+```
+
+For production deployment patterns (Docker, nginx, cloud), see [`packages/mcp/DEPLOYMENT.md`](./packages/mcp/DEPLOYMENT.md).
 
 ### Adding a Tool
 

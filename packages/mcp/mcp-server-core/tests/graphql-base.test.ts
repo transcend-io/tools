@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+import { requestAuthContext } from '../src/auth-context.js';
+import type { AuthCredentials } from '../src/auth.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import { ToolError, ErrorCode } from '../src/errors.js';
 
@@ -50,6 +52,12 @@ function createMockFetchResponse<T>(
 
 describe('TranscendGraphQLBase', () => {
   const API_KEY = 'test-api-key-12345';
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: API_KEY };
+  const SESSION_COOKIE_AUTH: AuthCredentials = {
+    type: 'sessionCookie',
+    cookie: 'laravel_session=abc123',
+    organizationId: 'org-uuid-456',
+  };
 
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -57,29 +65,29 @@ describe('TranscendGraphQLBase', () => {
 
   describe('constructor', () => {
     it('sets defaults correctly: baseUrl, strips trailing slash', () => {
-      const client = new TestGraphQLClient(API_KEY, 'https://custom.api.com/');
+      const client = new TestGraphQLClient(API_KEY_AUTH, 'https://custom.api.com/');
       expect(client.getBaseUrl()).toBe('https://custom.api.com');
     });
 
     it('uses default baseUrl when not provided', () => {
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       expect(client.getBaseUrl()).toBe('https://api.transcend.io');
     });
 
     it('preserves baseUrl without trailing slash', () => {
-      const client = new TestGraphQLClient(API_KEY, 'https://api.example.com');
+      const client = new TestGraphQLClient(API_KEY_AUTH, 'https://api.example.com');
       expect(client.getBaseUrl()).toBe('https://api.example.com');
     });
   });
 
   describe('makeRequest - headers', () => {
-    it('sends correct headers: Authorization, Content-Type, Accept', async () => {
+    it('sends Authorization header with API key auth', async () => {
       const mockFetch = createMockFetchResponse({
         data: { __typename: 'Query' },
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       await client.query('query { __typename }');
 
       expect(fetch).toHaveBeenCalledWith(
@@ -93,6 +101,42 @@ describe('TranscendGraphQLBase', () => {
           }),
         }),
       );
+    });
+
+    it('sends Cookie and org ID headers with session cookie auth', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(SESSION_COOKIE_AUTH);
+      await client.query('query { __typename }');
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Cookie: 'laravel_session=abc123',
+            'x-transcend-active-organization-id': 'org-uuid-456',
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          }),
+        }),
+      );
+    });
+
+    it('does not send Authorization header with session cookie auth', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(SESSION_COOKIE_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders).not.toHaveProperty('Authorization');
     });
   });
 
@@ -130,7 +174,7 @@ describe('TranscendGraphQLBase', () => {
 
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       const promise = client.query('query { __typename }');
 
       await vi.advanceTimersByTimeAsync(3500);
@@ -158,7 +202,7 @@ describe('TranscendGraphQLBase', () => {
 
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       const promise = client.query('query { __typename }');
 
       const rejectionPromise = expect(promise).rejects.toThrow(/Server error \(500\)/);
@@ -197,7 +241,7 @@ describe('TranscendGraphQLBase', () => {
 
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       const promise = client.query('query { __typename }');
 
       await vi.advanceTimersByTimeAsync(1500);
@@ -225,7 +269,7 @@ describe('TranscendGraphQLBase', () => {
 
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
 
       await expect(client.query('query { __typename }')).rejects.toThrow(/error/i);
       expect(fetch).toHaveBeenCalledTimes(1);
@@ -242,7 +286,7 @@ describe('TranscendGraphQLBase', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       try {
         await client.query('query { __typename }');
         expect.fail('Should have thrown');
@@ -264,7 +308,7 @@ describe('TranscendGraphQLBase', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       const promise = client.query('query { __typename }');
 
       const rejection = expect(promise).rejects.toBeInstanceOf(ToolError);
@@ -297,7 +341,7 @@ describe('TranscendGraphQLBase', () => {
 
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
 
       await expect(client.query('query { __typename }')).rejects.toThrow(
         /GraphQL errors: Unauthorized; Invalid query/,
@@ -316,7 +360,7 @@ describe('TranscendGraphQLBase', () => {
 
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
 
       await expect(client.query('query { __typename }')).rejects.toThrow(
         /GraphQL response missing data/,
@@ -331,7 +375,7 @@ describe('TranscendGraphQLBase', () => {
 
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
 
       await expect(client.query('query { __typename }')).rejects.toThrow(
         /GraphQL request timeout after 30000ms/,
@@ -346,7 +390,7 @@ describe('TranscendGraphQLBase', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
 
       const start = Date.now();
       await client.query('query { __typename }');
@@ -365,7 +409,7 @@ describe('TranscendGraphQLBase', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       const variables = { input: { title: 'Test', scopes: ['READ'] } };
       const result = await client.query(
         'mutation Test($input: TestInput!) { test(input: $input) { id } }',
@@ -387,7 +431,7 @@ describe('TranscendGraphQLBase', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const client = new TestGraphQLClient(API_KEY);
+      const client = new TestGraphQLClient(API_KEY_AUTH);
       await client.query('query { __typename }');
 
       expect(fetch).toHaveBeenCalledWith(
@@ -396,6 +440,70 @@ describe('TranscendGraphQLBase', () => {
           body: expect.stringContaining('__typename'),
         }),
       );
+    });
+  });
+
+  describe('null auth (sidecar pattern)', () => {
+    it('constructs without error when auth is null', () => {
+      expect(() => new TestGraphQLClient(null)).not.toThrow();
+    });
+
+    it('throws AUTH_ERROR on makeRequest when auth is null', async () => {
+      const client = new TestGraphQLClient(null);
+      await expect(client.query('query { __typename }')).rejects.toThrow(
+        /No authentication configured/,
+      );
+    });
+  });
+
+  describe('requestAuthContext (per-request auth)', () => {
+    it('overrides constructor auth when context is active', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      await requestAuthContext.run(SESSION_COOKIE_AUTH, async () => {
+        await client.query('query { __typename }');
+      });
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Cookie).toBe('laravel_session=abc123');
+      expect(calledHeaders['x-transcend-active-organization-id']).toBe('org-uuid-456');
+      expect(calledHeaders).not.toHaveProperty('Authorization');
+    });
+
+    it('provides auth for null-auth client (sidecar pattern)', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(null);
+
+      await expect(client.query('query { __typename }')).rejects.toThrow();
+
+      await requestAuthContext.run(API_KEY_AUTH, async () => {
+        await client.query('query { __typename }');
+      });
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
+    });
+
+    it('falls back to constructor auth when no context is active', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
     });
   });
 });

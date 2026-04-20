@@ -8,8 +8,8 @@ createMCPServer({
   name: 'transcend-mcp-discovery',
   version: '1.0.0',
   getTools: getDiscoveryTools,
-  createClients: (apiKey, sombraUrl, graphqlUrl) => ({
-    rest: new TranscendRestClient(apiKey, sombraUrl),
-    graphql: new DiscoveryMixin(apiKey, graphqlUrl),
+  createClients: (auth, sombraUrl, graphqlUrl) => ({
+    rest: new TranscendRestClient(auth, sombraUrl),
+    graphql: new DiscoveryMixin(auth, graphqlUrl),
   }),
 });

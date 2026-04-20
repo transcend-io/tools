@@ -1,3 +1,8 @@
+export { authHeaders } from './auth.js';
+export type { AuthCredentials, ApiKeyAuth, SessionCookieAuth } from './auth.js';
+
+export { requestAuthContext, getRequestAuth } from './auth-context.js';
+
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { TranscendRestClient } from './clients/rest-client.js';
@@ -15,5 +20,19 @@ export { createToolResult, createErrorResult, createListResult, groupBy } from '
 
 export { createMCPServer } from './server/create-server.js';
 export type { MCPServerOptions } from './server/create-server.js';
+
+export { buildMcpServer } from './server/build-server.js';
+export type { BuildMcpServerOptions } from './server/build-server.js';
+
+export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
+
+export { parseTransportArgs } from './server/parse-args.js';
+export type { TransportConfig } from './server/parse-args.js';
+
+export { runMcpHttp } from './server/run-http.js';
+export type { McpHttpServerOptions, McpHttpServer } from './server/run-http.js';
+
+export { InMemoryEventStore } from './server/event-store.js';
+export type { EventStore, StreamId, EventId } from './server/event-store.js';
 
 export type * from './types/transcend.js';

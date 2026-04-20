@@ -8,8 +8,8 @@ createMCPServer({
   name: 'transcend-mcp-inventory',
   version: '1.0.0',
   getTools: getInventoryTools,
-  createClients: (apiKey, sombraUrl, graphqlUrl) => ({
-    rest: new TranscendRestClient(apiKey, sombraUrl),
-    graphql: new InventoryMixin(apiKey, graphqlUrl),
+  createClients: (auth, sombraUrl, graphqlUrl) => ({
+    rest: new TranscendRestClient(auth, sombraUrl),
+    graphql: new InventoryMixin(auth, graphqlUrl),
   }),
 });

@@ -5,7 +5,8 @@ packages:
 catalog:
   '@arethetypeswrong/cli': ^0.18.2
   '@changesets/cli': ^2.30.0
-  '@modelcontextprotocol/sdk': ^1.0.0
+  '@modelcontextprotocol/sdk': ^1.29.0
+  '@transcend-io/internationalization': ^2.3.2
   '@types/json-schema': ^7.0.15
   '@types/node': ^22.19.15
   '@types/semver': ^7.7.1

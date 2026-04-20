@@ -16,9 +16,16 @@ API keys for running a domain or unified MCP server locally belong in the reposi
 
 ## What's inside
 
-- **`TranscendGraphQLBase`** — Base GraphQL client with query execution, pagination, and logging. Domain packages extend this via mixin classes.
-- **`TranscendRestClient`** — REST client for the Sombra API.
-- **`createMCPServer`** — Bootstraps a stdio MCP server from a list of tool definitions and client factories.
+- **`AuthCredentials`** — Discriminated union type representing API key or session cookie authentication. The `authHeaders()` helper converts credentials into the correct outbound HTTP headers.
+- **`resolveAuth` / `tryResolveAuth`** — Resolves `AuthCredentials` from inbound HTTP headers (session cookie, API key) or `TRANSCEND_API_KEY` env var. `resolveAuth` throws when no auth is found; `tryResolveAuth` returns `null` (used during auth-free MCP initialization).
+- **`requestAuthContext` / `getRequestAuth`** — `AsyncLocalStorage`-based per-request auth context. In HTTP transport, each inbound request's credentials are stored here so that downstream clients use the correct auth without shared mutable state. Concurrent requests with different users' credentials are fully isolated.
+- **`TranscendGraphQLBase`** — Base GraphQL client with query execution, pagination, and logging. Accepts `AuthCredentials | null` for initial/default auth and reads per-request overrides from `requestAuthContext`. Domain packages extend this via mixin classes.
+- **`TranscendRestClient`** — REST client for the Sombra API. Same auth model as `TranscendGraphQLBase`.
+- **`createMCPServer`** — Bootstraps an MCP server (stdio or HTTP) from a list of tool definitions and client factories.
+- **`buildMcpServer`** — Creates an MCP `Server` with ListTools/CallTool handlers from `ToolDefinition[]` without connecting a transport.
+- **`runMcpHttp`** — Starts an Express-based Streamable HTTP server with per-session Server instances, SSE resume, health check, and CORS. Wraps each inbound request in `requestAuthContext.run()` for per-request auth isolation.
+- **`parseTransportArgs`** — Parses `--transport`, `--port`, `--host`, and related CLI flags / env vars.
+- **`InMemoryEventStore`** — In-memory SSE event store for session resumability.
 - **Tool helpers** — `validateArgs`, `createToolResult`, `createListResult`, common Zod schemas (`PaginationSchema`), and shared TypeScript types (`ToolDefinition`, `ToolClients`, `ToolAnnotations`).
 - **Error utilities** — `ToolError`, `ErrorCode`, `classifyHttpError` for consistent error responses.
 
