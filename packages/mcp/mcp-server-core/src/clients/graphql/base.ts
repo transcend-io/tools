@@ -190,6 +190,48 @@ export class TranscendGraphQLBase {
     throw lastError || new Error('GraphQL request failed after all retries');
   }
 
+  /**
+   * Send a query to the server and return the raw response including any
+   * validation errors, without throwing. Useful for schema validation probes
+   * where we want to inspect GRAPHQL_VALIDATION_FAILED errors.
+   */
+  async validateQuery(
+    query: string,
+    variables?: Record<string, unknown>,
+  ): Promise<{
+    /** Response data, if any */
+    data?: unknown;
+    /** GraphQL errors from the server */
+    errors?: Array<{
+      /** Error message */
+      message: string;
+      /** Source locations in the query */
+      locations?: Array<{
+        /** Line number */
+        line: number;
+        /** Column number */
+        column: number;
+      }>;
+      /** Error extensions (contains code, validationErrorCode, etc.) */
+      extensions?: Record<string, unknown>;
+    }>;
+  }> {
+    await this.rateLimitWait();
+    const url = `${this.baseUrl}/graphql`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ query, variables: variables ?? {} }),
+    });
+
+    return (await response.json()) as any;
+  }
+
   async testConnection(): Promise<boolean> {
     try {
       await this.makeRequest<{ __typename: string }>('query { __typename }');

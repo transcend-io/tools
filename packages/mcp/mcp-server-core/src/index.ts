@@ -17,6 +17,7 @@ export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types
 export { defineTool } from './tools/types.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
+export { createGraphqlIntrospectTool } from './tools/graphql-introspect.js';
 
 export { createMCPServer } from './server/create-server.js';
 export type { MCPServerOptions } from './server/create-server.js';
