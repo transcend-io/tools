@@ -592,7 +592,7 @@ export const TrackingConsent = t.intersection([
     Essential: t.literal(true),
     Unknown: t.literal(false),
   }),
-  t.record(t.string, t.union([t.boolean, t.undefined])),
+  t.record(t.string, t.union([t.boolean, t.string, t.undefined])),
 ]);
 /**
  * Type override
