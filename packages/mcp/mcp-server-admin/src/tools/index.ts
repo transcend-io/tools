@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createAdminCreateApiKeyTool } from './admin_create_api_key.js';
 import { createAdminGetCurrentUserTool } from './admin_get_current_user.js';

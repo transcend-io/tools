@@ -76,7 +76,7 @@ When developing in this repository, reuse the same variable names from root **`s
 2. **Build and run** — `node ./dist/cli.mjs` matches the `transcend-mcp` `bin` (use `node` because `pnpm exec transcend-mcp` may not resolve this package’s own binary in a pnpm workspace):
 
 ```bash
-# from the repository root — builds the unified server, all domain packages, and mcp-server-core
+# from the repository root — builds the unified server, all domain packages, and mcp-server-base
 pnpm exec turbo run build --filter="@transcend-io/mcp..."
 set -a && source ./secret.env && set +a
 pnpm -F @transcend-io/mcp exec node ./dist/cli.mjs
@@ -109,7 +109,7 @@ If 70+ tools is too many for your AI agent, install individual domain packages i
 | `@transcend-io/mcp-server-admin`       | `transcend-mcp-admin`       | Organization, users, API keys     |
 | `@transcend-io/mcp-server-assessments` | `transcend-mcp-assessments` | Privacy assessments               |
 | `@transcend-io/mcp-server-consent`     | `transcend-mcp-consent`     | Consent management, cookie triage |
-| `@transcend-io/mcp-server-core`        | —                           | Shared infrastructure             |
+| `@transcend-io/mcp-server-base`        | —                           | Shared infrastructure             |
 | `@transcend-io/mcp-server-discovery`   | `transcend-mcp-discovery`   | Data discovery, classification    |
 | `@transcend-io/mcp-server-dsr`         | `transcend-mcp-dsr`         | Data subject requests             |
 | `@transcend-io/mcp-server-inventory`   | `transcend-mcp-inventory`   | Data inventory, silos, vendors    |

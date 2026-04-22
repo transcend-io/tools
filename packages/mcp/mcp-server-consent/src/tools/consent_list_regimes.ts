@@ -1,4 +1,4 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import { EXPERIENCES, type TranscendCliExperiencesResponse } from '@transcend-io/sdk';
 
 export const ListRegimesSchema = z.object({

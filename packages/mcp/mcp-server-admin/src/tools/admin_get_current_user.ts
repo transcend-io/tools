@@ -3,7 +3,7 @@ import {
   defineTool,
   EmptySchema,
   type ToolClients,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import type { AdminMixin } from '../graphql.js';
 

@@ -1,4 +1,4 @@
-import { createToolResult } from '@transcend-io/mcp-server-core';
+import { createToolResult } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 

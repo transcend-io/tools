@@ -4,7 +4,7 @@ import {
   PaginationSchema,
   type ToolClients,
   z,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 export const listIdentifiersSchema = z
   .object({

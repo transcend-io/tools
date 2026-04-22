@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-core';
+import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-base';
 
 import { WorkflowsMixin } from './graphql.js';
 import { getWorkflowTools } from './tools/index.js';

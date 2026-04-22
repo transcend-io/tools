@@ -4,7 +4,7 @@ import {
   EmptySchema,
   groupBy,
   type ToolClients,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
 

@@ -54,7 +54,7 @@ When developing in this repository, reuse the same variable names from root **`s
 2. **Build and run** — `node ./dist/cli.mjs` matches the `transcend-mcp-consent` `bin` (use `node` because `pnpm exec transcend-mcp-consent` may not resolve this package’s own binary in a pnpm workspace):
 
 ```bash
-# from the repository root — builds this package and its dependencies (e.g. mcp-server-core)
+# from the repository root — builds this package and its dependencies (e.g. mcp-server-base)
 pnpm exec turbo run build --filter="@transcend-io/mcp-server-consent..."
 set -a && source ./secret.env && set +a
 pnpm -F @transcend-io/mcp-server-consent exec node ./dist/cli.mjs

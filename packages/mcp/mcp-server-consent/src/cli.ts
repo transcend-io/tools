@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createMCPServer } from '@transcend-io/mcp-server-core';
+import { createMCPServer } from '@transcend-io/mcp-server-base';
 
 import { getConsentTools } from './tools/index.js';
 

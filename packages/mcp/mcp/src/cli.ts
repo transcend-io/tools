@@ -9,7 +9,7 @@ import {
   SimpleLogger,
   TranscendRestClient,
   type AuthCredentials,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import { TranscendGraphQLClient } from './graphql-client.js';
 import { ToolRegistry } from './registry.js';

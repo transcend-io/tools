@@ -5,7 +5,7 @@ import {
   type ToolClients,
   type AssessmentTemplateCreateInput,
   type AssessmentSectionInput,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 import { AssessmentFormTemplateStatus } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';

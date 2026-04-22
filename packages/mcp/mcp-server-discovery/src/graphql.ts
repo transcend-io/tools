@@ -4,7 +4,7 @@ import {
   type ClassificationScan,
   type DiscoveryPlugin,
   type ListOptions,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 export class DiscoveryMixin extends TranscendGraphQLBase {
   async listClassificationScans(

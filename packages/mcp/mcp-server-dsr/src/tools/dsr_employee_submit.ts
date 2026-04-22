@@ -1,4 +1,4 @@
-import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
 import { RequestAction } from '@transcend-io/privacy-types';
 
 import type { DSRMixin } from '../graphql.js';

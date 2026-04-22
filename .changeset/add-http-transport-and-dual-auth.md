@@ -1,5 +1,5 @@
 ---
-"@transcend-io/mcp-server-core": minor
+"@transcend-io/mcp-server-base": minor
 "@transcend-io/mcp": minor
 "@transcend-io/mcp-server-admin": minor
 "@transcend-io/mcp-server-assessments": minor

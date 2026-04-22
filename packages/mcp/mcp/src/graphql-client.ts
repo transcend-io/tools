@@ -4,7 +4,7 @@ import {
   TranscendGraphQLBase,
   type AuthCredentials,
   type Logger,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 import { DiscoveryMixin } from '@transcend-io/mcp-server-discovery';
 import { DSRMixin } from '@transcend-io/mcp-server-dsr';
 import { InventoryMixin } from '@transcend-io/mcp-server-inventory';

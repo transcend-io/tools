@@ -4,7 +4,7 @@ import {
   z,
   PaginationSchema,
   type ToolClients,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 import { AssessmentFormStatus } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';

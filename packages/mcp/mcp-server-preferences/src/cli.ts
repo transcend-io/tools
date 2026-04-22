@@ -3,7 +3,7 @@ import {
   createMCPServer,
   TranscendGraphQLBase,
   TranscendRestClient,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import { getPreferenceTools } from './tools/index.js';
 

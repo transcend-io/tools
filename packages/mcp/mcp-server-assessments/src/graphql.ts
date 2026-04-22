@@ -11,7 +11,7 @@ import {
   type AssessmentTemplateExport,
   type AssessmentQuestionInput,
   type ListOptions,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

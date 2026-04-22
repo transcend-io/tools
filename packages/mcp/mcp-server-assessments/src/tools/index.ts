@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createAssessmentsAddSectionTool } from './assessments_add_section.js';
 import { createAssessmentsAnswerQuestionTool } from './assessments_answer_question.js';

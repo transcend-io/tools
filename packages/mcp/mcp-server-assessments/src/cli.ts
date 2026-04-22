@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-core';
+import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-base';
 
 import { AssessmentsMixin } from './graphql.js';
 import { getAssessmentTools } from './tools/index.js';

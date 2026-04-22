@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createConsentBulkTriageTool } from './consent_bulk_triage.js';
 import { createConsentGetPreferencesTool } from './consent_get_preferences.js';

@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createDsrAnalyzeTool } from './dsr_analyze.js';
 import { createDsrCancelTool } from './dsr_cancel.js';

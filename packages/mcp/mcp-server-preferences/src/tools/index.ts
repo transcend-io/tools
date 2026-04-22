@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createPreferencesAppendIdentifiersTool } from './preferences_append_identifiers.js';
 import { createPreferencesDeleteTool } from './preferences_delete.js';

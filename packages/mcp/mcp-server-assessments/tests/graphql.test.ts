@@ -1,4 +1,4 @@
-import type { AuthCredentials } from '@transcend-io/mcp-server-core';
+import type { AuthCredentials } from '@transcend-io/mcp-server-base';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { AssessmentsMixin } from '../src/graphql.js';

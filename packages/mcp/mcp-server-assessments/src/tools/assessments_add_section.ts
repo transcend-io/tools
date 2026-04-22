@@ -4,7 +4,7 @@ import {
   z,
   type ToolClients,
   type AssessmentSectionInput,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 

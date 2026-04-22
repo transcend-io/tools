@@ -11,7 +11,7 @@ import {
   type PaginatedResponse,
   type SubDataPoint,
   type Vendor,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 export class InventoryMixin extends TranscendGraphQLBase {
   async listDataSilos(options?: ListOptions): Promise<PaginatedResponse<DataSilo>> {

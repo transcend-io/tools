@@ -1,14 +1,14 @@
 {
-  "name": "@transcend-io/mcp-server-core",
+  "name": "@transcend-io/mcp-server-base",
   "version": "0.1.0",
   "description": "Shared infrastructure for Transcend MCP Server packages.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-core",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-base",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/mcp/mcp-server-core"
+    "directory": "packages/mcp/mcp-server-base"
   },
   "files": [
     "dist"

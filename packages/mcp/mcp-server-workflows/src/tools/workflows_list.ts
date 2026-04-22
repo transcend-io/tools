@@ -4,7 +4,7 @@ import {
   PaginationSchema,
   z,
   type ToolClients,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import type { WorkflowsMixin } from '../graphql.js';
 

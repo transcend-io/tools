@@ -8,7 +8,7 @@
     { "path": "./packages/mcp/mcp-server-admin" },
     { "path": "./packages/mcp/mcp-server-assessments" },
     { "path": "./packages/mcp/mcp-server-consent" },
-    { "path": "./packages/mcp/mcp-server-core" },
+    { "path": "./packages/mcp/mcp-server-base" },
     { "path": "./packages/mcp/mcp-server-discovery" },
     { "path": "./packages/mcp/mcp-server-dsr" },
     { "path": "./packages/mcp/mcp-server-inventory" },

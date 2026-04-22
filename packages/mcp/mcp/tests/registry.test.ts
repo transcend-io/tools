@@ -1,11 +1,11 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
-import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import {
   TranscendRestClient,
   type AuthCredentials,
   type ToolClients,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
+import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';

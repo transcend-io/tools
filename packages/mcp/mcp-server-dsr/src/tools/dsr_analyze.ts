@@ -4,7 +4,7 @@ import {
   groupBy,
   type ToolClients,
   z,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import type { DSRMixin } from '../graphql.js';
 

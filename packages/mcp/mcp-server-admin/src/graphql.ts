@@ -8,7 +8,7 @@ import {
   type PrivacyCenter,
   type Team,
   type User,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 export class AdminMixin extends TranscendGraphQLBase {
   async getOrganization(): Promise<Organization> {

@@ -7,7 +7,7 @@
 ## Prerequisites
 
 - **Node.js** ≥ 22.12 (see each CLI package’s `engines` in `package.json`).
-- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-core`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
+- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-base`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
 
 In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package).
 
@@ -104,7 +104,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessments`](./mcp-server-assessments/) | `transcend-mcp-assessments` |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    12 | Consent management, cookie & data-flow triage    |
-| [`mcp-server-core`](./mcp-server-core/)               | —                           |     — | Shared infrastructure (not installed directly)   |
+| [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     6 | Data discovery, classification, NER              |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    12 | Data subject requests (submit, track, respond)   |
 | [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    10 | Data inventory, silos, vendors, data points      |
@@ -126,12 +126,12 @@ See each package's README for full tool lists, detailed environment variable doc
 │  └───────┼─────────────┼────────────┼──────────────────┘ │
 │          └─────────────┼────────────┘                    │
 │                        ▼                                 │
-│               mcp-server-core                            │
+│               mcp-server-base                            │
 │        (GraphQL base, REST client, validation)           │
 └──────────────────────────────────────────────────────────┘
 ```
 
-Each domain package (admin, consent, dsr, ...) is a self-contained MCP server with its own CLI entry point. It can run standalone or be composed into the unified server. All domain packages depend on `mcp-server-core` for shared infrastructure:
+Each domain package (admin, consent, dsr, ...) is a self-contained MCP server with its own CLI entry point. It can run standalone or be composed into the unified server. All domain packages depend on `mcp-server-base` for shared infrastructure:
 
 - **`TranscendGraphQLBase`** — base class extended by each domain's GraphQL mixin
 - **`TranscendRestClient`** — REST client for the Sombra API (used by DSR, preferences, and discovery)

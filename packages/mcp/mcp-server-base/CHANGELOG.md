@@ -1,4 +1,4 @@
-# @transcend-io/mcp-server-core
+# @transcend-io/mcp-server-base
 
 ## 0.1.0
 

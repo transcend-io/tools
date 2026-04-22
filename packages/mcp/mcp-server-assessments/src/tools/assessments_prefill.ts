@@ -5,7 +5,7 @@ import {
   type ToolClients,
   type Assessment,
   type AssessmentSection,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { resolveTemplateToGroupId } from './_helpers.js';

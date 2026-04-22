@@ -1,4 +1,4 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 export const ClassifyTextSchema = z.object({
   texts: z.array(z.string()).describe('Array of text strings to classify'),

@@ -5,7 +5,7 @@ import {
   type PaginatedResponse,
   type Workflow,
   type WorkflowConfig,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 export class WorkflowsMixin extends TranscendGraphQLBase {
   async listWorkflows(options?: ListOptions): Promise<PaginatedResponse<Workflow>> {
