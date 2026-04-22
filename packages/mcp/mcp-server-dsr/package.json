@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-dsr",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Transcend MCP Server — DSR Automation tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-dsr",
   "license": "Apache-2.0",
