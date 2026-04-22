@@ -53,7 +53,7 @@ pnpm -F @transcend-io/mcp-server-core build
 pnpm -F @transcend-io/mcp-server-core test
 ```
 
-To run a composed server against the real API, configure root **`secret.env`** and follow **Run from the monorepo** in [`mcp-server`](../mcp-server/README.md) or any domain package README.
+To run a composed server against the real API, configure root **`secret.env`** and follow **Run from the monorepo** in [`mcp`](../mcp/README.md) or any domain package README.
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for working across MCP packages and adding tools.
 

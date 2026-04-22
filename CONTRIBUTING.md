@@ -243,10 +243,10 @@ packages/mcp/
   mcp-server-inventory/
   mcp-server-preferences/
   mcp-server-workflows/
-  mcp-server/            # Unified server that re-exports all domain tools
+  mcp/                   # Unified server that re-exports all domain tools
 ```
 
-Each domain package provides a standalone CLI and can be installed independently. The unified `mcp-server` package composes all domains via `ToolRegistry`.
+Each domain package provides a standalone CLI and can be installed independently. The unified `mcp` package composes all domains via `ToolRegistry`.
 
 ### Local credentials (`secret.env`)
 
@@ -329,7 +329,7 @@ For production deployment patterns (Docker, nginx, cloud), see [`packages/mcp/DE
 4. If the tool needs new input validation, add a Zod schema to `src/schemas.ts`.
 5. If the tool calls a new API endpoint, extend the domain's GraphQL mixin (`src/graphql.ts`) or the shared REST client in `mcp-server-core`.
 6. Add or extend tests in the domain package's `tests/` directory.
-7. The unified `mcp-server` package picks up the new tool automatically through its `ToolRegistry`.
+7. The unified `mcp` package picks up the new tool automatically through its `ToolRegistry`.
 
 ### Changesets
 

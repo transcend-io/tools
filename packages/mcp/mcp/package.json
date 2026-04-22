@@ -1,14 +1,14 @@
 {
-  "name": "@transcend-io/mcp-server",
-  "version": "0.0.3",
+  "name": "@transcend-io/mcp",
+  "version": "0.1.0",
   "description": "Transcend MCP Server — unified server with all domain tools.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/mcp/mcp-server"
+    "directory": "packages/mcp/mcp"
   },
   "bin": {
     "transcend-mcp": "./dist/cli.mjs"

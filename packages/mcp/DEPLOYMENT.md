@@ -6,7 +6,7 @@ This guide covers running Transcend MCP servers in HTTP mode for remote hosting.
 
 ```bash
 # Start the unified server in HTTP mode
-TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp-server --transport http
+TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp --transport http
 
 # Or a domain server
 TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp-server-consent --transport http
@@ -98,7 +98,7 @@ Per-request auth is propagated via Node.js `AsyncLocalStorage` (`requestAuthCont
 ```json
 {
   "status": "ok",
-  "name": "transcend-mcp-server",
+  "name": "transcend-mcp",
   "version": "3.0.2"
 }
 ```
@@ -107,7 +107,7 @@ Per-request auth is propagated via Node.js `AsyncLocalStorage` (`requestAuthCont
 
 ```dockerfile
 FROM node:22-slim
-RUN npm install -g @transcend-io/mcp-server
+RUN npm install -g @transcend-io/mcp
 ENV TRANSCEND_HTTP_HOST=0.0.0.0
 EXPOSE 3000
 CMD ["transcend-mcp", "--transport", "http"]

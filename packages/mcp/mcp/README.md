@@ -1,4 +1,4 @@
-# @transcend-io/mcp-server
+# @transcend-io/mcp
 
 > **Alpha** — this package is under active development and has not yet been published to npm. APIs may change without notice.
 
@@ -13,7 +13,7 @@ For local runs from this repository, copy [`secret.env.example`](../../../secret
 When the package is available on npm, install the CLI globally:
 
 ```bash
-npm install -g @transcend-io/mcp-server
+npm install -g @transcend-io/mcp
 ```
 
 Until then, run from a checkout of this repository (see **Run from the monorepo** below).
@@ -58,7 +58,7 @@ This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a healt
   "mcpServers": {
     "transcend": {
       "command": "npx",
-      "args": ["-y", "@transcend-io/mcp-server"],
+      "args": ["-y", "@transcend-io/mcp"],
       "env": {
         "TRANSCEND_API_KEY": "your-api-key"
       }
@@ -77,12 +77,12 @@ When developing in this repository, reuse the same variable names from root **`s
 
 ```bash
 # from the repository root — builds the unified server, all domain packages, and mcp-server-core
-pnpm exec turbo run build --filter="@transcend-io/mcp-server..."
+pnpm exec turbo run build --filter="@transcend-io/mcp..."
 set -a && source ./secret.env && set +a
-pnpm -F @transcend-io/mcp-server exec node ./dist/cli.mjs
+pnpm -F @transcend-io/mcp exec node ./dist/cli.mjs
 ```
 
-**Alternative:** `./scripts/mcp-run.sh ./packages/mcp/mcp-server/dist/cli.mjs` (sources `secret.env` when present; run after build).
+**Alternative:** `./scripts/mcp-run.sh ./packages/mcp/mcp/dist/cli.mjs` (sources `secret.env` when present; run after build).
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout and `pnpm --filter` workflows.
 

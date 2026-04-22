@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   if (config.transport === 'http') {
     await runMcpHttp(
       {
-        name: 'transcend-mcp-server',
+        name: 'transcend-mcp',
         version: VERSION,
         createServer: async (auth) => {
           logger.info('Creating unified MCP server for new HTTP session...', {
@@ -45,7 +45,7 @@ async function main(): Promise<void> {
           });
           const registry = createToolRegistry(auth, sombraUrl, graphqlUrl);
           return buildMcpServer({
-            name: 'transcend-mcp-server',
+            name: 'transcend-mcp',
             version: VERSION,
             tools: registry.getAllTools(),
           });
@@ -71,7 +71,7 @@ async function main(): Promise<void> {
   );
 
   const server = buildMcpServer({
-    name: 'transcend-mcp-server',
+    name: 'transcend-mcp',
     version: VERSION,
     tools: toolRegistry.getAllTools(),
   });

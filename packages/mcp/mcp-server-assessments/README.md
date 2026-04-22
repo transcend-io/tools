@@ -93,4 +93,4 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Related packages
 
-Also available as part of the unified [`@transcend-io/mcp-server`](../mcp-server/README.md) which includes all domains. See the [root README](../../../README.md#mcp-servers) for the full list.
+Also available as part of the unified [`@transcend-io/mcp`](../mcp/README.md) which includes all domains. See the [root README](../../../README.md#mcp-servers) for the full list.

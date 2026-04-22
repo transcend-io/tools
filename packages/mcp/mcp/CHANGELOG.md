@@ -1,4 +1,4 @@
-# @transcend-io/mcp-server
+# @transcend-io/mcp
 
 ## 0.0.3
 

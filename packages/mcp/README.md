@@ -17,14 +17,14 @@ There are two ways to consume the MCP tools, and they can be mixed freely.
 
 ### Unified server
 
-Install **`@transcend-io/mcp-server`** to get every tool (71 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+Install **`@transcend-io/mcp`** to get every tool (71 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
 
 ```json
 {
   "mcpServers": {
     "transcend": {
       "command": "npx",
-      "args": ["-y", "@transcend-io/mcp-server"],
+      "args": ["-y", "@transcend-io/mcp"],
       "env": { "TRANSCEND_API_KEY": "your-api-key" }
     }
   }
@@ -67,7 +67,7 @@ Install only the domains you need. Smaller tool counts help AI agents stay focus
 Any server can be started in HTTP mode for remote hosting:
 
 ```bash
-TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp-server --transport http --port 3000
+TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp --transport http --port 3000
 ```
 
 This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a health check at `/health`. Each client connection gets its own session with automatic cleanup after idle timeout.
@@ -100,7 +100,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                               | Binary                      | Tools | Description                                      |
 | ----------------------------------------------------- | --------------------------- | ----: | ------------------------------------------------ |
-| [`mcp-server`](./mcp-server/)                         | `transcend-mcp`             |    71 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    71 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessments`](./mcp-server-assessments/) | `transcend-mcp-assessments` |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    12 | Consent management, cookie & data-flow triage    |
@@ -117,7 +117,7 @@ See each package's README for full tool lists, detailed environment variable doc
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  mcp-server  (unified)                                   │
+│  mcp  (unified)                                          │
 │  ┌─────────────────────────────────────────────────────┐ │
 │  │ ToolRegistry                                        │ │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │ │
@@ -140,7 +140,7 @@ Each domain package (admin, consent, dsr, ...) is a self-contained MCP server wi
 - **`runMcpHttp`** — starts an Express-based Streamable HTTP server with session management
 - **Validation & helpers** — Zod schemas, `validateArgs`, `createToolResult`, `createListResult`
 
-The unified `mcp-server` package aggregates tools via `ToolRegistry` and composes a `TranscendGraphQLClient` that mixes in all domain GraphQL capabilities.
+The unified `mcp` package aggregates tools via `ToolRegistry` and composes a `TranscendGraphQLClient` that mixes in all domain GraphQL capabilities.
 
 ## Environment variables
 
