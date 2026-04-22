@@ -1,4 +1,4 @@
-# @transcend-io/mcp-server-assessments
+# @transcend-io/mcp-server-assessment
 
 ## 0.0.3
 

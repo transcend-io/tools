@@ -6,7 +6,7 @@
     { "path": "./packages/internationalization" },
     { "path": "./packages/mcp/mcp" },
     { "path": "./packages/mcp/mcp-server-admin" },
-    { "path": "./packages/mcp/mcp-server-assessments" },
+    { "path": "./packages/mcp/mcp-server-assessment" },
     { "path": "./packages/mcp/mcp-server-consent" },
     { "path": "./packages/mcp/mcp-server-base" },
     { "path": "./packages/mcp/mcp-server-discovery" },

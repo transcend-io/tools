@@ -1,5 +1,5 @@
 import { AdminMixin } from '@transcend-io/mcp-server-admin';
-import { AssessmentsMixin } from '@transcend-io/mcp-server-assessments';
+import { AssessmentsMixin } from '@transcend-io/mcp-server-assessment';
 import {
   TranscendGraphQLBase,
   type AuthCredentials,

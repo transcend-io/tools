@@ -39,7 +39,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
     "@transcend-io/mcp-server-admin": "workspace:*",
-    "@transcend-io/mcp-server-assessments": "workspace:*",
+    "@transcend-io/mcp-server-assessment": "workspace:*",
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/mcp-server-consent": "workspace:*",
     "@transcend-io/mcp-server-discovery": "workspace:*",

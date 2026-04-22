@@ -5,7 +5,7 @@ import { AssessmentsMixin } from './graphql.js';
 import { getAssessmentTools } from './tools/index.js';
 
 createMCPServer({
-  name: 'transcend-mcp-assessments',
+  name: 'transcend-mcp-assessment',
   version: '1.0.0',
   getTools: getAssessmentTools,
   createClients: (auth, sombraUrl, graphqlUrl) => ({

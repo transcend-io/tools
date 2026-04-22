@@ -1,17 +1,17 @@
 {
-  "name": "@transcend-io/mcp-server-assessments",
+  "name": "@transcend-io/mcp-server-assessment",
   "version": "0.1.0",
   "description": "Transcend MCP Server — Assessments tools.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-assessments",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-assessment",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/mcp/mcp-server-assessments"
+    "directory": "packages/mcp/mcp-server-assessment"
   },
   "bin": {
-    "transcend-mcp-assessments": "./dist/cli.mjs"
+    "transcend-mcp-assessment": "./dist/cli.mjs"
   },
   "files": [
     "dist"

@@ -1,5 +1,5 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
-import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
+import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import type { ToolClients } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';

@@ -236,7 +236,7 @@ MCP (Model Context Protocol) server packages live under `packages/mcp/`. They le
 packages/mcp/
   mcp-server-base/       # Shared infrastructure (GraphQL base, REST client, validation, types)
   mcp-server-admin/      # Domain: org, users, API keys
-  mcp-server-assessments/
+  mcp-server-assessment/
   mcp-server-consent/
   mcp-server-discovery/
   mcp-server-dsr/

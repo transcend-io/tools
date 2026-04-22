@@ -1,5 +1,5 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
-import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
+import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
   TranscendRestClient,
   type AuthCredentials,

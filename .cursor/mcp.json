@@ -12,7 +12,7 @@
     "transcend-assessments": {
       "disabled": true,
       "command": "bash",
-      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-assessments/dist/cli.mjs"]
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-assessment/dist/cli.mjs"]
     },
     "transcend-consent": {
       "disabled": true,

@@ -1,6 +1,6 @@
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
-import { getAssessmentTools } from '@transcend-io/mcp-server-assessments';
+import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
   createErrorResult,
   type ToolDefinition,

@@ -107,7 +107,7 @@ If 70+ tools is too many for your AI agent, install individual domain packages i
 | Package                                | Binary                      | Domain                            |
 | -------------------------------------- | --------------------------- | --------------------------------- |
 | `@transcend-io/mcp-server-admin`       | `transcend-mcp-admin`       | Organization, users, API keys     |
-| `@transcend-io/mcp-server-assessments` | `transcend-mcp-assessments` | Privacy assessments               |
+| `@transcend-io/mcp-server-assessment`  | `transcend-mcp-assessment`  | Privacy assessments               |
 | `@transcend-io/mcp-server-consent`     | `transcend-mcp-consent`     | Consent management, cookie triage |
 | `@transcend-io/mcp-server-base`        | —                           | Shared infrastructure             |
 | `@transcend-io/mcp-server-discovery`   | `transcend-mcp-discovery`   | Data discovery, classification    |
