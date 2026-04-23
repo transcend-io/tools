@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-workflows
 
+## 0.2.1
+
+### Patch Changes
+
+- c07cb4f: Small bump so CI can correctly set deps for published package
+
 ## 0.2.0
 
 ### Minor Changes

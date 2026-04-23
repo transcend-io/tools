@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/utils",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shared utilities for the Transcend developer tools monorepo.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/utils",
   "license": "Apache-2.0",
