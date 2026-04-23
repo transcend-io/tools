@@ -14,6 +14,7 @@ import { inquirerConfirmBoolean } from '../helpers/index.js';
  * Ensures that all rows have a valid identifier
  * and that all identifiers are unique.
  *
+ * @deprecated Use the version in parsePreferenceIdentifiersInteractive.ts which accepts FileFormatState
  * @param preferences - List of preferences
  * @param currentState - The current file metadata state for parsing this list
  * @returns The updated file metadata state
