@@ -1,5 +1,14 @@
 # @transcend-io/cli
 
+## 10.2.3
+
+### Patch Changes
+
+- f0e7400: Add `DOES_NOT_CONTAIN` attribute to `ComparisonOperator` for assessment rules, and regenerate `transcend.yml` JSON schema.
+- Updated dependencies [f0e7400]
+  - @transcend-io/privacy-types@5.1.3
+  - @transcend-io/sdk@1.0.3
+
 ## 10.2.2
 
 ### Patch Changes

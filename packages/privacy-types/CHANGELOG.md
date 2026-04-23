@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.1.3
+
+### Patch Changes
+
+- f0e7400: Add `DOES_NOT_CONTAIN` attribute to `ComparisonOperator` for assessment rules, and regenerate `transcend.yml` JSON schema.
+
 ## 5.1.2
 
 ### Patch Changes
