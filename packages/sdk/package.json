@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Transcend SDK — shared GraphQL/REST API clients and preference management utilities.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/sdk",
   "license": "Apache-2.0",

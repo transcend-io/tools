@@ -1,5 +1,17 @@
 # @transcend-io/mcp-server-consent
 
+## 0.1.2
+
+### Patch Changes
+
+- 9d2a663: Update for mcp packages to consume new package names for previously name mcp-server, mcp-server-assessments, and mcp-server-core
+- Updated dependencies [f0e7400]
+- Updated dependencies [d6c7dbf]
+- Updated dependencies [9d2a663]
+  - @transcend-io/privacy-types@5.1.3
+  - @transcend-io/sdk@1.0.3
+  - @transcend-io/mcp-server-base@0.2.0
+
 ## 1.0.2
 
 ### Patch Changes
