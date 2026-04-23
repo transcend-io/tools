@@ -16,7 +16,7 @@ const H = vi.hoisted(() => {
   };
   const pages: Page[] = [];
 
-  // last retry options captured from withPreferenceRetry
+  // last retry options captured from withTransientRetry
   let lastRetryOpts: {
     /** On retry */
     onRetry?: (attempt: number, error: unknown, message: string) => void;
@@ -89,9 +89,11 @@ vi.mock('colors', () => ({
 }));
 
 // Mock SDK module path so iterateConsentPages' internal import is intercepted.
-vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
+vi.mock('../../../../../sdk/src/api/withTransientRetry.js', () => ({
   __esModule: true,
-  withPreferenceRetry: vi.fn(
+  RETRY_TRANSIENT_MSGS: [] as string[],
+  isTransientError: () => false,
+  withTransientRetry: vi.fn(
     async (
       name: string,
       fn: () => Promise<unknown>,

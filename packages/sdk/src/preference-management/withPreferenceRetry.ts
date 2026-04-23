@@ -1,78 +1,34 @@
-import { extractErrorMessage, sleepPromise, type Logger } from '@transcend-io/utils';
-
-import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import {
+  RETRY_TRANSIENT_MSGS,
+  withTransientRetry,
+  type RetryOptions,
+} from '../api/withTransientRetry.js';
 
 /**
- * Transient network / platform errors that merit a retry.
- * Keep this list short and specific to avoid masking real failures.
+ * @deprecated Use `RETRY_TRANSIENT_MSGS` from `../api/withTransientRetry.js` instead.
+ * Preserved as a re-export so downstream consumers of `@transcend-io/sdk` that
+ * imported the preference-scoped name continue to work.
  */
-export const RETRY_PREFERENCE_MSGS: string[] = [
-  'ENOTFOUND',
-  'ECONNRESET',
-  'ETIMEDOUT',
-  '502 Bad Gateway',
-  '504 Gateway Time-out',
-  '429',
-  'Rate limit exceeded',
-  'Task timed out after',
-  'unknown request error',
-].map((s) => s.toLowerCase());
+export const RETRY_PREFERENCE_MSGS = RETRY_TRANSIENT_MSGS;
 
 /**
- * Options for retrying preference operations.
+ * @deprecated Use `RetryOptions` from `../api/withTransientRetry.js` instead.
  */
-export type RetryOptions = {
-  logger?: Logger;
-  /** Max attempts including the first try (default 12) */
-  maxAttempts?: number;
-  /** Initial backoff in ms (default 250) */
-  baseDelayMs?: number;
-  /** Optional custom predicate to decide if an error is retryable */
-  isRetryable?: (err: unknown, message: string) => boolean;
-  /** Optional hook to log on each retry */
-  onRetry?: (attempt: number, err: unknown, message: string) => void;
-};
+export type { RetryOptions };
 
 /**
- * Run an async function with standardized retry behavior for preference operations.
- * Exponential backoff with jitter; only retries on known-transient messages.
+ * @deprecated Use `withTransientRetry` from `../api/withTransientRetry.js` instead.
+ * Preserved as a re-export for backwards compatibility.
  *
- * @param name - Name of the operation (for logging)
- * @param fn - Function to run
+ * @param name - Short name of the operation
+ * @param fn - Function to run under the retry wrapper
  * @param options - Retry options
- * @returns Result of the function
+ * @returns Result of the wrapped function on its first successful attempt
  */
 export async function withPreferenceRetry<T>(
   name: string,
   fn: () => Promise<T>,
-  {
-    logger = NOOP_LOGGER,
-    maxAttempts = 12,
-    baseDelayMs = 250,
-    isRetryable = (_err, msg) => RETRY_PREFERENCE_MSGS.some((m) => msg.toLowerCase().includes(m)),
-    onRetry,
-  }: RetryOptions,
+  options: RetryOptions = {},
 ): Promise<T> {
-  let attempt = 0;
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    attempt += 1;
-    try {
-      return await fn();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (err: any) {
-      const msg: string = extractErrorMessage(err);
-      const willRetry = attempt < maxAttempts && isRetryable(err, msg);
-      if (!willRetry) {
-        throw new Error(`${name} failed after ${attempt} attempt(s): ${msg}`);
-      }
-      onRetry?.(attempt, err, msg);
-
-      const backoff = baseDelayMs * 2 ** (attempt - 1);
-      const jitter = Math.floor(Math.random() * baseDelayMs);
-      const delay = backoff + jitter;
-      logger.warn(`[retry] attempt ${attempt}/${maxAttempts - 1}; backing off ${delay}ms: ${msg}`);
-      await sleepPromise(delay);
-    }
-  }
+  return withTransientRetry(name, fn, options);
 }

@@ -7,6 +7,7 @@ import * as t from 'io-ts';
 import semver from 'semver';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { withTransientRetry } from '../api/withTransientRetry.js';
 import { SOMBRA_VERSION } from './gqls/sombraVersion.js';
 
 const MIN_SOMBRA_VERSION_TO_DECRYPT = '7.180.0';
@@ -106,23 +107,28 @@ export async function fetchAllRequestIdentifiers(
   }
 
   do {
-    let response: unknown;
-    try {
-      response = await sombra!
-        .post<{
-          /** Decrypted identifiers */
-          identifiers: RequestIdentifier[];
-        }>('v1/request-identifiers', {
-          json: {
-            first: PAGE_SIZE,
-            offset,
-            requestId,
-          },
-        })
-        .json();
-    } catch (err) {
-      throw new Error(`Failed to fetch request identifiers: ${(err as Error).message}`);
-    }
+    // `POST /v1/request-identifiers` is effectively a paginated read (the server
+    // never mutates state from this call), so it is safe to retry on transient
+    // gateway / network errors. Retries matter here because a single export can
+    // span thousands of pages and occasional 502s from the Sombra reverse
+    // tunnel or upstream load balancer would otherwise abort the whole chunk.
+    const response = await withTransientRetry(
+      'Failed to fetch request identifiers',
+      () =>
+        sombra!
+          .post<{
+            /** Decrypted identifiers */
+            identifiers: RequestIdentifier[];
+          }>('v1/request-identifiers', {
+            json: {
+              first: PAGE_SIZE,
+              offset,
+              requestId,
+            },
+          })
+          .json(),
+      { logger, maxAttempts: 6, baseDelayMs: 500 },
+    );
 
     const { identifiers: nodes } = decodeCodec(RequestIdentifiersResponse, response);
 

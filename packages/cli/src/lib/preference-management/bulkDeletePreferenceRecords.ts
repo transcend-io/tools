@@ -1,7 +1,7 @@
 import {
   DeletePreferenceRecordCliCsvRow,
   DeletePreferenceRecordsResponse,
-  withPreferenceRetry,
+  withTransientRetry,
 } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import { map } from '@transcend-io/utils';
@@ -57,7 +57,7 @@ async function deletePreferenceRecordsRepository(
   { partition, identifierChunk: chunk, timestamp }: DeletePreferenceRecordsRepositoryOptions,
 ): Promise<FailedResult[]> {
   try {
-    const response = await withPreferenceRetry(
+    const response = await withTransientRetry(
       'Delete Preference Records',
       () =>
         sombra

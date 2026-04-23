@@ -58,12 +58,14 @@ vi.mock('@transcend-io/type-utils', async (importOriginal) => {
   };
 });
 
-// withPreferenceRetry should invoke the provided fn and return its result,
+// withTransientRetry should invoke the provided fn and return its result,
 // but we still want to see that it's being called.
 const withRetrySpy = vi.fn(async (name: string, fn: () => Promise<any>, _opts?: any) => fn());
 
-vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
-  withPreferenceRetry: (name: string, fn: unknown, opts?: unknown) =>
+vi.mock('../../../../../sdk/src/api/withTransientRetry.js', () => ({
+  RETRY_TRANSIENT_MSGS: [] as string[],
+  isTransientError: () => false,
+  withTransientRetry: (name: string, fn: unknown, opts?: unknown) =>
     // @ts-expect-error test-only
     withRetrySpy(name, fn, opts),
 }));

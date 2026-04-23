@@ -3,8 +3,8 @@ import { decodeCodec } from '@transcend-io/type-utils';
 import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
+import { withTransientRetry } from '../api/withTransientRetry.js';
 import { ConsentPreferenceResponse, type PreferencesQueryFilter } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**
  * Async generator over pages for a given filter
@@ -31,7 +31,7 @@ export async function* iterateConsentPages(
     if (filter && Object.keys(filter).length) body.filter = filter;
     if (cursor) body.cursor = cursor;
 
-    const resp = await withPreferenceRetry(
+    const resp = await withTransientRetry(
       'Preference Query',
       () =>
         sombra

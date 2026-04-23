@@ -5,8 +5,8 @@ import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
 import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { withTransientRetry } from '../api/withTransientRetry.js';
 import { ConsentPreferenceResponse } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**
  * Grab the current consent preference values for a list of identifiers
@@ -51,7 +51,7 @@ export async function getPreferencesForIdentifiers(
   await map(
     groupedIdentifiers,
     async (group) => {
-      const rawResult = await withPreferenceRetry(
+      const rawResult = await withTransientRetry(
         'Preference Query',
         () =>
           sombra
