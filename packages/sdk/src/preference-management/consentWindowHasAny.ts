@@ -3,8 +3,8 @@ import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
 import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { withTransientRetry } from '../api/withTransientRetry.js';
 import { ConsentPreferenceResponse, type PreferencesQueryFilter, type ChunkMode } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**
  * Probe window: does it contain any records? Uses the given mode.
@@ -54,7 +54,7 @@ export async function consentWindowHasAny(
             updatedBefore: beforeISO,
           },
         };
-  const resp = await withPreferenceRetry(
+  const resp = await withTransientRetry(
     'Preference Query',
     () =>
       sombra

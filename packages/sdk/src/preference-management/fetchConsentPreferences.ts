@@ -4,8 +4,8 @@ import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
 import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { withTransientRetry } from '../api/withTransientRetry.js';
 import { ConsentPreferenceResponse, type PreferencesQueryFilter } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**
  * Fetch consent preferences for the managed consent database (new query endpoint)
@@ -73,7 +73,7 @@ export async function fetchConsentPreferences(
       body.cursor = cursor;
     }
 
-    const response = await withPreferenceRetry(
+    const response = await withTransientRetry(
       'Preference Query',
       () =>
         sombra

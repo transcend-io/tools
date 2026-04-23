@@ -1,7 +1,7 @@
 import type { PreferenceQueryResponseItem } from '@transcend-io/privacy-types';
 import {
   consentWindowHasAny,
-  withPreferenceRetry,
+  withTransientRetry,
   type PreferencesQueryFilter,
 } from '@transcend-io/sdk';
 import type { Got } from 'got';
@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const H = vi.hoisted(() => {
   const logger = { warn: vi.fn(), info: vi.fn(), error: vi.fn(), debug: vi.fn() };
 
-  // Capture retry opts passed to withPreferenceRetry
+  // Capture retry opts passed to withTransientRetry
   let lastRetryOpts: {
     /** Options for retrying the request */
     onRetry?: (attempt: number, error: unknown, message: string) => void;
@@ -81,9 +81,9 @@ vi.mock('colors', () => ({
 }));
 
 // Mock SDK module path so consentWindowHasAny's internal import is intercepted (barrel partial mock does not).
-vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
+vi.mock('../../../../../sdk/src/api/withTransientRetry.js', () => ({
   __esModule: true,
-  withPreferenceRetry: vi.fn(
+  withTransientRetry: vi.fn(
     async (
       name: string,
       fn: () => Promise<unknown>,
@@ -164,8 +164,8 @@ describe('consentWindowHasAny', () => {
 
     expect(ok).toBe(true);
 
-    // Called via withPreferenceRetry
-    expect(withPreferenceRetry).toHaveBeenCalledTimes(1);
+    // Called via withTransientRetry
+    expect(withTransientRetry).toHaveBeenCalledTimes(1);
 
     // Verify POST target + body
     expect(H.postCalls).toHaveLength(1);
