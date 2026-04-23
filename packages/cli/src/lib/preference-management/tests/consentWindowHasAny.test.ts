@@ -83,11 +83,6 @@ vi.mock('colors', () => ({
 // Mock SDK module path so consentWindowHasAny's internal import is intercepted (barrel partial mock does not).
 vi.mock('../../../../../sdk/src/api/withTransientRetry.js', () => ({
   __esModule: true,
-  // Keep constants/helpers defined so the preference-management deprecated
-  // re-export shim (`withPreferenceRetry.ts`) can still resolve them when any
-  // barrel import pulls it in.
-  RETRY_TRANSIENT_MSGS: [] as string[],
-  isTransientError: () => false,
   withTransientRetry: vi.fn(
     async (
       name: string,

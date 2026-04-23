@@ -10,7 +10,6 @@ export * from './getUniquePreferenceIdentifierNamesFromRow.js';
 export * from './getPreferenceUpdatesFromRow.js';
 export * from './checkIfPendingPreferenceUpdatesAreNoOp.js';
 export * from './checkIfPendingPreferenceUpdatesCauseConflict.js';
-export * from './withPreferenceRetry.js';
 export * from './transformPreferenceRecordToCsv.js';
 export * from './buildConsentChunks.js';
 export * from './pickConsentChunkMode.js';

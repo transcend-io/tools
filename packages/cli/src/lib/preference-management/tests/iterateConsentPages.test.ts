@@ -91,8 +91,6 @@ vi.mock('colors', () => ({
 // Mock SDK module path so iterateConsentPages' internal import is intercepted.
 vi.mock('../../../../../sdk/src/api/withTransientRetry.js', () => ({
   __esModule: true,
-  RETRY_TRANSIENT_MSGS: [] as string[],
-  isTransientError: () => false,
   withTransientRetry: vi.fn(
     async (
       name: string,

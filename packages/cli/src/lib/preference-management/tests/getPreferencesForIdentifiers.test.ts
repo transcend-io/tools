@@ -63,8 +63,6 @@ vi.mock('@transcend-io/type-utils', async (importOriginal) => {
 const withRetrySpy = vi.fn(async (name: string, fn: () => Promise<any>, _opts?: any) => fn());
 
 vi.mock('../../../../../sdk/src/api/withTransientRetry.js', () => ({
-  RETRY_TRANSIENT_MSGS: [] as string[],
-  isTransientError: () => false,
   withTransientRetry: (name: string, fn: unknown, opts?: unknown) =>
     // @ts-expect-error test-only
     withRetrySpy(name, fn, opts),
