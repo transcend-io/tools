@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createWorkflowsListTool } from './workflows_list.js';
 import { createWorkflowsListEmailTemplatesTool } from './workflows_list_email_templates.js';

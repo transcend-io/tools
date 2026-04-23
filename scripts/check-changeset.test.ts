@@ -58,19 +58,19 @@ describe('check-changeset', () => {
 
   it('passes when a nested workspace package (e.g. packages/mcp/...) is covered', () => {
     const repository = createRepository({
-      packages: [{ directory: 'mcp/mcp-server', name: '@transcend-io/mcp-server' }],
+      packages: [{ directory: 'mcp/mcp', name: '@transcend-io/mcp' }],
     });
 
     writeRepositoryFile(
       repository.path,
-      'packages/mcp/mcp-server/src/index.ts',
+      'packages/mcp/mcp/src/index.ts',
       'export const value = 2;\n',
     );
     writeRepositoryFile(
       repository.path,
-      '.changeset/mcp-server.md',
+      '.changeset/mcp.md',
       `---
-"@transcend-io/mcp-server": patch
+"@transcend-io/mcp": patch
 ---
 
 Update the MCP server package.

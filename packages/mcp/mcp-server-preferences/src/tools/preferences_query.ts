@@ -1,4 +1,4 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 export const IdentifierSchema = z.object({
   value: z.string().describe('Identifier value'),

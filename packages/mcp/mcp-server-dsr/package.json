@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-dsr",
-  "version": "0.0.3",
+  "version": "0.1.1",
   "description": "Transcend MCP Server — DSR Automation tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-dsr",
   "license": "Apache-2.0",
@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
-    "@transcend-io/mcp-server-core": "workspace:*",
+    "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
     "zod": "catalog:"
   },

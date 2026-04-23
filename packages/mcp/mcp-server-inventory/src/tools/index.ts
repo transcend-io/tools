@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createInventoryAnalyzeTool } from './inventory_analyze.js';
 import { createInventoryCreateDataSiloTool } from './inventory_create_data_silo.js';

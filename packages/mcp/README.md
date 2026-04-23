@@ -7,7 +7,7 @@
 ## Prerequisites
 
 - **Node.js** ≥ 22.12 (see each CLI package’s `engines` in `package.json`).
-- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-core`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
+- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-base`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
 
 In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package).
 
@@ -17,14 +17,14 @@ There are two ways to consume the MCP tools, and they can be mixed freely.
 
 ### Unified server
 
-Install **`@transcend-io/mcp-server`** to get every tool (71 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+Install **`@transcend-io/mcp`** to get every tool (71 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
 
 ```json
 {
   "mcpServers": {
     "transcend": {
       "command": "npx",
-      "args": ["-y", "@transcend-io/mcp-server"],
+      "args": ["-y", "@transcend-io/mcp"],
       "env": { "TRANSCEND_API_KEY": "your-api-key" }
     }
   }
@@ -67,7 +67,7 @@ Install only the domains you need. Smaller tool counts help AI agents stay focus
 Any server can be started in HTTP mode for remote hosting:
 
 ```bash
-TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp-server --transport http --port 3000
+TRANSCEND_API_KEY=your-api-key npx @transcend-io/mcp --transport http --port 3000
 ```
 
 This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a health check at `/health`. Each client connection gets its own session with automatic cleanup after idle timeout.
@@ -100,11 +100,11 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                               | Binary                      | Tools | Description                                      |
 | ----------------------------------------------------- | --------------------------- | ----: | ------------------------------------------------ |
-| [`mcp-server`](./mcp-server/)                         | `transcend-mcp`             |    71 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    71 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys             |
-| [`mcp-server-assessments`](./mcp-server-assessments/) | `transcend-mcp-assessments` |    14 | Privacy assessments, templates, groups           |
+| [`mcp-server-assessment`](./mcp-server-assessment/)   | `transcend-mcp-assessment`  |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    12 | Consent management, cookie & data-flow triage    |
-| [`mcp-server-core`](./mcp-server-core/)               | —                           |     — | Shared infrastructure (not installed directly)   |
+| [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     6 | Data discovery, classification, NER              |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    12 | Data subject requests (submit, track, respond)   |
 | [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    10 | Data inventory, silos, vendors, data points      |
@@ -117,7 +117,7 @@ See each package's README for full tool lists, detailed environment variable doc
 
 ```
 ┌──────────────────────────────────────────────────────────┐
-│  mcp-server  (unified)                                   │
+│  mcp  (unified)                                          │
 │  ┌─────────────────────────────────────────────────────┐ │
 │  │ ToolRegistry                                        │ │
 │  │  ┌──────────┐ ┌──────────┐ ┌──────────┐            │ │
@@ -126,12 +126,12 @@ See each package's README for full tool lists, detailed environment variable doc
 │  └───────┼─────────────┼────────────┼──────────────────┘ │
 │          └─────────────┼────────────┘                    │
 │                        ▼                                 │
-│               mcp-server-core                            │
+│               mcp-server-base                            │
 │        (GraphQL base, REST client, validation)           │
 └──────────────────────────────────────────────────────────┘
 ```
 
-Each domain package (admin, consent, dsr, ...) is a self-contained MCP server with its own CLI entry point. It can run standalone or be composed into the unified server. All domain packages depend on `mcp-server-core` for shared infrastructure:
+Each domain package (admin, consent, dsr, ...) is a self-contained MCP server with its own CLI entry point. It can run standalone or be composed into the unified server. All domain packages depend on `mcp-server-base` for shared infrastructure:
 
 - **`TranscendGraphQLBase`** — base class extended by each domain's GraphQL mixin
 - **`TranscendRestClient`** — REST client for the Sombra API (used by DSR, preferences, and discovery)
@@ -140,7 +140,7 @@ Each domain package (admin, consent, dsr, ...) is a self-contained MCP server wi
 - **`runMcpHttp`** — starts an Express-based Streamable HTTP server with session management
 - **Validation & helpers** — Zod schemas, `validateArgs`, `createToolResult`, `createListResult`
 
-The unified `mcp-server` package aggregates tools via `ToolRegistry` and composes a `TranscendGraphQLClient` that mixes in all domain GraphQL capabilities.
+The unified `mcp` package aggregates tools via `ToolRegistry` and composes a `TranscendGraphQLClient` that mixes in all domain GraphQL capabilities.
 
 ## Environment variables
 

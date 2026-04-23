@@ -1,4 +1,4 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 export const UpdateIdentifiersItemSchema = z.object({
   oldValue: z.string().describe('Old identifier value'),

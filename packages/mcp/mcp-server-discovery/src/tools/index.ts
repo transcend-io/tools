@@ -1,4 +1,4 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-core';
+import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createDiscoveryClassifyTextTool } from './discovery_classify_text.js';
 import { createDiscoveryGetScanTool } from './discovery_get_scan.js';

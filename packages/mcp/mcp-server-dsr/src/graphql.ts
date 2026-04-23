@@ -5,7 +5,7 @@ import {
   type Request,
   type RequestDetails,
   type RequestType,
-} from '@transcend-io/mcp-server-core';
+} from '@transcend-io/mcp-server-base';
 
 export class DSRMixin extends TranscendGraphQLBase {
   async listRequests(options?: ListOptions): Promise<PaginatedResponse<Request>> {

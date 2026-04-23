@@ -308,7 +308,7 @@ function sortJsonValue(value: unknown): unknown {
 
 /**
  * Resolves the workspace package root for a path under `packages/`, including nested
- * layouts such as `packages/mcp/mcp-server/`.
+ * layouts such as `packages/mcp/mcp/`.
  */
 function resolvePackageDirectory(filePath: string): string | null {
   let currentDir = dirname(filePath);

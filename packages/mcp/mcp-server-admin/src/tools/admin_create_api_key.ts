@@ -1,4 +1,4 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-core';
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 
 import type { AdminMixin } from '../graphql.js';

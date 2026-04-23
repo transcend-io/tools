@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-consent",
-  "version": "1.0.2",
+  "version": "0.1.1",
   "description": "Transcend MCP Server — Consent Management tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-consent",
   "license": "Apache-2.0",
@@ -38,7 +38,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
-    "@transcend-io/mcp-server-core": "workspace:*",
+    "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
     "@transcend-io/sdk": "workspace:*",
     "zod": "catalog:"

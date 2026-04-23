@@ -234,19 +234,19 @@ MCP (Model Context Protocol) server packages live under `packages/mcp/`. They le
 
 ```
 packages/mcp/
-  mcp-server-core/       # Shared infrastructure (GraphQL base, REST client, validation, types)
+  mcp-server-base/       # Shared infrastructure (GraphQL base, REST client, validation, types)
   mcp-server-admin/      # Domain: org, users, API keys
-  mcp-server-assessments/
+  mcp-server-assessment/
   mcp-server-consent/
   mcp-server-discovery/
   mcp-server-dsr/
   mcp-server-inventory/
   mcp-server-preferences/
   mcp-server-workflows/
-  mcp-server/            # Unified server that re-exports all domain tools
+  mcp/                   # Unified server that re-exports all domain tools
 ```
 
-Each domain package provides a standalone CLI and can be installed independently. The unified `mcp-server` package composes all domains via `ToolRegistry`.
+Each domain package provides a standalone CLI and can be installed independently. The unified `mcp` package composes all domains via `ToolRegistry`.
 
 ### Local credentials (`secret.env`)
 
@@ -273,7 +273,7 @@ Use the path to the `dist/cli.mjs` for the server you built. See each package RE
 
 ### Working on a Single MCP Package
 
-Use `pnpm --filter` the same way as any other package. For `build`, prefer a Turbo filter with a trailing `...` so `mcp-server-core` and other dependencies are built when needed:
+Use `pnpm --filter` the same way as any other package. For `build`, prefer a Turbo filter with a trailing `...` so `mcp-server-base` and other dependencies are built when needed:
 
 ```bash
 pnpm exec turbo run build --filter="@transcend-io/mcp-server-consent..."
@@ -288,7 +288,7 @@ MCP servers support two authentication modes:
 - **API key** — set `TRANSCEND_API_KEY` env var (required for stdio; optional for HTTP if using session cookie or per-request API key headers)
 - **Session cookie** — in HTTP mode, forward `Cookie` and `x-transcend-active-organization-id` headers for in-app dashboard auth
 
-The `AuthCredentials` discriminated union (`'apiKey' | 'sessionCookie'`) is the internal representation. See `mcp-server-core/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
+The `AuthCredentials` discriminated union (`'apiKey' | 'sessionCookie'`) is the internal representation. See `mcp-server-base/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
 
 Optional overrides:
 
@@ -327,9 +327,9 @@ For production deployment patterns (Docker, nginx, cloud), see [`packages/mcp/DE
 2. Export a `create*Tool(clients: ToolClients): ToolDefinition` factory function following the existing pattern.
 3. Register it in the domain's `src/tools/index.ts` by importing and adding it to the returned array.
 4. If the tool needs new input validation, add a Zod schema to `src/schemas.ts`.
-5. If the tool calls a new API endpoint, extend the domain's GraphQL mixin (`src/graphql.ts`) or the shared REST client in `mcp-server-core`.
+5. If the tool calls a new API endpoint, extend the domain's GraphQL mixin (`src/graphql.ts`) or the shared REST client in `mcp-server-base`.
 6. Add or extend tests in the domain package's `tests/` directory.
-7. The unified `mcp-server` package picks up the new tool automatically through its `ToolRegistry`.
+7. The unified `mcp` package picks up the new tool automatically through its `ToolRegistry`.
 
 ### Changesets
 

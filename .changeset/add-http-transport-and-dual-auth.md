@@ -1,8 +1,8 @@
 ---
-"@transcend-io/mcp-server-core": minor
-"@transcend-io/mcp-server": minor
+"@transcend-io/mcp-server-base": minor
+"@transcend-io/mcp": minor
 "@transcend-io/mcp-server-admin": minor
-"@transcend-io/mcp-server-assessments": minor
+"@transcend-io/mcp-server-assessment": minor
 "@transcend-io/mcp-server-discovery": minor
 "@transcend-io/mcp-server-dsr": minor
 "@transcend-io/mcp-server-inventory": minor

@@ -1,4 +1,4 @@
-import type { TranscendGraphQLBase } from '@transcend-io/mcp-server-core';
+import type { TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
 import {
   FETCH_CONSENT_MANAGER_ID,
   type TranscendCliFetchConsentManagerIdResponse,
