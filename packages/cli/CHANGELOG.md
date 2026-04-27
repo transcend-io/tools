@@ -1,5 +1,12 @@
 # @transcend-io/cli
 
+## 10.2.5
+
+### Patch Changes
+
+- Updated dependencies [d5d6170]
+  - @transcend-io/sdk@1.1.1
+
 ## 10.2.4
 
 ### Patch Changes

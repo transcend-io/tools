@@ -1,5 +1,23 @@
 # @transcend-io/mcp-server-dsr
 
+## 0.3.0
+
+### Minor Changes
+
+- af70fbf: Align MCP env var naming with the rest of the repo.
+  - `TRANSCEND_API_URL` now points at the GraphQL backend (default `https://api.transcend.io`), matching `@transcend-io/cli` and the convention used throughout `transcend-io/main`.
+  - The Sombra REST endpoint moves to `SOMBRA_URL` (default `https://multi-tenant.sombra.transcend.io`), matching the env var already read by `@transcend-io/cli` and `@transcend-io/sdk` (`createSombraGotInstance`). Setting `SOMBRA_URL` once now applies to both the CLI/SDK and the MCP server.
+  - `TRANSCEND_GRAPHQL_URL` is removed.
+
+  **Breaking:**
+  - Anyone who previously set `TRANSCEND_API_URL` to a Sombra URL must rename it to `SOMBRA_URL`.
+  - Anyone who previously set `TRANSCEND_GRAPHQL_URL` must rename it to `TRANSCEND_API_URL`.
+
+### Patch Changes
+
+- Updated dependencies [af70fbf]
+  - @transcend-io/mcp-server-base@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-workflows",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Transcend MCP Server — Workflows tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-workflows",
   "license": "Apache-2.0",
