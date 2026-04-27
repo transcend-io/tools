@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-preferences",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Transcend MCP Server — Preference Management tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-preferences",
   "license": "Apache-2.0",
