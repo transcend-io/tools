@@ -292,8 +292,8 @@ The `AuthCredentials` discriminated union (`'apiKey' | 'sessionCookie'`) is the 
 
 Optional overrides:
 
-- `TRANSCEND_API_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`)
-- `TRANSCEND_GRAPHQL_URL` — GraphQL API base URL (default: `https://api.transcend.io`)
+- `TRANSCEND_API_URL` — GraphQL backend API base URL (default: `https://api.transcend.io`). Matches the CLI and main monorepo convention.
+- `SOMBRA_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`). Matches the CLI / SDK convention.
 
 For local development, define these in **`secret.env`** (copy from `secret.env.example` at the repository root). Do not commit `secret.env`.
 
