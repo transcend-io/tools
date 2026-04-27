@@ -66,11 +66,11 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable                | Required | Default                                    | Description       |
-| ----------------------- | -------- | ------------------------------------------ | ----------------- |
-| `TRANSCEND_API_KEY`     | Yes      | —                                          | Transcend API key |
-| `TRANSCEND_API_URL`     | No       | `https://multi-tenant.sombra.transcend.io` | Sombra API URL    |
-| `TRANSCEND_GRAPHQL_URL` | No       | `https://api.transcend.io`                 | GraphQL API URL   |
+| Variable            | Required | Default                                    | Description                                        |
+| ------------------- | -------- | ------------------------------------------ | -------------------------------------------------- |
+| `TRANSCEND_API_KEY` | Yes      | —                                          | Transcend API key                                  |
+| `TRANSCEND_API_URL` | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)   |
+| `SOMBRA_URL`        | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention) |
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 

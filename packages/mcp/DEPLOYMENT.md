@@ -31,8 +31,8 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 | Variable                       | Default                                    | Description                                                                                                    |
 | ------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `TRANSCEND_API_KEY`            | —                                          | Default API key. Required for stdio; optional for HTTP if using session cookie or per-request API key headers. |
-| `TRANSCEND_API_URL`            | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL                                                                                            |
-| `TRANSCEND_GRAPHQL_URL`        | `https://api.transcend.io`                 | GraphQL API URL                                                                                                |
+| `TRANSCEND_API_URL`            | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                               |
+| `SOMBRA_URL`                   | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                             |
 | `TRANSCEND_HTTP_PORT`          | `3000`                                     | HTTP listen port (overridden by `--port`)                                                                      |
 | `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                                | HTTP listen host (overridden by `--host`)                                                                      |
 | `TRANSCEND_MCP_CORS_ORIGINS`   | —                                          | Comma-separated allowed CORS origins                                                                           |

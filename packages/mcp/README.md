@@ -149,8 +149,8 @@ All servers share the same environment variables:
 | Variable                       | Required               | Default                                    | Description                                                                                       |
 | ------------------------------ | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
 | `TRANSCEND_API_KEY`            | Yes (stdio), No (HTTP) | —                                          | Transcend API key. In HTTP mode, optional if using session cookie or per-request API key headers. |
-| `TRANSCEND_API_URL`            | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL                                                                               |
-| `TRANSCEND_GRAPHQL_URL`        | No                     | `https://api.transcend.io`                 | GraphQL API URL                                                                                   |
+| `TRANSCEND_API_URL`            | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                  |
+| `SOMBRA_URL`                   | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                |
 | `TRANSCEND_HTTP_PORT`          | No                     | `3000`                                     | HTTP listen port                                                                                  |
 | `TRANSCEND_HTTP_HOST`          | No                     | `127.0.0.1`                                | HTTP listen host                                                                                  |
 | `TRANSCEND_MCP_CORS_ORIGINS`   | No                     | —                                          | Comma-separated allowed CORS origins                                                              |

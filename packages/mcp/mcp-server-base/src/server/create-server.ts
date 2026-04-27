@@ -50,8 +50,8 @@ async function buildClients(
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
   const logger = new SimpleLogger();
   const config = parseTransportArgs();
-  const sombraUrl = process.env.TRANSCEND_API_URL || 'https://multi-tenant.sombra.transcend.io';
-  const graphqlUrl = process.env.TRANSCEND_GRAPHQL_URL || 'https://api.transcend.io';
+  const sombraUrl = process.env.SOMBRA_URL || 'https://multi-tenant.sombra.transcend.io';
+  const graphqlUrl = process.env.TRANSCEND_API_URL || 'https://api.transcend.io';
 
   if (config.transport === 'http') {
     await runMcpHttp(
