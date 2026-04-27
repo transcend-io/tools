@@ -1,13 +1,17 @@
 import { readdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join } from 'node:path';
 
 import { describe, expect, test } from 'vitest';
 
 import { fileExists, readJsonFile, readRepoFile, repoRoot } from './lib/repo-files.ts';
 
+type DependencyMap = Record<string, string>;
+
 type PackageManifest = {
   author?: string;
-  devDependencies?: Record<string, string>;
+  dependencies?: DependencyMap;
+  devDependencies?: DependencyMap;
   engines?: {
     node?: string;
   };
@@ -22,6 +26,8 @@ type PackageManifest = {
   homepage?: string;
   license?: string;
   name?: string;
+  peerDependencies?: DependencyMap;
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
   private?: boolean;
   publishConfig?: {
     access?: string;
@@ -36,6 +42,11 @@ type PackageManifest = {
   type?: string;
   types?: string;
   version?: string;
+};
+
+type DependencyManifestSubset = {
+  peerDependencies?: DependencyMap;
+  peerDependenciesMeta?: Record<string, { optional?: boolean }>;
 };
 
 type CompilerOptions = Record<string, unknown> & {
@@ -222,6 +233,32 @@ describe('package conventions', () => {
       expect(tsdownConfig).toContain("'src/index.ts'");
     },
   );
+
+  // Strict resolvers (yarn-berry PnP, pnpm with strict peers) walk the require
+  // chain looking for a peer dependency on an ancestor package. If a published
+  // package depends on `io-ts` but does not itself declare `fp-ts`, every
+  // consumer crashes at first runtime use of `io-ts` even though `pnpm install`
+  // succeeds. We catch the entire bug class at PR time by requiring each
+  // publishable package to declare every non-optional peer of its direct deps.
+  test.each(publishablePackages)(
+    '$directory satisfies peer dependencies of its direct dependencies',
+    (workspacePackage) => {
+      const gaps = getUnsatisfiedPeerDependencies(workspacePackage);
+
+      if (gaps.length === 0) {
+        return;
+      }
+
+      const lines = gaps.map(
+        ({ dep, peer }) =>
+          `  - "${peer}" is required by "${dep}" (peerDependency). Add "${peer}" to ${workspacePackage.manifest.name}'s "dependencies" or "peerDependencies" so strict resolvers (yarn-berry PnP, pnpm strict peers) can satisfy it.`,
+      );
+
+      throw new Error(
+        `${workspacePackage.manifest.name} is missing peer dependencies brought in by direct dependencies:\n${lines.join('\n')}`,
+      );
+    },
+  );
 });
 
 function getWorkspacePackages(): WorkspacePackage[] {
@@ -256,4 +293,47 @@ function getWorkspacePackages(): WorkspacePackage[] {
 
 function sortStrings(values: string[]): string[] {
   return [...values].sort((a, b) => a.localeCompare(b));
+}
+
+function getUnsatisfiedPeerDependencies(
+  workspacePackage: WorkspacePackage,
+): Array<{ dep: string; peer: string }> {
+  const { directory, manifest } = workspacePackage;
+  const directDeps = manifest.dependencies ?? {};
+  const declaredKeys = new Set([
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.peerDependencies ?? {}),
+  ]);
+  const requireFromPackage = createRequire(join(repoRoot, directory, 'package.json'));
+  const gaps: Array<{ dep: string; peer: string }> = [];
+
+  for (const [depName, depSpecifier] of Object.entries(directDeps)) {
+    if (depSpecifier.startsWith('workspace:')) {
+      continue;
+    }
+
+    let depManifest: DependencyManifestSubset;
+    try {
+      depManifest = requireFromPackage(`${depName}/package.json`) as DependencyManifestSubset;
+    } catch {
+      continue;
+    }
+
+    const peers = depManifest.peerDependencies ?? {};
+    const peerMeta = depManifest.peerDependenciesMeta ?? {};
+
+    for (const peerName of Object.keys(peers)) {
+      if (peerMeta[peerName]?.optional === true) {
+        continue;
+      }
+      if (peerName === manifest.name) {
+        continue;
+      }
+      if (!declaredKeys.has(peerName)) {
+        gaps.push({ dep: depName, peer: peerName });
+      }
+    }
+  }
+
+  return gaps.sort((a, b) => a.peer.localeCompare(b.peer) || a.dep.localeCompare(b.dep));
 }

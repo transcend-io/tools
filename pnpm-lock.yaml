@@ -713,6 +713,9 @@ importers:
       '@transcend-io/utils':
         specifier: workspace:*
         version: link:../utils
+      fp-ts:
+        specifier: ^2.16.1
+        version: 2.16.11
       got:
         specifier: ^11.8.5
         version: 11.8.6
