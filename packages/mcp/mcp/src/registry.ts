@@ -3,6 +3,7 @@ import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
   createErrorResult,
+  SimpleLogger,
   type ToolDefinition,
   type TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
@@ -26,6 +27,7 @@ export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
   private jsonSchemaCache: Map<string, Record<string, unknown>> = new Map();
   private clients: UmbrellaToolClients;
+  private logger = new SimpleLogger();
 
   constructor(clients: UmbrellaToolClients) {
     this.clients = clients;
@@ -46,7 +48,7 @@ export class ToolRegistry {
   private registerToolsFromModule(tools: ToolDefinition[]): void {
     for (const tool of tools) {
       if (this.tools.has(tool.name)) {
-        process.stderr.write(`Warning: Duplicate tool name "${tool.name}" - skipping\n`);
+        this.logger.warn('Duplicate tool name - skipping', { toolName: tool.name });
         continue;
       }
       this.tools.set(tool.name, tool);
