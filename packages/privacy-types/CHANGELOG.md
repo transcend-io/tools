@@ -4,6 +4,12 @@
 
 ### Patch Changes
 
+- 041d5f9: Add `DROP` value to `RequestOrigin` enum.
+
+## 5.1.4
+
+### Patch Changes
+
 - Add `DROP` value to `RequestOrigin` enum.
 
 ## 5.1.3
