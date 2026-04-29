@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.1.4
+
+### Patch Changes
+
+- Add `DROP` value to `RequestOrigin` enum.
+
 ## 5.1.3
 
 ### Patch Changes
