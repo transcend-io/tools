@@ -1,5 +1,12 @@
 # @transcend-io/sdk
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies [041d5f9]
+  - @transcend-io/privacy-types@5.1.4
+
 ## 1.1.1
 
 ### Patch Changes
