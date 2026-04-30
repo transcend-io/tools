@@ -1026,7 +1026,13 @@ export const CONSENT_MANAGER_SUPPORTED_LOCALES: Pick<
   ConsentManagerSupportedTranslationKey
 > = consentManagerSupportedLocales;
 
-export const RTL_LANGS: readonly typeof LOCALE_KEY[keyof typeof LOCALE_KEY][] = [LOCALE_KEY.Ar, LOCALE_KEY.He, LOCALE_KEY.Fa, LOCALE_KEY.Ur, LOCALE_KEY.Dv] as const;
+export const RTL_LANGS: readonly LocaleValue[] = [
+  LOCALE_KEY.Ar,
+  LOCALE_KEY.He,
+  LOCALE_KEY.Fa,
+  LOCALE_KEY.Ur,
+  LOCALE_KEY.Dv,
+] as const;
 
 /**
  * List of BCP 47 language codes, grabbed from https://www.localeplanet.com/icu/
