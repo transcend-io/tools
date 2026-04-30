@@ -552,6 +552,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.Az]: AWS_SUPPORTED_TRANSLATIONS.Azerbaijani,
   [LOCALE_KEY.Bn]: AWS_SUPPORTED_TRANSLATIONS.Bengali,
   [LOCALE_KEY.FaAf]: AWS_SUPPORTED_TRANSLATIONS.Dari,
+  [LOCALE_KEY.Fa]: AWS_SUPPORTED_TRANSLATIONS.Farsi,
   [LOCALE_KEY.Tl]: AWS_SUPPORTED_TRANSLATIONS.Tagalog,
   [LOCALE_KEY.Ka]: AWS_SUPPORTED_TRANSLATIONS.Georgian,
   [LOCALE_KEY.Gu]: AWS_SUPPORTED_TRANSLATIONS.Gujarati,
@@ -2336,6 +2337,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Bn]: 'বাংলা',
   /* Dari */
   [LOCALE_KEY.FaAf]: 'دری',
+  /* Farsi */
+  [LOCALE_KEY.Fa]: 'فارسی',
   /* Tagalog */
   [LOCALE_KEY.Tl]: 'Tagalog',
   /* Georgian */
@@ -2717,6 +2720,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Az]: 'Azerbaijani',
   [LOCALE_KEY.Bn]: 'Bengali',
   [LOCALE_KEY.FaAf]: 'Dari',
+  [LOCALE_KEY.Fa]: 'Farsi',
   [LOCALE_KEY.Tl]: 'Tagalog',
   [LOCALE_KEY.Ka]: 'Georgian',
   [LOCALE_KEY.Gu]: 'Gujarati',
