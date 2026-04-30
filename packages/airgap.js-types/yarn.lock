@@ -313,9 +313,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@transcend-io/airgap.js-types@workspace:."
   dependencies:
-    "@transcend-io/internationalization": "npm:^2.3.0"
-    "@transcend-io/privacy-types": "npm:^4.143.0"
-    "@transcend-io/type-utils": "npm:^1.8.5"
+    "@transcend-io/internationalization": "npm:4.0.1"
+    "@transcend-io/privacy-types": "npm:5.1.4"
+    "@transcend-io/type-utils": "npm:3.0.1"
     "@typescript-eslint/eslint-plugin": "npm:^6.13.2"
     "@typescript-eslint/parser": "npm:^6.13.2"
     depcheck: "npm:^1.4.7"
@@ -325,50 +325,46 @@ __metadata:
     eslint-plugin-eslint-comments: "npm:^3.2.0"
     eslint-plugin-import: "npm:2.29.0"
     eslint-plugin-jsdoc: "npm:^46.9.0"
-    fp-ts: "npm:^2.16.1"
-    io-ts: "npm:^2.2.21"
+    fp-ts: "npm:2.16.1"
+    io-ts: "npm:2.2.21"
     prettier: "npm:^3.1.0"
     ts-node: "npm:^10.9.1"
     typescript: "npm:^5.3.2"
+  peerDependencies:
+    "@transcend-io/internationalization": 4
+    "@transcend-io/privacy-types": 5
+    "@transcend-io/type-utils": 3
+    fp-ts: 2
+    io-ts: 2
   languageName: unknown
   linkType: soft
 
-"@transcend-io/internationalization@npm:^2.3.0":
-  version: 2.3.0
-  resolution: "@transcend-io/internationalization@npm:2.3.0"
-  checksum: 10c0/3b32411d2bae0c4b7a63a52eca3103c164959b5a3075cf886ece81209d194983766398372e9be50a77ac8a0dbaf04733c55470ac4f20444b41fdd025454051b1
+"@transcend-io/internationalization@npm:4.0.1":
+  version: 4.0.1
+  resolution: "@transcend-io/internationalization@npm:4.0.1"
+  checksum: 10c0/d3dd71c1f07efe5b709e2f1f3a83f6c8d8f1a38be86339e54c59660e9511df64ba7975bdc2428db9050d8c6c05b23ee96f3c6c95273d1db2e99d5959eaa0a57f
   languageName: node
   linkType: hard
 
-"@transcend-io/privacy-types@npm:^4.143.0":
-  version: 4.143.0
-  resolution: "@transcend-io/privacy-types@npm:4.143.0"
+"@transcend-io/privacy-types@npm:5.1.4":
+  version: 5.1.4
+  resolution: "@transcend-io/privacy-types@npm:5.1.4"
   dependencies:
-    "@transcend-io/internationalization": "npm:^2.3.0"
-    "@transcend-io/type-utils": "npm:^1.8.4"
+    "@transcend-io/internationalization": "npm:4.0.1"
+    "@transcend-io/type-utils": "npm:3.0.1"
     fp-ts: "npm:^2.16.1"
     io-ts: "npm:^2.2.21"
-  checksum: 10c0/2cccea05b06e91867c0c831859a09f9238b84eb544339c12de9788992f44ed020b49cc04a90998d262344c32d35970cf30efcf57820aed7aa08137a06ea28307
+  checksum: 10c0/8012c9874528385bb7011b9e88e5dcc1baa980fbf87d55f35d18b17fe1e0b88052a8ff129b8e41a2bf04668553967fead9767b41eaafb161bba8a04e041d62df
   languageName: node
   linkType: hard
 
-"@transcend-io/type-utils@npm:^1.8.4":
-  version: 1.8.4
-  resolution: "@transcend-io/type-utils@npm:1.8.4"
+"@transcend-io/type-utils@npm:3.0.1":
+  version: 3.0.1
+  resolution: "@transcend-io/type-utils@npm:3.0.1"
   dependencies:
     fp-ts: "npm:^2.16.1"
     io-ts: "npm:^2.2.21"
-  checksum: 10c0/6da035c1972772f1d1188ce4444c12bb434be925ebf0654f4cb79056cc09fbe5f883600148548fd80bceb4ec65291c5cc17372a91816442d82daf6e1b3c49fed
-  languageName: node
-  linkType: hard
-
-"@transcend-io/type-utils@npm:^1.8.5":
-  version: 1.8.5
-  resolution: "@transcend-io/type-utils@npm:1.8.5"
-  dependencies:
-    fp-ts: "npm:^2.16.1"
-    io-ts: "npm:^2.2.21"
-  checksum: 10c0/5839f9d3026875cfaf70bf9ac7205052cd48e359f8732db0de21d4b4294dee189fd1536aa0afa7bbe9ab80cf3579c1bd0aa637db9ff04d96dc54f20f5633831e
+  checksum: 10c0/9953673fa48cea25e6c948ee258f1445631c6d9c147801f34d41338fcc63eb586d5eccf68c834c76d6c102ded19a70bfe3cce9564bf787cea0fcb9de57f6e318
   languageName: node
   linkType: hard
 
@@ -1633,7 +1629,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fp-ts@npm:^2.16.1":
+"fp-ts@npm:2.16.1, fp-ts@npm:^2.16.1":
   version: 2.16.1
   resolution: "fp-ts@npm:2.16.1"
   checksum: 10c0/16fcc7dc8a612ed8a2a339153bcc8745095eebf34ce7980507a9e3690b2c2aa2023c0caede48fd3d79068e271a6203d64416fa9db05613327f7c1a7546ba196d
@@ -1959,7 +1955,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"io-ts@npm:^2.2.21":
+"io-ts@npm:2.2.21, io-ts@npm:^2.2.21":
   version: 2.2.21
   resolution: "io-ts@npm:2.2.21"
   peerDependencies:

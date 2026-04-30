@@ -2,7 +2,7 @@
   "author": "Transcend Inc.",
   "name": "@transcend-io/airgap.js-types",
   "description": "TypeScript types for airgap.js interoperability with custom consent UIs",
-  "version": "12.17.0",
+  "version": "13.0.0",
   "homepage": "https://github.com/transcend-io/airgap.js-types",
   "repository": {
     "type": "git",
@@ -24,14 +24,17 @@
     "prepublish": "yarn build",
     "test": "echo 'no tests'"
   },
-  "dependencies": {
-    "@transcend-io/type-utils": "^1.8.5",
-    "fp-ts": "^2.16.1",
-    "io-ts": "^2.2.21"
+  "peerDependencies": {
+    "@transcend-io/internationalization": "4",
+    "@transcend-io/privacy-types": "5",
+    "@transcend-io/type-utils": "3",
+    "fp-ts": "2",
+    "io-ts": "2"
   },
   "devDependencies": {
-    "@transcend-io/internationalization": "^2.3.0",
-    "@transcend-io/privacy-types": "^4.143.0",
+    "@transcend-io/internationalization": "4.0.1",
+    "@transcend-io/privacy-types": "5.1.4",
+    "@transcend-io/type-utils": "3.0.1",
     "@typescript-eslint/eslint-plugin": "^6.13.2",
     "@typescript-eslint/parser": "^6.13.2",
     "depcheck": "^1.4.7",
@@ -41,6 +44,8 @@
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-import": "2.29.0",
     "eslint-plugin-jsdoc": "^46.9.0",
+    "fp-ts": "2.16.1",
+    "io-ts": "2.2.21",
     "prettier": "^3.1.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
