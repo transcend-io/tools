@@ -223,6 +223,8 @@ export const NonTcfVendor = t.intersection([
   t.partial({
     /** The vendor description */
     description: t.string,
+    /** The privacy policy URL */
+    privacyPolicyUrl: t.string,
   }),
 ]);
 
