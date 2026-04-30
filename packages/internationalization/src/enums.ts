@@ -123,6 +123,8 @@ export const LOCALE_KEY = {
   Bn: 'bn',
   /** Dari */
   FaAf: 'fa-AF',
+  /** Farsi */
+  Fa: 'fa',
   /** Tagalog */
   Tl: 'tl',
   /** Georgian */
@@ -1023,6 +1025,8 @@ export const CONSENT_MANAGER_SUPPORTED_LOCALES: Pick<
   typeof LOCALE_KEY,
   ConsentManagerSupportedTranslationKey
 > = consentManagerSupportedLocales;
+
+export const RTL_LANGS: readonly typeof LOCALE_KEY[keyof typeof LOCALE_KEY][] = [LOCALE_KEY.Ar, LOCALE_KEY.He, LOCALE_KEY.Fa, LOCALE_KEY.Ur, LOCALE_KEY.Dv] as const;
 
 /**
  * List of BCP 47 language codes, grabbed from https://www.localeplanet.com/icu/
