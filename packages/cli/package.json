@@ -86,7 +86,7 @@
     "@duckdb/node-api": "1.4.2-r.1",
     "@stricli/auto-complete": "^1.2.0",
     "@stricli/core": "^1.2.0",
-    "@transcend-io/airgap.js-types": "^12.16.0",
+    "@transcend-io/airgap.js-types": "workspace:*",
     "@transcend-io/handlebars-utils": "^1.3.2",
     "@transcend-io/internationalization": "workspace:*",
     "@transcend-io/persisted-state": "^1.0.6",

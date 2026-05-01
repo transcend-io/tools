@@ -2,16 +2,11 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2022", "DOM"],
     "outDir": "dist",
     "rootDir": "src",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "types": ["node", "vitest/globals"],
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "isolatedDeclarations": false,
-    "verbatimModuleSyntax": false
+    "lib": ["ES2022", "DOM"],
+    "types": ["node", "vitest/globals"]
   },
   "include": ["src/**/*.ts"]
 }
