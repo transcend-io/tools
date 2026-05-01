@@ -1,14 +1,14 @@
 {
-  "name": "@transcend-io/sdk",
-  "version": "1.1.2",
-  "description": "Transcend SDK — shared GraphQL/REST API clients and preference management utilities.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/sdk",
+  "name": "@transcend-io/airgap.js-types",
+  "version": "13.0.1",
+  "description": "TypeScript types for airgap.js interoperability with custom consent UIs.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/airgap.js-types",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/sdk"
+    "directory": "packages/airgap.js-types"
   },
   "files": [
     "dist"
@@ -34,25 +34,15 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@transcend-io/airgap.js-types": "workspace:*",
     "@transcend-io/internationalization": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
     "@transcend-io/type-utils": "workspace:*",
-    "@transcend-io/utils": "workspace:*",
     "fp-ts": "^2.16.1",
-    "got": "^11.8.5",
-    "graphql": "^16.6.0",
-    "graphql-request": "^5.0.0",
-    "io-ts": "^2.2.21",
-    "lodash-es": "^4.17.21",
-    "semver": "catalog:"
+    "io-ts": "^2.2.21"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
-    "@types/json-schema": "catalog:",
-    "@types/lodash-es": "^4.17.12",
     "@types/node": "catalog:",
-    "@types/semver": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
