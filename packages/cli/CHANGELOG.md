@@ -1,5 +1,15 @@
 # @transcend-io/cli
 
+## 10.2.7
+
+### Patch Changes
+
+- 270f4f2: While this is not intended as a functional change, we’ve migrated GitHub repositories and build tooling
+- Updated dependencies [270f4f2]
+- Updated dependencies [270f4f2]
+  - @transcend-io/airgap.js-types@14.0.0
+  - @transcend-io/sdk@1.1.3
+
 ## 10.2.6
 
 ### Patch Changes

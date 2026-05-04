@@ -1,5 +1,15 @@
 # @transcend-io/mcp-server-consent
 
+## 0.2.2
+
+### Patch Changes
+
+- 270f4f2: While this is not intended as a functional change, we’ve migrated GitHub repositories and build tooling
+- Updated dependencies [270f4f2]
+- Updated dependencies [d2822d5]
+  - @transcend-io/sdk@1.1.3
+  - @transcend-io/mcp-server-base@0.4.0
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-discovery",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Transcend MCP Server — Data Discovery tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-discovery",
   "license": "Apache-2.0",
