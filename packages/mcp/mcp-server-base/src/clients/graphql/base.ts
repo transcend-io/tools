@@ -3,35 +3,62 @@ import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
 import type { RequestOptions } from '../../types/transcend.js';
 
+/**
+ * Structurally identical to the `Logger` interface in `@transcend-io/utils`,
+ * declared locally to avoid pulling that package's transitive dependencies
+ * (bluebird, csv-parse, fp-ts, ...) into the published MCP packages.
+ *
+ * Because TypeScript is structural, instances are interchangeable with utils'
+ * `Logger` at zero runtime cost and zero call-site changes.
+ */
 export interface Logger {
-  debug(message: string, data?: unknown): void;
-  info(message: string, data?: unknown): void;
-  warn(message: string, data?: unknown): void;
-  error(message: string, data?: unknown): void;
+  debug(...args: unknown[]): void;
+  info(...args: unknown[]): void;
+  warn(...args: unknown[]): void;
+  error(...args: unknown[]): void;
 }
 
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+
 export class SimpleLogger implements Logger {
+  private static useStdoutForInfo = false;
+
+  /**
+   * Route info/debug to stdout. Call once at server startup when running
+   * in HTTP transport so log collectors (Datadog, Fluent Bit, ...) classify
+   * informational logs correctly instead of tagging everything from stderr
+   * as Error. Must NOT be enabled in stdio MCP mode -- stdout is reserved
+   * for JSON-RPC protocol frames.
+   */
+  static setInfoToStdout(enabled: boolean): void {
+    SimpleLogger.useStdoutForInfo = enabled;
+  }
+
+  private write(level: LogLevel, message: string, data?: unknown): void {
+    const line = JSON.stringify({
+      level,
+      message,
+      data,
+      timestamp: new Date().toISOString(),
+    });
+    const useStdout = SimpleLogger.useStdoutForInfo && (level === 'info' || level === 'debug');
+    (useStdout ? process.stdout : process.stderr).write(`${line}\n`);
+  }
+
   debug(message: string, data?: unknown): void {
-    if (process.env.LOG_LEVEL === 'debug') {
-      console.error(
-        JSON.stringify({ level: 'debug', message, data, timestamp: new Date().toISOString() }),
-      );
-    }
+    if (process.env.LOG_LEVEL === 'debug') this.write('debug', message, data);
   }
+
   info(message: string, data?: unknown): void {
-    console.error(
-      JSON.stringify({ level: 'info', message, data, timestamp: new Date().toISOString() }),
-    );
+    this.write('info', message, data);
   }
+
   warn(message: string, data?: unknown): void {
-    console.error(
-      JSON.stringify({ level: 'warn', message, data, timestamp: new Date().toISOString() }),
-    );
+    this.write('warn', message, data);
   }
+
   error(message: string, data?: unknown): void {
-    console.error(
-      JSON.stringify({ level: 'error', message, data, timestamp: new Date().toISOString() }),
-    );
+    this.write('error', message, data);
   }
 }
 
