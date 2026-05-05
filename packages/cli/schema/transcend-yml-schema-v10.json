@@ -40628,6 +40628,7 @@
               "az",
               "bn",
               "fa-AF",
+              "fa",
               "tl",
               "ka",
               "gu",
@@ -40824,6 +40825,7 @@
             "az",
             "bn",
             "fa-AF",
+            "fa",
             "tl",
             "ka",
             "gu",
@@ -41257,6 +41259,7 @@
                     "az",
                     "bn",
                     "fa-AF",
+                    "fa",
                     "tl",
                     "ka",
                     "gu",
@@ -41591,6 +41594,9 @@
                     "type": "string"
                   },
                   "fa-AF": {
+                    "type": "string"
+                  },
+                  "fa": {
                     "type": "string"
                   },
                   "tl": {

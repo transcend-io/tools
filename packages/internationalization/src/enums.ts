@@ -123,6 +123,8 @@ export const LOCALE_KEY = {
   Bn: 'bn',
   /** Dari */
   FaAf: 'fa-AF',
+  /** Farsi */
+  Fa: 'fa',
   /** Tagalog */
   Tl: 'tl',
   /** Georgian */
@@ -550,6 +552,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.Az]: AWS_SUPPORTED_TRANSLATIONS.Azerbaijani,
   [LOCALE_KEY.Bn]: AWS_SUPPORTED_TRANSLATIONS.Bengali,
   [LOCALE_KEY.FaAf]: AWS_SUPPORTED_TRANSLATIONS.Dari,
+  [LOCALE_KEY.Fa]: AWS_SUPPORTED_TRANSLATIONS.Farsi,
   [LOCALE_KEY.Tl]: AWS_SUPPORTED_TRANSLATIONS.Tagalog,
   [LOCALE_KEY.Ka]: AWS_SUPPORTED_TRANSLATIONS.Georgian,
   [LOCALE_KEY.Gu]: AWS_SUPPORTED_TRANSLATIONS.Gujarati,
@@ -1023,6 +1026,14 @@ export const CONSENT_MANAGER_SUPPORTED_LOCALES: Pick<
   typeof LOCALE_KEY,
   ConsentManagerSupportedTranslationKey
 > = consentManagerSupportedLocales;
+
+export const RTL_LANGS: readonly LocaleValue[] = [
+  LOCALE_KEY.Ar,
+  LOCALE_KEY.He,
+  LOCALE_KEY.Fa,
+  LOCALE_KEY.Ur,
+  LOCALE_KEY.Dv,
+] as const;
 
 /**
  * List of BCP 47 language codes, grabbed from https://www.localeplanet.com/icu/
@@ -2326,6 +2337,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Bn]: 'বাংলা',
   /* Dari */
   [LOCALE_KEY.FaAf]: 'دری',
+  /* Farsi */
+  [LOCALE_KEY.Fa]: 'فارسی',
   /* Tagalog */
   [LOCALE_KEY.Tl]: 'Tagalog',
   /* Georgian */
@@ -2707,6 +2720,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Az]: 'Azerbaijani',
   [LOCALE_KEY.Bn]: 'Bengali',
   [LOCALE_KEY.FaAf]: 'Dari',
+  [LOCALE_KEY.Fa]: 'Farsi',
   [LOCALE_KEY.Tl]: 'Tagalog',
   [LOCALE_KEY.Ka]: 'Georgian',
   [LOCALE_KEY.Gu]: 'Gujarati',
