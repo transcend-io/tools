@@ -1,13 +1,13 @@
 # Transcend MCP Servers
 
-> **Alpha** — these packages are under active development and have not yet been published to npm. APIs may change without notice.
+> **Beta** — these packages are under active development. APIs may change without notice.
 
 [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) servers that let AI agents interact with the [Transcend](https://transcend.io) privacy platform. Every server supports both **stdio** (local process) and **Streamable HTTP** (remote hosting) transports, so it works with any compliant client (Claude Desktop, Cursor, Cline, custom agents, etc.).
 
 ## Prerequisites
 
 - **Node.js** ≥ 22.12 (see each CLI package’s `engines` in `package.json`).
-- Packages are **alpha** and **not yet published to npm**. Global install and `npx` examples below assume a future registry release. **Until then**, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-base`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
+- Packages are in **beta**. Install via `npm install -g @transcend-io/<package>` or use `npx -y @transcend-io/<package>`. To develop from source, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-base`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
 
 In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package).
 
@@ -17,7 +17,9 @@ There are two ways to consume the MCP tools, and they can be mixed freely.
 
 ### Unified server
 
-Install **`@transcend-io/mcp`** to get every tool (71 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+Install **`@transcend-io/mcp`** to get every tool (70 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+
+**Claude Desktop** (`claude_desktop_config.json`) / **Cursor** (`.cursor/mcp.json`):
 
 ```json
 {
@@ -31,9 +33,26 @@ Install **`@transcend-io/mcp`** to get every tool (71 across all domains) in a s
 }
 ```
 
+**VS Code** (`.vscode/mcp.json`):
+
+```json
+{
+  "servers": {
+    "transcend": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@transcend-io/mcp"],
+      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+    }
+  }
+}
+```
+
 ### Domain servers
 
 Install only the domains you need. Smaller tool counts help AI agents stay focused and reduce token overhead from tool descriptions. You can run multiple domain servers side by side.
+
+**Claude Desktop** (`claude_desktop_config.json`) / **Cursor** (`.cursor/mcp.json`):
 
 ```json
 {
@@ -44,6 +63,27 @@ Install only the domains you need. Smaller tool counts help AI agents stay focus
       "env": { "TRANSCEND_API_KEY": "your-api-key" }
     },
     "transcend-dsr": {
+      "command": "npx",
+      "args": ["-y", "@transcend-io/mcp-server-dsr"],
+      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+    }
+  }
+}
+```
+
+**VS Code** (`.vscode/mcp.json`):
+
+```json
+{
+  "servers": {
+    "transcend-consent": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@transcend-io/mcp-server-consent"],
+      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+    },
+    "transcend-dsr": {
+      "type": "stdio",
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp-server-dsr"],
       "env": { "TRANSCEND_API_KEY": "your-api-key" }
@@ -100,10 +140,10 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                               | Binary                      | Tools | Description                                      |
 | ----------------------------------------------------- | --------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    71 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    70 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)   | `transcend-mcp-assessment`  |    14 | Privacy assessments, templates, groups           |
-| [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    12 | Consent management, cookie & data-flow triage    |
+| [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    11 | Consent management, cookie & data-flow triage    |
 | [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     6 | Data discovery, classification, NER              |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    12 | Data subject requests (submit, track, respond)   |

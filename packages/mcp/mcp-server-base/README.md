@@ -1,6 +1,6 @@
 # @transcend-io/mcp-server-base
 
-> **Alpha** — this package is under active development and has not yet been published to npm. APIs may change without notice.
+> **Beta** — this package is under active development. APIs may change without notice.
 
 Shared infrastructure for all Transcend MCP Server packages. Provides the base GraphQL and REST clients, tool type definitions, validation helpers, error handling, and the `createMCPServer` factory used by each domain server.
 
@@ -8,9 +8,9 @@ Requires **Node.js ≥ 22.12** (see `engines` in `package.json`) when building o
 
 ## Install
 
-This package is **not** a standalone MCP CLI: it has no `bin`. Domain servers and the unified `mcp-server` depend on it. In this repository it is consumed as `workspace:*`; when published to npm, downstream packages will list it as a normal dependency.
+This package is **not** a standalone MCP CLI: it has no `bin`. Domain servers and the unified `mcp` package depend on it. In this repository it is consumed as `workspace:*`; when published to npm, downstream packages will list it as a normal dependency.
 
-Until publication, use a checkout of this repository (see **Development** below).
+For development, use a checkout of this repository (see **Development** below).
 
 API keys for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers).
 

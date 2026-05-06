@@ -1,6 +1,6 @@
 # @transcend-io/mcp-server-consent
 
-> **Alpha** — this package is under active development and has not yet been published to npm. APIs may change without notice.
+> **Beta** — this package is under active development. APIs may change without notice.
 
 Transcend MCP Server for consent management. Provides tools for managing consent preferences, cookie triage, data flow management, and consent regime configuration.
 
@@ -10,13 +10,13 @@ For local runs from this repository, copy [`secret.env.example`](../../../secret
 
 ## Install
 
-When the package is available on npm, install the CLI globally:
+Install the CLI globally:
 
 ```bash
 npm install -g @transcend-io/mcp-server-consent
 ```
 
-Until then, run from a checkout of this repository (see **Run from the monorepo** below).
+Or run from a checkout of this repository (see **Run from the monorepo** below).
 
 ## Usage
 
@@ -80,10 +80,9 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_set_preferences` — Set consent preferences
 - `consent_list_purposes` — List tracking purposes
 - `consent_list_data_flows` — List data flows
+- `consent_list_cookies` — List cookies
 - `consent_list_airgap_bundles` — List Airgap bundles
 - `consent_list_regimes` — List consent regimes
-- `consent_list_triage_cookies` — List cookies for triage
-- `consent_list_triage_data_flows` — List data flows for triage
 - `consent_get_triage_stats` — Get cookie/data flow triage statistics
 - `consent_update_cookies` — Update cookies (approve, junk, assign purposes)
 - `consent_update_data_flows` — Update data flows
@@ -91,4 +90,4 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Related packages
 
-Also available as part of the unified [`@transcend-io/mcp`](../mcp/README.md) which includes all domains. See the [root README](../../../README.md#mcp-servers) for the full list.
+Also available as part of the unified [`@transcend-io/mcp`](../mcp/README.md), which includes all domains. See the [root README](../../../README.md#mcp-servers) for the full list.

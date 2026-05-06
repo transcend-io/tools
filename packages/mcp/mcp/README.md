@@ -1,6 +1,6 @@
 # @transcend-io/mcp
 
-> **Alpha** — this package is under active development and has not yet been published to npm. APIs may change without notice.
+> **Beta** — this package is under active development. APIs may change without notice.
 
 Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 70+ Transcend tools at once.
 
@@ -10,13 +10,13 @@ For local runs from this repository, copy [`secret.env.example`](../../../secret
 
 ## Install
 
-When the package is available on npm, install the CLI globally:
+Install the CLI globally:
 
 ```bash
 npm install -g @transcend-io/mcp
 ```
 
-Until then, run from a checkout of this repository (see **Run from the monorepo** below).
+Or run from a checkout of this repository (see **Run from the monorepo** below).
 
 ## Usage
 
@@ -85,16 +85,6 @@ pnpm -F @transcend-io/mcp exec node ./dist/cli.mjs
 **Alternative:** `./scripts/mcp-run.sh ./packages/mcp/mcp/dist/cli.mjs` (sources `secret.env` when present; run after build).
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout and `pnpm --filter` workflows.
-
-### Environment variables
-
-| Variable            | Required | Default                                    | Description                                        |
-| ------------------- | -------- | ------------------------------------------ | -------------------------------------------------- |
-| `TRANSCEND_API_KEY` | Yes      | —                                          | Transcend API key                                  |
-| `TRANSCEND_API_URL` | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)   |
-| `SOMBRA_URL`        | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention) |
-
-**Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 
 ## Architecture
 
