@@ -1,6 +1,6 @@
 # @transcend-io/mcp-server-inventory
 
-> **Alpha** — this package is under active development and has not yet been published to npm. APIs may change without notice.
+> **Beta** — this package is under active development. APIs may change without notice.
 
 Transcend MCP Server for data inventory management. Provides tools for managing data silos (integrations), data points, vendors, categories, and identifiers.
 
@@ -10,13 +10,13 @@ For local runs from this repository, copy [`secret.env.example`](../../../secret
 
 ## Install
 
-When the package is available on npm, install the CLI globally:
+Install the CLI globally:
 
 ```bash
 npm install -g @transcend-io/mcp-server-inventory
 ```
 
-Until then, run from a checkout of this repository (see **Run from the monorepo** below).
+Or run from a checkout of this repository (see **Run from the monorepo** below).
 
 ## Usage
 
@@ -89,4 +89,4 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Related packages
 
-Also available as part of the unified [`@transcend-io/mcp`](../mcp/README.md) which includes all domains. See the [root README](../../../README.md#mcp-servers) for the full list.
+Also available as part of the unified [`@transcend-io/mcp`](../mcp/README.md), which includes all domains. See the [root README](../../../README.md#mcp-servers) for the full list.

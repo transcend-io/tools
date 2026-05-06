@@ -100,7 +100,7 @@ Stable releases are driven by Changesets and the [Release workflow](.github/work
 Thus, after you merge a feature PR, you can either:
 
 1. Merge the subsequent release PR to publish to npm if you want it released immediately, or
-2. Wait a few feature PRs build up, before merging a release PR and publishing to npm (this also allows you to split up your changes into multiple PRs without releasing).
+2. Let a few feature PRs build up before merging a release PR and publishing to npm (this also allows you to split up your changes into multiple PRs without releasing).
 
 ### Changesets
 
