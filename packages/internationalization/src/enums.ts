@@ -59,6 +59,8 @@ export const LOCALE_KEY = {
   Mr: 'mr',
   /** Norwegian Bokmål */
   Nb: 'nb',
+  /** Norwegian DEPRECATED */
+  No: 'no',
   /** Polish */
   Pl: 'pl',
   /** Portuguese */
@@ -83,6 +85,8 @@ export const LOCALE_KEY = {
   Zu: 'zu',
   /** Hebrew */
   He: 'he',
+  /** Hebrew DEPRECATED */
+  Iw: 'iw',
   /** Dutch */
   Nl: 'nl',
   /** Estonian */
@@ -223,6 +227,8 @@ export const LOCALE_KEY = {
   MsSg: 'ms-SG',
   /** Marathi (India) */
   MrIn: 'mr-IN',
+  /** Norwegian (Norway) DEPRECATED */
+  NoNo: 'no-NO',
   /** Norwegian Bokmål (Norway) */
   NbNi: 'nb-NO',
   /** Polish (Poland) */
@@ -287,6 +293,8 @@ export const LOCALE_KEY = {
   ZhHk: 'zh-HK',
   /** Hebrew (Israel) */
   HeIl: 'he-IL',
+  /** Hebrew (Israel) DEPRECATED */
+  IwIl: 'iw-IL',
   /** English (New Zealand) */
   EnNz: 'en-NZ',
   /** Estonian (Estonia) */
@@ -521,6 +529,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.Ms]: AWS_SUPPORTED_TRANSLATIONS.Malay,
   [LOCALE_KEY.Mr]: AWS_SUPPORTED_TRANSLATIONS.Marathi,
   [LOCALE_KEY.Nb]: AWS_SUPPORTED_TRANSLATIONS.Norwegian,
+  [LOCALE_KEY.No]: AWS_SUPPORTED_TRANSLATIONS.Norwegian, // deprecated lang code
   [LOCALE_KEY.Pl]: AWS_SUPPORTED_TRANSLATIONS.Polish,
   [LOCALE_KEY.Pt]: AWS_SUPPORTED_TRANSLATIONS.PortuguesePortugal,
   [LOCALE_KEY.Ro]: AWS_SUPPORTED_TRANSLATIONS.Romanian,
@@ -533,6 +542,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.Vi]: AWS_SUPPORTED_TRANSLATIONS.Vietnamese,
   [LOCALE_KEY.Zu]: AWS_SUPPORTED_TRANSLATIONS.English, // fallback TODO: https://linear.app/transcend/issue/WAL-5583
   [LOCALE_KEY.He]: AWS_SUPPORTED_TRANSLATIONS.Hebrew,
+  [LOCALE_KEY.Iw]: AWS_SUPPORTED_TRANSLATIONS.Hebrew, // deprecated lang code
   [LOCALE_KEY.Nl]: AWS_SUPPORTED_TRANSLATIONS.Dutch,
   [LOCALE_KEY.Et]: AWS_SUPPORTED_TRANSLATIONS.Estonian,
   [LOCALE_KEY.Is]: AWS_SUPPORTED_TRANSLATIONS.Icelandic,
@@ -601,6 +611,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.MsMy]: AWS_SUPPORTED_TRANSLATIONS.Malay,
   [LOCALE_KEY.MrIn]: AWS_SUPPORTED_TRANSLATIONS.Marathi,
   [LOCALE_KEY.NbNi]: AWS_SUPPORTED_TRANSLATIONS.Norwegian,
+  [LOCALE_KEY.NoNo]: AWS_SUPPORTED_TRANSLATIONS.Norwegian, // deprecated locale code
   [LOCALE_KEY.PlPl]: AWS_SUPPORTED_TRANSLATIONS.Polish,
   [LOCALE_KEY.PtBr]: AWS_SUPPORTED_TRANSLATIONS.PortugueseBrazil,
   [LOCALE_KEY.PtPt]: AWS_SUPPORTED_TRANSLATIONS.PortuguesePortugal,
@@ -627,6 +638,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.ZhHk]: AWS_SUPPORTED_TRANSLATIONS.ChineseTraditional,
   [LOCALE_KEY.ZhHans]: AWS_SUPPORTED_TRANSLATIONS.ChineseSimplified,
   [LOCALE_KEY.HeIl]: AWS_SUPPORTED_TRANSLATIONS.Hebrew,
+  [LOCALE_KEY.IwIl]: AWS_SUPPORTED_TRANSLATIONS.Hebrew, // deprecated locale code
   [LOCALE_KEY.EnNz]: AWS_SUPPORTED_TRANSLATIONS.English,
   [LOCALE_KEY.EtEe]: AWS_SUPPORTED_TRANSLATIONS.Estonian,
   [LOCALE_KEY.IsIs]: AWS_SUPPORTED_TRANSLATIONS.Icelandic,
@@ -844,7 +856,11 @@ type ConsentManagerUnsupportedLocaleKey =
   | 'CaAd'
   | 'CaFr'
   | 'CaIt'
-  | 'GlEs';
+  | 'GlEs'
+  | 'Iw'
+  | 'IwIl'
+  | 'No'
+  | 'NoNo';
 
 /** These are the languages we have an enum value for but do not populate in the CM UI */
 const consentManagerUnsupportedLocales: readonly ConsentManagerUnsupportedLocaleKey[] =
@@ -996,6 +1012,10 @@ const consentManagerUnsupportedLocales: readonly ConsentManagerUnsupportedLocale
     'CaFr',
     'CaIt',
     'GlEs',
+    'Iw',
+    'IwIl',
+    'No',
+    'NoNo',
   ]);
 
 type ConsentManagerUnsupportedLocaleValue = (typeof LOCALE_KEY)[ConsentManagerUnsupportedLocaleKey];
@@ -2273,6 +2293,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Mr]: 'मराठी',
   /* Norwegian Bokmål */
   [LOCALE_KEY.Nb]: 'Bokmål',
+  /* Norwegian DEPRECATED */
+  [LOCALE_KEY.No]: 'Bokmål (Deprecated)',
   /* Polish */
   [LOCALE_KEY.Pl]: 'Polski',
   /* Portuguese */
@@ -2297,6 +2319,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Zu]: 'isiZulu',
   /* Hebrew */
   [LOCALE_KEY.He]: 'עברית',
+  /* Hebrew DEPRECATED */
+  [LOCALE_KEY.Iw]: 'עברית (Deprecated)',
   /* Dutch */
   [LOCALE_KEY.Nl]: 'Nederlands',
   /* Estonian */
@@ -2430,6 +2454,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.MrIn]: 'मराठी',
   /* Norwegian Bokmål */
   [LOCALE_KEY.NbNi]: 'Bokmål',
+  /* Norwegian (Norway) DEPRECATED */
+  [LOCALE_KEY.NoNo]: 'Bokmål (Deprecated)',
   /* Polish */
   [LOCALE_KEY.PlPl]: 'Polski',
   /* Portuguese (Brazil) */
@@ -2487,6 +2513,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
 
   /* Hebrew (Israel) */
   [LOCALE_KEY.HeIl]: 'עברית',
+  /* Hebrew (Israel) DEPRECATED */
+  [LOCALE_KEY.IwIl]: 'עברית (Deprecated)',
   /* Estonian (Estonia) */
   [LOCALE_KEY.EtEe]: 'Eesti',
   /* Icelandic (Iceland) */
@@ -2688,6 +2716,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Ms]: 'Malay',
   [LOCALE_KEY.Mr]: 'Marathi',
   [LOCALE_KEY.Nb]: 'Norwegian Bokmål',
+  [LOCALE_KEY.No]: 'Norwegian (Deprecated)',
   [LOCALE_KEY.Pl]: 'Polish',
   [LOCALE_KEY.Pt]: 'Portuguese',
   [LOCALE_KEY.Ro]: 'Romanian',
@@ -2700,6 +2729,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Vi]: 'Vietnamese',
   [LOCALE_KEY.Zu]: 'Zulu',
   [LOCALE_KEY.He]: 'Hebrew',
+  [LOCALE_KEY.Iw]: 'Hebrew (Deprecated)',
   [LOCALE_KEY.Nl]: 'Dutch',
   [LOCALE_KEY.Et]: 'Estonian',
   [LOCALE_KEY.Is]: 'Icelandic',
@@ -2768,6 +2798,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.MsMy]: 'Malay (Malaysia)',
   [LOCALE_KEY.MrIn]: 'Marathi (India)',
   [LOCALE_KEY.NbNi]: 'Norwegian Bokmål', // key as provided
+  [LOCALE_KEY.NoNo]: 'Norwegian (Norway) (Deprecated)',
   [LOCALE_KEY.PlPl]: 'Polish',
   [LOCALE_KEY.PtBr]: 'Portuguese (Brazil)',
   [LOCALE_KEY.PtPt]: 'Portuguese (Portugal)',
@@ -2794,6 +2825,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.FrCa]: 'French (Canada/Québec)',
   [LOCALE_KEY.FrCh]: 'French (Switzerland)',
   [LOCALE_KEY.HeIl]: 'Hebrew (Israel)',
+  [LOCALE_KEY.IwIl]: 'Hebrew (Israel) (Deprecated)',
   [LOCALE_KEY.EtEe]: 'Estonian (Estonia)',
   [LOCALE_KEY.IsIs]: 'Icelandic (Iceland)',
   [LOCALE_KEY.LvLv]: 'Latvian (Latvia)',
