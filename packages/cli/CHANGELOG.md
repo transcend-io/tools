@@ -1,5 +1,22 @@
 # @transcend-io/cli
 
+## 10.3.0
+
+### Minor Changes
+
+- 1fdd3b5: Added support for RTL languages
+- 1ed0ef6: Added deprecated language/locale codes (no, iw, no-NO, iw-IL) for DSR Submission API backward compatibility
+
+### Patch Changes
+
+- Updated dependencies [1fdd3b5]
+- Updated dependencies [1fdd3b5]
+- Updated dependencies [1ed0ef6]
+  - @transcend-io/internationalization@4.1.0
+  - @transcend-io/airgap.js-types@14.0.1
+  - @transcend-io/privacy-types@5.1.5
+  - @transcend-io/sdk@1.1.4
+
 ## 10.2.7
 
 ### Patch Changes
