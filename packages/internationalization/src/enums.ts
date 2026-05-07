@@ -59,6 +59,8 @@ export const LOCALE_KEY = {
   Mr: 'mr',
   /** Norwegian Bokmål */
   Nb: 'nb',
+  /** Norwegian DEPRECATED */
+  No: 'no',
   /** Polish */
   Pl: 'pl',
   /** Portuguese */
@@ -83,6 +85,8 @@ export const LOCALE_KEY = {
   Zu: 'zu',
   /** Hebrew */
   He: 'he',
+  /** Hebrew DEPRECATED */
+  Iw: 'iw',
   /** Dutch */
   Nl: 'nl',
   /** Estonian */
@@ -223,6 +227,8 @@ export const LOCALE_KEY = {
   MsSg: 'ms-SG',
   /** Marathi (India) */
   MrIn: 'mr-IN',
+  /** Norwegian (Norway) DEPRECATED */
+  NoNo: 'no-NO',
   /** Norwegian Bokmål (Norway) */
   NbNi: 'nb-NO',
   /** Polish (Poland) */
@@ -287,6 +293,8 @@ export const LOCALE_KEY = {
   ZhHk: 'zh-HK',
   /** Hebrew (Israel) */
   HeIl: 'he-IL',
+  /** Hebrew (Israel) DEPRECATED */
+  IwIl: 'iw-IL',
   /** English (New Zealand) */
   EnNz: 'en-NZ',
   /** Estonian (Estonia) */
@@ -521,6 +529,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.Ms]: AWS_SUPPORTED_TRANSLATIONS.Malay,
   [LOCALE_KEY.Mr]: AWS_SUPPORTED_TRANSLATIONS.Marathi,
   [LOCALE_KEY.Nb]: AWS_SUPPORTED_TRANSLATIONS.Norwegian,
+  [LOCALE_KEY.No]: AWS_SUPPORTED_TRANSLATIONS.Norwegian, // deprecated lang code
   [LOCALE_KEY.Pl]: AWS_SUPPORTED_TRANSLATIONS.Polish,
   [LOCALE_KEY.Pt]: AWS_SUPPORTED_TRANSLATIONS.PortuguesePortugal,
   [LOCALE_KEY.Ro]: AWS_SUPPORTED_TRANSLATIONS.Romanian,
@@ -533,6 +542,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.Vi]: AWS_SUPPORTED_TRANSLATIONS.Vietnamese,
   [LOCALE_KEY.Zu]: AWS_SUPPORTED_TRANSLATIONS.English, // fallback TODO: https://linear.app/transcend/issue/WAL-5583
   [LOCALE_KEY.He]: AWS_SUPPORTED_TRANSLATIONS.Hebrew,
+  [LOCALE_KEY.Iw]: AWS_SUPPORTED_TRANSLATIONS.Hebrew, // deprecated lang code
   [LOCALE_KEY.Nl]: AWS_SUPPORTED_TRANSLATIONS.Dutch,
   [LOCALE_KEY.Et]: AWS_SUPPORTED_TRANSLATIONS.Estonian,
   [LOCALE_KEY.Is]: AWS_SUPPORTED_TRANSLATIONS.Icelandic,
@@ -601,6 +611,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.MsMy]: AWS_SUPPORTED_TRANSLATIONS.Malay,
   [LOCALE_KEY.MrIn]: AWS_SUPPORTED_TRANSLATIONS.Marathi,
   [LOCALE_KEY.NbNi]: AWS_SUPPORTED_TRANSLATIONS.Norwegian,
+  [LOCALE_KEY.NoNo]: AWS_SUPPORTED_TRANSLATIONS.Norwegian, // deprecated locale code
   [LOCALE_KEY.PlPl]: AWS_SUPPORTED_TRANSLATIONS.Polish,
   [LOCALE_KEY.PtBr]: AWS_SUPPORTED_TRANSLATIONS.PortugueseBrazil,
   [LOCALE_KEY.PtPt]: AWS_SUPPORTED_TRANSLATIONS.PortuguesePortugal,
@@ -627,6 +638,7 @@ export const LOCALE_TRANSLATION_MAP: {
   [LOCALE_KEY.ZhHk]: AWS_SUPPORTED_TRANSLATIONS.ChineseTraditional,
   [LOCALE_KEY.ZhHans]: AWS_SUPPORTED_TRANSLATIONS.ChineseSimplified,
   [LOCALE_KEY.HeIl]: AWS_SUPPORTED_TRANSLATIONS.Hebrew,
+  [LOCALE_KEY.IwIl]: AWS_SUPPORTED_TRANSLATIONS.Hebrew, // deprecated locale code
   [LOCALE_KEY.EnNz]: AWS_SUPPORTED_TRANSLATIONS.English,
   [LOCALE_KEY.EtEe]: AWS_SUPPORTED_TRANSLATIONS.Estonian,
   [LOCALE_KEY.IsIs]: AWS_SUPPORTED_TRANSLATIONS.Icelandic,
@@ -844,7 +856,11 @@ type ConsentManagerUnsupportedLocaleKey =
   | 'CaAd'
   | 'CaFr'
   | 'CaIt'
-  | 'GlEs';
+  | 'GlEs'
+  | 'Iw'
+  | 'IwIl'
+  | 'No'
+  | 'NoNo';
 
 /** These are the languages we have an enum value for but do not populate in the CM UI */
 const consentManagerUnsupportedLocales: readonly ConsentManagerUnsupportedLocaleKey[] =
@@ -996,6 +1012,10 @@ const consentManagerUnsupportedLocales: readonly ConsentManagerUnsupportedLocale
     'CaFr',
     'CaIt',
     'GlEs',
+    'Iw',
+    'IwIl',
+    'No',
+    'NoNo',
   ]);
 
 type ConsentManagerUnsupportedLocaleValue = (typeof LOCALE_KEY)[ConsentManagerUnsupportedLocaleKey];
