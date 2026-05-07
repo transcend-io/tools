@@ -1,5 +1,13 @@
 # @transcend-io/internationalization
 
+## 4.1.0
+
+### Minor Changes
+
+- 1fdd3b5: Adds support for RTL languages
+- 1fdd3b5: Added support for RTL languages
+- 1ed0ef6: Added deprecated language/locale codes (no, iw, no-NO, iw-IL) for DSR Submission API backward compatibility
+
 ## 4.0.1
 
 ### Patch Changes
