@@ -40596,6 +40596,7 @@
               "ms",
               "mr",
               "nb",
+              "no",
               "pl",
               "pt",
               "ro",
@@ -40608,6 +40609,7 @@
               "vi",
               "zu",
               "he",
+              "iw",
               "nl",
               "et",
               "is",
@@ -40677,6 +40679,7 @@
               "ms-MY",
               "ms-SG",
               "mr-IN",
+              "no-NO",
               "nb-NO",
               "pl-PL",
               "pt-BR",
@@ -40709,6 +40712,7 @@
               "es-419",
               "zh-HK",
               "he-IL",
+              "iw-IL",
               "en-NZ",
               "et-EE",
               "is-IS",
@@ -40793,6 +40797,7 @@
             "ms",
             "mr",
             "nb",
+            "no",
             "pl",
             "pt",
             "ro",
@@ -40805,6 +40810,7 @@
             "vi",
             "zu",
             "he",
+            "iw",
             "nl",
             "et",
             "is",
@@ -40874,6 +40880,7 @@
             "ms-MY",
             "ms-SG",
             "mr-IN",
+            "no-NO",
             "nb-NO",
             "pl-PL",
             "pt-BR",
@@ -40906,6 +40913,7 @@
             "es-419",
             "zh-HK",
             "he-IL",
+            "iw-IL",
             "en-NZ",
             "et-EE",
             "is-IS",
@@ -41227,6 +41235,7 @@
                     "ms",
                     "mr",
                     "nb",
+                    "no",
                     "pl",
                     "pt",
                     "ro",
@@ -41239,6 +41248,7 @@
                     "vi",
                     "zu",
                     "he",
+                    "iw",
                     "nl",
                     "et",
                     "is",
@@ -41308,6 +41318,7 @@
                     "ms-MY",
                     "ms-SG",
                     "mr-IN",
+                    "no-NO",
                     "nb-NO",
                     "pl-PL",
                     "pt-BR",
@@ -41340,6 +41351,7 @@
                     "es-419",
                     "zh-HK",
                     "he-IL",
+                    "iw-IL",
                     "en-NZ",
                     "et-EE",
                     "is-IS",
@@ -41500,6 +41512,9 @@
                   "nb": {
                     "type": "string"
                   },
+                  "no": {
+                    "type": "string"
+                  },
                   "pl": {
                     "type": "string"
                   },
@@ -41534,6 +41549,9 @@
                     "type": "string"
                   },
                   "he": {
+                    "type": "string"
+                  },
+                  "iw": {
                     "type": "string"
                   },
                   "nl": {
@@ -41743,6 +41761,9 @@
                   "mr-IN": {
                     "type": "string"
                   },
+                  "no-NO": {
+                    "type": "string"
+                  },
                   "nb-NO": {
                     "type": "string"
                   },
@@ -41837,6 +41858,9 @@
                     "type": "string"
                   },
                   "he-IL": {
+                    "type": "string"
+                  },
+                  "iw-IL": {
                     "type": "string"
                   },
                   "en-NZ": {

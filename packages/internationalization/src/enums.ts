@@ -2293,6 +2293,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Mr]: 'मराठी',
   /* Norwegian Bokmål */
   [LOCALE_KEY.Nb]: 'Bokmål',
+  /* Norwegian DEPRECATED */
+  [LOCALE_KEY.No]: 'Bokmål',
   /* Polish */
   [LOCALE_KEY.Pl]: 'Polski',
   /* Portuguese */
@@ -2317,6 +2319,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Zu]: 'isiZulu',
   /* Hebrew */
   [LOCALE_KEY.He]: 'עברית',
+  /* Hebrew DEPRECATED */
+  [LOCALE_KEY.Iw]: 'עברית',
   /* Dutch */
   [LOCALE_KEY.Nl]: 'Nederlands',
   /* Estonian */
@@ -2450,6 +2454,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.MrIn]: 'मराठी',
   /* Norwegian Bokmål */
   [LOCALE_KEY.NbNi]: 'Bokmål',
+  /* Norwegian (Norway) DEPRECATED */
+  [LOCALE_KEY.NoNo]: 'Bokmål',
   /* Polish */
   [LOCALE_KEY.PlPl]: 'Polski',
   /* Portuguese (Brazil) */
@@ -2507,6 +2513,8 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
 
   /* Hebrew (Israel) */
   [LOCALE_KEY.HeIl]: 'עברית',
+  /* Hebrew (Israel) DEPRECATED */
+  [LOCALE_KEY.IwIl]: 'עברית',
   /* Estonian (Estonia) */
   [LOCALE_KEY.EtEe]: 'Eesti',
   /* Icelandic (Iceland) */
@@ -2708,6 +2716,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Ms]: 'Malay',
   [LOCALE_KEY.Mr]: 'Marathi',
   [LOCALE_KEY.Nb]: 'Norwegian Bokmål',
+  [LOCALE_KEY.No]: 'Norwegian (Deprecated)',
   [LOCALE_KEY.Pl]: 'Polish',
   [LOCALE_KEY.Pt]: 'Portuguese',
   [LOCALE_KEY.Ro]: 'Romanian',
@@ -2720,6 +2729,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.Vi]: 'Vietnamese',
   [LOCALE_KEY.Zu]: 'Zulu',
   [LOCALE_KEY.He]: 'Hebrew',
+  [LOCALE_KEY.Iw]: 'Hebrew (Deprecated)',
   [LOCALE_KEY.Nl]: 'Dutch',
   [LOCALE_KEY.Et]: 'Estonian',
   [LOCALE_KEY.Is]: 'Icelandic',
@@ -2788,6 +2798,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.MsMy]: 'Malay (Malaysia)',
   [LOCALE_KEY.MrIn]: 'Marathi (India)',
   [LOCALE_KEY.NbNi]: 'Norwegian Bokmål', // key as provided
+  [LOCALE_KEY.NoNo]: 'Norwegian (Norway) (Deprecated)',
   [LOCALE_KEY.PlPl]: 'Polish',
   [LOCALE_KEY.PtBr]: 'Portuguese (Brazil)',
   [LOCALE_KEY.PtPt]: 'Portuguese (Portugal)',
@@ -2814,6 +2825,7 @@ export const EN_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   [LOCALE_KEY.FrCa]: 'French (Canada/Québec)',
   [LOCALE_KEY.FrCh]: 'French (Switzerland)',
   [LOCALE_KEY.HeIl]: 'Hebrew (Israel)',
+  [LOCALE_KEY.IwIl]: 'Hebrew (Israel) (Deprecated)',
   [LOCALE_KEY.EtEe]: 'Estonian (Estonia)',
   [LOCALE_KEY.IsIs]: 'Icelandic (Iceland)',
   [LOCALE_KEY.LvLv]: 'Latvian (Latvia)',
