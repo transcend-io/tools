@@ -2294,7 +2294,7 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   /* Norwegian Bokmål */
   [LOCALE_KEY.Nb]: 'Bokmål',
   /* Norwegian DEPRECATED */
-  [LOCALE_KEY.No]: 'Bokmål',
+  [LOCALE_KEY.No]: 'Bokmål (Deprecated)',
   /* Polish */
   [LOCALE_KEY.Pl]: 'Polski',
   /* Portuguese */
@@ -2320,7 +2320,7 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   /* Hebrew */
   [LOCALE_KEY.He]: 'עברית',
   /* Hebrew DEPRECATED */
-  [LOCALE_KEY.Iw]: 'עברית',
+  [LOCALE_KEY.Iw]: 'עברית (Deprecated)',
   /* Dutch */
   [LOCALE_KEY.Nl]: 'Nederlands',
   /* Estonian */
@@ -2455,7 +2455,7 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   /* Norwegian Bokmål */
   [LOCALE_KEY.NbNi]: 'Bokmål',
   /* Norwegian (Norway) DEPRECATED */
-  [LOCALE_KEY.NoNo]: 'Bokmål',
+  [LOCALE_KEY.NoNo]: 'Bokmål (Deprecated)',
   /* Polish */
   [LOCALE_KEY.PlPl]: 'Polski',
   /* Portuguese (Brazil) */
@@ -2514,7 +2514,7 @@ export const NATIVE_LANGUAGE_NAMES: Record<LocaleValue, string> = {
   /* Hebrew (Israel) */
   [LOCALE_KEY.HeIl]: 'עברית',
   /* Hebrew (Israel) DEPRECATED */
-  [LOCALE_KEY.IwIl]: 'עברית',
+  [LOCALE_KEY.IwIl]: 'עברית (Deprecated)',
   /* Estonian (Estonia) */
   [LOCALE_KEY.EtEe]: 'Eesti',
   /* Icelandic (Iceland) */
