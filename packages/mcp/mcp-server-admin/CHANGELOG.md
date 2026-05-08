@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-admin
 
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [bf7e43d]
+  - @transcend-io/privacy-types@5.1.6
+
 ## 0.3.3
 
 ### Patch Changes

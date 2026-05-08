@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.1.6
+
+### Patch Changes
+
+- bf7e43d: Add `ApproximateLocation` (`APPROXIMATE_LOCATION`) to `DefaultDataSubCategoryType` for the LOCATION category.
+
 ## 5.1.5
 
 ### Patch Changes
