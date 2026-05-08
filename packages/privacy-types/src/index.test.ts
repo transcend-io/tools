@@ -15,6 +15,10 @@ describe('@transcend-io/privacy-types', () => {
     expect(Object.values(DefaultDataSubCategoryType)).toContain('EMAIL');
   });
 
+  it('exports APPROXIMATE_LOCATION as a data subcategory', () => {
+    expect(Object.values(DefaultDataSubCategoryType)).toContain('APPROXIMATE_LOCATION');
+  });
+
   it('exports ESSENTIAL as a purpose subcategory', () => {
     expect(Object.values(DefaultPurposeSubCategoryType)).toContain('ESSENTIAL');
   });
