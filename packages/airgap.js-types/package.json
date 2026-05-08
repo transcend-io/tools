@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/airgap.js-types",
-  "version": "14.0.1",
+  "version": "14.1.0",
   "description": "TypeScript types for airgap.js interoperability with custom consent UIs.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/airgap.js-types",
   "license": "Apache-2.0",

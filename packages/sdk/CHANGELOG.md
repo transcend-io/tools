@@ -1,5 +1,12 @@
 # @transcend-io/sdk
 
+## 1.1.5
+
+### Patch Changes
+
+- Updated dependencies [a35dc8b]
+  - @transcend-io/airgap.js-types@14.1.0
+
 ## 1.1.4
 
 ### Patch Changes
