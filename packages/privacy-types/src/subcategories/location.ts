@@ -1,6 +1,8 @@
 import { makeEnum } from '@transcend-io/type-utils';
 
 export const LocationSubCategory = makeEnum({
+  /** Approximate geolocation */
+  ApproximateLocation: 'APPROXIMATE_LOCATION',
   /** Fallback subcategory */
   Location: 'LOCATION',
 });
