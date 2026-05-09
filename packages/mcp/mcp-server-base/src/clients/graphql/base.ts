@@ -1,7 +1,9 @@
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
+import { getToolCallIdHeader } from '../../tool-call-context.js';
 import type { RequestOptions } from '../../types/transcend.js';
+import { TRANSCEND_MCP_USER_AGENT } from '../mcp-user-agent.js';
 
 /**
  * Structurally identical to the `Logger` interface in `@transcend-io/utils`,
@@ -142,12 +144,15 @@ export class TranscendGraphQLBase {
           );
         }
 
+        const toolCallId = getToolCallIdHeader();
         const response = await fetch(url, {
           method: 'POST',
           headers: {
             ...authHeaders(effectiveAuth),
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            'User-Agent': TRANSCEND_MCP_USER_AGENT,
+            ...(toolCallId && { 'x-toolcall-id': toolCallId }),
           },
           body: JSON.stringify({ query, variables: variables || {} }),
           signal: controller.signal,
