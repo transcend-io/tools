@@ -81,6 +81,7 @@ export async function runMcpHttp(
           'Authorization',
           'X-Transcend-Api-Key',
           'x-transcend-active-organization-id',
+          'x-transcend-mcp-caller',
           'Last-Event-ID',
         ],
         exposedHeaders: ['mcp-session-id'],
