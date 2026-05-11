@@ -3,6 +3,9 @@ export type { AuthCredentials, ApiKeyAuth, SessionCookieAuth } from './auth.js';
 
 export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
+export { toolCallContext, getToolCallIdHeader } from './tool-call-context.js';
+export type { ToolCallContext } from './tool-call-context.js';
+
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { TranscendRestClient } from './clients/rest-client.js';

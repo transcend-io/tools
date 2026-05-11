@@ -1,5 +1,6 @@
 import { getRequestAuth } from '../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../auth.js';
+import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
   DSRResponse,
@@ -17,6 +18,7 @@ import type {
   RequestOptions,
 } from '../types/transcend.js';
 import { SimpleLogger, type Logger } from './graphql/base.js';
+import { TRANSCEND_MCP_USER_AGENT } from './mcp-user-agent.js';
 
 export class TranscendRestClient {
   private auth: AuthCredentials | null;
@@ -66,12 +68,15 @@ export class TranscendRestClient {
       ...fetchOptions
     } = options;
 
+    const toolCallId = getToolCallIdHeader();
     const headers: Record<string, string> = {
       ...authHeaders(effectiveAuth),
       'Content-Type': 'application/json',
       Accept: 'application/json',
       'X-Transcend-Version': '2021-11-15',
       ...((options.headers as Record<string, string>) || {}),
+      'User-Agent': TRANSCEND_MCP_USER_AGENT,
+      ...(toolCallId && { 'x-toolcall-id': toolCallId }),
     };
 
     const controller = new AbortController();
@@ -191,10 +196,13 @@ export class TranscendRestClient {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
     const url = `${this.baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
+    const toolCallId = getToolCallIdHeader();
     const response = await fetch(url, {
       headers: {
         ...authHeaders(effectiveAuth),
         Accept: 'application/octet-stream',
+        'User-Agent': TRANSCEND_MCP_USER_AGENT,
+        ...(toolCallId && { 'x-toolcall-id': toolCallId }),
       },
     });
     if (!response.ok) {

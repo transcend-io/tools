@@ -1,9 +1,12 @@
+import { randomUUID } from 'node:crypto';
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { requestAuthContext } from '../src/auth-context.js';
 import type { AuthCredentials } from '../src/auth.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import { ToolError, ErrorCode } from '../src/errors.js';
+import { toolCallContext } from '../src/tool-call-context.js';
 
 class TestGraphQLClient extends TranscendGraphQLBase {
   async query<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
@@ -98,6 +101,7 @@ describe('TranscendGraphQLBase', () => {
             Authorization: `Bearer ${API_KEY}`,
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            'User-Agent': 'Transcend-mcp',
           }),
         }),
       );
@@ -121,6 +125,7 @@ describe('TranscendGraphQLBase', () => {
             'x-transcend-active-organization-id': 'org-uuid-456',
             'Content-Type': 'application/json',
             Accept: 'application/json',
+            'User-Agent': 'Transcend-mcp',
           }),
         }),
       );
@@ -137,6 +142,60 @@ describe('TranscendGraphQLBase', () => {
 
       const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
       expect(calledHeaders).not.toHaveProperty('Authorization');
+    });
+
+    it('does not send x-toolcall-id without tool call context', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders).not.toHaveProperty('x-toolcall-id');
+    });
+
+    it('sends x-toolcall-id when tool call context is active', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const correlationId = randomUUID();
+      await toolCallContext.run({ toolName: 'my_tool', correlationId }, async () => {
+        await client.query('query { __typename }');
+      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'x-toolcall-id': `my_tool:${correlationId}`,
+          }),
+        }),
+      );
+    });
+
+    it('reuses the same x-toolcall-id for multiple requests in one tool call', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const correlationId = randomUUID();
+      await toolCallContext.run({ toolName: 'multi_fetch', correlationId }, async () => {
+        await client.query('query { __typename }');
+        await client.query('query { __typename }');
+      });
+
+      const call0 = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      const call1 = (fetch as ReturnType<typeof vi.fn>).mock.calls[1][1].headers;
+      expect(call0['x-toolcall-id']).toBe(`multi_fetch:${correlationId}`);
+      expect(call1['x-toolcall-id']).toBe(call0['x-toolcall-id']);
     });
   });
 

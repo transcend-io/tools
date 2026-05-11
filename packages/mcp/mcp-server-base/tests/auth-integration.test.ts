@@ -258,6 +258,12 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
       expect(gqlReq).toBeDefined();
       expect(gqlReq!.headers.authorization).toBe('Bearer startup-api-key-12345');
       expect(gqlReq!.headers['x-transcend-active-organization-id']).toBeUndefined();
+      expect(gqlReq!.headers['user-agent']).toBe('Transcend-mcp');
+      const toolCallId = gqlReq!.headers['x-toolcall-id'] as string;
+      expect(toolCallId).toMatch(/^graphql_ping:/);
+      expect(toolCallId!.slice('graphql_ping:'.length)).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
     });
 
     it('per-request API key overrides the env var key', async () => {
