@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-base
 
+## 0.4.1
+
+### Patch Changes
+
+- a33cfa5: Adds user agent and toolcall headers mcp tool calls
+- a33cfa5: Adds x-transcend-mcp-caller to allowed headers
+
 ## 0.4.0
 
 ### Minor Changes
