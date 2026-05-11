@@ -584,10 +584,7 @@ export const TrackingConsent = t.intersection([
  */
 export type TrackingConsent = t.TypeOf<typeof TrackingConsent>;
 
-export const TrackingConsentWithNulls = t.record(
-  t.string,
-  t.union([t.boolean, t.undefined, t.null]),
-);
+export const TrackingConsentWithNulls = t.record(t.string, t.union([TrackingConsent, t.null]));
 /** Type override */
 export type TrackingConsentWithNulls = t.TypeOf<typeof TrackingConsentWithNulls>;
 
