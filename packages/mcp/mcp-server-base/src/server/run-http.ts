@@ -11,6 +11,11 @@ import type { Request, Response } from 'express';
 import { requestAuthContext } from '../auth-context.js';
 import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
+import {
+  MCP_CALLER_HEADER,
+  extractMcpCallerFromHeaders,
+  requestMcpCallerContext,
+} from '../mcp-caller-context.js';
 import { InMemoryEventStore } from './event-store.js';
 import type { TransportConfig } from './parse-args.js';
 import { tryResolveAuth } from './resolve-auth.js';
@@ -37,6 +42,26 @@ export interface McpHttpServer {
   httpServer: HttpServer;
   /** Gracefully shut down the server and all sessions */
   shutdown: () => Promise<void>;
+}
+
+async function runWithInboundHttpContext(
+  headers: Record<string, string | string[] | undefined>,
+  fn: () => Promise<void>,
+): Promise<void> {
+  const auth = tryResolveAuth(headers);
+  const mcpCaller = extractMcpCallerFromHeaders(headers);
+
+  let contextWrappedFn = fn;
+  if (mcpCaller !== undefined) {
+    const prev = contextWrappedFn;
+    contextWrappedFn = () => requestMcpCallerContext.run(mcpCaller, prev);
+  }
+  if (auth) {
+    const prev = contextWrappedFn;
+    contextWrappedFn = () => requestAuthContext.run(auth, prev);
+  }
+
+  return await contextWrappedFn();
 }
 
 interface SessionEntry {
@@ -81,7 +106,7 @@ export async function runMcpHttp(
           'Authorization',
           'X-Transcend-Api-Key',
           'x-transcend-active-organization-id',
-          'x-transcend-mcp-caller',
+          MCP_CALLER_HEADER,
           'Last-Event-ID',
         ],
         exposedHeaders: ['mcp-session-id'],
@@ -108,9 +133,11 @@ export async function runMcpHttp(
         const session = sessions.get(sessionId)!;
         session.lastActivityAt = Date.now();
 
-        const auth = tryResolveAuth(req.headers as Record<string, string | string[] | undefined>);
         const handleReq = () => session.transport.handleRequest(req, res, req.body);
-        await (auth ? requestAuthContext.run(auth, handleReq) : handleReq());
+        await runWithInboundHttpContext(
+          req.headers as Record<string, string | string[] | undefined>,
+          handleReq,
+        );
         return;
       }
 
@@ -143,7 +170,10 @@ export async function runMcpHttp(
 
         await server.connect(transport);
         const handleReq = () => transport.handleRequest(req, res, req.body);
-        await (auth ? requestAuthContext.run(auth, handleReq) : handleReq());
+        await runWithInboundHttpContext(
+          req.headers as Record<string, string | string[] | undefined>,
+          handleReq,
+        );
         return;
       }
 

@@ -8,6 +8,7 @@ import type { AddressInfo } from 'node:net';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
+import { MCP_CALLER_HEADER } from '../src/mcp-caller-context.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
@@ -264,6 +265,25 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
       expect(toolCallId!.slice('graphql_ping:'.length)).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
       );
+    });
+
+    it(`forwards ${MCP_CALLER_HEADER} to the GraphQL backend on tool calls`, async () => {
+      const sessionId = await initSession(mcpUrl);
+      capturedRequests = [];
+
+      const { isError } = await callTool(
+        mcpUrl,
+        sessionId,
+        'graphql_ping',
+        {},
+        { [MCP_CALLER_HEADER]: 'cursor-desktop' },
+      );
+
+      expect(isError).toBe(false);
+
+      const gqlReq = capturedRequests.find((r) => r.url === '/graphql');
+      expect(gqlReq).toBeDefined();
+      expect(gqlReq!.headers[MCP_CALLER_HEADER]).toBe('cursor-desktop');
     });
 
     it('per-request API key overrides the env var key', async () => {
