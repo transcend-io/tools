@@ -1,6 +1,12 @@
 import { getRequestAuth } from '../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../auth.js';
-import { MCP_CALLER_HEADER, getRequestMcpCaller } from '../mcp-caller-context.js';
+import {
+  MCP_CALLER_HEADER,
+  TOOLCALL_ID_HEADER,
+  TRANSCEND_VERSION_HEADER,
+  TRANSCEND_VERSION_HEADER_VALUE,
+} from '../http-header-names.js';
+import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
@@ -75,10 +81,10 @@ export class TranscendRestClient {
       ...authHeaders(effectiveAuth),
       'Content-Type': 'application/json',
       Accept: 'application/json',
-      'X-Transcend-Version': '2021-11-15',
+      [TRANSCEND_VERSION_HEADER]: TRANSCEND_VERSION_HEADER_VALUE,
       ...((options.headers as Record<string, string>) || {}),
       'User-Agent': TRANSCEND_MCP_USER_AGENT,
-      ...(toolCallId && { 'x-toolcall-id': toolCallId }),
+      ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
       ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
     };
 
@@ -206,7 +212,7 @@ export class TranscendRestClient {
         ...authHeaders(effectiveAuth),
         Accept: 'application/octet-stream',
         'User-Agent': TRANSCEND_MCP_USER_AGENT,
-        ...(toolCallId && { 'x-toolcall-id': toolCallId }),
+        ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
         ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
       },
     });

@@ -8,7 +8,12 @@ import type { AddressInfo } from 'node:net';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
-import { MCP_CALLER_HEADER } from '../src/mcp-caller-context.js';
+import {
+  MCP_CALLER_HEADER,
+  MCP_SESSION_ID_HEADER,
+  TOOLCALL_ID_HEADER,
+  TRANSCEND_ACTIVE_ORG_ID_HEADER,
+} from '../src/http-header-names.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
@@ -123,12 +128,12 @@ async function initSession(
     }),
   });
   expect(res.status).toBe(200);
-  const sessionId = res.headers.get('mcp-session-id')!;
+  const sessionId = res.headers.get(MCP_SESSION_ID_HEADER)!;
   expect(sessionId).toBeTruthy();
 
   await fetch(`${baseUrl}/mcp`, {
     method: 'POST',
-    headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+    headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
     body: JSON.stringify({
       jsonrpc: '2.0',
       method: 'notifications/initialized',
@@ -157,7 +162,7 @@ async function callTool(
     method: 'POST',
     headers: {
       ...MCP_HEADERS,
-      'mcp-session-id': sessionId,
+      [MCP_SESSION_ID_HEADER]: sessionId,
       ...extraHeaders,
     },
     body: JSON.stringify({
@@ -258,9 +263,9 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
       const gqlReq = capturedRequests.find((r) => r.url === '/graphql');
       expect(gqlReq).toBeDefined();
       expect(gqlReq!.headers.authorization).toBe('Bearer startup-api-key-12345');
-      expect(gqlReq!.headers['x-transcend-active-organization-id']).toBeUndefined();
+      expect(gqlReq!.headers[TRANSCEND_ACTIVE_ORG_ID_HEADER]).toBeUndefined();
       expect(gqlReq!.headers['user-agent']).toBe('Transcend-mcp');
-      const toolCallId = gqlReq!.headers['x-toolcall-id'] as string;
+      const toolCallId = gqlReq!.headers[TOOLCALL_ID_HEADER] as string;
       expect(toolCallId).toMatch(/^graphql_ping:/);
       expect(toolCallId!.slice('graphql_ping:'.length)).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
@@ -318,7 +323,7 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
         {},
         {
           Cookie: 'laravel_session=override-cookie',
-          'x-transcend-active-organization-id': 'override-org',
+          [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'override-org',
         },
       );
 
@@ -327,7 +332,7 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
       const gqlReq = capturedRequests.find((r) => r.url === '/graphql');
       expect(gqlReq).toBeDefined();
       expect(gqlReq!.headers.cookie).toBe('laravel_session=override-cookie');
-      expect(gqlReq!.headers['x-transcend-active-organization-id']).toBe('override-org');
+      expect(gqlReq!.headers[TRANSCEND_ACTIVE_ORG_ID_HEADER]).toBe('override-org');
       expect(gqlReq!.headers.authorization).toBeUndefined();
     });
 
@@ -342,7 +347,7 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
         {},
         {
           Cookie: 'laravel_session=priority-cookie',
-          'x-transcend-active-organization-id': 'org-priority',
+          [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-priority',
           Authorization: 'Bearer should-be-ignored',
         },
       );
@@ -352,7 +357,7 @@ describe('Auth Integration (HTTP transport → client → outbound fetch)', () =
       const gqlReq = capturedRequests.find((r) => r.url === '/graphql');
       expect(gqlReq).toBeDefined();
       expect(gqlReq!.headers.cookie).toBe('laravel_session=priority-cookie');
-      expect(gqlReq!.headers['x-transcend-active-organization-id']).toBe('org-priority');
+      expect(gqlReq!.headers[TRANSCEND_ACTIVE_ORG_ID_HEADER]).toBe('org-priority');
       expect(gqlReq!.headers.authorization).toBeUndefined();
     });
   });

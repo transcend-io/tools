@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 
 import {
+  TRANSCEND_ACTIVE_ORG_ID_HEADER,
+  TRANSCEND_API_KEY_HEADER,
+} from '../src/http-header-names.js';
+import {
   resolveAuth,
   tryResolveAuth,
   extractApiKeyFromHeaders,
@@ -13,14 +17,14 @@ describe('extractApiKeyFromHeaders', () => {
   });
 
   it('extracts key from X-Transcend-Api-Key header', () => {
-    const key = extractApiKeyFromHeaders({ 'x-transcend-api-key': 'my-key' });
+    const key = extractApiKeyFromHeaders({ [TRANSCEND_API_KEY_HEADER]: 'my-key' });
     expect(key).toBe('my-key');
   });
 
   it('prefers Authorization header over X-Transcend-Api-Key', () => {
     const key = extractApiKeyFromHeaders({
       authorization: 'Bearer auth-key',
-      'x-transcend-api-key': 'header-key',
+      [TRANSCEND_API_KEY_HEADER]: 'header-key',
     });
     expect(key).toBe('auth-key');
   });
@@ -55,7 +59,7 @@ describe('resolveAuth', () => {
   it('returns sessionCookie credentials when Cookie and org ID headers are present', () => {
     const auth = resolveAuth({
       cookie: 'laravel_session=abc123',
-      'x-transcend-active-organization-id': 'org-uuid',
+      [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid',
     });
     expect(auth).toEqual({
       type: 'sessionCookie',
@@ -70,7 +74,7 @@ describe('resolveAuth', () => {
   });
 
   it('returns apiKey credentials from X-Transcend-Api-Key header', () => {
-    const auth = resolveAuth({ 'x-transcend-api-key': 'header-key' });
+    const auth = resolveAuth({ [TRANSCEND_API_KEY_HEADER]: 'header-key' });
     expect(auth).toEqual({ type: 'apiKey', apiKey: 'header-key' });
   });
 
@@ -105,7 +109,7 @@ describe('resolveAuth', () => {
   it('prefers session cookie over API key header when both are present', () => {
     const auth = resolveAuth({
       cookie: 'laravel_session=abc123',
-      'x-transcend-active-organization-id': 'org-uuid',
+      [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid',
       authorization: 'Bearer api-key',
     });
     expect(auth).toEqual({
@@ -151,7 +155,7 @@ describe('tryResolveAuth', () => {
   it('returns sessionCookie credentials when cookie + org ID present', () => {
     const auth = tryResolveAuth({
       cookie: 'laravel_session=abc123',
-      'x-transcend-active-organization-id': 'org-uuid',
+      [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid',
     });
     expect(auth).toEqual({
       type: 'sessionCookie',

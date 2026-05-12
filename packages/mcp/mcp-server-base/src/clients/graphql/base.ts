@@ -1,7 +1,8 @@
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
-import { MCP_CALLER_HEADER, getRequestMcpCaller } from '../../mcp-caller-context.js';
+import { MCP_CALLER_HEADER, TOOLCALL_ID_HEADER } from '../../http-header-names.js';
+import { getRequestMcpCaller } from '../../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../../tool-call-context.js';
 import type { RequestOptions } from '../../types/transcend.js';
 import { TRANSCEND_MCP_USER_AGENT } from '../mcp-user-agent.js';
@@ -154,7 +155,7 @@ export class TranscendGraphQLBase {
             'Content-Type': 'application/json',
             Accept: 'application/json',
             'User-Agent': TRANSCEND_MCP_USER_AGENT,
-            ...(toolCallId && { 'x-toolcall-id': toolCallId }),
+            ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
             ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
           },
           body: JSON.stringify({ query, variables: variables || {} }),

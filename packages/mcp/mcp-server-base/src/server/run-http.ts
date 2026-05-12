@@ -13,9 +13,11 @@ import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import {
   MCP_CALLER_HEADER,
-  extractMcpCallerFromHeaders,
-  requestMcpCallerContext,
-} from '../mcp-caller-context.js';
+  MCP_SESSION_ID_HEADER,
+  TRANSCEND_ACTIVE_ORG_ID_HEADER,
+  TRANSCEND_API_KEY_HEADER,
+} from '../http-header-names.js';
+import { extractMcpCallerFromHeaders, requestMcpCallerContext } from '../mcp-caller-context.js';
 import { InMemoryEventStore } from './event-store.js';
 import type { TransportConfig } from './parse-args.js';
 import { tryResolveAuth } from './resolve-auth.js';
@@ -78,7 +80,7 @@ interface SessionEntry {
  *
  * Each client session gets its own {@link Server} and
  * {@link StreamableHTTPServerTransport}. Sessions are identified by the
- * `mcp-session-id` header and cleaned up after an idle TTL.
+ * {@link MCP_SESSION_ID_HEADER} header and cleaned up after an idle TTL.
  *
  * Per-request auth is propagated via {@link requestAuthContext} so that
  * concurrent requests on the same session each use their own credentials
@@ -102,14 +104,14 @@ export async function runMcpHttp(
         allowedHeaders: [
           'Content-Type',
           'Cookie',
-          'mcp-session-id',
+          MCP_SESSION_ID_HEADER,
           'Authorization',
-          'X-Transcend-Api-Key',
-          'x-transcend-active-organization-id',
+          TRANSCEND_API_KEY_HEADER,
+          TRANSCEND_ACTIVE_ORG_ID_HEADER,
           MCP_CALLER_HEADER,
           'Last-Event-ID',
         ],
-        exposedHeaders: ['mcp-session-id'],
+        exposedHeaders: [MCP_SESSION_ID_HEADER],
       }),
     );
   }
@@ -125,7 +127,7 @@ export async function runMcpHttp(
 
   // POST /mcp — main JSON-RPC endpoint
   app.post(config.mcpPath, async (req: Request, res: Response) => {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    const sessionId = req.headers[MCP_SESSION_ID_HEADER] as string | undefined;
 
     try {
       // Existing session — resolve per-request auth into AsyncLocalStorage
@@ -196,7 +198,7 @@ export async function runMcpHttp(
 
   // GET /mcp — SSE stream for server-to-client notifications
   app.get(config.mcpPath, async (req: Request, res: Response) => {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    const sessionId = req.headers[MCP_SESSION_ID_HEADER] as string | undefined;
     if (!sessionId || !sessions.has(sessionId)) {
       res.status(400).json({
         jsonrpc: '2.0',
@@ -213,7 +215,7 @@ export async function runMcpHttp(
 
   // DELETE /mcp — session termination
   app.delete(config.mcpPath, async (req: Request, res: Response) => {
-    const sessionId = req.headers['mcp-session-id'] as string | undefined;
+    const sessionId = req.headers[MCP_SESSION_ID_HEADER] as string | undefined;
     if (!sessionId || !sessions.has(sessionId)) {
       res.status(400).json({
         jsonrpc: '2.0',

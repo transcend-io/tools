@@ -1,7 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-/** HTTP header name for the MCP client identity on inbound HTTP transport requests */
-export const MCP_CALLER_HEADER = 'x-transcend-mcp-caller';
+import { MCP_CALLER_HEADER } from './http-header-names.js';
+
+export { MCP_CALLER_HEADER };
 
 /**
  * Per-request MCP caller label from {@link MCP_CALLER_HEADER}. Populated for HTTP

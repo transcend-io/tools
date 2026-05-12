@@ -1,4 +1,5 @@
 import type { AuthCredentials } from '../auth.js';
+import { TRANSCEND_ACTIVE_ORG_ID_HEADER, TRANSCEND_API_KEY_HEADER } from '../http-header-names.js';
 
 /**
  * Extracts an API key from HTTP request headers.
@@ -12,7 +13,7 @@ export function extractApiKeyFromHeaders(
     return auth.slice(7);
   }
 
-  const apiKeyHeader = headers['x-transcend-api-key'];
+  const apiKeyHeader = headers[TRANSCEND_API_KEY_HEADER];
   if (typeof apiKeyHeader === 'string') {
     return apiKeyHeader;
   }
@@ -37,7 +38,7 @@ export function tryResolveAuth(
 ): AuthCredentials | null {
   if (headers) {
     const cookie = headers.cookie;
-    const orgId = headers['x-transcend-active-organization-id'];
+    const orgId = headers[TRANSCEND_ACTIVE_ORG_ID_HEADER];
     if (typeof cookie === 'string' && typeof orgId === 'string') {
       return { type: 'sessionCookie', cookie, organizationId: orgId };
     }
@@ -72,6 +73,6 @@ export function resolveAuth(
   throw new Error(
     'No authentication provided. Set TRANSCEND_API_KEY, ' +
       'send an Authorization header, or include a session cookie with ' +
-      'x-transcend-active-organization-id.',
+      `${TRANSCEND_ACTIVE_ORG_ID_HEADER}.`,
   );
 }
