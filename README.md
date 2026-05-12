@@ -17,3 +17,5 @@ The packages in `packages/` are the public developer tools for Transcend.
   definitions for Transcend APIs and product surfaces.
 - [`packages/mcp`](./packages/mcp/): [Model Context Protocol](https://modelcontextprotocol.io/) servers (`@transcend-io/mcp` and
   per-domain packages) so AI agents can work with Transcend.
+- [`packages/airgap.js-types`](./packages/airgap.js-types/) (`@transcend-io/airgap.js-types`): shared enums, codecs, and type
+  definitions for Transcend airgap.js.
