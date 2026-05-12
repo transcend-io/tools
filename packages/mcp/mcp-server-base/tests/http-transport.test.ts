@@ -1,8 +1,14 @@
 import type { AddressInfo } from 'node:net';
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi, type Mock } from 'vitest';
 
-import { getRequestAuth, requestAuthContext } from '../src/auth-context.js';
+import { getRequestAuth } from '../src/auth-context.js';
+import type { AuthCredentials } from '../src/auth.js';
+import {
+  MCP_SESSION_ID_HEADER,
+  TRANSCEND_ACTIVE_ORG_ID_HEADER,
+  TRANSCEND_API_KEY_HEADER,
+} from '../src/http-header-names.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import type { TransportConfig } from '../src/server/parse-args.js';
 import { runMcpHttp, type McpHttpServer } from '../src/server/run-http.js';
@@ -116,7 +122,7 @@ describe('HTTP Transport', () => {
       });
 
       expect(res.status).toBe(200);
-      sessionId = res.headers.get('mcp-session-id')!;
+      sessionId = res.headers.get(MCP_SESSION_ID_HEADER)!;
       expect(sessionId).toBeTruthy();
     });
 
@@ -125,7 +131,7 @@ describe('HTTP Transport', () => {
         method: 'POST',
         headers: {
           ...MCP_HEADERS,
-          'mcp-session-id': sessionId,
+          [MCP_SESSION_ID_HEADER]: sessionId,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -142,7 +148,7 @@ describe('HTTP Transport', () => {
         method: 'POST',
         headers: {
           ...MCP_HEADERS,
-          'mcp-session-id': sessionId,
+          [MCP_SESSION_ID_HEADER]: sessionId,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -166,7 +172,7 @@ describe('HTTP Transport', () => {
         method: 'POST',
         headers: {
           ...MCP_HEADERS,
-          'mcp-session-id': sessionId,
+          [MCP_SESSION_ID_HEADER]: sessionId,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -190,7 +196,7 @@ describe('HTTP Transport', () => {
         method: 'DELETE',
         headers: {
           Accept: 'text/event-stream, application/json',
-          'mcp-session-id': sessionId,
+          [MCP_SESSION_ID_HEADER]: sessionId,
         },
       });
       expect(res.status).toBe(200);
@@ -200,7 +206,7 @@ describe('HTTP Transport', () => {
         method: 'POST',
         headers: {
           ...MCP_HEADERS,
-          'mcp-session-id': sessionId,
+          [MCP_SESSION_ID_HEADER]: sessionId,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -235,7 +241,7 @@ describe('HTTP Transport', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.headers.get('mcp-session-id')).toBeTruthy();
+      expect(res.headers.get(MCP_SESSION_ID_HEADER)).toBeTruthy();
     });
 
     it('accepts API key from X-Transcend-Api-Key header', async () => {
@@ -243,7 +249,7 @@ describe('HTTP Transport', () => {
         method: 'POST',
         headers: {
           ...MCP_HEADERS,
-          'X-Transcend-Api-Key': TEST_API_KEY,
+          [TRANSCEND_API_KEY_HEADER]: TEST_API_KEY,
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -258,18 +264,18 @@ describe('HTTP Transport', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.headers.get('mcp-session-id')).toBeTruthy();
+      expect(res.headers.get(MCP_SESSION_ID_HEADER)).toBeTruthy();
     });
   });
 
   describe('session cookie authentication', () => {
-    it('initializes a session with Cookie + x-transcend-active-organization-id headers', async () => {
+    it(`initializes a session with Cookie + ${TRANSCEND_ACTIVE_ORG_ID_HEADER} headers`, async () => {
       const res = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
           ...MCP_HEADERS,
           Cookie: 'laravel_session=session-token-abc',
-          'x-transcend-active-organization-id': 'org-uuid-123',
+          [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid-123',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -284,7 +290,7 @@ describe('HTTP Transport', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.headers.get('mcp-session-id')).toBeTruthy();
+      expect(res.headers.get(MCP_SESSION_ID_HEADER)).toBeTruthy();
     });
 
     it('cookie-authed session can call tools', async () => {
@@ -293,7 +299,7 @@ describe('HTTP Transport', () => {
         headers: {
           ...MCP_HEADERS,
           Cookie: 'laravel_session=session-for-tool-call',
-          'x-transcend-active-organization-id': 'org-uuid-456',
+          [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid-456',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -307,13 +313,13 @@ describe('HTTP Transport', () => {
         }),
       });
 
-      const sessionId = initRes.headers.get('mcp-session-id')!;
+      const sessionId = initRes.headers.get(MCP_SESSION_ID_HEADER)!;
       expect(sessionId).toBeTruthy();
 
       // Send initialized notification
       await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
-        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'notifications/initialized',
@@ -323,7 +329,7 @@ describe('HTTP Transport', () => {
       // Call a tool
       const res = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
-        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'tools/call',
@@ -347,7 +353,7 @@ describe('HTTP Transport', () => {
         headers: {
           ...MCP_HEADERS,
           Cookie: 'laravel_session=customer-a-session',
-          'x-transcend-active-organization-id': 'org-a',
+          [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-a',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -366,7 +372,7 @@ describe('HTTP Transport', () => {
         headers: {
           ...MCP_HEADERS,
           Cookie: 'laravel_session=customer-b-session',
-          'x-transcend-active-organization-id': 'org-b',
+          [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-b',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -380,8 +386,8 @@ describe('HTTP Transport', () => {
         }),
       });
 
-      const sessionA = initA.headers.get('mcp-session-id')!;
-      const sessionB = initB.headers.get('mcp-session-id')!;
+      const sessionA = initA.headers.get(MCP_SESSION_ID_HEADER)!;
+      const sessionB = initB.headers.get(MCP_SESSION_ID_HEADER)!;
 
       expect(sessionA).toBeTruthy();
       expect(sessionB).toBeTruthy();
@@ -392,7 +398,7 @@ describe('HTTP Transport', () => {
   describe('auth-free initialization (sidecar pattern)', () => {
     let sidecarServer: McpHttpServer;
     let sidecarUrl: string;
-    let capturedAuthSpy: ReturnType<typeof vi.fn>;
+    let capturedAuthSpy: Mock<(auth: AuthCredentials | null) => void>;
 
     const authCaptureTool: ToolDefinition = {
       name: 'capture_auth',
@@ -453,7 +459,7 @@ describe('HTTP Transport', () => {
       });
 
       expect(res.status).toBe(200);
-      expect(res.headers.get('mcp-session-id')).toBeTruthy();
+      expect(res.headers.get(MCP_SESSION_ID_HEADER)).toBeTruthy();
     });
 
     it('propagates per-request auth via AsyncLocalStorage when headers present', async () => {
@@ -472,12 +478,12 @@ describe('HTTP Transport', () => {
         }),
       });
 
-      const sessionId = initRes.headers.get('mcp-session-id')!;
+      const sessionId = initRes.headers.get(MCP_SESSION_ID_HEADER)!;
       expect(sessionId).toBeTruthy();
 
       await fetch(`${sidecarUrl}/mcp`, {
         method: 'POST',
-        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'notifications/initialized',
@@ -490,9 +496,9 @@ describe('HTTP Transport', () => {
         method: 'POST',
         headers: {
           ...MCP_HEADERS,
-          'mcp-session-id': sessionId,
+          [MCP_SESSION_ID_HEADER]: sessionId,
           Cookie: 'laravel_session=user-a-session',
-          'x-transcend-active-organization-id': 'org-a-uuid',
+          [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-a-uuid',
         },
         body: JSON.stringify({
           jsonrpc: '2.0',
@@ -526,11 +532,11 @@ describe('HTTP Transport', () => {
         }),
       });
 
-      const sessionId = initRes.headers.get('mcp-session-id')!;
+      const sessionId = initRes.headers.get(MCP_SESSION_ID_HEADER)!;
 
       await fetch(`${sidecarUrl}/mcp`, {
         method: 'POST',
-        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'notifications/initialized',
@@ -541,7 +547,7 @@ describe('HTTP Transport', () => {
 
       await fetch(`${sidecarUrl}/mcp`, {
         method: 'POST',
-        headers: { ...MCP_HEADERS, 'mcp-session-id': sessionId },
+        headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
         body: JSON.stringify({
           jsonrpc: '2.0',
           method: 'tools/call',

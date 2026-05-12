@@ -6,6 +6,7 @@ import { requestAuthContext } from '../src/auth-context.js';
 import type { AuthCredentials } from '../src/auth.js';
 import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import { ToolError, ErrorCode } from '../src/errors.js';
+import { TOOLCALL_ID_HEADER, TRANSCEND_ACTIVE_ORG_ID_HEADER } from '../src/http-header-names.js';
 import { toolCallContext } from '../src/tool-call-context.js';
 
 class TestGraphQLClient extends TranscendGraphQLBase {
@@ -122,7 +123,7 @@ describe('TranscendGraphQLBase', () => {
           method: 'POST',
           headers: expect.objectContaining({
             Cookie: 'laravel_session=abc123',
-            'x-transcend-active-organization-id': 'org-uuid-456',
+            [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid-456',
             'Content-Type': 'application/json',
             Accept: 'application/json',
             'User-Agent': 'Transcend-mcp',
@@ -144,7 +145,7 @@ describe('TranscendGraphQLBase', () => {
       expect(calledHeaders).not.toHaveProperty('Authorization');
     });
 
-    it('does not send x-toolcall-id without tool call context', async () => {
+    it(`does not send ${TOOLCALL_ID_HEADER} without tool call context`, async () => {
       const mockFetch = createMockFetchResponse({
         data: { __typename: 'Query' },
       });
@@ -154,10 +155,10 @@ describe('TranscendGraphQLBase', () => {
       await client.query('query { __typename }');
 
       const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
-      expect(calledHeaders).not.toHaveProperty('x-toolcall-id');
+      expect(calledHeaders).not.toHaveProperty(TOOLCALL_ID_HEADER);
     });
 
-    it('sends x-toolcall-id when tool call context is active', async () => {
+    it(`sends ${TOOLCALL_ID_HEADER} when tool call context is active`, async () => {
       const mockFetch = createMockFetchResponse({
         data: { __typename: 'Query' },
       });
@@ -173,13 +174,13 @@ describe('TranscendGraphQLBase', () => {
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'x-toolcall-id': `my_tool:${correlationId}`,
+            [TOOLCALL_ID_HEADER]: `my_tool:${correlationId}`,
           }),
         }),
       );
     });
 
-    it('reuses the same x-toolcall-id for multiple requests in one tool call', async () => {
+    it(`reuses the same ${TOOLCALL_ID_HEADER} for multiple requests in one tool call`, async () => {
       const mockFetch = createMockFetchResponse({
         data: { __typename: 'Query' },
       });
@@ -194,8 +195,8 @@ describe('TranscendGraphQLBase', () => {
 
       const call0 = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
       const call1 = (fetch as ReturnType<typeof vi.fn>).mock.calls[1][1].headers;
-      expect(call0['x-toolcall-id']).toBe(`multi_fetch:${correlationId}`);
-      expect(call1['x-toolcall-id']).toBe(call0['x-toolcall-id']);
+      expect(call0[TOOLCALL_ID_HEADER]).toBe(`multi_fetch:${correlationId}`);
+      expect(call1[TOOLCALL_ID_HEADER]).toBe(call0[TOOLCALL_ID_HEADER]);
     });
   });
 
@@ -530,7 +531,7 @@ describe('TranscendGraphQLBase', () => {
 
       const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
       expect(calledHeaders.Cookie).toBe('laravel_session=abc123');
-      expect(calledHeaders['x-transcend-active-organization-id']).toBe('org-uuid-456');
+      expect(calledHeaders[TRANSCEND_ACTIVE_ORG_ID_HEADER]).toBe('org-uuid-456');
       expect(calledHeaders).not.toHaveProperty('Authorization');
     });
 

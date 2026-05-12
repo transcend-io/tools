@@ -3,7 +3,14 @@ export type { AuthCredentials, ApiKeyAuth, SessionCookieAuth } from './auth.js';
 
 export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
-export { toolCallContext, getToolCallIdHeader } from './tool-call-context.js';
+export {
+  MCP_CALLER_HEADER,
+  extractMcpCallerFromHeaders,
+  getRequestMcpCaller,
+  requestMcpCallerContext,
+} from './mcp-caller-context.js';
+
+export { toolCallContext, getToolCallIdHeader, TOOLCALL_ID_HEADER } from './tool-call-context.js';
 export type { ToolCallContext } from './tool-call-context.js';
 
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';

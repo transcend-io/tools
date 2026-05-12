@@ -1,3 +1,5 @@
+import { TRANSCEND_ACTIVE_ORG_ID_HEADER } from './http-header-names.js';
+
 /** API key authentication (programmatic access) */
 export interface ApiKeyAuth {
   /** Discriminant */
@@ -35,6 +37,6 @@ export function authHeaders(creds: AuthCredentials): Record<string, string> {
   }
   return {
     Cookie: creds.cookie,
-    'x-transcend-active-organization-id': creds.organizationId,
+    [TRANSCEND_ACTIVE_ORG_ID_HEADER]: creds.organizationId,
   };
 }
