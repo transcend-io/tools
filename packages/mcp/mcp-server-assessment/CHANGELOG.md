@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-assessment
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [a9634e4]
+  - @transcend-io/mcp-server-base@0.4.2
+
 ## 0.3.5
 
 ### Patch Changes
