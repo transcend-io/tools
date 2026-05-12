@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 0.4.2
+
+### Patch Changes
+
+- a9634e4: Properly forwards mcp-caller header from requests to tool calls
+
 ## 0.4.1
 
 ### Patch Changes
