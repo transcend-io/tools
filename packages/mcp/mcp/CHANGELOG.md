@@ -1,5 +1,12 @@
 # @transcend-io/mcp
 
+## 0.4.8
+
+### Patch Changes
+
+- Updated dependencies [3cb3a63]
+  - @transcend-io/mcp-server-dsr@0.3.7
+
 ## 0.4.7
 
 ### Patch Changes
