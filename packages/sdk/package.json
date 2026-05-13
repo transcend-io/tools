@@ -40,7 +40,7 @@
     "@transcend-io/type-utils": "workspace:*",
     "@transcend-io/utils": "workspace:*",
     "fp-ts": "^2.16.1",
-    "got": "^11.8.5",
+    "got": "^15.0.0",
     "graphql": "^16.6.0",
     "graphql-request": "^5.0.0",
     "io-ts": "^2.2.21",
