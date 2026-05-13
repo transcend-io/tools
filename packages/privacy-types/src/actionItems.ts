@@ -160,6 +160,18 @@ export enum ActionItemCode {
    * A database datapoint has queries that need approval
    */
   DataPointDatabaseQueryNeedsApproval = 'DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL',
+  /**
+   * - A Rules Automation rule has hit a terminal failure (an execution
+   *   transitioned to FAILURE with no further retries) and the rule has
+   *   no assigned owners
+   */
+  MaestroRuleTerminalFailure = 'MAESTRO_RULE_TERMINAL_FAILURE',
+  /**
+   * - A Rules Automation rule has hit a terminal failure (an execution
+   *   transitioned to FAILURE with no further retries) and the rule has
+   *   one or more assigned owners (users or teams)
+   */
+  MaestroRuleTerminalFailureAssigned = 'MAESTRO_RULE_TERMINAL_FAILURE_ASSIGNED',
 }
 
 /**
