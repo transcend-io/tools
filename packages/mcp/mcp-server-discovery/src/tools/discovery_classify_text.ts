@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  LLMClassificationResultSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 export const ClassifyTextSchema = z.object({
   texts: z.array(z.string()).describe('Array of text strings to classify'),
@@ -20,6 +27,13 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ClassifyTextSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        results: z.array(LLMClassificationResultSchema),
+        inputCount: z.number(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ texts, categories, model }) => {
       const results = await rest.classifyText({
         texts,

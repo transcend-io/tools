@@ -1,6 +1,7 @@
 import {
   createToolResult,
   defineTool,
+  envelopeSchema,
   z,
   type ToolClients,
   type Assessment,
@@ -61,6 +62,35 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
     confirmationHint: 'Creates assessment, prefills answers, assigns reviewers',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: PrefillSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        assessmentId: z.string().optional(),
+        title: z.string().optional(),
+        answersApplied: z.number(),
+        answersSkipped: z.number().optional(),
+        totalQuestions: z.number().optional(),
+        results: z
+          .array(
+            z.object({
+              question: z.string(),
+              status: z.string(),
+              answer: z.string().optional(),
+            }),
+          )
+          .optional(),
+        assignment: z
+          .object({
+            status: z.unknown(),
+            message: z.string(),
+          })
+          .nullable()
+          .optional(),
+        submittedForReview: z.boolean().optional(),
+        message: z.string(),
+        // Early-return path when the form has no sections
+        assessment: z.unknown().optional(),
+      }),
+    ),
     handler: async ({
       answers,
       title,

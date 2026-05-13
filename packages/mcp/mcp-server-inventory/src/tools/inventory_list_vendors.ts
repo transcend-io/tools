@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  VendorSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -27,6 +34,7 @@ export function createInventoryListVendorsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListVendorsSchema,
+    outputZodSchema: listEnvelopeSchema(VendorSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listVendors({
         first: limit,

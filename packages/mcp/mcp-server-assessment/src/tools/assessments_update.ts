@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  AssessmentSchema,
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { AssessmentStatusEnum } from './assessments_list.js';
@@ -26,6 +33,12 @@ export function createAssessmentsUpdateTool(clients: ToolClients) {
     confirmationHint: 'Updates the assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssessmentSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        assessment: AssessmentSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ assessment_id, title, description, reviewer_ids, due_date, status }) => {
       const result = await graphql.updateAssessment({
         id: assessment_id,

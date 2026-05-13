@@ -1,7 +1,9 @@
 import {
   createListResult,
   defineTool,
+  listEnvelopeSchema,
   PaginationSchema,
+  WorkflowSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
@@ -26,6 +28,7 @@ export function createWorkflowsListTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListWorkflowsSchema,
+    outputZodSchema: listEnvelopeSchema(WorkflowSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listWorkflows({
         first: limit,

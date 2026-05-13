@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  NEREntitySchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 export const NerExtractSchema = z.object({
   text: z.string().describe('Text to extract entities from'),
@@ -18,6 +25,14 @@ export function createDiscoveryNerExtractTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: NerExtractSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        entities: z.array(NEREntitySchema),
+        entityCount: z.number(),
+        entityTypes: z.array(z.string()),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ text, entity_types }) => {
       const result = await rest.extractEntities({
         text,

@@ -100,9 +100,7 @@ describe('Inventory Tools', () => {
 
       expect(result).toMatchObject({
         success: true,
-        data: nodes,
-        count: 1,
-        totalCount: 1,
+        data: { items: nodes, count: 1, totalCount: 1 },
       });
       expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
         first: 10,

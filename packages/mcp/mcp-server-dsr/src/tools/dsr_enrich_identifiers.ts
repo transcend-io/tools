@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  type ToolClients,
+  z,
+} from '@transcend-io/mcp-server-base';
 
 export const enrichIdentifiersSchema = z.object({
   request_id: z.string().describe('ID of the DSR to enrich'),
@@ -20,6 +26,12 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Adds identifiers to the DSR during preflight',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: enrichIdentifiersSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        success: z.boolean().optional(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ request_id, identifiers }) => {
       const result = await rest.enrichIdentifiers({
         requestId: request_id,

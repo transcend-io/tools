@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import {
   UPDATE_OR_CREATE_COOKIES,
@@ -41,6 +47,20 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
     confirmationHint: 'Updates cookies in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateCookiesSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        updated: z.number(),
+        cookies: z.array(
+          z.object({
+            name: z.string(),
+            status: z.string().optional(),
+            isJunk: z.boolean().optional(),
+            trackingPurposes: z.array(z.string()).optional(),
+            service: z.string().optional(),
+          }),
+        ),
+      }),
+    ),
     handler: async ({ cookies }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const cookieInputs: TranscendUpdateCookieInputGql[] = cookies.map((c) => ({

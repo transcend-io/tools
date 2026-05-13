@@ -1,7 +1,9 @@
 import {
+  AirgapBundleSchema,
   createToolResult,
   defineTool,
   EmptySchema,
+  envelopeSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import {
@@ -22,6 +24,7 @@ export function createConsentListAirgapBundlesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAirgapBundlesSchema,
+    outputZodSchema: envelopeSchema(AirgapBundleSchema),
     handler: async (_args) => {
       const data = await clients.graphql.makeRequest<TranscendCliFetchConsentManagerResponse>(
         FETCH_CONSENT_MANAGER,

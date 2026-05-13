@@ -28,6 +28,13 @@ export interface ToolDefinition {
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */
   zodSchema: z.ZodType<any>;
+  /**
+   * Zod schema for handler return value. Used to populate `outputSchema` in
+   * `tools/list` and `structuredContent` in `CallToolResult`. Validation is
+   * non-throwing — failures are logged to stderr and the raw handler return
+   * is still surfaced as `structuredContent`.
+   */
+  outputZodSchema: z.ZodType<any>;
   /** Handler receives pre-validated args */
   handler: (args: any) => Promise<unknown>;
 }
@@ -40,10 +47,11 @@ export interface ToolClients {
 }
 
 /**
- * Type-safe tool factory. Infers handler arg types from the zodSchema
- * so you never need manual `as z.infer<typeof …>` casts.
+ * Type-safe tool factory. Infers handler arg types from the zodSchema and
+ * handler return types from the outputZodSchema so you never need manual
+ * `as z.infer<typeof …>` casts.
  */
-export function defineTool<T>(config: {
+export function defineTool<TIn, TOut>(config: {
   /** Unique tool name */
   name: string;
   /** Human-readable description for LLM */
@@ -57,9 +65,11 @@ export function defineTool<T>(config: {
   /** MCP tool annotations */
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */
-  zodSchema: z.ZodType<T>;
+  zodSchema: z.ZodType<TIn>;
+  /** Zod schema for handler return value */
+  outputZodSchema: z.ZodType<TOut>;
   /** Handler receives pre-validated, fully typed args */
-  handler: (args: T) => Promise<unknown>;
+  handler: (args: TIn) => Promise<TOut>;
 }): ToolDefinition {
   return config;
 }

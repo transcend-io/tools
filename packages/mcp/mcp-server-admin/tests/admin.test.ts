@@ -109,7 +109,10 @@ describe('Admin Tools', () => {
 
       const result = await tool.handler({});
 
-      expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
+      expect(result).toMatchObject({
+        success: true,
+        data: { items: nodes, totalCount: 1 },
+      });
     });
 
     it('throws when client throws', async () => {

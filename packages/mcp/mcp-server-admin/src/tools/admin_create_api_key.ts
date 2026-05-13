@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  ApiKeySchema,
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 
 import type { AdminMixin } from '../graphql.js';
@@ -38,6 +45,14 @@ export function createAdminCreateApiKeyTool(clients: ToolClients) {
     confirmationHint: 'Creates a new API key with the specified scopes',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateApiKeySchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        apiKey: ApiKeySchema,
+        token: z.string(),
+        warning: z.string(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ title, scopes, data_silos }) => {
       const result = await graphql.createApiKey({
         title,

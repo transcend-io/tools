@@ -26,7 +26,8 @@ export interface BuildMcpServerOptions {
 export function buildMcpServer(options: BuildMcpServerOptions): Server {
   const logger = new SimpleLogger();
   const toolMap = new Map<string, ToolDefinition>();
-  const jsonSchemaCache = new Map<string, Record<string, unknown>>();
+  const inputJsonSchemaCache = new Map<string, Record<string, unknown>>();
+  const outputJsonSchemaCache = new Map<string, Record<string, unknown>>();
 
   for (const tool of options.tools) {
     if (toolMap.has(tool.name)) {
@@ -34,9 +35,13 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       continue;
     }
     toolMap.set(tool.name, tool);
-    jsonSchemaCache.set(
+    inputJsonSchemaCache.set(
       tool.name,
       toJsonSchemaCompat(tool.zodSchema as any) as Record<string, unknown>,
+    );
+    outputJsonSchemaCache.set(
+      tool.name,
+      toJsonSchemaCompat(tool.outputZodSchema as any) as Record<string, unknown>,
     );
   }
 
@@ -52,7 +57,8 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     const toolList = Array.from(toolMap.entries()).map(([name, t]) => ({
       name: t.name,
       description: t.description,
-      inputSchema: jsonSchemaCache.get(name) || { type: 'object', properties: {} },
+      inputSchema: inputJsonSchemaCache.get(name) || { type: 'object', properties: {} },
+      outputSchema: outputJsonSchemaCache.get(name),
       annotations: t.annotations,
     }));
     logger.info(`Returning ${toolList.length} tools`);
@@ -80,6 +86,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         });
         return {
           content: [{ type: 'text', text: JSON.stringify(errorResult, null, 2) }],
+          structuredContent: errorResult as Record<string, unknown>,
           isError: true,
         };
       }
@@ -90,13 +97,33 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       );
       logger.debug(`Tool ${name} completed successfully`);
 
+      // Validate handler return against the declared outputZodSchema. Failures
+      // are non-fatal during rollout: log to stderr but still surface the raw
+      // handler return as `structuredContent` so consumers don't break on
+      // schema drift.
+      const outputParse = tool.outputZodSchema.safeParse(result);
+      if (!outputParse.success) {
+        const issues = outputParse.error.issues
+          .map((i: any) => `${i.path.join('.') || 'output'}: ${i.message}`)
+          .join('; ');
+        process.stderr.write(
+          `Warning: outputZodSchema validation failed for "${name}": ${issues}\n`,
+        );
+      }
+
       return {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+        structuredContent: (outputParse.success ? outputParse.data : result) as Record<
+          string,
+          unknown
+        >,
       };
     } catch (error) {
       logger.error(`Error executing tool ${name}:`, error);
+      const errorResult = createErrorResult(error);
       return {
-        content: [{ type: 'text', text: JSON.stringify(createErrorResult(error), null, 2) }],
+        content: [{ type: 'text', text: JSON.stringify(errorResult, null, 2) }],
+        structuredContent: errorResult as Record<string, unknown>,
         isError: true,
       };
     }

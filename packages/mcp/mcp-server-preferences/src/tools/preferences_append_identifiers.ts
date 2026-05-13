@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import { IdentifierSchema } from './preferences_query.js';
 
@@ -19,6 +25,13 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Appends identifiers to the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AppendIdentifiersSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        success: z.boolean().optional(),
+        identifiersAdded: z.number(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ partition, user_id, identifiers }) => {
       const result = await rest.appendIdentifiers(
         partition,

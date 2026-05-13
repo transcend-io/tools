@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  ClassificationScanSchema,
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { DiscoveryMixin } from '../graphql.js';
 
@@ -19,6 +26,12 @@ export function createDiscoveryStartScanTool(clients: ToolClients) {
     confirmationHint: 'Starts a new classification scan on the data silo',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: StartScanSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        scan: ClassificationScanSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ name, data_silo_id, type }) => {
       const result = await graphql.startClassificationScan({
         name,

@@ -1,9 +1,11 @@
 import {
+  AssessmentSchema,
   createListResult,
   defineTool,
-  z,
+  listEnvelopeSchema,
   PaginationSchema,
   type ToolClients,
+  z,
 } from '@transcend-io/mcp-server-base';
 import { AssessmentFormStatus } from '@transcend-io/privacy-types';
 
@@ -29,6 +31,7 @@ export function createAssessmentsListTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAssessmentsSchema,
+    outputZodSchema: listEnvelopeSchema(AssessmentSchema),
     handler: async ({ status, limit, cursor }) => {
       const result = await graphql.listAssessments({
         first: limit,

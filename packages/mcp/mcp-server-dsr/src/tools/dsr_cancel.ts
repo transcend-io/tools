@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  RequestSchema,
+  type ToolClients,
+  z,
+} from '@transcend-io/mcp-server-base';
 
 import type { DSRMixin } from '../graphql.js';
 
@@ -19,6 +26,12 @@ export function createDsrCancelTool(clients: ToolClients) {
     confirmationHint: 'Cancels the specified request permanently',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: cancelDsrSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        request: RequestSchema.optional(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ request_id, reason }) => {
       const input: { requestId: string; template?: string; subject?: string } = {
         requestId: request_id,

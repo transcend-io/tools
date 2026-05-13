@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -19,6 +25,45 @@ export function createAssessmentsExportTemplateTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ExportTemplateSchema,
+    outputZodSchema: envelopeSchema(
+      z
+        .object({
+          _exportedAt: z.string(),
+          _format: z.string(),
+          template: z
+            .object({
+              title: z.string(),
+              description: z.string().optional(),
+              status: z.string().optional(),
+              sections: z.array(
+                z
+                  .object({
+                    title: z.string(),
+                    questions: z.array(
+                      z
+                        .object({
+                          title: z.string().optional(),
+                          type: z.string().optional(),
+                          subType: z.string().optional(),
+                          description: z.string().optional(),
+                          placeholder: z.string().optional(),
+                          isRequired: z.boolean().optional(),
+                          referenceId: z.string().optional(),
+                          allowSelectOther: z.boolean().optional(),
+                          requireRiskEvaluation: z.boolean().optional(),
+                          answerOptions: z.array(z.object({ value: z.string() }).passthrough()),
+                        })
+                        .passthrough(),
+                    ),
+                  })
+                  .passthrough(),
+              ),
+            })
+            .passthrough(),
+          _raw: z.unknown(),
+        })
+        .passthrough(),
+    ),
     handler: async ({ template_id }) => {
       const template = await graphql.getAssessmentFormTemplate(template_id);
 

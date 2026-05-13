@@ -63,10 +63,12 @@ describe('Assessment Tools', () => {
 
       expect(result).toMatchObject({
         success: true,
-        data: mockNodes,
-        count: 2,
-        totalCount: 2,
-        hasNextPage: false,
+        data: {
+          items: mockNodes,
+          count: 2,
+          totalCount: 2,
+          hasNextPage: false,
+        },
       });
       expect(mockGraphql.listAssessments).toHaveBeenCalledWith({
         first: 25,

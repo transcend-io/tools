@@ -92,6 +92,10 @@ This package composes all domain MCP packages via `ToolRegistry`, which aggregat
 
 If 70+ tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
 
+## Output schemas and `structuredContent`
+
+Every tool exposes a Zod-derived JSON Schema as `outputSchema` in `tools/list`, and every `CallToolResult` includes `structuredContent` populated with the validated handler return value, alongside the existing `content[0].text` JSON payload. Payloads use a single envelope (`{ success, data, timestamp }` on success); list tools nest pagination metadata under `data`.
+
 ## Related packages
 
 | Package                                | Binary                      | Domain                            |

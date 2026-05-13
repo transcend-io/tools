@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  CookieStatsSchema,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import {
   COOKIE_STATS,
   DATA_FLOW_STATS,
@@ -21,6 +28,12 @@ export function createConsentGetTriageStatsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetCookieStatsSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        cookies: CookieStatsSchema,
+        dataFlows: CookieStatsSchema,
+      }),
+    ),
     handler: async () => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const variables = { input: { airgapBundleId } };

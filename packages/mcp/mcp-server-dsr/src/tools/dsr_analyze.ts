@@ -1,6 +1,7 @@
 import {
   createToolResult,
   defineTool,
+  envelopeSchema,
   groupBy,
   type ToolClients,
   z,
@@ -29,6 +30,30 @@ export function createDsrAnalyzeTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: analyzeDsrSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        summary: z.object({
+          analyzedRequests: z.number(),
+          totalRequestsInSystem: z.number().optional(),
+          recentRequests: z.number(),
+          completedRequests: z.number(),
+          pendingRequests: z.number(),
+          completionRate: z.number(),
+        }),
+        breakdown: z.object({
+          byType: z.record(z.string(), z.number()),
+          byStatus: z.record(z.string(), z.number()),
+          recentByType: z.record(z.string(), z.number()),
+          recentByStatus: z.record(z.string(), z.number()),
+        }),
+        period: z.object({
+          days: z.number(),
+          startDate: z.string(),
+          endDate: z.string(),
+        }),
+        limitation: z.string().optional(),
+      }),
+    ),
     handler: async ({ days }) => {
       const result = await graphql.listRequests({ first: 100 });
       const requests = result.nodes;
