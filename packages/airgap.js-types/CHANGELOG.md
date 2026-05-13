@@ -1,5 +1,13 @@
 # @transcend-io/airgap.js-types
 
+## 14.1.2
+
+### Patch Changes
+
+- 093bbf7: - Enable tsdown `unbundle` mode so `dist/` is emitted as separate compiled files per source module instead of a single bundled artifact per entry. The package `exports` entry (`. → dist/index.mjs`) is unchanged; this mainly affects the on-disk layout under `dist/` for maintainability and clearer source-to-output mapping.
+- 32a8bdb: Update TrackingConsentWithNulls type
+- 841a442: Add additionalConsentProviderId to NonTcfVendor codec for Google's Additional Consent String
+
 ## 14.1.1
 
 ### Patch Changes
