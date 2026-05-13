@@ -79,7 +79,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `dsr_list` — List data subject requests
 - `dsr_get_details` — Get request details
 - `dsr_submit` — Submit a new DSR
-- `dsr_employee_submit` — Submit an employee DSR
+- `dsr_submit_on_behalf` — Submit a DSR as an admin on behalf of a data subject
 - `dsr_cancel` — Cancel a request
 - `dsr_respond_access` — Respond to an access request
 - `dsr_respond_erasure` — Respond to an erasure request
