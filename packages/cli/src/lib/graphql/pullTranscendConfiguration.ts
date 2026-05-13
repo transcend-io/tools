@@ -13,6 +13,7 @@ import {
   fetchAllAgentFunctions,
   fetchAllAgents,
   fetchAllAssessments,
+  fetchAllAssessmentTemplates,
   fetchAllAttributes,
   fetchAllBusinessEntities,
   fetchAllCookies,
@@ -91,7 +92,6 @@ import {
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
-import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
   TranscendPullResource.DataSilos,
@@ -334,7 +334,7 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch assessmentTemplates
     resources.includes(TranscendPullResource.AssessmentTemplates)
-      ? fetchAllAssessmentTemplates(client)
+      ? fetchAllAssessmentTemplates(client, { logger })
       : [],
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
