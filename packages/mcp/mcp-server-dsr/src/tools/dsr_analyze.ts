@@ -24,7 +24,7 @@ export function createDsrAnalyzeTool(clients: ToolClients) {
   return defineTool({
     name: 'dsr_analyze',
     description:
-      'Analyze DSR metrics from most recent 100 requests. Note: For complete analysis of all requests, use dsr_list with pagination to fetch all data first.',
+      'Summarize the 100 most recent DSRs: counts by type and status, completion rate, and a configurable recent-days window (default 30). For full-fleet analytics, page through dsr_list and aggregate yourself.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
