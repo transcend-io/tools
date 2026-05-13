@@ -25,10 +25,6 @@
     "./*": {
       "types": "./dist/*.d.mts",
       "default": "./dist/*.mjs"
-    },
-    "./enums/*": {
-      "types": "./dist/enums/*.d.mts",
-      "default": "./dist/enums/*.mjs"
     }
   },
   "publishConfig": {
