@@ -51,15 +51,9 @@ jobs:
           private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-      # Publish any package.json versions that are ahead of the npm registry
-      # before letting changesets/action decide between versioning and publishing.
-      # changesets/action is XOR: in a single run it will either open/update the
-      # Version Packages PR (when pending changesets exist) or run publish (when
-      # they don't), never both. When a Version Packages PR is merged while a
-      # newer changeset is in flight, the bumped versions end up stranded on
-      # main with nothing on npm. `changeset publish` is idempotent — it only
-      # ships versions missing from the registry — so this step is a no-op in
-      # the steady state and self-heals after a race.
+      # Self-heal versions that are ahead of npm. changesets/action only
+      # publishes when no pending changesets remain, so bumped versions can get
+      # stranded; `changeset publish` is idempotent and no-ops otherwise.
       - name: Publish any stranded versions to npm
         run: mise exec -- pnpm release
       - uses: changesets/action@v1
