@@ -1,5 +1,5 @@
 ---
-"@transcend-io/mcp-server-dsr": minor
+"@transcend-io/mcp-server-dsr": patch
 ---
 
 Rename `dsr_employee_submit` tool to `dsr_submit_on_behalf` to clarify that the
