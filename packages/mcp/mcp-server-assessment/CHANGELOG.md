@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-assessment
 
+## 0.3.7
+
+### Patch Changes
+
+- 644c65a: Makes assessment_get clearer on which assessment is being fetched
+
 ## 0.3.6
 
 ### Patch Changes
