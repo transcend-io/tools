@@ -42,7 +42,7 @@
     "fp-ts": "^2.16.1",
     "got": "^11.8.5",
     "graphql": "^16.6.0",
-    "graphql-request": "^5.0.0",
+    "graphql-request": "^7.0.0",
     "io-ts": "^2.2.21",
     "lodash-es": "^4.17.21",
     "semver": "catalog:"
