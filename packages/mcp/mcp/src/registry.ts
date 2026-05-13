@@ -110,16 +110,14 @@ export class ToolRegistry {
       const result = await tool.handler(parseResult.data);
 
       // Validate handler return against outputZodSchema. Failures are
-      // non-fatal during rollout: log to stderr but still surface the raw
+      // non-fatal during rollout: log a warning but still surface the raw
       // handler return as `structuredContent`.
       const outputParse = tool.outputZodSchema.safeParse(result);
       if (!outputParse.success) {
         const issues = outputParse.error.issues
           .map((i: any) => `${i.path.join('.') || 'output'}: ${i.message}`)
           .join('; ');
-        process.stderr.write(
-          `Warning: outputZodSchema validation failed for "${name}": ${issues}\n`,
-        );
+        this.logger.warn('outputZodSchema validation failed', { toolName: name, issues });
       }
 
       return {

@@ -98,7 +98,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       logger.debug(`Tool ${name} completed successfully`);
 
       // Validate handler return against the declared outputZodSchema. Failures
-      // are non-fatal during rollout: log to stderr but still surface the raw
+      // are non-fatal during rollout: log a warning but still surface the raw
       // handler return as `structuredContent` so consumers don't break on
       // schema drift.
       const outputParse = tool.outputZodSchema.safeParse(result);
@@ -106,9 +106,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         const issues = outputParse.error.issues
           .map((i: any) => `${i.path.join('.') || 'output'}: ${i.message}`)
           .join('; ');
-        process.stderr.write(
-          `Warning: outputZodSchema validation failed for "${name}": ${issues}\n`,
-        );
+        logger.warn('outputZodSchema validation failed', { toolName: name, issues });
       }
 
       return {
