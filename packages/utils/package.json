@@ -36,7 +36,7 @@
   "dependencies": {
     "@transcend-io/type-utils": "workspace:*",
     "bluebird": "^3.7.2",
-    "csv-parse": "^5.6.0",
+    "csv-parse": "^6.0.0",
     "fast-csv": "^4.3.6"
   },
   "devDependencies": {
