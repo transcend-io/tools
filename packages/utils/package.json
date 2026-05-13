@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
-    "@types/bluebird": "^3.5.38",
+    "@types/bluebird": "3.5.42",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",

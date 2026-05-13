@@ -50,7 +50,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@types/json-schema": "catalog:",
-    "@types/lodash-es": "^4.17.12",
+    "@types/lodash-es": "4.17.12",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "publint": "catalog:",
