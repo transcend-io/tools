@@ -6,7 +6,7 @@ Transcend MCP Server for data inventory management. Provides tools for managing 
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
-For local runs from this repository, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** at the repo root (gitignored) and set your API key (see **Run from the monorepo**).
+For local runs from this repository, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** at the repo root (gitignored) and set your API key (see **Run from the monorepo**). The key must be created with **MCP** enabled in the Transcend dashboard (a toggle when you create the key).
 
 ## Install
 

@@ -41,8 +41,8 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.0",
+    "@types/cors": "2.8.19",
+    "@types/express": "5.0.6",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",

@@ -11,6 +11,12 @@ import type { AssessmentsMixin } from '../graphql.js';
 
 export const GetAssessmentSchema = z.object({
   assessment_id: z.string().describe('ID of the assessment to retrieve'),
+  assessment_name: z
+    .string()
+    .optional()
+    .describe(
+      'Optional human-readable name (e.g. title) for the tool call in chat; not sent to the API.',
+    ),
 });
 export type GetAssessmentInput = z.infer<typeof GetAssessmentSchema>;
 

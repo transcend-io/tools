@@ -6,7 +6,7 @@ Transcend MCP Server for data subject requests (DSR). Provides tools for submitt
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
-For local runs from this repository, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** at the repo root (gitignored) and set your API key (see **Run from the monorepo**).
+For local runs from this repository, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** at the repo root (gitignored) and set your API key (see **Run from the monorepo**). The key must be created with **MCP** enabled in the Transcend dashboard (a toggle when you create the key).
 
 ## Install
 
@@ -79,7 +79,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `dsr_list` — List data subject requests
 - `dsr_get_details` — Get request details
 - `dsr_submit` — Submit a new DSR
-- `dsr_employee_submit` — Submit an employee DSR
+- `dsr_submit_on_behalf` — Submit a DSR as an admin on behalf of a data subject
 - `dsr_cancel` — Cancel a request
 - `dsr_respond_access` — Respond to an access request
 - `dsr_respond_erasure` — Respond to an erasure request

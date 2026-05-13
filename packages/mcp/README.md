@@ -120,7 +120,7 @@ The MCP server supports two authentication modes that can be used independently 
 
 ### API key (external customers)
 
-For external consumers (Claude Enterprise, Cursor, etc.), provide a Transcend API key:
+For external consumers (Claude Enterprise, Cursor, etc.), provide a Transcend API key that was created with **MCP** enabled in the Transcend dashboard (a toggle when you create the key). Keys without MCP access will not authenticate to these servers.
 
 - **Stdio**: Set the `TRANSCEND_API_KEY` environment variable
 - **HTTP**: Send `Authorization: Bearer <key>` or `X-Transcend-Api-Key: <key>` header, or fall back to `TRANSCEND_API_KEY` env var
@@ -194,15 +194,15 @@ See `@transcend-io/mcp-server-base` for the `envelopeSchema` / `listEnvelopeSche
 
 All servers share the same environment variables:
 
-| Variable                       | Required               | Default                                    | Description                                                                                       |
-| ------------------------------ | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | Yes (stdio), No (HTTP) | —                                          | Transcend API key. In HTTP mode, optional if using session cookie or per-request API key headers. |
-| `TRANSCEND_API_URL`            | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                  |
-| `SOMBRA_URL`                   | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                |
-| `TRANSCEND_HTTP_PORT`          | No                     | `3000`                                     | HTTP listen port                                                                                  |
-| `TRANSCEND_HTTP_HOST`          | No                     | `127.0.0.1`                                | HTTP listen host                                                                                  |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | No                     | —                                          | Comma-separated allowed CORS origins                                                              |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | No                     | `1800000`                                  | Idle session timeout (ms)                                                                         |
+| Variable                       | Required               | Default                                    | Description                                                                                                                                          |
+| ------------------------------ | ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`            | Yes (stdio), No (HTTP) | —                                          | Transcend API key with **MCP** enabled when created in the dashboard. In HTTP mode, optional if using session cookie or per-request API key headers. |
+| `TRANSCEND_API_URL`            | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                     |
+| `SOMBRA_URL`                   | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                   |
+| `TRANSCEND_HTTP_PORT`          | No                     | `3000`                                     | HTTP listen port                                                                                                                                     |
+| `TRANSCEND_HTTP_HOST`          | No                     | `127.0.0.1`                                | HTTP listen host                                                                                                                                     |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | No                     | —                                          | Comma-separated allowed CORS origins                                                                                                                 |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | No                     | `1800000`                                  | Idle session timeout (ms)                                                                                                                            |
 
 **Monorepo:** store these in root **`secret.env`** (from [`secret.env.example`](../../secret.env.example)); load with `source` or [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh). See [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers).
 

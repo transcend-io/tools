@@ -1,5 +1,17 @@
 # @transcend-io/mcp-server-consent
 
+## 0.2.9
+
+### Patch Changes
+
+- @transcend-io/sdk@1.1.8
+
+## 0.2.8
+
+### Patch Changes
+
+- @transcend-io/sdk@1.1.7
+
 ## 0.2.7
 
 ### Patch Changes

@@ -10,7 +10,7 @@ import { RequestAction } from '@transcend-io/privacy-types';
 
 import type { DSRMixin } from '../graphql.js';
 
-export const employeeSubmitDsrSchema = z.object({
+export const submitDsrOnBehalfSchema = z.object({
   type: z.nativeEnum(RequestAction).describe('Type of DSR request'),
   email: z.string().describe('Email address of the data subject'),
   subjectType: z
@@ -20,20 +20,20 @@ export const employeeSubmitDsrSchema = z.object({
   locale: z.string().optional().describe('Locale for communications (e.g., en-US)'),
   isSilent: z.boolean().optional().describe('Whether to suppress email notifications'),
 });
-export type EmployeeSubmitDsrInput = z.infer<typeof employeeSubmitDsrSchema>;
+export type SubmitDsrOnBehalfInput = z.infer<typeof submitDsrOnBehalfSchema>;
 
-export function createDsrEmployeeSubmitTool(clients: ToolClients) {
+export function createDsrSubmitOnBehalfTool(clients: ToolClients) {
   const graphql = clients.graphql as DSRMixin;
 
   return defineTool({
-    name: 'dsr_employee_submit',
+    name: 'dsr_submit_on_behalf',
     description:
-      'Submit a Data Subject Request as an employee on behalf of a data subject. Requires subjectType to be specified.',
+      'Submit a Data Subject Request as an admin on behalf of a data subject (admin-dashboard flow). Use dsr_submit when the data subject is submitting their own.',
     category: 'DSR Automation',
     readOnly: false,
-    confirmationHint: 'Creates a new data subject request (employee)',
+    confirmationHint: 'Creates a new data subject request on behalf of a data subject',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
-    zodSchema: employeeSubmitDsrSchema,
+    zodSchema: submitDsrOnBehalfSchema,
     outputZodSchema: envelopeSchema(
       z.object({
         request: RequestSchema.optional(),
@@ -53,7 +53,7 @@ export function createDsrEmployeeSubmitTool(clients: ToolClients) {
       return createToolResult(true, {
         request: result.request,
         clientMutationId: result.clientMutationId,
-        message: `Employee DSR of type ${type} submitted successfully`,
+        message: `DSR of type ${type} submitted on behalf of data subject`,
       });
     },
   });

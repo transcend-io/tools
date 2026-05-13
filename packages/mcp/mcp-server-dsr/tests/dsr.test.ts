@@ -13,7 +13,7 @@ const EXPECTED_TOOL_NAMES = [
   'dsr_respond_access',
   'dsr_respond_erasure',
   'dsr_cancel',
-  'dsr_employee_submit',
+  'dsr_submit_on_behalf',
   'dsr_analyze',
 ] as const;
 
