@@ -58,7 +58,6 @@ jobs:
         run: mise exec -- pnpm release
       - uses: changesets/action@v1
         with:
-          publish: mise exec -- pnpm release
           version: mise exec -- pnpm changeset:version:release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
