@@ -38,6 +38,8 @@ jobs:
           mise install --locked
           mise exec -- npm install -g npm@^11.5.1
           mise run bootstrap-ci
+      - name: Check package consistency
+        run: mise exec -- pnpm check:packages
       - name: Check dependency versions
         run: mise exec -- pnpm check:deps
       - name: Lint
@@ -52,6 +54,8 @@ jobs:
         run: mise exec -- pnpm test
       - name: Check exports
         run: mise exec -- pnpm check:exports
+      - name: Check publish compatibility
+        run: mise exec -- pnpm check:publint
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: release_app
         with:

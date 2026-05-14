@@ -1,4 +1,4 @@
-name: Release
+name: Version
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
+  version:
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -30,20 +30,6 @@ jobs:
           mise install --locked
           mise exec -- npm install -g npm@^11.5.1
           mise run bootstrap-ci
-      - name: Check dependency versions
-        run: mise exec -- pnpm check:deps
-      - name: Lint
-        run: mise exec -- pnpm lint
-      - name: Check formatting
-        run: mise exec -- pnpm format:check
-      - name: Typecheck
-        run: mise exec -- pnpm typecheck
-      - name: Build
-        run: mise exec -- pnpm build
-      - name: Test
-        run: mise exec -- pnpm test
-      - name: Check exports
-        run: mise exec -- pnpm check:exports
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: release_app
         with:
@@ -51,7 +37,7 @@ jobs:
           private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-      - name: Create or update release pull request
+      - name: Create or update version pull request
         uses: changesets/action@v1
         with:
           version: mise exec -- pnpm changeset:version:release
