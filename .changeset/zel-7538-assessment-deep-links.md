@@ -1,6 +1,12 @@
 ---
 '@transcend-io/mcp-server-assessment': patch
 '@transcend-io/mcp-server-base': patch
+'@transcend-io/mcp-server-admin': patch
+'@transcend-io/mcp-server-discovery': patch
+'@transcend-io/mcp-server-dsr': patch
+'@transcend-io/mcp-server-inventory': patch
+'@transcend-io/mcp-server-preferences': patch
+'@transcend-io/mcp-server-workflows': patch
 '@transcend-io/mcp': patch
 ---
 
@@ -28,5 +34,10 @@ clients (Claude Desktop, Cursor, etc.) stop fabricating 404 URLs like
   production so we fall through to the canonical `app.transcend.io`.
 - `assessmentGroupId` is now surfaced on the `Assessment` type via the
   underlying GraphQL queries.
+- Standalone server CLIs (`mcp-server-admin`, `mcp-server-discovery`,
+  `mcp-server-dsr`, `mcp-server-inventory`, `mcp-server-preferences`,
+  `mcp-server-workflows`) were updated to accept the new `dashboardUrl`
+  field on `CreateClientsArgs`. Runtime behavior is unchanged for everything
+  except the assessment server, which now uses it to build deep links.
 
 Fixes ZEL-7538.
