@@ -4,10 +4,24 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  release:
+  # Open or update the Version Packages PR when a regular push to main lands a
+  # new changeset. No-op when `.changeset/` is empty.
+  #
+  # This used to be folded into the publish job below via changesets/action's
+  # XOR behaviour (it picked version-PR-or-publish based on whether changesets
+  # remained on the trigger ref). That coupling caused stranded npm versions
+  # whenever a new changeset landed between a Version Packages PR being
+  # prepared and merged. The two paths are now decoupled.
+  version-pr:
+    if: github.event_name == 'push'
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -51,13 +65,72 @@ jobs:
           private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-      # Self-heal versions that are ahead of npm. changesets/action only
-      # publishes when no pending changesets remain, so bumped versions can get
-      # stranded; `changeset publish` is idempotent and no-ops otherwise.
-      - name: Publish any stranded versions to npm
-        run: mise exec -- pnpm release
       - uses: changesets/action@v1
         with:
           version: mise exec -- pnpm changeset:version:release
+        env:
+          GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
+
+  # Publish to npm and create GitHub Releases when the Version Packages PR is
+  # merged. Driven by the pull_request:closed event so the publish decision is
+  # tied to the VP PR merge specifically and is no longer at the mercy of
+  # whatever changesets happen to be on main at workflow-run time.
+  #
+  # Also runnable via workflow_dispatch for manual recovery (e.g. backfilling a
+  # missed release). `changeset publish` is idempotent against the npm registry
+  # so re-runs are safe.
+  publish:
+    if: |
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.merged == true &&
+       github.event.pull_request.head.ref == 'changeset-release/main') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.ref }}
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          version: 2026.3.17
+          install: false
+          cache: true
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise exec -- npm install -g npm@^11.5.1
+          mise run bootstrap-ci
+      - name: Check dependency versions
+        run: mise exec -- pnpm check:deps
+      - name: Lint
+        run: mise exec -- pnpm lint
+      - name: Check formatting
+        run: mise exec -- pnpm format:check
+      - name: Typecheck
+        run: mise exec -- pnpm typecheck
+      - name: Build
+        run: mise exec -- pnpm build
+      - name: Test
+        run: mise exec -- pnpm test
+      - name: Check exports
+        run: mise exec -- pnpm check:exports
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: release_app
+        with:
+          app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
+          private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - uses: changesets/action@v1
+        with:
+          publish: mise exec -- pnpm release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
