@@ -11,10 +11,6 @@ jobs:
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
-      id-token: write
-    env:
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
@@ -28,7 +24,6 @@ jobs:
         run: |
           mise trust --yes mise.toml
           mise install --locked
-          mise exec -- npm install -g npm@^11.5.1
           mise run bootstrap-ci
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: release_app
@@ -37,7 +32,7 @@ jobs:
           private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
           permission-contents: write
           permission-pull-requests: write
-      - name: Create or update version pull request
+      - name: Create or update Version Packages PR
         uses: changesets/action@v1
         with:
           version: mise exec -- pnpm changeset:version:release
