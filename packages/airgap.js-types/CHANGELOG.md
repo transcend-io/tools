@@ -1,5 +1,11 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.1
+
+### Patch Changes
+
+- c8e24e5: Update additionalConsentProviderId to be a string in NonTcfVendor
+
 ## 14.2.0
 
 ### Minor Changes
