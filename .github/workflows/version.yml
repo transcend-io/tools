@@ -1,0 +1,45 @@
+name: Version
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
+        with:
+          version: 2026.3.17
+          install: false
+          cache: true
+      - name: Bootstrap workspace
+        run: |
+          mise trust --yes mise.toml
+          mise install --locked
+          mise exec -- npm install -g npm@^11.5.1
+          mise run bootstrap-ci
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: release_app
+        with:
+          app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
+          private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Create or update version pull request
+        uses: changesets/action@v1
+        with:
+          version: mise exec -- pnpm changeset:version:release
+        env:
+          GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
