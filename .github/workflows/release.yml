@@ -14,12 +14,6 @@ on:
 jobs:
   # Open or update the Version Packages PR when a regular push to main lands a
   # new changeset. No-op when `.changeset/` is empty.
-  #
-  # This used to be folded into the publish job below via changesets/action's
-  # XOR behaviour (it picked version-PR-or-publish based on whether changesets
-  # remained on the trigger ref). That coupling caused stranded npm versions
-  # whenever a new changeset landed between a Version Packages PR being
-  # prepared and merged. The two paths are now decoupled.
   version-pr:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04-arm
