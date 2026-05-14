@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-workflows
 
+## 0.3.4
+
+### Patch Changes
+
+- ed322d2: Adjust readme to clarify api key requirements
+- Updated dependencies [ed322d2]
+  - @transcend-io/mcp-server-base@0.4.3
+
 ## 0.3.3
 
 ### Patch Changes
