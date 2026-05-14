@@ -56,7 +56,8 @@ describe('DSR Tools', () => {
   const getTools = () =>
     getDSRTools({
       rest: mockRest as never,
-      graphql: mockGraphql,
+      graphql: mockGraphql as never,
+      dashboardUrl: 'https://app.transcend.io',
     });
 
   it('registers exactly 12 tools with expected names', () => {

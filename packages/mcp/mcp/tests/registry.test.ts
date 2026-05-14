@@ -24,6 +24,7 @@ const stubFn = () => vi.fn();
 const mockClients: ToolClients = {
   rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({} as ToolClients['graphql'], { get: stubFn }),
+  dashboardUrl: 'https://app.transcend.io',
 };
 
 const allTools = [
@@ -49,7 +50,11 @@ describe('ToolRegistry', () => {
   it('ToolRegistry registers all tools with correct count', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
-    const registry = new ToolRegistry({ rest, graphql });
+    const registry = new ToolRegistry({
+      rest,
+      graphql,
+      dashboardUrl: 'https://app.transcend.io',
+    });
 
     expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
     expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT);
@@ -58,7 +63,11 @@ describe('ToolRegistry', () => {
   it('getToolList returns well-formed tool descriptors', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
-    const registry = new ToolRegistry({ rest, graphql });
+    const registry = new ToolRegistry({
+      rest,
+      graphql,
+      dashboardUrl: 'https://app.transcend.io',
+    });
 
     for (const tool of registry.getToolList()) {
       expect(tool.name).toBeTruthy();
@@ -71,7 +80,11 @@ describe('ToolRegistry', () => {
   it('getTool returns undefined for unknown tools', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
-    const registry = new ToolRegistry({ rest, graphql });
+    const registry = new ToolRegistry({
+      rest,
+      graphql,
+      dashboardUrl: 'https://app.transcend.io',
+    });
 
     expect(registry.getTool('nonexistent_tool')).toBeUndefined();
   });
@@ -79,7 +92,11 @@ describe('ToolRegistry', () => {
   it('executeTool throws for unknown tools', async () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
-    const registry = new ToolRegistry({ rest, graphql });
+    const registry = new ToolRegistry({
+      rest,
+      graphql,
+      dashboardUrl: 'https://app.transcend.io',
+    });
 
     await expect(registry.executeTool('nonexistent_tool', {})).rejects.toThrow('Unknown tool');
   });

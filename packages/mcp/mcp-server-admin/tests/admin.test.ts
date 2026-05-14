@@ -52,7 +52,8 @@ describe('Admin Tools', () => {
   const getTools = () =>
     getAdminTools({
       rest: mockRest as never,
-      graphql: mockGraphql,
+      graphql: mockGraphql as never,
+      dashboardUrl: 'https://app.transcend.io',
     });
 
   it('registers exactly 8 tools with expected names', () => {

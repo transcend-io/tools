@@ -5,6 +5,7 @@ import {
   buildMcpServer,
   parseTransportArgs,
   resolveAuth,
+  resolveDashboardUrl,
   runMcpHttp,
   SimpleLogger,
   TranscendRestClient,
@@ -20,10 +21,11 @@ function createToolRegistry(
   auth: AuthCredentials | null,
   sombraUrl: string,
   graphqlUrl: string,
+  dashboardUrl: string,
 ): ToolRegistry {
   const restClient = new TranscendRestClient(auth, sombraUrl);
   const graphqlClient = new TranscendGraphQLClient(auth, graphqlUrl);
-  return new ToolRegistry({ rest: restClient, graphql: graphqlClient });
+  return new ToolRegistry({ rest: restClient, graphql: graphqlClient, dashboardUrl });
 }
 
 async function main(): Promise<void> {
@@ -33,6 +35,7 @@ async function main(): Promise<void> {
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || 'https://multi-tenant.sombra.transcend.io';
   const graphqlUrl = process.env.TRANSCEND_API_URL || 'https://api.transcend.io';
+  const dashboardUrl = resolveDashboardUrl();
 
   if (isHttpTransport) {
     await runMcpHttp(
@@ -43,9 +46,10 @@ async function main(): Promise<void> {
           logger.info('Creating unified MCP server for new HTTP session...', {
             sombraUrl,
             graphqlUrl,
+            dashboardUrl,
             authType: auth?.type ?? 'none',
           });
-          const registry = createToolRegistry(auth, sombraUrl, graphqlUrl);
+          const registry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
           return buildMcpServer({
             name: 'transcend-mcp',
             version: VERSION,
@@ -60,9 +64,9 @@ async function main(): Promise<void> {
 
   // stdio mode
   const auth = resolveAuth();
-  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl });
+  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl, dashboardUrl });
 
-  const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl);
+  const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
 
   logger.info(
     `Registered ${toolRegistry.getToolCount()} tools across ${toolRegistry.getCategories().length} categories`,
@@ -89,6 +93,7 @@ async function main(): Promise<void> {
   logger.info('Transcend MCP Server started successfully', {
     sombraUrl,
     graphqlUrl,
+    dashboardUrl,
     tools: toolRegistry.getToolCount(),
   });
 }

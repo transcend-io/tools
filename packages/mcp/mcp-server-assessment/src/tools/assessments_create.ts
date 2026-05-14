@@ -1,6 +1,7 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
+import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
 export const CreateAssessmentSchema = z.object({
@@ -26,10 +27,11 @@ export type CreateAssessmentInput = z.infer<typeof CreateAssessmentSchema>;
 
 export function createAssessmentsCreateTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
+  const { dashboardUrl } = clients;
   return defineTool({
     name: 'assessments_create',
     description:
-      'Create a new privacy assessment within an assessment group. Assessment groups are linked to templates. You can provide either an assessment_group_id directly, or a template_id to auto-resolve the first matching group. Use assessments_list_groups to find available groups.',
+      'Create a new privacy assessment within an assessment group. Assessment groups are linked to templates. You can provide either an assessment_group_id directly, or a template_id to auto-resolve the first matching group. Use assessments_list_groups to find available groups. The response includes a `url` field with the canonical admin-dashboard link — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
     category: 'Assessments',
     readOnly: false,
     confirmationHint: 'Creates a new privacy assessment',
@@ -58,9 +60,17 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
         assigneeIds: assignee_ids,
       });
 
+      const links = buildAssessmentLinks({
+        dashboardUrl,
+        assessmentFormId: result.id,
+        assessmentGroupId: result.assessmentGroupId ?? assessmentGroupId,
+        status: result.status,
+      });
+
       return createToolResult(true, {
-        assessment: result,
-        message: `Assessment "${title}" created successfully`,
+        assessment: { ...result, ...links },
+        ...links,
+        message: `Assessment "${title}" created successfully. Open it at ${links.url}`,
       });
     },
   });

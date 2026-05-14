@@ -66,11 +66,12 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable            | Required | Default                                    | Description                                        |
-| ------------------- | -------- | ------------------------------------------ | -------------------------------------------------- |
-| `TRANSCEND_API_KEY` | Yes      | —                                          | Transcend API key                                  |
-| `TRANSCEND_API_URL` | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)   |
-| `SOMBRA_URL`        | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention) |
+| Variable                  | Required | Default                                    | Description                                                                                                                                       |
+| ------------------------- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`       | Yes      | —                                          | Transcend API key                                                                                                                                 |
+| `TRANSCEND_API_URL`       | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                                                                  |
+| `SOMBRA_URL`              | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
+| `TRANSCEND_DASHBOARD_URL` | No       | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links returned by tool responses. Intended for local development against staging / fake hosts |
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 
@@ -90,6 +91,12 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `assessments_export_template` — Export an assessment template
 - `assessments_list_groups` — List assessment groups
 - `assessments_create_group` — Create an assessment group
+
+### Admin-dashboard deep links
+
+Tools that reference a specific assessment (`assessments_create`, `assessments_get`, `assessments_update`, `assessments_submit_response`, `assessments_list`) and assessment-group tools (`assessments_create_group`, `assessments_list_groups`) include canonical `app.transcend.io` admin-dashboard URLs (`url`, `groupUrl`) in their responses. Surface these verbatim to end users rather than constructing assessment URLs from raw IDs.
+
+The primary `url` points at `/assessments/forms/{id}/response` (the read-only form view, accessible to any user with assessment view scope), except for `IN_REVIEW` assessments where it points at the parent group page to match the existing in-review email convention. The fillable `/assessments/forms/{id}/view` route is intentionally **not** exposed — it 404s for anyone who isn't the form's assignee.
 
 ## Related packages
 

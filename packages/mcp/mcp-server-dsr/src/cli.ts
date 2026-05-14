@@ -8,8 +8,9 @@ createMCPServer({
   name: 'transcend-mcp-dsr',
   version: '1.0.0',
   getTools: getDSRTools,
-  createClients: (auth, sombraUrl, graphqlUrl) => ({
+  createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
     rest: new TranscendRestClient(auth, sombraUrl),
     graphql: new DSRMixin(auth, graphqlUrl),
+    dashboardUrl,
   }),
 });

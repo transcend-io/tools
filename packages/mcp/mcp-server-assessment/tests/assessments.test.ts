@@ -29,10 +29,11 @@ describe('Assessment Tools', () => {
     };
   });
 
-  const getTools = () =>
+  const getTools = (dashboardUrl = 'https://app.transcend.io') =>
     getAssessmentTools({
       rest: {} as never,
-      graphql: mockGraphql,
+      graphql: mockGraphql as never,
+      dashboardUrl,
     });
 
   describe('assessments_list', () => {
@@ -113,7 +114,7 @@ describe('Assessment Tools', () => {
       expect(result).toMatchObject({
         success: true,
         data: expect.objectContaining({
-          assessment: mockAssessment,
+          assessment: expect.objectContaining(mockAssessment),
           message: expect.stringContaining('created successfully'),
         }),
       });
@@ -153,7 +154,7 @@ describe('Assessment Tools', () => {
       expect(result).toMatchObject({
         success: true,
         data: expect.objectContaining({
-          assessment: mockAssessment,
+          assessment: expect.objectContaining(mockAssessment),
         }),
       });
       expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith({ first: 100 });
@@ -486,6 +487,147 @@ describe('Assessment Tools', () => {
           answers: { Q1: 'A1' },
         }),
       ).rejects.toThrow('Create failed');
+    });
+  });
+
+  describe('admin dashboard deep links', () => {
+    const FORM_ID = '1928a56a-26b9-40f1-aac3-1b5208cd256e';
+    const GROUP_ID = '44dc90f1-71b8-4bb7-a2ae-053985605cf1';
+
+    it('assessments_create returns the form response url for DRAFT status', async () => {
+      mockGraphql.createAssessment.mockResolvedValue({
+        id: FORM_ID,
+        title: 'DPIA',
+        status: 'DRAFT',
+        assessmentGroupId: GROUP_ID,
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_create')!;
+      const result = (await tool.handler({
+        title: 'DPIA',
+        assessment_group_id: GROUP_ID,
+      })) as { success: boolean; data: Record<string, unknown> };
+
+      expect(result.success).toBe(true);
+      expect(result.data.url).toBe(
+        `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
+      );
+      expect(result.data.groupUrl).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      // Should never surface the assignee-only /view route — it 404s for non-assignees.
+      expect(JSON.stringify(result.data)).not.toContain('/view');
+      expect(result.data.message).toContain(
+        `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
+      );
+    });
+
+    it('assessments_submit_response returns the group URL for IN_REVIEW status', async () => {
+      mockGraphql.submitAssessmentForReview.mockResolvedValue({
+        id: FORM_ID,
+        title: 'DPIA',
+        status: 'IN_REVIEW',
+        assessmentGroupId: GROUP_ID,
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_submit_response')!;
+      const result = (await tool.handler({
+        assessment_id: FORM_ID,
+        assessment_section_ids: ['sec-1'],
+      })) as { success: boolean; data: Record<string, unknown> };
+
+      expect(result.success).toBe(true);
+      expect(result.data.url).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      expect(result.data.groupUrl).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      expect(result.data.message).toContain(
+        `https://app.transcend.io/assessments/groups/${GROUP_ID}`,
+      );
+    });
+
+    it('assessments_get returns the form response URL for APPROVED status', async () => {
+      mockGraphql.getAssessment.mockResolvedValue({
+        id: FORM_ID,
+        title: 'DPIA',
+        status: 'APPROVED',
+        assessmentGroupId: GROUP_ID,
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_get')!;
+      const result = (await tool.handler({ assessment_id: FORM_ID })) as {
+        success: boolean;
+        data: Record<string, unknown>;
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data.url).toBe(
+        `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
+      );
+      expect(result.data.groupUrl).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+    });
+
+    it('assessments_list attaches a url to each row using its own status', async () => {
+      mockGraphql.listAssessments.mockResolvedValue({
+        nodes: [
+          { id: FORM_ID, title: 'Draft', status: 'DRAFT', assessmentGroupId: GROUP_ID },
+          { id: 'form-2', title: 'In Review', status: 'IN_REVIEW', assessmentGroupId: GROUP_ID },
+        ],
+        totalCount: 2,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list')!;
+      const result = (await tool.handler({ limit: 50 })) as {
+        success: boolean;
+        data: Array<Record<string, unknown>>;
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data[0]!.url).toBe(
+        `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
+      );
+      expect(result.data[1]!.url).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      // No row should expose the assignee-only /view route.
+      expect(JSON.stringify(result.data)).not.toContain('/view');
+    });
+
+    it('assessments_list_groups attaches a groupUrl to each row', async () => {
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [
+          { id: 'grp-1', title: 'Group 1' },
+          { id: 'grp-2', title: 'Group 2' },
+        ],
+        totalCount: 2,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const result = (await tool.handler({ limit: 50 })) as {
+        success: boolean;
+        data: Array<Record<string, unknown>>;
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data[0]!.groupUrl).toBe('https://app.transcend.io/assessments/groups/grp-1');
+      expect(result.data[1]!.groupUrl).toBe('https://app.transcend.io/assessments/groups/grp-2');
+    });
+
+    it('honors a caller-supplied dashboard URL on the ToolClients', async () => {
+      mockGraphql.createAssessment.mockResolvedValue({
+        id: FORM_ID,
+        title: 'DPIA',
+        status: 'DRAFT',
+        assessmentGroupId: GROUP_ID,
+      });
+
+      const tool = getTools('https://app.staging.transcend.io').find(
+        (t) => t.name === 'assessments_create',
+      )!;
+      const result = (await tool.handler({
+        title: 'DPIA',
+        assessment_group_id: GROUP_ID,
+      })) as { success: boolean; data: Record<string, unknown> };
+
+      expect(result.data.url).toBe(
+        `https://app.staging.transcend.io/assessments/forms/${FORM_ID}/response`,
+      );
     });
   });
 });

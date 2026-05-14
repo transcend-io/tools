@@ -26,7 +26,8 @@ describe('Workflows Tools', () => {
   const getTools = () =>
     getWorkflowTools({
       rest: {} as never,
-      graphql: mockGraphql,
+      graphql: mockGraphql as never,
+      dashboardUrl: 'https://app.transcend.io',
     });
 
   it('registers exactly 3 tools with expected names', () => {
