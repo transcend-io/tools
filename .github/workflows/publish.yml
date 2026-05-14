@@ -1,13 +1,18 @@
-name: Release
+name: Publish
 
 on:
-  push:
+  pull_request:
+    types:
+      - closed
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
-  release:
+  publish:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'changeset-release/main'
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -18,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
+          # Publish the release PR tree, not the merge-queue commit that may
+          # include newer changesets for the next release.
+          ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
       - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
         with:
@@ -50,10 +58,9 @@ jobs:
           app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
           private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
           permission-contents: write
-          permission-pull-requests: write
-      - name: Create or update release pull request
+      - name: Publish packages
         uses: changesets/action@v1
         with:
-          version: mise exec -- pnpm changeset:version:release
+          publish: mise exec -- pnpm release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
