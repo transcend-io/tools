@@ -1,5 +1,28 @@
 # @transcend-io/mcp
 
+## 0.4.9
+
+### Patch Changes
+
+- ed322d2: Adjust readme to clarify api key requirements
+- Updated dependencies [ed322d2]
+  - @transcend-io/mcp-server-preferences@0.3.4
+  - @transcend-io/mcp-server-assessment@0.3.8
+  - @transcend-io/mcp-server-discovery@0.3.4
+  - @transcend-io/mcp-server-inventory@0.3.4
+  - @transcend-io/mcp-server-workflows@0.3.4
+  - @transcend-io/mcp-server-consent@0.2.10
+  - @transcend-io/mcp-server-admin@0.3.7
+  - @transcend-io/mcp-server-base@0.4.3
+  - @transcend-io/mcp-server-dsr@0.3.8
+
+## 0.4.8
+
+### Patch Changes
+
+- Updated dependencies [3cb3a63]
+  - @transcend-io/mcp-server-dsr@0.3.7
+
 ## 0.4.7
 
 ### Patch Changes
