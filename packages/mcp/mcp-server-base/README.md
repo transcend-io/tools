@@ -26,7 +26,8 @@ API keys for running a domain or unified MCP server locally belong in the reposi
 - **`runMcpHttp`** — Starts an Express-based Streamable HTTP server with per-session Server instances, SSE resume, health check, and CORS. Wraps each inbound request in `requestAuthContext.run()` for per-request auth isolation.
 - **`parseTransportArgs`** — Parses `--transport`, `--port`, `--host`, and related CLI flags / env vars.
 - **`InMemoryEventStore`** — In-memory SSE event store for session resumability.
-- **Tool helpers** — `validateArgs`, `createToolResult`, `createListResult`, common Zod schemas (`PaginationSchema`), and shared TypeScript types (`ToolDefinition`, `ToolClients`, `ToolAnnotations`).
+- **Tool helpers** — `validateArgs`, `createToolResult`, `createListResult`, `defineTool`, common Zod schemas (`PaginationSchema`), and shared TypeScript types (`ToolDefinition`, `ToolClients`, `ToolAnnotations`).
+- **Output schemas** — `envelopeSchema`, `listEnvelopeSchema`, `paginatedListSchema`, `successEnvelopeSchema`, `errorEnvelopeSchema`, plus Zod mirrors of every interface in `transcend.ts` (`AssessmentSchema`, `RequestSchema`, `DataSiloSchema`, `CookieSchema`, `UserPreferencesSchema`, …) for use as a tool's `outputZodSchema`.
 - **Error utilities** — `ToolError`, `ErrorCode`, `classifyHttpError` for consistent error responses.
 
 ## Usage
@@ -40,9 +41,50 @@ import {
   TranscendRestClient,
   validateArgs,
   createToolResult,
+  defineTool,
+  envelopeSchema,
+  listEnvelopeSchema,
+  AssessmentSchema,
   z,
 } from '@transcend-io/mcp-server-base';
 ```
+
+### Defining a tool with an output schema
+
+Every tool must declare both an input schema (`zodSchema`) and an output schema (`outputZodSchema`). The output schema is exposed as `outputSchema` in `tools/list` and the validated handler return is surfaced as `structuredContent` on `CallToolResult`:
+
+```ts
+import {
+  defineTool,
+  envelopeSchema,
+  listEnvelopeSchema,
+  AssessmentSchema,
+  z,
+} from '@transcend-io/mcp-server-base';
+
+export const listAssessments = defineTool({
+  name: 'assessments_list',
+  description: 'List all privacy assessments',
+  category: 'Assessments',
+  readOnly: true,
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  zodSchema: z.object({ limit: z.number().int().positive().max(100).default(50) }),
+  outputZodSchema: listEnvelopeSchema(AssessmentSchema),
+  handler: async ({ limit }) => {
+    // ...
+  },
+});
+
+export const getAssessment = defineTool({
+  // ...
+  outputZodSchema: envelopeSchema(AssessmentSchema), // single record
+  handler: async ({ id }) => createToolResult(true, await graphql.getAssessment(id)),
+});
+```
+
+Validation failures are non-throwing — they log to stderr but still surface the raw handler return as `structuredContent`, so a schema regression cannot break an existing workflow.
+
+> ⚠️ **Breaking change in beta:** `createListResult` now nests pagination metadata (`count`, `totalCount`, `hasNextPage`, `nextCursor`, `paginationNote`) under `data` instead of placing it at the top level alongside `success`. Previously `result.totalCount`; now `result.data.totalCount`. This unifies the envelope shape across all tools.
 
 ## Development
 

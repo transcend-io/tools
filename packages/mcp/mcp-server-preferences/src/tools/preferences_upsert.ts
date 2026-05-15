@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 export const UpsertPreferencesPurposeSchema = z.object({
   purpose: z.string().describe('Purpose slug'),
@@ -30,6 +36,14 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
     confirmationHint: 'Creates or updates preference records for users',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpsertPreferencesSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        success: z.boolean().optional(),
+        count: z.number().optional(),
+        recordsProcessed: z.number(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ partition, records }) => {
       const result = await rest.upsertPreferences({
         partition,

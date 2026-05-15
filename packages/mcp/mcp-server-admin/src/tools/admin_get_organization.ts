@@ -2,6 +2,8 @@ import {
   createToolResult,
   defineTool,
   EmptySchema,
+  envelopeSchema,
+  OrganizationSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
@@ -16,6 +18,7 @@ export function createAdminGetOrganizationTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
+    outputZodSchema: envelopeSchema(OrganizationSchema),
     handler: async (_args) => {
       const result = await graphql.getOrganization();
       return createToolResult(true, result);

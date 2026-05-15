@@ -182,6 +182,14 @@ Each domain package (admin, consent, dsr, ...) is a self-contained MCP server wi
 
 The unified `mcp` package aggregates tools via `ToolRegistry` and composes a `TranscendGraphQLClient` that mixes in all domain GraphQL capabilities.
 
+## Output schemas and `structuredContent`
+
+Every tool declares an `outputZodSchema` alongside its input schema. The derived JSON Schema is exposed as `outputSchema` in `tools/list`, and every `CallToolResult` includes `structuredContent` with the validated handler return (in addition to the existing `content[0].text` JSON payload).
+
+Payloads follow a single envelope: `{ success, data, timestamp }` on success and `{ success: false, error?, message?, code?, retryable?, timestamp }` on failure. List tools nest pagination metadata (`count`, `totalCount`, `hasNextPage`, `nextCursor`, `paginationNote`) under `data`.
+
+See `@transcend-io/mcp-server-base` for the `envelopeSchema` / `listEnvelopeSchema` helpers used to author new tools.
+
 ## Environment variables
 
 All servers share the same environment variables:

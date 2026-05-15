@@ -77,6 +77,37 @@ describe('ToolRegistry', () => {
     }
   });
 
+  it('every tool exposes a non-empty outputSchema', () => {
+    const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
+    const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
+    const registry = new ToolRegistry({ rest, graphql });
+
+    const missingOutputSchema: string[] = [];
+    for (const tool of registry.getToolList()) {
+      if (
+        !tool.outputSchema ||
+        typeof tool.outputSchema !== 'object' ||
+        Object.keys(tool.outputSchema).length === 0
+      ) {
+        missingOutputSchema.push(tool.name);
+      }
+    }
+    expect(
+      missingOutputSchema,
+      `Tools missing outputSchema: ${missingOutputSchema.join(', ')}`,
+    ).toEqual([]);
+  });
+
+  it('every registered tool has an outputZodSchema attribute', () => {
+    const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
+    const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
+    const registry = new ToolRegistry({ rest, graphql });
+
+    for (const tool of registry.getAllTools()) {
+      expect(tool.outputZodSchema, `Tool ${tool.name} missing outputZodSchema`).toBeDefined();
+    }
+  });
+
   it('getTool returns undefined for unknown tools', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');

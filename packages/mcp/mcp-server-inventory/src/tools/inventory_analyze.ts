@@ -2,8 +2,10 @@ import {
   createToolResult,
   defineTool,
   EmptySchema,
+  envelopeSchema,
   groupBy,
   type ToolClients,
+  z,
 } from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
@@ -18,6 +20,35 @@ export function createInventoryAnalyzeTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        summary: z.object({
+          totalDataSilos: z.number(),
+          liveDataSilos: z.number(),
+          totalVendors: z.number(),
+          totalIdentifiers: z.number(),
+          totalCategories: z.number(),
+        }),
+        breakdown: z.object({
+          dataSilosByType: z.record(z.string(), z.number()),
+          dataSilosByOuterType: z.record(z.string(), z.number()),
+        }),
+        topIdentifiers: z.array(
+          z.object({
+            name: z.string(),
+            type: z.string(),
+            isRequired: z.boolean().optional(),
+          }),
+        ),
+        topCategories: z.array(
+          z.object({
+            name: z.string(),
+            category: z.string(),
+          }),
+        ),
+        recommendations: z.array(z.string()),
+      }),
+    ),
     handler: async (_args) => {
       const [dataSilosResult, vendorsResult, identifiersResult, categoriesResult] =
         await Promise.all([

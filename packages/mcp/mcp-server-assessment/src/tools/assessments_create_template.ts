@@ -1,6 +1,8 @@
 import {
+  AssessmentTemplateSchema,
   createToolResult,
   defineTool,
+  envelopeSchema,
   z,
   type ToolClients,
   type AssessmentTemplateCreateInput,
@@ -42,6 +44,12 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients) {
     confirmationHint: 'Creates a new assessment form template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateTemplateSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        template: AssessmentTemplateSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ title, description, status, sections }) => {
       const input: AssessmentTemplateCreateInput = {
         title,

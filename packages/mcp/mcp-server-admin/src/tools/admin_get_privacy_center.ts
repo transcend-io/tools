@@ -2,7 +2,10 @@ import {
   createToolResult,
   defineTool,
   EmptySchema,
+  envelopeSchema,
+  PrivacyCenterSchema,
   type ToolClients,
+  z,
 } from '@transcend-io/mcp-server-base';
 
 import type { AdminMixin } from '../graphql.js';
@@ -16,6 +19,12 @@ export function createAdminGetPrivacyCenterTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
+    outputZodSchema: envelopeSchema(
+      z.discriminatedUnion('found', [
+        z.object({ found: z.literal(false), message: z.string() }),
+        z.object({ found: z.literal(true), privacyCenter: PrivacyCenterSchema }),
+      ]),
+    ),
     handler: async (_args) => {
       const result = await graphql.getPrivacyCenter();
       if (!result) {

@@ -1,6 +1,8 @@
 import {
+  AssessmentGroupSchema,
   createListResult,
   defineTool,
+  listEnvelopeSchema,
   PaginationSchema,
   z,
   type ToolClients,
@@ -23,6 +25,7 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListGroupsSchema,
+    outputZodSchema: listEnvelopeSchema(AssessmentGroupSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listAssessmentGroups({
         first: limit,

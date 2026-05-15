@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  DataSiloSchema,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -19,6 +26,12 @@ export function createInventoryUpdateDataSiloTool(clients: ToolClients) {
     confirmationHint: 'Updates the data silo configuration',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateDataSiloSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        dataSilo: DataSiloSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ data_silo_id, title, description }) => {
       const result = await graphql.updateDataSilo({
         id: data_silo_id,

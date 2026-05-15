@@ -34,6 +34,16 @@ export { defineTool } from './tools/types.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
 
+export {
+  successEnvelopeSchema,
+  errorEnvelopeSchema,
+  envelopeSchema,
+  paginatedListSchema,
+  listEnvelopeSchema,
+} from './tools/output-schemas.js';
+
+export * from './types/transcend.schemas.js';
+
 export { createMCPServer } from './server/create-server.js';
 export type { MCPServerOptions } from './server/create-server.js';
 

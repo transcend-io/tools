@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  UserPreferencesSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 export const GetPreferencesSchema = z.object({
   identifier: z.string().describe('User identifier (e.g., email, user ID)'),
@@ -15,6 +22,12 @@ export function createConsentGetPreferencesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetPreferencesSchema,
+    outputZodSchema: envelopeSchema(
+      z.discriminatedUnion('found', [
+        z.object({ found: z.literal(false), message: z.string() }),
+        z.object({ found: z.literal(true), preferences: UserPreferencesSchema }),
+      ]),
+    ),
     handler: async ({ identifier, partition }) => {
       const result = await rest.getConsentPreferences(identifier, partition);
       if (!result) {

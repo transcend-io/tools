@@ -1,6 +1,7 @@
 import {
   createListResult,
   defineTool,
+  listEnvelopeSchema,
   PaginationSchema,
   type ToolClients,
   z,
@@ -23,6 +24,7 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: listIdentifiersSchema,
+    outputZodSchema: listEnvelopeSchema(z.record(z.string(), z.string())),
     handler: async ({ request_id }) => {
       const identifiers = await rest.listRequestIdentifiers(request_id);
       return createListResult(identifiers);

@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  ConsentDataFlowSchema,
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import {
   ConsentTrackerStatus,
   DataFlowOrderField,
@@ -34,6 +41,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataFlowsSchema,
+    outputZodSchema: listEnvelopeSchema(ConsentDataFlowSchema),
     handler: async ({
       limit,
       offset,

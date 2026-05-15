@@ -29,6 +29,7 @@ const echoTool: ToolDefinition = {
   readOnly: true,
   annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
   zodSchema: z.object({ message: z.string() }),
+  outputZodSchema: z.object({ echo: z.string() }),
   handler: async (args: { message: string }) => ({ echo: args.message }),
 };
 
@@ -189,6 +190,37 @@ describe('HTTP Transport', () => {
       expect(callResponse).toBeDefined();
       const content = JSON.parse(callResponse.result.content[0].text);
       expect(content.echo).toBe('hello');
+
+      // Validated handler return surfaces as structuredContent so consumers
+      // (e.g. @mastra/mcp) can avoid manual JSON.parse on content[0].text.
+      expect(callResponse.result.structuredContent).toEqual({ echo: 'hello' });
+    });
+
+    it('includes outputSchema in tools/list response', async () => {
+      const res = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          ...MCP_HEADERS,
+          [MCP_SESSION_ID_HEADER]: sessionId,
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'tools/list',
+          params: {},
+          id: 99,
+        }),
+      });
+
+      expect(res.status).toBe(200);
+      const text = await res.text();
+      const dataLines = parseSseData(text);
+      const listResponse = dataLines.find((d: any) => d.id === 99) as any;
+      expect(listResponse).toBeDefined();
+      const echo = listResponse.result.tools.find((t: any) => t.name === 'echo');
+      expect(echo).toBeDefined();
+      expect(echo.outputSchema).toBeDefined();
+      expect(echo.outputSchema.type).toBe('object');
+      expect(echo.outputSchema.properties.echo).toBeDefined();
     });
 
     it('terminates session via DELETE', async () => {
@@ -407,6 +439,7 @@ describe('HTTP Transport', () => {
       readOnly: true,
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
       zodSchema: z.object({ message: z.string() }),
+      outputZodSchema: z.object({ echo: z.string(), hasAuth: z.boolean() }),
       handler: async (args: { message: string }) => {
         const auth = getRequestAuth();
         capturedAuthSpy(auth);

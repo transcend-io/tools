@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  AssessmentSchema,
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
@@ -37,6 +44,12 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
     confirmationHint: 'Creates a new privacy assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateAssessmentSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        assessment: AssessmentSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ title, assessment_group_id, template_id, assignee_ids }) => {
       let assessmentGroupId = assessment_group_id;
 

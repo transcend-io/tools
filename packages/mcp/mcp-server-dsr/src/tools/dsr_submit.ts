@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  DSRResponseSchema,
+  envelopeSchema,
+  type ToolClients,
+  z,
+} from '@transcend-io/mcp-server-base';
 import { RequestAction } from '@transcend-io/privacy-types';
 
 export const submitDsrSchema = z.object({
@@ -31,6 +38,12 @@ export function createDsrSubmitTool(clients: ToolClients) {
     confirmationHint: 'Creates a new data subject request',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: submitDsrSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        request: DSRResponseSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ type, email, subjectType, coreIdentifier, name, locale, isSilent }) => {
       const result = await rest.submitDSR({
         type,

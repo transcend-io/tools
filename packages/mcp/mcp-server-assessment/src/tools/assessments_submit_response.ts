@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  AssessmentSchema,
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
@@ -23,6 +30,12 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
     confirmationHint: 'Submits assessment for review — cannot be undone',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: SubmitResponseSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        assessment: AssessmentSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ assessment_id, assessment_section_ids }) => {
       const result = await graphql.submitAssessmentForReview({
         id: assessment_id,
