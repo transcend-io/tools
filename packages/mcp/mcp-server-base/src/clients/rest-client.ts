@@ -1,5 +1,6 @@
 import { getRequestAuth } from '../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../auth.js';
+import { DEFAULT_SOMBRA_URL } from '../defaults.js';
 import {
   MCP_CALLER_HEADER,
   TOOLCALL_ID_HEADER,
@@ -36,11 +37,7 @@ export class TranscendRestClient {
   private lastRequestTime: number = 0;
   private minRequestInterval: number = 200;
 
-  constructor(
-    auth: AuthCredentials | null,
-    baseUrl: string = 'https://multi-tenant.sombra.transcend.io',
-    logger?: Logger,
-  ) {
+  constructor(auth: AuthCredentials | null, baseUrl: string = DEFAULT_SOMBRA_URL, logger?: Logger) {
     this.auth = auth;
     this.baseUrl = baseUrl.replace(/\/$/, '');
     this.logger = logger || new SimpleLogger();

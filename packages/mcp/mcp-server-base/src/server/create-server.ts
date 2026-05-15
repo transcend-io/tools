@@ -3,7 +3,11 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { TranscendRestClient } from '../clients/rest-client.js';
-import { DEFAULT_DASHBOARD_URL } from '../dashboard-url.js';
+import {
+  DEFAULT_DASHBOARD_URL,
+  DEFAULT_SOMBRA_URL,
+  DEFAULT_TRANSCEND_API_URL,
+} from '../defaults.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
@@ -68,8 +72,8 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   const isHttpTransport = config.transport === 'http';
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
-  const sombraUrl = process.env.SOMBRA_URL || 'https://multi-tenant.sombra.transcend.io';
-  const graphqlUrl = process.env.TRANSCEND_API_URL || 'https://api.transcend.io';
+  const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
+  const graphqlUrl = process.env.TRANSCEND_API_URL || DEFAULT_TRANSCEND_API_URL;
   const dashboardUrl = process.env.TRANSCEND_DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
 
   if (isHttpTransport) {

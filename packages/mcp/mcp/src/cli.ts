@@ -4,6 +4,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import {
   buildMcpServer,
   DEFAULT_DASHBOARD_URL,
+  DEFAULT_SOMBRA_URL,
+  DEFAULT_TRANSCEND_API_URL,
   parseTransportArgs,
   resolveAuth,
   runMcpHttp,
@@ -33,8 +35,8 @@ async function main(): Promise<void> {
   const isHttpTransport = config.transport === 'http';
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
-  const sombraUrl = process.env.SOMBRA_URL || 'https://multi-tenant.sombra.transcend.io';
-  const graphqlUrl = process.env.TRANSCEND_API_URL || 'https://api.transcend.io';
+  const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
+  const graphqlUrl = process.env.TRANSCEND_API_URL || DEFAULT_TRANSCEND_API_URL;
   const dashboardUrl = process.env.TRANSCEND_DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
 
   if (isHttpTransport) {
