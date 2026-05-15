@@ -178,8 +178,8 @@ importers:
         specifier: ^1.4.0
         version: 1.4.0
       csv-parse:
-        specifier: ^5.6.0
-        version: 5.6.0
+        specifier: ^6.0.0
+        version: 6.2.1
       fast-csv:
         specifier: ^4.3.6
         version: 4.3.6
@@ -840,8 +840,8 @@ importers:
         specifier: ^3.7.2
         version: 3.7.2
       csv-parse:
-        specifier: ^5.6.0
-        version: 5.6.0
+        specifier: ^6.0.0
+        version: 6.2.1
       fast-csv:
         specifier: ^4.3.6
         version: 4.3.6
@@ -2232,8 +2232,8 @@ packages:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
 
-  csv-parse@5.6.0:
-    resolution: {integrity: sha512-l3nz3euub2QMg5ouu5U09Ew9Wf6/wQ8I++ch1loQ0ljmzhmfZYrH9fflS22i/PQEvsPvxCwxgz5q7UB8K1JO4Q==}
+  csv-parse@6.2.1:
+    resolution: {integrity: sha512-LRLMV+UCyfMokp8Wb411duBf1gaBKJfOfBWU9eHMJ+b+cJYZsNu3AFmjJf3+yPGd59Exz1TsMjaSFyxnYB9+IQ==}
 
   data-view-buffer@1.0.2:
     resolution: {integrity: sha512-EmKO5V3OLXh1rtK2wgXRansaK1/mtVdTUEiEI0W8RkvgT05kfxaH29PliLnpLP73yYO6142Q72QNa8Wx/A5CqQ==}
@@ -5369,7 +5369,7 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
-  csv-parse@5.6.0: {}
+  csv-parse@6.2.1: {}
 
   data-view-buffer@1.0.2:
     dependencies:
