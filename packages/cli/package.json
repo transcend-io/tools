@@ -105,7 +105,7 @@
     "fp-ts": "^2.16.1",
     "fuzzysearch": "^1.0.3",
     "global-agent": "^3.0.0",
-    "got": "^11.8.5",
+    "got": "^15.0.0",
     "graphql": "^16.6.0",
     "graphql-request": "^5.0.0",
     "inquirer": "^8.0.0",
