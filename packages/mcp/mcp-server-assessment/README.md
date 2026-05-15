@@ -66,11 +66,12 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable            | Required | Default                                    | Description                                        |
-| ------------------- | -------- | ------------------------------------------ | -------------------------------------------------- |
-| `TRANSCEND_API_KEY` | Yes      | —                                          | Transcend API key                                  |
-| `TRANSCEND_API_URL` | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)   |
-| `SOMBRA_URL`        | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention) |
+| Variable                  | Required | Default                                    | Description                                                                                                                                       |
+| ------------------------- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`       | Yes      | —                                          | Transcend API key                                                                                                                                 |
+| `TRANSCEND_API_URL`       | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                                                                  |
+| `SOMBRA_URL`              | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
+| `TRANSCEND_DASHBOARD_URL` | No       | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links returned by tool responses. Intended for local development against staging / fake hosts |
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 

@@ -16,6 +16,7 @@ const stubFn = () => vi.fn();
 const mockClients: ToolClients = {
   rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({} as ToolClients['graphql'], { get: stubFn }),
+  dashboardUrl: 'https://app.transcend.io',
 };
 
 const allTools = [

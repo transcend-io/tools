@@ -40,7 +40,8 @@ describe('Discovery Tools', () => {
   const getTools = () =>
     getDiscoveryTools({
       rest: mockRest as never,
-      graphql: mockGraphql,
+      graphql: mockGraphql as never,
+      dashboardUrl: 'https://app.transcend.io',
     });
 
   it('registers exactly 6 tools with expected names', () => {

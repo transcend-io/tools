@@ -35,6 +35,7 @@ describe('Consent Tools', () => {
     getConsentTools({
       rest: {} as never,
       graphql: mockGraphql as never,
+      dashboardUrl: 'https://app.transcend.io',
     });
 
   it(`registers exactly ${EXPECTED_TOOL_NAMES.length} tools with expected names`, () => {

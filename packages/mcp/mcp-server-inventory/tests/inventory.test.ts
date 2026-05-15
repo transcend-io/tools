@@ -45,7 +45,8 @@ describe('Inventory Tools', () => {
   const getTools = () =>
     getInventoryTools({
       rest: {} as never,
-      graphql: mockGraphql,
+      graphql: mockGraphql as never,
+      dashboardUrl: 'https://app.transcend.io',
     });
 
   it('registers exactly 10 tools with expected names', () => {

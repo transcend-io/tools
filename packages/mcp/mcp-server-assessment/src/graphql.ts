@@ -67,19 +67,28 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
             title
             status
             createdAt
+            assessmentGroup {
+              id
+            }
           }
           totalCount
         }
       }
     `;
     const data = await this.makeRequest<{
-      assessmentForms: { nodes: Assessment[]; totalCount: number };
+      assessmentForms: {
+        nodes: Array<Omit<Assessment, 'assessmentGroupId'> & { assessmentGroup?: { id: string } }>;
+        totalCount: number;
+      };
     }>(query, {
       first: Math.min(options?.first || 50, 100),
       filterBy: options?.filterBy?.statuses ? { statuses: options.filterBy.statuses } : undefined,
     });
     return {
-      nodes: data.assessmentForms.nodes,
+      nodes: data.assessmentForms.nodes.map(({ assessmentGroup, ...rest }) => ({
+        ...rest,
+        assessmentGroupId: assessmentGroup?.id,
+      })),
       pageInfo: {
         hasNextPage: data.assessmentForms.nodes.length < data.assessmentForms.totalCount,
         hasPreviousPage: false,
@@ -100,6 +109,9 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
             submittedAt
             createdAt
             updatedAt
+            assessmentGroup {
+              id
+            }
             sections {
               id
               title
@@ -130,14 +142,17 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         }
       }
     `;
-    const data = await this.makeRequest<{ assessmentForms: { nodes: Assessment[] } }>(query, {
-      ids: [id],
-    });
+    const data = await this.makeRequest<{
+      assessmentForms: {
+        nodes: Array<Omit<Assessment, 'assessmentGroupId'> & { assessmentGroup?: { id: string } }>;
+      };
+    }>(query, { ids: [id] });
     const node = data.assessmentForms.nodes[0];
     if (!node) {
       throw new Error(`Assessment with id ${id} not found`);
     }
-    return node;
+    const { assessmentGroup, ...rest } = node;
+    return { ...rest, assessmentGroupId: assessmentGroup?.id };
   }
 
   async selectAssessmentQuestionAnswers(input: {
@@ -267,7 +282,10 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     }>(mutation, { input: batchInput });
     const created = data.createAssessmentForms.assessmentForms[0];
     if (!created) throw new Error('createAssessmentForms returned an empty array');
-    return created;
+    // The mutation response doesn't echo `assessmentGroup`, but we know the
+    // ID from the input — surface it so callers can build a deep link without
+    // an extra round trip.
+    return { ...created, assessmentGroupId: input.assessmentGroupId };
   }
 
   async updateAssessment(input: AssessmentUpdateInput): Promise<Assessment> {
@@ -281,15 +299,22 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
             status
             dueDate
             updatedAt
+            assessmentGroup {
+              id
+            }
           }
         }
       }
     `;
-    const data = await this.makeRequest<{ updateAssessmentForm: { assessmentForm: Assessment } }>(
-      mutation,
-      { input },
-    );
-    return data.updateAssessmentForm.assessmentForm;
+    const data = await this.makeRequest<{
+      updateAssessmentForm: {
+        assessmentForm: Omit<Assessment, 'assessmentGroupId'> & {
+          assessmentGroup?: { id: string };
+        };
+      };
+    }>(mutation, { input });
+    const { assessmentGroup, ...rest } = data.updateAssessmentForm.assessmentForm;
+    return { ...rest, assessmentGroupId: assessmentGroup?.id };
   }
 
   async listAssessmentTemplates(
