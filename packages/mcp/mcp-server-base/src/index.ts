@@ -17,11 +17,7 @@ export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { TranscendRestClient } from './clients/rest-client.js';
 
-export {
-  DEFAULT_DASHBOARD_URL,
-  TRANSCEND_DASHBOARD_URL_ENV,
-  resolveDashboardUrl,
-} from './dashboard-url.js';
+export { DEFAULT_DASHBOARD_URL } from './dashboard-url.js';
 
 export { ToolError, ErrorCode, classifyHttpError } from './errors.js';
 

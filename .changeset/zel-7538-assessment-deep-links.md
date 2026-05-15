@@ -33,8 +33,8 @@ clients (Claude Desktop, Cursor, etc.) stop fabricating 404 URLs like
 - Tool `description`s now instruct the model to surface the returned `url`
   / `groupUrl` verbatim instead of constructing URLs from raw IDs.
 - `ToolClients` gains a `dashboardUrl` field (always
-  `https://app.transcend.io` in production) plus new `DEFAULT_DASHBOARD_URL`
-  and `resolveDashboardUrl` exports from `@transcend-io/mcp-server-base`.
+  `https://app.transcend.io` in production) plus a new
+  `DEFAULT_DASHBOARD_URL` export from `@transcend-io/mcp-server-base`.
 - New optional `TRANSCEND_DASHBOARD_URL` env var overrides the dashboard
   base URL for testing against staging or local dashboards. Unset in
   production so we fall through to the canonical `app.transcend.io`.
