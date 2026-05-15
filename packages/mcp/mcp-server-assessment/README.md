@@ -94,9 +94,12 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Admin-dashboard deep links
 
-Tools that reference a specific assessment (`assessments_create`, `assessments_get`, `assessments_update`, `assessments_submit_response`, `assessments_list`) and assessment-group tools (`assessments_create_group`, `assessments_list_groups`) include canonical `app.transcend.io` admin-dashboard URLs (`url`, `groupUrl`) in their responses. Surface these verbatim to end users rather than constructing assessment URLs from raw IDs.
+Tools that reference a specific assessment (`assessments_create`, `assessments_get`, `assessments_update`, `assessments_submit_response`, `assessments_list`) return a single `url` field pointing at `/assessments/forms/{id}/response` — the read-only response page, matching the dashboard's own "View Responses" row action. Group tools (`assessments_create_group`, `assessments_list_groups`) return a `groupUrl` field instead. Surface these verbatim to end users rather than constructing assessment URLs from raw IDs.
 
-The primary `url` points at `/assessments/forms/{id}/response` (the read-only form view, accessible to any user with assessment view scope), except for `IN_REVIEW` assessments where it points at the parent group page to match the existing in-review email convention. The fillable `/assessments/forms/{id}/view` route is intentionally **not** exposed — it 404s for anyone who isn't the form's assignee.
+Two routes are intentionally **not** exposed on per-assessment tools:
+
+- `/assessments/forms/{id}/view` — only resolves for the form's assignee. The MCP can't verify assignee membership, so emitting it produces 404s for anyone else.
+- A separate `groupUrl` sibling field — when both `url` and `groupUrl` are present, LLM clients reliably surface `groupUrl` over `url` (because "group" reads as the parent container) and every clicked link ends up at the group page instead of the specific assessment. Group navigation is a separate concern handled by `assessments_list_groups` / `assessments_create_group`.
 
 ## Related packages
 

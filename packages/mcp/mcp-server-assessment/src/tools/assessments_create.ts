@@ -60,12 +60,7 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
         assigneeIds: assignee_ids,
       });
 
-      const links = buildAssessmentLinks({
-        dashboardUrl,
-        assessmentFormId: result.id,
-        assessmentGroupId: result.assessmentGroupId ?? assessmentGroupId,
-        status: result.status,
-      });
+      const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });
 
       return createToolResult(true, {
         assessment: { ...result, ...links },

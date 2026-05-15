@@ -27,12 +27,7 @@ export function createAssessmentsGetTool(clients: ToolClients) {
     zodSchema: GetAssessmentSchema,
     handler: async ({ assessment_id }) => {
       const result = await graphql.getAssessment(assessment_id);
-      const links = buildAssessmentLinks({
-        dashboardUrl,
-        assessmentFormId: result.id,
-        assessmentGroupId: result.assessmentGroupId,
-        status: result.status,
-      });
+      const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });
       return createToolResult(true, { ...result, ...links });
     },
   });

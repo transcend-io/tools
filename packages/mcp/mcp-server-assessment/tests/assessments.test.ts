@@ -512,7 +512,10 @@ describe('Assessment Tools', () => {
       expect(result.data.url).toBe(
         `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
       );
-      expect(result.data.groupUrl).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      // The per-assessment tools only surface a single `url` field — exposing
+      // `groupUrl` alongside it tempts LLM clients to render the group page
+      // instead of the assessment.
+      expect(result.data.groupUrl).toBeUndefined();
       // Should never surface the assignee-only /view route — it 404s for non-assignees.
       expect(JSON.stringify(result.data)).not.toContain('/view');
       expect(result.data.message).toContain(
@@ -520,7 +523,12 @@ describe('Assessment Tools', () => {
       );
     });
 
-    it('assessments_submit_response returns the group URL for IN_REVIEW status', async () => {
+    it('assessments_submit_response returns the form response URL even for IN_REVIEW status', async () => {
+      // The dashboard's own "View Responses" row action sends reviewers to
+      // /response regardless of status — the previous IN_REVIEW -> group
+      // special case mirrored the email link convention, but that's a
+      // different audience. Per-assessment MCP responses should always
+      // point at the specific assessment.
       mockGraphql.submitAssessmentForReview.mockResolvedValue({
         id: FORM_ID,
         title: 'DPIA',
@@ -535,10 +543,12 @@ describe('Assessment Tools', () => {
       })) as { success: boolean; data: Record<string, unknown> };
 
       expect(result.success).toBe(true);
-      expect(result.data.url).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
-      expect(result.data.groupUrl).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      expect(result.data.url).toBe(
+        `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
+      );
+      expect(result.data.groupUrl).toBeUndefined();
       expect(result.data.message).toContain(
-        `https://app.transcend.io/assessments/groups/${GROUP_ID}`,
+        `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
       );
     });
 
@@ -560,10 +570,10 @@ describe('Assessment Tools', () => {
       expect(result.data.url).toBe(
         `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
       );
-      expect(result.data.groupUrl).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      expect(result.data.groupUrl).toBeUndefined();
     });
 
-    it('assessments_list attaches a url to each row using its own status', async () => {
+    it('assessments_list attaches a /response url to each row regardless of status', async () => {
       mockGraphql.listAssessments.mockResolvedValue({
         nodes: [
           { id: FORM_ID, title: 'Draft', status: 'DRAFT', assessmentGroupId: GROUP_ID },
@@ -580,10 +590,18 @@ describe('Assessment Tools', () => {
       };
 
       expect(result.success).toBe(true);
+      // Every row gets the same canonical /response URL regardless of
+      // status — matches the dashboard's "View Responses" row action.
       expect(result.data[0]!.url).toBe(
         `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
       );
-      expect(result.data[1]!.url).toBe(`https://app.transcend.io/assessments/groups/${GROUP_ID}`);
+      expect(result.data[1]!.url).toBe(
+        `https://app.transcend.io/assessments/forms/form-2/response`,
+      );
+      // Per-assessment rows must not expose a sibling `groupUrl` — agents will
+      // pick it over the canonical `url` and route every link to the group page.
+      expect(result.data[0]!.groupUrl).toBeUndefined();
+      expect(result.data[1]!.groupUrl).toBeUndefined();
       // No row should expose the assignee-only /view route.
       expect(JSON.stringify(result.data)).not.toContain('/view');
     });

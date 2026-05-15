@@ -40,12 +40,7 @@ export function createAssessmentsListTool(clients: ToolClients) {
 
       const nodesWithLinks = result.nodes.map((node) => ({
         ...node,
-        ...buildAssessmentLinks({
-          dashboardUrl,
-          assessmentFormId: node.id,
-          assessmentGroupId: node.assessmentGroupId,
-          status: node.status,
-        }),
+        ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: node.id }),
       }));
 
       return createListResult(nodesWithLinks, {

@@ -29,12 +29,7 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
         assessmentSectionIds: assessment_section_ids,
       });
 
-      const links = buildAssessmentLinks({
-        dashboardUrl,
-        assessmentFormId: result.id,
-        assessmentGroupId: result.assessmentGroupId,
-        status: result.status,
-      });
+      const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });
 
       return createToolResult(true, {
         assessment: { ...result, ...links },
