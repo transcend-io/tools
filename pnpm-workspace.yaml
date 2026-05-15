@@ -8,7 +8,7 @@ catalog:
   '@modelcontextprotocol/sdk': ^1.29.0
   '@transcend-io/internationalization': ^2.3.2
   '@types/json-schema': ^7.0.15
-  '@types/node': ^22.19.15
+  '@types/node': ^24.0.0
   '@types/semver': ^7.7.1
   husky: ^9.1.7
   oxfmt: ^0.38.0
