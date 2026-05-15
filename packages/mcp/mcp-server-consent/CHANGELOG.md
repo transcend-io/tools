@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-consent
 
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [467109b]
+  - @transcend-io/mcp-server-base@0.4.4
+
 ## 0.2.10
 
 ### Patch Changes
