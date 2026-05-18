@@ -27,9 +27,6 @@ catalogs:
     husky:
       specifier: ^9.1.7
       version: 9.1.7
-    lodash-es:
-      specifier: ^4.18.1
-      version: 4.18.1
     oxfmt:
       specifier: ^0.38.0
       version: 0.38.0
