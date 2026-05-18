@@ -35,7 +35,7 @@ jobs:
       - name: Bootstrap workspace
         run: |
           mise trust --yes mise.toml
-          mise install --locked
+          mise install
           mise exec -- npm install -g npm@^11.5.1
           mise run bootstrap-ci
       - name: Check package consistency

@@ -4,6 +4,7 @@
 coverage
 dist
 mise.local.lock
+mise.lock
 mise.local.toml
 node_modules
 *.tsbuildinfo

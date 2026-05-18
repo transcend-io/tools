@@ -23,7 +23,7 @@ jobs:
       - name: Bootstrap workspace
         run: |
           mise trust --yes mise.toml
-          mise install --locked
+          mise install
           mise run bootstrap-ci
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: release_app
