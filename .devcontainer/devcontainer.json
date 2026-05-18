@@ -11,5 +11,5 @@
     "MISE_DATA_DIR": "/mnt/mise-data"
   },
   "mounts": [{ "source": "tools-mise-data", "target": "/mnt/mise-data", "type": "volume" }],
-  "postCreateCommand": "sudo chown -R vscode:vscode /mnt/mise-data && mise trust --yes mise.toml && mise install --locked && mise run bootstrap"
+  "postCreateCommand": "sudo chown -R vscode:vscode /mnt/mise-data && mise trust --yes mise.toml && mise install && mise run bootstrap"
 }

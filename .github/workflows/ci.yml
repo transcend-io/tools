@@ -31,7 +31,7 @@ jobs:
       - name: Bootstrap workspace
         run: |
           mise trust --yes mise.toml
-          mise install --locked
+          mise install
           mise run bootstrap-ci
       - if: github.event_name == 'pull_request'
         name: Check changeset
@@ -71,7 +71,7 @@ jobs:
       - name: Bootstrap workspace
         run: |
           mise trust --yes mise.toml
-          mise install --locked
+          mise install
           mise run bootstrap-ci
       - name: Verify generated CLI files are up to date
         run: |
