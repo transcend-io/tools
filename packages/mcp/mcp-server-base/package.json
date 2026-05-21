@@ -35,8 +35,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
-    "cors": "^2.8.5",
-    "express": "^5.2.1",
+    "cors": "2.8.6",
+    "express": "5.2.1",
     "zod": "catalog:"
   },
   "devDependencies": {

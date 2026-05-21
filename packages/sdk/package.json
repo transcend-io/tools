@@ -39,12 +39,12 @@
     "@transcend-io/privacy-types": "workspace:*",
     "@transcend-io/type-utils": "workspace:*",
     "@transcend-io/utils": "workspace:*",
-    "fp-ts": "^2.16.1",
-    "got": "^11.8.5",
-    "graphql": "^16.6.0",
-    "graphql-request": "^5.0.0",
-    "io-ts": "^2.2.21",
-    "lodash-es": "^4.17.21",
+    "fp-ts": "2.16.11",
+    "got": "11.8.6",
+    "graphql": "16.13.1",
+    "graphql-request": "5.2.0",
+    "io-ts": "2.2.22",
+    "lodash-es": "4.18.1",
     "semver": "catalog:"
   },
   "devDependencies": {

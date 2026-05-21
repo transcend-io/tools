@@ -34,8 +34,8 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "fp-ts": "^2.16.1",
-    "io-ts": "^2.2.21"
+    "fp-ts": "2.16.11",
+    "io-ts": "2.2.22"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
