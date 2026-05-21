@@ -26,7 +26,7 @@ export async function streamPrivacyRequestFiles(
     /** Sombra got instance */
     sombra: Got;
     /** Handler on each file */
-    onFileDownloaded: (metadata: RequestFileMetadata, stream: Buffer) => void;
+    onFileDownloaded: (metadata: RequestFileMetadata, stream: Uint8Array) => void;
     /** Concurrent downloads at once */
     concurrency?: number;
   },
