@@ -26,6 +26,8 @@ catalog:
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
+  # Renovate security update: turbo@2.9.14
+  - turbo@2.9.14
 
 onlyBuiltDependencies:
   - esbuild
