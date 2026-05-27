@@ -37,16 +37,12 @@ export interface TrackingScriptProps extends ScriptProps {
  *
  * @example
  * ```tsx
- * const airgapSyncPromise = new Promise((resolve) => {
- *   self.airgap.ready((airgap) => {
- *     airgap.addEventListener('sync', resolve, { once: true });
- *   });
- * });
+ * import { airgapReady, TrackingScript } from '@transcend-io/react-airgap';
  *
  * <TrackingScript
  *   src="https://cdn.example.com/analytics.js"
  *   strategy="afterInteractive"
- *   loadAfter={Promise.all([analyticsConsentPromise, airgapSyncPromise])}
+ *   loadAfter={Promise.all([airgapReady(), analyticsConsentPromise])}
  * />
  * ```
  */
