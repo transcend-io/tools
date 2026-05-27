@@ -16,6 +16,7 @@
     { "path": "./packages/mcp/mcp-server-preferences" },
     { "path": "./packages/mcp/mcp-server-workflows" },
     { "path": "./packages/privacy-types" },
+    { "path": "./packages/react-airgap" },
     { "path": "./packages/sdk" },
     { "path": "./packages/type-utils" },
     { "path": "./packages/utils" }
