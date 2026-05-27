@@ -17,7 +17,7 @@ catalog:
   semver: ^7.7.4
   syncpack: ^14.2.0
   tsdown: ^0.21.2
-  turbo: ^2.8.21
+  turbo: ^2.9.14
   typescript: ^5.9.3
   vitest: ^4.0.18
   zod: ^4.3.6
