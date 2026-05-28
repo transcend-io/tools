@@ -21,7 +21,7 @@ vi.mock('react', async (importOriginal) => {
   };
 });
 
-vi.mock('./consent-manager.js', () => ({
+vi.mock('./use-consent-manager.js', () => ({
   useConsentManager: mocks.useConsentManager,
 }));
 

@@ -10,7 +10,7 @@ import {
 } from 'react';
 
 import { getMissingConsentPurposesForUrls } from '../core/consent-boundary.js';
-import { useConsentManager } from './consent-manager.js';
+import { useConsentManager } from './use-consent-manager.js';
 
 type ConsentBoundaryState =
   | { status: 'pending' }

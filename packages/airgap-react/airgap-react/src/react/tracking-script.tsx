@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import type { ReactAirgapScriptProps } from './consent-manager.js';
+import type { ReactAirgapScriptProps } from './use-consent-manager.js';
 
 export interface TrackingScriptProps extends ReactAirgapScriptProps {
   /**

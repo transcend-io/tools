@@ -49,10 +49,11 @@ airgap.js is ready. Async loading cannot regulate trackers that initialize
 before Airgap has initialized. See Transcend's guide to
 [loading airgap.js asynchronously](https://docs.transcend.io/docs/articles/consent-management/configuration/loading-asynchronously.md).
 
-## ConsentProvider
+## useConsentManager
 
-`ConsentProvider` loads airgap.js through `next/script` and exposes the loaded
-`airgap` and `transcend` APIs through `useConsentManager()`.
+`useConsentManager()` returns the loaded `airgap` and `transcend` APIs. Wrap
+your app in `ConsentProvider` once so it can load airgap.js through
+`next/script` and populate the hook.
 
 ```tsx
 import { ConsentProvider, useConsentManager } from '@transcend-io/airgap-nextjs';

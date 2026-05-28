@@ -11,7 +11,7 @@ import {
   useState,
 } from 'react';
 
-import { type ConsentAPI, subscribeConsentApis } from '../core/consent-manager.js';
+import { type ConsentAPI, subscribeConsentApis } from '../core/consent-apis.js';
 
 export interface ConsentProviderProps {
   /** Child tree that can consume the consent APIs. */

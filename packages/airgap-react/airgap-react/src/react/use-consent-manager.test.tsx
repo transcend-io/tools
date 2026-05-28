@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ConsentProvider } from './consent-manager.js';
+import { ConsentProvider } from './use-consent-manager.js';
 
 const reactMocks = vi.hoisted(() => ({
   useEffect: vi.fn(),
