@@ -39,11 +39,13 @@ instead. It provides the same public APIs without depending on `next/script`.
    </ConsentBoundary>
    ```
 
+## Asynchronously loading airgap.js
+
 > [!WARNING]
 > If you load airgap.js asynchronously, Airgap can only regulate network traffic
-> after it has loaded. Make sure no trackers load before airgap.js is ready.
-> Replace tracking script elements with [`<TrackingScript>`](#trackingscript), or
-> condition script loads on the hook:
+> after it has loaded and is ready. Make sure no trackers load before airgap.js
+> is ready. Replace tracking script elements with
+> [`<TrackingScript>`](#trackingscript), or condition script loads on the hook:
 >
 > ```tsx
 > function TrackerLoader() {
@@ -62,7 +64,28 @@ instead. It provides the same public APIs without depending on `next/script`.
 ## useConsentManager
 
 `useConsentManager()` returns the loaded `airgap` and `transcend` APIs. The hook
-re-renders when either API becomes ready.
+re-renders when either API becomes ready. `airgap` and `transcend` are
+`undefined` until each API is loaded and ready.
+
+Use the hook for component-level conditions, like enabling UI or loading trackers
+from an effect once `airgap` is loaded and ready to regulate network traffic:
+
+```tsx
+import { useEffect } from 'react';
+import { useConsentManager } from '@transcend-io/airgap-nextjs';
+
+function TrackerLoader() {
+  const { airgap } = useConsentManager();
+
+  useEffect(() => {
+    if (!airgap) return;
+
+    loadTrackers();
+  }, [airgap]);
+
+  return null;
+}
+```
 
 If your app already loads airgap.js, call the hook directly and it will observe
 the existing `self.airgap` and `self.transcend` globals:
@@ -85,7 +108,8 @@ export function PrivacyChoicesButton() {
 }
 ```
 
-Use `ConsentProvider` when you want this package to load airgap.js **asynchronously**, using
+Use `ConsentProvider` when you want this package to load
+[airgap.js **asynchronously**](#asynchronously-loading-airgapjs), using
 `next/script`:
 
 ```tsx
@@ -145,6 +169,32 @@ export function AnalyticsScript() {
 `strategy="beforeInteractive"` is unsupported because `TrackingScript` gates
 script injection after hydration.
 
+### airgapReady
+
+`airgapReady()` returns a `Promise<AirgapAPI>` that resolves when
+`self.airgap.ready(...)` fires. It is primarily intended for the `loadAfter` prop
+on `TrackingScript`.
+
+If airgap.js has not loaded yet, `airgapReady()` creates a ready-queue stub so
+the callback is drained when airgap.js initializes. For component logic, prefer
+`useConsentManager()` so React re-renders when `airgap` becomes available.
+
+```tsx
+import { airgapReady, TrackingScript } from '@transcend-io/airgap-nextjs';
+
+const airgapSyncPromise = airgapReady().then((airgap) => {
+  return new Promise<void>((resolve) => {
+    airgap.addEventListener('sync', () => resolve(), { once: true });
+  });
+});
+
+<TrackingScript
+  src="https://cdn.example.com/analytics.js"
+  strategy="afterInteractive"
+  loadAfter={airgapSyncPromise}
+/>;
+```
+
 ## ConsentBoundary
 
 `ConsentBoundary` is re-exported from `@transcend-io/airgap-react` so it shares
@@ -186,23 +236,4 @@ export function VideoBoundary({ videoUrl }: { videoUrl: string }) {
     </ConsentBoundary>
   );
 }
-```
-
-## Helpers
-
-### airgapReady
-
-`airgapReady()` resolves with the typed `AirgapAPI` when
-`self.airgap.ready(...)` fires. If airgap.js has not loaded yet, it creates the
-documented ready-queue stub so the callback is drained when airgap.js
-initializes.
-
-```tsx
-import { airgapReady } from '@transcend-io/airgap-nextjs';
-
-const airgapSyncPromise = airgapReady().then((airgap) => {
-  return new Promise<void>((resolve) => {
-    airgap.addEventListener('sync', () => resolve(), { once: true });
-  });
-});
 ```
