@@ -49,7 +49,7 @@ Use `Promise.race(...)` when any condition can open the gate:
 />
 ```
 
-To wait for Airgap's `sync` event:
+To wait for the next Airgap `sync` event:
 
 ```tsx
 const airgapSyncPromise = new Promise<void>((resolve) => {

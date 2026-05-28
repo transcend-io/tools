@@ -3,27 +3,13 @@
 import Script, { type ScriptProps } from 'next/script';
 import { type ReactElement, type ReactNode, useEffect, useState } from 'react';
 
-/**
- * Promise that opens the script gate when it resolves.
- *
- * Use normal promise composition at the call site:
- * - `Promise.all([...])` when every condition must finish.
- * - `Promise.race([...])` when any condition can open the gate.
- */
-export type LoadAfter = PromiseLike<unknown>;
-
-/** Resolve the promise that controls when the script is injected. */
-export function waitForLoadAfter(loadAfter: LoadAfter): Promise<unknown> {
-  return Promise.resolve(loadAfter);
-}
-
 export interface TrackingScriptProps extends ScriptProps {
   /**
    * Wait for this promise before injecting the underlying `<Script>`.
    * Use `Promise.all(...)` or `Promise.race(...)` at the call site to compose
    * multiple conditions. If the promise rejects, the script remains unloaded.
    */
-  loadAfter: LoadAfter;
+  loadAfter: PromiseLike<unknown>;
   /** Inline script body (for `<TrackingScript id="...">{`...`}</TrackingScript>`). */
   children?: ReactNode;
 }
@@ -37,12 +23,16 @@ export interface TrackingScriptProps extends ScriptProps {
  *
  * @example
  * ```tsx
- * import { airgapReady, TrackingScript } from '@transcend-io/react-airgap';
+ * import { TrackingScript } from '@transcend-io/react-airgap';
+ *
+ * const analyticsReady = new Promise<void>((resolve) => {
+ *   window.addEventListener('analytics:ready', () => resolve(), { once: true });
+ * });
  *
  * <TrackingScript
  *   src="https://cdn.example.com/analytics.js"
  *   strategy="afterInteractive"
- *   loadAfter={Promise.all([airgapReady(), analyticsConsentPromise])}
+ *   loadAfter={analyticsReady}
  * />
  * ```
  */
@@ -65,7 +55,7 @@ export default function TrackingScript({
 
   useEffect(() => {
     let cancelled = false;
-    void waitForLoadAfter(loadAfter).then(
+    void Promise.resolve(loadAfter).then(
       () => {
         if (!cancelled) setOpen(true);
       },
