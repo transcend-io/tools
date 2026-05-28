@@ -61,11 +61,11 @@ instead. It provides the same public APIs without depending on `next/script`.
 > }
 > ```
 
-## useConsentManager
+## `useConsentManager()` hook
 
-`useConsentManager()` returns the loaded `airgap` and `transcend` APIs. The hook
-re-renders when either API becomes ready. `airgap` and `transcend` are
-`undefined` until each API is loaded and ready.
+`useConsentManager()` is a React hook that returns the loaded `airgap` and
+`transcend` APIs. The hook re-renders when either API becomes ready. `airgap` and
+`transcend` are `undefined` until each API is loaded and ready.
 
 Use the hook for component-level conditions, like enabling UI or loading trackers
 from an effect once `airgap` is loaded and ready to regulate network traffic:
@@ -141,11 +141,12 @@ export function PrivacyChoicesButton() {
 }
 ```
 
-## TrackingScript
+## `<TrackingScript>` component
 
-`TrackingScript` is a small client component around [`next/script`](https://nextjs.org/docs/pages/api-reference/components/script). It renders
-nothing until its `loadAfter` promise resolves, then renders the underlying
-`<Script>`.
+`<TrackingScript>` is a React component around
+[`next/script`](https://nextjs.org/docs/pages/api-reference/components/script).
+It renders nothing until its `loadAfter` promise resolves, then renders the
+underlying `<Script>`.
 
 Create the promise outside render so React does not restart the gate effect on
 every render.
@@ -169,11 +170,11 @@ export function AnalyticsScript() {
 `strategy="beforeInteractive"` is unsupported because `TrackingScript` gates
 script injection after hydration.
 
-### airgapReady
+### `airgapReady()` helper
 
-`airgapReady()` returns a `Promise<AirgapAPI>` that resolves when
-`self.airgap.ready(...)` fires. It is primarily intended for the `loadAfter` prop
-on `TrackingScript`.
+`airgapReady()` is a helper function that returns a `Promise<AirgapAPI>` that
+resolves when `self.airgap.ready(...)` fires. It is primarily intended for the
+`loadAfter` prop on `<TrackingScript>`.
 
 If airgap.js has not loaded yet, `airgapReady()` creates a ready-queue stub so
 the callback is drained when airgap.js initializes. For component logic, prefer
@@ -195,10 +196,11 @@ const airgapSyncPromise = airgapReady().then((airgap) => {
 />;
 ```
 
-## ConsentBoundary
+## `<ConsentBoundary>` component
 
-`ConsentBoundary` is re-exported from `@transcend-io/airgap-react` so it shares
-the same behavior in both packages. It is similar to
+`<ConsentBoundary>` is a React component re-exported from
+`@transcend-io/airgap-react` so it shares the same behavior in both packages. It
+is similar to
 [`<Suspense>`](https://react.dev/reference/react/Suspense): it displays a
 fallback while work is pending, then reveals its children when they are ready.
 Instead of waiting for code or data, it waits until Airgap allows the URLs needed
