@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { ConsentProvider } from './use-consent-manager.js';
+import { ConsentProvider, useConsentManager } from './use-consent-manager.js';
 
 const reactMocks = vi.hoisted(() => ({
   useEffect: vi.fn(),
+  useContext: vi.fn(),
   useState: vi.fn(),
 }));
 
@@ -13,6 +14,7 @@ vi.mock('react', async (importOriginal) => {
   return {
     ...actual,
     useEffect: reactMocks.useEffect,
+    useContext: reactMocks.useContext,
     useState: reactMocks.useState,
   };
 });
@@ -53,6 +55,7 @@ function useUndefinedConsentState(): {
 describe('ConsentProvider', () => {
   beforeEach(() => {
     reactMocks.useEffect.mockReset();
+    reactMocks.useContext.mockReset();
     reactMocks.useState.mockReset();
   });
 
@@ -214,5 +217,155 @@ describe('ConsentProvider', () => {
     expect(scriptElement?.id).toBe('airgap');
     expect(scriptElement?.async).toBe(true);
     expect(scriptElement?.defer).toBe(true);
+  });
+
+  test('observes consent APIs without injecting a script when airgapSrc is omitted', () => {
+    setSelf({});
+    const appendedScripts: unknown[] = [];
+    setDocument({
+      createElement: vi.fn(() => ({
+        dataset: {},
+        remove: vi.fn(),
+      })),
+      documentElement: {
+        appendChild: vi.fn((script: unknown) => appendedScripts.push(script)),
+      },
+    });
+    useUndefinedConsentState();
+    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => effect());
+
+    ConsentProvider({
+      children: 'children',
+    });
+    const consentGlobals = self as typeof self & {
+      /** airgap.js preload stub. */
+      airgap?: { readyQueue?: Array<(api: unknown) => void> };
+      /** Transcend preload stub. */
+      transcend?: { readyQueue?: Array<(api: unknown) => void> };
+    };
+
+    expect(appendedScripts).toHaveLength(0);
+    expect(consentGlobals.airgap?.readyQueue).toHaveLength(1);
+    expect(consentGlobals.transcend?.readyQueue).toHaveLength(1);
+  });
+});
+
+describe('useConsentManager', () => {
+  beforeEach(() => {
+    reactMocks.useEffect.mockReset();
+    reactMocks.useContext.mockReset();
+    reactMocks.useState.mockReset();
+  });
+
+  afterEach(() => {
+    if (originalSelfDescriptor) {
+      Object.defineProperty(globalThis, 'self', originalSelfDescriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'self');
+    }
+  });
+
+  test('returns consent APIs from provider context', () => {
+    const consentApis = {
+      airgap: {},
+      transcend: {},
+    };
+    reactMocks.useContext.mockReturnValue(consentApis);
+    reactMocks.useState.mockReturnValue([{}, vi.fn()]);
+    reactMocks.useEffect.mockImplementation(() => undefined);
+
+    expect(useConsentManager()).toBe(consentApis);
+  });
+
+  test('falls back to initialized globals without a provider', () => {
+    const readyAirgap = {
+      addEventListener() {
+        // Initialized APIs are EventTargets.
+      },
+    };
+    const readyTranscend = {
+      addEventListener() {
+        // Initialized APIs are EventTargets.
+      },
+    };
+    setSelf({
+      airgap: readyAirgap,
+      transcend: readyTranscend,
+    });
+    reactMocks.useContext.mockReturnValue(undefined);
+    reactMocks.useState.mockImplementation((initializer: () => unknown) => [
+      initializer(),
+      vi.fn(),
+    ]);
+    reactMocks.useEffect.mockImplementation(() => undefined);
+
+    expect(useConsentManager()).toEqual({
+      airgap: readyAirgap,
+      transcend: readyTranscend,
+    });
+  });
+
+  test('observes ready queues without a provider', () => {
+    setSelf({});
+    const setObservedConsentApis = vi.fn();
+    reactMocks.useContext.mockReturnValue(undefined);
+    reactMocks.useState.mockReturnValue([{}, setObservedConsentApis]);
+    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => effect());
+
+    useConsentManager();
+    const consentGlobals = self as typeof self & {
+      /** airgap.js preload stub. */
+      airgap?: { readyQueue?: Array<(api: unknown) => void> };
+      /** Transcend preload stub. */
+      transcend?: { readyQueue?: Array<(api: unknown) => void> };
+    };
+    const readyAirgap = {};
+    const readyTranscend = {};
+
+    consentGlobals.airgap?.readyQueue?.[0]?.(readyAirgap);
+    consentGlobals.transcend?.readyQueue?.[0]?.(readyTranscend);
+
+    expect(setObservedConsentApis).toHaveBeenCalledTimes(2);
+    expect(setObservedConsentApis).toHaveBeenNthCalledWith(1, expect.any(Function));
+    expect(setObservedConsentApis).toHaveBeenNthCalledWith(2, expect.any(Function));
+
+    const airgapUpdater = setObservedConsentApis.mock.calls[0]?.[0] as (
+      current: unknown,
+    ) => unknown;
+    const transcendUpdater = setObservedConsentApis.mock.calls[1]?.[0] as (
+      current: unknown,
+    ) => unknown;
+
+    expect(airgapUpdater({})).toEqual({ airgap: readyAirgap });
+    expect(transcendUpdater({})).toEqual({ transcend: readyTranscend });
+  });
+
+  test('does not update fallback state after unmount', () => {
+    setSelf({});
+    const setObservedConsentApis = vi.fn();
+    const cleanupRef: {
+      /** Effect cleanup callback. */
+      current?: () => void;
+    } = {};
+    reactMocks.useContext.mockReturnValue(undefined);
+    reactMocks.useState.mockReturnValue([{}, setObservedConsentApis]);
+    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => {
+      const cleanup = effect();
+      if (typeof cleanup === 'function') cleanupRef.current = cleanup;
+    });
+
+    useConsentManager();
+    const consentGlobals = self as typeof self & {
+      /** airgap.js preload stub. */
+      airgap?: { readyQueue?: Array<(api: unknown) => void> };
+      /** Transcend preload stub. */
+      transcend?: { readyQueue?: Array<(api: unknown) => void> };
+    };
+
+    cleanupRef.current?.();
+    consentGlobals.airgap?.readyQueue?.[0]?.({});
+    consentGlobals.transcend?.readyQueue?.[0]?.({});
+
+    expect(setObservedConsentApis).not.toHaveBeenCalled();
   });
 });

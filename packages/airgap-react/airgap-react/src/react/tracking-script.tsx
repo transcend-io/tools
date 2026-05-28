@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import type { ReactAirgapScriptProps } from './use-consent-manager.js';
+import { type ReactAirgapScriptProps, appendScriptElement } from './script-element.js';
 
 export interface TrackingScriptProps extends ReactAirgapScriptProps {
   /**
@@ -52,21 +52,11 @@ export function TrackingScript({
       () => {
         if (cancelled || typeof document === 'undefined') return;
 
-        const script = document.createElement('script');
-        if (src) script.src = src;
-        if (children) script.text = children;
-        script.async = scriptProps.async ?? true;
-        script.defer = scriptProps.defer ?? true;
-        if (scriptProps.id) script.id = scriptProps.id;
-        if (scriptProps.nonce) script.nonce = scriptProps.nonce;
-        if (scriptProps.integrity) script.integrity = scriptProps.integrity;
-        if (scriptProps.crossOrigin) script.crossOrigin = scriptProps.crossOrigin;
-        if (scriptProps.referrerPolicy) script.referrerPolicy = scriptProps.referrerPolicy;
-        for (const [key, value] of Object.entries(scriptProps.dataset ?? {})) {
-          script.dataset[key] = value;
-        }
-        document.documentElement.appendChild(script);
-        cleanup = () => script.remove();
+        cleanup = appendScriptElement({
+          scriptProps,
+          src,
+          text: children,
+        });
       },
       () => undefined,
     );

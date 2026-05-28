@@ -1,21 +1,13 @@
 import type { AirgapAPI } from '@transcend-io/airgap.js-types';
 
-type PreInitAirgapAPI = Pick<AirgapAPI, 'ready' | 'readyQueue'>;
+import { type ReadyApi, observeReadyApi } from './ready-api.js';
 
 interface GlobalWithAirgap {
   /** Transcend airgap API or preload stub. */
-  airgap?: AirgapAPI | Partial<PreInitAirgapAPI>;
+  airgap?: AirgapAPI | Partial<ReadyApi<AirgapAPI>>;
 }
 
 let airgapReadyPromise: Promise<AirgapAPI> | undefined;
-
-function isInitializedAirgapApi(
-  airgap: AirgapAPI | Partial<PreInitAirgapAPI> | undefined,
-): airgap is AirgapAPI {
-  return (
-    typeof (airgap as { addEventListener?: unknown } | undefined)?.addEventListener === 'function'
-  );
-}
 
 /**
  * Resolves when `self.airgap.ready(...)` fires.
@@ -28,26 +20,13 @@ export function airgapReady(): Promise<AirgapAPI> {
     if (typeof self === 'undefined') return;
 
     const airgapGlobal = self as typeof self & GlobalWithAirgap;
-    const existingAirgap = airgapGlobal.airgap;
-
-    if (isInitializedAirgapApi(existingAirgap)) {
-      resolve(existingAirgap);
-      return;
-    }
-
-    if (!existingAirgap?.ready) {
-      const readyQueue = existingAirgap?.readyQueue ?? [];
-      airgapGlobal.airgap = {
-        ...existingAirgap,
-        readyQueue,
-        ready(callback) {
-          readyQueue.push(callback);
-        },
-      };
-    }
-
-    const airgap = airgapGlobal.airgap as PreInitAirgapAPI;
-    airgap.ready((readyAirgap) => resolve(readyAirgap));
+    observeReadyApi<AirgapAPI>({
+      api: airgapGlobal.airgap,
+      onReady: resolve,
+      setApi(airgap) {
+        airgapGlobal.airgap = airgap;
+      },
+    });
   });
 
   return airgapReadyPromise;

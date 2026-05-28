@@ -63,9 +63,11 @@ before Airgap has initialized. See Transcend's guide to
 
 ## useConsentManager
 
-`useConsentManager()` returns the loaded `airgap` and `transcend` APIs. Wrap
-your app in `ConsentProvider` once so it can inject airgap.js with
-`document.createElement('script')` and populate the hook.
+`useConsentManager()` returns the loaded `airgap` and `transcend` APIs. If your
+app already loads airgap.js, the hook observes the existing `self.airgap` and
+`self.transcend` globals without a provider.
+
+Use `ConsentProvider` when you want this package to inject airgap.js for you:
 
 ```tsx
 import { ConsentProvider, useConsentManager } from '@transcend-io/airgap-react';
@@ -93,11 +95,33 @@ export function PrivacyChoicesButton() {
 }
 ```
 
+If Airgap is loaded elsewhere, call the hook directly:
+
+```tsx
+import { useConsentManager } from '@transcend-io/airgap-react';
+
+export function PrivacyChoicesButton() {
+  const { transcend } = useConsentManager();
+
+  return (
+    <button
+      type="button"
+      disabled={!transcend}
+      onClick={() => void transcend?.showConsentManager()}
+    >
+      Privacy choices
+    </button>
+  );
+}
+```
+
 ## ConsentBoundary
 
 `ConsentBoundary` checks the URLs needed by a subtree before mounting its
 children. While the check is pending, or when consent is missing, only the
-fallback renders so gated children cannot start loading network resources.
+fallback renders so gated children cannot start loading network resources. It
+uses `useConsentManager()`, so it works with `ConsentProvider` or with Airgap
+globals loaded separately.
 
 ```tsx
 import { ConsentBoundary, type ConsentBoundaryFallbackProps } from '@transcend-io/airgap-react';

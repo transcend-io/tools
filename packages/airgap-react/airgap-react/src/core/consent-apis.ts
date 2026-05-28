@@ -1,13 +1,8 @@
 import type { AirgapAPI, PreInitTranscendAPI, TranscendAPI } from '@transcend-io/airgap.js-types';
 
-type PreInitAirgapAPI = Pick<AirgapAPI, 'ready' | 'readyQueue'>;
+import { type ReadyApi, isInitializedReadyApi, observeReadyApi } from './ready-api.js';
 
-type ReadyApi<TApi> = {
-  /** Queue of callbacks to dispatch once the API is ready. */
-  readyQueue?: Array<(api: TApi) => void>;
-  /** Subscribe to the API ready event. */
-  ready(callback: (api: TApi) => void): void;
-};
+type PreInitAirgapAPI = ReadyApi<AirgapAPI>;
 
 interface ConsentGlobals {
   /** airgap.js interface or preload stub. */
@@ -31,28 +26,19 @@ export interface ConsentApiSubscriptionHandlers {
   onTranscend(transcend: TranscendAPI): void;
 }
 
-function ensureReadyApi<TApi>(existing: Partial<ReadyApi<TApi>> | undefined): ReadyApi<TApi> {
-  if (existing?.ready) {
-    return existing as ReadyApi<TApi>;
-  }
+export function getInitializedConsentApis(): ConsentAPI {
+  if (typeof self === 'undefined') return {};
 
-  const readyQueue = existing?.readyQueue ?? [];
+  const consentGlobals = self as typeof self & ConsentGlobals;
 
   return {
-    ...existing,
-    readyQueue,
-    ready(callback) {
-      readyQueue.push(callback);
-    },
+    airgap: isInitializedReadyApi<AirgapAPI>(consentGlobals.airgap)
+      ? consentGlobals.airgap
+      : undefined,
+    transcend: isInitializedReadyApi<TranscendAPI>(consentGlobals.transcend)
+      ? consentGlobals.transcend
+      : undefined,
   };
-}
-
-function isInitializedApi<TApi extends EventTarget>(
-  api: TApi | Partial<ReadyApi<TApi>> | undefined,
-): api is TApi {
-  return (
-    typeof (api as { addEventListener?: unknown } | undefined)?.addEventListener === 'function'
-  );
 }
 
 /**
@@ -68,27 +54,28 @@ export function subscribeConsentApis({
   let cancelled = false;
   const consentGlobals = self as typeof self & ConsentGlobals;
 
-  if (isInitializedApi<AirgapAPI>(consentGlobals.airgap)) {
-    onAirgap(consentGlobals.airgap);
-  } else {
-    const airgapReady = ensureReadyApi<AirgapAPI>(consentGlobals.airgap);
-    consentGlobals.airgap = airgapReady;
-    airgapReady.ready((readyAirgap) => {
-      if (!cancelled) onAirgap(readyAirgap);
-    });
-  }
-
-  if (isInitializedApi<TranscendAPI>(consentGlobals.transcend)) {
-    onTranscend(consentGlobals.transcend);
-  } else {
-    const transcendReady = ensureReadyApi<TranscendAPI>(consentGlobals.transcend);
-    consentGlobals.transcend = transcendReady;
-    transcendReady.ready((readyTranscend) => {
-      if (!cancelled) onTranscend(readyTranscend);
-    });
-  }
+  const cleanupAirgap = observeReadyApi({
+    api: consentGlobals.airgap,
+    onReady(airgap) {
+      if (!cancelled) onAirgap(airgap);
+    },
+    setApi(airgap) {
+      consentGlobals.airgap = airgap;
+    },
+  });
+  const cleanupTranscend = observeReadyApi({
+    api: consentGlobals.transcend,
+    onReady(transcend) {
+      if (!cancelled) onTranscend(transcend);
+    },
+    setApi(transcend) {
+      consentGlobals.transcend = transcend;
+    },
+  });
 
   return () => {
     cancelled = true;
+    cleanupAirgap();
+    cleanupTranscend();
   };
 }

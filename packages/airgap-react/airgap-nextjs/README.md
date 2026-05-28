@@ -51,9 +51,12 @@ before Airgap has initialized. See Transcend's guide to
 
 ## useConsentManager
 
-`useConsentManager()` returns the loaded `airgap` and `transcend` APIs. Wrap
-your app in `ConsentProvider` once so it can load airgap.js through
-`next/script` and populate the hook.
+`useConsentManager()` returns the loaded `airgap` and `transcend` APIs. If your
+app already loads airgap.js, the hook observes the existing `self.airgap` and
+`self.transcend` globals without a provider.
+
+Use `ConsentProvider` when you want this package to load airgap.js through
+`next/script`:
 
 ```tsx
 import { ConsentProvider, useConsentManager } from '@transcend-io/airgap-nextjs';
@@ -84,10 +87,31 @@ export function PrivacyChoicesButton() {
 }
 ```
 
+If Airgap is loaded elsewhere, call the hook directly:
+
+```tsx
+import { useConsentManager } from '@transcend-io/airgap-nextjs';
+
+export function PrivacyChoicesButton() {
+  const { transcend } = useConsentManager();
+
+  return (
+    <button
+      type="button"
+      disabled={!transcend}
+      onClick={() => void transcend?.showConsentManager()}
+    >
+      Privacy choices
+    </button>
+  );
+}
+```
+
 ## ConsentBoundary
 
 `ConsentBoundary` is re-exported from `@transcend-io/airgap-react` so it shares
-the same behavior in both packages.
+the same behavior in both packages. It uses `useConsentManager()`, so it works
+with `ConsentProvider` or with Airgap globals loaded separately.
 
 ```tsx
 import { ConsentBoundary, type ConsentBoundaryFallbackProps } from '@transcend-io/airgap-nextjs';
