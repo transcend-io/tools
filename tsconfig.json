@@ -3,6 +3,8 @@
   "files": [],
   "references": [
     { "path": "./packages/airgap.js-types" },
+    { "path": "./packages/airgap-react/airgap-nextjs" },
+    { "path": "./packages/airgap-react/airgap-react" },
     { "path": "./packages/cli" },
     { "path": "./packages/internationalization" },
     { "path": "./packages/mcp/mcp" },
@@ -16,7 +18,6 @@
     { "path": "./packages/mcp/mcp-server-preferences" },
     { "path": "./packages/mcp/mcp-server-workflows" },
     { "path": "./packages/privacy-types" },
-    { "path": "./packages/react-airgap" },
     { "path": "./packages/sdk" },
     { "path": "./packages/type-utils" },
     { "path": "./packages/utils" }

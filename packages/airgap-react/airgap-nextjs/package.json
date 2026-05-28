@@ -1,14 +1,14 @@
 {
-  "name": "@transcend-io/react-airgap",
+  "name": "@transcend-io/airgap-nextjs",
   "version": "0.0.0",
-  "description": "React components for the Transcend Airgap library.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/react-airgap",
+  "description": "Next.js components for the Transcend Airgap library.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/airgap-react/airgap-nextjs",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/react-airgap"
+    "directory": "packages/airgap-react/airgap-nextjs"
   },
   "files": [
     "dist"
@@ -21,11 +21,6 @@
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
-    },
-    "./next": {
-      "@transcend-io/source": "./src/next/index.ts",
-      "types": "./dist/next/index.d.mts",
-      "default": "./dist/next/index.mjs"
     }
   },
   "publishConfig": {
@@ -39,6 +34,7 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
+    "@transcend-io/airgap-react": "workspace:*",
     "@transcend-io/airgap.js-types": "workspace:*"
   },
   "devDependencies": {

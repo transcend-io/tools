@@ -23,7 +23,7 @@ export interface TrackingScriptProps extends ScriptProps {
  *
  * @example
  * ```tsx
- * import { TrackingScript } from '@transcend-io/react-airgap/next';
+ * import { TrackingScript } from '@transcend-io/airgap-nextjs';
  *
  * const analyticsReady = new Promise<void>((resolve) => {
  *   if (window.analyticsReady) {
@@ -41,7 +41,7 @@ export interface TrackingScriptProps extends ScriptProps {
  * />
  * ```
  */
-export default function TrackingScript({
+export function TrackingScript({
   loadAfter,
   children,
   ...scriptProps

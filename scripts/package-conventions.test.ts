@@ -269,11 +269,14 @@ function getWorkspacePackages(): WorkspacePackage[] {
     .map((entry) => `packages/${entry.name}`)
     .filter((directory) => fileExists(`${directory}/package.json`));
 
-  const mcpRoot = join(packagesRoot, 'mcp');
-  const nested = readdirSync(mcpRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => `packages/mcp/${entry.name}`)
-    .filter((directory) => fileExists(`${directory}/package.json`));
+  const nestedRoots = ['airgap-react', 'mcp'];
+  const nested = nestedRoots.flatMap((nestedRoot) => {
+    const packageRoot = join(packagesRoot, nestedRoot);
+    return readdirSync(packageRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => `packages/${nestedRoot}/${entry.name}`)
+      .filter((directory) => fileExists(`${directory}/package.json`));
+  });
 
   return [...topLevel, ...nested]
     .sort((a, b) => a.localeCompare(b))

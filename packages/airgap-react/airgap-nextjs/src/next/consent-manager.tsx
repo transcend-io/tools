@@ -1,18 +1,12 @@
 'use client';
 
-import type { AirgapAPI, PreInitTranscendAPI, TranscendAPI } from '@transcend-io/airgap.js-types';
+import { ConsentContext, type ConsentAPI } from '@transcend-io/airgap-react';
+import type { AirgapAPI, TranscendAPI } from '@transcend-io/airgap.js-types';
 import Script, { type ScriptProps } from 'next/script';
-import {
-  type Context,
-  createContext,
-  type ReactElement,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import { type ReactElement, type ReactNode, useEffect, useState } from 'react';
 
 type PreInitAirgapAPI = Pick<AirgapAPI, 'ready' | 'readyQueue'>;
+type PreInitTranscendAPI = Pick<TranscendAPI, 'ready' | 'readyQueue'>;
 
 type ReadyApi<TApi> = {
   /** Queue of callbacks to dispatch once the API is ready. */
@@ -28,14 +22,6 @@ interface ConsentGlobals {
   transcend?: TranscendAPI | Partial<PreInitTranscendAPI>;
 }
 
-/** The loaded Airgap and Transcend Consent APIs. */
-export interface ConsentAPI {
-  /** The airgap.js core API, once loaded. */
-  airgap?: AirgapAPI;
-  /** The Transcend Consent Manager UI API, once loaded. */
-  transcend?: TranscendAPI;
-}
-
 export interface ConsentProviderProps {
   /** Child tree that can consume the consent APIs. */
   children: ReactNode;
@@ -44,9 +30,6 @@ export interface ConsentProviderProps {
   /** Additional props forwarded to `next/script`. */
   scriptProps?: Omit<ScriptProps, 'children' | 'src'>;
 }
-
-/** React context backing `useConsentManager()`. */
-export const ConsentContext: Context<ConsentAPI> = createContext<ConsentAPI>({});
 
 function ensureReadyApi<TApi>(existing: Partial<ReadyApi<TApi>> | undefined): ReadyApi<TApi> {
   if (existing?.ready) {
@@ -81,8 +64,8 @@ export function ConsentProvider({
   children,
   scriptProps,
 }: ConsentProviderProps): ReactElement {
-  const [airgap, setAirgap] = useState<AirgapAPI | undefined>();
-  const [transcend, setTranscend] = useState<TranscendAPI | undefined>();
+  const [airgap, setAirgap] = useState<ConsentAPI['airgap']>();
+  const [transcend, setTranscend] = useState<ConsentAPI['transcend']>();
 
   useEffect(() => {
     if (typeof self === 'undefined') return;
@@ -93,9 +76,9 @@ export function ConsentProvider({
     if (isInitializedApi<AirgapAPI>(consentGlobals.airgap)) {
       setAirgap(consentGlobals.airgap);
     } else {
-      const airgapReady = ensureReadyApi<AirgapAPI>(consentGlobals.airgap);
-      consentGlobals.airgap = airgapReady;
-      airgapReady.ready((readyAirgap) => {
+      const airgapReadyApi = ensureReadyApi<AirgapAPI>(consentGlobals.airgap);
+      consentGlobals.airgap = airgapReadyApi;
+      airgapReadyApi.ready((readyAirgap) => {
         if (!cancelled) setAirgap(readyAirgap);
       });
     }
@@ -121,11 +104,4 @@ export function ConsentProvider({
       <ConsentContext.Provider value={{ airgap, transcend }}>{children}</ConsentContext.Provider>
     </>
   );
-}
-
-/**
- * Access the Airgap and Transcend Consent APIs loaded by `ConsentProvider`.
- */
-export function useConsentManager(): ConsentAPI {
-  return useContext(ConsentContext);
 }

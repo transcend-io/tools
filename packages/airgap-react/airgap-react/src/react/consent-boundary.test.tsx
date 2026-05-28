@@ -2,11 +2,8 @@ import type { AirgapAPI, TrackingPurpose } from '@transcend-io/airgap.js-types';
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import {
-  ConsentBoundary,
-  type ConsentBoundaryFallbackProps,
-  getMissingConsentPurposesForUrls,
-} from './consent-boundary.js';
+import { getMissingConsentPurposesForUrls } from '../core/consent-boundary.js';
+import { ConsentBoundary, type ConsentBoundaryFallbackProps } from './consent-boundary.js';
 
 const mocks = vi.hoisted(() => ({
   useConsentManager: vi.fn(),

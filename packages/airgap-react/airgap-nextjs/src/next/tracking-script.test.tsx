@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-import TrackingScript from './tracking-script.js';
+import { TrackingScript } from './tracking-script.js';
 
 const reactMocks = vi.hoisted(() => ({
   useEffect: vi.fn(),
