@@ -21,6 +21,11 @@
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./next": {
+      "@transcend-io/source": "./src/next/index.ts",
+      "types": "./dist/next/index.d.mts",
+      "default": "./dist/next/index.mjs"
     }
   },
   "publishConfig": {
@@ -32,6 +37,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "dependencies": {
+    "@transcend-io/airgap.js-types": "workspace:*"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",

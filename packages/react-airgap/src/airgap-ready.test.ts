@@ -29,40 +29,43 @@ describe('airgapReady', () => {
       };
     };
     setSelf(airgapGlobal);
+    const readyAirgap = {};
     const ready = airgapReady();
 
     expect(airgapGlobal.airgap?.readyQueue).toHaveLength(1);
 
-    airgapGlobal.airgap?.readyQueue?.[0]?.({});
-    await expect(ready).resolves.toBeUndefined();
+    airgapGlobal.airgap?.readyQueue?.[0]?.(readyAirgap);
+    await expect(ready).resolves.toBe(readyAirgap);
   });
 
   test('resolves from an existing airgap ready API', async () => {
     const { airgapReady } = await import('./airgap-ready.js');
+    const readyAirgap = {};
     setSelf({
       airgap: {
         ready(callback: (airgap: unknown) => void) {
-          callback({});
+          callback(readyAirgap);
         },
       },
     });
 
-    await expect(airgapReady()).resolves.toBeUndefined();
+    await expect(airgapReady()).resolves.toBe(readyAirgap);
   });
 
   test('resolves immediately when airgap is already initialized', async () => {
     const { airgapReady } = await import('./airgap-ready.js');
     const ready = vi.fn();
-    setSelf({
-      airgap: {
-        addEventListener() {
-          // Initialized airgap.js API is an EventTarget.
-        },
-        ready,
+    const initializedAirgap = {
+      addEventListener() {
+        // Initialized airgap.js API is an EventTarget.
       },
+      ready,
+    };
+    setSelf({
+      airgap: initializedAirgap,
     });
 
-    await expect(airgapReady()).resolves.toBeUndefined();
+    await expect(airgapReady()).resolves.toBe(initializedAirgap);
     expect(ready).not.toHaveBeenCalled();
   });
 
@@ -76,6 +79,7 @@ describe('airgapReady', () => {
       };
     };
     setSelf(airgapGlobal);
+    const readyAirgap = {};
 
     const firstReady = airgapReady();
     const secondReady = airgapReady();
@@ -83,7 +87,7 @@ describe('airgapReady', () => {
     expect(secondReady).toBe(firstReady);
     expect(airgapGlobal.airgap?.readyQueue).toHaveLength(1);
 
-    airgapGlobal.airgap?.readyQueue?.[0]?.({});
-    await expect(firstReady).resolves.toBeUndefined();
+    airgapGlobal.airgap?.readyQueue?.[0]?.(readyAirgap);
+    await expect(firstReady).resolves.toBe(readyAirgap);
   });
 });

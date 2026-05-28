@@ -1,27 +1,17 @@
-type AirgapReadyCallback = (airgap: unknown) => void;
+import type { AirgapAPI } from '@transcend-io/airgap.js-types';
 
-interface AirgapReadyApi {
-  /** Queue of callbacks to dispatch once airgap.js is ready. */
-  readyQueue?: AirgapReadyCallback[];
-  /** Subscribe to the airgap.js ready event. */
-  ready(callback: AirgapReadyCallback): void;
-}
+type PreInitAirgapAPI = Pick<AirgapAPI, 'ready' | 'readyQueue'>;
 
 interface GlobalWithAirgap {
   /** Transcend airgap API or preload stub. */
-  airgap?: Partial<AirgapReadyApi>;
+  airgap?: AirgapAPI | Partial<PreInitAirgapAPI>;
 }
 
-interface InitializedAirgapApi extends AirgapReadyApi {
-  /** EventTarget listener available after airgap.js initializes. */
-  addEventListener: EventTarget['addEventListener'];
-}
-
-let airgapReadyPromise: Promise<void> | undefined;
+let airgapReadyPromise: Promise<AirgapAPI> | undefined;
 
 function isInitializedAirgapApi(
-  airgap: Partial<AirgapReadyApi> | undefined,
-): airgap is InitializedAirgapApi {
+  airgap: AirgapAPI | Partial<PreInitAirgapAPI> | undefined,
+): airgap is AirgapAPI {
   return (
     typeof (airgap as { addEventListener?: unknown } | undefined)?.addEventListener === 'function'
   );
@@ -33,7 +23,7 @@ function isInitializedAirgapApi(
  * If airgap.js has not loaded yet, this creates the documented ready-queue
  * stub so the callback is drained when airgap.js initializes.
  */
-export function airgapReady(): Promise<void> {
+export function airgapReady(): Promise<AirgapAPI> {
   airgapReadyPromise ??= new Promise((resolve) => {
     if (typeof self === 'undefined') return;
 
@@ -41,7 +31,7 @@ export function airgapReady(): Promise<void> {
     const existingAirgap = airgapGlobal.airgap;
 
     if (isInitializedAirgapApi(existingAirgap)) {
-      resolve();
+      resolve(existingAirgap);
       return;
     }
 
@@ -56,8 +46,8 @@ export function airgapReady(): Promise<void> {
       };
     }
 
-    const airgap = airgapGlobal.airgap as AirgapReadyApi;
-    airgap.ready(() => resolve());
+    const airgap = airgapGlobal.airgap as PreInitAirgapAPI;
+    airgap.ready((readyAirgap) => resolve(readyAirgap));
   });
 
   return airgapReadyPromise;
