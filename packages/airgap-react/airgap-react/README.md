@@ -66,7 +66,7 @@ export function PrivacyChoicesButton() {
 }
 ```
 
-Use `ConsentProvider` when you want this package to inject airgap.js for you:
+Use `ConsentProvider` when you want this package to inject airgap.js for you **asynchronously**:
 
 ```tsx
 import { ConsentProvider, useConsentManager } from '@transcend-io/airgap-react';

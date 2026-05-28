@@ -71,7 +71,7 @@ export function PrivacyChoicesButton() {
 }
 ```
 
-Use `ConsentProvider` when you want this package to load airgap.js through
+Use `ConsentProvider` when you want this package to load airgap.js **asynchronously**, using
 `next/script`:
 
 ```tsx
@@ -105,7 +105,7 @@ export function PrivacyChoicesButton() {
 
 ## TrackingScript
 
-`TrackingScript` is a small client component around `next/script`. It renders
+`TrackingScript` is a small client component around [`next/script`](https://nextjs.org/docs/pages/api-reference/components/script). It renders
 nothing until its `loadAfter` promise resolves, then renders the underlying
 `<Script>`.
 
