@@ -7,12 +7,6 @@ Using Next.js? Use
 instead. It provides the same public APIs, but renders scripts with
 `next/script`.
 
-> [!WARNING]
-> If you load airgap.js asynchronously, Airgap can only regulate network traffic
-> after it has loaded. Make sure no trackers load before airgap.js is ready. See
-> Transcend's guide to
-> [loading airgap.js asynchronously](https://docs.transcend.io/docs/articles/consent-management/configuration/loading-asynchronously).
-
 ## API Overview
 
 1. `useConsentManager()` hook: access the loaded Airgap APIs and re-render when
@@ -39,6 +33,12 @@ instead. It provides the same public APIs, but renders scripts with
      <VideoPlayer src={videoUrl} />
    </ConsentBoundary>
    ```
+
+> [!WARNING]
+> If you load airgap.js asynchronously, Airgap can only regulate network traffic
+> after it has loaded. Make sure no trackers load before airgap.js is ready. See
+> Transcend's guide to
+> [loading airgap.js asynchronously](https://docs.transcend.io/docs/articles/consent-management/configuration/loading-asynchronously).
 
 ## useConsentManager
 
