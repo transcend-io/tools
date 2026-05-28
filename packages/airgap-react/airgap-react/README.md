@@ -36,9 +36,23 @@ instead. It provides the same public APIs, but renders scripts with
 
 > [!WARNING]
 > If you load airgap.js asynchronously, Airgap can only regulate network traffic
-> after it has loaded. Make sure no trackers load before airgap.js is ready. See
-> Transcend's guide to
-> [loading airgap.js asynchronously](https://docs.transcend.io/docs/articles/consent-management/configuration/loading-asynchronously).
+> after it has loaded. Make sure no trackers load before airgap.js is ready.
+> Replace tracking script elements with [`<TrackingScript>`](#trackingscript), or
+> condition script loads on the hook:
+>
+> ```tsx
+> function TrackerLoader() {
+>   const { airgap } = useConsentManager();
+>
+>   useEffect(() => {
+>     if (!airgap) return;
+>
+>     loadTrackers();
+>   }, [airgap]);
+>
+>   return null;
+> }
+> ```
 
 ## useConsentManager
 
