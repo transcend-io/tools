@@ -90,4 +90,26 @@ describe('airgapReady', () => {
     airgapGlobal.airgap?.readyQueue?.[0]?.(readyAirgap);
     await expect(firstReady).resolves.toBe(readyAirgap);
   });
+
+  test('does not cache the no-self promise', async () => {
+    const { airgapReady } = await import('./airgap-ready.js');
+    Reflect.deleteProperty(globalThis, 'self');
+
+    const serverReady = airgapReady();
+    const airgapGlobal = {} as {
+      /** Transcend airgap API or preload stub. */
+      airgap?: {
+        /** Queue of callbacks to dispatch once airgap.js is ready. */
+        readyQueue?: Array<(airgap: unknown) => void>;
+      };
+    };
+    setSelf(airgapGlobal);
+
+    const browserReady = airgapReady();
+    const readyAirgap = {};
+
+    expect(browserReady).not.toBe(serverReady);
+    airgapGlobal.airgap?.readyQueue?.[0]?.(readyAirgap);
+    await expect(browserReady).resolves.toBe(readyAirgap);
+  });
 });

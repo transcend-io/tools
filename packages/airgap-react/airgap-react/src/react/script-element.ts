@@ -49,7 +49,8 @@ export function appendScriptElement({
     script.dataset[key] = value;
   }
 
-  document.documentElement.appendChild(script);
+  const scriptParent = document.head ?? document.body ?? document.documentElement;
+  scriptParent.appendChild(script);
 
   return () => {
     script.remove();

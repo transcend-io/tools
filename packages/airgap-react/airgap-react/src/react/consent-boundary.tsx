@@ -1,6 +1,10 @@
 'use client';
 
-import type { TrackingConsent, TrackingPurpose } from '@transcend-io/airgap.js-types';
+import type {
+  AirgapConsentEventType,
+  TrackingConsent,
+  TrackingPurpose,
+} from '@transcend-io/airgap.js-types';
 import {
   type MouseEventHandler,
   type ReactElement,
@@ -11,6 +15,12 @@ import {
 
 import { getMissingConsentPurposesForUrls } from '../core/consent-boundary.js';
 import { useConsentManager } from './use-consent-manager.js';
+
+const consentRefreshEvents: AirgapConsentEventType[] = [
+  'consent-change',
+  'consent-resolution',
+  'sync',
+];
 
 type ConsentBoundaryState =
   | { status: 'pending' }
@@ -89,6 +99,8 @@ export function ConsentBoundary({
 }: ConsentBoundaryProps): ReactNode {
   const { airgap } = useConsentManager();
   const [state, setState] = useState<ConsentBoundaryState>({ status: 'pending' });
+  const [consentRefreshCounter, setConsentRefreshCounter] = useState(0);
+  const urlsRequiredForRenderKey = JSON.stringify(urlsRequiredForRender);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +113,8 @@ export function ConsentBoundary({
     }
 
     setState({ status: 'pending' });
-    void getMissingConsentPurposesForUrls(airgap, urlsRequiredForRender).then(
+    const urlsToCheck = JSON.parse(urlsRequiredForRenderKey) as string[];
+    void getMissingConsentPurposesForUrls(airgap, urlsToCheck).then(
       (missingConsentPurposes) => {
         if (cancelled) return;
 
@@ -125,7 +138,25 @@ export function ConsentBoundary({
     return () => {
       cancelled = true;
     };
-  }, [airgap, urlsRequiredForRender]);
+  }, [airgap, consentRefreshCounter, urlsRequiredForRenderKey]);
+
+  useEffect(() => {
+    if (!airgap) return undefined;
+
+    const refreshConsentState = (): void => {
+      setConsentRefreshCounter((current) => current + 1);
+    };
+
+    for (const eventType of consentRefreshEvents) {
+      airgap.addEventListener(eventType, refreshConsentState);
+    }
+
+    return () => {
+      for (const eventType of consentRefreshEvents) {
+        airgap.removeEventListener(eventType, refreshConsentState);
+      }
+    };
+  }, [airgap]);
 
   if (state.status === 'allowed') {
     return <>{children}</>;

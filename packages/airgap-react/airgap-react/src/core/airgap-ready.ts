@@ -16,9 +16,11 @@ let airgapReadyPromise: Promise<AirgapAPI> | undefined;
  * stub so the callback is drained when airgap.js initializes.
  */
 export function airgapReady(): Promise<AirgapAPI> {
-  airgapReadyPromise ??= new Promise((resolve) => {
-    if (typeof self === 'undefined') return;
+  if (typeof self === 'undefined') {
+    return new Promise<AirgapAPI>(() => undefined);
+  }
 
+  airgapReadyPromise ??= new Promise((resolve) => {
     const airgapGlobal = self as typeof self & GlobalWithAirgap;
     observeReadyApi<AirgapAPI>({
       api: airgapGlobal.airgap,

@@ -17,6 +17,12 @@ export interface TrackingScriptProps extends ReactAirgapScriptProps {
   children?: string;
 }
 
+function getDatasetDependencyKey(dataset: ReactAirgapScriptProps['dataset']): string {
+  return JSON.stringify(
+    Object.entries(dataset ?? {}).sort(([left], [right]) => left.localeCompare(right)),
+  );
+}
+
 /**
  * Client component that injects a script element only after `loadAfter` resolves.
  *
@@ -41,10 +47,19 @@ export interface TrackingScriptProps extends ReactAirgapScriptProps {
  */
 export function TrackingScript({
   loadAfter,
+  async,
   children,
+  crossOrigin,
+  dataset,
+  defer,
+  id,
+  integrity,
+  nonce,
+  referrerPolicy,
   src,
-  ...scriptProps
 }: TrackingScriptProps): null {
+  const datasetDependencyKey = getDatasetDependencyKey(dataset);
+
   useEffect(() => {
     let cancelled = false;
     let cleanup: (() => void) | undefined;
@@ -53,7 +68,16 @@ export function TrackingScript({
         if (cancelled || typeof document === 'undefined') return;
 
         cleanup = appendScriptElement({
-          scriptProps,
+          scriptProps: {
+            async,
+            crossOrigin,
+            dataset,
+            defer,
+            id,
+            integrity,
+            nonce,
+            referrerPolicy,
+          },
           src,
           text: children,
         });
@@ -64,7 +88,19 @@ export function TrackingScript({
       cancelled = true;
       cleanup?.();
     };
-  }, [children, loadAfter, scriptProps, src]);
+  }, [
+    async,
+    children,
+    crossOrigin,
+    datasetDependencyKey,
+    defer,
+    id,
+    integrity,
+    loadAfter,
+    nonce,
+    referrerPolicy,
+    src,
+  ]);
 
   return null;
 }

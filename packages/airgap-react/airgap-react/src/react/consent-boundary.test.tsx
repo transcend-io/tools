@@ -88,6 +88,66 @@ describe('ConsentBoundary', () => {
     );
   });
 
+  test('keys URL effect dependencies by contents', () => {
+    const airgap = {
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    const effectDeps: unknown[][] = [];
+    const urlsRequiredForRender = ['https://example.com/tracker.js'];
+    mocks.useConsentManager.mockReturnValue({ airgap });
+    mocks.useState.mockReturnValue([{ status: 'pending' }, vi.fn()]);
+    mocks.useEffect.mockImplementation((_effect: () => void | (() => void), deps?: unknown[]) => {
+      effectDeps.push(deps ?? []);
+    });
+
+    ConsentBoundary({
+      children: 'blocked children',
+      urlsRequiredForRender,
+    });
+
+    expect(effectDeps[0]?.[2]).toBe(JSON.stringify(urlsRequiredForRender));
+    expect(effectDeps[0]).not.toContain(urlsRequiredForRender);
+  });
+
+  test('refreshes consent checks when Airgap consent events fire', () => {
+    const setConsentRefreshCounter = vi.fn();
+    const airgap = {
+      addEventListener: vi.fn(),
+      getPurposes: vi.fn(() => Promise.resolve(new Set<TrackingPurpose>(['Analytics']))),
+      getRegimePurposes: vi.fn(() => new Set<TrackingPurpose>()),
+      isAllowed: vi.fn(() => Promise.resolve(false)),
+      isConsented: vi.fn(() => false),
+      removeEventListener: vi.fn(),
+    };
+    mocks.useConsentManager.mockReturnValue({ airgap });
+    mocks.useState
+      .mockReturnValueOnce([{ status: 'pending' }, vi.fn()])
+      .mockReturnValueOnce([0, setConsentRefreshCounter]);
+    mocks.useEffect.mockImplementation((effect: () => void | (() => void)) => effect());
+
+    ConsentBoundary({
+      children: 'blocked children',
+      urlsRequiredForRender: ['https://example.com/tracker.js'],
+    });
+
+    expect(airgap.addEventListener).toHaveBeenCalledWith('consent-change', expect.any(Function));
+    expect(airgap.addEventListener).toHaveBeenCalledWith(
+      'consent-resolution',
+      expect.any(Function),
+    );
+    expect(airgap.addEventListener).toHaveBeenCalledWith('sync', expect.any(Function));
+
+    const refreshConsentState = airgap.addEventListener.mock.calls[0]?.[1] as () => void;
+    refreshConsentState();
+
+    expect(setConsentRefreshCounter).toHaveBeenCalledWith(expect.any(Function));
+    const refreshUpdater = setConsentRefreshCounter.mock.calls[0]?.[0] as (
+      current: number,
+    ) => number;
+    expect(refreshUpdater(1)).toBe(2);
+  });
+
   test('opt-in handler grants missing purposes', async () => {
     const missingConsentPurposes = new Set<TrackingPurpose>(['Analytics']);
     const setState = vi.fn();

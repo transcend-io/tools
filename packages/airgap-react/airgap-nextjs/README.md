@@ -47,7 +47,7 @@ const airgapSyncPromise = airgapReady().then((airgap) => {
 When loading airgap.js asynchronously, make sure no trackers load before
 airgap.js is ready. Async loading cannot regulate trackers that initialize
 before Airgap has initialized. See Transcend's guide to
-[loading airgap.js asynchronously](https://docs.transcend.io/docs/articles/consent-management/configuration/loading-asynchronously.md).
+[loading airgap.js asynchronously](https://docs.transcend.io/docs/articles/consent-management/configuration/loading-asynchronously).
 
 ## useConsentManager
 

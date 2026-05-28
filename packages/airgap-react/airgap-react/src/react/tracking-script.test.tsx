@@ -31,6 +31,9 @@ function stubDocument(): unknown[] {
       dataset: {},
       remove: vi.fn(),
     })),
+    head: {
+      appendChild: vi.fn((script: unknown) => appendedScripts.push(script)),
+    },
     documentElement: {
       appendChild: vi.fn((script: unknown) => appendedScripts.push(script)),
     },
@@ -73,6 +76,52 @@ describe('TrackingScript', () => {
     await Promise.resolve();
 
     expect(appendedScripts).toHaveLength(1);
+  });
+
+  test('does not re-inject after rerender when script props are unchanged', async () => {
+    const loadAfter = Promise.resolve();
+    const appendedScripts = stubDocument();
+    let previousDeps: readonly unknown[] | undefined;
+    let previousCleanup: (() => void) | undefined;
+    reactMocks.useEffect.mockImplementation(
+      (effect: () => void | (() => void), deps?: readonly unknown[]) => {
+        const depsChanged =
+          !previousDeps ||
+          !deps ||
+          deps.length !== previousDeps.length ||
+          deps.some((dep, index) => dep !== previousDeps?.[index]);
+
+        if (depsChanged) {
+          previousCleanup?.();
+          const cleanup = effect();
+          previousCleanup = typeof cleanup === 'function' ? cleanup : undefined;
+          previousDeps = deps;
+        }
+      },
+    );
+
+    TrackingScript({
+      dataset: { purpose: 'analytics' },
+      id: 'analytics',
+      loadAfter,
+      src: 'https://cdn.example.com/analytics.js',
+    });
+    await Promise.resolve();
+
+    TrackingScript({
+      dataset: { purpose: 'analytics' },
+      id: 'analytics',
+      loadAfter,
+      src: 'https://cdn.example.com/analytics.js',
+    });
+    await Promise.resolve();
+
+    const [scriptElement] = appendedScripts as Array<{
+      /** Removes the script element. */
+      remove: ReturnType<typeof vi.fn>;
+    }>;
+    expect(appendedScripts).toHaveLength(1);
+    expect(scriptElement?.remove).not.toHaveBeenCalled();
   });
 
   test('does not inject after unmount', async () => {
