@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.1.7
+
+### Patch Changes
+
+- b18f2e8: Added new database driver Trino
+
 ## 5.1.6
 
 ### Patch Changes
