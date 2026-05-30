@@ -1,5 +1,5 @@
 ---
-"@transcend-io/privacy-types": major
+"@transcend-io/privacy-types": patch
 ---
 
 Added new database driver Trino
