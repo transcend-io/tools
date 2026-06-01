@@ -36,6 +36,7 @@ describe('Preferences Tools', () => {
     getPreferenceTools({
       rest: mockRest as never,
       graphql: {} as never,
+      dashboardUrl: 'https://app.transcend.io',
     });
 
   it('registers exactly 6 tools with expected names', () => {

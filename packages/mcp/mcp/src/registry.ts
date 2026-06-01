@@ -21,6 +21,8 @@ export interface UmbrellaToolClients {
   rest: TranscendRestClient;
   /** Composed GraphQL client with all domain mixins */
   graphql: TranscendGraphQLClient;
+  /** Admin-dashboard base URL used to build deep links */
+  dashboardUrl: string;
 }
 
 export class ToolRegistry {

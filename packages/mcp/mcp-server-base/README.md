@@ -12,7 +12,7 @@ This package is **not** a standalone MCP CLI: it has no `bin`. Domain servers an
 
 For development, use a checkout of this repository (see **Development** below).
 
-API keys for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers).
+API keys for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers). Use keys created with **MCP** enabled in the Transcend dashboard (a toggle when you create the key); other keys will not authenticate to the MCP servers.
 
 ## What's inside
 

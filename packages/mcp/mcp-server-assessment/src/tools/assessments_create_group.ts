@@ -1,6 +1,7 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
+import { buildAssessmentGroupUrl } from '../helpers/buildAssessmentLinks.js';
 
 export const CreateGroupSchema = z.object({
   title: z.string().describe('Title of the assessment group'),
@@ -15,10 +16,11 @@ export type CreateGroupInput = z.infer<typeof CreateGroupSchema>;
 
 export function createAssessmentsCreateGroupTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
+  const { dashboardUrl } = clients;
   return defineTool({
     name: 'assessments_create_group',
     description:
-      'Create a new assessment group linked to a template. Assessment groups are containers for assessments.',
+      'Create a new assessment group linked to a template. Assessment groups are containers for assessments. The response includes a `groupUrl` field with the canonical admin-dashboard link to the group — surface that to the user verbatim.',
     category: 'Assessments',
     readOnly: false,
     confirmationHint: 'Creates a new assessment group',
@@ -32,9 +34,12 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients) {
         reviewerIds: reviewer_ids,
       });
 
+      const groupUrl = buildAssessmentGroupUrl(dashboardUrl, result.id);
+
       return createToolResult(true, {
-        assessmentGroup: result,
-        message: `Assessment group "${title}" created successfully`,
+        assessmentGroup: { ...result, groupUrl },
+        groupUrl,
+        message: `Assessment group "${title}" created successfully. View it at ${groupUrl}`,
       });
     },
   });

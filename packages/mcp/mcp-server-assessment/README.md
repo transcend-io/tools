@@ -6,7 +6,7 @@ Transcend MCP Server for privacy assessments. Provides tools for creating, manag
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
-For local runs from this repository, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** at the repo root (gitignored) and set your API key (see **Run from the monorepo**).
+For local runs from this repository, copy [`secret.env.example`](../../../secret.env.example) to **`secret.env`** at the repo root (gitignored) and set your API key (see **Run from the monorepo**). The key must be created with **MCP** enabled in the Transcend dashboard (a toggle when you create the key).
 
 ## Install
 
@@ -66,11 +66,12 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable            | Required | Default                                    | Description                                        |
-| ------------------- | -------- | ------------------------------------------ | -------------------------------------------------- |
-| `TRANSCEND_API_KEY` | Yes      | —                                          | Transcend API key                                  |
-| `TRANSCEND_API_URL` | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)   |
-| `SOMBRA_URL`        | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention) |
+| Variable                  | Required | Default                                    | Description                                                                                                                                       |
+| ------------------------- | -------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`       | Yes      | —                                          | Transcend API key                                                                                                                                 |
+| `TRANSCEND_API_URL`       | No       | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                                                                  |
+| `SOMBRA_URL`              | No       | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
+| `TRANSCEND_DASHBOARD_URL` | No       | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links returned by tool responses. Intended for local development against staging / fake hosts |
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 

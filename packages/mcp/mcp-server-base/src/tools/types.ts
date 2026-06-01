@@ -37,6 +37,13 @@ export interface ToolClients {
   rest: TranscendRestClient;
   /** GraphQL API client */
   graphql: TranscendGraphQLBase;
+  /**
+   * Base URL for the Transcend admin dashboard. In production this is always
+   * `https://app.transcend.io` (the dashboard is single-region; the regional
+   * split lives on the API host instead) — see `DEFAULT_DASHBOARD_URL`. Kept
+   * configurable on the client surface so tests can inject a fake host.
+   */
+  dashboardUrl: string;
 }
 
 /**

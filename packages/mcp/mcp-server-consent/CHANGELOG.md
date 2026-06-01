@@ -1,5 +1,36 @@
 # @transcend-io/mcp-server-consent
 
+## 0.2.12
+
+### Patch Changes
+
+- Updated dependencies [b18f2e8]
+- Updated dependencies [9d180f4]
+  - @transcend-io/privacy-types@5.1.7
+  - @transcend-io/sdk@1.1.10
+
+## 0.2.11
+
+### Patch Changes
+
+- Updated dependencies [467109b]
+  - @transcend-io/mcp-server-base@0.4.4
+
+## 0.2.10
+
+### Patch Changes
+
+- ed322d2: Adjust readme to clarify api key requirements
+- Updated dependencies [ed322d2]
+  - @transcend-io/mcp-server-base@0.4.3
+  - @transcend-io/sdk@1.1.9
+
+## 0.2.9
+
+### Patch Changes
+
+- @transcend-io/sdk@1.1.8
+
 ## 0.2.8
 
 ### Patch Changes
