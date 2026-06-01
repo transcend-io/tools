@@ -8,8 +8,9 @@ createMCPServer({
   name: 'transcend-mcp-workflows',
   version: '1.0.0',
   getTools: getWorkflowTools,
-  createClients: (auth, sombraUrl, graphqlUrl) => ({
+  createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
     rest: new TranscendRestClient(auth, sombraUrl),
     graphql: new WorkflowsMixin(auth, graphqlUrl),
+    dashboardUrl,
   }),
 });

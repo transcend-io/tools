@@ -8,6 +8,7 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
+import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 
 export const GetAssessmentSchema = z.object({
   assessment_id: z.string().describe('ID of the assessment to retrieve'),
@@ -22,10 +23,11 @@ export type GetAssessmentInput = z.infer<typeof GetAssessmentSchema>;
 
 export function createAssessmentsGetTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
+  const { dashboardUrl } = clients;
   return defineTool({
     name: 'assessments_get',
     description:
-      'Get detailed information about a specific assessment including questions and responses',
+      'Get detailed information about a specific assessment including questions and responses. The response includes a `url` field with the canonical admin-dashboard link — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -33,7 +35,8 @@ export function createAssessmentsGetTool(clients: ToolClients) {
     outputZodSchema: envelopeSchema(AssessmentSchema),
     handler: async ({ assessment_id }) => {
       const result = await graphql.getAssessment(assessment_id);
-      return createToolResult(true, result);
+      const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });
+      return createToolResult(true, { ...result, ...links });
     },
   });
 }

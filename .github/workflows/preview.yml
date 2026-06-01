@@ -2,6 +2,8 @@ name: Preview Release
 
 on:
   pull_request:
+    branches-ignore:
+      - 'renovate/*'
 
 concurrency:
   group: preview-${{ github.event.pull_request.number || github.ref }}
@@ -32,7 +34,7 @@ jobs:
         run: mise exec -- pnpm build
       - name: Publish PR previews
         shell: bash
-        run: |
+        run: | #shell
           set +e
           # Resolve publish roots from pnpm-workspace.yaml (any nesting depth); skip private packages (e.g. repo root).
           PACKAGE_PATHS=()

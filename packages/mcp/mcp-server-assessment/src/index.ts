@@ -1,5 +1,11 @@
 export { getAssessmentTools } from './tools/index.js';
 export { AssessmentsMixin } from './graphql.js';
+export {
+  buildAssessmentLinks,
+  buildAssessmentGroupUrl,
+  type AssessmentLinks,
+  type BuildAssessmentLinksInput,
+} from './helpers/buildAssessmentLinks.js';
 
 export { AddSectionSchema, type AddSectionInput } from './tools/assessments_add_section.js';
 export {

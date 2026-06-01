@@ -1,5 +1,6 @@
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
+import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
 import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
 import { MCP_CALLER_HEADER, TOOLCALL_ID_HEADER } from '../../http-header-names.js';
 import { getRequestMcpCaller } from '../../mcp-caller-context.js';
@@ -95,7 +96,7 @@ export class TranscendGraphQLBase {
 
   constructor(
     auth: AuthCredentials | null,
-    baseUrl: string = 'https://api.transcend.io',
+    baseUrl: string = DEFAULT_TRANSCEND_API_URL,
     logger?: Logger,
   ) {
     this.auth = auth;

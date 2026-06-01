@@ -533,18 +533,37 @@ export type AssessmentFormStatus =
 export type AssessmentStatus = AssessmentFormStatus;
 
 export interface Assessment {
+  /** Unique identifier */
   id: string;
+  /** Display title */
   title: string;
+  /** Optional description */
   description?: string;
+  /** Lifecycle status */
   status: AssessmentStatus;
+  /**
+   * ID of the assessment group this form belongs to. Available on responses
+   * from {@link AssessmentsMixin.createAssessment}, `getAssessment`, and
+   * `listAssessments` so callers can build deep links to the group view.
+   */
+  assessmentGroupId?: string;
+  /** Source template, when expanded */
   template?: AssessmentTemplate;
+  /** Primary assignee */
   assignee?: User;
+  /** Reviewer */
   reviewer?: User;
+  /** Optional due date (ISO 8601) */
   dueDate?: string;
+  /** When the form was submitted for review (ISO 8601) */
   submittedAt?: string;
+  /** When the form was fully completed (ISO 8601) */
   completedAt?: string;
+  /** Sections in the form */
   sections?: AssessmentSection[];
+  /** When the form was created (ISO 8601) */
   createdAt: string;
+  /** When the form was last updated (ISO 8601) */
   updatedAt?: string;
 }
 

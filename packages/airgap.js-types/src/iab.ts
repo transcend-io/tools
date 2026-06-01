@@ -226,7 +226,7 @@ export const NonTcfVendor = t.intersection([
     /** The privacy policy URL */
     privacyPolicyUrl: t.string,
     /** The additional consent provider ID - used for Google Additional Consent string */
-    additionalConsentProviderId: t.string,
+    additionalConsentProviderId: t.number,
   }),
 ]);
 

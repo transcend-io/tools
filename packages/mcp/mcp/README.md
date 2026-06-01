@@ -39,15 +39,16 @@ This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a healt
 
 ### Environment variables
 
-| Variable                       | Required    | Default                                    | Description                                                                                        |
-| ------------------------------ | ----------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | Yes (stdio) | —                                          | Transcend API key with **MCP** enabled when created in the dashboard (HTTP: fallback if no header) |
-| `TRANSCEND_API_URL`            | No          | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                   |
-| `SOMBRA_URL`                   | No          | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                 |
-| `TRANSCEND_HTTP_PORT`          | No          | `3000`                                     | HTTP listen port                                                                                   |
-| `TRANSCEND_HTTP_HOST`          | No          | `127.0.0.1`                                | HTTP listen host                                                                                   |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | No          | —                                          | Comma-separated allowed CORS origins                                                               |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | No          | `1800000`                                  | Idle session timeout (ms)                                                                          |
+| Variable                       | Required    | Default                                    | Description                                                                                                                                       |
+| ------------------------------ | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`            | Yes (stdio) | —                                          | Transcend API key with **MCP** enabled when created in the dashboard (HTTP: fallback if no header)                                                |
+| `TRANSCEND_API_URL`            | No          | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                                                                  |
+| `SOMBRA_URL`                   | No          | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
+| `TRANSCEND_DASHBOARD_URL`      | No          | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links returned by tool responses. Intended for local development against staging / fake hosts |
+| `TRANSCEND_HTTP_PORT`          | No          | `3000`                                     | HTTP listen port                                                                                                                                  |
+| `TRANSCEND_HTTP_HOST`          | No          | `127.0.0.1`                                | HTTP listen host                                                                                                                                  |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | No          | —                                          | Comma-separated allowed CORS origins                                                                                                              |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | No          | `1800000`                                  | Idle session timeout (ms)                                                                                                                         |
 
 ### MCP client configuration (stdio)
 
