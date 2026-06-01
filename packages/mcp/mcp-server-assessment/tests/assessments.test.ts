@@ -588,24 +588,24 @@ describe('Assessment Tools', () => {
       const tool = getTools().find((t) => t.name === 'assessments_list')!;
       const result = (await tool.handler({ limit: 50 })) as {
         success: boolean;
-        data: Array<Record<string, unknown>>;
+        data: { items: Array<Record<string, unknown>> };
       };
 
       expect(result.success).toBe(true);
       // Every row gets the same canonical /response URL regardless of
       // status — matches the dashboard's "View Responses" row action.
-      expect(result.data[0]!.url).toBe(
+      expect(result.data.items[0]!.url).toBe(
         `https://app.transcend.io/assessments/forms/${FORM_ID}/response`,
       );
-      expect(result.data[1]!.url).toBe(
+      expect(result.data.items[1]!.url).toBe(
         `https://app.transcend.io/assessments/forms/form-2/response`,
       );
       // Per-assessment rows must not expose a sibling `groupUrl` — agents will
       // pick it over the canonical `url` and route every link to the group page.
-      expect(result.data[0]!.groupUrl).toBeUndefined();
-      expect(result.data[1]!.groupUrl).toBeUndefined();
+      expect(result.data.items[0]!.groupUrl).toBeUndefined();
+      expect(result.data.items[1]!.groupUrl).toBeUndefined();
       // No row should expose the assignee-only /view route.
-      expect(JSON.stringify(result.data)).not.toContain('/view');
+      expect(JSON.stringify(result.data.items)).not.toContain('/view');
     });
 
     it('assessments_list_groups attaches a groupUrl to each row', async () => {
@@ -621,12 +621,16 @@ describe('Assessment Tools', () => {
       const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
       const result = (await tool.handler({ limit: 50 })) as {
         success: boolean;
-        data: Array<Record<string, unknown>>;
+        data: { items: Array<Record<string, unknown>> };
       };
 
       expect(result.success).toBe(true);
-      expect(result.data[0]!.groupUrl).toBe('https://app.transcend.io/assessments/groups/grp-1');
-      expect(result.data[1]!.groupUrl).toBe('https://app.transcend.io/assessments/groups/grp-2');
+      expect(result.data.items[0]!.groupUrl).toBe(
+        'https://app.transcend.io/assessments/groups/grp-1',
+      );
+      expect(result.data.items[1]!.groupUrl).toBe(
+        'https://app.transcend.io/assessments/groups/grp-2',
+      );
     });
 
     it('honors a caller-supplied dashboard URL on the ToolClients', async () => {
