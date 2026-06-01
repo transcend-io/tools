@@ -136,18 +136,21 @@ export class AdminMixin extends TranscendGraphQLBase {
           apiKey {
             id
             title
-            scopes
+            apiKey
+            scopes {
+              id
+              name
+            }
             createdAt
           }
-          token
         }
       }
     `;
-    const data = await this.makeRequest<{ createApiKey: { apiKey: ApiKey; token: string } }>(
-      mutation,
-      { input },
-    );
-    return data.createApiKey;
+    const data = await this.makeRequest<{
+      createApiKey: { apiKey: ApiKey & { apiKey: string } };
+    }>(mutation, { input });
+    const { apiKey: token, ...apiKey } = data.createApiKey.apiKey;
+    return { apiKey, token };
   }
 
   async getPrivacyCenter(lookup?: { url?: string }): Promise<PrivacyCenter | null> {
