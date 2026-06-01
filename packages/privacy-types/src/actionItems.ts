@@ -165,13 +165,13 @@ export enum ActionItemCode {
    *   transitioned to FAILURE with no further retries) and the rule has
    *   no assigned owners
    */
-  MaestroRuleTerminalFailure = 'MAESTRO_RULE_TERMINAL_FAILURE',
+  RulesAutomationRuleTerminalFailure = 'RULES_AUTOMATION_RULE_TERMINAL_FAILURE',
   /**
    * - A Rules Automation rule has hit a terminal failure (an execution
    *   transitioned to FAILURE with no further retries) and the rule has
    *   one or more assigned owners (users or teams)
    */
-  MaestroRuleTerminalFailureAssigned = 'MAESTRO_RULE_TERMINAL_FAILURE_ASSIGNED',
+  RulesAutomationRuleTerminalFailureAssigned = 'RULES_AUTOMATION_RULE_TERMINAL_FAILURE_ASSIGNED',
 }
 
 /**
