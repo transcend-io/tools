@@ -24,6 +24,7 @@ export const DatabaseIntegration = makeEnum({
   googlebigtable: 'googlebigtable',
   azuresynapse: 'azuresynapse',
   azurecosmosdbnosql: 'azurecosmosdbnosql',
+  trino: 'trino',
 });
 
 /**
@@ -41,6 +42,7 @@ export const SQLDriverWithDataMapping = makeEnum({
   [DatabaseIntegration.ibmdb2]: 'IBM DB2',
   [DatabaseIntegration.oracle]: 'Oracle DB',
   [DatabaseIntegration.azuresynapse]: 'Azure Synapse',
+  [DatabaseIntegration.trino]: 'Trino',
 });
 
 /** Overrides type */

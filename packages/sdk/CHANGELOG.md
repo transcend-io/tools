@@ -1,5 +1,22 @@
 # @transcend-io/sdk
 
+## 1.1.10
+
+### Patch Changes
+
+- 9d180f4: Update `got` dependency from v11 to v15.
+
+  Note: per [got v15 release notes](https://github.com/sindresorhus/got/releases/tag/v15.0.0),
+  `responseType: 'buffer'` (and `.buffer()`) now resolve to `Uint8Array` instead
+  of `Buffer`. The `onFileDownloaded` callback in `streamPrivacyRequestFiles`
+  has been retyped accordingly. `Buffer` is still a `Uint8Array` subclass, so
+  existing usages that just write the value to disk continue to work without
+  changes.
+
+- Updated dependencies [b18f2e8]
+  - @transcend-io/privacy-types@5.1.7
+  - @transcend-io/airgap.js-types@14.2.2
+
 ## 1.1.9
 
 ### Patch Changes
