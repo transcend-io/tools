@@ -82,9 +82,11 @@
       "persistent": true
     },
     "//#test:root": {
+      "dependsOn": ["//#codegen"],
       "outputs": []
     },
     "//#typecheck:root": {
+      "dependsOn": ["//#codegen"],
       "outputs": []
     },
     "//#lint:root": {},
