@@ -7,27 +7,81 @@ import {
   type WorkflowConfig,
 } from '@transcend-io/mcp-server-base';
 
-export class WorkflowsMixin extends TranscendGraphQLBase {
-  async listWorkflows(options?: ListOptions): Promise<PaginatedResponse<Workflow>> {
-    const query = `
-      query ListWorkflows($first: Int) {
-        workflows(first: $first) {
-          nodes {
-            id
-            title {
-              defaultMessage
-            }
-          }
-          totalCount
+import { graphql } from './__generated__/gql.js';
+
+const ListWorkflowsDoc = graphql(/* GraphQL */ `
+  query WorkflowsList($first: Int) {
+    workflows(first: $first) {
+      nodes {
+        id
+        title {
+          defaultMessage
         }
       }
-    `;
-    const data = await this.makeRequest<{ workflows: { nodes: Workflow[]; totalCount: number } }>(
-      query,
-      { first: Math.min(options?.first || 50, 100) },
-    );
+      totalCount
+    }
+  }
+`);
+
+// `updateWorkflowConfig` returns only `{ success, clientMutationId }` per the
+// schema -- the previous selection requested a `workflowConfig` field that
+// never existed and would have errored at runtime if Transcend's API had
+// stricter validation. We split into a mutation + follow-up read so callers
+// still get a fully-shaped WorkflowConfig back.
+const UpdateWorkflowConfigDoc = graphql(/* GraphQL */ `
+  mutation WorkflowsUpdateConfig($input: UpdateWorkflowConfigInput!) {
+    updateWorkflowConfig(input: $input) {
+      success
+    }
+  }
+`);
+
+// Note: WorkflowConfig has no `showInPrivacyCenter` field (and the input type
+// has no corresponding setter). The MCP tool used to advertise this option,
+// but it was a no-op against the schema -- removed from the surface area.
+const ReadWorkflowConfigDoc = graphql(/* GraphQL */ `
+  query WorkflowsReadConfig($input: WorkflowConfigInput!) {
+    workflowConfig(input: $input) {
+      workflowConfig {
+        id
+        title {
+          defaultMessage
+        }
+        subtitle {
+          defaultMessage
+        }
+        description {
+          defaultMessage
+        }
+      }
+    }
+  }
+`);
+
+const ListEmailTemplatesDoc = graphql(/* GraphQL */ `
+  query WorkflowsListTemplates($first: Int, $offset: Int) {
+    templates(first: $first, offset: $offset) {
+      nodes {
+        id
+        title
+        type
+        isRequired
+      }
+      totalCount
+    }
+  }
+`);
+
+export class WorkflowsMixin extends TranscendGraphQLBase {
+  async listWorkflows(options?: ListOptions): Promise<PaginatedResponse<Workflow>> {
+    const data = await this.makeRequest(ListWorkflowsDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+    });
     return {
-      nodes: data.workflows.nodes,
+      nodes: data.workflows.nodes.map((w) => ({
+        id: w.id,
+        title: { defaultMessage: w.title.defaultMessage },
+      })),
       pageInfo: {
         hasNextPage: data.workflows.nodes.length < data.workflows.totalCount,
         hasPreviousPage: false,
@@ -42,72 +96,27 @@ export class WorkflowsMixin extends TranscendGraphQLBase {
       title?: string;
       subtitle?: string;
       description?: string;
-      showInPrivacyCenter?: boolean;
     },
   ): Promise<WorkflowConfig> {
-    const mutation = `
-      mutation UpdateWorkflowConfig($input: UpdateWorkflowConfigInput!) {
-        updateWorkflowConfig(input: $input) {
-          workflowConfig {
-            id
-            title {
-              defaultMessage
-            }
-            subtitle {
-              defaultMessage
-            }
-            description {
-              defaultMessage
-            }
-            showInPrivacyCenter
-          }
-        }
-      }
-    `;
-    const input = { workflowConfigId, ...updates };
-    const data = await this.makeRequest<{
-      updateWorkflowConfig: {
-        workflowConfig: {
-          id: string;
-          title: { defaultMessage: string } | null;
-          subtitle: { defaultMessage: string } | null;
-          description: { defaultMessage: string } | null;
-          showInPrivacyCenter: boolean;
-        };
-      };
-    }>(mutation, { input });
-    const wc = data.updateWorkflowConfig.workflowConfig;
+    await this.makeRequest(UpdateWorkflowConfigDoc, {
+      input: { workflowConfigId, ...updates },
+    });
+    const data = await this.makeRequest(ReadWorkflowConfigDoc, {
+      input: { id: workflowConfigId },
+    });
+    const wc = data.workflowConfig.workflowConfig;
     return {
       id: wc.id,
-      title: wc.title?.defaultMessage || '',
-      subtitle: wc.subtitle?.defaultMessage || '',
-      description: wc.description?.defaultMessage || '',
-      showInPrivacyCenter: wc.showInPrivacyCenter,
+      title: wc.title.defaultMessage,
+      subtitle: wc.subtitle?.defaultMessage ?? '',
+      description: wc.description?.defaultMessage ?? '',
     };
   }
 
   async listEmailTemplates(options?: ListOptions): Promise<PaginatedResponse<EmailTemplate>> {
-    const query = `
-      query ListTemplates($first: Int, $offset: Int) {
-        templates(first: $first, offset: $offset) {
-          nodes {
-            id
-            title
-            type
-            isRequired
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      templates: {
-        nodes: Array<{ id: string; title: string; type: string; isRequired: boolean }>;
-        totalCount: number;
-      };
-    }>(query, {
-      first: Math.min(options?.first || 50, 100),
-      offset: options?.offset || 0,
+    const data = await this.makeRequest(ListEmailTemplatesDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+      offset: options?.offset ?? 0,
     });
     const templates: EmailTemplate[] = data.templates.nodes.map((t) => ({
       id: t.id,

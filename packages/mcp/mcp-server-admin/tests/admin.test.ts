@@ -76,18 +76,30 @@ describe('Admin Tools', () => {
     });
 
     it('creates API key on success', async () => {
-      const response = {
-        apiKey: { id: 'key-1', title: 'Test Key', scopes: ['readWrite'], createdAt: '2024-01-01' },
+      // The mixin now returns a flat CreatedApiKey (extends ApiKey) carrying
+      // the plain-text bearer in `token`. There is no longer a nested
+      // `apiKey` wrapper -- that shape was the original schema-drift bug.
+      const created = {
+        id: 'key-1',
+        title: 'Test Key',
+        scopes: [{ id: 'scope-1', name: 'readWrite' }],
+        createdAt: '2024-01-01',
         token: 'secret-token',
       };
-      mockGraphql.createApiKey.mockResolvedValue(response);
+      mockGraphql.createApiKey.mockResolvedValue(created);
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
 
       const result = await tool.handler({ title: 'Test Key', scopes: ['readWrite'] });
 
-      expect(result).toMatchObject({ success: true });
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          apiKey: { id: 'key-1', title: 'Test Key' },
+          token: 'secret-token',
+        },
+      });
       expect(mockGraphql.createApiKey).toHaveBeenCalledWith({
         title: 'Test Key',
         scopes: ['readWrite'],

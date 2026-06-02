@@ -1,34 +1,97 @@
 import {
   TranscendGraphQLBase,
-  type PaginatedResponse,
   type ClassificationScan,
   type DiscoveryPlugin,
   type ListOptions,
+  type PaginatedResponse,
 } from '@transcend-io/mcp-server-base';
+
+import { graphql } from './__generated__/gql.js';
+
+const ListDataSilosForClassificationDoc = graphql(/* GraphQL */ `
+  query DiscoveryListDataSilos($first: Int) {
+    dataSilos(first: $first) {
+      nodes {
+        id
+        title
+        type
+        createdAt
+      }
+      totalCount
+    }
+  }
+`);
+
+const ListDataSiloTypesDoc = graphql(/* GraphQL */ `
+  query DiscoveryListDataSiloTypes($first: Int) {
+    dataSilos(first: $first) {
+      nodes {
+        id
+        title
+        type
+        description
+      }
+      totalCount
+    }
+  }
+`);
+
+/*
+ * `startClassificationScan` and `classificationScan(id:)` don't exist in
+ * Transcend's GraphQL schema -- they were declared against an aspirational
+ * shape that was never shipped. Tracked in ZEL-XXXX (synthetic discovery
+ * queries). Until that ticket lands a real operation, these strings stay
+ * bare (not in a `graphql()` tag), so codegen skips them and these methods
+ * fail at runtime with a server-side validation error rather than blocking
+ * the whole package's typecheck.
+ */
+const START_CLASSIFICATION_SCAN_QUERY = `
+  mutation StartClassificationScan($input: StartClassificationScanInput!) {
+    startClassificationScan(input: $input) {
+      scan {
+        id
+        name
+        type
+        status
+        startedAt
+        createdAt
+      }
+    }
+  }
+`;
+
+const GET_CLASSIFICATION_SCAN_QUERY = `
+  query GetClassificationScan($id: ID!) {
+    classificationScan(id: $id) {
+      id
+      name
+      type
+      status
+      startedAt
+      completedAt
+      dataSiloId
+      results {
+        id
+        path
+        dataCategory {
+          id
+          name
+          category
+        }
+        confidence
+      }
+      createdAt
+    }
+  }
+`;
 
 export class DiscoveryMixin extends TranscendGraphQLBase {
   async listClassificationScans(
     options?: ListOptions,
   ): Promise<PaginatedResponse<ClassificationScan>> {
-    const query = `
-      query ListDataSilosForClassification($first: Int) {
-        dataSilos(first: $first) {
-          nodes {
-            id
-            title
-            type
-            createdAt
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      dataSilos: {
-        nodes: Array<{ id: string; title: string; type: string; createdAt: string }>;
-        totalCount: number;
-      };
-    }>(query, { first: Math.min(options?.first || 50, 100) });
+    const data = await this.makeRequest(ListDataSilosForClassificationDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+    });
     const scans: ClassificationScan[] = data.dataSilos.nodes.map((silo) => ({
       id: silo.id,
       name: `Classification: ${silo.title}`,
@@ -49,76 +112,25 @@ export class DiscoveryMixin extends TranscendGraphQLBase {
     dataSiloId?: string;
     type?: string;
   }): Promise<ClassificationScan> {
-    const mutation = `
-      mutation StartClassificationScan($input: StartClassificationScanInput!) {
-        startClassificationScan(input: $input) {
-          scan {
-            id
-            name
-            type
-            status
-            startedAt
-            createdAt
-          }
-        }
-      }
-    `;
     const data = await this.makeRequest<{ startClassificationScan: { scan: ClassificationScan } }>(
-      mutation,
+      START_CLASSIFICATION_SCAN_QUERY,
       { input },
     );
     return data.startClassificationScan.scan;
   }
 
   async getClassificationScan(id: string): Promise<ClassificationScan> {
-    const query = `
-      query GetClassificationScan($id: ID!) {
-        classificationScan(id: $id) {
-          id
-          name
-          type
-          status
-          startedAt
-          completedAt
-          dataSiloId
-          results {
-            id
-            path
-            dataCategory {
-              id
-              name
-              category
-            }
-            confidence
-          }
-          createdAt
-        }
-      }
-    `;
-    const data = await this.makeRequest<{ classificationScan: ClassificationScan }>(query, { id });
+    const data = await this.makeRequest<{ classificationScan: ClassificationScan }>(
+      GET_CLASSIFICATION_SCAN_QUERY,
+      { id },
+    );
     return data.classificationScan;
   }
 
   async listDiscoveryPlugins(options?: ListOptions): Promise<PaginatedResponse<DiscoveryPlugin>> {
-    const query = `
-      query ListDataSiloTypes($first: Int) {
-        dataSilos(first: $first) {
-          nodes {
-            id
-            title
-            type
-            description
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      dataSilos: {
-        nodes: Array<{ id: string; title: string; type: string; description: string | null }>;
-        totalCount: number;
-      };
-    }>(query, { first: options?.first || 50 });
+    const data = await this.makeRequest(ListDataSiloTypesDoc, {
+      first: options?.first ?? 50,
+    });
     const typeMap = new Map<string, DiscoveryPlugin>();
     data.dataSilos.nodes.forEach((silo) => {
       if (!typeMap.has(silo.type)) {
