@@ -344,18 +344,25 @@ These conventions are enforced by `scripts/check-mcp-descriptions.test.ts` and s
 
 Every MCP server's GraphQL operations are validated against the committed schema at compile time:
 
-- Author operations with the generated `graphql()` tag in each domain's `src/graphql.ts`. The tag returns a `TypedDocumentNode<Result, Variables>`, which `TranscendGraphQLBase.makeRequest` consumes natively. Drift between an operation and the staging schema fails `tsc` rather than surfacing as a runtime error.
-- The schema lives at `schema.graphql` (committed). Do not edit it by hand. Refresh it with `pnpm graphql:refresh-schema` (or let the scheduled `Refresh GraphQL Schema` workflow do it for you) and let CI flag any tools that break against the new shape.
+- Author operations with the generated `graphql()` tag in each domain's `src/graphql.ts`. The tag returns a `TypedDocumentNode<Result, Variables>`, which `TranscendGraphQLBase.makeRequest` consumes natively. Drift between an operation and the published schema fails `tsc` rather than surfacing as a runtime error.
+- The schema lives at `schema.graphql` (committed). Do not edit it by hand. Refresh it with `pnpm graphql:refresh-schema` and let CI flag any tools that break against the new shape.
 - After editing operations, run `pnpm codegen` to regenerate `__generated__/` artifacts. The artifacts are gitignored — `pnpm build`/`pnpm typecheck`/`pnpm test` invoke the codegen task automatically through Turbo's dependency graph, so the only time you need to run codegen by hand is during local development.
 
 ### Updating `schema.graphql`
 
-`schema.graphql` is the offline source of truth so local and CI builds stay hermetic. Refresh it when:
+`schema.graphql` is the committed snapshot of the `Transcend-io@current` graph published to Apollo Studio by the backend release pipeline. Refresh it when:
 
-- Staging adds or removes a type/field that an MCP tool needs to consume.
+- The backend ships a type/field change that an MCP tool needs to consume.
 - A failing `pnpm codegen` traces back to a missing schema element.
 
-The scheduled `.github/workflows/refresh-graphql-schema.yml` workflow runs `pnpm graphql:refresh-schema` weekly, regenerates `__generated__/`, and opens a PR — let CI on that PR be your gate. Manual refreshes (e.g., when developing against a feature schema before it lands in staging) are fine; just make sure the resulting `pnpm typecheck` is green before pushing.
+To refresh:
+
+1. Install the [Rover CLI](https://www.apollographql.com/docs/rover/getting-started) once: `curl -sSL https://rover.apollo.dev/nix/v0.26.2 | sh`.
+2. Export an Apollo Studio user or graph key with read access to `Transcend-io@current` (ask in `#eng-platform` if you don't have one). Either `APOLLO_STUDIO_KEY` or `APOLLO_KEY` works; both can also be set in `secret.env`.
+3. Run `pnpm graphql:refresh-schema`. The script calls `rover graph fetch Transcend-io@current`, strips type/field descriptions (so internal prose never lands in this public repo), and writes `schema.graphql`.
+4. Run `pnpm codegen && pnpm typecheck` to confirm the new shape works for every operation, then commit `schema.graphql` alongside any operation/test updates.
+
+If `APOLLO_STUDIO_KEY` is not set, `pnpm graphql:refresh-schema` exits 0 with a warning and leaves the committed schema untouched. Local development continues to work against the last refreshed snapshot, so contributors without an Apollo Studio key can still build, typecheck, test, and ship operation changes — they just cannot refresh the schema themselves.
 
 ### Changesets
 

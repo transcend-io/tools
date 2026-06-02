@@ -1,37 +1,50 @@
 /**
- * Refresh the committed `schema.graphql` at the repo root by introspecting a
- * live Transcend GraphQL endpoint.
+ * Refresh the committed `schema.graphql` at the repo root by fetching from
+ * Apollo Studio's `Transcend-io@current` graph variant.
+ *
+ * Why Apollo Studio (not staging introspection):
+ *   - Apollo Studio is the canonical source-of-truth that the
+ *     `transcend-io/main` backend release pipeline publishes to. It is the
+ *     same artifact the backend team treats as authoritative.
+ *   - It is auth-gated behind `APOLLO_STUDIO_KEY`, so the source itself is
+ *     not anonymously public the way `api.staging.transcen.dental` happens
+ *     to be.
  *
  * Run modes:
- *   - Local:    `pnpm graphql:refresh-schema` (reads `secret.env` for the API
- *               key + URL override, defaults to staging).
- *   - CI cron:  `.github/workflows/refresh-graphql-schema.yml` invokes this
- *               with `TRANSCEND_API_KEY` + `TRANSCEND_API_URL` in env.
+ *   - Local:  `pnpm graphql:refresh-schema` (reads `secret.env` for
+ *             `APOLLO_STUDIO_KEY`/`APOLLO_KEY`).
+ *   - Manual: An engineer with an Apollo Studio key runs this when the
+ *             schema needs refreshing. There is no scheduled cron; the
+ *             committed `schema.graphql` is intentionally a snapshot.
  *
- * The script is idempotent: it prints the SDL alphabetically-sorted via
- * `printSchema` so byte-stable diffs surface only meaningful schema changes.
+ * Behavior when `APOLLO_STUDIO_KEY` is missing:
+ *   The script prints a warning and exits 0. Local builds and contributors
+ *   without an Apollo Studio key continue to work against the last committed
+ *   `schema.graphql`. Only schema *refreshes* require the key.
  *
- * Why we commit the schema:
- *   - Hermetic CI for unrelated PRs (no flaky network on every run).
- *   - Local-first dev: contributors don't need staging credentials to typecheck.
- *   - A single PR shows exactly which schema changes are landing.
+ * Output post-processing:
+ *   The script re-prints the SDL via graphql-js `printSchema` after
+ *   stripping every type/field description. Author-written descriptions on
+ *   the schema may include internal context (deprecation notes, partner
+ *   names, business rules) that we do not want to surface via this
+ *   repository.
  */
+import { spawnSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 import {
-  buildClientSchema,
-  getIntrospectionQuery,
-  type IntrospectionQuery,
+  buildSchema,
+  GraphQLEnumType,
+  GraphQLInputObjectType,
+  GraphQLInterfaceType,
+  GraphQLObjectType,
+  GraphQLScalarType,
+  GraphQLUnionType,
   printSchema,
 } from 'graphql';
 
-const DEFAULT_STAGING_URL = 'https://api.staging.transcen.dental';
-
-interface IntrospectionResponse {
-  data?: IntrospectionQuery;
-  errors?: Array<{ message: string }>;
-}
+const APOLLO_GRAPH_REF = 'Transcend-io@current';
 
 function loadSecretEnv(): void {
   const path = resolve(process.cwd(), 'secret.env');
@@ -48,60 +61,93 @@ function loadSecretEnv(): void {
     if (eq < 0) continue;
     const key = line.slice(0, eq).trim();
     const value = line.slice(eq + 1).trim();
-    // Only fill in from secret.env when the variable is fully unset; an
-    // explicit empty string in the parent env is honored as "do not auth".
     if (process.env[key] === undefined && value) {
       process.env[key] = value;
     }
   }
 }
 
-async function main(): Promise<void> {
+/**
+ * Walk every named type, field, argument, and enum value in the schema and
+ * clear their description text. graphql-js exposes `description` as a
+ * mutable property on these AST-derived objects, so this is safe.
+ */
+function stripDescriptions(sdl: string): string {
+  const schema = buildSchema(sdl);
+  const typeMap = schema.getTypeMap();
+  for (const type of Object.values(typeMap)) {
+    if (type.name.startsWith('__')) continue;
+    const mutableType = type as { description?: string | null };
+    mutableType.description = null;
+
+    if (type instanceof GraphQLObjectType || type instanceof GraphQLInterfaceType) {
+      for (const field of Object.values(type.getFields())) {
+        (field as { description?: string | null }).description = null;
+        for (const arg of field.args) {
+          (arg as { description?: string | null }).description = null;
+        }
+      }
+    } else if (type instanceof GraphQLInputObjectType) {
+      for (const field of Object.values(type.getFields())) {
+        (field as { description?: string | null }).description = null;
+      }
+    } else if (type instanceof GraphQLEnumType) {
+      for (const value of type.getValues()) {
+        (value as { description?: string | null }).description = null;
+      }
+    } else if (type instanceof GraphQLScalarType || type instanceof GraphQLUnionType) {
+      // Already cleared above.
+    }
+  }
+  return printSchema(schema);
+}
+
+function fetchSchemaViaRover(apolloKey: string): string {
+  const rover = spawnSync('rover', ['graph', 'fetch', APOLLO_GRAPH_REF], {
+    env: { ...process.env, APOLLO_KEY: apolloKey },
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  if (rover.error) {
+    if ((rover.error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(
+        'rover CLI not found on $PATH. Install it with:\n' +
+          '  curl -sSL https://rover.apollo.dev/nix/v0.26.2 | sh\n' +
+          'See https://www.apollographql.com/docs/rover/getting-started for details.',
+      );
+    }
+    throw rover.error;
+  }
+  if (rover.status !== 0) {
+    throw new Error(
+      `rover graph fetch ${APOLLO_GRAPH_REF} exited ${rover.status}: ${rover.stderr}`,
+    );
+  }
+  return rover.stdout;
+}
+
+function main(): void {
   loadSecretEnv();
 
-  const apiKey = process.env.TRANSCEND_API_KEY;
-  const baseUrl = (process.env.TRANSCEND_API_URL ?? DEFAULT_STAGING_URL).replace(/\/$/, '');
-  const url = `${baseUrl}/graphql`;
+  const apolloKey = process.env.APOLLO_STUDIO_KEY ?? process.env.APOLLO_KEY;
+  if (!apolloKey) {
+    // eslint-disable-next-line no-console
+    console.error(
+      'APOLLO_STUDIO_KEY (or APOLLO_KEY) is not set; skipping schema refresh.\n' +
+        'The committed schema.graphql will be used as-is. To refresh, export\n' +
+        'APOLLO_STUDIO_KEY=<service:Transcend-io:…> and re-run.',
+    );
+    return;
+  }
+
   // eslint-disable-next-line no-console
-  console.error(`Introspecting ${url}…`);
+  console.error(`Fetching ${APOLLO_GRAPH_REF} from Apollo Studio…`);
+  const rawSdl = fetchSchemaViaRover(apolloKey);
+  const sdl = stripDescriptions(rawSdl);
 
-  // Transcend's GraphQL endpoint allows introspection without auth, which lets
-  // CI refresh the schema with no secret. We still send the API key when
-  // present so a misconfigured staging that *does* require auth still works.
-  //
-  // We deliberately request the schema *without* descriptions. Field/type
-  // descriptions on staging are author-written and may include internal
-  // context (deprecation notes, partner names, edge-case business rules) that
-  // we don't want surfaced via the public repo or our published `.d.ts`
-  // bundles. The shapes alone are enough for type-safe codegen; engineers who
-  // need the prose can still introspect staging directly.
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    body: JSON.stringify({ query: getIntrospectionQuery({ descriptions: false }) }),
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(`Introspection HTTP ${response.status}: ${text}`);
-  }
-
-  const result = (await response.json()) as IntrospectionResponse;
-  if (result.errors?.length) {
-    throw new Error(`Introspection errors: ${result.errors.map((e) => e.message).join('; ')}`);
-  }
-  if (!result.data) {
-    throw new Error('Introspection returned no data');
-  }
-
-  const schema = buildClientSchema(result.data);
-  const sdl = printSchema(schema);
   const banner = `# Generated by scripts/refresh-graphql-schema.ts
-# Source: ${url}
+# Source: Apollo Studio (${APOLLO_GRAPH_REF}); descriptions stripped.
 # DO NOT EDIT BY HAND. Run \`pnpm graphql:refresh-schema\` to regenerate.
 `;
   const outputPath = resolve(process.cwd(), 'schema.graphql');
@@ -111,8 +157,10 @@ async function main(): Promise<void> {
   console.error(`Wrote ${outputPath} (${sdl.length} bytes).`);
 }
 
-main().catch((err: unknown) => {
+try {
+  main();
+} catch (err: unknown) {
   // eslint-disable-next-line no-console
   console.error(err instanceof Error ? err.message : String(err));
   process.exit(1);
-});
+}
