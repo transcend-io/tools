@@ -92,6 +92,33 @@ importers:
       '@graphql-codegen/typescript':
         specifier: 'catalog:'
         version: 6.0.2(graphql@16.14.0)
+      '@transcend-io/mcp-server-admin':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-admin
+      '@transcend-io/mcp-server-assessment':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-assessment
+      '@transcend-io/mcp-server-base':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-base
+      '@transcend-io/mcp-server-consent':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-consent
+      '@transcend-io/mcp-server-discovery':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-discovery
+      '@transcend-io/mcp-server-dsr':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-dsr
+      '@transcend-io/mcp-server-inventory':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-inventory
+      '@transcend-io/mcp-server-preferences':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-preferences
+      '@transcend-io/mcp-server-workflows':
+        specifier: workspace:*
+        version: link:packages/mcp/mcp-server-workflows
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.15
@@ -122,6 +149,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.18(@types/node@22.19.15)(jiti@2.7.0)(tsx@4.21.0)(yaml@2.9.0)
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
 
   packages/airgap.js-types:
     dependencies:

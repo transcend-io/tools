@@ -9,8 +9,19 @@ import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sd
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const ListDataFlowsSchema = z.object({
-  limit: z.number().min(1).max(200).optional().default(50),
-  offset: z.number().min(0).optional().default(0),
+  limit: z
+    .number()
+    .min(1)
+    .max(200)
+    .optional()
+    .default(50)
+    .describe('Maximum number of data flows to return per page (1-200, default 50).'),
+  offset: z
+    .number()
+    .min(0)
+    .optional()
+    .default(0)
+    .describe('Number of results to skip for pagination (default 0).'),
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),

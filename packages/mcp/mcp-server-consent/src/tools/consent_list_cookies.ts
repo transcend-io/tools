@@ -9,8 +9,19 @@ import { COOKIES, type TranscendCliCookiesResponse } from '@transcend-io/sdk';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const ListCookiesSchema = z.object({
-  limit: z.number().min(1).max(200).optional().default(50),
-  offset: z.number().min(0).optional().default(0),
+  limit: z
+    .number()
+    .min(1)
+    .max(200)
+    .optional()
+    .default(50)
+    .describe('Maximum number of cookies to return per page (1-200, default 50).'),
+  offset: z
+    .number()
+    .min(0)
+    .optional()
+    .default(0)
+    .describe('Number of results to skip for pagination (default 0).'),
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),

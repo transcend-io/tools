@@ -39,6 +39,15 @@
     "@graphql-codegen/cli": "catalog:",
     "@graphql-codegen/client-preset": "catalog:",
     "@graphql-codegen/typescript": "catalog:",
+    "@transcend-io/mcp-server-admin": "workspace:*",
+    "@transcend-io/mcp-server-assessment": "workspace:*",
+    "@transcend-io/mcp-server-base": "workspace:*",
+    "@transcend-io/mcp-server-consent": "workspace:*",
+    "@transcend-io/mcp-server-discovery": "workspace:*",
+    "@transcend-io/mcp-server-dsr": "workspace:*",
+    "@transcend-io/mcp-server-inventory": "workspace:*",
+    "@transcend-io/mcp-server-preferences": "workspace:*",
+    "@transcend-io/mcp-server-workflows": "workspace:*",
     "@types/node": "catalog:",
     "graphql": "catalog:",
     "graphql-codegen-typescript-validation-schema": "catalog:",
@@ -48,7 +57,8 @@
     "syncpack": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   },
   "engines": {
     "node": ">=22.12.0",
