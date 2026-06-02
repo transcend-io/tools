@@ -213,6 +213,9 @@ export class AdminMixin extends TranscendGraphQLBase {
    * returns it again. The previous implementation read a top-level `token`
    * field that does not exist in the schema; the token is on
    * `createApiKey.apiKey.apiKey` (a sibling of `id`/`title`/`scopes`).
+   *
+   * #173 fixed the same bug independently with a hand-rolled mutation; this
+   * branch's typed `graphql()` form is a strict superset, so we keep ours.
    */
   async createApiKey(input: ApiKeyCreateInput): Promise<CreatedApiKey> {
     const data = await this.makeRequest(CreateApiKeyDoc, {
