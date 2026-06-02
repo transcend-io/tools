@@ -14,12 +14,12 @@ export const ListCookiesSchema = z.object({
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),
-  is_junk: z.boolean().optional().describe('Filter by junk status'),
-  show_zero_activity: z.boolean().optional().describe('Include items with zero activity'),
+  isJunk: z.boolean().optional().describe('Filter by junk status'),
+  showZeroActivity: z.boolean().optional().describe('Include items with zero activity'),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
-  order_field: z.nativeEnum(CookieOrderField).optional().describe('Field to sort by'),
-  order_direction: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
+  orderField: z.nativeEnum(CookieOrderField).optional().describe('Field to sort by'),
+  orderDirection: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
 });
 export type ListCookiesInput = z.infer<typeof ListCookiesSchema>;
 
@@ -38,12 +38,12 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       limit,
       offset,
       status,
-      is_junk,
-      show_zero_activity,
+      isJunk,
+      showZeroActivity,
       text,
       service,
-      order_field,
-      order_direction,
+      orderField,
+      orderDirection,
     }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const data = await clients.graphql.makeRequest<TranscendCliCookiesResponse>(COOKIES, {
@@ -52,13 +52,13 @@ export function createConsentListCookiesTool(clients: ToolClients) {
         offset,
         filterBy: {
           status,
-          ...(is_junk !== undefined ? { isJunk: is_junk } : {}),
-          ...(show_zero_activity !== undefined ? { showZeroActivity: show_zero_activity } : {}),
+          ...(isJunk !== undefined ? { isJunk } : {}),
+          ...(showZeroActivity !== undefined ? { showZeroActivity } : {}),
           ...(text ? { text } : {}),
           ...(service ? { service } : {}),
         },
-        ...(order_field && order_direction
-          ? { orderBy: [{ field: order_field, direction: order_direction }] }
+        ...(orderField && orderDirection
+          ? { orderBy: [{ field: orderField, direction: orderDirection }] }
           : {}),
       });
       const { nodes, totalCount } = data.cookies;

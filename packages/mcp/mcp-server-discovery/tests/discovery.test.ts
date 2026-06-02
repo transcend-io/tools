@@ -51,14 +51,14 @@ describe('Discovery Tools', () => {
   });
 
   describe('discovery_get_scan', () => {
-    it('zodSchema rejects input when scan_id is missing', () => {
+    it('zodSchema rejects input when scanId is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'discovery_get_scan')!;
 
       const result = tool.zodSchema.safeParse({});
 
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['scan_id']);
+      expect((result as any).error.issues[0].path).toEqual(['scanId']);
     });
 
     it('returns scan on success', async () => {
@@ -74,7 +74,7 @@ describe('Discovery Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'discovery_get_scan')!;
 
-      const result = await tool.handler({ scan_id: 'scan-1' });
+      const result = await tool.handler({ scanId: 'scan-1' });
 
       expect(result).toMatchObject({ success: true, data: scan });
       expect(mockGraphql.getClassificationScan).toHaveBeenCalledWith('scan-1');

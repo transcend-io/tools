@@ -56,13 +56,13 @@ describe('Inventory Tools', () => {
   });
 
   describe('inventory_get_data_silo', () => {
-    it('zodSchema rejects when data_silo_id is missing', () => {
+    it('zodSchema rejects when dataSiloId is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_get_data_silo')!;
 
       const result = tool.zodSchema.safeParse({});
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['data_silo_id']);
+      expect((result as any).error.issues[0].path).toEqual(['dataSiloId']);
     });
 
     it('returns data silo on success', async () => {
@@ -78,7 +78,7 @@ describe('Inventory Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_get_data_silo')!;
 
-      const result = await tool.handler({ data_silo_id: 'silo-1' });
+      const result = await tool.handler({ dataSiloId: 'silo-1' });
 
       expect(result).toMatchObject({ success: true, data: detail });
       expect(mockGraphql.getDataSilo).toHaveBeenCalledWith('silo-1');

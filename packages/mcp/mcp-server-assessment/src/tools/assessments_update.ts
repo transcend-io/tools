@@ -5,14 +5,14 @@ import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 import { AssessmentStatusEnum } from './assessments_list.js';
 
 export const UpdateAssessmentSchema = z.object({
-  assessment_id: z.string().describe('ID of the assessment to update'),
+  assessmentId: z.string().describe('ID of the assessment to update'),
   title: z.string().optional().describe('New title for the assessment'),
   description: z.string().optional().describe('New description'),
-  reviewer_ids: z
+  reviewerIds: z
     .array(z.string())
     .optional()
     .describe('IDs of users assigned to review this assessment'),
-  due_date: z.string().optional().describe('New due date (ISO format)'),
+  dueDate: z.string().optional().describe('New due date (ISO format)'),
   status: AssessmentStatusEnum.optional().describe('New status'),
 });
 export type UpdateAssessmentInput = z.infer<typeof UpdateAssessmentSchema>;
@@ -29,13 +29,13 @@ export function createAssessmentsUpdateTool(clients: ToolClients) {
     confirmationHint: 'Updates the assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssessmentSchema,
-    handler: async ({ assessment_id, title, description, reviewer_ids, due_date, status }) => {
+    handler: async ({ assessmentId, title, description, reviewerIds, dueDate, status }) => {
       const result = await graphql.updateAssessment({
-        id: assessment_id,
+        id: assessmentId,
         title,
         description,
-        reviewerIds: reviewer_ids,
-        dueDate: due_date,
+        reviewerIds,
+        dueDate,
         status,
       });
 

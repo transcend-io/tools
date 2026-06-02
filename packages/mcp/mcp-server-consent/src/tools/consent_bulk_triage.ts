@@ -19,7 +19,7 @@ export const BulkTriageItemSchema = z.object({
   type: z.nativeEnum(ConsentTrackerType).describe('Item type'),
   id: z.string().describe('Item ID (for data flows) or cookie name (for cookies)'),
   action: z.nativeEnum(TriageAction).describe('Action to take: APPROVE or JUNK'),
-  tracking_purposes: z
+  trackingPurposes: z
     .array(z.string())
     .optional()
     .describe('Tracking purposes to assign (required when approving)'),
@@ -62,7 +62,7 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
             : { status: ConsentTrackerStatus.Live, isJunk: true }),
-          ...(item.tracking_purposes ? { trackingPurposes: item.tracking_purposes } : {}),
+          ...(item.trackingPurposes ? { trackingPurposes: item.trackingPurposes } : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
         await clients.graphql.makeRequest<TranscendCliUpdateOrCreateCookiesResponse>(
@@ -85,7 +85,7 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
             : { status: ConsentTrackerStatus.Live, isJunk: true }),
-          ...(item.tracking_purposes ? { purposeIds: item.tracking_purposes } : {}),
+          ...(item.trackingPurposes ? { purposeIds: item.trackingPurposes } : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
         const dfResult = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(

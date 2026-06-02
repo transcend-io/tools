@@ -4,7 +4,7 @@ import type { DiscoveryMixin } from '../graphql.js';
 
 export const StartScanSchema = z.object({
   name: z.string().describe('Name for the classification scan'),
-  data_silo_id: z.string().optional().describe('ID of the data silo to scan (optional)'),
+  dataSiloId: z.string().optional().describe('ID of the data silo to scan (optional)'),
   type: z.string().optional().describe('Type of scan (optional)'),
 });
 export type StartScanInput = z.infer<typeof StartScanSchema>;
@@ -19,10 +19,10 @@ export function createDiscoveryStartScanTool(clients: ToolClients) {
     confirmationHint: 'Starts a new classification scan on the data silo',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: StartScanSchema,
-    handler: async ({ name, data_silo_id, type }) => {
+    handler: async ({ name, dataSiloId, type }) => {
       const result = await graphql.startClassificationScan({
         name,
-        dataSiloId: data_silo_id,
+        dataSiloId,
         type,
       });
       return createToolResult(true, {
