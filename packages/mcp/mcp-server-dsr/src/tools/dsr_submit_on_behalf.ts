@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  RequestSchema,
+  type ToolClients,
+  z,
+} from '@transcend-io/mcp-server-base';
 import { RequestAction } from '@transcend-io/privacy-types';
 
 import type { DSRMixin } from '../graphql.js';
@@ -27,6 +34,13 @@ export function createDsrSubmitOnBehalfTool(clients: ToolClients) {
     confirmationHint: 'Creates a new data subject request on behalf of a data subject',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: submitDsrOnBehalfSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        request: RequestSchema.optional(),
+        clientMutationId: z.string().optional(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ type, email, subjectType, coreIdentifier, locale, isSilent }) => {
       const result = await graphql.employeeMakeDataSubjectRequest({
         type,

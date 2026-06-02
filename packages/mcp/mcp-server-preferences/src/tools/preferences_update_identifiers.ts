@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 export const UpdateIdentifiersItemSchema = z.object({
   oldValue: z.string().describe('Old identifier value'),
@@ -26,6 +32,13 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Updates identifiers for the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateIdentifiersSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        success: z.boolean().optional(),
+        identifiersUpdated: z.number(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ partition, user_id, identifiers }) => {
       const result = await rest.updateIdentifiers(
         partition,

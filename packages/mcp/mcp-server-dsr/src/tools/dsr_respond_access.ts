@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  type ToolClients,
+  z,
+} from '@transcend-io/mcp-server-base';
 
 export const respondAccessSchema = z.object({
   request_id: z.string().describe('ID of the DSR'),
@@ -21,6 +27,12 @@ export function createDsrRespondAccessTool(clients: ToolClients) {
     confirmationHint: 'Uploads access response data for the DSR',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: respondAccessSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        success: z.boolean().optional(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ request_id, data_silo_id, profiles }) => {
       const result = await rest.respondToAccess({
         requestId: request_id,

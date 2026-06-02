@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  TeamSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AdminMixin } from '../graphql.js';
 
@@ -27,6 +34,7 @@ export function createAdminListTeamsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTeamsSchema,
+    outputZodSchema: listEnvelopeSchema(TeamSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listTeams({
         first: limit,

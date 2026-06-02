@@ -1,6 +1,8 @@
 import {
   createListResult,
   defineTool,
+  DiscoveryPluginSchema,
+  listEnvelopeSchema,
   PaginationSchema,
   z,
   type ToolClients,
@@ -25,6 +27,7 @@ export function createDiscoveryListPluginsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListPluginsSchema,
+    outputZodSchema: listEnvelopeSchema(DiscoveryPluginSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listDiscoveryPlugins({
         first: limit,

@@ -70,7 +70,10 @@ describe('Preferences Tools', () => {
         identifiers: [{ value: 'user@example.com', type: 'email' }],
       });
 
-      expect(result).toMatchObject({ success: true, data: preferences });
+      expect(result).toMatchObject({
+        success: true,
+        data: { items: preferences },
+      });
       expect(mockRest.queryPreferences).toHaveBeenCalledWith({
         partition: 'my-org',
         identifiers: [{ value: 'user@example.com', type: 'email' }],

@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  ApiKeySchema,
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AdminMixin } from '../graphql.js';
 
@@ -33,6 +40,7 @@ export function createAdminListApiKeysTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListApiKeysSchema,
+    outputZodSchema: listEnvelopeSchema(ApiKeySchema),
     handler: async ({ limit, offset }) => {
       const result = await graphql.listApiKeys({
         first: limit,

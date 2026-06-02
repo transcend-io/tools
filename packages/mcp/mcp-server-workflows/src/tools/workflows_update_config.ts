@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  WorkflowConfigSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { WorkflowsMixin } from '../graphql.js';
 
@@ -27,6 +34,12 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients) {
     confirmationHint: 'Updates the workflow configuration',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateWorkflowConfigSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        workflowConfig: WorkflowConfigSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({
       workflow_config_id,
       title,

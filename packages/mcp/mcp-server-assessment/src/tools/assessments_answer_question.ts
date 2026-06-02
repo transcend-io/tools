@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
@@ -36,6 +42,12 @@ export function createAssessmentsAnswerQuestionTool(clients: ToolClients) {
     confirmationHint: 'Records answer to the assessment question',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: AnswerQuestionSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        selectedAnswers: z.unknown(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({
       assessment_question_id,
       assessment_answer_ids,

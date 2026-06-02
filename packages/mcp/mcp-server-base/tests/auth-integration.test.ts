@@ -100,6 +100,7 @@ function makeGraphqlPingTool(graphql: TranscendGraphQLBase): ToolDefinition {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: z.object({}),
+    outputZodSchema: z.object({ ok: z.literal(true) }),
     handler: async () => {
       await graphql.makeRequest('query { __typename }');
       return { ok: true };

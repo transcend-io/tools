@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  CookieSchema,
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import {
   ConsentTrackerStatus,
   CookieOrderField,
@@ -34,6 +41,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListCookiesSchema,
+    outputZodSchema: listEnvelopeSchema(CookieSchema),
     handler: async ({
       limit,
       offset,

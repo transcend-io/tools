@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import {
   ConsentTrackerStatus,
   ConsentTrackerType,
@@ -44,6 +50,25 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
     confirmationHint: 'Bulk approves or junks cookies and data flows',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: BulkTriageSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        totalProcessed: z.number(),
+        cookies: z.array(
+          z.object({
+            name: z.string(),
+            action: z.string(),
+            status: z.string(),
+          }),
+        ),
+        dataFlows: z.array(
+          z.object({
+            id: z.string(),
+            action: z.string(),
+            status: z.string(),
+          }),
+        ),
+      }),
+    ),
     handler: async ({ items }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const cookieItems = items.filter((i) => i.type === 'cookie');

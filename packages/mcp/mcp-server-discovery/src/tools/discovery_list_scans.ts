@@ -1,6 +1,8 @@
 import {
+  ClassificationScanSchema,
   createListResult,
   defineTool,
+  listEnvelopeSchema,
   PaginationSchema,
   z,
   type ToolClients,
@@ -25,6 +27,7 @@ export function createDiscoveryListScansTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListScansSchema,
+    outputZodSchema: listEnvelopeSchema(ClassificationScanSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listClassificationScans({
         first: limit,

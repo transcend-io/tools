@@ -43,12 +43,14 @@ export function createListResult(
 ): unknown {
   return {
     success: true,
-    data: items,
-    count: items.length,
-    ...(options?.totalCount !== undefined && { totalCount: options.totalCount }),
-    ...(options?.hasNextPage !== undefined && { hasNextPage: options.hasNextPage }),
-    ...(options?.cursor && { nextCursor: options.cursor }),
-    ...(options?.paginationNote && { paginationNote: options.paginationNote }),
+    data: {
+      items,
+      count: items.length,
+      ...(options?.totalCount !== undefined && { totalCount: options.totalCount }),
+      ...(options?.hasNextPage !== undefined && { hasNextPage: options.hasNextPage }),
+      ...(options?.cursor && { nextCursor: options.cursor }),
+      ...(options?.paginationNote && { paginationNote: options.paginationNote }),
+    },
     timestamp: new Date().toISOString(),
   };
 }

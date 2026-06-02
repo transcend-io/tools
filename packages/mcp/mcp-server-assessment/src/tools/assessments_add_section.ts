@@ -1,6 +1,8 @@
 import {
+  AssessmentSectionSchema,
   createToolResult,
   defineTool,
+  envelopeSchema,
   z,
   type ToolClients,
   type AssessmentSectionInput,
@@ -33,6 +35,12 @@ export function createAssessmentsAddSectionTool(clients: ToolClients) {
     confirmationHint: 'Adds a section to the assessment template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AddSectionSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        section: AssessmentSectionSchema,
+        message: z.string(),
+      }),
+    ),
     handler: async ({ template_id, title, questions }) => {
       const result = await graphql.createAssessmentSection({
         assessmentFormTemplateId: template_id,

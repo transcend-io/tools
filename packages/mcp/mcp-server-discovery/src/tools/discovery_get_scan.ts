@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  ClassificationScanSchema,
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { DiscoveryMixin } from '../graphql.js';
 
@@ -16,6 +23,7 @@ export function createDiscoveryGetScanTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetScanSchema,
+    outputZodSchema: envelopeSchema(ClassificationScanSchema),
     handler: async ({ scan_id }) => {
       const result = await graphql.getClassificationScan(scan_id);
       return createToolResult(true, result);

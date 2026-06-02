@@ -1,4 +1,5 @@
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
+import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
@@ -27,7 +28,8 @@ export interface UmbrellaToolClients {
 
 export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
-  private jsonSchemaCache: Map<string, Record<string, unknown>> = new Map();
+  private inputJsonSchemaCache: Map<string, Record<string, unknown>> = new Map();
+  private outputJsonSchemaCache: Map<string, Record<string, unknown>> = new Map();
   private clients: UmbrellaToolClients;
   private logger = new SimpleLogger();
 
@@ -54,9 +56,13 @@ export class ToolRegistry {
         continue;
       }
       this.tools.set(tool.name, tool);
-      this.jsonSchemaCache.set(
+      this.inputJsonSchemaCache.set(
         tool.name,
         toJsonSchemaCompat(tool.zodSchema as any) as Record<string, unknown>,
+      );
+      this.outputJsonSchemaCache.set(
+        tool.name,
+        toJsonSchemaCompat(tool.outputZodSchema as any) as Record<string, unknown>,
       );
     }
   }
@@ -65,6 +71,7 @@ export class ToolRegistry {
     name: string;
     description: string;
     inputSchema: Record<string, unknown>;
+    outputSchema?: Record<string, unknown>;
     annotations: {
       readOnlyHint: boolean;
       destructiveHint: boolean;
@@ -74,7 +81,11 @@ export class ToolRegistry {
     return Array.from(this.tools.values()).map((tool) => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: this.jsonSchemaCache.get(tool.name) || { type: 'object', properties: {} },
+      inputSchema: this.inputJsonSchemaCache.get(tool.name) || {
+        type: 'object',
+        properties: {},
+      },
+      outputSchema: this.outputJsonSchemaCache.get(tool.name),
       annotations: tool.annotations,
     }));
   }
@@ -83,7 +94,7 @@ export class ToolRegistry {
     return this.tools.get(name);
   }
 
-  async executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
+  async executeTool(name: string, args: Record<string, unknown>): Promise<CallToolResult> {
     const tool = this.tools.get(name);
     if (!tool) {
       throw new Error(`Unknown tool: ${name}`);
@@ -98,9 +109,33 @@ export class ToolRegistry {
     }
 
     try {
-      return await tool.handler(parseResult.data);
+      const result = await tool.handler(parseResult.data);
+
+      // Validate handler return against outputZodSchema. Failures are
+      // non-fatal during rollout: log a warning but still surface the raw
+      // handler return as `structuredContent`.
+      const outputParse = tool.outputZodSchema.safeParse(result);
+      if (!outputParse.success) {
+        const issues = outputParse.error.issues
+          .map((i: any) => `${i.path.join('.') || 'output'}: ${i.message}`)
+          .join('; ');
+        this.logger.warn('outputZodSchema validation failed', { toolName: name, issues });
+      }
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result) }],
+        structuredContent: (outputParse.success ? outputParse.data : result) as Record<
+          string,
+          unknown
+        >,
+      };
     } catch (error) {
-      return createErrorResult(error);
+      const errorResult = createErrorResult(error);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(errorResult) }],
+        structuredContent: errorResult as Record<string, unknown>,
+        isError: true,
+      };
     }
   }
 

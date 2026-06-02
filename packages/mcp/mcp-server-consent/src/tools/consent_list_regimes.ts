@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  PrivacyRegimeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { EXPERIENCES, type TranscendCliExperiencesResponse } from '@transcend-io/sdk';
 
 export const ListRegimesSchema = z.object({
@@ -17,6 +24,7 @@ export function createConsentListRegimesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListRegimesSchema,
+    outputZodSchema: listEnvelopeSchema(PrivacyRegimeSchema),
     handler: async ({ limit, offset }) => {
       const data = await clients.graphql.makeRequest<TranscendCliExperiencesResponse>(EXPERIENCES, {
         first: limit,

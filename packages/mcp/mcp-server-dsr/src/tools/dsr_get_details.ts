@@ -1,4 +1,11 @@
-import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  RequestDetailsSchema,
+  type ToolClients,
+  z,
+} from '@transcend-io/mcp-server-base';
 
 import type { DSRMixin } from '../graphql.js';
 
@@ -17,6 +24,7 @@ export function createDsrGetDetailsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: getDetailsSchema,
+    outputZodSchema: envelopeSchema(RequestDetailsSchema),
     handler: async ({ request_id }) => {
       const result = await graphql.getRequest(request_id);
       return createToolResult(true, result);

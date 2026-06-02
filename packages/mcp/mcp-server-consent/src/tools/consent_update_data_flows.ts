@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import {
   UPDATE_DATA_FLOWS,
@@ -37,6 +43,21 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
     confirmationHint: 'Updates data flows in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateDataFlowsSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        updated: z.number(),
+        dataFlows: z.array(
+          z.object({
+            id: z.string(),
+            value: z.string(),
+            status: z.string(),
+            isJunk: z.boolean(),
+            purposes: z.array(z.string()),
+            service: z.string().optional(),
+          }),
+        ),
+      }),
+    ),
     handler: async ({ data_flows }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const dfInputs: TranscendUpdateDataFlowInputGql[] = data_flows.map((df) => ({

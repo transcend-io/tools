@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  DataPointSchema,
+  defineTool,
+  listEnvelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -27,6 +34,7 @@ export function createInventoryListDataPointsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataPointsSchema,
+    outputZodSchema: listEnvelopeSchema(DataPointSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listDataPoints(
         undefined, // dataSiloId not supported by API

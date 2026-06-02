@@ -2,7 +2,9 @@ import {
   createToolResult,
   defineTool,
   EmptySchema,
+  envelopeSchema,
   type ToolClients,
+  z,
 } from '@transcend-io/mcp-server-base';
 
 import type { AdminMixin } from '../graphql.js';
@@ -17,6 +19,17 @@ export function createAdminTestConnectionTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        connected: z.boolean(),
+        details: z.object({
+          graphql: z.object({ connected: z.boolean(), url: z.string() }),
+          rest: z.object({ connected: z.boolean(), url: z.string() }),
+        }),
+        message: z.string(),
+        timestamp: z.string(),
+      }),
+    ),
     handler: async (_args) => {
       const [graphqlConnected, restConnected] = await Promise.all([
         graphql.testConnection(),

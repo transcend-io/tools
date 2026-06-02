@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  UserPreferencesSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 export const IdentifierSchema = z.object({
   value: z.string().describe('Identifier value'),
@@ -21,6 +28,7 @@ export function createPreferencesQueryTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: QueryPreferencesSchema,
+    outputZodSchema: listEnvelopeSchema(UserPreferencesSchema),
     handler: async ({ partition, identifiers }) => {
       const result = await rest.queryPreferences({
         partition,

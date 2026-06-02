@@ -1,6 +1,8 @@
 import {
+  AssessmentTemplateSchema,
   createListResult,
   defineTool,
+  listEnvelopeSchema,
   PaginationSchema,
   z,
   type ToolClients,
@@ -21,6 +23,7 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTemplatesSchema,
+    outputZodSchema: listEnvelopeSchema(AssessmentTemplateSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listAssessmentTemplates({
         first: limit,

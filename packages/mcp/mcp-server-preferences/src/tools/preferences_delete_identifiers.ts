@@ -1,4 +1,10 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineTool,
+  envelopeSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import { IdentifierSchema } from './preferences_query.js';
 
@@ -19,6 +25,13 @@ export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Deletes identifiers from the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: DeleteIdentifiersSchema,
+    outputZodSchema: envelopeSchema(
+      z.object({
+        success: z.boolean().optional(),
+        identifiersDeleted: z.number(),
+        message: z.string(),
+      }),
+    ),
     handler: async ({ partition, user_id, identifiers }) => {
       const result = await rest.deleteIdentifiers(
         partition,

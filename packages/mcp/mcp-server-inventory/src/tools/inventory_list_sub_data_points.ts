@@ -1,4 +1,11 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  listEnvelopeSchema,
+  SubDataPointSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -30,6 +37,7 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListSubDataPointsSchema,
+    outputZodSchema: listEnvelopeSchema(SubDataPointSchema),
     handler: async ({ data_point_id, limit, offset }) => {
       const result = await graphql.listSubDataPoints(data_point_id, {
         first: limit,

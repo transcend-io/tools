@@ -1,7 +1,9 @@
 import {
   createListResult,
   defineTool,
+  listEnvelopeSchema,
   PaginationSchema,
+  RequestSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
@@ -18,6 +20,7 @@ export function createDsrListTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: PaginationSchema,
+    outputZodSchema: listEnvelopeSchema(RequestSchema),
     handler: async ({ limit, cursor }) => {
       const result = await graphql.listRequests({
         first: limit,

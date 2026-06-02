@@ -1,6 +1,8 @@
 import {
   createListResult,
   defineTool,
+  EmailTemplateSchema,
+  listEnvelopeSchema,
   PaginationSchema,
   z,
   type ToolClients,
@@ -32,6 +34,7 @@ export function createWorkflowsListEmailTemplatesTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListEmailTemplatesSchema,
+    outputZodSchema: listEnvelopeSchema(EmailTemplateSchema),
     handler: async ({ limit, offset }) => {
       const result = await graphql.listEmailTemplates({
         first: limit,

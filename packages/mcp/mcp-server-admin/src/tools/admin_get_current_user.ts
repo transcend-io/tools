@@ -2,6 +2,8 @@ import {
   createToolResult,
   defineTool,
   EmptySchema,
+  envelopeSchema,
+  UserSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
@@ -16,6 +18,7 @@ export function createAdminGetCurrentUserTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
+    outputZodSchema: envelopeSchema(UserSchema),
     handler: async (_args) => {
       const result = await graphql.getCurrentUser();
       return createToolResult(true, result);
