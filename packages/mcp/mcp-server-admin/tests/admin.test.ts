@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { AdminMixin } from '../src/graphql.js';
 import { getAdminTools } from '../src/tools.js';
 
 const EXPECTED_TOOL_NAMES = [
@@ -121,5 +122,83 @@ describe('Admin Tools', () => {
 
       await expect(tool.handler({})).rejects.toThrow('Network error');
     });
+  });
+});
+
+describe('AdminMixin.createApiKey', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const mockFetchOnce = (payload: unknown) =>
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      text: async () => 'OK',
+      json: async () => ({ data: payload }),
+    });
+
+  it('sends a mutation that selects nested scopes { id name } and apiKey.apiKey, with no top-level token field', async () => {
+    const mockFetch = mockFetchOnce({
+      createApiKey: {
+        apiKey: {
+          id: 'key-1',
+          title: 'Test Key',
+          apiKey: 'tok_xxx',
+          scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
+          createdAt: '2024-01-01',
+        },
+      },
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new AdminMixin({ type: 'apiKey', apiKey: 'test-api-key' });
+    await client.createApiKey({ title: 'Test Key', scopes: ['viewDataMap'] });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [, init] = mockFetch.mock.calls[0];
+    const body = JSON.parse(init.body as string) as { query: string };
+    const normalized = body.query.replace(/\s+/g, ' ').trim();
+
+    expect(normalized).toContain('mutation CreateApiKey($input: ApiKeyInput!)');
+    expect(normalized).toContain('apiKey { id title apiKey scopes { id name } createdAt }');
+    // Guard against regression: there must not be a bare `token` selection on
+    // the payload, and `scopes` must never appear without subfield selection.
+    expect(normalized).not.toMatch(/\}\s*token\s*\}/);
+    expect(normalized).not.toMatch(/scopes\s+createdAt/);
+  });
+
+  it('returns { apiKey, token } with token sourced from the nested apiKey.apiKey field', async () => {
+    const mockFetch = mockFetchOnce({
+      createApiKey: {
+        apiKey: {
+          id: 'key-1',
+          title: 'Test Key',
+          apiKey: 'tok_xxx',
+          scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
+          createdAt: '2024-01-01',
+        },
+      },
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new AdminMixin({ type: 'apiKey', apiKey: 'test-api-key' });
+    const result = await client.createApiKey({
+      title: 'Test Key',
+      scopes: ['viewDataMap'],
+    });
+
+    expect(result).toEqual({
+      apiKey: {
+        id: 'key-1',
+        title: 'Test Key',
+        scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
+        createdAt: '2024-01-01',
+      },
+      token: 'tok_xxx',
+    });
+    // The plain-text token must not leak back onto the returned ApiKey object.
+    expect(result.apiKey).not.toHaveProperty('apiKey');
   });
 });
