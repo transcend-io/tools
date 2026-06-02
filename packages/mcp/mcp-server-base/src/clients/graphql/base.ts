@@ -1,3 +1,6 @@
+import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
+import { type DocumentNode, print } from 'graphql';
+
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
@@ -115,12 +118,24 @@ export class TranscendGraphQLBase {
     this.lastRequestTime = Date.now();
   }
 
-  async makeRequest<T>(
-    query: string,
-    variables?: Record<string, unknown>,
+  /**
+   * Send a GraphQL request, accepting either a raw query string or a typed
+   * document produced by `graphql()` (the codegen client-preset tag).
+   *
+   * When given a `TypedDocumentNode`, the result and variables types are
+   * inferred from the document, so call sites no longer need to redeclare
+   * the response shape (which is what masked the original `createApiKey`
+   * regression -- a hand-written `{ token: string }` lying about the wire
+   * format the API actually returns).
+   */
+  async makeRequest<TResult, TVariables = Record<string, unknown>>(
+    query: string | TypedDocumentNode<TResult, TVariables>,
+    variables?: TVariables,
     options: RequestOptions = {},
-  ): Promise<T> {
+  ): Promise<TResult> {
     await this.rateLimitWait();
+
+    const queryString = typeof query === 'string' ? query : print(query as DocumentNode);
 
     const url = `${this.baseUrl}/graphql`;
     const { timeout = this.defaultTimeout, retries = this.defaultRetries } = options;
@@ -134,7 +149,7 @@ export class TranscendGraphQLBase {
       try {
         this.logger.debug('GraphQL request', {
           url,
-          operationType: query.includes('mutation') ? 'mutation' : 'query',
+          operationType: queryString.includes('mutation') ? 'mutation' : 'query',
           attempt,
         });
 
@@ -159,7 +174,7 @@ export class TranscendGraphQLBase {
             ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
             ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
           },
-          body: JSON.stringify({ query, variables: variables || {} }),
+          body: JSON.stringify({ query: queryString, variables: variables ?? {} }),
           signal: controller.signal,
         });
 
@@ -184,7 +199,8 @@ export class TranscendGraphQLBase {
           throw httpError;
         }
 
-        const result: GraphQLResponse<T> = (await response.json()) as GraphQLResponse<T>;
+        const result: GraphQLResponse<TResult> =
+          (await response.json()) as GraphQLResponse<TResult>;
 
         if (result.errors && result.errors.length > 0) {
           const errorMessages = result.errors.map((e) => e.message).join('; ');

@@ -8,15 +8,17 @@
     "tsdown.config.base.ts",
     "vitest.config.ts",
     "oxlint.json",
-    ".oxfmtrc.jsonc"
+    ".oxfmtrc.jsonc",
+    "codegen.ts",
+    "schema.graphql"
   ],
   "tasks": {
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "//#codegen"],
       "outputs": ["dist/**"]
     },
     "test": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["transit", "//#codegen"],
       "outputs": []
     },
     "quality": {
@@ -43,8 +45,17 @@
       "dependsOn": ["lint:fix", "//#lint:fix:root", "format", "//#format:root", "quality:checks"]
     },
     "typecheck": {
-      "dependsOn": ["transit"],
+      "dependsOn": ["transit", "//#codegen"],
       "outputs": []
+    },
+    "//#codegen": {
+      "inputs": [
+        "codegen.ts",
+        "schema.graphql",
+        "packages/mcp/mcp-server-*/src/**/*.ts",
+        "!packages/mcp/mcp-server-*/src/__generated__/**"
+      ],
+      "outputs": ["packages/mcp/mcp-server-*/src/__generated__/**"]
     },
     "lint": {},
     "lint:fix": {
