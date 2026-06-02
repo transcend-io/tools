@@ -68,6 +68,13 @@ async function main(): Promise<void> {
   // Transcend's GraphQL endpoint allows introspection without auth, which lets
   // CI refresh the schema with no secret. We still send the API key when
   // present so a misconfigured staging that *does* require auth still works.
+  //
+  // We deliberately request the schema *without* descriptions. Field/type
+  // descriptions on staging are author-written and may include internal
+  // context (deprecation notes, partner names, edge-case business rules) that
+  // we don't want surfaced via the public repo or our published `.d.ts`
+  // bundles. The shapes alone are enough for type-safe codegen; engineers who
+  // need the prose can still introspect staging directly.
   const response = await fetch(url, {
     method: 'POST',
     headers: {
@@ -75,7 +82,7 @@ async function main(): Promise<void> {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({ query: getIntrospectionQuery({ descriptions: true }) }),
+    body: JSON.stringify({ query: getIntrospectionQuery({ descriptions: false }) }),
   });
 
   if (!response.ok) {
