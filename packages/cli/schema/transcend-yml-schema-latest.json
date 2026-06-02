@@ -57,7 +57,9 @@
                   "ONBOARDING",
                   "REQUEST_ASSIGNED_TO_USER",
                   "BUSINESS_ENTITY_NEEDS_DOCUMENTATION",
-                  "DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL"
+                  "DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL",
+                  "RULES_AUTOMATION_RULE_TERMINAL_FAILURE",
+                  "RULES_AUTOMATION_RULE_TERMINAL_FAILURE_ASSIGNED"
                 ]
               },
               "collections": {
