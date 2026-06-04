@@ -16,29 +16,20 @@ import {
 export class InventoryMixin extends TranscendGraphQLBase {
   async listDataSilos(options?: ListOptions): Promise<PaginatedResponse<DataSilo>> {
     const query = `
-      query ListDataSilos($first: Int) {
-        dataSilos(first: $first) {
+      query ListDataSilos($first: Int, $offset: Int) {
+        dataSilos(first: $first, offset: $offset) {
           nodes {
             id
             title
             type
+            isLive
+            outerType
           }
           totalCount
         }
       }
     `;
-    const data = await this.makeRequest<{ dataSilos: { nodes: DataSilo[]; totalCount: number } }>(
-      query,
-      { first: Math.min(options?.first || 100, 100) },
-    );
-    return {
-      nodes: data.dataSilos.nodes,
-      pageInfo: {
-        hasNextPage: data.dataSilos.nodes.length < data.dataSilos.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.dataSilos.totalCount,
-    };
+    return this.listConnection<DataSilo>(query, 'dataSilos', options);
   }
 
   async getDataSilo(id: string): Promise<DataSiloDetails> {
@@ -117,8 +108,8 @@ export class InventoryMixin extends TranscendGraphQLBase {
 
   async listVendors(options?: ListOptions): Promise<PaginatedResponse<Vendor>> {
     const query = `
-      query ListVendors($first: Int) {
-        vendors(first: $first) {
+      query ListVendors($first: Int, $offset: Int) {
+        vendors(first: $first, offset: $offset) {
           nodes {
             id
             title
@@ -127,18 +118,7 @@ export class InventoryMixin extends TranscendGraphQLBase {
         }
       }
     `;
-    const data = await this.makeRequest<{ vendors: { nodes: Vendor[]; totalCount: number } }>(
-      query,
-      { first: Math.min(options?.first || 100, 100) },
-    );
-    return {
-      nodes: data.vendors.nodes,
-      pageInfo: {
-        hasNextPage: data.vendors.nodes.length < data.vendors.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.vendors.totalCount,
-    };
+    return this.listConnection<Vendor>(query, 'vendors', options);
   }
 
   async listDataPoints(
@@ -146,8 +126,8 @@ export class InventoryMixin extends TranscendGraphQLBase {
     options?: ListOptions,
   ): Promise<PaginatedResponse<DataPoint>> {
     const query = `
-      query ListDataPoints($first: Int) {
-        dataPoints(first: $first) {
+      query ListDataPoints($first: Int, $offset: Int) {
+        dataPoints(first: $first, offset: $offset) {
           nodes {
             id
             name
@@ -162,30 +142,23 @@ export class InventoryMixin extends TranscendGraphQLBase {
         }
       }
     `;
-    const data = await this.makeRequest<{
-      dataPoints: {
-        nodes: Array<{
-          id: string;
-          name: string;
-          title: { defaultMessage: string };
-          description: { defaultMessage: string } | null;
-        }>;
-        totalCount: number;
-      };
-    }>(query, { first: Math.min(options?.first || 100, 100) });
-    const points: DataPoint[] = data.dataPoints.nodes.map((dp) => ({
+    type RawDataPoint = {
+      id: string;
+      name: string;
+      title: { defaultMessage: string };
+      description: { defaultMessage: string } | null;
+    };
+    const toDataPoint = (dp: RawDataPoint): DataPoint => ({
       id: dp.id,
       name: dp.name,
       title: dp.title?.defaultMessage,
       description: dp.description?.defaultMessage,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }));
-    return {
-      nodes: points,
-      pageInfo: { hasNextPage: points.length < data.dataPoints.totalCount, hasPreviousPage: false },
-      totalCount: data.dataPoints.totalCount,
-    };
+    });
+    return this.listConnection<RawDataPoint, DataPoint>(query, 'dataPoints', options, {
+      mapNode: toDataPoint,
+    });
   }
 
   async listSubDataPoints(
@@ -205,53 +178,32 @@ export class InventoryMixin extends TranscendGraphQLBase {
         }
       }
     `;
-    const data = await this.makeRequest<{
-      subDataPoints: { nodes: SubDataPoint[]; totalCount: number };
-    }>(query, {
-      first: Math.min(options?.first || 100, 100),
-      offset: options?.offset || 0,
-      filterBy: { dataPoints: [dataPointId] },
+    return this.listConnection<SubDataPoint>(query, 'subDataPoints', options, {
+      variables: { filterBy: { dataPoints: [dataPointId] } },
     });
-    return {
-      nodes: data.subDataPoints.nodes,
-      pageInfo: {
-        hasNextPage: data.subDataPoints.nodes.length < data.subDataPoints.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.subDataPoints.totalCount,
-    };
   }
 
   async listIdentifiers(options?: ListOptions): Promise<PaginatedResponse<Identifier>> {
     const query = `
-      query ListIdentifiers($first: Int) {
-        identifiers(first: $first) {
+      query ListIdentifiers($first: Int, $offset: Int) {
+        identifiers(first: $first, offset: $offset) {
           nodes {
             id
             name
             type
+            isRequiredInForm
           }
           totalCount
         }
       }
     `;
-    const data = await this.makeRequest<{
-      identifiers: { nodes: Identifier[]; totalCount: number };
-    }>(query, { first: Math.min(options?.first || 100, 100) });
-    return {
-      nodes: data.identifiers.nodes,
-      pageInfo: {
-        hasNextPage: data.identifiers.nodes.length < data.identifiers.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.identifiers.totalCount,
-    };
+    return this.listConnection<Identifier>(query, 'identifiers', options);
   }
 
   async listDataCategories(options?: ListOptions): Promise<PaginatedResponse<DataCategory>> {
     const query = `
-      query ListDataCategories($first: Int) {
-        dataCategories(first: $first) {
+      query ListDataCategories($first: Int, $offset: Int) {
+        dataCategories(first: $first, offset: $offset) {
           nodes {
             name
             category
@@ -260,16 +212,6 @@ export class InventoryMixin extends TranscendGraphQLBase {
         }
       }
     `;
-    const data = await this.makeRequest<{
-      dataCategories: { nodes: DataCategory[]; totalCount: number };
-    }>(query, { first: Math.min(options?.first || 100, 100) });
-    return {
-      nodes: data.dataCategories.nodes,
-      pageInfo: {
-        hasNextPage: data.dataCategories.nodes.length < data.dataCategories.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.dataCategories.totalCount,
-    };
+    return this.listConnection<DataCategory>(query, 'dataCategories', options);
   }
 }

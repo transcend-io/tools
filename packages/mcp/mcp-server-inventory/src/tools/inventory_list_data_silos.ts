@@ -10,10 +10,12 @@ export const ListDataSilosSchema = z.object({
     .optional()
     .default(50)
     .describe('Results per page (1-100, default: 50)'),
-  cursor: z
-    .string()
+  offset: z.coerce
+    .number()
+    .min(0)
     .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
+    .default(0)
+    .describe('Number of results to skip for pagination (default: 0)'),
 });
 export type ListDataSilosInput = z.infer<typeof ListDataSilosSchema>;
 
@@ -22,15 +24,15 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_list_data_silos',
     description:
-      'List all data silos (data systems and integrations) in your organization. Note: API does not support cursor pagination (max ~100 results).',
+      'List data silos (data systems and integrations) in your organization. Paginate with `offset` (increment by `limit`) until `hasNextPage` is false; `totalCount` is the full count.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataSilosSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listDataSilos({
         first: limit,
-        after: cursor,
+        offset,
       });
 
       return createListResult(result.nodes, {

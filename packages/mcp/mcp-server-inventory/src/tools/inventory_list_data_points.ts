@@ -10,10 +10,12 @@ export const ListDataPointsSchema = z.object({
     .optional()
     .default(50)
     .describe('Results per page (1-100, default: 50)'),
-  cursor: z
-    .string()
+  offset: z.coerce
+    .number()
+    .min(0)
     .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
+    .default(0)
+    .describe('Number of results to skip for pagination (default: 0)'),
 });
 export type ListDataPointsInput = z.infer<typeof ListDataPointsSchema>;
 
@@ -22,17 +24,17 @@ export function createInventoryListDataPointsTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_list_data_points',
     description:
-      'List data points (collections of personal data). Note: API does not support cursor pagination or data_silo filtering (max ~100 results).',
+      'List data points (collections of personal data). Paginate with `offset` (increment by `limit`) until `hasNextPage` is false; `totalCount` is the full count. Note: data_silo filtering is not supported.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataPointsSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listDataPoints(
         undefined, // dataSiloId not supported by API
         {
           first: limit,
-          after: cursor,
+          offset,
         },
       );
 
