@@ -1,5 +1,15 @@
 # @transcend-io/cli
 
+## 10.3.7
+
+### Patch Changes
+
+- b90b468: Add `RulesAutomationRuleTerminalFailure` and `RulesAutomationRuleTerminalFailureAssigned` values to the `ActionItemCode` enum so that Rules Automation rule owners can be notified when a rule hits a terminal execution failure. Regenerate the CLI `transcend.yml` JSON schema so the new codes are reflected.
+- Updated dependencies [b90b468]
+  - @transcend-io/privacy-types@5.1.8
+  - @transcend-io/airgap.js-types@14.2.3
+  - @transcend-io/sdk@1.1.11
+
 ## 10.3.6
 
 ### Patch Changes
