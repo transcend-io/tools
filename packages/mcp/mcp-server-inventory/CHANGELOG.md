@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-inventory
 
+## 0.3.7
+
+### Patch Changes
+
+- ec9f959: Clarify pagination wording in the `inventory_list_data_silos` tool description.
+
 ## 0.3.6
 
 ### Patch Changes
