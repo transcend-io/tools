@@ -24,7 +24,7 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_list_data_silos',
     description:
-      'List data silos (data systems and integrations) in your organization. Paginate with `offset` (increment by `limit`) until `hasNextPage` is false; `totalCount` is the full count.',
+      'List data silos (data systems and integrations) in your organization. Paginate with `offset` (increment by `limit`) until `hasNextPage` is false, `totalCount` is the full count.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
