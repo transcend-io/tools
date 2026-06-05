@@ -27,44 +27,47 @@ jobs:
           # include newer changesets for the next release.
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-      - uses: jdx/mise-action@5228313ee0372e111a38da051671ca30fc5a96db # v3
-        with:
-          version: 2026.3.17
-          install: false
-          cache: true
-      - name: Bootstrap workspace
-        run: |
-          mise trust --yes mise.toml
-          mise install --locked
-          mise exec -- npm install -g npm@^11.5.1
-          mise run bootstrap-ci
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
       - name: Check package consistency
-        run: mise exec -- pnpm check:packages
+        run: pnpm check:packages
+
       - name: Check dependency versions
-        run: mise exec -- pnpm check:deps
+        run: pnpm check:deps
+
       - name: Lint
-        run: mise exec -- pnpm lint
+        run: pnpm lint
+
       - name: Check formatting
-        run: mise exec -- pnpm format:check
-      - name: Typecheck
-        run: mise exec -- pnpm typecheck
-      - name: Build
-        run: mise exec -- pnpm build
+        run: pnpm format:check
+
+      - name: Check types
+        run: pnpm typecheck
+
       - name: Test
-        run: mise exec -- pnpm test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
       - name: Check exports
-        run: mise exec -- pnpm check:exports
+        run: pnpm check:exports
+
       - name: Check publish compatibility
-        run: mise exec -- pnpm check:publint
+        run: pnpm check:publint
+
       - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
         id: release_app
         with:
           app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
           private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
           permission-contents: write
+
       - name: Publish packages
         uses: changesets/action@v1
         with:
-          publish: mise exec -- pnpm release
+          publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
