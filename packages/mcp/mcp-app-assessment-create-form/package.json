@@ -1,17 +1,14 @@
 {
-  "name": "@transcend-io/mcp-server-assessment",
-  "version": "0.3.11",
-  "description": "Transcend MCP Server — Assessments tools.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-assessment",
+  "name": "@transcend-io/mcp-app-assessment-create-form",
+  "version": "0.1.0",
+  "description": "MCP App UI bundle for pre-create assessment confirmation (title, group, assignee).",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-app-assessment-create-form",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/mcp/mcp-server-assessment"
-  },
-  "bin": {
-    "transcend-mcp-assessment": "./dist/cli.mjs"
+    "directory": "packages/mcp/mcp-app-assessment-create-form"
   },
   "files": [
     "dist"
@@ -31,24 +28,24 @@
   },
   "scripts": {
     "build": "tsdown",
+    "postbuild": "INPUT=mcp-app.html vite build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "catalog:",
-    "@transcend-io/mcp-app-assessment-create-form": "workspace:*",
-    "@transcend-io/mcp-server-base": "workspace:*",
-    "@transcend-io/privacy-types": "workspace:*",
-    "zod": "catalog:"
+    "@transcend-io/mcp-server-base": "workspace:*"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@modelcontextprotocol/ext-apps": "^1.1.2",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
+    "vite": "^6.3.5",
+    "vite-plugin-singlefile": "^2.2.0",
     "vitest": "catalog:"
   },
   "engines": {

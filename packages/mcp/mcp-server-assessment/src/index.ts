@@ -1,4 +1,5 @@
 export { getAssessmentTools } from './tools/index.js';
+export { getAssessmentMcpResources } from './mcp-resources.js';
 export { AssessmentsMixin } from './graphql.js';
 export {
   buildAssessmentLinks,

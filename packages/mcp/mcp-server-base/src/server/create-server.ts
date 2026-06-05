@@ -8,7 +8,7 @@ import {
   DEFAULT_SOMBRA_URL,
   DEFAULT_TRANSCEND_API_URL,
 } from '../defaults.js';
-import type { ToolClients, ToolDefinition } from '../tools/types.js';
+import type { McpAppResource, ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
 import { resolveAuth } from './resolve-auth.js';
@@ -43,6 +43,8 @@ export interface MCPServerOptions {
    * object so new fields can be added without breaking call sites.
    */
   createClients?: (args: CreateClientsArgs) => ToolClients;
+  /** Optional MCP App UI resources to register alongside tools */
+  getResources?: () => McpAppResource[];
 }
 
 async function buildClients(
@@ -93,7 +95,13 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
             options.createClients,
           );
           const tools = options.getTools(clients);
-          return buildMcpServer({ name: options.name, version: options.version, tools });
+          const resources = options.getResources?.() ?? [];
+          return buildMcpServer({
+            name: options.name,
+            version: options.version,
+            tools,
+            resources,
+          });
         },
       },
       config,
@@ -109,7 +117,13 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
     options.createClients,
   );
   const tools = options.getTools(clients);
-  const server = buildMcpServer({ name: options.name, version: options.version, tools });
+  const resources = options.getResources?.() ?? [];
+  const server = buildMcpServer({
+    name: options.name,
+    version: options.version,
+    tools,
+    resources,
+  });
 
   logger.info(`Starting ${options.name} v${options.version}...`, { toolCount: tools.length });
 

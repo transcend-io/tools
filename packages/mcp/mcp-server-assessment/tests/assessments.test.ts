@@ -1,6 +1,40 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { requestAuthContext } from '@transcend-io/mcp-server-base';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+import {
+  _clearPendingCreateConfirmations,
+  confirmCreateConfirmation,
+  getPendingCreateContext,
+} from '../src/pending-create-confirmation.js';
 import { getAssessmentTools } from '../src/tools.js';
+
+const auth = { type: 'apiKey' as const, apiKey: 'assessments-test-key' };
+
+async function confirmPendingCreate(
+  _tools: ReturnType<typeof getAssessmentTools>,
+  input: {
+    title: string;
+    assessmentGroupId: string;
+    assigneeIds: string[];
+  },
+): Promise<void> {
+  for (let attempt = 0; attempt < 200; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const confirmed = requestAuthContext.run(auth, () => {
+      const ctx = getPendingCreateContext();
+      if (!ctx?.confirmationToken) return false;
+      confirmCreateConfirmation({
+        title: input.title,
+        assessmentGroupId: input.assessmentGroupId,
+        assigneeIds: input.assigneeIds,
+        confirmationToken: ctx.confirmationToken,
+      });
+      return true;
+    });
+    if (confirmed) return;
+  }
+  throw new Error('Timed out waiting for create confirmation');
+}
 
 describe('Assessment Tools', () => {
   let mockGraphql: {
@@ -13,19 +47,39 @@ describe('Assessment Tools', () => {
     updateAssessmentFormAssignees: ReturnType<typeof vi.fn>;
     updateAssessment: ReturnType<typeof vi.fn>;
     submitAssessmentForReview: ReturnType<typeof vi.fn>;
+    listUsers: ReturnType<typeof vi.fn>;
+    getCurrentUser: ReturnType<typeof vi.fn>;
   };
 
+  afterEach(() => {
+    _clearPendingCreateConfirmations();
+  });
+
   beforeEach(() => {
+    _clearPendingCreateConfirmations();
     mockGraphql = {
       listAssessments: vi.fn(),
-      listAssessmentGroups: vi.fn(),
-      createAssessment: vi.fn(),
+      listAssessmentGroups: vi.fn().mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      }),
+      createAssessment: vi.fn().mockResolvedValue({
+        id: 'assess-default',
+        title: 'Default',
+        status: 'DRAFT',
+      }),
+      updateAssessmentFormAssignees: vi.fn().mockResolvedValue({
+        id: 'assess-default',
+        status: 'SHARED',
+      }),
       getAssessment: vi.fn(),
       createAssessmentFormTemplate: vi.fn(),
       selectAssessmentQuestionAnswers: vi.fn(),
-      updateAssessmentFormAssignees: vi.fn(),
       updateAssessment: vi.fn(),
       submitAssessmentForReview: vi.fn(),
+      listUsers: vi.fn(),
+      getCurrentUser: vi.fn().mockResolvedValue({ id: 'user-default' }),
     };
   });
 
@@ -86,46 +140,64 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_create', () => {
-    it('zodSchema rejects when title is missing', () => {
+    it('zodSchema accepts empty input (all fields are suggestions)', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = tool.zodSchema.safeParse({ assessment_group_id: 'grp-1' });
-      expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['title']);
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(true);
     });
 
-    it('creates assessment with group_id on success', async () => {
+    it('creates assessment after user confirms in the create form', async () => {
       const mockAssessment = {
         id: 'assess-1',
         title: 'My Assessment',
         status: 'DRAFT',
       };
       mockGraphql.createAssessment.mockResolvedValue(mockAssessment);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: 'assess-1',
+        title: 'My Assessment',
+        status: 'SHARED',
+      });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = await tool.handler({
+      const handlerPromise = requestAuthContext.run(auth, () =>
+        tool.handler({
+          suggested_title: 'My Assessment',
+          suggested_assessment_group_id: 'grp-123',
+          suggested_assignee_id: 'user-1',
+        }),
+      );
+
+      await confirmPendingCreate(tools, {
         title: 'My Assessment',
-        assessment_group_id: 'grp-123',
+        assessmentGroupId: 'grp-123',
+        assigneeIds: ['user-1'],
       });
+
+      const result = await handlerPromise;
 
       expect(result).toMatchObject({
         success: true,
         data: expect.objectContaining({
-          assessment: expect.objectContaining(mockAssessment),
+          assessment: expect.objectContaining({ id: 'assess-1', status: 'SHARED' }),
           message: expect.stringContaining('created successfully'),
         }),
       });
       expect(mockGraphql.createAssessment).toHaveBeenCalledWith({
         title: 'My Assessment',
         assessmentGroupId: 'grp-123',
-        assigneeIds: undefined,
+      });
+      expect(mockGraphql.updateAssessmentFormAssignees).toHaveBeenCalledWith({
+        id: 'assess-1',
+        assigneeIds: ['user-1'],
       });
     });
 
-    it('resolves template_id to group_id when assessment_group_id not provided', async () => {
+    it('uses template_id to suggest group when confirming create', async () => {
       const mockGroup = {
         id: 'grp-from-template',
         assessmentFormTemplate: { id: 'tpl-1' },
@@ -142,41 +214,64 @@ describe('Assessment Tools', () => {
         status: 'DRAFT',
       };
       mockGraphql.createAssessment.mockResolvedValue(mockAssessment);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        ...mockAssessment,
+        status: 'SHARED',
+      });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = await tool.handler({
+      const handlerPromise = requestAuthContext.run(auth, () =>
+        tool.handler({
+          suggested_title: 'From Template',
+          template_id: 'tpl-1',
+          suggested_assignee_id: 'user-1',
+        }),
+      );
+
+      await confirmPendingCreate(tools, {
         title: 'From Template',
-        template_id: 'tpl-1',
+        assessmentGroupId: 'grp-from-template',
+        assigneeIds: ['user-1'],
       });
+
+      const result = await handlerPromise;
 
       expect(result).toMatchObject({
         success: true,
         data: expect.objectContaining({
-          assessment: expect.objectContaining(mockAssessment),
+          assessment: expect.objectContaining({ id: 'assess-2', status: 'SHARED' }),
         }),
       });
       expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith({ first: 100 });
       expect(mockGraphql.createAssessment).toHaveBeenCalledWith({
         title: 'From Template',
         assessmentGroupId: 'grp-from-template',
-        assigneeIds: undefined,
       });
     });
 
-    it('throws when client throws', async () => {
-      mockGraphql.createAssessment.mockRejectedValue(new Error('Group not found'));
+    it('throws when client throws after confirmation', async () => {
+      mockGraphql.createAssessment.mockRejectedValueOnce(new Error('Group not found'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      await expect(
+      const handlerPromise = requestAuthContext.run(auth, () =>
         tool.handler({
-          title: 'Test',
-          assessment_group_id: 'grp-bad',
+          suggested_title: 'Test',
+          suggested_assessment_group_id: 'grp-bad',
+          suggested_assignee_id: 'user-1',
         }),
-      ).rejects.toThrow('Group not found');
+      );
+
+      await confirmPendingCreate(tools, {
+        title: 'Test',
+        assessmentGroupId: 'grp-bad',
+        assigneeIds: ['user-1'],
+      });
+
+      await expect(handlerPromise).rejects.toThrow('Group not found');
     });
   });
 
@@ -330,47 +425,19 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_prefill', () => {
-    it('zodSchema rejects when title is missing', () => {
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_prefill')!;
-
-      const result = tool.zodSchema.safeParse({
-        assessment_group_id: 'grp-1',
-        answers: { Q1: 'A1' },
-      });
-      expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['title']);
-    });
-
     it('zodSchema rejects when answers is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
       const result = tool.zodSchema.safeParse({
-        title: 'Prefill Test',
-        assessment_group_id: 'grp-1',
+        suggested_title: 'Prefill Test',
+        suggested_assessment_group_id: 'grp-1',
       });
       expect(result.success).toBe(false);
       expect((result as any).error.issues[0].path).toEqual(['answers']);
     });
 
-    it('returns error when neither template_id nor assessment_group_id provided', async () => {
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_prefill')!;
-
-      const result = await tool.handler({
-        title: 'Prefill Test',
-        answers: { Q1: 'A1' },
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: expect.stringContaining('template_id or assessment_group_id'),
-      });
-      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
-    });
-
-    it('prefills assessment on happy path (multi-step flow)', async () => {
+    it('prefills assessment after user confirms in the create form', async () => {
       const mockAssessment = {
         id: 'assess-prefill-1',
         title: 'Prefilled Assessment',
@@ -413,14 +480,30 @@ describe('Assessment Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
-        title: 'Prefilled Assessment',
-        assessment_group_id: 'grp-prefill',
-        answers: {
-          'What is your name?': 'Alice',
-          'Select one': 'Option A',
-        },
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: 'assess-prefill-1',
+        status: 'SHARED',
       });
+
+      const handlerPromise = requestAuthContext.run(auth, () =>
+        tool.handler({
+          suggested_title: 'Prefilled Assessment',
+          suggested_assessment_group_id: 'grp-prefill',
+          suggested_assignee_id: 'user-1',
+          answers: {
+            'What is your name?': 'Alice',
+            'Select one': 'Option A',
+          },
+        }),
+      );
+
+      await confirmPendingCreate(tools, {
+        title: 'Prefilled Assessment',
+        assessmentGroupId: 'grp-prefill',
+        assigneeIds: ['user-1'],
+      });
+
+      const result = await handlerPromise;
 
       expect(result).toMatchObject({
         success: true,
@@ -453,15 +536,30 @@ describe('Assessment Tools', () => {
         title: 'Empty Form',
         sections: [],
       });
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: 'assess-empty',
+        status: 'SHARED',
+      });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      const result = await tool.handler({
+      const handlerPromise = requestAuthContext.run(auth, () =>
+        tool.handler({
+          suggested_title: 'Empty Form',
+          suggested_assessment_group_id: 'grp-1',
+          suggested_assignee_id: 'user-1',
+          answers: { Q1: 'A1' },
+        }),
+      );
+
+      await confirmPendingCreate(tools, {
         title: 'Empty Form',
-        assessment_group_id: 'grp-1',
-        answers: { Q1: 'A1' },
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
       });
+
+      const result = await handlerPromise;
 
       expect(result).toMatchObject({
         success: true,
@@ -474,19 +572,28 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.selectAssessmentQuestionAnswers).not.toHaveBeenCalled();
     });
 
-    it('throws when client throws during create', async () => {
-      mockGraphql.createAssessment.mockRejectedValue(new Error('Create failed'));
+    it('throws when client throws during create after confirmation', async () => {
+      mockGraphql.createAssessment.mockRejectedValueOnce(new Error('Create failed'));
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
-      await expect(
+      const handlerPromise = requestAuthContext.run(auth, () =>
         tool.handler({
-          title: 'Failing Prefill',
-          assessment_group_id: 'grp-1',
+          suggested_title: 'Failing Prefill',
+          suggested_assessment_group_id: 'grp-1',
+          suggested_assignee_id: 'user-1',
           answers: { Q1: 'A1' },
         }),
-      ).rejects.toThrow('Create failed');
+      );
+
+      await confirmPendingCreate(tools, {
+        title: 'Failing Prefill',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+      });
+
+      await expect(handlerPromise).rejects.toThrow('Create failed');
     });
   });
 
@@ -501,12 +608,31 @@ describe('Assessment Tools', () => {
         status: 'DRAFT',
         assessmentGroupId: GROUP_ID,
       });
-
-      const tool = getTools().find((t) => t.name === 'assessments_create')!;
-      const result = (await tool.handler({
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: FORM_ID,
         title: 'DPIA',
-        assessment_group_id: GROUP_ID,
-      })) as { success: boolean; data: Record<string, unknown> };
+        status: 'SHARED',
+        assessmentGroupId: GROUP_ID,
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'assessments_create')!;
+
+      const handlerPromise = requestAuthContext.run(auth, () =>
+        tool.handler({
+          suggested_title: 'DPIA',
+          suggested_assessment_group_id: GROUP_ID,
+          suggested_assignee_id: 'user-1',
+        }),
+      );
+
+      await confirmPendingCreate(tools, {
+        title: 'DPIA',
+        assessmentGroupId: GROUP_ID,
+        assigneeIds: ['user-1'],
+      });
+
+      const result = (await handlerPromise) as { success: boolean; data: Record<string, unknown> };
 
       expect(result.success).toBe(true);
       expect(result.data.url).toBe(
@@ -634,14 +760,31 @@ describe('Assessment Tools', () => {
         status: 'DRAFT',
         assessmentGroupId: GROUP_ID,
       });
-
-      const tool = getTools('https://app.staging.transcend.io').find(
-        (t) => t.name === 'assessments_create',
-      )!;
-      const result = (await tool.handler({
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: FORM_ID,
         title: 'DPIA',
-        assessment_group_id: GROUP_ID,
-      })) as { success: boolean; data: Record<string, unknown> };
+        status: 'SHARED',
+        assessmentGroupId: GROUP_ID,
+      });
+
+      const tools = getTools('https://app.staging.transcend.io');
+      const tool = tools.find((t) => t.name === 'assessments_create')!;
+
+      const handlerPromise = requestAuthContext.run(auth, () =>
+        tool.handler({
+          suggested_title: 'DPIA',
+          suggested_assessment_group_id: GROUP_ID,
+          suggested_assignee_id: 'user-1',
+        }),
+      );
+
+      await confirmPendingCreate(tools, {
+        title: 'DPIA',
+        assessmentGroupId: GROUP_ID,
+        assigneeIds: ['user-1'],
+      });
+
+      const result = (await handlerPromise) as { success: boolean; data: Record<string, unknown> };
 
       expect(result.data.url).toBe(
         `https://app.staging.transcend.io/assessments/forms/${FORM_ID}/response`,

@@ -2,11 +2,13 @@ import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base'
 
 import { createAssessmentsAddSectionTool } from './assessments_add_section.js';
 import { createAssessmentsAnswerQuestionTool } from './assessments_answer_question.js';
+import { createAssessmentsConfirmCreateTool } from './assessments_confirm_create.js';
 import { createAssessmentsCreateTool } from './assessments_create.js';
 import { createAssessmentsCreateGroupTool } from './assessments_create_group.js';
 import { createAssessmentsCreateTemplateTool } from './assessments_create_template.js';
 import { createAssessmentsExportTemplateTool } from './assessments_export_template.js';
 import { createAssessmentsGetTool } from './assessments_get.js';
+import { createAssessmentsGetCreateFormContextTool } from './assessments_get_create_form_context.js';
 import { createAssessmentsListTool } from './assessments_list.js';
 import { createAssessmentsListGroupsTool } from './assessments_list_groups.js';
 import { createAssessmentsListTemplatesTool } from './assessments_list_templates.js';
@@ -31,5 +33,7 @@ export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
     createAssessmentsAddSectionTool(clients),
     createAssessmentsExportTemplateTool(clients),
     createAssessmentsPrefillTool(clients),
+    createAssessmentsConfirmCreateTool(clients),
+    createAssessmentsGetCreateFormContextTool(clients),
   ];
 }

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { getAssessmentMcpResources } from '@transcend-io/mcp-server-assessment';
 import {
   buildMcpServer,
   DEFAULT_DASHBOARD_URL,
@@ -56,6 +57,7 @@ async function main(): Promise<void> {
             name: 'transcend-mcp',
             version: VERSION,
             tools: registry.getAllTools(),
+            resources: getAssessmentMcpResources(),
           });
         },
       },
@@ -82,6 +84,7 @@ async function main(): Promise<void> {
     name: 'transcend-mcp',
     version: VERSION,
     tools: toolRegistry.getAllTools(),
+    resources: getAssessmentMcpResources(),
   });
 
   logger.info(`Starting Transcend MCP Server v${VERSION}...`, {
