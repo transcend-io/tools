@@ -1,9 +1,7 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
 import { PreferenceTopicType } from '@transcend-io/privacy-types';
-import type { PreferenceTopic } from '@transcend-io/sdk';
-import { FileFormatState } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
-import { splitCsvToList } from '@transcend-io/utils';
+import { FileFormatState, type PreferenceTopic } from '@transcend-io/sdk';
+import { mapSeries, splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
 import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';

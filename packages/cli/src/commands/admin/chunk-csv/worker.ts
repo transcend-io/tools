@@ -1,5 +1,9 @@
-import { chunkOneCsvFile, extractErrorMessage, CHILD_FLAG } from '@transcend-io/utils';
-import type { ToWorker } from '@transcend-io/utils';
+import {
+  chunkOneCsvFile,
+  extractErrorMessage,
+  CHILD_FLAG,
+  type ToWorker,
+} from '@transcend-io/utils';
 
 import { logger } from '../../../logger.js';
 

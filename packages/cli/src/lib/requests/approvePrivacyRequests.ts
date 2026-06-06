@@ -1,5 +1,5 @@
 import { RequestAction, RequestOrigin, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -9,7 +9,6 @@ import { logger } from '../../logger.js';
 import {
   UPDATE_PRIVACY_REQUEST,
   fetchAllRequests,
-  makeGraphQLRequest,
   APPROVE_PRIVACY_REQUEST,
 } from '../graphql/index.js';
 

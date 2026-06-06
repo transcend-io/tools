@@ -100,7 +100,7 @@ Stable releases are driven by Changesets and the [Release workflow](.github/work
 Thus, after you merge a feature PR, you can either:
 
 1. Merge the subsequent release PR to publish to npm if you want it released immediately, or
-2. Wait a few feature PRs build up, before merging a release PR and publishing to npm (this also allows you to split up your changes into multiple PRs without releasing).
+2. Let a few feature PRs build up before merging a release PR and publishing to npm (this also allows you to split up your changes into multiple PRs without releasing).
 
 ### Changesets
 
@@ -225,3 +225,112 @@ Current package conventions:
 - `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
 - publishable packages include `homepage`, `repository`, and `author` metadata
 - released publishable packages keep a `CHANGELOG.md`
+
+## MCP Servers
+
+MCP (Model Context Protocol) server packages live under `packages/mcp/`. They let AI agents interact with the Transcend platform. See the root [`README.md`](./README.md) for a full list of packages and their purpose.
+
+### Layout
+
+```
+packages/mcp/
+  mcp-server-base/       # Shared infrastructure (GraphQL base, REST client, validation, types)
+  mcp-server-admin/      # Domain: org, users, API keys
+  mcp-server-assessment/
+  mcp-server-consent/
+  mcp-server-discovery/
+  mcp-server-dsr/
+  mcp-server-inventory/
+  mcp-server-preferences/
+  mcp-server-workflows/
+  mcp/                   # Unified server that re-exports all domain tools
+```
+
+Each domain package provides a standalone CLI and can be installed independently. The unified `mcp` package composes all domains via `ToolRegistry`.
+
+### Local credentials (`secret.env`)
+
+MCP servers read `TRANSCEND_API_KEY` (and optional URL overrides) from the environment. For local runs from this repository, use root **`secret.env`** (gitignored):
+
+```bash
+cp secret.env.example secret.env
+# Edit secret.env — set at least TRANSCEND_API_KEY
+```
+
+Load variables into your shell before `pnpm` (from the repository root):
+
+```bash
+set -a && source ./secret.env && set +a
+```
+
+Or run a built CLI via [`scripts/mcp-run.sh`](./scripts/mcp-run.sh), which sources `secret.env` when the file exists:
+
+```bash
+./scripts/mcp-run.sh ./packages/mcp/mcp-server-consent/dist/cli.mjs
+```
+
+Use the path to the `dist/cli.mjs` for the server you built. See each package README under `packages/mcp/` for Turbo `build` filters.
+
+### Working on a Single MCP Package
+
+Use `pnpm --filter` the same way as any other package. For `build`, prefer a Turbo filter with a trailing `...` so `mcp-server-base` and other dependencies are built when needed:
+
+```bash
+pnpm exec turbo run build --filter="@transcend-io/mcp-server-consent..."
+pnpm -F @transcend-io/mcp-server-consent test
+pnpm -F @transcend-io/mcp-server-consent typecheck
+```
+
+### Environment Variables & Authentication
+
+MCP servers support two authentication modes:
+
+- **API key** — set `TRANSCEND_API_KEY` env var (required for stdio; optional for HTTP if using session cookie or per-request API key headers)
+- **Session cookie** — in HTTP mode, forward `Cookie` and `x-transcend-active-organization-id` headers for in-app dashboard auth
+
+The `AuthCredentials` discriminated union (`'apiKey' | 'sessionCookie'`) is the internal representation. See `mcp-server-base/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
+
+Optional overrides:
+
+- `TRANSCEND_API_URL` — GraphQL backend API base URL (default: `https://api.transcend.io`). Matches the CLI and main monorepo convention.
+- `SOMBRA_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`). Matches the CLI / SDK convention.
+
+For local development, define these in **`secret.env`** (copy from `secret.env.example` at the repository root). Do not commit `secret.env`.
+
+HTTP transport variables (only used with `--transport http`):
+
+- `TRANSCEND_HTTP_PORT` — listen port (default: `3000`)
+- `TRANSCEND_HTTP_HOST` — listen host (default: `127.0.0.1`)
+- `TRANSCEND_MCP_CORS_ORIGINS` — comma-separated allowed CORS origins
+- `TRANSCEND_MCP_SESSION_TTL_MS` — idle session timeout in milliseconds (default: `1800000`)
+
+### Running in HTTP mode locally
+
+```bash
+TRANSCEND_API_KEY=your-key pnpm -F @transcend-io/mcp-server-consent dev -- --transport http --port 3001
+```
+
+The server listens at `http://127.0.0.1:3001/mcp` with a health check at `/health`. You can send JSON-RPC requests with `curl`:
+
+```bash
+# Initialize a session
+curl -X POST http://127.0.0.1:3001/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"0.1"}},"id":1}'
+```
+
+For production deployment patterns (Docker, nginx, cloud), see [`packages/mcp/DEPLOYMENT.md`](./packages/mcp/DEPLOYMENT.md).
+
+### Adding a Tool
+
+1. Create a new file under the domain's `src/tools/` directory (e.g. `src/tools/consent_new_tool.ts`).
+2. Export a `create*Tool(clients: ToolClients): ToolDefinition` factory function following the existing pattern.
+3. Register it in the domain's `src/tools/index.ts` by importing and adding it to the returned array.
+4. If the tool needs new input validation, add a Zod schema to `src/schemas.ts`.
+5. If the tool calls a new API endpoint, extend the domain's GraphQL mixin (`src/graphql.ts`) or the shared REST client in `mcp-server-base`.
+6. Add or extend tests in the domain package's `tests/` directory.
+7. The unified `mcp` package picks up the new tool automatically through its `ToolRegistry`.
+
+### Changesets
+
+MCP packages are publishable. Run `pnpm changeset` when your change modifies package code under `packages/mcp/`, just like any other publishable package.

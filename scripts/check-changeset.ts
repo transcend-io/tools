@@ -1,7 +1,9 @@
 import { execFileSync } from 'node:child_process';
+import { dirname } from 'node:path';
 
 import { fileExists, readJsonFile, readRepoFile } from './lib/repo-files.ts';
 import { logGroup, prominentError } from './lib/reporting.ts';
+import { logger } from './logger.ts';
 
 type ChangesetConfig = {
   ignore?: unknown;
@@ -28,12 +30,18 @@ type PackageJson = {
   sideEffects?: unknown;
   type?: unknown;
   types?: unknown;
+  version?: unknown;
 };
 
 type PackageMetadata = {
+  /** Workspace path from repo root (e.g. packages/cli). */
   directory: string;
+  /** package.json name field. */
   name: string;
+  /** When true, package is not published. */
   private: boolean;
+  /** package.json version; 0.0.0 skips changeset enforcement until first release. */
+  version: string | undefined;
 };
 
 const changesetConfig = readJsonFile<ChangesetConfig>('.changeset/config.json');
@@ -74,7 +82,7 @@ try {
   run();
 } catch (error) {
   const details = error instanceof Error ? error.message : String(error);
-  console.error(details);
+  logger.error(details);
   process.exit(1);
 }
 
@@ -152,8 +160,8 @@ function getChangedFiles(base: string): string[] {
   } catch (error) {
     const details = error instanceof Error ? error.message : String(error);
 
-    console.error(`Failed to compare changes against ${base}.`);
-    console.error(details);
+    logger.error(`Failed to compare changes against ${base}.`);
+    logger.error(details);
     process.exit(1);
   }
 }
@@ -171,12 +179,14 @@ function isRelevantPackageChange(filePath: string, base: string): boolean {
     return false;
   }
 
-  const [, packageName, ...rest] = filePath.split('/');
-  const relativePath = rest.join('/');
+  const packageDirectory = resolvePackageDirectory(filePath);
 
-  if (!packageName || !relativePath) {
+  if (!packageDirectory) {
     return false;
   }
+
+  const relativePath =
+    filePath.length > packageDirectory.length ? filePath.slice(packageDirectory.length + 1) : '';
 
   if (relativePath === 'package.json') {
     return hasRelevantPackageJsonChange(filePath, base);
@@ -296,14 +306,30 @@ function sortJsonValue(value: unknown): unknown {
   return value;
 }
 
-function getPackageDirectory(filePath: string): string | null {
-  const [, packageDirectory] = filePath.split('/');
+/**
+ * Resolves the workspace package root for a path under `packages/`, including nested
+ * layouts such as `packages/mcp/mcp/`.
+ */
+function resolvePackageDirectory(filePath: string): string | null {
+  let currentDir = dirname(filePath);
 
-  if (!packageDirectory) {
-    return null;
+  while (currentDir.startsWith('packages')) {
+    if (currentDir === 'packages') {
+      break;
+    }
+
+    if (fileExists(`${currentDir}/package.json`)) {
+      return currentDir;
+    }
+
+    currentDir = dirname(currentDir);
   }
 
-  return `packages/${packageDirectory}`;
+  return null;
+}
+
+function getPackageDirectory(filePath: string): string | null {
+  return resolvePackageDirectory(filePath);
 }
 
 function getChangedPublishablePackages(filePaths: string[]): PackageMetadata[] {
@@ -318,7 +344,11 @@ function getChangedPublishablePackages(filePaths: string[]): PackageMetadata[] {
 
     const packageMetadata = getPackageMetadata(packageDirectory);
 
-    if (packageMetadata.private || ignoredPackages.has(packageMetadata.name)) {
+    if (
+      packageMetadata.private ||
+      ignoredPackages.has(packageMetadata.name) ||
+      isUnreleasedPlaceholderVersion(packageMetadata.version)
+    ) {
       continue;
     }
 
@@ -348,11 +378,17 @@ function getPackageMetadata(packageDirectory: string): PackageMetadata {
     directory: packageDirectory,
     name: packageJson.name,
     private: packageJson.private === true,
+    version: typeof packageJson.version === 'string' ? packageJson.version : undefined,
   };
 
   packageMetadataCache.set(packageDirectory, packageMetadata);
 
   return packageMetadata;
+}
+
+/** Packages still at the monorepo placeholder version are treated as not yet on the release train. */
+function isUnreleasedPlaceholderVersion(version: string | undefined): boolean {
+  return version === '0.0.0';
 }
 
 function getReferencedPackages(changesetFiles: string[]): Set<string> {

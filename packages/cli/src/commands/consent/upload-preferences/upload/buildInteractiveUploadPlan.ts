@@ -1,6 +1,7 @@
 import {
   loadReferenceData,
   type FileFormatState,
+  type FormattedAttribute,
   type PendingSafePreferenceUpdates,
   type PendingWithConflictPreferenceUpdates,
   type PreferenceUploadProgress,
@@ -13,7 +14,6 @@ import type { Got } from 'got';
 import type { GraphQLClient } from 'graphql-request';
 import * as t from 'io-ts';
 
-import type { FormattedAttribute } from '../../../../lib/graphql/formatAttributeValues.js';
 import { parsePreferenceManagementCsvWithCache } from '../../../../lib/preference-management/index.js';
 import { parseAttributesFromString, readCsv } from '../../../../lib/requests/index.js';
 import { logger } from '../../../../logger.js';

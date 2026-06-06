@@ -2,8 +2,7 @@ import { mkdirSync, createWriteStream } from 'node:fs';
 import { join, dirname } from 'node:path';
 
 import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
-import { CHILD_FLAG, splitCsvToList } from '@transcend-io/utils';
-import type { ToWorker } from '@transcend-io/utils';
+import { CHILD_FLAG, splitCsvToList, type ToWorker } from '@transcend-io/utils';
 
 import { logger } from '../../../logger.js';
 import { getFilePrefix } from './artifacts/index.js';

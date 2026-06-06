@@ -1,6 +1,14 @@
 import { sleepPromise, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient, RequestDocument, Variables } from 'graphql-request';
 
+/** Logger that silently discards all messages */
+export const NOOP_LOGGER: Logger = {
+  info: () => {},
+  warn: () => {},
+  error: () => {},
+  debug: () => {},
+};
+
 const DEFAULT_MAX_RETRIES = 4;
 
 const KNOWN_ERRORS = [
@@ -26,14 +34,19 @@ export async function makeGraphQLRequest<T, V extends Variables = Variables>(
     /** GraphQL variables */
     variables?: V;
     /** Logger for retry/error messages */
-    logger: Logger;
+    logger?: Logger;
     /** Additional request headers */
     requestHeaders?: Record<string, string> | string[][] | Headers;
     /** Max number of retry attempts (default 4) */
     maxRetries?: number;
   },
 ): Promise<T> {
-  const { variables, logger, requestHeaders, maxRetries = DEFAULT_MAX_RETRIES } = options;
+  const {
+    variables,
+    logger = NOOP_LOGGER,
+    requestHeaders,
+    maxRetries = DEFAULT_MAX_RETRIES,
+  } = options;
 
   let retryCount = 0;
   // eslint-disable-next-line no-constant-condition

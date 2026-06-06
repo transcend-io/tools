@@ -42,8 +42,8 @@ vi.mock('colors', () => ({
   yellow: H.colors.yellow,
 }));
 
-vi.mock('../../../../../sdk/src/preference-management/withPreferenceRetry.js', () => ({
-  withPreferenceRetry: (name: string, fn: unknown, opts?: unknown) =>
+vi.mock('../../../../../sdk/src/api/withTransientRetry.js', () => ({
+  withTransientRetry: (name: string, fn: unknown, opts?: unknown) =>
     // @ts-expect-error test-only
     H.withRetrySpy(name, fn, opts),
 }));

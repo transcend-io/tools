@@ -2,7 +2,12 @@ import { join, resolve } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequestIdentifiers,
+  validateSombraVersion,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -11,11 +16,7 @@ import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { fetchAllRequests } from '../graphql/index.js';
 import { SuccessfulRequest } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { restartPrivacyRequest } from './restartPrivacyRequest.js';
@@ -160,7 +161,7 @@ export async function bulkRestartRequests({
   }
 
   if (copyIdentifiers) {
-    await validateSombraVersion(client);
+    await validateSombraVersion(client, { logger });
   }
 
   // Map over the requests
@@ -173,8 +174,9 @@ export async function bulkRestartRequests({
         // Pull the request identifiers
         const requestIdentifiers = copyIdentifiers
           ? await fetchAllRequestIdentifiers(client, sombra, {
-              requestId: request.id,
+              filterBy: { requestId: request.id },
               skipSombraCheck: true,
+              logger,
             })
           : [];
 

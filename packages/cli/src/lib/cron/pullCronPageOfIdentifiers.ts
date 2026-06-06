@@ -1,7 +1,10 @@
 import { RequestAction } from '@transcend-io/privacy-types';
+import { withTransientRetry } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import type { Got } from 'got';
 import * as t from 'io-ts';
+
+import { logger } from '../../logger.js';
 
 export const CronIdentifier = t.type({
   /** The identifier value */
@@ -59,15 +62,23 @@ export async function pullCronPageOfIdentifiers(
   },
 ): Promise<CronIdentifier[]> {
   try {
-    // Make the GraphQL request
-    const response = await sombra
-      .get(`v1/data-silo/${dataSiloId}/pending-requests/${requestType}`, {
-        searchParams: {
-          offset,
-          limit,
-        },
-      })
-      .json();
+    // `GET pending-requests` is a read and therefore safe to retry on transient
+    // gateway / network errors. Customers running `transcend cron
+    // pull-identifiers` against large silos would otherwise see the command
+    // abort on a single 502 from the Sombra reverse tunnel.
+    const response = await withTransientRetry(
+      'pullCronPageOfIdentifiers',
+      () =>
+        sombra
+          .get(`v1/data-silo/${dataSiloId}/pending-requests/${requestType}`, {
+            searchParams: {
+              offset,
+              limit,
+            },
+          })
+          .json(),
+      { logger, maxAttempts: 6, baseDelayMs: 500 },
+    );
 
     const { items } = decodeCodec(
       t.type({

@@ -20,60 +20,66 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@v3
-        with:
-          version: 2026.3.17
-          install: false
-          cache: true
-      - name: Bootstrap workspace
-        run: |
-          mise trust --yes mise.toml
-          mise install --locked
-          mise run bootstrap-ci
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
       - if: github.event_name == 'pull_request'
         name: Check changeset
         env:
           CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: mise exec -- pnpm check:changeset
+        run: pnpm check:changeset
+
       - name: Check package consistency
-        run: mise exec -- pnpm check:packages
+        run: pnpm check:packages
+
       - name: Check dependency versions
-        run: mise exec -- pnpm check:deps
+        run: pnpm check:deps
+
       - name: Lint
-        run: mise exec -- pnpm lint
+        run: pnpm lint
+
       - name: Check formatting
-        run: mise exec -- pnpm format:check
+        run: pnpm format:check
+
       - name: Typecheck
-        run: mise exec -- pnpm typecheck
-      - name: Build
-        run: mise exec -- pnpm build
+        run: pnpm typecheck
+
       - name: Test
-        run: mise exec -- pnpm test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Check package quality
+        run: pnpm quality
+
       - name: Check exports
-        run: mise exec -- pnpm check:exports
+        run: pnpm check:exports
+
       - name: Check publish compatibility
-        run: mise exec -- pnpm check:publint
+        run: pnpm check:publint
 
   cli:
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
-      - uses: jdx/mise-action@v3
-        with:
-          version: 2026.3.17
-          install: false
-          cache: true
-      - name: Bootstrap workspace
-        run: |
-          mise trust --yes mise.toml
-          mise install --locked
-          mise run bootstrap-ci
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Build
+        run: pnpm build
+
+      - name: Check package quality
+        run: pnpm quality
+
       - name: Verify generated CLI files are up to date
         run: |
-          mise exec -- pnpm --dir packages/cli genfiles
+          pnpm --dir packages/cli genfiles
           git diff --quiet HEAD || (git diff --raw && echo "Detected git changes after regenerating CLI files" && exit 1)

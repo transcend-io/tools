@@ -4,8 +4,8 @@ import { extractErrorMessage, map, splitInHalf, type Logger } from '@transcend-i
 import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
+import { withTransientRetry } from '../api/withTransientRetry.js';
 import { ConsentPreferenceResponse, type PreferenceUploadProgress } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**
  * Grab the current consent preference values for a list of identifiers.
@@ -83,13 +83,14 @@ export async function getPreferencesForIdentifiers(
   const postGroupWithRetries = async (
     group: { value: string; name: string }[],
   ): Promise<PreferenceQueryResponseItem[]> => {
-    const rawResult = await withPreferenceRetry(
+    const rawResult = await withTransientRetry(
       'Preference Query',
       () =>
         sombra
           .post(`v1/preferences/${partitionKey}/query`, {
             json: {
               filter: { identifiers: group },
+              limit: group.length,
             },
           })
           .json(),

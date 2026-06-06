@@ -1,5 +1,13 @@
 import { CodePackageType } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  CREATE_CODE_PACKAGE,
+  UPDATE_CODE_PACKAGES,
+  fetchAllCodePackages,
+  type CodePackage,
+  makeGraphQLRequest,
+  syncRepositories,
+  syncSoftwareDevelopmentKits,
+} from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -7,10 +15,6 @@ import { chunk, uniq, keyBy, uniqBy } from 'lodash-es';
 
 import { CodePackageInput, RepositoryInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { CodePackage, fetchAllCodePackages } from './fetchAllCodePackages.js';
-import { CREATE_CODE_PACKAGE, UPDATE_CODE_PACKAGES } from './gqls/index.js';
-import { syncRepositories } from './syncRepositories.js';
-import { syncSoftwareDevelopmentKits } from './syncSoftwareDevelopmentKits.js';
 
 const CHUNK_SIZE = 100;
 
@@ -139,7 +143,7 @@ export async function syncCodePackages(
   const [existingCodePackages, { softwareDevelopmentKits: existingSoftwareDevelopmentKits }] =
     await Promise.all([
       // fetch all code packages
-      fetchAllCodePackages(client),
+      fetchAllCodePackages(client, { logger }),
       // make sure all SDKs exist
       syncSoftwareDevelopmentKits(
         client,
@@ -154,7 +158,7 @@ export async function syncCodePackages(
             .flat(),
           ({ name, codePackageType }) => `${name}${LOOKUP_SPLIT_KEY}${codePackageType}`,
         ),
-        concurrency,
+        { logger, concurrency },
       ),
       // make sure all Repositories exist
       syncRepositories(
@@ -166,6 +170,7 @@ export async function syncCodePackages(
               url: `https://github.com/${repositoryName}`,
             }) as RepositoryInput,
         ),
+        { logger },
       ),
     ]);
 
@@ -218,7 +223,7 @@ export async function syncCodePackages(
     logger.info(colors.green(`Successfully synced ${newCodePackages.length} code packages!`));
   } catch (err) {
     encounteredError = true;
-    logger.info(colors.red(`Failed to create code packages! - ${err.message}`));
+    logger.error(colors.red(`Failed to create code packages! - ${err.message}`));
   }
 
   // Update existing codePackages
@@ -257,7 +262,7 @@ export async function syncCodePackages(
       logger.info(colors.green(`Successfully updated "${chunk.length}" code packages!`));
     } catch (err) {
       encounteredError = true;
-      logger.info(colors.red(`Failed to update code packages! - ${err.message}`));
+      logger.error(colors.red(`Failed to update code packages! - ${err.message}`));
     }
   });
 

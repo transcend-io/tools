@@ -1,8 +1,42 @@
 ---
-description: How to commit and push changes in this repo — always run hooks, use correct permissions
+description: How to commit and push changes in this repo — always run hooks, use correct permissions, use safe commands
 globs: "**/*"
 alwaysApply: true
 ---
+
+# Safe Commands
+
+## Main Workspace
+
+ALWAYS use `tools-git` instead of `git` for ALL git commands (status, add, commit, push, log, diff, etc.).
+ALWAYS use `tools-rm` instead of `rm` for removing files or directories.
+NEVER use raw `git` or `rm` directly — they are not auto-allowed and the safe wrappers enforce repo boundaries.
+
+These functions are automatically loaded by the preToolUse hook in every Shell call.
+
+Examples:
+```
+tools-git status
+tools-git add -A && tools-git commit -m "fix: message"
+tools-git push origin branch-name
+tools-rm dist node_modules
+```
+
+## Inside `.worktrees/` Directories
+
+Use `worktree-git` and `worktree-rm` instead — `tools-git` will NOT work in worktrees (repo name check fails).
+
+- `worktree-git` — safe git that only runs inside `.worktrees/` directories
+- `worktree-rm` — safe rm that only operates on `.worktrees/` paths
+
+Examples:
+```
+cd .worktrees/fix-branch && worktree-git add -A && worktree-git commit -m "fix: message"
+cd .worktrees/fix-branch && worktree-git push origin HEAD:branch-name
+worktree-rm fix-branch
+```
+
+See `/background-task` skill for the full worktree workflow.
 
 # Committing and Pushing Changes
 
@@ -15,7 +49,7 @@ This repo uses husky pre-commit and pre-push hooks that run formatting, linting,
 The pre-commit hook requires `npm pack` (for `attw` export checking) which is blocked by the default Cursor sandbox. When committing from Cursor, **always use `required_permissions: ["all"]`** on the Shell tool call:
 
 ```
-git add -A && git commit -m "message"
+tools-git add -A && tools-git commit -m "message"
 # with required_permissions: ["all"]
 ```
 

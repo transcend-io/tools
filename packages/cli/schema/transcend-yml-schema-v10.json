@@ -57,7 +57,9 @@
                   "ONBOARDING",
                   "REQUEST_ASSIGNED_TO_USER",
                   "BUSINESS_ENTITY_NEEDS_DOCUMENTATION",
-                  "DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL"
+                  "DATA_POINT_DATABASE_QUERY_NEEDS_APPROVAL",
+                  "RULES_AUTOMATION_RULE_TERMINAL_FAILURE",
+                  "RULES_AUTOMATION_RULE_TERMINAL_FAILURE_ASSIGNED"
                 ]
               },
               "collections": {
@@ -40596,6 +40598,7 @@
               "ms",
               "mr",
               "nb",
+              "no",
               "pl",
               "pt",
               "ro",
@@ -40608,6 +40611,7 @@
               "vi",
               "zu",
               "he",
+              "iw",
               "nl",
               "et",
               "is",
@@ -40628,6 +40632,7 @@
               "az",
               "bn",
               "fa-AF",
+              "fa",
               "tl",
               "ka",
               "gu",
@@ -40676,6 +40681,7 @@
               "ms-MY",
               "ms-SG",
               "mr-IN",
+              "no-NO",
               "nb-NO",
               "pl-PL",
               "pt-BR",
@@ -40708,6 +40714,7 @@
               "es-419",
               "zh-HK",
               "he-IL",
+              "iw-IL",
               "en-NZ",
               "et-EE",
               "is-IS",
@@ -40792,6 +40799,7 @@
             "ms",
             "mr",
             "nb",
+            "no",
             "pl",
             "pt",
             "ro",
@@ -40804,6 +40812,7 @@
             "vi",
             "zu",
             "he",
+            "iw",
             "nl",
             "et",
             "is",
@@ -40824,6 +40833,7 @@
             "az",
             "bn",
             "fa-AF",
+            "fa",
             "tl",
             "ka",
             "gu",
@@ -40872,6 +40882,7 @@
             "ms-MY",
             "ms-SG",
             "mr-IN",
+            "no-NO",
             "nb-NO",
             "pl-PL",
             "pt-BR",
@@ -40904,6 +40915,7 @@
             "es-419",
             "zh-HK",
             "he-IL",
+            "iw-IL",
             "en-NZ",
             "et-EE",
             "is-IS",
@@ -41225,6 +41237,7 @@
                     "ms",
                     "mr",
                     "nb",
+                    "no",
                     "pl",
                     "pt",
                     "ro",
@@ -41237,6 +41250,7 @@
                     "vi",
                     "zu",
                     "he",
+                    "iw",
                     "nl",
                     "et",
                     "is",
@@ -41257,6 +41271,7 @@
                     "az",
                     "bn",
                     "fa-AF",
+                    "fa",
                     "tl",
                     "ka",
                     "gu",
@@ -41305,6 +41320,7 @@
                     "ms-MY",
                     "ms-SG",
                     "mr-IN",
+                    "no-NO",
                     "nb-NO",
                     "pl-PL",
                     "pt-BR",
@@ -41337,6 +41353,7 @@
                     "es-419",
                     "zh-HK",
                     "he-IL",
+                    "iw-IL",
                     "en-NZ",
                     "et-EE",
                     "is-IS",
@@ -41497,6 +41514,9 @@
                   "nb": {
                     "type": "string"
                   },
+                  "no": {
+                    "type": "string"
+                  },
                   "pl": {
                     "type": "string"
                   },
@@ -41531,6 +41551,9 @@
                     "type": "string"
                   },
                   "he": {
+                    "type": "string"
+                  },
+                  "iw": {
                     "type": "string"
                   },
                   "nl": {
@@ -41591,6 +41614,9 @@
                     "type": "string"
                   },
                   "fa-AF": {
+                    "type": "string"
+                  },
+                  "fa": {
                     "type": "string"
                   },
                   "tl": {
@@ -41737,6 +41763,9 @@
                   "mr-IN": {
                     "type": "string"
                   },
+                  "no-NO": {
+                    "type": "string"
+                  },
                   "nb-NO": {
                     "type": "string"
                   },
@@ -41831,6 +41860,9 @@
                     "type": "string"
                   },
                   "he-IL": {
+                    "type": "string"
+                  },
+                  "iw-IL": {
                     "type": "string"
                   },
                   "en-NZ": {
@@ -42162,7 +42194,8 @@
                                                       "IS_NOT_ONE_OF",
                                                       "CONTAINS",
                                                       "IS_SHOWN",
-                                                      "IS_NOT_SHOWN"
+                                                      "IS_NOT_SHOWN",
+                                                      "DOES_NOT_CONTAIN"
                                                     ]
                                                   }
                                                 }
@@ -42211,7 +42244,8 @@
                                                 "IS_NOT_ONE_OF",
                                                 "CONTAINS",
                                                 "IS_SHOWN",
-                                                "IS_NOT_SHOWN"
+                                                "IS_NOT_SHOWN",
+                                                "DOES_NOT_CONTAIN"
                                               ]
                                             }
                                           }
@@ -42610,7 +42644,8 @@
                                                       "IS_NOT_ONE_OF",
                                                       "CONTAINS",
                                                       "IS_SHOWN",
-                                                      "IS_NOT_SHOWN"
+                                                      "IS_NOT_SHOWN",
+                                                      "DOES_NOT_CONTAIN"
                                                     ]
                                                   }
                                                 }
@@ -42659,7 +42694,8 @@
                                                 "IS_NOT_ONE_OF",
                                                 "CONTAINS",
                                                 "IS_SHOWN",
-                                                "IS_NOT_SHOWN"
+                                                "IS_NOT_SHOWN",
+                                                "DOES_NOT_CONTAIN"
                                               ]
                                             }
                                           }

@@ -1,7 +1,7 @@
 import { existsSync, lstatSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, fetchAndIndexCatalogs } from '@transcend-io/sdk';
 import colors from 'colors';
 import { difference } from 'lodash-es';
 
@@ -10,7 +10,6 @@ import type { LocalContext } from '../../../context.js';
 import { listFiles } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { dataFlowsToDataSilos } from '../../../lib/consent-manager/dataFlowsToDataSilos.js';
-import { fetchAndIndexCatalogs } from '../../../lib/graphql/index.js';
 import { readTranscendYaml, writeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 import { logger } from '../../../logger.js';
 
@@ -122,7 +121,9 @@ export async function deriveDataSilosFromDataFlowsCrossInstance(
 
   // Fetch all integrations in the catalog
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const { serviceToTitle, serviceToSupportedIntegration } = await fetchAndIndexCatalogs(client);
+  const { serviceToTitle, serviceToSupportedIntegration } = await fetchAndIndexCatalogs(client, {
+    logger,
+  });
 
   // construct the aggregated data silo inputs
   const dataSilos = [...adTechIntegrations, ...siteTechIntegrations].map((service) => ({

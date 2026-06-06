@@ -52,12 +52,15 @@ export async function fetchAllPurposes(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-    /** Whether to include deleted purposes */
-    includeDeleted?: boolean;
-  },
+    logger?: Logger;
+    /** Filter options */
+    filterBy?: {
+      /** Whether to include deleted purposes */
+      includeDeleted?: boolean;
+    };
+  } = {},
 ): Promise<Purpose[]> {
-  const { logger, includeDeleted = false } = options;
+  const { logger, filterBy: { includeDeleted = false } = {} } = options;
   const purposes: Purpose[] = [];
   let offset = 0;
 
@@ -67,7 +70,10 @@ export async function fetchAllPurposes(
       purposes: { nodes },
     } = await makeGraphQLRequest<{
       /** Purposes */
-      purposes: { /** List */ nodes: Purpose[] };
+      purposes: {
+        /** List */
+        nodes: Purpose[];
+      };
     }>(client, PURPOSES, {
       logger,
       variables: { first: PAGE_SIZE, offset, input: { includeDeleted } },

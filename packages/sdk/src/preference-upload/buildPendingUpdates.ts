@@ -1,5 +1,6 @@
 import type { PreferenceUpdateItem } from '@transcend-io/privacy-types';
 
+import type { FormattedAttribute } from '../dsr-automation/formatAttributeValues.js';
 import type {
   ColumnIdentifierMap,
   ColumnMetadataMap,
@@ -15,14 +16,6 @@ import {
 } from '../preference-management/getPreferenceIdentifiersFromRow.js';
 import { getPreferenceMetadataFromRow } from '../preference-management/getPreferenceMetadataFromRow.js';
 import { getPreferenceUpdatesFromRow } from '../preference-management/getPreferenceUpdatesFromRow.js';
-
-/** Attribute key-value pair for workflow settings */
-export interface FormattedAttribute {
-  /** Attribute key */
-  key: string;
-  /** Attribute values */
-  values: string[];
-}
 
 export interface BuildPendingParams {
   /** Safe updates keyed by user/primaryKey */

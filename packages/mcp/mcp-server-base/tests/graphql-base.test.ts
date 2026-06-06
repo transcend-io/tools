@@ -1,0 +1,628 @@
+import { randomUUID } from 'node:crypto';
+
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+import { requestAuthContext } from '../src/auth-context.js';
+import type { AuthCredentials } from '../src/auth.js';
+import { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
+import { ToolError, ErrorCode } from '../src/errors.js';
+import { TOOLCALL_ID_HEADER, TRANSCEND_ACTIVE_ORG_ID_HEADER } from '../src/http-header-names.js';
+import { toolCallContext } from '../src/tool-call-context.js';
+
+class TestGraphQLClient extends TranscendGraphQLBase {
+  async query<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
+    return this.makeRequest<T>(query, variables);
+  }
+
+  /** Test hook exposing the protected pagination helper. */
+  exposeFetchAllPages<TNode>(
+    query: string,
+    connectionKey: string,
+    variables?: Record<string, unknown>,
+    pageSize?: number,
+  ): Promise<TNode[]> {
+    return this.fetchAllPages<TNode>(query, connectionKey, variables, pageSize);
+  }
+}
+
+function createMockFetchResponse<T>(
+  overrides: {
+    ok?: boolean;
+    status?: number;
+    statusText?: string;
+    data?: T;
+    errors?: Array<{ message: string }>;
+    text?: string;
+  } = {},
+) {
+  const { ok = true, status = 200, statusText = 'OK', data, errors, text = '' } = overrides;
+
+  return vi.fn().mockImplementation(async () => {
+    if (!ok && !text) {
+      return {
+        ok,
+        status,
+        statusText,
+        text: async () => `HTTP ${status} ${statusText}`,
+        json: async () => {
+          throw new Error('Response not JSON');
+        },
+      };
+    }
+    return {
+      ok,
+      status,
+      statusText,
+      text: async () => text || `HTTP ${status} ${statusText}`,
+      json: async () => {
+        if (errors && errors.length > 0) {
+          return { data: undefined, errors };
+        }
+        return { data: data ?? {} };
+      },
+    };
+  });
+}
+
+describe('TranscendGraphQLBase', () => {
+  const API_KEY = 'test-api-key-12345';
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: API_KEY };
+  const SESSION_COOKIE_AUTH: AuthCredentials = {
+    type: 'sessionCookie',
+    cookie: 'laravel_session=abc123',
+    organizationId: 'org-uuid-456',
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('constructor', () => {
+    it('sets defaults correctly: baseUrl, strips trailing slash', () => {
+      const client = new TestGraphQLClient(API_KEY_AUTH, 'https://custom.api.com/');
+      expect(client.getBaseUrl()).toBe('https://custom.api.com');
+    });
+
+    it('uses default baseUrl when not provided', () => {
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      expect(client.getBaseUrl()).toBe('https://api.transcend.io');
+    });
+
+    it('preserves baseUrl without trailing slash', () => {
+      const client = new TestGraphQLClient(API_KEY_AUTH, 'https://api.example.com');
+      expect(client.getBaseUrl()).toBe('https://api.example.com');
+    });
+  });
+
+  describe('makeRequest - headers', () => {
+    it('sends Authorization header with API key auth', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      await client.query('query { __typename }');
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: `Bearer ${API_KEY}`,
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'User-Agent': 'Transcend-mcp',
+          }),
+        }),
+      );
+    });
+
+    it('sends Cookie and org ID headers with session cookie auth', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(SESSION_COOKIE_AUTH);
+      await client.query('query { __typename }');
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Cookie: 'laravel_session=abc123',
+            [TRANSCEND_ACTIVE_ORG_ID_HEADER]: 'org-uuid-456',
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            'User-Agent': 'Transcend-mcp',
+          }),
+        }),
+      );
+    });
+
+    it('does not send Authorization header with session cookie auth', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(SESSION_COOKIE_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders).not.toHaveProperty('Authorization');
+    });
+
+    it(`does not send ${TOOLCALL_ID_HEADER} without tool call context`, async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders).not.toHaveProperty(TOOLCALL_ID_HEADER);
+    });
+
+    it(`sends ${TOOLCALL_ID_HEADER} when tool call context is active`, async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const correlationId = randomUUID();
+      await toolCallContext.run({ toolName: 'my_tool', correlationId }, async () => {
+        await client.query('query { __typename }');
+      });
+
+      expect(fetch).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            [TOOLCALL_ID_HEADER]: `my_tool:${correlationId}`,
+          }),
+        }),
+      );
+    });
+
+    it(`reuses the same ${TOOLCALL_ID_HEADER} for multiple requests in one tool call`, async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const correlationId = randomUUID();
+      await toolCallContext.run({ toolName: 'multi_fetch', correlationId }, async () => {
+        await client.query('query { __typename }');
+        await client.query('query { __typename }');
+      });
+
+      const call0 = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      const call1 = (fetch as ReturnType<typeof vi.fn>).mock.calls[1][1].headers;
+      expect(call0[TOOLCALL_ID_HEADER]).toBe(`multi_fetch:${correlationId}`);
+      expect(call1[TOOLCALL_ID_HEADER]).toBe(call0[TOOLCALL_ID_HEADER]);
+    });
+  });
+
+  describe('makeRequest - retries on 5xx', () => {
+    it('retries up to 3 times on 5xx errors, then succeeds', async () => {
+      vi.useFakeTimers();
+
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          text: async () => 'Server error',
+          json: async () => {
+            throw new Error('Not JSON');
+          },
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 502,
+          statusText: 'Bad Gateway',
+          text: async () => 'Bad gateway',
+          json: async () => {
+            throw new Error('Not JSON');
+          },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: async () => '',
+          json: async () => ({ data: { result: 'ok' } }),
+        });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const promise = client.query('query { __typename }');
+
+      await vi.advanceTimersByTimeAsync(3500);
+
+      const result = await promise;
+
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(result).toEqual({ result: 'ok' });
+
+      vi.useRealTimers();
+    });
+
+    it('throws after exhausting retries on 5xx', async () => {
+      vi.useFakeTimers();
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        text: async () => 'Server error',
+        json: async () => {
+          throw new Error('Not JSON');
+        },
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const promise = client.query('query { __typename }');
+
+      const rejectionPromise = expect(promise).rejects.toThrow(/Server error \(500\)/);
+
+      await vi.advanceTimersByTimeAsync(8000);
+
+      await rejectionPromise;
+      expect(fetch).toHaveBeenCalledTimes(4); // initial + 3 retries
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('makeRequest - retries on 429', () => {
+    it('retries on 429 (rate limited)', async () => {
+      vi.useFakeTimers();
+
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 429,
+          statusText: 'Too Many Requests',
+          text: async () => 'Rate limited',
+          json: async () => {
+            throw new Error('Not JSON');
+          },
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          text: async () => '',
+          json: async () => ({ data: { result: 'ok' } }),
+        });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const promise = client.query('query { __typename }');
+
+      await vi.advanceTimersByTimeAsync(1500);
+
+      const result = await promise;
+
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(result).toEqual({ result: 'ok' });
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('makeRequest - does NOT retry on 4xx (except 429)', () => {
+    it.each([400, 401, 403, 404])('does not retry on %d', async (status) => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status,
+        statusText: 'Client Error',
+        text: async () => `Error ${status}`,
+        json: async () => {
+          throw new Error('Not JSON');
+        },
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      await expect(client.query('query { __typename }')).rejects.toThrow(/error/i);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('makeRequest - structured ToolError', () => {
+    it('throws ToolError with AUTH_ERROR code on 401', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        text: async () => 'Bad token',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      try {
+        await client.query('query { __typename }');
+        expect.fail('Should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ToolError);
+        expect((err as ToolError).code).toBe(ErrorCode.AUTH_ERROR);
+        expect((err as ToolError).retryable).toBe(false);
+      }
+    });
+
+    it('throws ToolError with RATE_LIMITED code on 429 (retryable)', async () => {
+      vi.useFakeTimers();
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 429,
+        statusText: 'Too Many Requests',
+        text: async () => 'Slow down',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const promise = client.query('query { __typename }');
+
+      const rejection = expect(promise).rejects.toBeInstanceOf(ToolError);
+      await vi.advanceTimersByTimeAsync(8000);
+
+      await rejection;
+      try {
+        await promise;
+      } catch (err) {
+        expect((err as ToolError).code).toBe(ErrorCode.RATE_LIMITED);
+        expect((err as ToolError).retryable).toBe(true);
+      }
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('makeRequest - GraphQL errors', () => {
+    it('throws on GraphQL errors in response', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () => '',
+        json: async () => ({
+          data: null,
+          errors: [{ message: 'Unauthorized' }, { message: 'Invalid query' }],
+        }),
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      await expect(client.query('query { __typename }')).rejects.toThrow(
+        /GraphQL errors: Unauthorized; Invalid query/,
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws when response has no data', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () => '',
+        json: async () => ({ data: undefined }),
+      });
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      await expect(client.query('query { __typename }')).rejects.toThrow(
+        /GraphQL response missing data/,
+      );
+    });
+  });
+
+  describe('makeRequest - timeout', () => {
+    it('throws timeout error when fetch aborts (AbortError)', async () => {
+      const abortError = new DOMException('Aborted', 'AbortError');
+      const mockFetch = vi.fn().mockRejectedValue(abortError);
+
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      await expect(client.query('query { __typename }')).rejects.toThrow(
+        /GraphQL request timeout after 30000ms/,
+      );
+    });
+  });
+
+  describe('rate limiting', () => {
+    it('enforces ~200ms delay between requests', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { result: 'ok' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      const start = Date.now();
+      await client.query('query { __typename }');
+      await client.query('query { __typename }');
+      const elapsed = Date.now() - start;
+
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(elapsed).toBeGreaterThanOrEqual(190); // allow small variance
+    });
+  });
+
+  describe('query with variables', () => {
+    it('sends variables in the request body', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { result: { id: 'test-123' } },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const variables = { input: { title: 'Test', scopes: ['READ'] } };
+      const result = await client.query(
+        'mutation Test($input: TestInput!) { test(input: $input) { id } }',
+        variables,
+      );
+
+      expect(result).toEqual({ result: { id: 'test-123' } });
+
+      const callBody = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+      expect(callBody.variables).toEqual(variables);
+      expect(callBody.query).toContain('mutation Test');
+    });
+  });
+
+  describe('query sends to correct URL', () => {
+    it('posts to baseUrl/graphql', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      await client.query('query { __typename }');
+
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.transcend.io/graphql',
+        expect.objectContaining({
+          body: expect.stringContaining('__typename'),
+        }),
+      );
+    });
+  });
+
+  describe('null auth (sidecar pattern)', () => {
+    it('constructs without error when auth is null', () => {
+      expect(() => new TestGraphQLClient(null)).not.toThrow();
+    });
+
+    it('throws AUTH_ERROR on makeRequest when auth is null', async () => {
+      const client = new TestGraphQLClient(null);
+      await expect(client.query('query { __typename }')).rejects.toThrow(
+        /No authentication configured/,
+      );
+    });
+  });
+
+  describe('requestAuthContext (per-request auth)', () => {
+    it('overrides constructor auth when context is active', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+
+      await requestAuthContext.run(SESSION_COOKIE_AUTH, async () => {
+        await client.query('query { __typename }');
+      });
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Cookie).toBe('laravel_session=abc123');
+      expect(calledHeaders[TRANSCEND_ACTIVE_ORG_ID_HEADER]).toBe('org-uuid-456');
+      expect(calledHeaders).not.toHaveProperty('Authorization');
+    });
+
+    it('provides auth for null-auth client (sidecar pattern)', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(null);
+
+      await expect(client.query('query { __typename }')).rejects.toThrow();
+
+      await requestAuthContext.run(API_KEY_AUTH, async () => {
+        await client.query('query { __typename }');
+      });
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
+    });
+
+    it('falls back to constructor auth when no context is active', async () => {
+      const mockFetch = createMockFetchResponse({
+        data: { __typename: 'Query' },
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      await client.query('query { __typename }');
+
+      const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
+      expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
+    });
+  });
+
+  describe('fetchAllPages', () => {
+    const PAGE_QUERY = `
+      query($first: Int, $offset: Int) {
+        things(first: $first, offset: $offset) {
+          nodes { id }
+          totalCount
+        }
+      }
+    `;
+
+    it('accumulates nodes across pages and stops at totalCount', async () => {
+      const total = 5;
+      const mockFetch = vi.fn().mockImplementation(async (_url: string, init: { body: string }) => {
+        const { variables } = JSON.parse(init.body);
+        const { first, offset } = variables as { first: number; offset: number };
+        const count = Math.max(0, Math.min(first, total - offset));
+        const nodes = Array.from({ length: count }, (_, i) => ({ id: String(offset + i) }));
+        return { ok: true, json: async () => ({ data: { things: { nodes, totalCount: total } } }) };
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const nodes = await client.exposeFetchAllPages<{ id: string }>(PAGE_QUERY, 'things', {}, 2);
+
+      expect(nodes.map((n) => n.id)).toEqual(['0', '1', '2', '3', '4']);
+      // pages: [0,1], [2,3], [4]
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('terminates when the backend ignores offset (guards against infinite loop)', async () => {
+      const total = 10;
+      // Returns a full first page regardless of the requested offset.
+      const mockFetch = vi.fn().mockImplementation(async (_url: string, init: { body: string }) => {
+        const { variables } = JSON.parse(init.body);
+        const { first } = variables as { first: number };
+        const nodes = Array.from({ length: first }, (_, i) => ({ id: String(i) }));
+        return { ok: true, json: async () => ({ data: { things: { nodes, totalCount: total } } }) };
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const nodes = await client.exposeFetchAllPages<{ id: string }>(PAGE_QUERY, 'things', {}, 5);
+
+      // offset climbs 0 -> 5 -> 10; `offset >= totalCount` halts after 2 pages.
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(nodes).toHaveLength(10);
+    });
+  });
+});

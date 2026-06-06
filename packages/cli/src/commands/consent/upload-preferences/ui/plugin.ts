@@ -3,8 +3,13 @@ import { pathToFileURL } from 'node:url';
 
 import colors from 'colors';
 
-import { fmtNum, makeHeader, makeWorkerRows } from '../../../../lib/pooling/index.js';
-import type { CommonCtx, DashboardPlugin } from '../../../../lib/pooling/index.js';
+import {
+  fmtNum,
+  makeHeader,
+  makeWorkerRows,
+  type CommonCtx,
+  type DashboardPlugin,
+} from '../../../../lib/pooling/index.js';
 import { isUploadModeTotals, type AnyTotals } from './typeGuards.js';
 
 /**

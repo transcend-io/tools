@@ -1,5 +1,372 @@
 # @transcend-io/cli
 
+## 10.3.7
+
+### Patch Changes
+
+- b90b468: Add `RulesAutomationRuleTerminalFailure` and `RulesAutomationRuleTerminalFailureAssigned` values to the `ActionItemCode` enum so that Rules Automation rule owners can be notified when a rule hits a terminal execution failure. Regenerate the CLI `transcend.yml` JSON schema so the new codes are reflected.
+- Updated dependencies [b90b468]
+  - @transcend-io/privacy-types@5.1.8
+  - @transcend-io/airgap.js-types@14.2.3
+  - @transcend-io/sdk@1.1.11
+
+## 10.3.6
+
+### Patch Changes
+
+- 9d180f4: Update `got` dependency from v11 to v15.
+
+  Note: per [got v15 release notes](https://github.com/sindresorhus/got/releases/tag/v15.0.0),
+  `responseType: 'buffer'` (and `.buffer()`) now resolve to `Uint8Array` instead
+  of `Buffer`. The `onFileDownloaded` callback in `streamPrivacyRequestFiles`
+  has been retyped accordingly. `Buffer` is still a `Uint8Array` subclass, so
+  existing usages that just write the value to disk continue to work without
+  changes.
+
+- Updated dependencies [b18f2e8]
+- Updated dependencies [9d180f4]
+  - @transcend-io/privacy-types@5.1.7
+  - @transcend-io/sdk@1.1.10
+  - @transcend-io/airgap.js-types@14.2.2
+
+## 10.3.5
+
+### Patch Changes
+
+- Updated dependencies [c8e24e5]
+  - @transcend-io/airgap.js-types@14.2.1
+  - @transcend-io/sdk@1.1.9
+
+## 10.3.4
+
+### Patch Changes
+
+- Updated dependencies [0252b43]
+  - @transcend-io/airgap.js-types@14.2.0
+  - @transcend-io/sdk@1.1.8
+
+## 10.3.3
+
+### Patch Changes
+
+- Updated dependencies [093bbf7]
+- Updated dependencies [32a8bdb]
+- Updated dependencies [841a442]
+  - @transcend-io/airgap.js-types@14.1.2
+  - @transcend-io/sdk@1.1.7
+
+## 10.3.2
+
+### Patch Changes
+
+- Updated dependencies [bf7e43d]
+  - @transcend-io/privacy-types@5.1.6
+  - @transcend-io/airgap.js-types@14.1.1
+  - @transcend-io/sdk@1.1.6
+
+## 10.3.1
+
+### Patch Changes
+
+- Updated dependencies [a35dc8b]
+  - @transcend-io/airgap.js-types@14.1.0
+  - @transcend-io/sdk@1.1.5
+
+## 10.3.0
+
+### Minor Changes
+
+- 1fdd3b5: Added support for RTL languages
+- 1ed0ef6: Added deprecated language/locale codes (no, iw, no-NO, iw-IL) for DSR Submission API backward compatibility
+
+### Patch Changes
+
+- Updated dependencies [1fdd3b5]
+- Updated dependencies [1fdd3b5]
+- Updated dependencies [1ed0ef6]
+  - @transcend-io/internationalization@4.1.0
+  - @transcend-io/airgap.js-types@14.0.1
+  - @transcend-io/privacy-types@5.1.5
+  - @transcend-io/sdk@1.1.4
+
+## 10.2.7
+
+### Patch Changes
+
+- 270f4f2: While this is not intended as a functional change, we’ve migrated GitHub repositories and build tooling
+- Updated dependencies [270f4f2]
+- Updated dependencies [270f4f2]
+  - @transcend-io/airgap.js-types@14.0.0
+  - @transcend-io/sdk@1.1.3
+
+## 10.2.6
+
+### Patch Changes
+
+- aadcc1f: Bump `undici` from `^5.22.1` to `^6.24.0` to clear CVE-2026-1525 (HTTP request/response smuggling, GHSA-2mjp-6q6p-2qxm) and CVE-2026-1527 (CRLF injection via `upgrade` option, GHSA-4992-7rv2-5pvq). The `ProxyAgent` and `setGlobalDispatcher` API used in `src/logger.ts` is unchanged across the major bump.
+- Updated dependencies [041d5f9]
+  - @transcend-io/privacy-types@5.1.4
+  - @transcend-io/sdk@1.1.2
+
+## 10.2.5
+
+### Patch Changes
+
+- Updated dependencies [d5d6170]
+  - @transcend-io/sdk@1.1.1
+
+## 10.2.4
+
+### Patch Changes
+
+- 18b4321: Retry transient gateway errors on Sombra REST reads so large `transcend request export` and `transcend cron pull-identifiers` runs ride through occasional 502 / 503 / 504 / 429 / network resets from the reverse tunnel instead of aborting a chunk.
+  - Add a generalised `withTransientRetry` (and `isTransientError`) helper in `@transcend-io/sdk` under `api/`. Exponential backoff with jitter, retries on known-transient message substrings (`ECONNRESET`, `ETIMEDOUT`, `bad gateway`, `gateway timeout`, etc.) _and_ known-transient HTTP status codes (408, 425, 429, 500, 502, 503, 504) so `got` HTTPErrors are caught even when their message is generic.
+  - `fetchAllRequestIdentifiers` (used by `transcend request export`) now wraps `POST /v1/request-identifiers` in `withTransientRetry` with `maxAttempts: 6` and `baseDelayMs: 500`. Fixes WAL-9783.
+  - `pullCronPageOfIdentifiers` (used by `transcend cron pull-identifiers`) applies the same retry wrapper around its Sombra `GET` for the same reason.
+  - **Breaking:** the preference-scoped aliases `withPreferenceRetry` and `RETRY_PREFERENCE_MSGS` are removed. Callers should import `withTransientRetry` / `RETRY_TRANSIENT_MSGS` from `@transcend-io/sdk` directly (the underlying implementation is unchanged).
+  - `extractErrorMessage` now summarises HTML gateway bodies (`<html>...502 Bad Gateway...</html>`) as `HTTP 502 Bad Gateway` when a status code is available, and caps raw non-JSON bodies at ~200 characters so failures surface cleanly in CLI output instead of dumping the whole HTML page.
+
+- Updated dependencies [18b4321]
+  - @transcend-io/sdk@1.1.0
+  - @transcend-io/utils@0.1.3
+
+## 10.2.3
+
+### Patch Changes
+
+- f0e7400: Add `DOES_NOT_CONTAIN` attribute to `ComparisonOperator` for assessment rules, and regenerate `transcend.yml` JSON schema.
+- Updated dependencies [f0e7400]
+  - @transcend-io/privacy-types@5.1.3
+  - @transcend-io/sdk@1.0.3
+
+## 10.2.2
+
+### Patch Changes
+
+- Updated dependencies [f252484]
+  - @transcend-io/internationalization@4.0.1
+  - @transcend-io/type-utils@3.0.1
+  - @transcend-io/privacy-types@5.1.2
+  - @transcend-io/sdk@1.0.2
+  - @transcend-io/utils@0.1.2
+
+## 10.2.1
+
+### Patch Changes
+
+- ebc2e91: Migrate `@transcend-io/internationalization` into the tools monorepo and align it with the
+  shared package conventions.
+
+  Material changes:
+  - the package is now built, tested, versioned, and released from the tools monorepo
+  - the top-level API stays compatible, but the published filesystem layout now follows the
+    monorepo's `dist/` plus `exports` structure instead of the legacy `build/` output
+  - CLI, SDK, and privacy-types now consume the package from the local workspace
+
+- 8984fb5: Migrate `@transcend-io/type-utils` into the tools monorepo as a first-party workspace package. The package now uses the monorepo's standard build, test, and export conventions while preserving the existing utility and `io-ts` helper surface for internal consumers.
+
+  Update the dependent workspace packages to consume the monorepo-managed `@transcend-io/type-utils` package instead of the previously external dependency reference.
+
+- Updated dependencies [ebc2e91]
+- Updated dependencies [8984fb5]
+  - @transcend-io/internationalization@4.0.0
+  - @transcend-io/privacy-types@5.1.1
+  - @transcend-io/sdk@1.0.1
+  - @transcend-io/type-utils@3.0.0
+  - @transcend-io/utils@0.1.1
+
+## 10.2.0
+
+### Minor Changes
+
+- f7a5c54: Move enricher functions from CLI to SDK + standardize function signatures
+  - Add `dsr-automation/` module to SDK: `fetchAllRequestEnrichers`, `retryRequestEnricher`, `fetchAllEnrichers`, `syncEnricher`
+  - Migrate GQL definitions: `ENRICHERS`, `CREATE_ENRICHER`, `UPDATE_ENRICHER`, `INITIALIZER`, `REQUEST_ENRICHERS`, `RETRY_REQUEST_ENRICHER`, `SKIP_REQUEST_ENRICHER`
+  - **BREAKING**: Standardize all new SDK function signatures to the `(client, options)` convention
+    - `fetchAllRequestEnrichers`: `(client, filterOptions, opts)` → `(client, { filterBy, logger? })`
+    - `fetchAllEnrichers`: `(client, { title?, logger })` → `(client, { filterBy?: { title? }, logger? })`
+    - `retryRequestEnricher`: `(client, id, opts)` → `(client, { id, logger? })`
+    - `syncEnricher`: `(client, syncOptions, opts)` → `(client, { input, identifierByName, dataSubjectsByName, logger? })`
+  - Make `logger` optional across every SDK function; default to `NOOP_LOGGER`
+  - All CLI imports updated to use `@transcend-io/sdk` directly
+
+- 00b9d23: Move identifier & data subject functions from CLI to SDK + standardize signatures
+  - Add `dsr-automation/` module to SDK: `fetchAllRequestIdentifiers`, `fetchAllRequestIdentifierMetadata`, `fetchDataSubjects`, `syncDataSubject`, `fetchIdentifiers`, `syncIdentifier`
+  - **Standardize all new SDK function signatures** to the `(client, options)` convention
+  - Make `logger` optional across every new SDK function; use `NOOP_LOGGER` default
+  - Filters nested under `filterBy`; create/update data nested under `input`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 896364c: Standardize SDK function signatures to follow `(client, options)` convention
+
+  BREAKING CHANGES:
+  - `fetchRequestDataSilosCount`, `fetchRequestDataSilos`, `fetchRequestDataSilo`: collapse separate filter + options params into single `options: { logger, filterBy? }`
+  - `fetchRequestFilesForRequest`: collapse 4 positional params into `(client, options: { logger, pageSize?, filterBy })`
+  - `fetchAllCookies`, `fetchAllDataFlows`: move `status` param into `options.filterBy.status`
+  - `updateDataFlows`, `createDataFlows`, `syncDataFlows`: move `classifyService` boolean into options object
+  - `loginUser`, `assumeRole`: separate logger from domain data into `(client, credentials, { logger })`
+  - `fetchAllTemplates`: move `title` filter into `options.filterBy.title`
+  - `fetchPromptsWithVariables`: move `promptTitles`/`promptIds` into `options.filterBy.titles`/`options.filterBy.ids`
+  - `fetchAllApiKeys`: move `titles` filter into `options.filterBy.titles`
+  - `fetchApiKeys`: move `client` to first param, collapse `apiKeyInputs`/`fetchAll` into options
+
+### Patch Changes
+
+- a15fed8: Bump `@transcend-io/internationalization` from ^2.3.2 to ^3.0.0.
+- 6f2a059: feat(sdk): move data silo & datapoint GraphQL helpers to SDK
+  - Move `fetchAllDataSilos`, `fetchAllDataPoints`, `fetchAllSubDataPoints`, `fetchEnrichedDataSilos` from CLI to SDK `data-inventory/` module
+  - Move `syncDataSiloDependencies` from CLI to SDK `data-inventory/` module
+  - Move data silo and datapoint GQL queries (`DATA_SILOS`, `DATA_SILO_EXPORT`, `DATA_SILOS_ENRICHED`, `CREATE_DATA_SILOS`, `UPDATE_DATA_SILOS`, `DATA_POINTS`, `DATA_POINT_COUNT`, `SUB_DATA_POINTS`, `SUB_DATA_POINTS_COUNT`, `SUB_DATA_POINTS_WITH_GUESSES`, `UPDATE_OR_CREATE_DATA_POINT`, `DATAPOINT_EXPORT`) from CLI to SDK
+  - Move types (`DataSilo`, `DataSiloEnriched`, `DataSiloAttributeValue`, `SubDataPoint`, `DataPoint`, `DataPointWithSubDataPoint`) to SDK
+  - Standardize all new SDK function signatures to `(client, options)` convention with optional `logger`
+  - Delete `cli/src/lib/graphql/gqls/dataSilo.ts` and `cli/src/lib/graphql/gqls/dataPoint.ts`
+  - CLI re-exports moved symbols from `@transcend-io/sdk` for backward compatibility
+
+- Updated dependencies [a15fed8]
+- Updated dependencies [8185679]
+- Updated dependencies [d3f8140]
+- Updated dependencies [29868af]
+- Updated dependencies [6f2a059]
+- Updated dependencies [f7a5c54]
+- Updated dependencies [00b9d23]
+- Updated dependencies [896364c]
+  - @transcend-io/sdk@1.0.0
+  - @transcend-io/privacy-types@5.1.0
+
+## 10.1.0
+
+### Minor Changes
+
+- 119a47a: Move action items GraphQL functions from CLI to SDK
+  - Add `assessments/` module to SDK: `fetchAllActionItems`, `fetchAllActionItemCollections`, `syncActionItems`, `syncActionItemCollections`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- d0d35a0: Move attribute, setResourceAttributes, and formatRegions functions from CLI to SDK
+  - Add attribute management to `administration/` module in SDK: `fetchAllAttributes`, `syncAttribute`, `setResourceAttributes`, `formatRegions`
+  - Export `attributeKey` GQL constants (`ATTRIBUTE_KEYS_REQUESTS`) from SDK for consumers
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 05716b8: Move auth, API keys, teams, and user GraphQL functions from CLI to SDK
+  - Add `administration/` module to SDK: `loginUser`, `assumeRole`, `fetchAllTeams`, `syncTeams`, `fetchAllUsers`, `fetchApiKeys`, `fetchAllApiKeys`, `createApiKey`, `deleteApiKey`
+  - Remove `colors` dependency from SDK - log messages are plain strings
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 1c0534e: Move business entities, vendors, and intl messages from CLI to SDK
+  - Add to `data-inventory/` module in SDK: `fetchAllBusinessEntities`, `syncBusinessEntities`, `fetchAllVendors`, `syncVendors`
+  - Add to `administration/` module in SDK: `fetchAllMessages`, `syncIntlMessages`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 40c8524: Move agent GraphQL functions from CLI to SDK
+  - Add `ai/` module to SDK: `fetchAllAgents`, `syncAgents`, `fetchAllAgentFiles`, `syncAgentFiles`, `fetchAllAgentFunctions`, `syncAgentFunctions`
+  - Add `@types/json-schema` to SDK, normalize CLI version to `catalog:`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 2493ea0: Move assessment fetch and GQL definitions from CLI to SDK
+  - Add `fetchAllAssessments` to `assessments/` module in SDK
+  - Move `gqls/assessment.ts` to SDK
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- b737da6: Move assessment parsing functions from CLI to SDK
+  - Add `parseAssessmentDisplayLogic` and `parseAssessmentRiskLogic` to `assessments/` module in SDK
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 415887f: Move code package fetch functions from CLI to SDK
+  - Add `code-intelligence/` module to SDK: `fetchAllCodePackages`
+  - Add `dsr-automation/` module to SDK: actions, templates, catalogs, silo discovery
+  - Migrated: `fetchAllActions`, `syncAction`, `fetchAllTemplates`, `syncTemplate`, `fetchAllCatalogs`, `fetchAndIndexCatalogs`, `uploadSiloDiscoveryResults`, `fetchAllSiloDiscoveryResults`, `fetchActiveSiloDiscoPlugin`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 7c3bd44: Move consent manager core functions from CLI to SDK
+  - Add `consent/` module to SDK: `fetchConsentManager`, `fetchConsentManagerId`, `fetchConsentManagerExperiences`, `fetchConsentManagerAnalyticsData`, `fetchConsentManagerTheme`, `createTranscendConsentGotInstance`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- ec80f0b: Move consent manager sync & deploy functions from CLI to SDK
+  - Add to `consent/` module in SDK: `syncConsentManager`, `deployConsentManager`, `updateConsentManagerToLatest`, `syncPartitions`, `fetchPartitions`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- ceb9be8: Move cookies and data flows from CLI to SDK
+  - Add to `consent/` module in SDK: `fetchAllCookies`, `syncCookies`, `fetchAllDataFlows`, `syncDataFlows`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- c467daf: Move LLM and prompt fetch GraphQL functions from CLI to SDK
+  - Add to `ai/` module in SDK: `fetchAllLargeLanguageModels`, `fetchAllPrompts`, `fetchPromptsWithVariables`, `fetchAllPromptGroups`, `fetchAllPromptPartials`, `fetchAllPromptThreads`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 6909387: Move generic pooling infrastructure from CLI to @transcend-io/utils
+  - Move runPool, spawnWorkerProcess, logRotation, types, ensureLogFile, safeGetLogPathsForSlot from packages/cli to packages/utils
+  - Strip colors dependency, make installInteractiveSwitcher injectable callback
+  - Replace openLogWindows boolean with onLogFilesCreated callback
+  - Add @transcend-io/type-utils dependency to utils
+
+- 2669fef: Move preference-management domain logic from CLI to SDK
+  - Extract 17 preference-management files (codecs, types, conflict detection, retry, consent fetching, chunking, transforms) from packages/cli into packages/sdk
+  - Inject Logger interface instead of CLI's global console logger
+  - Replace cli-progress bars with onProgress callbacks
+  - Strip colors dependency from SDK — log messages are plain strings
+  - Add io-ts and @transcend-io/type-utils as SDK dependencies
+
+- b066787: Move processing activities and data categories from CLI to SDK
+  - Add to `data-inventory/` module in SDK: `fetchAllProcessingActivities`, `syncProcessingActivities`, `fetchAllDataCategories`, `syncDataCategories`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- c467daf: Move prompt sync & run GraphQL functions from CLI to SDK
+  - Add to `ai/` module in SDK: `syncPrompts`, `syncPromptPartials`, `syncPromptGroups`, `reportPromptRun`, `addMessagesToPromptRun`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- eb65725: Move processing purposes, privacy center, and policies from CLI to SDK consent module
+- 01fb917: Move repository and software development kit functions from CLI to SDK
+  - Add to `code-intelligence/` module in SDK: `fetchAllRepositories`, `syncRepositories`, `fetchAllSoftwareDevelopmentKits`, `syncSoftwareDevelopmentKits`
+  - All imports updated to use `@transcend-io/sdk` directly
+
+- 1d5c5b3: Rename @transcend-io/core to @transcend-io/sdk, make utils and sdk public, move GraphQL/REST API foundation and preference management fetchers into SDK
+  - Rename packages/core to packages/sdk (@transcend-io/sdk)
+  - Make @transcend-io/utils and @transcend-io/sdk publishable (remove private flag)
+  - Add api/ module to SDK: buildTranscendGraphQLClient, makeGraphQLRequest, createSombraGotInstance with Logger DI
+  - Add preference-management/ module to SDK: fetchAllPurposes, fetchAllPreferenceTopics, fetchAllPurposesAndPreferences, fetchAllIdentifiers, createPreferenceAccessTokens
+  - Move bluebird map/mapSeries wrapper from CLI to @transcend-io/utils
+
+- 52ae399: Add --actionTypes flag to skip-request-data-silos command for filtering by request action type
+
+### Patch Changes
+
+- f08af44: Add `URL` and `EMAIL` variants to `AssessmentQuestionType` for assessment form questions, and regenerate `transcend.yml` JSON schema.
+- 3aefc21: Extract shared utilities from CLI into @transcend-io/utils
+
+  Move generic helpers (splitInHalf, retrySamePromise, sleepPromise, extractErrorMessage, getErrorStatus, limitRecords, RateCounter, time, chunkOneCsvFile) and a Logger interface into @transcend-io/utils for use outside the CLI. The CLI now imports these from @transcend-io/utils instead of its own lib/helpers.
+
+- 4812938: Testing: Updated shellcheck test to use a pinned shellcheck binary
+- c072e20: Minor syntax changes
+- cac80a5: Add publint
+- 4b2e96f: Add v10 transcend.yml schema
+- Updated dependencies [f08af44]
+- Updated dependencies [3aefc21]
+- Updated dependencies [c072e20]
+- Updated dependencies [119a47a]
+- Updated dependencies [d0d35a0]
+- Updated dependencies [05716b8]
+- Updated dependencies [1c0534e]
+- Updated dependencies [40c8524]
+- Updated dependencies [2493ea0]
+- Updated dependencies [b737da6]
+- Updated dependencies [415887f]
+- Updated dependencies [7c3bd44]
+- Updated dependencies [ec80f0b]
+- Updated dependencies [ceb9be8]
+- Updated dependencies [c467daf]
+- Updated dependencies [6909387]
+- Updated dependencies [2669fef]
+- Updated dependencies [b066787]
+- Updated dependencies [c467daf]
+- Updated dependencies [eb65725]
+- Updated dependencies [01fb917]
+- Updated dependencies [cac80a5]
+- Updated dependencies [1d5c5b3]
+- Updated dependencies [d777dd4]
+- Updated dependencies [7816fc0]
+  - @transcend-io/privacy-types@5.0.1
+  - @transcend-io/utils@0.1.0
+  - @transcend-io/sdk@0.1.0
+
 ## 10.0.1
 
 ### Patch Changes

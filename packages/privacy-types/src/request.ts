@@ -98,6 +98,8 @@ export enum RequestOrigin {
   Api = 'API',
   /** Request made from Shopify Webhook */
   Shopify = 'SHOPIFY',
+  /** Request that was dropped and not processed */
+  Drop = 'DROP',
 }
 
 /**

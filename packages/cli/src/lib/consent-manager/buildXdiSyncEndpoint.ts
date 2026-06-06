@@ -1,4 +1,4 @@
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import { buildTranscendGraphQLClient, fetchConsentManager } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import { difference } from 'lodash-es';
@@ -6,7 +6,6 @@ import { difference } from 'lodash-es';
 import { StoredApiKey } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { fetchConsentManager } from '../graphql/index.js';
 import { domainToHost } from './domainToHost.js';
 
 /**
@@ -78,7 +77,7 @@ export async function buildXdiSyncEndpoint(
       const client = buildTranscendGraphQLClient(transcendUrl, apiKey.apiKey);
 
       // Grab consent manager
-      const consentManager = await fetchConsentManager(client);
+      const consentManager = await fetchConsentManager(client, { logger });
       return consentManager;
     },
     { concurrency: 5 },

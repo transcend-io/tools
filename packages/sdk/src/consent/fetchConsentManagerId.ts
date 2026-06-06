@@ -1,0 +1,306 @@
+import { InitialViewState, BrowserLanguage, OnConsentExpiry } from '@transcend-io/airgap.js-types';
+import {
+  ConsentPrecedenceOption,
+  UnknownRequestPolicy,
+  TelemetryPartitionStrategy,
+  RegionsOperator,
+  IsoCountrySubdivisionCode,
+  IsoCountryCode,
+  BrowserTimeZone,
+  SignedIabAgreementOption,
+} from '@transcend-io/privacy-types';
+import type { Logger } from '@transcend-io/utils';
+import { GraphQLClient } from 'graphql-request';
+
+import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import {
+  FETCH_CONSENT_MANAGER_ID,
+  FETCH_CONSENT_MANAGER,
+  FETCH_CONSENT_MANAGER_THEME,
+  type TranscendConsentManagerThemeGql,
+  type TranscendCliFetchConsentManagerThemeResponse,
+} from './gqls/consentManager.js';
+import { CONSENT_MANAGER_ANALYTICS_DATA } from './gqls/consentManagerMetrics.js';
+import { EXPERIENCES } from './gqls/experiences.js';
+
+export interface ConsentManager {
+  /** ID of consent manager */
+  id: string;
+  /** Production bundle URL */
+  bundleURL: string;
+  /** Test bundle URL */
+  testBundleURL: string;
+  /** Configuration of consent manager */
+  configuration: {
+    /** Domain list */
+    domains: string[];
+    /** Consent precedence of user vs signal */
+    consentPrecedence: ConsentPrecedenceOption;
+    /** Unknown request policy */
+    unknownRequestPolicy: UnknownRequestPolicy;
+    /** Unknown cookie policy */
+    unknownCookiePolicy: UnknownRequestPolicy;
+    /** Sync endpoint */
+    syncEndpoint: string;
+    /** Telemetry partitioning */
+    telemetryPartitioning: TelemetryPartitionStrategy;
+    /** Signed IAB agreement */
+    signedIabAgreement: SignedIabAgreementOption;
+    /** Sync groups */
+    syncGroups: string;
+    /** Partition parameter */
+    partition: string;
+  };
+  /** When using a custom partition, this is the partition value */
+  partition?: {
+    /** Partition value */
+    partition: string;
+  };
+}
+
+/**
+ * Fetch consent manager
+ *
+ * @param client - GraphQL client
+ * @param options - Options
+ * @returns Consent manager ID in organization
+ */
+export async function fetchConsentManager(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
+): Promise<ConsentManager> {
+  const {
+    consentManager: { consentManager },
+  } = await makeGraphQLRequest<{
+    /** Consent manager query */
+    consentManager: {
+      /** Consent manager object */
+      consentManager: ConsentManager;
+    };
+  }>(client, FETCH_CONSENT_MANAGER, { logger: options.logger });
+  return consentManager;
+}
+
+/**
+ * Fetch consent manager ID
+ *
+ * @param client - GraphQL client
+ * @param options - Options
+ * @returns Consent manager ID in organization
+ */
+export async function fetchConsentManagerId(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+    /** Max number of requests to send */
+    maxRequests?: number;
+  } = {},
+): Promise<string> {
+  const {
+    consentManager: { consentManager },
+  } = await makeGraphQLRequest<{
+    /** Consent manager query */
+    consentManager: {
+      /** Consent manager object */
+      consentManager: {
+        /** ID of bundle */
+        id: string;
+      };
+    };
+  }>(client, FETCH_CONSENT_MANAGER_ID, {
+    logger: options.logger,
+    maxRetries: options.maxRequests,
+  });
+  return consentManager.id;
+}
+
+const PAGE_SIZE = 50;
+
+export interface ConsentExperience {
+  /** ID of experience */
+  id: string;
+  /** Name of experience */
+  name: string;
+  /** Experience display name */
+  displayName?: string;
+  /** Region that define this regional experience */
+  regions: {
+    /** Sub division */
+    countrySubDivision?: IsoCountrySubdivisionCode;
+    /** Country */
+    country?: IsoCountryCode;
+  }[];
+  /** In vs not in operator */
+  operator: RegionsOperator;
+  /** Priority of experience */
+  displayPriority: number;
+  /** View state to prompt when auto prompting is enabled */
+  viewState: InitialViewState;
+  /** Consent expiry setting */
+  onConsentExpiry: OnConsentExpiry;
+  /** Consent expiry */
+  consentExpiry: number;
+  /** Purposes that can be opted out of in a particular experience */
+  purposes: {
+    /** Name of purpose */
+    name: string;
+    /** Purpose slug */
+    trackingType: string;
+  }[];
+  /** Purposes that are opted out by default in a particular experience */
+  optedOutPurposes: {
+    /** Name of purpose */
+    name: string;
+    /** Purpose slug */
+    trackingType: string;
+  }[];
+  /** Browser languages that define this regional experience */
+  browserLanguages: BrowserLanguage[];
+  /** Browser time zones that define this regional experience */
+  browserTimeZones: BrowserTimeZone[];
+}
+
+/**
+ * Fetch consent manager experiences
+ *
+ * @param client - GraphQL client
+ * @param options - Options
+ * @returns Consent manager experiences in the organization
+ */
+export async function fetchConsentManagerExperiences(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
+): Promise<ConsentExperience[]> {
+  const experiences: ConsentExperience[] = [];
+  let offset = 0;
+
+  let shouldContinue = false;
+  do {
+    const {
+      experiences: { nodes },
+    } = await makeGraphQLRequest<{
+      /** Consent experience */
+      experiences: {
+        /** List */
+        nodes: ConsentExperience[];
+      };
+    }>(client, EXPERIENCES, {
+      variables: { first: PAGE_SIZE, offset },
+      logger: options.logger,
+    });
+    experiences.push(...nodes);
+    offset += PAGE_SIZE;
+    shouldContinue = nodes.length === PAGE_SIZE;
+  } while (shouldContinue);
+
+  return experiences.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/**
+ * The allowed bin sizes for pulling consent metrics
+ */
+export enum ConsentManagerMetricBin {
+  Hourly = '1h',
+  Daily = '1d',
+}
+
+export interface ConsentManagerMetric {
+  /** Name of metric */
+  name: string;
+  /** The metrics */
+  points: {
+    /** Key of metric */
+    key: string;
+    /** Value of metric */
+    value: string;
+  }[];
+}
+
+/**
+ * Fetch consent manager analytics data
+ *
+ * @param client - GraphQL client
+ * @param input - Input for fetching data
+ * @param options - Options
+ * @returns Consent manager purposes in the organization
+ */
+export async function fetchConsentManagerAnalyticsData(
+  client: GraphQLClient,
+  input: {
+    /** Data source */
+    dataSource:
+      | 'PRIVACY_SIGNAL_TIMESERIES'
+      | 'CONSENT_CHANGES_TIMESERIES'
+      | 'CONSENT_SESSIONS_BY_REGIME';
+    /** Start date, in ISO string format */
+    startDate: string;
+    /** End date, in ISO string format */
+    endDate: string;
+    /** Force refetching */
+    forceRefetch?: boolean;
+    /** Airgap bundle ID */
+    airgapBundleId: string;
+    /** Bin interval */
+    binInterval: ConsentManagerMetricBin;
+    /** Whether or not to smooth the time series */
+    smoothTimeseries: false;
+  },
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
+): Promise<ConsentManagerMetric[]> {
+  const {
+    analyticsData: { series },
+  } = await makeGraphQLRequest<{
+    /** Analytics data response */
+    analyticsData: {
+      /** Consent manager metrics */
+      series: ConsentManagerMetric[];
+    };
+  }>(client, CONSENT_MANAGER_ANALYTICS_DATA, {
+    variables: { input },
+    logger: options.logger,
+  });
+  return series;
+}
+
+/**
+ * Fetch consent manager theme
+ *
+ * @param client - GraphQL client
+ * @param airgapBundleId - Airgap bundle ID to fetch for
+ * @param options - Options
+ * @returns Consent manager ID in organization
+ */
+export async function fetchConsentManagerTheme(
+  client: GraphQLClient,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+    /** Filter options */
+    filterBy: {
+      /** Airgap bundle ID to fetch for */
+      airgapBundleId: string;
+    };
+  },
+): Promise<TranscendConsentManagerThemeGql> {
+  const {
+    consentManagerTheme: { theme },
+  } = await makeGraphQLRequest<TranscendCliFetchConsentManagerThemeResponse>(
+    client,
+    FETCH_CONSENT_MANAGER_THEME,
+    {
+      variables: { airgapBundleId: options.filterBy.airgapBundleId },
+      logger: options.logger,
+    },
+  );
+  return theme;
+}

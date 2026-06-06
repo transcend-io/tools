@@ -93,13 +93,14 @@ export const LoadOptions = t.intersection([
     themeConfigMap: t.record(ThemeKey, ThemeConfiguration),
     autofocus: AutofocusValues,
     uiZIndex: IntegerString,
-    css: AbsoluteUrlString,
     // If messageMap is not defined, messages will be fetched from `${messageFolder}/${localeKey}.json`
     messageFolder: AbsoluteUrlString,
     regimePrecedence: SemicolonDelimitedRegimeKeyString, // e.g. 'GDPR;CPRA;nFADP'
     uiShadowRoot: valuesOf(ShadowRootOptions),
   }),
   t.partial({
+    // if css is defined and cssFolder is not, CSS will be fetched from the css load option
+    css: AbsoluteUrlString,
     // if message map is defined, it will be used to retrieve localized messages
     messageMap: t.record(valuesOf(LOCALE_KEY), AbsoluteUrlString),
     forceTheme: ThemeKey,

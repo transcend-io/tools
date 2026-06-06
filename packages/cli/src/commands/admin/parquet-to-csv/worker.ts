@@ -1,5 +1,4 @@
-import { extractErrorMessage, CHILD_FLAG } from '@transcend-io/utils';
-import type { ToWorker } from '@transcend-io/utils';
+import { extractErrorMessage, CHILD_FLAG, type ToWorker } from '@transcend-io/utils';
 
 import { parquetToCsvOneFile } from '../../../lib/helpers/index.js';
 import { logger } from '../../../logger.js';

@@ -1,5 +1,8 @@
-import type { Handlebars } from '@transcend-io/handlebars-utils';
-import { HandlebarsInput, createHandlebarsWithHelpers } from '@transcend-io/handlebars-utils';
+import {
+  HandlebarsInput,
+  createHandlebarsWithHelpers,
+  type Handlebars,
+} from '@transcend-io/handlebars-utils';
 import {
   PromptStatus,
   ChatCompletionRole,
@@ -7,7 +10,23 @@ import {
   QueueStatus,
   LargeLanguageModelClient,
 } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
+import {
+  type Agent,
+  type AgentFile,
+  type AgentFileFilterBy,
+  buildTranscendGraphQLClient,
+  fetchAllAgentFiles,
+  fetchAllAgents,
+  fetchAllLargeLanguageModels,
+  fetchAllPromptThreads,
+  fetchPromptsWithVariables,
+  type LargeLanguageModel,
+  type PromptThread,
+  reportPromptRun,
+  type ReportPromptRunInput,
+  type TranscendPromptTemplated,
+  type TranscendPromptsAndVariables,
+} from '@transcend-io/sdk';
 import { Secret } from '@transcend-io/secret-value';
 /* eslint-disable max-lines */
 import { Optionalize, Requirize, apply, decodeCodec, getValues } from '@transcend-io/type-utils';
@@ -17,25 +36,7 @@ import * as t from 'io-ts';
 import { groupBy, keyBy, uniq, chunk } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
-import {
-  LargeLanguageModel,
-  fetchAllLargeLanguageModels,
-} from '../graphql/fetchLargeLanguageModels.js';
-import {
-  TranscendPromptTemplated,
-  TranscendPromptsAndVariables,
-  fetchPromptsWithVariables,
-} from '../graphql/fetchPrompts.js';
-import { PromptThread, fetchAllPromptThreads } from '../graphql/fetchPromptThreads.js';
-import {
-  Agent,
-  AgentFile,
-  AgentFileFilterBy,
-  ReportPromptRunInput,
-  fetchAllAgentFiles,
-  fetchAllAgents,
-  reportPromptRun,
-} from '../graphql/index.js';
+import { logger } from '../../logger.js';
 
 /**
  * An LLM Prompt definition
@@ -271,11 +272,11 @@ export class TranscendPromptManager<
     // Fetch prompts and data
     const [response, largeLanguageModels, agents] = await Promise.all([
       fetchPromptsWithVariables(this.graphQLClient, {
-        promptIds,
-        promptTitles,
+        logger,
+        filterBy: { ids: promptIds, titles: promptTitles },
       }),
-      fetchAllLargeLanguageModels(this.graphQLClient),
-      fetchAllAgents(this.graphQLClient, { names: agentNames }),
+      fetchAllLargeLanguageModels(this.graphQLClient, { logger }),
+      fetchAllAgents(this.graphQLClient, { logger, filterBy: { names: agentNames } }),
     ]);
     this.agentsByName = keyBy(agents, 'name');
     this.agentsByAgentId = keyBy(agents, 'agentId');
@@ -338,7 +339,8 @@ export class TranscendPromptManager<
       return agent;
     }
     const [remoteAgent] = await fetchAllAgents(this.graphQLClient, {
-      names: [name],
+      logger,
+      filterBy: { names: [name] },
     });
     if (!remoteAgent) {
       return undefined;
@@ -356,7 +358,8 @@ export class TranscendPromptManager<
    */
   async getPromptThreadBySlackTs(ts: string): Promise<PromptThread | undefined> {
     const [thread] = await fetchAllPromptThreads(this.graphQLClient, {
-      slackMessageTs: [ts],
+      logger,
+      filterBy: { slackMessageTs: [ts] },
     });
     return thread;
   }
@@ -384,7 +387,8 @@ export class TranscendPromptManager<
     const remoteAgents: Agent[] = [];
     await mapSeries(chunkedNames, async (chunkedName) => {
       const pageOfAgents = await fetchAllAgents(this.graphQLClient, {
-        names: chunkedName,
+        logger,
+        filterBy: { names: chunkedName },
       });
       pageOfAgents.forEach((agent) => {
         this.agentsByName[agent.name] = agent;
@@ -402,7 +406,7 @@ export class TranscendPromptManager<
    * @returns The files found matching the filter
    */
   getAgentFiles(filterBy: AgentFileFilterBy): Promise<AgentFile[]> {
-    return fetchAllAgentFiles(this.graphQLClient, filterBy);
+    return fetchAllAgentFiles(this.graphQLClient, { logger, filterBy });
   }
 
   /**
@@ -597,12 +601,39 @@ export class TranscendPromptManager<
       // Parse the response
       parsed = this.parseAiResponse(promptName, response);
     } catch (err) {
-      await reportPromptRun(this.graphQLClient, {
+      await reportPromptRun(
+        this.graphQLClient,
+        {
+          productArea: PromptRunProductArea.PromptManager,
+          ...options,
+          name,
+          error: err.message,
+          status: QueueStatus.Error,
+          ...(typeof largeLanguageModel === 'string'
+            ? { largeLanguageModelId: largeLanguageModel }
+            : {
+                largeLanguageModelName: largeLanguageModel.name,
+                largeLanguageModelClient: largeLanguageModel.client,
+              }),
+          promptId: promptInput.id,
+          promptRunMessages: options.promptRunMessages.map((message, ind) => ({
+            ...message,
+            ...(ind === 0 ? { template: promptInput.content } : {}),
+          })),
+        },
+        { logger },
+      );
+      throw err;
+    }
+
+    // report successful run
+    const promptRunId = await reportPromptRun(
+      this.graphQLClient,
+      {
         productArea: PromptRunProductArea.PromptManager,
         ...options,
         name,
-        error: err.message,
-        status: QueueStatus.Error,
+        status: QueueStatus.Resolved,
         ...(typeof largeLanguageModel === 'string'
           ? { largeLanguageModelId: largeLanguageModel }
           : {
@@ -614,28 +645,9 @@ export class TranscendPromptManager<
           ...message,
           ...(ind === 0 ? { template: promptInput.content } : {}),
         })),
-      });
-      throw err;
-    }
-
-    // report successful run
-    const promptRunId = await reportPromptRun(this.graphQLClient, {
-      productArea: PromptRunProductArea.PromptManager,
-      ...options,
-      name,
-      status: QueueStatus.Resolved,
-      ...(typeof largeLanguageModel === 'string'
-        ? { largeLanguageModelId: largeLanguageModel }
-        : {
-            largeLanguageModelName: largeLanguageModel.name,
-            largeLanguageModelClient: largeLanguageModel.client,
-          }),
-      promptId: promptInput.id,
-      promptRunMessages: options.promptRunMessages.map((message, ind) => ({
-        ...message,
-        ...(ind === 0 ? { template: promptInput.content } : {}),
-      })),
-    });
+      },
+      { logger },
+    );
 
     return {
       result: parsed,
@@ -686,23 +698,27 @@ export class TranscendPromptManager<
       throw new Error(`promptRunMessages[0].role is expected to be = ${ChatCompletionRole.System}`);
     }
 
-    const promptRunId = await reportPromptRun(this.graphQLClient, {
-      productArea: PromptRunProductArea.PromptManager,
-      ...options,
-      name,
-      status: QueueStatus.Error,
-      ...(typeof largeLanguageModel === 'string'
-        ? { largeLanguageModelId: largeLanguageModel }
-        : {
-            largeLanguageModelName: largeLanguageModel.name,
-            largeLanguageModelClient: largeLanguageModel.client,
-          }),
-      promptId: promptInput.id,
-      promptRunMessages: options.promptRunMessages.map((message, ind) => ({
-        ...message,
-        ...(ind === 0 ? { template: promptInput.content } : {}),
-      })),
-    });
+    const promptRunId = await reportPromptRun(
+      this.graphQLClient,
+      {
+        productArea: PromptRunProductArea.PromptManager,
+        ...options,
+        name,
+        status: QueueStatus.Error,
+        ...(typeof largeLanguageModel === 'string'
+          ? { largeLanguageModelId: largeLanguageModel }
+          : {
+              largeLanguageModelName: largeLanguageModel.name,
+              largeLanguageModelClient: largeLanguageModel.client,
+            }),
+        promptId: promptInput.id,
+        promptRunMessages: options.promptRunMessages.map((message, ind) => ({
+          ...message,
+          ...(ind === 0 ? { template: promptInput.content } : {}),
+        })),
+      },
+      { logger },
+    );
 
     return {
       promptRunId,

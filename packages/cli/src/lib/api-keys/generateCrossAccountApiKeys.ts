@@ -1,18 +1,18 @@
 import { ScopeName } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClientGeneric } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClientGeneric,
+  loginUser,
+  createApiKey,
+  fetchAllApiKeys,
+  deleteApiKey,
+  assumeRole,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { StoredApiKey } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  loginUser,
-  createApiKey,
-  fetchAllApiKeys,
-  deleteApiKey,
-  assumeRole,
-} from '../graphql/index.js';
 
 export interface ApiKeyGenerateError {
   /** Name of instance */
@@ -66,7 +66,7 @@ export async function generateCrossAccountApiKeys({
 
   // Login the user
   logger.info(colors.magenta('Logging in using email and password.'));
-  const { roles, loginCookie } = await loginUser(client, { email, password });
+  const { roles, loginCookie } = await loginUser(client, { email, password, logger });
   logger.info(
     colors.green(
       `Successfully logged in and found ${roles.length} role${roles.length === 1 ? '' : 's'}!`,
@@ -100,7 +100,7 @@ export async function generateCrossAccountApiKeys({
   await mapSeries(filteredRoles, async (role) => {
     try {
       // Log into the other instance
-      await assumeRole(client, { roleId: role.id, email });
+      await assumeRole(client, { roleId: role.id, email, logger });
 
       // Grab API keys with that title
       logger.info(
@@ -110,14 +110,17 @@ export async function generateCrossAccountApiKeys({
       );
 
       // Delete existing API key
-      const [apiKeyWithTitle] = await fetchAllApiKeys(client, [apiKeyTitle]);
+      const [apiKeyWithTitle] = await fetchAllApiKeys(client, {
+        logger,
+        filterBy: { titles: [apiKeyTitle] },
+      });
       if (apiKeyWithTitle && deleteExistingApiKey) {
         logger.info(
           colors.yellow(
             `Deleting existing API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,
           ),
         );
-        await deleteApiKey(client, apiKeyWithTitle.id);
+        await deleteApiKey(client, { id: apiKeyWithTitle.id, logger });
         logger.info(
           colors.green(
             `Successfully deleted API key in "${role.organization.name}" with title: "${apiKeyTitle}".`,
@@ -136,8 +139,8 @@ export async function generateCrossAccountApiKeys({
           ),
         );
         const { apiKey } = await createApiKey(client, {
-          title: apiKeyTitle,
-          scopes,
+          input: { title: apiKeyTitle, scopes },
+          logger,
         });
         results.push({
           organizationName: role.organization.name,

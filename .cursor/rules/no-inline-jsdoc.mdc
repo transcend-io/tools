@@ -1,0 +1,50 @@
+---
+description: JSDoc comment conventions for TypeScript types and interfaces
+globs: **/*.ts
+alwaysApply: false
+---
+
+# JSDoc on All Type Properties
+
+Every property in an `interface`, `type`, or inline object type **must** have a `/** ... */` JSDoc comment. This includes function parameter object types, generic type arguments, and return types.
+
+```typescript
+// ❌ BAD — missing comments
+export interface FooInput {
+  id: string;
+  title?: string;
+  tags?: string[];
+}
+
+// ✅ GOOD
+export interface FooInput {
+  /** Unique identifier */
+  id: string;
+  /** Display title */
+  title?: string;
+  /** Associated tags */
+  tags?: string[];
+}
+```
+
+# No Inline JSDoc in Object Types
+
+Never place `/** ... */` JSDoc comments inline on the same line as the property. Always expand to multi-line.
+
+```typescript
+// ❌ BAD
+options: { /** Logger instance */ logger: Logger }
+nodes: { /** Token */ token: string }[]
+
+// ✅ GOOD
+options: {
+  /** Logger instance */
+  logger: Logger;
+}
+nodes: {
+  /** Token */
+  token: string;
+}[]
+```
+
+This applies to inline types in function parameters, interface properties, and generic type arguments alike.

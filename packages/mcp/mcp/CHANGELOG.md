@@ -1,0 +1,351 @@
+# @transcend-io/mcp
+
+## 0.4.13
+
+### Patch Changes
+
+- Updated dependencies [ec9f959]
+  - @transcend-io/mcp-server-inventory@0.3.7
+
+## 0.4.12
+
+### Patch Changes
+
+- Updated dependencies [6d32f5e]
+- Updated dependencies [85f24d0]
+  - @transcend-io/mcp-server-admin@0.3.10
+  - @transcend-io/mcp-server-inventory@0.3.6
+  - @transcend-io/mcp-server-base@0.4.5
+  - @transcend-io/mcp-server-assessment@0.3.11
+  - @transcend-io/mcp-server-consent@0.2.13
+  - @transcend-io/mcp-server-dsr@0.3.11
+  - @transcend-io/mcp-server-discovery@0.3.6
+  - @transcend-io/mcp-server-preferences@0.3.6
+  - @transcend-io/mcp-server-workflows@0.3.6
+
+## 0.4.11
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.9
+- @transcend-io/mcp-server-assessment@0.3.10
+- @transcend-io/mcp-server-consent@0.2.12
+- @transcend-io/mcp-server-dsr@0.3.10
+
+## 0.4.10
+
+### Patch Changes
+
+- 467109b: Return canonical `app.transcend.io` deep links from assessment tools so MCP
+  clients (Claude Desktop, Cursor, etc.) stop fabricating 404 URLs like
+  `/privacy-requests/assessments/:id`.
+  - `assessments_create`, `assessments_get`, `assessments_update`,
+    `assessments_submit_response`, and `assessments_list` now include a single
+    `url` field in their result payloads, always pointing at the form's
+    read-only response page (`/assessments/forms/{id}/response`) — the same
+    destination as the dashboard's "View Responses" row action, which works
+    for any user with assessment view scope.
+  - `assessments_create_group` and `assessments_list_groups` include a
+    `groupUrl` (`/assessments/groups/{id}`).
+  - Per-assessment tools intentionally do **not** return `groupUrl` as a
+    sibling of `url`. When both were exposed, downstream LLM clients reliably
+    surfaced `groupUrl` over `url` and every clicked link ended up at the
+    parent group instead of the specific assessment. Group navigation lives
+    on the dedicated group tools above.
+  - The fillable `/assessments/forms/{id}/view` route is also intentionally
+    not surfaced — it 404s for anyone who isn't the form's assignee, which
+    the MCP can't verify.
+  - Tool `description`s now instruct the model to surface the returned `url`
+    / `groupUrl` verbatim instead of constructing URLs from raw IDs.
+  - `ToolClients` gains a `dashboardUrl` field (always
+    `https://app.transcend.io` in production) plus a new
+    `DEFAULT_DASHBOARD_URL` export from `@transcend-io/mcp-server-base`.
+  - New optional `TRANSCEND_DASHBOARD_URL` env var overrides the dashboard
+    base URL for testing against staging or local dashboards. Unset in
+    production so we fall through to the canonical `app.transcend.io`.
+  - `assessmentGroupId` is now surfaced on the `Assessment` type via the
+    underlying GraphQL queries, so callers can still navigate from a specific
+    assessment to its parent group via the group tools.
+  - Standalone server CLIs (`mcp-server-admin`, `mcp-server-discovery`,
+    `mcp-server-dsr`, `mcp-server-inventory`, `mcp-server-preferences`,
+    `mcp-server-workflows`) were updated to accept the new `dashboardUrl`
+    field on `CreateClientsArgs`. Runtime behavior is unchanged for everything
+    except the assessment server, which now uses it to build deep links.
+
+  Fixes ZEL-7538.
+
+- Updated dependencies [467109b]
+  - @transcend-io/mcp-server-assessment@0.3.9
+  - @transcend-io/mcp-server-base@0.4.4
+  - @transcend-io/mcp-server-admin@0.3.8
+  - @transcend-io/mcp-server-discovery@0.3.5
+  - @transcend-io/mcp-server-dsr@0.3.9
+  - @transcend-io/mcp-server-inventory@0.3.5
+  - @transcend-io/mcp-server-preferences@0.3.5
+  - @transcend-io/mcp-server-workflows@0.3.5
+  - @transcend-io/mcp-server-consent@0.2.11
+
+## 0.4.9
+
+### Patch Changes
+
+- ed322d2: Adjust readme to clarify api key requirements
+- Updated dependencies [ed322d2]
+  - @transcend-io/mcp-server-preferences@0.3.4
+  - @transcend-io/mcp-server-assessment@0.3.8
+  - @transcend-io/mcp-server-discovery@0.3.4
+  - @transcend-io/mcp-server-inventory@0.3.4
+  - @transcend-io/mcp-server-workflows@0.3.4
+  - @transcend-io/mcp-server-consent@0.2.10
+  - @transcend-io/mcp-server-admin@0.3.7
+  - @transcend-io/mcp-server-base@0.4.3
+  - @transcend-io/mcp-server-dsr@0.3.8
+
+## 0.4.8
+
+### Patch Changes
+
+- Updated dependencies [3cb3a63]
+  - @transcend-io/mcp-server-dsr@0.3.7
+
+## 0.4.7
+
+### Patch Changes
+
+- Updated dependencies [644c65a]
+  - @transcend-io/mcp-server-assessment@0.3.7
+  - @transcend-io/mcp-server-consent@0.2.9
+
+## 0.4.6
+
+### Patch Changes
+
+- @transcend-io/mcp-server-consent@0.2.8
+
+## 0.4.5
+
+### Patch Changes
+
+- Updated dependencies [a9634e4]
+  - @transcend-io/mcp-server-base@0.4.2
+  - @transcend-io/mcp-server-admin@0.3.6
+  - @transcend-io/mcp-server-assessment@0.3.6
+  - @transcend-io/mcp-server-consent@0.2.7
+  - @transcend-io/mcp-server-discovery@0.3.3
+  - @transcend-io/mcp-server-dsr@0.3.6
+  - @transcend-io/mcp-server-inventory@0.3.3
+  - @transcend-io/mcp-server-preferences@0.3.3
+  - @transcend-io/mcp-server-workflows@0.3.3
+
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies [a33cfa5]
+- Updated dependencies [a33cfa5]
+  - @transcend-io/mcp-server-base@0.4.1
+  - @transcend-io/mcp-server-admin@0.3.5
+  - @transcend-io/mcp-server-assessment@0.3.5
+  - @transcend-io/mcp-server-consent@0.2.6
+  - @transcend-io/mcp-server-discovery@0.3.2
+  - @transcend-io/mcp-server-dsr@0.3.5
+  - @transcend-io/mcp-server-inventory@0.3.2
+  - @transcend-io/mcp-server-preferences@0.3.2
+  - @transcend-io/mcp-server-workflows@0.3.2
+
+## 0.4.3
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.4
+- @transcend-io/mcp-server-assessment@0.3.4
+- @transcend-io/mcp-server-consent@0.2.5
+- @transcend-io/mcp-server-dsr@0.3.4
+
+## 0.4.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-consent@0.2.4
+
+## 0.4.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.3
+- @transcend-io/mcp-server-assessment@0.3.3
+- @transcend-io/mcp-server-consent@0.2.3
+- @transcend-io/mcp-server-dsr@0.3.3
+
+## 0.4.0
+
+### Minor Changes
+
+- d2822d5: Stop Datadog (and other container log collectors that key off the stream) from tagging every MCP info log as Error. `SimpleLogger` previously wrote all log levels to stderr unconditionally; in HTTP transport that meant routine lines like `Executing tool: ...`, `Returning N tools`, and `HTTP server listening` were classified as `Error` in Datadog despite the JSON `level` field saying `info`.
+
+  `SimpleLogger` now exposes a static `setInfoToStdout(enabled)` configuration. When enabled (called automatically for HTTP transport in `createMCPServer` and the unified `mcp` CLI), `info` and `debug` route to `process.stdout` while `warn` and `error` stay on `process.stderr`. The default remains all-stderr so stdio MCP transport keeps working without polluting the JSON-RPC protocol on stdout.
+
+  Also:
+  - The duplicate-tool-name warning in `ToolRegistry` now goes through `SimpleLogger.warn` instead of bypassing it with a direct `process.stderr.write`, so it benefits from the same routing config and emits structured JSON consistent with the rest of the server's logs.
+  - `SimpleLogger` keeps strict `(message: string, data?: unknown)` method signatures for compile-time safety on direct callers, while satisfying a wider variadic `Logger` interface (structurally identical to the one in `@transcend-io/utils`) via TypeScript's method bivariance. No new runtime dependencies introduced.
+
+### Patch Changes
+
+- 270f4f2: While this is not intended as a functional change, we’ve migrated GitHub repositories and build tooling
+- Updated dependencies [270f4f2]
+- Updated dependencies [d2822d5]
+  - @transcend-io/mcp-server-consent@0.2.2
+  - @transcend-io/mcp-server-base@0.4.0
+  - @transcend-io/mcp-server-admin@0.3.2
+  - @transcend-io/mcp-server-assessment@0.3.2
+  - @transcend-io/mcp-server-discovery@0.3.1
+  - @transcend-io/mcp-server-dsr@0.3.2
+  - @transcend-io/mcp-server-inventory@0.3.1
+  - @transcend-io/mcp-server-preferences@0.3.1
+  - @transcend-io/mcp-server-workflows@0.3.1
+
+## 0.3.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.1
+- @transcend-io/mcp-server-assessment@0.3.1
+- @transcend-io/mcp-server-consent@0.2.1
+- @transcend-io/mcp-server-dsr@0.3.1
+
+## 0.3.0
+
+### Minor Changes
+
+- af70fbf: Align MCP env var naming with the rest of the repo.
+  - `TRANSCEND_API_URL` now points at the GraphQL backend (default `https://api.transcend.io`), matching `@transcend-io/cli` and the convention used throughout `transcend-io/main`.
+  - The Sombra REST endpoint moves to `SOMBRA_URL` (default `https://multi-tenant.sombra.transcend.io`), matching the env var already read by `@transcend-io/cli` and `@transcend-io/sdk` (`createSombraGotInstance`). Setting `SOMBRA_URL` once now applies to both the CLI/SDK and the MCP server.
+  - `TRANSCEND_GRAPHQL_URL` is removed.
+
+  **Breaking:**
+  - Anyone who previously set `TRANSCEND_API_URL` to a Sombra URL must rename it to `SOMBRA_URL`.
+  - Anyone who previously set `TRANSCEND_GRAPHQL_URL` must rename it to `TRANSCEND_API_URL`.
+
+### Patch Changes
+
+- Updated dependencies [af70fbf]
+  - @transcend-io/mcp-server-base@0.3.0
+  - @transcend-io/mcp-server-admin@0.3.0
+  - @transcend-io/mcp-server-assessment@0.3.0
+  - @transcend-io/mcp-server-consent@0.2.0
+  - @transcend-io/mcp-server-discovery@0.3.0
+  - @transcend-io/mcp-server-dsr@0.3.0
+  - @transcend-io/mcp-server-inventory@0.3.0
+  - @transcend-io/mcp-server-preferences@0.3.0
+  - @transcend-io/mcp-server-workflows@0.3.0
+
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [c07cb4f]
+  - @transcend-io/mcp-server-workflows@0.2.1
+  - @transcend-io/mcp-server-consent@0.1.3
+
+## 0.2.0
+
+### Minor Changes
+
+- d6c7dbf: Add Streamable HTTP transport and dual-auth support (API key + session cookie) to all MCP server packages.
+
+  **Breaking (core):** `TranscendGraphQLBase` and `TranscendRestClient` constructors now accept `AuthCredentials | null` instead of a plain API key string. `createMCPServer`'s `createClients` callback receives `AuthCredentials | null` as its first argument.
+
+  **New:**
+  - `--transport http` flag starts an Express-based Streamable HTTP server with per-session isolation
+  - `AuthCredentials` discriminated union (`apiKey` | `sessionCookie`) for outbound request authentication
+  - `AsyncLocalStorage`-based per-request auth context (`requestAuthContext` / `getRequestAuth`) for safe concurrent multi-tenant operation
+  - `resolveAuth` / `tryResolveAuth` for resolving credentials from inbound HTTP headers or env var
+  - `buildMcpServer` lower-level factory for creating `Server` instances without transport
+  - `runMcpHttp` for starting HTTP servers with session management, SSE resume, health check, and CORS
+  - Auth-free initialization for sidecar deployments (Prometheus/Mastra pattern)
+
+### Patch Changes
+
+- 9d2a663: Update for mcp packages to consume new package names for previously name mcp-server, mcp-server-assessments, and mcp-server-core
+- Updated dependencies [d6c7dbf]
+- Updated dependencies [9d2a663]
+  - @transcend-io/mcp-server-base@0.2.0
+  - @transcend-io/mcp-server-admin@0.2.0
+  - @transcend-io/mcp-server-assessment@0.2.0
+  - @transcend-io/mcp-server-discovery@0.2.0
+  - @transcend-io/mcp-server-dsr@0.2.0
+  - @transcend-io/mcp-server-inventory@0.2.0
+  - @transcend-io/mcp-server-preferences@0.2.0
+  - @transcend-io/mcp-server-workflows@0.2.0
+  - @transcend-io/mcp-server-consent@0.1.2
+
+## 0.0.3
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.0.3
+- @transcend-io/mcp-server-assessments@0.0.3
+- @transcend-io/mcp-server-consent@1.0.2
+- @transcend-io/mcp-server-dsr@0.0.3
+
+## 0.0.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.0.2
+- @transcend-io/mcp-server-assessments@0.0.2
+- @transcend-io/mcp-server-consent@1.0.1
+- @transcend-io/mcp-server-dsr@0.0.2
+
+## 0.0.1
+
+### Patch Changes
+
+- 8185679: feat(sdk): split consent GQL queries into domain files with shared types
+
+  **SDK (`@transcend-io/sdk`):**
+  - Split monolithic `consent/gqls/consentManager.ts` (800+ lines) into domain-focused modules: `cookies.ts`, `dataFlows.ts`, `experiences.ts`, `purposes.ts`, `partitions.ts`, `stats.ts`, `consentManager.ts`
+  - Add shared field selection constants (`SERVICE_FIELDS`, `TRACKING_PURPOSE_FIELDS`, `OWNER_FIELDS`, `TEAM_FIELDS`, `ATTRIBUTE_VALUE_FIELDS`) to deduplicate GQL field lists across queries
+  - Add `Transcend*Gql` response types next to every GQL constant (e.g. `TranscendCliCookiesResponse`, `TranscendCliDataFlowsResponse`)
+  - Add missing GQL queries: `PURPOSES`, `COOKIE_STATS`, `DATA_FLOW_STATS`, `DELETE_COOKIES`, `DELETE_DATA_FLOWS`
+  - Extend `DATA_FLOWS` and `COOKIES` queries with parameterized `$filterBy`/`$orderBy` variables and triage fields (`occurrences`, `frequency`, `purposes`, etc.)
+  - Extend `UPDATE_DATA_FLOWS` mutation to return full data flow fields
+  - Add `totalCount` to `EXPERIENCES` query response
+  - Add `id` to owners, teams, and attribute values in all GQL selections
+  - Move generic types (`TranscendOwnerGql`, `TranscendTeamGql`, `TranscendAttributeValueGql`) to SDK-wide `gqls/shared.ts`
+  - Delete redundant type aliases (`Cookie`, `DataFlow`, `ConsentManagerTheme`, `TranscendPartition`) from fetch/sync files; use GQL types directly
+  - Expose optional `orderBy` parameter in `fetchAllDataFlows` and `fetchAllCookies`
+  - Add barrel exports: `consent/gqls/index.ts` and `gqls/index.ts`
+
+  **Privacy Types (`@transcend-io/privacy-types`):**
+  - Add `OrderDirection` enum (`Asc = 'ASC'`, `Desc = 'DESC'`)
+
+  **MCP Server Core (`@transcend-io/mcp-server-core`):**
+  - Make `TranscendGraphQLBase.makeRequest` public (was `protected`)
+  - Remove consent-specific types from `types/transcend.ts` (moved to SDK)
+  - Remove `@transcend-io/privacy-types` re-exports (consumers import directly)
+
+  **MCP Server Consent (`@transcend-io/mcp-server-consent`):**
+  - **BREAKING:** Delete `graphql.ts` (`ConsentMixin`) — tools now call `makeRequest` directly with GQL from SDK
+  - **BREAKING:** Remove `airgap_bundle_id` from all tool inputs — auto-resolved from API key via `resolveAirgapBundleId`
+  - **BREAKING:** Merge `consent_list_triage_cookies`/`consent_list_triage_data_flows` into `consent_list_cookies`/`consent_list_data_flows` with required `status` filter
+  - **BREAKING:** Rename tool `consent_list_triage_cookies` → `consent_list_cookies`, `consent_list_triage_data_flows` → `consent_list_data_flows`
+  - Replace hardcoded regimes with real `EXPERIENCES` API call
+  - Add `show_zero_activity` support to `consent_get_triage_stats`
+  - Use `ConsentTrackerStatus`/`OrderDirection` enums from `@transcend-io/privacy-types` instead of hardcoded strings
+  - Import all GQL response types from SDK — zero inline `makeRequest<{...}>` type parameters
+
+  **Future work:** Reuse SDK fetch functions (`fetchAllDataFlows`, `fetchConsentManagerExperiences`) directly once `TranscendGraphQLBase` is compatible with `graphql-request`'s `GraphQLClient` interface.
+
+- Updated dependencies [8185679]
+- Updated dependencies [d3f8140]
+- Updated dependencies [29868af]
+  - @transcend-io/mcp-server-core@0.1.0
+  - @transcend-io/mcp-server-consent@1.0.0
+  - @transcend-io/mcp-server-dsr@0.0.1
+  - @transcend-io/mcp-server-admin@0.0.1
+  - @transcend-io/mcp-server-assessments@0.0.1
+  - @transcend-io/mcp-server-discovery@0.0.1
+  - @transcend-io/mcp-server-inventory@0.0.1
+  - @transcend-io/mcp-server-preferences@0.0.1
+  - @transcend-io/mcp-server-workflows@0.0.1
