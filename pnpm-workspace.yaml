@@ -26,6 +26,8 @@ catalog:
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
+  # Renovate security update: vitest@4.1.0
+  - vitest@4.1.0
 
 onlyBuiltDependencies:
   - esbuild
