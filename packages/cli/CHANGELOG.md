@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.3.8
+
+### Patch Changes
+
+- 47bf9a4: Fixed jwt import syntax
+
 ## 10.3.7
 
 ### Patch Changes
