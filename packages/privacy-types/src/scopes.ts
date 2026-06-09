@@ -92,6 +92,10 @@ export enum ScopeName {
   ViewPreferenceStoreSettings = 'viewPreferenceStoreSettings',
   ManagePolicies = 'managePolicies',
   ViewPolicies = 'viewPolicies',
+  // Policy Engine (Seneca) — control-plane policy bundles
+  ViewPolicyBundles = 'viewPolicyBundles',
+  ManagePolicyBundles = 'managePolicyBundles',
+  ActivatePolicyBundles = 'activatePolicyBundles',
   ManageIntlMessages = 'manageIntlMessages',
   ViewIntlMessages = 'viewIntlMessages',
   LLMLogTransfer = 'llmLogTransfer',
@@ -137,6 +141,7 @@ export enum TranscendProduct {
   UnstructuredDiscovery = 'UNSTRUCTURED_DISCOVERY',
   DataLineage = 'DATA_LINEAGE',
   RulesAutomation = 'RULES_AUTOMATION',
+  PolicyEngine = 'POLICY_ENGINE',
 }
 
 /**
@@ -478,6 +483,29 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     title: 'View Policies',
     type: ScopeType.View,
     products: [TranscendProduct.PrivacyCenter],
+  },
+  [ScopeName.ViewPolicyBundles]: {
+    dependencies: [],
+    description: 'View Policy Engine policy bundles and their versions.',
+    title: 'View Policy Bundles',
+    type: ScopeType.View,
+    products: [TranscendProduct.PolicyEngine],
+  },
+  [ScopeName.ManagePolicyBundles]: {
+    dependencies: [ScopeName.ViewPolicyBundles],
+    description:
+      'Create and upload Policy Engine policy bundles and versions. Uploaded versions are inert until activated.',
+    title: 'Manage Policy Bundles',
+    type: ScopeType.Modify,
+    products: [TranscendProduct.PolicyEngine],
+  },
+  [ScopeName.ActivatePolicyBundles]: {
+    dependencies: [ScopeName.ViewPolicyBundles],
+    description:
+      'Activate a Policy Engine bundle version, making it the live policy. Kept separate from Manage Policy Bundles so publish-only access can be granted without activation rights.',
+    title: 'Activate Policy Bundles',
+    type: ScopeType.Modify,
+    products: [TranscendProduct.PolicyEngine],
   },
   [ScopeName.ManageIntlMessages]: {
     dependencies: [ScopeName.ViewIntlMessages],
