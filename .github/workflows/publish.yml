@@ -6,6 +6,7 @@ on:
       - closed
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -14,9 +15,10 @@ permissions:
 jobs:
   publish:
     if: >-
-      github.event.pull_request.merged == true &&
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.pull_request.merged == true &&
       github.event.pull_request.head.repo.full_name == github.repository &&
-      github.event.pull_request.head.ref == 'changeset-release/main'
+      github.event.pull_request.head.ref == 'changeset-release/main')
     runs-on: ubuntu-24.04-arm
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -25,8 +27,8 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           # Publish the release PR tree, not the merge-queue commit that may
-          # include newer changesets for the next release.
-          ref: ${{ github.event.pull_request.head.sha }}
+          # include newer changesets for the next release. Manual reruns use main.
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.event.pull_request.head.sha }}
           persist-credentials: false
 
       - name: Bootstrap

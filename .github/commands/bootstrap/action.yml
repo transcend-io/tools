@@ -15,6 +15,10 @@ runs:
         cache: 'pnpm'
         node-version-file: '.node-version'
 
+    - name: Ensure npm supports OIDC trusted publishing
+      shell: bash
+      run: npm install -g npm@^11.5.1
+
     - name: Install dependencies
       shell: bash
       run: pnpm install
