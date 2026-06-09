@@ -216,6 +216,9 @@
               "sso-title": {
                 "type": "string"
               },
+              "parent-team-name": {
+                "type": "string"
+              },
               "users": {
                 "type": "array",
                 "items": {

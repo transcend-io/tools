@@ -1,6 +1,7 @@
 teams:
   - name: Product
     description: Team for bill
+    parent-team-name: Engineering
     sso-department: /Product
     users:
       - bill@acme.com

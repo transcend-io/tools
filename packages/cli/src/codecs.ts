@@ -134,6 +134,8 @@ export const TeamInput = t.intersection([
     'sso-group': t.string,
     /** SSO title mapping for automated provisioning */
     'sso-title': t.string,
+    /** Parent organization team name to link this team to */
+    'parent-team-name': t.string,
     /** List of user emails on the team */
     users: t.array(t.string),
     /** List of scopes that the team should have */
