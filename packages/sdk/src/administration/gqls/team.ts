@@ -28,6 +28,10 @@ export const TEAMS = gql`
           name
           title
         }
+        parentTeam {
+          id
+          name
+        }
       }
     }
   }
