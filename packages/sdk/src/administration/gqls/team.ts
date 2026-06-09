@@ -28,7 +28,32 @@ export const TEAMS = gql`
           name
           title
         }
+        parentTeam {
+          id
+          name
+        }
       }
+    }
+  }
+`;
+
+export const PARENT_ORGANIZATION_TEAMS = gql`
+  query TranscendCliParentOrganizationTeams(
+    $first: Int!
+    $offset: Int!
+    $filterBy: ParentTeamFiltersInput
+  ) {
+    parentOrganizationTeams(
+      first: $first
+      offset: $offset
+      filterBy: $filterBy
+      orderBy: [{ field: createdAt, direction: ASC }, { field: name, direction: ASC }]
+    ) {
+      nodes {
+        id
+        name
+      }
+      totalCount
     }
   }
 `;

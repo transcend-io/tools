@@ -1,6 +1,7 @@
 export * from './fetchAllAttributes.js';
 export * from './fetchAllMessages.js';
 export * from './fetchAllTeams.js';
+export * from './fetchParentOrganizationTeams.js';
 export * from './fetchAllUsers.js';
 export * from './fetchApiKeys.js';
 export * from './formatRegions.js';

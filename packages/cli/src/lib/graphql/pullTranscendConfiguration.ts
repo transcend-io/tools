@@ -813,12 +813,22 @@ export async function pullTranscendConfiguration(
   // Save teams
   if (teams.length > 0 && resources.includes(TranscendPullResource.Teams)) {
     result.teams = teams.map(
-      ({ name, description, ssoDepartment, ssoGroup, ssoTitle, users, scopes }): TeamInput => ({
+      ({
+        name,
+        description,
+        ssoDepartment,
+        ssoGroup,
+        ssoTitle,
+        users,
+        scopes,
+        parentTeam,
+      }): TeamInput => ({
         name,
         description,
         'sso-department': ssoDepartment || undefined,
         'sso-group': ssoGroup || undefined,
         'sso-title': ssoTitle || undefined,
+        'parent-team-name': parentTeam?.name,
         users: users.map(({ email }) => email),
         scopes: scopes.map(({ name }) => name),
       }),
