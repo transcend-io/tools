@@ -47,7 +47,7 @@ export const CronIdentifier = t.intersection([
   }),
   t.partial({
     /** The consent partition that scopes this request, when applicable */
-    partition: CronPartition,
+    partition: t.union([CronPartition, t.null]),
   }),
 ]);
 
