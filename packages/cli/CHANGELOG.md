@@ -1,5 +1,17 @@
 # @transcend-io/cli
 
+## 10.4.0
+
+### Minor Changes
+
+- 14459f8: Add optional `parent-team-name` to team config. During sync, resolve the name to a parent organization team ID via `parentOrganizationTeams` and pass it to `createTeam`/`updateTeam`. During pull, emit `parent-team-name` from each team's linked `parentTeam`.
+- ad6655d: Document the optional `partition` object on cron pending-requests responses and include `partitionId`, `partitionName`, and `partitionKey` columns in `transcend request cron pull-identifiers` CSV output when a DSR is scoped to a consent partition.
+
+### Patch Changes
+
+- Updated dependencies [14459f8]
+  - @transcend-io/sdk@1.2.0
+
 ## 10.3.8
 
 ### Patch Changes
