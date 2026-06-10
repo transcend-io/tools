@@ -93,9 +93,9 @@ export enum ScopeName {
   ManagePolicies = 'managePolicies',
   ViewPolicies = 'viewPolicies',
   // Policy Engine (Seneca) — control-plane policy bundles
-  ViewPolicyBundles = 'viewPolicyBundles',
-  ManagePolicyBundles = 'managePolicyBundles',
-  ActivatePolicyBundles = 'activatePolicyBundles',
+  ViewPolicyEngineBundles = 'viewPolicyEngineBundles',
+  ManagePolicyEngineBundles = 'managePolicyEngineBundles',
+  ActivatePolicyEngineBundles = 'activatePolicyEngineBundles',
   ManageIntlMessages = 'manageIntlMessages',
   ViewIntlMessages = 'viewIntlMessages',
   LLMLogTransfer = 'llmLogTransfer',
@@ -473,37 +473,37 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
   [ScopeName.ManagePolicies]: {
     dependencies: [ScopeName.ViewPolicies],
     description: 'Make changes to the policies defined underneath the privacy center.',
-    title: 'Manage Policies',
+    title: 'Manage Privacy Center Policies',
     type: ScopeType.Modify,
     products: [TranscendProduct.PrivacyCenter],
   },
   [ScopeName.ViewPolicies]: {
     dependencies: [],
     description: 'View the policies defined underneath the privacy center.',
-    title: 'View Policies',
+    title: 'View Privacy Center Policies',
     type: ScopeType.View,
     products: [TranscendProduct.PrivacyCenter],
   },
-  [ScopeName.ViewPolicyBundles]: {
+  [ScopeName.ViewPolicyEngineBundles]: {
     dependencies: [],
     description: 'View Policy Engine policy bundles and their versions.',
-    title: 'View Policy Bundles',
+    title: 'View Policy',
     type: ScopeType.View,
     products: [TranscendProduct.PolicyEngine],
   },
-  [ScopeName.ManagePolicyBundles]: {
-    dependencies: [ScopeName.ViewPolicyBundles],
+  [ScopeName.ManagePolicyEngineBundles]: {
+    dependencies: [ScopeName.ViewPolicyEngineBundles],
     description:
       'Create and upload Policy Engine policy bundles and versions. Uploaded versions are inert until activated.',
-    title: 'Manage Policy Bundles',
+    title: 'Manage Policy',
     type: ScopeType.Modify,
     products: [TranscendProduct.PolicyEngine],
   },
-  [ScopeName.ActivatePolicyBundles]: {
-    dependencies: [ScopeName.ViewPolicyBundles],
+  [ScopeName.ActivatePolicyEngineBundles]: {
+    dependencies: [ScopeName.ViewPolicyEngineBundles],
     description:
-      'Activate a Policy Engine bundle version, making it the live policy. Kept separate from Manage Policy Bundles so publish-only access can be granted without activation rights.',
-    title: 'Activate Policy Bundles',
+      'Activate a Policy Engine bundle version, making it the live policy. Kept separate from Manage Policy so publish-only access can be granted without activation rights.',
+    title: 'Activate Policy',
     type: ScopeType.Modify,
     products: [TranscendProduct.PolicyEngine],
   },
