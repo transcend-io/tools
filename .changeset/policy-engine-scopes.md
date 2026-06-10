@@ -1,5 +1,6 @@
 ---
 "@transcend-io/privacy-types": minor
+"@transcend-io/cli": minor
 ---
 
 Add Policy Engine (Seneca) control-plane scopes to the AD scope catalog: `ViewPolicyEngineBundles`, `ManagePolicyEngineBundles`, and `ActivatePolicyEngineBundles` (wire values `viewPolicyEngineBundles` / `managePolicyEngineBundles` / `activatePolicyEngineBundles`), titled "View Policy" / "Manage Policy" / "Activate Policy". These authorize the new `/api/v1/policy-engine/*` REST endpoints on the monolith. Also adds a new `TranscendProduct.PolicyEngine` enum value.
