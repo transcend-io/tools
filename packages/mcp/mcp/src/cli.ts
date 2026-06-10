@@ -6,9 +6,11 @@ import {
   DEFAULT_DASHBOARD_URL,
   DEFAULT_SOMBRA_URL,
   DEFAULT_TRANSCEND_API_URL,
+  getOAuthIssuer,
   parseTransportArgs,
-  resolveAuth,
+  resolveStdioStartupAuth,
   runMcpHttp,
+  runOAuthLoginAfterConnect,
   SimpleLogger,
   TranscendRestClient,
   type AuthCredentials,
@@ -65,8 +67,13 @@ async function main(): Promise<void> {
   }
 
   // stdio mode
-  const auth = resolveAuth();
-  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl, dashboardUrl });
+  const auth = resolveStdioStartupAuth();
+  logger.info('Initializing Transcend API clients...', {
+    sombraUrl,
+    graphqlUrl,
+    dashboardUrl,
+    authType: auth?.type ?? (process.env.TRANSCEND_OAUTH_ISSUER ? 'oauth-pending' : 'none'),
+  });
 
   const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
 
@@ -91,6 +98,10 @@ async function main(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  if (auth === null && process.env.TRANSCEND_OAUTH_ISSUER) {
+    runOAuthLoginAfterConnect({ issuer: getOAuthIssuer(), logger });
+  }
 
   logger.info('Transcend MCP Server started successfully', {
     sombraUrl,

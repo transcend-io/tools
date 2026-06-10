@@ -8,10 +8,12 @@ import {
   DEFAULT_SOMBRA_URL,
   DEFAULT_TRANSCEND_API_URL,
 } from '../defaults.js';
+import { getOAuthIssuer } from '../oauth/config.js';
+import { runOAuthLoginAfterConnect } from '../oauth/oauth-flow.js';
+import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
-import { resolveAuth } from './resolve-auth.js';
 import { runMcpHttp } from './run-http.js';
 
 /**
@@ -102,8 +104,13 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const auth = resolveAuth();
-  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl, dashboardUrl });
+  const auth = resolveStdioStartupAuth();
+  logger.info('Initializing Transcend API clients...', {
+    sombraUrl,
+    graphqlUrl,
+    dashboardUrl,
+    authType: auth?.type ?? (process.env.TRANSCEND_OAUTH_ISSUER ? 'oauth-pending' : 'none'),
+  });
   const clients = await buildClients(
     { auth, sombraUrl, graphqlUrl, dashboardUrl },
     options.createClients,
@@ -115,6 +122,10 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  if (auth === null && process.env.TRANSCEND_OAUTH_ISSUER) {
+    runOAuthLoginAfterConnect({ issuer: getOAuthIssuer(), logger });
+  }
 
   logger.info(`${options.name} started successfully`, {
     sombraUrl,

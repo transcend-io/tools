@@ -42,6 +42,15 @@ export type { BuildMcpServerOptions } from './server/build-server.js';
 
 export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 
+export { isOAuthModeEnabled, getOAuthIssuer, getOAuthScopes } from './oauth/config.js';
+export { resolveStdioStartupAuth } from './oauth/resolve-stdio-auth.js';
+export {
+  startOAuthLogin,
+  runOAuthLoginAfterConnect,
+  buildAuthorizationUrl,
+} from './oauth/oauth-flow.js';
+export type { PendingOAuthSession } from './oauth/types.js';
+
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';
 
