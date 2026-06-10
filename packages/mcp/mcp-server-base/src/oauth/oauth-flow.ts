@@ -98,27 +98,3 @@ export async function startOAuthLogin(
     throw error;
   }
 }
-
-/**
- * Runs OAuth login in the background after stdio MCP initialize completes.
- * Logs callback receipt; token exchange is implemented in phase 3.
- */
-export function runOAuthLoginAfterConnect(options: StartOAuthLoginOptions): void {
-  void (async () => {
-    let session: PendingOAuthSession | undefined;
-    try {
-      session = await startOAuthLogin(options);
-      const callback = await session.waitForCallback();
-      options.logger.info('OAuth authorization code received', {
-        state: callback.state,
-        codeLength: callback.code.length,
-      });
-    } catch (error) {
-      options.logger.error('OAuth login failed', {
-        error: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      await session?.close().catch(() => undefined);
-    }
-  })();
-}

@@ -44,11 +44,12 @@ export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/
 
 export { isOAuthModeEnabled, getOAuthIssuer, getOAuthScopes } from './oauth/config.js';
 export { resolveStdioStartupAuth } from './oauth/resolve-stdio-auth.js';
+export { startOAuthLogin, buildAuthorizationUrl } from './oauth/oauth-flow.js';
 export {
-  startOAuthLogin,
-  runOAuthLoginAfterConnect,
-  buildAuthorizationUrl,
-} from './oauth/oauth-flow.js';
+  ensureLazyOAuthAuth,
+  isLazyOAuthSessionReady,
+  resetLazyOAuthState,
+} from './oauth/lazy-auth.js';
 export type { PendingOAuthSession } from './oauth/types.js';
 
 export { parseTransportArgs } from './server/parse-args.js';

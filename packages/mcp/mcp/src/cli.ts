@@ -6,11 +6,9 @@ import {
   DEFAULT_DASHBOARD_URL,
   DEFAULT_SOMBRA_URL,
   DEFAULT_TRANSCEND_API_URL,
-  getOAuthIssuer,
   parseTransportArgs,
   resolveStdioStartupAuth,
   runMcpHttp,
-  runOAuthLoginAfterConnect,
   SimpleLogger,
   TranscendRestClient,
   type AuthCredentials,
@@ -98,10 +96,6 @@ async function main(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-
-  if (auth === null && process.env.TRANSCEND_OAUTH_ISSUER) {
-    runOAuthLoginAfterConnect({ issuer: getOAuthIssuer(), logger });
-  }
 
   logger.info('Transcend MCP Server started successfully', {
     sombraUrl,
