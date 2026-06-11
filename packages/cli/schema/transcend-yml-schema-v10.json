@@ -157,7 +157,8 @@
                   "STRUCTURED_DISCOVERY",
                   "UNSTRUCTURED_DISCOVERY",
                   "DATA_LINEAGE",
-                  "RULES_AUTOMATION"
+                  "RULES_AUTOMATION",
+                  "POLICY_ENGINE"
                 ]
               }
             }
@@ -316,6 +317,9 @@
                     "viewPreferenceStoreSettings",
                     "managePolicies",
                     "viewPolicies",
+                    "viewPolicyEngineBundles",
+                    "managePolicyEngineBundles",
+                    "activatePolicyEngineBundles",
                     "manageIntlMessages",
                     "viewIntlMessages",
                     "llmLogTransfer",
