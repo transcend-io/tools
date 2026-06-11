@@ -5,7 +5,7 @@ import { registerOAuthClient } from './dcr.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { openBrowser } from './open-browser.js';
 import { generateOAuthState, generatePkcePair } from './pkce.js';
-import type { PendingOAuthSession } from './types.js';
+import type { OAuthAuthorizationGrant, PendingOAuthSession } from './types.js';
 
 export interface StartOAuthLoginOptions {
   /** OAuth authorization server issuer URL */
@@ -97,4 +97,20 @@ export async function startOAuthLogin(
     await callbackHandle.close().catch(() => undefined);
     throw error;
   }
+}
+
+/**
+ * Waits for the browser callback and returns the full authorization grant for token exchange.
+ */
+export async function waitForAuthorizationGrant(
+  session: PendingOAuthSession,
+): Promise<OAuthAuthorizationGrant> {
+  const callback = await session.waitForCallback();
+  return {
+    code: callback.code,
+    state: callback.state,
+    codeVerifier: session.codeVerifier,
+    redirectUri: session.redirectUri,
+    clientId: session.clientId,
+  };
 }

@@ -4,8 +4,9 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
+import { requestAuthContext } from '../auth-context.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
-import { ensureLazyOAuthAuth } from '../oauth/lazy-auth.js';
+import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
 import type { ToolDefinition } from '../tools/types.js';
@@ -86,10 +87,14 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       }
 
       await ensureLazyOAuthAuth(logger);
+      const oauthCredentials = getLazyOAuthCredentials();
 
       const result = await toolCallContext.run(
         { toolName: name, correlationId: randomUUID() },
-        () => tool.handler(parseResult.data),
+        () => {
+          const execute = () => tool.handler(parseResult.data);
+          return oauthCredentials ? requestAuthContext.run(oauthCredentials, execute) : execute();
+        },
       );
       logger.debug(`Tool ${name} completed successfully`);
 

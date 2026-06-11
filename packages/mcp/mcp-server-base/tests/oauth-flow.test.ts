@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAuthorizationUrl } from '../src/oauth/oauth-flow.js';
+import { buildAuthorizationUrl, waitForAuthorizationGrant } from '../src/oauth/oauth-flow.js';
 
 describe('buildAuthorizationUrl', () => {
   it('includes PKCE, state, and scope parameters', () => {
@@ -23,5 +23,25 @@ describe('buildAuthorizationUrl', () => {
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(url.searchParams.get('state')).toBe('state-xyz');
     expect(url.searchParams.get('scope')).toBe('offline_access viewRequests');
+  });
+});
+
+describe('waitForAuthorizationGrant', () => {
+  it('merges callback result with session fields for token exchange', async () => {
+    const grant = await waitForAuthorizationGrant({
+      redirectUri: 'http://127.0.0.1:4567/callback',
+      clientId: 'client-123',
+      codeVerifier: 'verifier-abc',
+      waitForCallback: async () => ({ code: 'auth-code', state: 'state-xyz' }),
+      close: async () => undefined,
+    });
+
+    expect(grant).toEqual({
+      code: 'auth-code',
+      state: 'state-xyz',
+      codeVerifier: 'verifier-abc',
+      redirectUri: 'http://127.0.0.1:4567/callback',
+      clientId: 'client-123',
+    });
   });
 });

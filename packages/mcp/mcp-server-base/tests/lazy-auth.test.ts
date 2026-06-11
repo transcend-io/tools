@@ -1,32 +1,56 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
+import { ErrorCode, ToolError } from '../src/errors.js';
+import { TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV } from '../src/oauth/constants.js';
 import {
   ensureLazyOAuthAuth,
+  getLazyOAuthCredentials,
+  getStoredAuthorizationGrant,
   isLazyOAuthSessionReady,
   resetLazyOAuthState,
 } from '../src/oauth/lazy-auth.js';
+import * as metadata from '../src/oauth/metadata.js';
 import * as oauthFlow from '../src/oauth/oauth-flow.js';
+import * as tokenExchange from '../src/oauth/token-exchange.js';
+import * as tokenManager from '../src/oauth/token-manager.js';
+import { writeStoredOAuthTokens, storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
 
 describe('ensureLazyOAuthAuth', () => {
   const logger = new SimpleLogger();
   const originalApiKey = process.env.TRANSCEND_API_KEY;
   const originalIssuer = process.env.TRANSCEND_OAUTH_ISSUER;
+  const originalStorePath = process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV];
+  let tempDir = '';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     resetLazyOAuthState();
     vi.restoreAllMocks();
     delete process.env.TRANSCEND_API_KEY;
     delete process.env.TRANSCEND_OAUTH_ISSUER;
+    tempDir = await mkdtemp(path.join(tmpdir(), 'transcend-oauth-lazy-'));
+    process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV] = path.join(tempDir, 'tokens.json');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     resetLazyOAuthState();
     if (originalApiKey === undefined) delete process.env.TRANSCEND_API_KEY;
     else process.env.TRANSCEND_API_KEY = originalApiKey;
 
     if (originalIssuer === undefined) delete process.env.TRANSCEND_OAUTH_ISSUER;
     else process.env.TRANSCEND_OAUTH_ISSUER = originalIssuer;
+
+    if (originalStorePath === undefined) {
+      delete process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV];
+    } else {
+      process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV] = originalStorePath;
+    }
+
+    await rm(tempDir, { recursive: true, force: true });
   });
 
   it('no-ops when OAuth mode is disabled', async () => {
@@ -35,7 +59,75 @@ describe('ensureLazyOAuthAuth', () => {
     expect(startSpy).not.toHaveBeenCalled();
   });
 
-  it('runs OAuth login once and marks the session ready', async () => {
+  it('refreshes expired tokens without opening the browser', async () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    const now = 1_700_000_000_000;
+    const expired = storedTokensFromTokenResponse({
+      response: {
+        access_token: 'expired-access',
+        refresh_token: 'refresh-token',
+        expires_in: 60,
+      },
+      issuer: 'https://yo.com:4001',
+      clientId: 'client',
+      nowMs: now,
+    });
+    await writeStoredOAuthTokens(expired);
+
+    vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
+      issuer: 'https://yo.com:4001',
+      authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
+      tokenEndpoint: 'https://yo.com:4001/oauth/token',
+      registrationEndpoint: 'https://yo.com:4001/oauth/register',
+      codeChallengeMethodsSupported: ['S256'],
+    });
+    vi.spyOn(tokenManager, 'getValidOAuthCredentials').mockImplementation(async () => ({
+      type: 'oauthToken',
+      accessToken: 'refreshed-access',
+      refreshToken: 'refresh-token',
+      expiresAt: now + 3_540_000,
+    }));
+
+    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin');
+    await ensureLazyOAuthAuth(logger);
+
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(isLazyOAuthSessionReady()).toBe(true);
+    expect(getLazyOAuthCredentials()).toMatchObject({
+      type: 'oauthToken',
+      accessToken: 'refreshed-access',
+    });
+  });
+
+  it('uses cached tokens without opening the browser', async () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    const now = Date.now();
+    await writeStoredOAuthTokens(
+      storedTokensFromTokenResponse({
+        response: {
+          access_token: 'cached-access',
+          refresh_token: 'cached-refresh',
+          expires_in: 3600,
+        },
+        issuer: 'https://yo.com:4001',
+        clientId: 'client',
+        nowMs: now,
+      }),
+    );
+
+    const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin');
+    await ensureLazyOAuthAuth(logger);
+
+    expect(startSpy).not.toHaveBeenCalled();
+    expect(isLazyOAuthSessionReady()).toBe(true);
+    expect(getLazyOAuthCredentials()).toMatchObject({
+      type: 'oauthToken',
+      accessToken: 'cached-access',
+      refreshToken: 'cached-refresh',
+    });
+  });
+
+  it('runs OAuth login once, exchanges tokens, and marks the session ready', async () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
 
     const waitForCallback = vi.fn().mockResolvedValue({ code: 'abc', state: 'xyz' });
@@ -47,13 +139,58 @@ describe('ensureLazyOAuthAuth', () => {
       waitForCallback,
       close,
     });
+    vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
+      issuer: 'https://yo.com:4001',
+      authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
+      tokenEndpoint: 'https://yo.com:4001/oauth/token',
+      registrationEndpoint: 'https://yo.com:4001/oauth/register',
+      codeChallengeMethodsSupported: ['S256'],
+    });
+    vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(
+      storedTokensFromTokenResponse({
+        response: {
+          access_token: 'new-access',
+          refresh_token: 'new-refresh',
+          expires_in: 3600,
+        },
+        issuer: 'https://yo.com:4001',
+        clientId: 'client',
+      }),
+    );
 
     await ensureLazyOAuthAuth(logger);
     expect(isLazyOAuthSessionReady()).toBe(true);
     expect(startSpy).toHaveBeenCalledTimes(1);
+    expect(getStoredAuthorizationGrant()).toEqual({
+      code: 'abc',
+      state: 'xyz',
+      codeVerifier: 'verifier',
+      redirectUri: 'http://127.0.0.1:1/callback',
+      clientId: 'client',
+    });
+    expect(getLazyOAuthCredentials()).toMatchObject({
+      type: 'oauthToken',
+      accessToken: 'new-access',
+      refreshToken: 'new-refresh',
+    });
 
     await ensureLazyOAuthAuth(logger);
     expect(startSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('surfaces OAuth failures as AUTH_ERROR tool errors', async () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+
+    vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(new Error('OAuth callback timed out'));
+
+    await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
+      name: 'ToolError',
+      code: ErrorCode.AUTH_ERROR,
+      retryable: true,
+    } satisfies Partial<ToolError>);
+    expect(isLazyOAuthSessionReady()).toBe(false);
+    expect(getStoredAuthorizationGrant()).toBeNull();
+    expect(getLazyOAuthCredentials()).toBeNull();
   });
 
   it('deduplicates concurrent login attempts', async () => {
@@ -74,6 +211,20 @@ describe('ensureLazyOAuthAuth', () => {
       waitForCallback,
       close,
     });
+    vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
+      issuer: 'https://yo.com:4001',
+      authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
+      tokenEndpoint: 'https://yo.com:4001/oauth/token',
+      registrationEndpoint: 'https://yo.com:4001/oauth/register',
+      codeChallengeMethodsSupported: ['S256'],
+    });
+    vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(
+      storedTokensFromTokenResponse({
+        response: { access_token: 'access', expires_in: 3600 },
+        issuer: 'https://yo.com:4001',
+        clientId: 'client',
+      }),
+    );
 
     const first = ensureLazyOAuthAuth(logger);
     const second = ensureLazyOAuthAuth(logger);

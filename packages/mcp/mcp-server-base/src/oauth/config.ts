@@ -1,6 +1,7 @@
 import {
   DEFAULT_OAUTH_ISSUER,
   DEFAULT_OAUTH_SCOPES,
+  TRANSCEND_OAUTH_CALLBACK_PORT_ENV,
   TRANSCEND_OAUTH_SCOPES_ENV,
 } from './constants.js';
 
@@ -32,4 +33,19 @@ export function getOAuthScopes(): string[] {
     return [...DEFAULT_OAUTH_SCOPES];
   }
   return raw.split(/[\s,]+/).filter(Boolean);
+}
+
+/**
+ * Optional fixed localhost port for the OAuth callback server (`0` = ephemeral).
+ */
+export function getOAuthCallbackPort(): number {
+  const raw = process.env[TRANSCEND_OAUTH_CALLBACK_PORT_ENV]?.trim();
+  if (!raw) {
+    return 0;
+  }
+  const port = Number.parseInt(raw, 10);
+  if (!Number.isInteger(port) || port < 0 || port > 65535) {
+    throw new Error(`${TRANSCEND_OAUTH_CALLBACK_PORT_ENV} must be an integer between 0 and 65535`);
+  }
+  return port;
 }

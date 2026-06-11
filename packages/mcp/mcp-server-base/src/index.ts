@@ -1,5 +1,5 @@
 export { authHeaders } from './auth.js';
-export type { AuthCredentials, ApiKeyAuth, SessionCookieAuth } from './auth.js';
+export type { AuthCredentials, ApiKeyAuth, OAuthTokenAuth, SessionCookieAuth } from './auth.js';
 
 export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
@@ -42,15 +42,50 @@ export type { BuildMcpServerOptions } from './server/build-server.js';
 
 export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 
-export { isOAuthModeEnabled, getOAuthIssuer, getOAuthScopes } from './oauth/config.js';
+export {
+  isOAuthModeEnabled,
+  getOAuthIssuer,
+  getOAuthScopes,
+  getOAuthCallbackPort,
+} from './oauth/config.js';
 export { resolveStdioStartupAuth } from './oauth/resolve-stdio-auth.js';
-export { startOAuthLogin, buildAuthorizationUrl } from './oauth/oauth-flow.js';
+export {
+  startOAuthLogin,
+  buildAuthorizationUrl,
+  waitForAuthorizationGrant,
+} from './oauth/oauth-flow.js';
 export {
   ensureLazyOAuthAuth,
+  getLazyOAuthCredentials,
+  getStoredAuthorizationGrant,
   isLazyOAuthSessionReady,
   resetLazyOAuthState,
 } from './oauth/lazy-auth.js';
-export type { PendingOAuthSession } from './oauth/types.js';
+export { OAuthCallbackError, parseOAuthCallbackQuery } from './oauth/parse-callback.js';
+export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
+export { refreshOAuthTokens } from './oauth/token-refresh.js';
+export {
+  getActiveOAuthCredentials,
+  getValidOAuthCredentials,
+  resetOAuthTokenManagerState,
+  setActiveOAuthCredentials,
+} from './oauth/token-manager.js';
+export {
+  clearStoredOAuthTokens,
+  computeOAuthExpiresAt,
+  getOAuthTokenStorePath,
+  loadValidOAuthCredentials,
+  loadValidOAuthCredentialsSync,
+  readStoredOAuthTokens,
+  writeStoredOAuthTokens,
+} from './oauth/token-store.js';
+export type {
+  OAuthAuthorizationGrant,
+  OAuthCallbackResult,
+  OAuthTokenResponse,
+  PendingOAuthSession,
+  StoredOAuthTokens,
+} from './oauth/types.js';
 
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';

@@ -1,7 +1,13 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
+import { getOAuthCallbackPort } from './config.js';
 import { OAUTH_CALLBACK_TIMEOUT_MS } from './constants.js';
+import {
+  OAuthCallbackError,
+  parseOAuthCallbackQuery,
+  validateOAuthCallbackQuery,
+} from './parse-callback.js';
 import type { OAuthCallbackResult } from './types.js';
 
 export interface StartCallbackServerOptions {
@@ -30,8 +36,10 @@ const SUCCESS_HTML = `<!DOCTYPE html>
 </body>
 </html>`;
 
+const ERROR_HTML = '<p>Authorization failed. Return to your editor and try again.</p>';
+
 /**
- * Starts an ephemeral HTTP server on `127.0.0.1:0` to receive the OAuth redirect.
+ * Starts an ephemeral HTTP server on `127.0.0.1` to receive the OAuth redirect.
  */
 export function startCallbackServer(
   options: StartCallbackServerOptions,
@@ -43,6 +51,7 @@ export function startCallbackServer(
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let resolveCallback!: (result: OAuthCallbackResult) => void;
     let rejectCallback!: (error: Error) => void;
+    let closeServer!: () => Promise<void>;
 
     const callbackPromise = new Promise<OAuthCallbackResult>((resolve, reject) => {
       resolveCallback = resolve;
@@ -50,47 +59,39 @@ export function startCallbackServer(
     });
 
     const server = createServer((req, res) => {
+      if (req.method !== 'GET') {
+        res.writeHead(405);
+        res.end('Method not allowed');
+        return;
+      }
+
       if (!req.url?.startsWith('/callback')) {
         res.writeHead(404);
         res.end('Not found');
         return;
       }
 
-      const requestUrl = new URL(req.url, 'http://127.0.0.1');
-      const error = requestUrl.searchParams.get('error');
-      const errorDescription = requestUrl.searchParams.get('error_description');
-
-      if (error) {
-        finishWithError(
-          new Error(
-            `OAuth authorization failed: ${error}${errorDescription ? ` — ${errorDescription}` : ''}`,
-          ),
-        );
-        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<p>Authorization failed. Return to your editor and try again.</p>');
+      if (settled) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(SUCCESS_HTML);
         return;
       }
 
-      const code = requestUrl.searchParams.get('code');
-      const state = requestUrl.searchParams.get('state');
-
-      if (!code) {
-        finishWithError(new Error('OAuth callback is missing authorization code'));
+      try {
+        const query = parseOAuthCallbackQuery(req.url);
+        const result = validateOAuthCallbackQuery(query, options.expectedState);
+        finishWithSuccess(result);
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(SUCCESS_HTML);
+        void closeServer();
+      } catch (error) {
+        const message =
+          error instanceof OAuthCallbackError ? error.message : 'OAuth callback validation failed';
+        finishWithError(error instanceof Error ? error : new Error(message));
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<p>Authorization failed: missing code.</p>');
-        return;
+        res.end(ERROR_HTML);
+        void closeServer();
       }
-
-      if (!state || state !== options.expectedState) {
-        finishWithError(new Error('OAuth callback state mismatch'));
-        res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<p>Authorization failed: invalid state.</p>');
-        return;
-      }
-
-      finishWithSuccess({ code, state });
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(SUCCESS_HTML);
     });
 
     function finishWithSuccess(result: OAuthCallbackResult): void {
@@ -115,7 +116,8 @@ export function startCallbackServer(
       rejectCallback(err);
     });
 
-    server.listen(0, '127.0.0.1', () => {
+    const listenPort = getOAuthCallbackPort();
+    server.listen(listenPort, '127.0.0.1', () => {
       const address = server.address();
       if (!address || typeof address === 'string') {
         rejectStart(new Error('Failed to determine OAuth callback server port'));
@@ -130,6 +132,19 @@ export function startCallbackServer(
         void closeServer();
       }, timeoutMs);
 
+      closeServer = () =>
+        new Promise((resolveClose, rejectClose) => {
+          clearTimeout(timeoutId);
+          if (!server.listening) {
+            resolveClose();
+            return;
+          }
+          server.close((err) => {
+            if (err) rejectClose(err);
+            else resolveClose();
+          });
+        });
+
       resolveStart({
         port,
         redirectUri,
@@ -137,19 +152,5 @@ export function startCallbackServer(
         close: closeServer,
       });
     });
-
-    function closeServer(): Promise<void> {
-      clearTimeout(timeoutId);
-      return new Promise((resolveClose, rejectClose) => {
-        if (!server.listening) {
-          resolveClose();
-          return;
-        }
-        server.close((err) => {
-          if (err) rejectClose(err);
-          else resolveClose();
-        });
-      });
-    }
   });
 }
