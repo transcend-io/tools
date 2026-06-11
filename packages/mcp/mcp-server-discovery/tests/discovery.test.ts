@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { getDiscoveryTools } from '../src/tools.js';
+import { packageVersion } from '../src/version.js';
 
 const EXPECTED_TOOL_NAMES = [
   'discovery_classify_text',
@@ -106,5 +109,15 @@ describe('Discovery Tools', () => {
 
       await expect(tool.handler({})).rejects.toThrow('API error');
     });
+  });
+});
+
+describe('server metadata', () => {
+  it('uses the package version for MCP server metadata', () => {
+    const packageJson = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as { version: string };
+
+    expect(packageVersion).toBe(packageJson.version);
   });
 });
