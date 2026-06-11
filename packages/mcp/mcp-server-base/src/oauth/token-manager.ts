@@ -2,18 +2,11 @@ import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { refreshOAuthTokens } from './token-refresh.js';
-import {
-  clearStoredOAuthTokens,
-  isOAuthTokenAuthValid,
-  isStoredOAuthTokenValid,
-  readStoredOAuthTokens,
-  storedOAuthTokensToAuth,
-  writeStoredOAuthTokens,
-} from './token-store.js';
+import { isStoredOAuthTokenValid, storedOAuthTokensToAuth } from './token-store.js';
 import type { StoredOAuthTokens } from './types.js';
 
-/** Active OAuth credentials cached for the current process. */
-let activeOAuthCredentials: OAuthTokenAuth | null = null;
+/** Active OAuth tokens cached for the current process (session-only, not persisted). */
+let activeStoredTokens: StoredOAuthTokens | null = null;
 
 /** In-flight refresh promise shared across concurrent callers. */
 let refreshPromise: Promise<OAuthTokenAuth | null> | null = null;
@@ -22,22 +15,29 @@ let refreshPromise: Promise<OAuthTokenAuth | null> | null = null;
  * Resets in-memory OAuth token manager state (for tests).
  */
 export function resetOAuthTokenManagerState(): void {
-  activeOAuthCredentials = null;
+  activeStoredTokens = null;
   refreshPromise = null;
+}
+
+/**
+ * Returns active session OAuth tokens cached in this process.
+ */
+export function getActiveStoredOAuthTokens(): StoredOAuthTokens | null {
+  return activeStoredTokens;
+}
+
+/**
+ * Sets active session OAuth tokens for the current process.
+ */
+export function setActiveStoredOAuthTokens(tokens: StoredOAuthTokens | null): void {
+  activeStoredTokens = tokens;
 }
 
 /**
  * Returns active OAuth credentials cached in this process.
  */
 export function getActiveOAuthCredentials(): OAuthTokenAuth | null {
-  return activeOAuthCredentials;
-}
-
-/**
- * Sets active OAuth credentials for the current process.
- */
-export function setActiveOAuthCredentials(credentials: OAuthTokenAuth | null): void {
-  activeOAuthCredentials = credentials;
+  return activeStoredTokens ? storedOAuthTokensToAuth(activeStoredTokens) : null;
 }
 
 /**
@@ -48,28 +48,23 @@ export async function getValidOAuthCredentials(
   logger: Logger,
   nowMs: number = Date.now(),
 ): Promise<OAuthTokenAuth | null> {
-  if (activeOAuthCredentials && isOAuthTokenAuthValid(activeOAuthCredentials, nowMs)) {
-    return activeOAuthCredentials;
-  }
+  const normalizedIssuer = issuer.replace(/\/+$/, '');
 
-  const stored = await readStoredOAuthTokens(issuer);
-  if (!stored) {
-    activeOAuthCredentials = null;
+  if (!activeStoredTokens || activeStoredTokens.issuer !== normalizedIssuer) {
     return null;
   }
 
-  if (isStoredOAuthTokenValid(stored, nowMs)) {
-    activeOAuthCredentials = storedOAuthTokensToAuth(stored);
-    return activeOAuthCredentials;
+  if (isStoredOAuthTokenValid(activeStoredTokens, nowMs)) {
+    return storedOAuthTokensToAuth(activeStoredTokens);
   }
 
-  if (!stored.refreshToken) {
-    activeOAuthCredentials = null;
+  if (!activeStoredTokens.refreshToken) {
+    activeStoredTokens = null;
     return null;
   }
 
   if (!refreshPromise) {
-    refreshPromise = refreshStoredOAuthTokens(issuer, stored, logger).finally(() => {
+    refreshPromise = refreshSessionOAuthTokens(activeStoredTokens, logger).finally(() => {
       refreshPromise = null;
     });
   }
@@ -77,32 +72,30 @@ export async function getValidOAuthCredentials(
   return refreshPromise;
 }
 
-async function refreshStoredOAuthTokens(
-  issuer: string,
+async function refreshSessionOAuthTokens(
   stored: StoredOAuthTokens,
   logger: Logger,
 ): Promise<OAuthTokenAuth | null> {
   try {
-    const metadata = await fetchAuthorizationServerMetadata(issuer);
+    const metadata = await fetchAuthorizationServerMetadata(stored.issuer);
     const refreshed = await refreshOAuthTokens({
       tokenEndpoint: metadata.tokenEndpoint,
       stored,
     });
-    await writeStoredOAuthTokens(refreshed);
+    activeStoredTokens = refreshed;
 
-    activeOAuthCredentials = storedOAuthTokensToAuth(refreshed);
+    const credentials = storedOAuthTokensToAuth(refreshed);
     logger.info('OAuth token refresh succeeded', {
       issuer: refreshed.issuer,
       clientId: refreshed.clientId,
       expiresAt: refreshed.expiresAt,
       hasRefreshToken: Boolean(refreshed.refreshToken),
     });
-    return activeOAuthCredentials;
+    return credentials;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    logger.error('OAuth token refresh failed — clearing stored tokens', { error: message });
-    await clearStoredOAuthTokens(issuer).catch(() => undefined);
-    activeOAuthCredentials = null;
+    logger.error('OAuth token refresh failed — clearing session tokens', { error: message });
+    activeStoredTokens = null;
     return null;
   }
 }

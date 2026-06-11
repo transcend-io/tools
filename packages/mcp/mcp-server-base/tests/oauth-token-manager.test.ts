@@ -1,49 +1,32 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
-import { TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV } from '../src/oauth/constants.js';
 import * as metadata from '../src/oauth/metadata.js';
 import {
+  getActiveStoredOAuthTokens,
   getValidOAuthCredentials,
   resetOAuthTokenManagerState,
+  setActiveStoredOAuthTokens,
 } from '../src/oauth/token-manager.js';
 import * as tokenRefresh from '../src/oauth/token-refresh.js';
-import {
-  readStoredOAuthTokens,
-  storedTokensFromTokenResponse,
-  writeStoredOAuthTokens,
-} from '../src/oauth/token-store.js';
+import { storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
 
 describe('getValidOAuthCredentials', () => {
   const logger = new SimpleLogger();
   const issuer = 'https://yo.com:4001';
-  const originalStorePath = process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV];
-  let tempDir = '';
 
-  beforeEach(async () => {
+  beforeEach(() => {
     resetOAuthTokenManagerState();
     vi.restoreAllMocks();
-    tempDir = await mkdtemp(path.join(tmpdir(), 'transcend-oauth-manager-'));
-    process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV] = path.join(tempDir, 'tokens.json');
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     resetOAuthTokenManagerState();
-    if (originalStorePath === undefined) {
-      delete process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV];
-    } else {
-      process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV] = originalStorePath;
-    }
-    await rm(tempDir, { recursive: true, force: true });
   });
 
   it('returns cached credentials when the access token is still valid', async () => {
     const now = Date.now();
-    await writeStoredOAuthTokens(
+    setActiveStoredOAuthTokens(
       storedTokensFromTokenResponse({
         response: { access_token: 'valid-access', expires_in: 3600 },
         issuer,
@@ -71,7 +54,7 @@ describe('getValidOAuthCredentials', () => {
       clientId: 'client',
       nowMs: now,
     });
-    await writeStoredOAuthTokens(expired);
+    setActiveStoredOAuthTokens(expired);
 
     vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
       issuer,
@@ -100,11 +83,10 @@ describe('getValidOAuthCredentials', () => {
       refreshToken: 'refresh-token',
     });
 
-    const stored = await readStoredOAuthTokens(issuer);
-    expect(stored?.accessToken).toBe('refreshed-access');
+    expect(getActiveStoredOAuthTokens()?.accessToken).toBe('refreshed-access');
   });
 
-  it('clears stored tokens and returns null when refresh fails', async () => {
+  it('clears session tokens and returns null when refresh fails', async () => {
     const now = 1_700_000_000_000;
     const expired = storedTokensFromTokenResponse({
       response: {
@@ -116,7 +98,7 @@ describe('getValidOAuthCredentials', () => {
       clientId: 'client',
       nowMs: now,
     });
-    await writeStoredOAuthTokens(expired);
+    setActiveStoredOAuthTokens(expired);
 
     vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
       issuer,
@@ -131,7 +113,7 @@ describe('getValidOAuthCredentials', () => {
 
     const credentials = await getValidOAuthCredentials(issuer, logger, expired.expiresAt + 1);
     expect(credentials).toBeNull();
-    expect(await readStoredOAuthTokens(issuer)).toBeNull();
+    expect(getActiveStoredOAuthTokens()).toBeNull();
   });
 
   it('deduplicates concurrent refresh attempts', async () => {
@@ -146,7 +128,7 @@ describe('getValidOAuthCredentials', () => {
       clientId: 'client',
       nowMs: now,
     });
-    await writeStoredOAuthTokens(expired);
+    setActiveStoredOAuthTokens(expired);
 
     vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
       issuer,

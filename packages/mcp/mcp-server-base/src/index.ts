@@ -66,18 +66,18 @@ export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
 export { refreshOAuthTokens } from './oauth/token-refresh.js';
 export {
   getActiveOAuthCredentials,
+  getActiveStoredOAuthTokens,
   getValidOAuthCredentials,
   resetOAuthTokenManagerState,
-  setActiveOAuthCredentials,
+  setActiveStoredOAuthTokens,
 } from './oauth/token-manager.js';
 export {
-  clearStoredOAuthTokens,
   computeOAuthExpiresAt,
-  getOAuthTokenStorePath,
-  loadValidOAuthCredentials,
-  loadValidOAuthCredentialsSync,
-  readStoredOAuthTokens,
-  writeStoredOAuthTokens,
+  isOAuthTokenAuthValid,
+  isStoredOAuthTokenValid,
+  storedOAuthTokensToAuth,
+  storedTokensFromRefreshResponse,
+  storedTokensFromTokenResponse,
 } from './oauth/token-store.js';
 export type {
   OAuthAuthorizationGrant,

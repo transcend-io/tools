@@ -10,9 +10,8 @@ import {
   getActiveOAuthCredentials,
   getValidOAuthCredentials,
   resetOAuthTokenManagerState,
-  setActiveOAuthCredentials,
+  setActiveStoredOAuthTokens,
 } from './token-manager.js';
-import { writeStoredOAuthTokens } from './token-store.js';
 import type { OAuthAuthorizationGrant } from './types.js';
 
 /** Whether OAuth tokens are available in this process lifetime. */
@@ -42,7 +41,7 @@ export function getStoredAuthorizationGrant(): OAuthAuthorizationGrant | null {
 }
 
 /**
- * Returns active OAuth credentials after login, refresh, or token store load.
+ * Returns active OAuth credentials after login or in-memory refresh.
  */
 export function getLazyOAuthCredentials(): OAuthTokenAuth | null {
   return getActiveOAuthCredentials();
@@ -71,7 +70,6 @@ export async function ensureLazyOAuthAuth(logger: Logger): Promise<void> {
   const issuer = getOAuthIssuer();
   const credentials = await getValidOAuthCredentials(issuer, logger);
   if (credentials) {
-    setActiveOAuthCredentials(credentials);
     oauthSessionReady = true;
     return;
   }
@@ -101,14 +99,7 @@ async function performLazyOAuthLogin(logger: Logger): Promise<void> {
       grant,
       issuer,
     });
-    await writeStoredOAuthTokens(tokens);
-
-    setActiveOAuthCredentials({
-      type: 'oauthToken',
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresAt: tokens.expiresAt,
-    });
+    setActiveStoredOAuthTokens(tokens);
     oauthSessionReady = true;
 
     logger.info('OAuth token exchange succeeded', {
@@ -118,8 +109,9 @@ async function performLazyOAuthLogin(logger: Logger): Promise<void> {
       expiresAt: tokens.expiresAt,
       hasRefreshToken: Boolean(tokens.refreshToken),
     });
+    logger.info('OAuth tokens are session-only and will not persist across MCP process restarts');
   } catch (error) {
-    setActiveOAuthCredentials(null);
+    setActiveStoredOAuthTokens(null);
     oauthSessionReady = false;
     storedAuthorizationGrant = null;
 

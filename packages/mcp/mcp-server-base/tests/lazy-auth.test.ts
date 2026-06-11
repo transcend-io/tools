@@ -1,12 +1,7 @@
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { ErrorCode, ToolError } from '../src/errors.js';
-import { TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV } from '../src/oauth/constants.js';
 import {
   ensureLazyOAuthAuth,
   getLazyOAuthCredentials,
@@ -18,39 +13,28 @@ import * as metadata from '../src/oauth/metadata.js';
 import * as oauthFlow from '../src/oauth/oauth-flow.js';
 import * as tokenExchange from '../src/oauth/token-exchange.js';
 import * as tokenManager from '../src/oauth/token-manager.js';
-import { writeStoredOAuthTokens, storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
+import * as tokenRefresh from '../src/oauth/token-refresh.js';
+import { storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
 
 describe('ensureLazyOAuthAuth', () => {
   const logger = new SimpleLogger();
   const originalApiKey = process.env.TRANSCEND_API_KEY;
   const originalIssuer = process.env.TRANSCEND_OAUTH_ISSUER;
-  const originalStorePath = process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV];
-  let tempDir = '';
 
-  beforeEach(async () => {
+  beforeEach(() => {
     resetLazyOAuthState();
     vi.restoreAllMocks();
     delete process.env.TRANSCEND_API_KEY;
     delete process.env.TRANSCEND_OAUTH_ISSUER;
-    tempDir = await mkdtemp(path.join(tmpdir(), 'transcend-oauth-lazy-'));
-    process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV] = path.join(tempDir, 'tokens.json');
   });
 
-  afterEach(async () => {
+  afterEach(() => {
     resetLazyOAuthState();
     if (originalApiKey === undefined) delete process.env.TRANSCEND_API_KEY;
     else process.env.TRANSCEND_API_KEY = originalApiKey;
 
     if (originalIssuer === undefined) delete process.env.TRANSCEND_OAUTH_ISSUER;
     else process.env.TRANSCEND_OAUTH_ISSUER = originalIssuer;
-
-    if (originalStorePath === undefined) {
-      delete process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV];
-    } else {
-      process.env[TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV] = originalStorePath;
-    }
-
-    await rm(tempDir, { recursive: true, force: true });
   });
 
   it('no-ops when OAuth mode is disabled', async () => {
@@ -72,7 +56,7 @@ describe('ensureLazyOAuthAuth', () => {
       clientId: 'client',
       nowMs: now,
     });
-    await writeStoredOAuthTokens(expired);
+    tokenManager.setActiveStoredOAuthTokens(expired);
 
     vi.spyOn(metadata, 'fetchAuthorizationServerMetadata').mockResolvedValue({
       issuer: 'https://yo.com:4001',
@@ -81,12 +65,18 @@ describe('ensureLazyOAuthAuth', () => {
       registrationEndpoint: 'https://yo.com:4001/oauth/register',
       codeChallengeMethodsSupported: ['S256'],
     });
-    vi.spyOn(tokenManager, 'getValidOAuthCredentials').mockImplementation(async () => ({
-      type: 'oauthToken',
-      accessToken: 'refreshed-access',
-      refreshToken: 'refresh-token',
-      expiresAt: now + 3_540_000,
-    }));
+    vi.spyOn(tokenRefresh, 'refreshOAuthTokens').mockResolvedValue(
+      storedTokensFromTokenResponse({
+        response: {
+          access_token: 'refreshed-access',
+          refresh_token: 'refresh-token',
+          expires_in: 3600,
+        },
+        issuer: 'https://yo.com:4001',
+        clientId: 'client',
+        nowMs: expired.expiresAt + 1,
+      }),
+    );
 
     const startSpy = vi.spyOn(oauthFlow, 'startOAuthLogin');
     await ensureLazyOAuthAuth(logger);
@@ -102,7 +92,7 @@ describe('ensureLazyOAuthAuth', () => {
   it('uses cached tokens without opening the browser', async () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
     const now = Date.now();
-    await writeStoredOAuthTokens(
+    tokenManager.setActiveStoredOAuthTokens(
       storedTokensFromTokenResponse({
         response: {
           access_token: 'cached-access',

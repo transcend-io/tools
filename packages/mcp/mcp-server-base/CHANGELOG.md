@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-base
 
+## Unreleased
+
+### Patch Changes
+
+- OAuth stdio tokens are **session-only**: access and refresh tokens are kept in process memory and are not written to disk. Restarting the MCP client (or MCP server process) requires signing in again. Expired access tokens are still refreshed silently within the same process when a refresh token is available.
+- **Breaking:** Removed disk token persistence APIs (`readStoredOAuthTokens`, `writeStoredOAuthTokens`, `clearStoredOAuthTokens`, `loadValidOAuthCredentials`, `getOAuthTokenStorePath`) and the `TRANSCEND_OAUTH_TOKEN_STORE_PATH` environment variable. Legacy `~/.config/transcend-mcp/tokens.json` files are ignored and may be deleted manually.
+- **Breaking:** Removed `setActiveOAuthCredentials` export; use `setActiveStoredOAuthTokens` / `getActiveStoredOAuthTokens` for session token state.
+
 ## 0.4.5
 
 ### Patch Changes

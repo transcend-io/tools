@@ -19,9 +19,6 @@ export const OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 /** OAuth dynamic client registration request body client display name. */
 export const OAUTH_CLIENT_NAME = 'Transcend MCP';
 
-/** Environment variable override for the OAuth token store file path (tests). */
-export const TRANSCEND_OAUTH_TOKEN_STORE_PATH_ENV = 'TRANSCEND_OAUTH_TOKEN_STORE_PATH';
-
 /** Default OAuth access token lifetime when the token response omits expires_in. */
 export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
 
