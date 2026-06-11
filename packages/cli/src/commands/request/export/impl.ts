@@ -14,6 +14,7 @@ export interface ExportCommandFlags {
   transcendUrl: string;
   file: string;
   concurrency: number;
+  maxIdentifierConcurrency: number;
   createdAtBefore?: Date;
   createdAtAfter?: Date;
   updatedAtBefore?: Date;
@@ -33,6 +34,7 @@ export async function _export(
     file,
     pageLimit,
     concurrency,
+    maxIdentifierConcurrency,
     actions,
     sombraAuth,
     skipRequestIdentifiers,
@@ -49,6 +51,7 @@ export async function _export(
   const { filePaths, totalCount } = await streamPrivacyRequestsToCsv({
     transcendUrl,
     concurrency,
+    maxIdentifierConcurrency,
     pageLimit,
     actions,
     statuses,

@@ -48,6 +48,14 @@ export const exportCommand = buildCommand({
           'Requires both --createdAtAfter and --createdAtBefore to be set.',
         default: '1',
       },
+      maxIdentifierConcurrency: {
+        kind: 'parsed',
+        parse: numberParser,
+        brief:
+          'Maximum number of parallel request-identifier fetches, shared across ' +
+          'the --concurrency date-range chunks. Raise to push more load onto Sombra.',
+        default: '200',
+      },
       skipRequestIdentifiers: {
         kind: 'boolean',
         brief: 'Skip exporting request identifiers',

@@ -5,8 +5,9 @@ import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
-  fetchAllRequestIdentifiers,
+  fetchRequestIdentifiersBatch,
   validateSombraVersion,
+  type RequestIdentifier,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -160,8 +161,13 @@ export async function bulkRestartRequests({
     }
   }
 
+  let identifiersByRequest: Map<string, RequestIdentifier[]> | undefined;
   if (copyIdentifiers) {
     await validateSombraVersion(client, { logger });
+    identifiersByRequest = await fetchRequestIdentifiersBatch(sombra, {
+      requestIds: requests.map((r) => r.id),
+      logger,
+    });
   }
 
   // Map over the requests
@@ -171,13 +177,8 @@ export async function bulkRestartRequests({
     requests,
     async (request, ind) => {
       try {
-        // Pull the request identifiers
         const requestIdentifiers = copyIdentifiers
-          ? await fetchAllRequestIdentifiers(client, sombra, {
-              filterBy: { requestId: request.id },
-              skipSombraCheck: true,
-              logger,
-            })
+          ? (identifiersByRequest!.get(request.id) ?? [])
           : [];
 
         // Make the GraphQL request to restart the request

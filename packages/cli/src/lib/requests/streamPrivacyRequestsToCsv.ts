@@ -2,7 +2,8 @@ import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
-  fetchAllRequestIdentifiers,
+  fetchRequestIdentifiersBatch,
+  MAX_IDENTIFIER_FETCH_CONCURRENCY,
   validateSombraVersion,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
@@ -32,7 +33,7 @@ export async function streamPrivacyRequestsToCsv({
   statuses = [],
   identifierSearch,
   concurrency = 1,
-  pageLimit = 100,
+  maxIdentifierConcurrency = MAX_IDENTIFIER_FETCH_CONCURRENCY,
   transcendUrl = DEFAULT_TRANSCEND_API,
   createdAtBefore,
   createdAtAfter,
@@ -58,6 +59,8 @@ export async function streamPrivacyRequestsToCsv({
   concurrency?: number;
   /** Concurrency for fetching identifiers per page */
   pageLimit?: number;
+  /** Max parallel identifier fetches, shared across date-range chunks */
+  maxIdentifierConcurrency?: number;
   /** Filter for requests created before this date */
   createdAtBefore?: Date;
   /** Filter for requests created after this date */
@@ -114,6 +117,11 @@ export async function streamPrivacyRequestsToCsv({
   if (useChunks) {
     logger.info(colors.magenta(`Splitting date range into ${concurrency} parallel chunks`));
   }
+
+  // Divide the identifier-fetch budget across the date-range chunks so total
+  // Sombra connections stay bounded regardless of --concurrency (each chunk
+  // fetches identifiers in parallel, so chunks * perChunk must stay in budget).
+  const identifierConcurrency = Math.max(1, Math.floor(maxIdentifierConcurrency / chunks.length));
 
   // Fetch total count once for the shared progress bar
   const filterBy = {
@@ -181,20 +189,17 @@ export async function streamPrivacyRequestsToCsv({
             if (nodes.length === 0) return;
 
             // Optionally enrich each request with its identifiers
-            const enriched: ExportedPrivacyRequest[] = skipRequestIdentifiers
-              ? nodes.map((n) => ({ ...n, requestIdentifiers: [] }))
-              : await map(
-                  nodes,
-                  async (n) => ({
-                    ...n,
-                    requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
-                      filterBy: { requestId: n.id },
-                      skipSombraCheck: true,
-                      logger,
-                    }),
-                  }),
-                  { concurrency: pageLimit },
-                );
+            const identifiersByRequest = skipRequestIdentifiers
+              ? new Map()
+              : await fetchRequestIdentifiersBatch(sombra!, {
+                  requestIds: nodes.map((n) => n.id),
+                  concurrency: identifierConcurrency,
+                  logger,
+                });
+            const enriched: ExportedPrivacyRequest[] = nodes.map((n) => ({
+              ...n,
+              requestIdentifiers: identifiersByRequest.get(n.id) ?? [],
+            }));
 
             const rows: Record<string, string | null | number | boolean>[] =
               enriched.map(formatRequestForCsv);

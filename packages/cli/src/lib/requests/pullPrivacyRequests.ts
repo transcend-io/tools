@@ -2,9 +2,8 @@ import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
-  fetchAllRequestIdentifiers,
+  fetchRequestIdentifiersBatch,
   validateSombraVersion,
-  type RequestIdentifier,
 } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import colors from 'colors';
@@ -27,7 +26,6 @@ export async function pullPrivacyRequests({
   actions = [],
   statuses = [],
   identifierSearch,
-  pageLimit = 100,
   concurrency = 1,
   transcendUrl = DEFAULT_TRANSCEND_API,
   createdAtBefore,
@@ -130,28 +128,17 @@ export async function pullPrivacyRequests({
   }
 
   // Fetch the request identifiers for those requests
-  const requestsWithRequestIdentifiers = skipRequestIdentifiers
-    ? requests.map((request) => ({
-        ...request,
-        requestIdentifiers: [] as RequestIdentifier[],
-      }))
-    : await map(
-        requests,
-        async (request) => {
-          const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
-            filterBy: { requestId: request.id },
-            skipSombraCheck: true,
-            logger,
-          });
-          return {
-            ...request,
-            requestIdentifiers,
-          };
-        },
-        {
-          concurrency: pageLimit,
-        },
-      );
+  const identifiersByRequest = skipRequestIdentifiers
+    ? new Map()
+    : await fetchRequestIdentifiersBatch(sombra, {
+        requestIds: requests.map((r) => r.id),
+        logger,
+      });
+
+  const requestsWithRequestIdentifiers = requests.map((request) => ({
+    ...request,
+    requestIdentifiers: identifiersByRequest.get(request.id) ?? [],
+  }));
 
   logger.info(colors.magenta(`Pulled ${requestsWithRequestIdentifiers.length} requests`));
 
