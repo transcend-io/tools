@@ -739,6 +739,7 @@ export type AirgapRequestSource =
   | 'beacon'
   | 'CSPV'
   | 'navigation'
+  | 'navigation-source'
   | 'open'
   | 'script'
   | AirgapDOMRequestSource;
