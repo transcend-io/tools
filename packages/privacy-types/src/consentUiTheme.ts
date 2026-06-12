@@ -3,6 +3,8 @@
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
+import { AbsoluteUrlString } from './consentUiConfiguration.js';
+
 /**
  * Types representing the consent UI theme configuration
  * Includes keys for alignment, logo position, content flow, colors, and more
@@ -178,8 +180,13 @@ export const ContainerTheme = t.intersection([Background, Border]);
 /** Override type */
 export type ContainerTheme = t.TypeOf<typeof ContainerTheme>;
 
+// TODO: Remove the deprecated props once the deprecated props are removed from the theme configuration - https://linear.app/transcend/issue/GOOM-1903/deprecate-the-non-css-values-in-the-tools-repo
 /** Represents the header theme configuration */
-export const HeaderTheme = t.intersection([Text, t.type({ logoPosition: valuesOf(LogoPosition) })]);
+export const HeaderTheme = t.intersection([
+  /** @deprecated - Removed in favor of CSS styling */
+  t.partial(Text.props),
+  t.type({ logoPosition: valuesOf(LogoPosition), logoImageUrl: AbsoluteUrlString }),
+]);
 
 /** Override type */
 export type HeaderTheme = t.TypeOf<typeof HeaderTheme>;
@@ -248,22 +255,30 @@ export type ToggleTheme = t.TypeOf<typeof ToggleTheme>;
 /** Theme configuration shared between both First (banner) and Second Layers (modal) */
 export const CommonLayerTheme = t.intersection([
   t.type({
+    alwaysShowScrollbar: t.boolean,
+  }),
+  t.partial({
+    header: HeaderTheme,
+    /** @deprecated - Removed in favor of CSS styling */
+    background: Background,
+    /** @deprecated - Removed in favor of CSS styling */
+    closeButton: CloseButtonTheme,
+    /** @deprecated - Removed in favor of CSS styling */
     buttons: t.tuple([
       ButtonThemeIndex,
       t.union([ButtonThemeIndex, t.undefined]),
       t.union([ButtonThemeIndex, t.undefined]),
     ]),
+    /** @deprecated - Removed in favor of CSS styling */
     container: ContainerTheme,
+    /** @deprecated - Removed in favor of CSS styling */
     description: DescriptionTextTheme,
+    /** @deprecated - Removed in favor of CSS styling */
     footer: FooterTheme,
-    alwaysShowScrollbar: t.boolean,
+    /** @deprecated - Removed in favor of CSS styling */
     horizontalAlign: valuesOf(HorizontalAlign),
+    /** @deprecated - Removed in favor of CSS styling */
     cookieAndPrivacyPolicy: t.partial(Link.props),
-  }),
-  t.partial({
-    background: Background,
-    header: HeaderTheme,
-    closeButton: CloseButtonTheme,
   }),
 ]);
 
@@ -274,8 +289,13 @@ export type CommonLayerTheme = t.TypeOf<typeof CommonLayerTheme>;
 export const FirstLayerTheme = t.intersection([
   CommonLayerTheme,
   t.type({
-    contentFlow: valuesOf(ContentFlows),
+    contentLayout: ContentLayout,
+  }),
+  t.partial({
+    /** @deprecated - Removed in favor of CSS styling */
     verticalAlign: valuesOf(VerticalAlign),
+    /** @deprecated - Removed in favor of CSS styling */
+    contentFlow: valuesOf(ContentFlows),
   }),
 ]);
 
@@ -286,23 +306,35 @@ export type FirstLayerTheme = t.TypeOf<typeof FirstLayerTheme>;
 export const SecondLayerTheme = t.intersection([
   CommonLayerTheme,
   t.type({
-    modalTitle: Text,
-    modalSubtitle: Text,
-    purposeListTitle: Text,
-    caretIcon: Icon,
-    cardTitle: Text,
-    alwaysOnText: Text,
-    purposeDescription: DescriptionTextTheme,
-    purposeCard: ContainerTheme, // border color applies to dividers
-    toggle: ToggleTheme,
     // lockToEdges is linked to horizontalAlign left/right. if left/right, this is forced to true.
     // if horizontalAlign is center and lockEdges is true then top and bottom are locked to edges
     lockToEdges: t.boolean,
-    maxWidth: CssUnitString,
   }),
   t.partial({
+    /** @deprecated - Removed in favor of CSS styling */
     bulkActionButtons: t.tuple([ButtonThemeIndex, ButtonThemeIndex]),
+    /** @deprecated - remove */
     shrinkToFullWidth: CssUnitString,
+    /** @deprecated - Removed in favor of CSS styling */
+    maxWidth: CssUnitString,
+    /** @deprecated - Removed in favor of CSS styling */
+    modalTitle: Text,
+    /** @deprecated - Removed in favor of CSS styling */
+    modalSubtitle: Text,
+    /** @deprecated - Removed in favor of CSS styling */
+    purposeListTitle: Text,
+    /** @deprecated - Removed in favor of CSS styling */
+    caretIcon: Icon,
+    /** @deprecated - Removed in favor of CSS styling */
+    cardTitle: Text,
+    /** @deprecated - Removed in favor of CSS styling */
+    alwaysOnText: Text,
+    /** @deprecated - Removed in favor of CSS styling */
+    purposeDescription: DescriptionTextTheme,
+    /** @deprecated - Removed in favor of CSS styling */
+    purposeCard: ContainerTheme, // border color applies to dividers
+    /** @deprecated - Removed in favor of CSS styling */
+    toggle: ToggleTheme,
   }),
 ]);
 
@@ -325,7 +357,8 @@ export type SharedTopLevelTheme = t.TypeOf<typeof SharedTopLevelTheme>;
 
 /** Banner-only theme configuration */
 export const ThemeConfigurationBannerOnly = t.intersection([
-  SharedTopLevelTheme,
+  /** @deprecated - Removed in favor of CSS styling */
+  t.partial(SharedTopLevelTheme.props),
   t.type({
     firstLayer: FirstLayerTheme,
   }),
@@ -336,7 +369,8 @@ export type ThemeConfigurationBannerOnly = t.TypeOf<typeof ThemeConfigurationBan
 
 /** Modal-only theme configuration */
 export const ThemeConfigurationModalOnly = t.intersection([
-  SharedTopLevelTheme,
+  /** @deprecated - Removed in favor of CSS styling */
+  t.partial(SharedTopLevelTheme.props),
   t.type({
     secondLayer: SecondLayerTheme,
   }),
@@ -347,7 +381,8 @@ export type ThemeConfigurationModalOnly = t.TypeOf<typeof ThemeConfigurationModa
 
 /** Banner into modal theme configuration */
 export const ThemeConfigurationBannerIntoModal = t.intersection([
-  SharedTopLevelTheme,
+  /** @deprecated - Removed in favor of CSS styling */
+  t.partial(SharedTopLevelTheme.props),
   t.type({
     firstLayer: FirstLayerTheme,
     secondLayer: SecondLayerTheme,
