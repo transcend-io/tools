@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.2.1
+
+### Patch Changes
+
+- 3741ca3: Add `Footer` (`footer`) and `FooterLink` (`footerLink`) to the `CustomizableComponent` enum for Privacy Center footer CSS overrides. Regenerate the CLI `transcend.yml` JSON schema so the new components are reflected.
+
 ## 5.2.0
 
 ### Minor Changes

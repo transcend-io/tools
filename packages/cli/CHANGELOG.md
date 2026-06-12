@@ -1,5 +1,16 @@
 # @transcend-io/cli
 
+## 10.5.1
+
+### Patch Changes
+
+- 93fd511: Extract the shared `splitDateRange` helper used by the request export and pull commands into a single module, removing the duplicated copies.
+- 3741ca3: Add `Footer` (`footer`) and `FooterLink` (`footerLink`) to the `CustomizableComponent` enum for Privacy Center footer CSS overrides. Regenerate the CLI `transcend.yml` JSON schema so the new components are reflected.
+- Updated dependencies [3741ca3]
+  - @transcend-io/privacy-types@5.2.1
+  - @transcend-io/airgap.js-types@14.2.5
+  - @transcend-io/sdk@1.2.2
+
 ## 10.5.0
 
 ### Minor Changes
