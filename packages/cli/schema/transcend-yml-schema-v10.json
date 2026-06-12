@@ -41107,6 +41107,12 @@
                 },
                 "modal": {
                   "type": "string"
+                },
+                "footer": {
+                  "type": "string"
+                },
+                "footerLink": {
+                  "type": "string"
                 }
               }
             },
