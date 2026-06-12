@@ -15,6 +15,13 @@ export interface TransportConfig {
   sessionTtlMs: number;
 }
 
+export interface CliMetadata {
+  /** CLI display name */
+  name: string;
+  /** CLI package version */
+  version: string;
+}
+
 const DEFAULT_PORT = 3000;
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_MCP_PATH = '/mcp';
@@ -29,6 +36,19 @@ function parseIntOrDefault(raw: string | undefined, fallback: number): number {
   return n;
 }
 
+function getHelpText(name: string): string {
+  return `Usage: ${name} [options]
+
+Options:
+  --transport <stdio|http>  Transport type (default: stdio)
+  --port <number>           HTTP listen port (default: 3000)
+  --host <host>             HTTP listen host (default: 127.0.0.1)
+  --mcp-path <path>         MCP endpoint path (default: /mcp)
+  --cors-origin <origin>    Allowed CORS origin; can be repeated
+  -v, --version             Show version
+  -h, --help                Show help`;
+}
+
 /**
  * Parses CLI flags and environment variables for transport configuration.
  *
@@ -36,18 +56,38 @@ function parseIntOrDefault(raw: string | undefined, fallback: number): number {
  * Env:   TRANSCEND_HTTP_PORT, TRANSCEND_HTTP_HOST, TRANSCEND_MCP_CORS_ORIGINS (comma-separated),
  *        TRANSCEND_MCP_SESSION_TTL_MS
  */
-export function parseTransportArgs(): TransportConfig {
-  const { values } = parseArgs({
-    options: {
-      transport: { type: 'string', default: 'stdio' },
-      port: { type: 'string' },
-      host: { type: 'string' },
-      'mcp-path': { type: 'string' },
-      'cors-origin': { type: 'string', multiple: true },
-    },
-    strict: false,
-    allowPositionals: true,
-  });
+export function parseTransportArgs(metadata: CliMetadata): TransportConfig {
+  let values: ReturnType<typeof parseArgs>['values'];
+
+  try {
+    ({ values } = parseArgs({
+      options: {
+        transport: { type: 'string', default: 'stdio' },
+        port: { type: 'string' },
+        host: { type: 'string' },
+        'mcp-path': { type: 'string' },
+        'cors-origin': { type: 'string', multiple: true },
+        help: { type: 'boolean', short: 'h' },
+        version: { type: 'boolean', short: 'v' },
+      },
+      strict: true,
+      allowPositionals: true,
+    }));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(message);
+    process.exit(1);
+  }
+
+  if (values.help) {
+    console.log(getHelpText(metadata.name));
+    process.exit(0);
+  }
+
+  if (values.version) {
+    console.log(metadata.version);
+    process.exit(0);
+  }
 
   const transport = values.transport === 'http' ? 'http' : 'stdio';
 
