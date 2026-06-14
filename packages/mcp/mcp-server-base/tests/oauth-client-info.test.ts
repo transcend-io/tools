@@ -24,7 +24,7 @@ describe('fetchOAuthClientInfo', () => {
       'client-abc',
     );
 
-    expect(fetch).toHaveBeenCalledWith('https://yo.com:4001/oauth/client-info', {
+    expect(fetch).toHaveBeenCalledWith('https://yo.com:4001/oauth/client-id', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ client_secret: 'secret-value' }),
