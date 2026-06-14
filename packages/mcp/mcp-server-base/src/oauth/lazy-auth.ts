@@ -2,7 +2,7 @@ import { getRequestAuth } from '../auth-context.js';
 import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
 import { ErrorCode, ToolError } from '../errors.js';
-import { getOAuthIssuer, isOAuthModeEnabled } from './config.js';
+import { getOAuthClientSecret, getOAuthIssuer, isOAuthModeEnabled } from './config.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { startOAuthLogin, waitForAuthorizationGrant } from './oauth-flow.js';
 import { exchangeAuthorizationCode } from './token-exchange.js';
@@ -98,6 +98,7 @@ async function performLazyOAuthLogin(logger: Logger): Promise<void> {
       tokenEndpoint: metadata.tokenEndpoint,
       grant,
       issuer,
+      clientSecret: getOAuthClientSecret()!,
     });
     setActiveStoredOAuthTokens(tokens);
     oauthSessionReady = true;

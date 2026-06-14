@@ -2,11 +2,13 @@
 import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-base';
 
 import { AdminMixin } from './graphql.js';
+import { ADMIN_OAUTH_SCOPES } from './scopes.js';
 import { getAdminTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-admin',
   version: '1.0.0',
+  oauthScopes: ADMIN_OAUTH_SCOPES,
   getTools: getAdminTools,
   createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
     rest: new TranscendRestClient(auth, sombraUrl),

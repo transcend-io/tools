@@ -1,9 +1,20 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { startCallbackServer } from '../src/oauth/callback-server.js';
 import { generateOAuthState } from '../src/oauth/pkce.js';
 
 describe('startCallbackServer', () => {
+  const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+  let nextPort = 19000;
+
+  beforeEach(() => {
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = String(nextPort++);
+  });
+
+  afterEach(() => {
+    if (originalRedirectPort === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+    else process.env.TRANSCEND_OAUTH_REDIRECT_PORT = originalRedirectPort;
+  });
   it('accepts a valid callback and returns the authorization code', async () => {
     const state = generateOAuthState();
     const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
@@ -27,12 +38,17 @@ describe('startCallbackServer', () => {
     const state = generateOAuthState();
     const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
 
-    await fetch(`${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`);
-    await handle.waitForCallback();
+    try {
+      await fetch(`${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`);
+      await handle.waitForCallback();
+      await handle.close();
 
-    await expect(
-      fetch(`${handle.redirectUri}?code=ignored&state=${encodeURIComponent(state)}`),
-    ).rejects.toThrow();
+      await expect(
+        fetch(`${handle.redirectUri}?code=ignored&state=${encodeURIComponent(state)}`),
+      ).rejects.toThrow();
+    } finally {
+      await handle.close().catch(() => undefined);
+    }
   });
 
   it('serves success HTML for duplicate callbacks after settlement', async () => {

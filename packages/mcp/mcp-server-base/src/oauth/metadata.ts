@@ -24,16 +24,12 @@ export async function fetchAuthorizationServerMetadata(
 
   const authorizationEndpoint = body.authorization_endpoint;
   const tokenEndpoint = body.token_endpoint;
-  const registrationEndpoint = body.registration_endpoint;
 
   if (typeof authorizationEndpoint !== 'string') {
     throw new Error(`OAuth metadata at ${url} is missing authorization_endpoint`);
   }
   if (typeof tokenEndpoint !== 'string') {
     throw new Error(`OAuth metadata at ${url} is missing token_endpoint`);
-  }
-  if (typeof registrationEndpoint !== 'string') {
-    throw new Error(`OAuth metadata at ${url} is missing registration_endpoint`);
   }
 
   const codeChallengeMethods = body.code_challenge_methods_supported;
@@ -49,7 +45,6 @@ export async function fetchAuthorizationServerMetadata(
     issuer: typeof body.issuer === 'string' ? body.issuer : base,
     authorizationEndpoint,
     tokenEndpoint,
-    registrationEndpoint,
     codeChallengeMethodsSupported,
   };
 }

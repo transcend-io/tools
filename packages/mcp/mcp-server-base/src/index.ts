@@ -45,9 +45,17 @@ export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/
 export {
   isOAuthModeEnabled,
   getOAuthIssuer,
-  getOAuthScopes,
-  getOAuthCallbackPort,
+  getOAuthClientSecret,
+  getOAuthRedirectPort,
+  requireOAuthStartupEnv,
 } from './oauth/config.js';
+export {
+  OFFLINE_ACCESS_SCOPE,
+  mergeOAuthScopes,
+  configureOAuthScopes,
+  getOAuthScopes,
+  resetConfiguredOAuthScopes,
+} from './oauth/scopes.js';
 export { resolveStdioStartupAuth } from './oauth/resolve-stdio-auth.js';
 export {
   startOAuthLogin,
@@ -61,6 +69,13 @@ export {
   isLazyOAuthSessionReady,
   resetLazyOAuthState,
 } from './oauth/lazy-auth.js';
+export { fetchOAuthClientInfo } from './oauth/client-info.js';
+export {
+  getOAuthClientId,
+  initializeOAuthClient,
+  resetOAuthClientState,
+} from './oauth/client-registry.js';
+export { ensureOAuthStartupReady } from './oauth/startup.js';
 export { OAuthCallbackError, parseOAuthCallbackQuery } from './oauth/parse-callback.js';
 export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
 export { refreshOAuthTokens } from './oauth/token-refresh.js';

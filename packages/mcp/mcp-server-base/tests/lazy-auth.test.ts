@@ -62,7 +62,6 @@ describe('ensureLazyOAuthAuth', () => {
       issuer: 'https://yo.com:4001',
       authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
       tokenEndpoint: 'https://yo.com:4001/oauth/token',
-      registrationEndpoint: 'https://yo.com:4001/oauth/register',
       codeChallengeMethodsSupported: ['S256'],
     });
     vi.spyOn(tokenRefresh, 'refreshOAuthTokens').mockResolvedValue(
@@ -133,7 +132,6 @@ describe('ensureLazyOAuthAuth', () => {
       issuer: 'https://yo.com:4001',
       authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
       tokenEndpoint: 'https://yo.com:4001/oauth/token',
-      registrationEndpoint: 'https://yo.com:4001/oauth/register',
       codeChallengeMethodsSupported: ['S256'],
     });
     vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(
@@ -205,7 +203,6 @@ describe('ensureLazyOAuthAuth', () => {
       issuer: 'https://yo.com:4001',
       authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
       tokenEndpoint: 'https://yo.com:4001/oauth/token',
-      registrationEndpoint: 'https://yo.com:4001/oauth/register',
       codeChallengeMethodsSupported: ['S256'],
     });
     vi.spyOn(tokenExchange, 'exchangeAuthorizationCode').mockResolvedValue(

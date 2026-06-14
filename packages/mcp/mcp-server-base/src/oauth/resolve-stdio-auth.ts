@@ -1,6 +1,6 @@
 import type { AuthCredentials } from '../auth.js';
 import { resolveAuth } from '../server/resolve-auth.js';
-import { isOAuthModeEnabled } from './config.js';
+import { isOAuthModeEnabled, requireOAuthStartupEnv } from './config.js';
 
 /**
  * Resolves stdio startup credentials.
@@ -11,6 +11,7 @@ import { isOAuthModeEnabled } from './config.js';
  */
 export function resolveStdioStartupAuth(): AuthCredentials | null {
   if (isOAuthModeEnabled()) {
+    requireOAuthStartupEnv();
     return null;
   }
   return resolveAuth();

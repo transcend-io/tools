@@ -1,5 +1,6 @@
 import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
+import { getOAuthClientSecret } from './config.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { refreshOAuthTokens } from './token-refresh.js';
 import { isStoredOAuthTokenValid, storedOAuthTokensToAuth } from './token-store.js';
@@ -81,6 +82,7 @@ async function refreshSessionOAuthTokens(
     const refreshed = await refreshOAuthTokens({
       tokenEndpoint: metadata.tokenEndpoint,
       stored,
+      clientSecret: getOAuthClientSecret()!,
     });
     activeStoredTokens = refreshed;
 

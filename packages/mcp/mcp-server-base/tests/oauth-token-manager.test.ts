@@ -60,7 +60,6 @@ describe('getValidOAuthCredentials', () => {
       issuer,
       authorizationEndpoint: `${issuer}/oauth/authorize`,
       tokenEndpoint: `${issuer}/oauth/token`,
-      registrationEndpoint: `${issuer}/oauth/register`,
       codeChallengeMethodsSupported: ['S256'],
     });
     vi.spyOn(tokenRefresh, 'refreshOAuthTokens').mockResolvedValue(
@@ -104,7 +103,6 @@ describe('getValidOAuthCredentials', () => {
       issuer,
       authorizationEndpoint: `${issuer}/oauth/authorize`,
       tokenEndpoint: `${issuer}/oauth/token`,
-      registrationEndpoint: `${issuer}/oauth/register`,
       codeChallengeMethodsSupported: ['S256'],
     });
     vi.spyOn(tokenRefresh, 'refreshOAuthTokens').mockRejectedValue(
@@ -134,7 +132,6 @@ describe('getValidOAuthCredentials', () => {
       issuer,
       authorizationEndpoint: `${issuer}/oauth/authorize`,
       tokenEndpoint: `${issuer}/oauth/token`,
-      registrationEndpoint: `${issuer}/oauth/register`,
       codeChallengeMethodsSupported: ['S256'],
     });
 

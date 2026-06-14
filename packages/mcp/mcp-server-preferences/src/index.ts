@@ -1,4 +1,5 @@
 export { getPreferenceTools } from './tools/index.js';
+export { PREFERENCE_OAUTH_SCOPES } from './scopes.js';
 
 export {
   IdentifierSchema,

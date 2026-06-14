@@ -4,20 +4,14 @@ export const DEFAULT_OAUTH_ISSUER = 'https://yo.com:4001';
 /** Environment variable for the OAuth issuer URL. */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
 
-/** Environment variable for comma- or space-separated OAuth scopes. */
-export const TRANSCEND_OAUTH_SCOPES_ENV = 'TRANSCEND_OAUTH_SCOPES';
+/** Environment variable for the OAuth client secret (exchanged for client_id at startup). */
+export const TRANSCEND_OAUTH_CLIENT_SECRET_ENV = 'TRANSCEND_OAUTH_CLIENT_SECRET';
 
-/** Environment variable for a fixed OAuth callback listen port (`0` = ephemeral). */
-export const TRANSCEND_OAUTH_CALLBACK_PORT_ENV = 'TRANSCEND_OAUTH_CALLBACK_PORT';
-
-/** Default OAuth scopes requested during login (includes refresh via offline_access). */
-export const DEFAULT_OAUTH_SCOPES = ['offline_access', 'viewAssessments'];
+/** Environment variable for the fixed localhost OAuth redirect callback port. */
+export const TRANSCEND_OAUTH_REDIRECT_PORT_ENV = 'TRANSCEND_OAUTH_REDIRECT_PORT';
 
 /** Maximum time to wait for the browser OAuth callback. */
 export const OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
-
-/** OAuth dynamic client registration request body client display name. */
-export const OAUTH_CLIENT_NAME = 'Transcend MCP';
 
 /** Default OAuth access token lifetime when the token response omits expires_in. */
 export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;

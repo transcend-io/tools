@@ -6,18 +6,8 @@ export interface AuthorizationServerMetadata {
   authorizationEndpoint: string;
   /** Token endpoint URL */
   tokenEndpoint: string;
-  /** Dynamic client registration endpoint URL */
-  registrationEndpoint: string;
   /** Supported PKCE code challenge methods */
   codeChallengeMethodsSupported: string[];
-}
-
-/** Result of dynamic client registration (RFC 7591 subset). */
-export interface OAuthClientRegistration {
-  /** Registered OAuth client identifier */
-  clientId: string;
-  /** Redirect URI registered with the client */
-  redirectUri: string;
 }
 
 /** Authorization code received at the local callback server. */
@@ -38,7 +28,7 @@ export interface OAuthAuthorizationGrant {
   codeVerifier: string;
   /** Redirect URI registered for this login attempt */
   redirectUri: string;
-  /** OAuth client identifier from dynamic client registration */
+  /** OAuth client identifier from client-info exchange */
   clientId: string;
 }
 
@@ -82,9 +72,9 @@ export interface StoredOAuthTokens {
 
 /** In-flight OAuth login session (phases 1–3). */
 export interface PendingOAuthSession {
-  /** Ephemeral localhost redirect URI used for this session */
+  /** Fixed localhost redirect URI used for this session */
   redirectUri: string;
-  /** Registered client identifier */
+  /** OAuth client identifier from client-info exchange */
   clientId: string;
   /** PKCE verifier to use during token exchange (phase 3) */
   codeVerifier: string;

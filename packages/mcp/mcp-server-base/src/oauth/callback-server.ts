@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { getOAuthCallbackPort } from './config.js';
+import { getOAuthRedirectPort } from './config.js';
 import { OAUTH_CALLBACK_TIMEOUT_MS } from './constants.js';
 import {
   OAuthCallbackError,
@@ -39,7 +39,7 @@ const SUCCESS_HTML = `<!DOCTYPE html>
 const ERROR_HTML = '<p>Authorization failed. Return to your editor and try again.</p>';
 
 /**
- * Starts an ephemeral HTTP server on `127.0.0.1` to receive the OAuth redirect.
+ * Starts an HTTP server on `127.0.0.1` at {@link getOAuthRedirectPort} to receive the OAuth redirect.
  */
 export function startCallbackServer(
   options: StartCallbackServerOptions,
@@ -116,7 +116,7 @@ export function startCallbackServer(
       rejectCallback(err);
     });
 
-    const listenPort = getOAuthCallbackPort();
+    const listenPort = getOAuthRedirectPort();
     server.listen(listenPort, '127.0.0.1', () => {
       const address = server.address();
       if (!address || typeof address === 'string') {

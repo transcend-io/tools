@@ -9,6 +9,8 @@ export interface ExchangeAuthorizationCodeOptions {
   grant: OAuthAuthorizationGrant;
   /** OAuth authorization server issuer */
   issuer: string;
+  /** OAuth client secret for confidential client authentication */
+  clientSecret: string;
 }
 
 /**
@@ -17,13 +19,14 @@ export interface ExchangeAuthorizationCodeOptions {
 export async function exchangeAuthorizationCode(
   options: ExchangeAuthorizationCodeOptions,
 ): Promise<StoredOAuthTokens> {
-  const { tokenEndpoint, grant, issuer } = options;
+  const { tokenEndpoint, grant, issuer, clientSecret } = options;
 
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code: grant.code,
     redirect_uri: grant.redirectUri,
     client_id: grant.clientId,
+    client_secret: clientSecret,
     code_verifier: grant.codeVerifier,
   });
 

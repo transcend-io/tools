@@ -41,6 +41,7 @@ describe('refreshOAuthTokens', () => {
     const refreshed = await refreshOAuthTokens({
       tokenEndpoint: 'https://yo.com:4001/oauth/token',
       stored: previous,
+      clientSecret: 'client-secret',
     });
 
     expect(fetchMock).toHaveBeenCalledWith('https://yo.com:4001/oauth/token', {
@@ -53,6 +54,7 @@ describe('refreshOAuthTokens', () => {
         grant_type: 'refresh_token',
         refresh_token: 'refresh-token',
         client_id: 'client-xyz',
+        client_secret: 'client-secret',
       }),
     });
 
@@ -72,6 +74,7 @@ describe('refreshOAuthTokens', () => {
       refreshOAuthTokens({
         tokenEndpoint: 'https://yo.com:4001/oauth/token',
         stored,
+        clientSecret: 'client-secret',
       }),
     ).rejects.toThrow(/requires a refresh token/i);
   });

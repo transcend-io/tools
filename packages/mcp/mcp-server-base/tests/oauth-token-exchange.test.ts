@@ -31,6 +31,7 @@ describe('exchangeAuthorizationCode', () => {
     const tokens = await exchangeAuthorizationCode({
       tokenEndpoint: 'https://yo.com:4001/oauth/token',
       issuer: 'https://yo.com:4001',
+      clientSecret: 'client-secret',
       grant: {
         code: 'auth-code',
         state: 'state-123',
@@ -51,6 +52,7 @@ describe('exchangeAuthorizationCode', () => {
         code: 'auth-code',
         redirect_uri: 'http://127.0.0.1:8765/callback',
         client_id: 'client-xyz',
+        client_secret: 'client-secret',
         code_verifier: 'verifier-abc',
       }),
     });
@@ -71,6 +73,7 @@ describe('exchangeAuthorizationCode', () => {
       exchangeAuthorizationCode({
         tokenEndpoint: 'https://yo.com:4001/oauth/token',
         issuer: 'https://yo.com:4001',
+        clientSecret: 'client-secret',
         grant: {
           code: 'bad-code',
           state: 'state',

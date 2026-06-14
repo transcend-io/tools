@@ -4,16 +4,15 @@ import { buildAuthorizationUrl, waitForAuthorizationGrant } from '../src/oauth/o
 
 describe('buildAuthorizationUrl', () => {
   it('includes PKCE, state, and scope parameters', () => {
-    const url = new URL(
-      buildAuthorizationUrl({
-        authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
-        clientId: 'client-123',
-        redirectUri: 'http://127.0.0.1:4567/callback',
-        codeChallenge: 'challenge-abc',
-        state: 'state-xyz',
-        scopes: ['offline_access', 'viewRequests'],
-      }),
-    );
+    const authorizationUrl = buildAuthorizationUrl({
+      authorizationEndpoint: 'https://yo.com:4001/oauth/authorize',
+      clientId: 'client-123',
+      redirectUri: 'http://127.0.0.1:4567/callback',
+      codeChallenge: 'challenge-abc',
+      state: 'state-xyz',
+      scopes: ['offline_access', 'viewRequests'],
+    });
+    const url = new URL(authorizationUrl);
 
     expect(url.origin + url.pathname).toBe('https://yo.com:4001/oauth/authorize');
     expect(url.searchParams.get('response_type')).toBe('code');
@@ -22,7 +21,10 @@ describe('buildAuthorizationUrl', () => {
     expect(url.searchParams.get('code_challenge')).toBe('challenge-abc');
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
     expect(url.searchParams.get('state')).toBe('state-xyz');
+    expect(url.searchParams.get('prompt')).toBe('consent');
     expect(url.searchParams.get('scope')).toBe('offline_access viewRequests');
+    expect(authorizationUrl).toContain('scope=offline_access%20viewRequests');
+    expect(authorizationUrl).not.toContain('scope=offline_access+viewRequests');
   });
 });
 

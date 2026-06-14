@@ -1,10 +1,10 @@
 import type { Logger } from '../clients/graphql/base.js';
 import { startCallbackServer } from './callback-server.js';
-import { getOAuthScopes } from './config.js';
-import { registerOAuthClient } from './dcr.js';
+import { getOAuthClientId } from './client-registry.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { openBrowser } from './open-browser.js';
 import { generateOAuthState, generatePkcePair } from './pkce.js';
+import { getOAuthScopes } from './scopes.js';
 import type { OAuthAuthorizationGrant, PendingOAuthSession } from './types.js';
 
 export interface StartOAuthLoginOptions {
@@ -32,14 +32,16 @@ export function buildAuthorizationUrl(params: {
   url.searchParams.set('code_challenge', params.codeChallenge);
   url.searchParams.set('code_challenge_method', 'S256');
   url.searchParams.set('state', params.state);
+  url.searchParams.set('prompt', 'consent');
   if (params.scopes.length > 0) {
-    url.searchParams.set('scope', params.scopes.join(' '));
+    // encodeURIComponent uses %20 for spaces; URLSearchParams would use '+' instead.
+    url.search += `&scope=${encodeURIComponent(params.scopes.join(' '))}`;
   }
   return url.toString();
 }
 
 /**
- * Phase 1 OAuth login: ephemeral callback, DCR, browser consent.
+ * Phase 1 OAuth login: fixed redirect callback, browser consent.
  *
  * Returns a session handle; token exchange (phase 3) consumes {@link PendingOAuthSession.waitForCallback}.
  */
@@ -50,6 +52,7 @@ export async function startOAuthLogin(
   const state = generateOAuthState();
   const { codeVerifier, codeChallenge } = generatePkcePair();
   const scopes = getOAuthScopes();
+  const clientId = getOAuthClientId();
 
   const callbackHandle = await startCallbackServer({ expectedState: state });
 
@@ -65,19 +68,10 @@ export async function startOAuthLogin(
       authorizationEndpoint: metadata.authorizationEndpoint,
     });
 
-    const registration = await registerOAuthClient(
-      metadata.registrationEndpoint,
-      callbackHandle.redirectUri,
-    );
-    logger.info('Registered OAuth client via dynamic client registration', {
-      clientId: registration.clientId,
-      redirectUri: registration.redirectUri,
-    });
-
     const authorizationUrl = buildAuthorizationUrl({
       authorizationEndpoint: metadata.authorizationEndpoint,
-      clientId: registration.clientId,
-      redirectUri: registration.redirectUri,
+      clientId,
+      redirectUri: callbackHandle.redirectUri,
       codeChallenge,
       state,
       scopes,
@@ -87,8 +81,8 @@ export async function startOAuthLogin(
     await openBrowser(authorizationUrl);
 
     return {
-      redirectUri: registration.redirectUri,
-      clientId: registration.clientId,
+      redirectUri: callbackHandle.redirectUri,
+      clientId,
       codeVerifier,
       waitForCallback: callbackHandle.waitForCallback,
       close: callbackHandle.close,

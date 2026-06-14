@@ -1,8 +1,7 @@
 import {
   DEFAULT_OAUTH_ISSUER,
-  DEFAULT_OAUTH_SCOPES,
-  TRANSCEND_OAUTH_CALLBACK_PORT_ENV,
-  TRANSCEND_OAUTH_SCOPES_ENV,
+  TRANSCEND_OAUTH_CLIENT_SECRET_ENV,
+  TRANSCEND_OAUTH_REDIRECT_PORT_ENV,
 } from './constants.js';
 
 /**
@@ -25,27 +24,50 @@ function getOAuthIssuerEnv(): string | undefined {
 }
 
 /**
- * OAuth scopes to request during authorization. Override via {@link TRANSCEND_OAUTH_SCOPES_ENV}.
+ * OAuth client secret from {@link TRANSCEND_OAUTH_CLIENT_SECRET_ENV}.
  */
-export function getOAuthScopes(): string[] {
-  const raw = process.env[TRANSCEND_OAUTH_SCOPES_ENV]?.trim();
-  if (!raw) {
-    return [...DEFAULT_OAUTH_SCOPES];
-  }
-  return raw.split(/[\s,]+/).filter(Boolean);
+export function getOAuthClientSecret(): string | undefined {
+  const value = process.env[TRANSCEND_OAUTH_CLIENT_SECRET_ENV]?.trim();
+  return value || undefined;
 }
 
 /**
- * Optional fixed localhost port for the OAuth callback server (`0` = ephemeral).
+ * Fixed localhost port for the OAuth callback server (required in OAuth mode).
  */
-export function getOAuthCallbackPort(): number {
-  const raw = process.env[TRANSCEND_OAUTH_CALLBACK_PORT_ENV]?.trim();
+export function getOAuthRedirectPort(): number {
+  const raw = process.env[TRANSCEND_OAUTH_REDIRECT_PORT_ENV]?.trim();
   if (!raw) {
-    return 0;
+    throw new Error(`${TRANSCEND_OAUTH_REDIRECT_PORT_ENV} is required in OAuth mode`);
   }
   const port = Number.parseInt(raw, 10);
-  if (!Number.isInteger(port) || port < 0 || port > 65535) {
-    throw new Error(`${TRANSCEND_OAUTH_CALLBACK_PORT_ENV} must be an integer between 0 and 65535`);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`${TRANSCEND_OAUTH_REDIRECT_PORT_ENV} must be an integer between 1 and 65535`);
   }
   return port;
+}
+
+/**
+ * Validates OAuth startup environment variables when OAuth mode is enabled.
+ */
+export function requireOAuthStartupEnv(): void {
+  if (!isOAuthModeEnabled()) {
+    return;
+  }
+
+  if (!getOAuthClientSecret()) {
+    throw new Error(
+      `OAuth mode requires ${TRANSCEND_OAUTH_CLIENT_SECRET_ENV}. ` +
+        'Set it to the client secret issued for this MCP server.',
+    );
+  }
+
+  try {
+    getOAuthRedirectPort();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `${detail} Register redirect URI http://127.0.0.1:<port>/callback on the OAuth client ` +
+        `and set ${TRANSCEND_OAUTH_REDIRECT_PORT_ENV} to that port.`,
+    );
+  }
 }
