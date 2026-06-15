@@ -5,6 +5,9 @@ import {
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
+import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
+import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
+import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
 import { getConsentTools } from '../src/tools/index.js';
 
 const EXPECTED_TOOL_NAMES = [
@@ -124,6 +127,43 @@ describe('Consent Tools', () => {
         },
       });
     });
+  });
+});
+
+describe('normalizeAnalyticsMetric', () => {
+  it('maps common metric aliases to GraphQL enum values', () => {
+    expect(normalizeAnalyticsMetric('PAGE_VIEW')).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    expect(normalizeAnalyticsMetric('page_view')).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    expect(normalizeAnalyticsMetric('CONSENT_SESSION')).toBe(
+      AirgapBundleAnalyticsMetric.SiteSessions,
+    );
+    expect(normalizeAnalyticsMetric('CONSENT_SESSIONS')).toBe(
+      AirgapBundleAnalyticsMetric.SiteSessions,
+    );
+    expect(normalizeAnalyticsMetric('PAGE_VIEWS')).toBe(AirgapBundleAnalyticsMetric.PageViews);
+  });
+
+  it('accepts PAGE_VIEW in timeseries schema', () => {
+    const result = GetTimeseriesAnalyticsSchema.safeParse({
+      metric: 'PAGE_VIEW',
+      days: 30,
+      bin_interval: '1d',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.metric).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    }
+  });
+
+  it('accepts PAGE_VIEW in aggregate schema', () => {
+    const result = GetAggregateAnalyticsSchema.safeParse({
+      metric: 'PAGE_VIEW',
+      days: 7,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.metric).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    }
   });
 });
 

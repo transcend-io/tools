@@ -9,15 +9,14 @@ import {
 } from '@transcend-io/sdk';
 
 import { resolveAnalyticsDateRange } from '../analyticsDateRange.js';
+import { airgapBundleAnalyticsMetricSchema } from '../normalizeAnalyticsMetric.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const GetTimeseriesAnalyticsSchema = z.object({
-  metric: z
-    .nativeEnum(AirgapBundleAnalyticsMetric)
-    .describe(
-      'Analytics metric to query. PAGE_VIEWS for daily page-view volume; SITE_SESSIONS for sessions; ' +
-        'SIGNAL_DETECTED for GPC/DNT signal counts over time.',
-    ),
+  metric: airgapBundleAnalyticsMetricSchema.describe(
+    'Analytics metric to query. PAGE_VIEWS for daily page-view volume; SITE_SESSIONS for sessions; ' +
+      'SIGNAL_DETECTED for GPC/DNT signal counts over time.',
+  ),
   start: z
     .string()
     .optional()

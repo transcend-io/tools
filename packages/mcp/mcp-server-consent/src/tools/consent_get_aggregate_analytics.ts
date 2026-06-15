@@ -9,14 +9,13 @@ import {
 } from '@transcend-io/sdk';
 
 import { resolveAnalyticsDateRange } from '../analyticsDateRange.js';
+import { airgapBundleAnalyticsMetricSchema } from '../normalizeAnalyticsMetric.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const GetAggregateAnalyticsSchema = z.object({
-  metric: z
-    .nativeEnum(AirgapBundleAnalyticsMetric)
-    .describe(
-      'Analytics metric to query. CONSENT_CHANGED for opt-in/out counts; SITE_SESSIONS or PAGE_VIEWS for traffic totals.',
-    ),
+  metric: airgapBundleAnalyticsMetricSchema.describe(
+    'Analytics metric to query. CONSENT_CHANGED for opt-in/out counts; SITE_SESSIONS or PAGE_VIEWS for traffic totals.',
+  ),
   start: z
     .string()
     .optional()
