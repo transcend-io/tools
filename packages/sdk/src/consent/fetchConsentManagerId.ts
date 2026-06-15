@@ -8,6 +8,7 @@ import {
   IsoCountryCode,
   BrowserTimeZone,
   SignedIabAgreementOption,
+  ConsentManagerMetricBin,
 } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
@@ -201,14 +202,6 @@ export async function fetchConsentManagerExperiences(
   } while (shouldContinue);
 
   return experiences.sort((a, b) => a.name.localeCompare(b.name));
-}
-
-/**
- * The allowed bin sizes for pulling consent metrics
- */
-export enum ConsentManagerMetricBin {
-  Hourly = '1h',
-  Daily = '1d',
 }
 
 export interface ConsentManagerMetric {

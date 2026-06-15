@@ -1,5 +1,10 @@
+import {
+  AirgapBundleAnalyticsDimension,
+  AirgapBundleAnalyticsMetric,
+} from '@transcend-io/privacy-types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
 import { getConsentTools } from '../src/tools/index.js';
 
 const EXPECTED_TOOL_NAMES = [
@@ -10,7 +15,10 @@ const EXPECTED_TOOL_NAMES = [
   'consent_list_cookies',
   'consent_list_airgap_bundles',
   'consent_list_regimes',
-  'consent_get_triage_stats',
+  'consent_get_inventory_stats',
+  'consent_get_aggregate_analytics',
+  'consent_get_timeseries_analytics',
+  'consent_get_analytics_data',
   'consent_update_cookies',
   'consent_update_data_flows',
   'consent_bulk_triage',
@@ -80,5 +88,59 @@ describe('Consent Tools', () => {
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
+  });
+
+  describe('consent_get_aggregate_analytics', () => {
+    it('queries aggregate analytics with resolved bundle id', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({
+          consentManager: { consentManager: { id: 'bundle-1' } },
+        })
+        .mockResolvedValueOnce({
+          airgapBundleAggregateAnalytics: {
+            items: [{ measure: '10', dimensions: { PURPOSE: 'Advertising' } }],
+          },
+        });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'consent_get_aggregate_analytics')!;
+
+      const result = await tool.handler({
+        metric: AirgapBundleAnalyticsMetric.ConsentChanged,
+        days: 7,
+        include_dimensions: [
+          AirgapBundleAnalyticsDimension.Purpose,
+          AirgapBundleAnalyticsDimension.Regime,
+          AirgapBundleAnalyticsDimension.NewValue,
+        ],
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          airgapBundleId: 'bundle-1',
+          metric: AirgapBundleAnalyticsMetric.ConsentChanged,
+          totalRows: 1,
+        },
+      });
+    });
+  });
+});
+
+describe('resolveAnalyticsDateRange', () => {
+  it('defaults to a 7-day lookback ending now', () => {
+    const now = Date.now();
+    const range = resolveAnalyticsDateRange({});
+    expect(range.endEpoch).toBeGreaterThanOrEqual(Math.floor(now / 1000) - 2);
+    expect(range.endEpoch - range.startEpoch).toBeGreaterThanOrEqual(7 * 24 * 60 * 60 - 2);
+  });
+
+  it('throws when start is after end', () => {
+    expect(() =>
+      resolveAnalyticsDateRange({
+        start: '2024-01-02T00:00:00.000Z',
+        end: '2024-01-01T00:00:00.000Z',
+      }),
+    ).toThrow('Start date must be before end date');
   });
 });
