@@ -15,7 +15,7 @@ export const GetAggregateAnalyticsSchema = z.object({
   metric: z
     .nativeEnum(AirgapBundleAnalyticsMetric)
     .describe(
-      'Analytics metric to query. CONSENT_CHANGED is typical for opt-in/out counts by purpose and regime.',
+      'Analytics metric to query. CONSENT_CHANGED for opt-in/out counts; SITE_SESSIONS or PAGE_VIEWS for traffic totals.',
     ),
   start: z
     .string()
@@ -42,8 +42,8 @@ export function createConsentGetAggregateAnalyticsTool(clients: ToolClients) {
     name: 'consent_get_aggregate_analytics',
     description:
       'Query aggregate consent analytics via airgapBundleAggregateAnalytics. ' +
-      'Use CONSENT_CHANGED with NEW_VALUE/REGIME/PURPOSE dimensions to see opt-in/out counts. ' +
-      'Requires ViewConsentManager API key scope.',
+      'Use CONSENT_CHANGED with NEW_VALUE/REGIME/PURPOSE for opt-in/out counts; ' +
+      'SITE_SESSIONS or PAGE_VIEWS for total traffic. Requires ViewConsentManager API key scope.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

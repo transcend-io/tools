@@ -15,7 +15,8 @@ export const GetTimeseriesAnalyticsSchema = z.object({
   metric: z
     .nativeEnum(AirgapBundleAnalyticsMetric)
     .describe(
-      'Analytics metric to query. SIGNAL_DETECTED is typical for GPC/DNT signal counts over time.',
+      'Analytics metric to query. PAGE_VIEWS for daily page-view volume; SITE_SESSIONS for sessions; ' +
+        'SIGNAL_DETECTED for GPC/DNT signal counts over time.',
     ),
   start: z
     .string()
@@ -41,7 +42,7 @@ export function createConsentGetTimeseriesAnalyticsTool(clients: ToolClients) {
     name: 'consent_get_timeseries_analytics',
     description:
       'Query timeseries consent analytics via airgapBundleTimeseriesAnalytics. ' +
-      'Use SIGNAL_DETECTED to track privacy signal counts over time. ' +
+      'Use PAGE_VIEWS or SITE_SESSIONS for traffic volume; SIGNAL_DETECTED for privacy signal counts. ' +
       'Requires ViewConsentManager API key scope.',
     category: 'Consent Management',
     readOnly: true,

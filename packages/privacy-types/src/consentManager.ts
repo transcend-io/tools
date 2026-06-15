@@ -295,9 +295,9 @@ export const AirgapBundleAnalyticsMetric = makeEnum({
   /** Privacy signal detected (e.g. GPC, DNT) */
   SignalDetected: 'SIGNAL_DETECTED',
   /** Site session recorded */
-  ConsentSession: 'CONSENT_SESSION',
+  SiteSessions: 'SITE_SESSIONS',
   /** Page view recorded */
-  PageView: 'PAGE_VIEW',
+  PageViews: 'PAGE_VIEWS',
 });
 
 /** Type override */
