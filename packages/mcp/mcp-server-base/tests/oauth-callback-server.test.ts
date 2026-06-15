@@ -24,7 +24,7 @@ describe('startCallbackServer', () => {
         `${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`,
       );
       expect(response.status).toBe(200);
-      expect(await response.text()).toContain('Authentication complete');
+      expect(await response.text()).toContain('successfully authenticated');
 
       const result = await handle.waitForCallback();
       expect(result.code).toBe('auth-code-123');
@@ -60,7 +60,7 @@ describe('startCallbackServer', () => {
       const [first, duplicate] = await Promise.all([fetch(callbackUrl), fetch(callbackUrl)]);
       expect(first.status).toBe(200);
       expect(duplicate.status).toBe(200);
-      expect(await duplicate.text()).toContain('Authentication complete');
+      expect(await duplicate.text()).toContain('successfully authenticated');
 
       const result = await handle.waitForCallback();
       expect(result.code).toBe('auth-code-123');
