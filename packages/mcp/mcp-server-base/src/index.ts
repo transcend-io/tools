@@ -29,7 +29,13 @@ export { validateArgs, z } from './validation/index.js';
 export type { ValidationResult } from './validation/index.js';
 export { EmptySchema, PaginationSchema } from './validation/schemas.js';
 
-export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
+export type {
+  McpAppResource,
+  ToolAnnotations,
+  ToolDefinition,
+  ToolClients,
+  ToolUiMeta,
+} from './tools/types.js';
 export { defineTool } from './tools/types.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
@@ -39,6 +45,7 @@ export type { MCPServerOptions } from './server/create-server.js';
 
 export { buildMcpServer } from './server/build-server.js';
 export type { BuildMcpServerOptions } from './server/build-server.js';
+export { MCP_APP_RESOURCE_MIME_TYPE } from './server/mcp-app-mime.js';
 
 export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 

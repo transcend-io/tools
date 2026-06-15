@@ -1,27 +1,35 @@
+import { ASSESSMENT_CREATE_FORM_RESOURCE_URI } from '@transcend-io/mcp-app-assessment-create-form';
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
-import { resolveTemplateToGroupId } from './_helpers.js';
+import {
+  updatePendingCreateSuggestions,
+  waitForCreateConfirmation,
+} from '../pending-create-confirmation.js';
+import { resolveCreateFormSuggestions } from './_createFormSuggestions.js';
 
 export const CreateAssessmentSchema = z.object({
-  title: z.string().describe('Title of the assessment'),
-  assessment_group_id: z
+  suggested_title: z
+    .string()
+    .optional()
+    .describe('Suggested title prepopulated in the create form UI'),
+  suggested_assessment_group_id: z
     .string()
     .optional()
     .describe(
-      'ID of the assessment group to create the assessment in (preferred). Use assessments_list_groups to find available groups.',
+      'Suggested assessment group ID prepopulated in the create form UI. Use assessments_list_groups to find IDs.',
     ),
+  suggested_assignee_id: z
+    .string()
+    .optional()
+    .describe('Suggested assignee user ID prepopulated in the create form UI'),
   template_id: z
     .string()
     .optional()
     .describe(
-      'ID of the assessment template. If assessment_group_id is not provided, the first group using this template will be used.',
+      'Template ID used to derive a suggested assessment group when suggested_assessment_group_id is not provided.',
     ),
-  assignee_ids: z
-    .array(z.string())
-    .optional()
-    .describe('Array of user IDs to assign the assessment to'),
 });
 export type CreateAssessmentInput = z.infer<typeof CreateAssessmentSchema>;
 
@@ -31,41 +39,47 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_create',
     description:
-      'Create a new privacy assessment within an assessment group. Assessment groups are linked to templates. You can provide either an assessment_group_id directly, or a template_id to auto-resolve the first matching group. Use assessments_list_groups to find available groups. The response includes a `url` field with the canonical admin-dashboard link — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
+      'Create a new privacy assessment. Always opens a create form UI (title, assessment group, assignee) and does not return until the user confirms. ' +
+      'Pass suggested_title, suggested_assessment_group_id, and suggested_assignee_id as optional hints to prepopulate the form. ' +
+      'Use assessments_list_groups to find group IDs. template_id can derive a suggested group when no group suggestion is provided. ' +
+      'The response includes a `url` field with the canonical admin-dashboard link — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
     category: 'Assessments',
     readOnly: false,
     confirmationHint: 'Creates a new privacy assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateAssessmentSchema,
-    handler: async ({ title, assessment_group_id, template_id, assignee_ids }) => {
-      let assessmentGroupId = assessment_group_id;
-
-      if (!assessmentGroupId && template_id) {
-        const resolved = await resolveTemplateToGroupId(graphql, template_id);
-        if ('error' in resolved) return resolved.error;
-        assessmentGroupId = resolved.groupId;
-      }
-
-      if (!assessmentGroupId) {
-        return createToolResult(
-          false,
-          undefined,
-          'Either assessment_group_id or template_id must be provided. Use assessments_list_groups to find available groups.',
-        );
-      }
-
-      const result = await graphql.createAssessment({
-        title,
-        assessmentGroupId,
-        assigneeIds: assignee_ids,
+    ui: { resourceUri: ASSESSMENT_CREATE_FORM_RESOURCE_URI },
+    handler: async (input) => {
+      const confirmedPromise = waitForCreateConfirmation({
+        suggestedTitle: input.suggested_title,
+        suggestedAssessmentGroupId: input.suggested_assessment_group_id,
+        suggestedAssigneeId: input.suggested_assignee_id,
+        operation: 'create',
       });
 
-      const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });
+      void resolveCreateFormSuggestions(graphql, input).then((suggestions) => {
+        updatePendingCreateSuggestions(suggestions);
+      });
+
+      const confirmed = await confirmedPromise;
+
+      const created = await graphql.createAssessment({
+        title: confirmed.title,
+        assessmentGroupId: confirmed.assessmentGroupId,
+      });
+
+      const assigned = await graphql.updateAssessmentFormAssignees({
+        id: created.id,
+        assigneeIds: confirmed.assigneeIds,
+      });
+      const assessment = { ...created, ...assigned };
+
+      const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: assessment.id });
 
       return createToolResult(true, {
-        assessment: { ...result, ...links },
+        assessment: { ...assessment, ...links },
         ...links,
-        message: `Assessment "${title}" created successfully. Open it at ${links.url}`,
+        message: `Assessment "${confirmed.title}" created successfully. Open it at ${links.url}`,
       });
     },
   });

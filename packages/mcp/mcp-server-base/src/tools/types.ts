@@ -3,6 +3,23 @@ import { type z } from 'zod';
 import type { TranscendGraphQLBase } from '../clients/graphql/base.js';
 import type { TranscendRestClient } from '../clients/rest-client.js';
 
+/** MCP App UI resource served via `resources/read` */
+export interface McpAppResource {
+  /** `ui://` resource URI */
+  uri: string;
+  /** Human-readable resource name */
+  name: string;
+  /** Optional description for `resources/list` */
+  description?: string;
+  /** Loads bundled HTML for the MCP App */
+  loadHtml: () => Promise<string>;
+}
+
+export interface ToolUiMeta {
+  /** URI of the MCP App resource to render for this tool */
+  resourceUri: string;
+}
+
 export interface ToolAnnotations {
   /** Whether this tool only reads data */
   readOnlyHint: boolean;
@@ -30,6 +47,10 @@ export interface ToolDefinition {
   zodSchema: z.ZodType<any>;
   /** Handler receives pre-validated args */
   handler: (args: any) => Promise<unknown>;
+  /** When set, hosts render the linked MCP App alongside this tool */
+  ui?: ToolUiMeta;
+  /** When true, listed with `_meta.ui.visibility: ["app"]` for MCP App use only */
+  internal?: boolean;
 }
 
 export interface ToolClients {
@@ -67,6 +88,10 @@ export function defineTool<T>(config: {
   zodSchema: z.ZodType<T>;
   /** Handler receives pre-validated, fully typed args */
   handler: (args: T) => Promise<unknown>;
+  /** When set, hosts render the linked MCP App alongside this tool */
+  ui?: ToolUiMeta;
+  /** When true, listed with `_meta.ui.visibility: ["app"]` for MCP App use only */
+  internal?: boolean;
 }): ToolDefinition {
   return config;
 }

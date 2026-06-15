@@ -1,6 +1,7 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
+import { hasPendingCreateConfirmation } from '../pending-create-confirmation.js';
 
 export const UpdateAssigneesSchema = z.object({
   assessment_id: z.string().describe('ID of the assessment form to update assignees for'),
@@ -27,6 +28,14 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssigneesSchema,
     handler: async ({ assessment_id, assignee_ids, external_assignee_emails }) => {
+      if (hasPendingCreateConfirmation()) {
+        return createToolResult(
+          false,
+          undefined,
+          'An assessment create confirmation is in progress. Complete the create form UI before updating assignees.',
+        );
+      }
+
       const result = await graphql.updateAssessmentFormAssignees({
         id: assessment_id,
         assigneeIds: assignee_ids,

@@ -6,6 +6,7 @@
     { "path": "./packages/cli" },
     { "path": "./packages/internationalization" },
     { "path": "./packages/mcp/mcp" },
+    { "path": "./packages/mcp/mcp-app-assessment-create-form" },
     { "path": "./packages/mcp/mcp-server-admin" },
     { "path": "./packages/mcp/mcp-server-assessment" },
     { "path": "./packages/mcp/mcp-server-consent" },

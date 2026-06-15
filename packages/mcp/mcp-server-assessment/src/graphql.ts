@@ -11,6 +11,7 @@ import {
   type AssessmentTemplateExport,
   type AssessmentQuestionInput,
   type ListOptions,
+  type User,
 } from '@transcend-io/mcp-server-base';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -56,6 +57,50 @@ function normalizeQuestion(q: AssessmentQuestionInput): Record<string, unknown> 
 }
 
 export class AssessmentsMixin extends TranscendGraphQLBase {
+  async getCurrentUser(): Promise<User> {
+    const query = `
+      query {
+        user {
+          id
+          email
+          name
+          createdAt
+        }
+      }
+    `;
+    const data = await this.makeRequest<{ user: User }>(query);
+    return data.user;
+  }
+
+  async listUsers(
+    options?: ListOptions & { filterBy?: { text?: string } },
+  ): Promise<PaginatedResponse<User>> {
+    const query = `
+      query ListUsers($first: Int, $filterBy: UserFiltersInput) {
+        users(first: $first, filterBy: $filterBy) {
+          nodes {
+            id
+            email
+            name
+          }
+          totalCount
+        }
+      }
+    `;
+    const data = await this.makeRequest<{ users: { nodes: User[]; totalCount: number } }>(query, {
+      first: Math.min(options?.first || 50, 100),
+      ...(options?.filterBy ? { filterBy: options.filterBy } : {}),
+    });
+    return {
+      nodes: data.users.nodes,
+      pageInfo: {
+        hasNextPage: data.users.nodes.length < data.users.totalCount,
+        hasPreviousPage: false,
+      },
+      totalCount: data.users.totalCount,
+    };
+  }
+
   async listAssessments(
     options?: ListOptions & { filterBy?: { statuses?: string[] } },
   ): Promise<PaginatedResponse<Assessment>> {
