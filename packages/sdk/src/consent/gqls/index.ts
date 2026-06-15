@@ -7,6 +7,7 @@ export * from './partitions.js';
 export * from './stats.js';
 export * from './consentManager.js';
 export * from './consentManagerMetrics.js';
+export * from './airgapBundleAnalytics.js';
 export * from './policy.js';
 export * from './privacyCenter.js';
 export * from './processingPurpose.js';

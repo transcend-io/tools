@@ -8,19 +8,20 @@ import {
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-export const GetCookieStatsSchema = z.object({});
-export type GetCookieStatsInput = z.infer<typeof GetCookieStatsSchema>;
+export const GetInventoryStatsSchema = z.object({});
+export type GetInventoryStatsInput = z.infer<typeof GetInventoryStatsSchema>;
 
-export function createConsentGetTriageStatsTool(clients: ToolClients) {
+export function createConsentGetInventoryStatsTool(clients: ToolClients) {
   return defineTool({
-    name: 'consent_get_triage_stats',
+    name: 'consent_get_inventory_stats',
     description:
-      'Get statistics on cookies and data flows: live (approved), needs review (triage), ' +
-      'and junk counts.',
+      'Get cookie and data-flow inventory triage counts: live (approved), needs review, and junk. ' +
+      'This is inventory status, not consent analytics — use consent_get_aggregate_analytics or ' +
+      'consent_get_timeseries_analytics for opt-in/out and signal metrics.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    zodSchema: GetCookieStatsSchema,
+    zodSchema: GetInventoryStatsSchema,
     handler: async () => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const variables = { input: { airgapBundleId } };
