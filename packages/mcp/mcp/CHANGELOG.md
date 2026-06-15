@@ -6,7 +6,7 @@
 
 - c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
 - Updated dependencies [c14ba60]
-  - @transcend-io/mcp-server-consent@0.2.17
+  - @transcend-io/mcp-server-consent@0.3.0
   - @transcend-io/mcp-server-admin@0.3.13
   - @transcend-io/mcp-server-assessment@0.3.14
   - @transcend-io/mcp-server-dsr@0.3.14
