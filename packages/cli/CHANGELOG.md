@@ -1,5 +1,15 @@
 # @transcend-io/cli
 
+## 10.5.3
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+  - @transcend-io/airgap.js-types@14.2.7
+  - @transcend-io/privacy-types@5.2.3
+  - @transcend-io/sdk@1.2.4
+
 ## 10.5.2
 
 ### Patch Changes
