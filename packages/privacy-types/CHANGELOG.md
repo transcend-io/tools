@@ -1,5 +1,12 @@
 # @transcend-io/privacy-types
 
+## 5.2.3
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+
 ## 5.2.2
 
 ### Patch Changes
