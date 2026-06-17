@@ -7,9 +7,26 @@
 ## Prerequisites
 
 - **Node.js** ≥ 22.12 (see each CLI package’s `engines` in `package.json`).
-- Packages are in **beta**. Install via `npm install -g @transcend-io/<package>` or use `npx -y @transcend-io/<package>`. To develop from source, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set `TRANSCEND_API_KEY`; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-base`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
+- **OAuth credentials** for stdio transport — see [OAuth client setup](#oauth-client-setup) below.
+- Packages are in **beta**. Install via `npm install -g @transcend-io/<package>` or use `npx -y @transcend-io/<package>`. To develop from source, clone this repository: copy [`secret.env.example`](../../secret.env.example) to **`secret.env`** at the repo root and set the OAuth environment variables; then from the repo root run `pnpm exec turbo run build --filter="@transcend-io/<package>..."` (trailing `...` includes dependencies such as `mcp-server-base`), then `set -a && source ./secret.env && set +a` and `pnpm -F @transcend-io/<package> exec node ./dist/cli.mjs` (or use [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh) — see **Run from the monorepo** in each package README and [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers)).
 
 In client config, `npx` with `-y @transcend-io/...` runs that package’s published `bin` (see `package.json` in each package).
+
+## OAuth client setup
+
+Before configuring an MCP client, create OAuth credentials in the Transcend admin dashboard:
+
+1. Navigate to [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients) and create an OAuth client.
+2. Copy the **client ID** and **client secret**.
+3. Register a redirect URI using the **same port** you will set in `TRANSCEND_OAUTH_REDIRECT_PORT`:
+   - `http://127.0.0.1:{port}/callback`, or
+   - `http://[::1]:{port}/callback`
+
+> **`TRANSCEND_OAUTH_REDIRECT_PORT` must exactly match the port in your registered redirect URI.** If the port in the URI and the env var differ, OAuth login will fail.
+
+For example, if `TRANSCEND_OAUTH_REDIRECT_PORT` is `"5555"`, register `http://127.0.0.1:5555/callback` (default) or `http://[::1]:5555/callback` with `TRANSCEND_OAUTH_REDIRECT_HOST=::1`.
+
+On first tool call, the server opens a browser for login. Tokens are session-only (in-memory); restarting the MCP process requires signing in again.
 
 ## Choosing a server
 
@@ -27,7 +44,12 @@ Install **`@transcend-io/mcp`** to get every tool (70 across all domains) in a s
     "transcend": {
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp"],
-      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+      "env": {
+        "TRANSCEND_OAUTH_ISSUER": "https://api.transcend.io",
+        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "5555"
+      }
     }
   }
 }
@@ -42,7 +64,12 @@ Install **`@transcend-io/mcp`** to get every tool (70 across all domains) in a s
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp"],
-      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+      "env": {
+        "TRANSCEND_OAUTH_ISSUER": "https://api.transcend.io",
+        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "5555"
+      }
     }
   }
 }
@@ -60,16 +87,28 @@ Install only the domains you need. Smaller tool counts help AI agents stay focus
     "transcend-consent": {
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp-server-consent"],
-      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+      "env": {
+        "TRANSCEND_OAUTH_ISSUER": "https://api.transcend.io",
+        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "5555"
+      }
     },
     "transcend-dsr": {
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp-server-dsr"],
-      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+      "env": {
+        "TRANSCEND_OAUTH_ISSUER": "https://api.transcend.io",
+        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "5556"
+      }
     }
   }
 }
 ```
+
+> When running multiple domain servers, use a **different** `TRANSCEND_OAUTH_REDIRECT_PORT` (and matching redirect URI) for each server.
 
 **VS Code** (`.vscode/mcp.json`):
 
@@ -80,13 +119,23 @@ Install only the domains you need. Smaller tool counts help AI agents stay focus
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp-server-consent"],
-      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+      "env": {
+        "TRANSCEND_OAUTH_ISSUER": "https://api.transcend.io",
+        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "5555"
+      }
     },
     "transcend-dsr": {
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@transcend-io/mcp-server-dsr"],
-      "env": { "TRANSCEND_API_KEY": "your-api-key" }
+      "env": {
+        "TRANSCEND_OAUTH_ISSUER": "https://api.transcend.io",
+        "TRANSCEND_OAUTH_CLIENT_ID": "your-client-id",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "your-client-secret",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "5556"
+      }
     }
   }
 }
@@ -118,12 +167,17 @@ For Docker, reverse proxy, and cloud deployment patterns, see [DEPLOYMENT.md](./
 
 The MCP server supports two authentication modes that can be used independently or simultaneously:
 
-### API key (external customers)
+### OAuth (stdio)
 
-For external consumers (Claude Enterprise, Cursor, etc.), provide a Transcend API key that was created with **MCP** enabled in the Transcend dashboard (a toggle when you create the key). Keys without MCP access will not authenticate to these servers.
+For external consumers (Claude Enterprise, Cursor, etc.) using stdio transport, authenticate via browser OAuth login. Set these environment variables in your MCP client config (see [OAuth client setup](#oauth-client-setup)):
 
-- **Stdio**: Set the `TRANSCEND_API_KEY` environment variable
-- **HTTP**: Send `Authorization: Bearer <key>` or `X-Transcend-Api-Key: <key>` header, or fall back to `TRANSCEND_API_KEY` env var
+- `TRANSCEND_OAUTH_ISSUER` — OAuth authorization server URL
+- `TRANSCEND_OAUTH_CLIENT_ID` — client ID from [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients)
+- `TRANSCEND_OAUTH_CLIENT_SECRET` — client secret from the same page
+- `TRANSCEND_OAUTH_REDIRECT_PORT` — localhost port for the OAuth callback server; **must match the port in your registered redirect URI**
+- `TRANSCEND_OAUTH_REDIRECT_HOST` — loopback host for the OAuth callback (`127.0.0.1` default, or `::1` for IPv6 format)
+
+On first tool call, the server opens a browser for login. Tokens are kept in process memory only; restarting the MCP client requires signing in again.
 
 ### Session cookie (in-app dashboard)
 
@@ -186,16 +240,20 @@ The unified `mcp` package aggregates tools via `ToolRegistry` and composes a `Tr
 
 All servers share the same environment variables:
 
-| Variable                       | Required               | Default                                    | Description                                                                                                                                          |
-| ------------------------------ | ---------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | Yes (stdio), No (HTTP) | —                                          | Transcend API key with **MCP** enabled when created in the dashboard. In HTTP mode, optional if using session cookie or per-request API key headers. |
-| `TRANSCEND_API_URL`            | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                     |
-| `SOMBRA_URL`                   | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                   |
-| `TRANSCEND_DASHBOARD_URL`      | No                     | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards                                    |
-| `TRANSCEND_HTTP_PORT`          | No                     | `3000`                                     | HTTP listen port                                                                                                                                     |
-| `TRANSCEND_HTTP_HOST`          | No                     | `127.0.0.1`                                | HTTP listen host                                                                                                                                     |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | No                     | —                                          | Comma-separated allowed CORS origins                                                                                                                 |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | No                     | `1800000`                                  | Idle session timeout (ms)                                                                                                                            |
+| Variable                        | Required (stdio) | Default                                    | Description                                                                                                       |
+| ------------------------------- | ---------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_ISSUER`        | Yes              | —                                          | OAuth authorization server URL; enables OAuth stdio mode when set                                                 |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes              | —                                          | Client ID from [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients)             |
+| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes              | —                                          | Client secret from the same OAuth clients page                                                                    |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes              | —                                          | Localhost port for the OAuth callback server; **must match the port in your registered redirect URI**             |
+| `TRANSCEND_OAUTH_REDIRECT_HOST` | No               | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                    |
+| `TRANSCEND_API_URL`             | No               | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                  |
+| `SOMBRA_URL`                    | No               | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                |
+| `TRANSCEND_DASHBOARD_URL`       | No               | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards |
+| `TRANSCEND_HTTP_PORT`           | No               | `3000`                                     | HTTP listen port                                                                                                  |
+| `TRANSCEND_HTTP_HOST`           | No               | `127.0.0.1`                                | HTTP listen host                                                                                                  |
+| `TRANSCEND_MCP_CORS_ORIGINS`    | No               | —                                          | Comma-separated allowed CORS origins                                                                              |
+| `TRANSCEND_MCP_SESSION_TTL_MS`  | No               | `1800000`                                  | Idle session timeout (ms)                                                                                         |
 
 **Monorepo:** store these in root **`secret.env`** (from [`secret.env.example`](../../secret.env.example)); load with `source` or [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh). See [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers).
 
