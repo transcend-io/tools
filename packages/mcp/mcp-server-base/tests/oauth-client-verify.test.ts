@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { verifyOAuthClientCredentials } from '../src/oauth/client-verify.js';
-import { OAUTH_CLIENTS_ADMIN_URL } from '../src/oauth/constants.js';
+import { buildOAuthClientsAdminUrl } from '../src/oauth/constants.js';
 
 describe('verifyOAuthClientCredentials', () => {
   beforeEach(() => {
@@ -66,7 +66,7 @@ describe('verifyOAuthClientCredentials', () => {
         'bad-secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(buildOAuthClientsAdminUrl());
   });
 
   it('throws when success is false', async () => {
@@ -93,7 +93,7 @@ describe('verifyOAuthClientCredentials', () => {
         'secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(buildOAuthClientsAdminUrl());
   });
 
   it('throws when success is missing', async () => {

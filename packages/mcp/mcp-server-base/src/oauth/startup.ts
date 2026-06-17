@@ -4,7 +4,6 @@ import {
   getOAuthClientIdFromEnv,
   getOAuthClientSecret,
   getOAuthIssuer,
-  hasTranscendApiKeyEnv,
   isOAuthModeEnabled,
   requireOAuthStartupEnv,
 } from './config.js';
@@ -13,11 +12,6 @@ import {
  * Validates OAuth env vars and verifies client credentials before stdio MCP startup.
  */
 export async function ensureOAuthStartupReady(logger: Logger): Promise<void> {
-  logger.info('MCP startup auth env', {
-    hasTranscendApiKey: hasTranscendApiKeyEnv(),
-    oauthModeEnabled: isOAuthModeEnabled(),
-  });
-
   if (!isOAuthModeEnabled()) {
     return;
   }

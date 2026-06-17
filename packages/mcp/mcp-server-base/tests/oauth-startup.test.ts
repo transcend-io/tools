@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import * as clientVerify from '../src/oauth/client-verify.js';
-import { OAUTH_CLIENTS_ADMIN_URL, formatOAuthClientConfigError } from '../src/oauth/constants.js';
+import { buildOAuthClientsAdminUrl, formatOAuthClientConfigError } from '../src/oauth/constants.js';
 import { ensureOAuthStartupReady } from '../src/oauth/startup.js';
 
 describe('ensureOAuthStartupReady', () => {
@@ -49,27 +49,17 @@ describe('ensureOAuthStartupReady', () => {
 
   it('no-ops when OAuth mode is disabled', async () => {
     const verifySpy = vi.spyOn(clientVerify, 'verifyOAuthClientCredentials');
-    const infoSpy = vi.spyOn(logger, 'info');
     await ensureOAuthStartupReady(logger);
     expect(verifySpy).not.toHaveBeenCalled();
-    expect(infoSpy).toHaveBeenCalledWith('MCP startup auth env', {
-      hasTranscendApiKey: false,
-      oauthModeEnabled: false,
-    });
   });
 
-  it('logs when TRANSCEND_API_KEY is set and skips OAuth verification', async () => {
+  it('skips OAuth verification when TRANSCEND_API_KEY is set', async () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
     process.env.TRANSCEND_API_KEY = 'test-api-key';
     const verifySpy = vi.spyOn(clientVerify, 'verifyOAuthClientCredentials');
-    const infoSpy = vi.spyOn(logger, 'info');
 
     await ensureOAuthStartupReady(logger);
 
-    expect(infoSpy).toHaveBeenCalledWith('MCP startup auth env', {
-      hasTranscendApiKey: true,
-      oauthModeEnabled: false,
-    });
     expect(verifySpy).not.toHaveBeenCalled();
   });
 
@@ -136,6 +126,6 @@ describe('ensureOAuthStartupReady', () => {
       new Error(formatOAuthClientConfigError('OAuth client verification failed: HTTP 401')),
     );
 
-    await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(buildOAuthClientsAdminUrl());
   });
 });

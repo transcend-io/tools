@@ -5,7 +5,7 @@ import {
   getOAuthRedirectUri,
   requireOAuthStartupEnv,
 } from '../src/oauth/config.js';
-import { OAUTH_CLIENTS_ADMIN_URL } from '../src/oauth/constants.js';
+import { buildOAuthClientsAdminUrl } from '../src/oauth/constants.js';
 
 describe('OAuth redirect config', () => {
   const originalIssuer = process.env.TRANSCEND_OAUTH_ISSUER;
@@ -14,6 +14,7 @@ describe('OAuth redirect config', () => {
   const originalClientSecret = process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
   const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
   const originalRedirectHost = process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+  const originalDashboardUrl = process.env.TRANSCEND_DASHBOARD_URL;
 
   beforeEach(() => {
     delete process.env.TRANSCEND_OAUTH_ISSUER;
@@ -22,6 +23,7 @@ describe('OAuth redirect config', () => {
     delete process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
     delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
     delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+    delete process.env.TRANSCEND_DASHBOARD_URL;
   });
 
   afterEach(() => {
@@ -42,6 +44,9 @@ describe('OAuth redirect config', () => {
 
     if (originalRedirectHost === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
     else process.env.TRANSCEND_OAUTH_REDIRECT_HOST = originalRedirectHost;
+
+    if (originalDashboardUrl === undefined) delete process.env.TRANSCEND_DASHBOARD_URL;
+    else process.env.TRANSCEND_DASHBOARD_URL = originalDashboardUrl;
   });
 
   it('defaults redirect host to 127.0.0.1', () => {
@@ -82,7 +87,7 @@ describe('OAuth redirect config', () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_HOST = 'example.com';
 
     expect(() => requireOAuthStartupEnv()).toThrow(/TRANSCEND_OAUTH_REDIRECT_HOST/);
-    expect(() => requireOAuthStartupEnv()).toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    expect(() => requireOAuthStartupEnv()).toThrow(buildOAuthClientsAdminUrl());
   });
 
   it('includes admin URL when client id is missing', () => {
@@ -91,7 +96,7 @@ describe('OAuth redirect config', () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
 
     expect(() => requireOAuthStartupEnv()).toThrow(/TRANSCEND_OAUTH_CLIENT_ID/);
-    expect(() => requireOAuthStartupEnv()).toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    expect(() => requireOAuthStartupEnv()).toThrow(buildOAuthClientsAdminUrl());
   });
 
   it('includes admin URL when client secret is missing', () => {
@@ -100,6 +105,17 @@ describe('OAuth redirect config', () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
 
     expect(() => requireOAuthStartupEnv()).toThrow(/TRANSCEND_OAUTH_CLIENT_SECRET/);
-    expect(() => requireOAuthStartupEnv()).toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    expect(() => requireOAuthStartupEnv()).toThrow(buildOAuthClientsAdminUrl());
+  });
+
+  it('uses TRANSCEND_DASHBOARD_URL in admin guidance when client id is missing', () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
+    process.env.TRANSCEND_DASHBOARD_URL = 'https://app.staging.transcend.io';
+
+    expect(() => requireOAuthStartupEnv()).toThrow(
+      buildOAuthClientsAdminUrl('https://app.staging.transcend.io'),
+    );
   });
 });

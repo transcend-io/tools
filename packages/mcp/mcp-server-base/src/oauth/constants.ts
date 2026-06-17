@@ -1,3 +1,5 @@
+import { DEFAULT_DASHBOARD_URL } from '../defaults.js';
+
 /** Default Transcend OAuth authorization server issuer URL. */
 export const DEFAULT_OAUTH_ISSUER = 'https://yo.com:4001';
 
@@ -32,15 +34,28 @@ export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
 /** Subtract this many seconds from expires_in before treating a token as expired. */
 export const OAUTH_TOKEN_EXPIRY_SKEW_SECONDS = 60;
 
-/** URL where admins create and manage OAuth clients. */
-export const OAUTH_CLIENTS_ADMIN_URL = 'https://app.transcend.io/admin/oauth-clients';
+/** Path on the admin dashboard where OAuth clients are managed. */
+export const OAUTH_CLIENTS_ADMIN_PATH = '/admin/oauth-clients';
+
+/**
+ * Builds the admin-dashboard URL for OAuth client management.
+ * Honors {@link TRANSCEND_DASHBOARD_URL} when `dashboardUrl` is omitted.
+ */
+export function buildOAuthClientsAdminUrl(dashboardUrl?: string): string {
+  const base = (
+    dashboardUrl ??
+    process.env.TRANSCEND_DASHBOARD_URL ??
+    DEFAULT_DASHBOARD_URL
+  ).replace(/\/$/, '');
+  return `${base}${OAUTH_CLIENTS_ADMIN_PATH}`;
+}
 
 /**
  * Appends admin guidance to an OAuth client configuration error message.
  */
 export function formatOAuthClientConfigError(detail: string): string {
   return (
-    `${detail}. \nHave an admin navigate to ${OAUTH_CLIENTS_ADMIN_URL} ` +
-    'to fetch or create valid credentials.'
+    `${detail}.\n\n` +
+    `Have an admin navigate to ${buildOAuthClientsAdminUrl()} to fetch or create valid credentials.`
   );
 }
