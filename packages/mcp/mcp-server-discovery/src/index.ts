@@ -1,4 +1,5 @@
 export { getDiscoveryTools } from './tools/index.js';
+export { DISCOVERY_OAUTH_SCOPES } from './scopes.js';
 export { DiscoveryMixin } from './graphql.js';
 
 export { ClassifyTextSchema, type ClassifyTextInput } from './tools/discovery_classify_text.js';

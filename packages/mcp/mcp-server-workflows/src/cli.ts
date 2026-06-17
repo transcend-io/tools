@@ -2,11 +2,13 @@
 import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-base';
 
 import { WorkflowsMixin } from './graphql.js';
+import { WORKFLOW_OAUTH_SCOPES } from './scopes.js';
 import { getWorkflowTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-workflows',
   version: '1.0.0',
+  oauthScopes: WORKFLOW_OAUTH_SCOPES,
   getTools: getWorkflowTools,
   createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
     rest: new TranscendRestClient(auth, sombraUrl),

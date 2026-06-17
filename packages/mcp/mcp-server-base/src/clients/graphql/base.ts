@@ -25,6 +25,18 @@ export interface Logger {
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+/** Join a log prefix with an Error message for human-readable output. */
+function formatErrorLogMessage(prefix: string, error: Error): string {
+  const trimmedPrefix = prefix.trimEnd();
+  if (!trimmedPrefix) {
+    return error.message;
+  }
+  if (trimmedPrefix.endsWith(':')) {
+    return `${trimmedPrefix} ${error.message}`;
+  }
+  return `${trimmedPrefix}: ${error.message}`;
+}
+
 export class SimpleLogger implements Logger {
   private static useStdoutForInfo = false;
 
@@ -40,10 +52,22 @@ export class SimpleLogger implements Logger {
   }
 
   private write(level: LogLevel, message: string, data?: unknown): void {
+    let logMessage = message;
+    let logData: unknown;
+
+    if (data instanceof Error) {
+      logMessage = formatErrorLogMessage(message, data);
+      if (process.env.LOG_LEVEL === 'debug' && data.stack) {
+        logData = { stack: data.stack };
+      }
+    } else if (data !== undefined) {
+      logData = data;
+    }
+
     const line = JSON.stringify({
       level,
-      message,
-      data,
+      message: logMessage,
+      ...(logData !== undefined ? { data: logData } : {}),
       timestamp: new Date().toISOString(),
     });
     const useStdout = SimpleLogger.useStdoutForInfo && (level === 'info' || level === 'debug');
@@ -63,6 +87,14 @@ export class SimpleLogger implements Logger {
   }
 
   error(message: string, data?: unknown): void {
+    // Stdio MCP mode: plain-text errors are easier to read in Cursor than JSON blobs.
+    if (!SimpleLogger.useStdoutForInfo && data instanceof Error) {
+      process.stderr.write(`${formatErrorLogMessage(message, data)}\n`);
+      if (process.env.LOG_LEVEL === 'debug' && data.stack) {
+        process.stderr.write(`${data.stack}\n`);
+      }
+      return;
+    }
     this.write('error', message, data);
   }
 }

@@ -1,4 +1,5 @@
 export { getInventoryTools } from './tools/index.js';
+export { INVENTORY_OAUTH_SCOPES } from './scopes.js';
 export { InventoryMixin } from './graphql.js';
 
 export {

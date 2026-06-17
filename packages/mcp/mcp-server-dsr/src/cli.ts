@@ -2,11 +2,13 @@
 import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-base';
 
 import { DSRMixin } from './graphql.js';
+import { DSR_OAUTH_SCOPES } from './scopes.js';
 import { getDSRTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-dsr',
   version: '1.0.0',
+  oauthScopes: DSR_OAUTH_SCOPES,
   getTools: getDSRTools,
   createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
     rest: new TranscendRestClient(auth, sombraUrl),

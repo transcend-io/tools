@@ -8,10 +8,12 @@ import {
   DEFAULT_SOMBRA_URL,
   DEFAULT_TRANSCEND_API_URL,
 } from '../defaults.js';
+import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
+import { configureOAuthScopes } from '../oauth/scopes.js';
+import { ensureOAuthStartupReady } from '../oauth/startup.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
-import { resolveAuth } from './resolve-auth.js';
 import { runMcpHttp } from './run-http.js';
 
 /**
@@ -36,6 +38,8 @@ export interface MCPServerOptions {
   name: string;
   /** Server version */
   version: string;
+  /** Domain OAuth scopes (offline_access is added automatically) */
+  oauthScopes: readonly string[];
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
   /**
@@ -68,6 +72,8 @@ async function buildClients(
  * authenticated via session cookie or API key header.
  */
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
+  configureOAuthScopes(options.oauthScopes);
+
   const config = parseTransportArgs();
   const isHttpTransport = config.transport === 'http';
   SimpleLogger.setInfoToStdout(isHttpTransport);
@@ -102,8 +108,14 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const auth = resolveAuth();
-  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl, dashboardUrl });
+  await ensureOAuthStartupReady(logger);
+  const auth = resolveStdioStartupAuth();
+  logger.info('Initializing Transcend API clients...', {
+    sombraUrl,
+    graphqlUrl,
+    dashboardUrl,
+    authType: auth?.type ?? (process.env.TRANSCEND_OAUTH_ISSUER ? 'oauth-pending' : 'none'),
+  });
   const clients = await buildClients(
     { auth, sombraUrl, graphqlUrl, dashboardUrl },
     options.createClients,

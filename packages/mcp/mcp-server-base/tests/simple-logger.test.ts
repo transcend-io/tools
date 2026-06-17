@@ -109,6 +109,16 @@ describe('SimpleLogger', () => {
       const parsed = readSingleLogLine(stderrSpy);
       expect(parsed.level).toBe('error');
     });
+
+    it('folds Error data into the message without a stack trace', () => {
+      new SimpleLogger().error(
+        'Failed to start server:',
+        new Error('OAuth client verification failed'),
+      );
+      const parsed = readSingleLogLine(stderrSpy);
+      expect(parsed.message).toBe('Failed to start server: OAuth client verification failed');
+      expect(parsed.data).toBeUndefined();
+    });
   });
 
   describe('singleton config', () => {
@@ -157,6 +167,28 @@ describe('SimpleLogger', () => {
       const parsed = JSON.parse(written.trim()) as Record<string, unknown>;
       expect(parsed.data).toBeUndefined();
       expect('data' in parsed).toBe(false);
+    });
+
+    it('writes plain-text errors with Error data in stdio mode', () => {
+      new SimpleLogger().error(
+        'Failed to start server:',
+        new Error('OAuth client verification failed'),
+      );
+      expect(stderrSpy).toHaveBeenCalledOnce();
+      const written = stderrSpy.mock.calls[0]?.[0] as string;
+      expect(written).toBe('Failed to start server: OAuth client verification failed\n');
+      expect(() => JSON.parse(written.trim())).toThrow();
+    });
+
+    it('appends stack trace in stdio mode when LOG_LEVEL=debug', () => {
+      process.env.LOG_LEVEL = 'debug';
+      const error = new Error('OAuth client verification failed');
+      new SimpleLogger().error('Failed to start server:', error);
+      expect(stderrSpy).toHaveBeenCalledTimes(2);
+      expect(stderrSpy.mock.calls[0]?.[0]).toBe(
+        'Failed to start server: OAuth client verification failed\n',
+      );
+      expect(stderrSpy.mock.calls[1]?.[0]).toBe(`${error.stack}\n`);
     });
   });
 
