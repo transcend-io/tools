@@ -25,6 +25,8 @@ import {
   fetchAllTemplates,
   fetchConsentManager,
   fetchConsentManagerExperiences,
+  fetchConsentVariants,
+  fetchConsentThemes,
   fetchConsentManagerTheme,
   fetchAllEnrichers,
   fetchAllIdentifiers,
@@ -87,6 +89,8 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  type ConsentVariantInput,
+  type ConsentThemeInput,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
@@ -164,6 +168,8 @@ export async function pullTranscendConfiguration(
     processingActivities,
     consentManager,
     consentManagerExperiences,
+    consentVariants,
+    consentThemes,
     prompts,
     promptPartials,
     promptGroups,
@@ -274,6 +280,14 @@ export async function pullTranscendConfiguration(
     // Fetch consent manager experiences
     resources.includes(TranscendPullResource.ConsentManager)
       ? fetchConsentManagerExperiences(client, { logger })
+      : [],
+    // Fetch consent manager consent variants
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentVariants(client, { logger })
+      : [],
+    // Fetch consent manager consent themes
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentThemes(client, { logger })
       : [],
     // Fetch prompts
     resources.includes(TranscendPullResource.Prompts) ? fetchAllPrompts(client, { logger }) : [],
@@ -422,7 +436,25 @@ export async function pullTranscendConfiguration(
         })),
         browserLanguages: experience.browserLanguages,
         browserTimeZones: experience.browserTimeZones,
+        consentUiVariantId: experience.consentUiVariant?.id,
       })),
+      consentVariants: consentVariants.map(
+        (variant): ConsentVariantInput => ({
+          name: variant.name,
+          description: variant.description || undefined,
+          configuration: JSON.stringify(variant.configuration),
+          locales: variant.locales as LocaleValue[],
+          status: variant.status,
+          userFlow: variant.userFlow,
+          themeId: variant.theme?.id,
+        }),
+      ),
+      consentThemes: consentThemes.map(
+        (theme): ConsentThemeInput => ({
+          name: theme.name,
+          configuration: JSON.stringify(theme.configuration),
+        }),
+      ),
     };
   }
 

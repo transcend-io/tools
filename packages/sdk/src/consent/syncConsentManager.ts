@@ -16,7 +16,8 @@ import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPurposes } from '../preference-management/fetchAllPurposes.js';
-import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
+import { fetchConsentManagerExperiences } from './fetchConsentManagerExperiences.js';
+import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import {
   UPDATE_CONSENT_MANAGER_DOMAINS,
@@ -31,6 +32,12 @@ import {
   UPDATE_CONSENT_MANAGER_THEME,
 } from './gqls/consentManager.js';
 import { UPDATE_CONSENT_EXPERIENCE, CREATE_CONSENT_EXPERIENCE } from './gqls/experiences.js';
+import {
+  syncConsentUiThemes,
+  syncConsentUiVariants,
+  type ConsentThemeInput,
+  type ConsentVariantInput,
+} from './syncConsentUi.js';
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
@@ -71,6 +78,8 @@ export interface ConsentManageExperienceInput {
   browserLanguages?: BrowserLanguage[];
   /** Browser time zones that define this regional experience */
   browserTimeZones?: BrowserTimeZone[];
+  /** ID of the consent UI variant assigned to this experience */
+  consentUiVariantId?: string;
 }
 
 export interface ConsentManagerInput {
@@ -109,6 +118,10 @@ export interface ConsentManagerInput {
   };
   /** The Shared XDI host sync groups config (JSON) */
   syncGroups?: string;
+  /** Consent UI variant configurations */
+  consentVariants?: ConsentVariantInput[];
+  /** Consent UI theme configurations */
+  consentThemes?: ConsentThemeInput[];
 }
 
 /**
@@ -180,6 +193,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds,
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
+              ...(exp.consentUiVariantId ? { consentUiVariantId: exp.consentUiVariantId } : {}),
             },
           },
           logger,
@@ -201,6 +215,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds || [],
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
+              ...(exp.consentUiVariantId ? { consentUiVariantId: exp.consentUiVariantId } : {}),
             },
           },
           logger,
@@ -357,6 +372,20 @@ export async function syncConsentManager(
     await syncConsentManagerExperiences(client, consentManager.experiences, {
       logger,
     });
+  }
+
+  if (consentManager.consentThemes || consentManager.consentVariants) {
+    if (consentManager.consentThemes) {
+      await syncConsentUiThemes(client, airgapBundleId, consentManager.consentThemes, {
+        logger,
+      });
+    }
+
+    if (consentManager.consentVariants) {
+      await syncConsentUiVariants(client, airgapBundleId, consentManager.consentVariants, {
+        logger,
+      });
+    }
   }
 
   if (consentManager.theme) {

@@ -68,6 +68,16 @@ import { OpenAIRouteName, PathfinderPolicyName } from './enums.js';
 import { buildAIIntegrationType } from './lib/helpers/buildAIIntegrationType.js';
 import { buildEnabledRouteType } from './lib/helpers/buildEnabledRouteType.js';
 
+/** Status of a consent UI variant */
+export const UiVariantStatus = {
+  DRAFT: 'DRAFT',
+  ACTIVE: 'ACTIVE',
+  PUBLISHED: 'PUBLISHED',
+} as const;
+
+/** Type override */
+export type UiVariantStatus = (typeof UiVariantStatus)[keyof typeof UiVariantStatus];
+
 /**
  * Input to define email templates that can be used to communicate to end-users
  * about the status of their requests
@@ -1231,11 +1241,53 @@ export const ConsentManageExperienceInput = t.intersection([
     browserLanguages: t.array(valuesOf(BrowserLanguage)),
     /** Browser time zones that define this regional experience */
     browserTimeZones: t.array(valuesOf(BrowserTimeZone)),
+    /** ID of the consent UI variant assigned to this experience */
+    consentUiVariantId: t.string,
   }),
 ]);
 
 /** Type override */
 export type ConsentManageExperienceInput = t.TypeOf<typeof ConsentManageExperienceInput>;
+
+export const ConsentVariantInput = t.intersection([
+  t.type({
+    /** Name of experience */
+    name: t.string,
+  }),
+  t.partial({
+    /** Description of variant */
+    description: t.string,
+    /** Configuration of variant */
+    configuration: t.string,
+    /** Locales of variant */
+    locales: t.array(valuesOf(LOCALE_KEY)),
+    /** Status of variant */
+    status: valuesOf(UiVariantStatus),
+    /** User flow of variant */
+    userFlow: t.string,
+    /** ID of the consent UI theme associated with this variant */
+    themeId: t.string,
+  }),
+]);
+
+/** Type override */
+export type ConsentVariantInput = t.TypeOf<typeof ConsentVariantInput>;
+
+export const ConsentThemeInput = t.intersection([
+  t.type({
+    /** Name of experience */
+    name: t.string,
+  }),
+  t.partial({
+    /** ID of theme */
+    id: t.string,
+    /** Configuration of variant */
+    configuration: t.string,
+  }),
+]);
+
+/** Type override */
+export type ConsentThemeInput = t.TypeOf<typeof ConsentThemeInput>;
 
 export const PartitionInput = t.intersection([
   t.type({
@@ -1288,6 +1340,8 @@ export const ConsentManagerInput = t.partial({
   // TODO: https://transcend.height.app/T-23919 - reconsider simpler yml shape
   /** The Shared XDI host sync groups config (JSON) for this airgap bundle */
   syncGroups: t.string,
+  consentVariants: t.array(ConsentVariantInput),
+  consentThemes: t.array(ConsentThemeInput),
 });
 
 /** Type override */
