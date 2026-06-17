@@ -29,7 +29,7 @@ export interface ConsentVariantInput {
   /** JSON-serialized variant configuration */
   configuration?: string;
   /** Locales this variant applies to */
-  locales?: string[];
+  locales: string[];
   /** Status of the variant */
   status: UiVariantStatus;
   /** User flow for the variant */
@@ -183,10 +183,6 @@ export async function syncConsentUiVariants(
       const configuration = parseConsentUiConfiguration(variant.configuration, resourceLabel);
       const themeId = resolveThemeId(variant.themeId);
       const existingVariant = variantLookup[variant.name];
-
-      if (!variant.locales?.length) {
-        throw new Error(`Missing locales for ${resourceLabel}`);
-      }
 
       if (existingVariant) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_UI_VARIANT, {

@@ -40365,27 +40365,17 @@
             "allOf": [
               {
                 "type": "object",
-                "required": ["name", "slug"],
+                "required": ["name", "slug", "status", "locales"],
                 "properties": {
                   "name": {
                     "type": "string"
                   },
                   "slug": {
                     "type": "string"
-                  }
-                }
-              },
-              {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string"
                   },
-                  "description": {
-                    "type": "string"
-                  },
-                  "configuration": {
-                    "type": "string"
+                  "status": {
+                    "type": "string",
+                    "enum": ["DRAFT", "ACTIVE", "PUBLISHED"]
                   },
                   "locales": {
                     "type": "array",
@@ -40589,10 +40579,20 @@
                         "gl-ES"
                       ]
                     }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
                   },
-                  "status": {
-                    "type": "string",
-                    "enum": ["DRAFT", "ACTIVE", "PUBLISHED"]
+                  "description": {
+                    "type": "string"
+                  },
+                  "configuration": {
+                    "type": "string"
                   },
                   "userFlow": {
                     "type": "string"

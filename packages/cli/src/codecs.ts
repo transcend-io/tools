@@ -1257,6 +1257,8 @@ export const ConsentVariantInput = t.intersection([
     slug: t.string,
     /** Status of variant */
     status: valuesOf(UiVariantStatus),
+    /** Locales of variant */
+    locales: t.array(valuesOf(LOCALE_KEY)),
   }),
   t.partial({
     /** ID of consent variant */
@@ -1265,8 +1267,6 @@ export const ConsentVariantInput = t.intersection([
     description: t.string,
     /** Configuration of variant */
     configuration: t.string,
-    /** Locales of variant */
-    locales: t.array(valuesOf(LOCALE_KEY)),
     /** User flow of variant */
     userFlow: t.string,
     /** ID of the consent UI theme associated with this variant */
