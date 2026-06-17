@@ -1,5 +1,23 @@
 # @transcend-io/sdk
 
+## 1.2.4
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+  - @transcend-io/airgap.js-types@14.2.7
+  - @transcend-io/privacy-types@5.2.3
+
+## 1.2.3
+
+### Patch Changes
+
+- c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
+- Updated dependencies [c14ba60]
+  - @transcend-io/privacy-types@5.2.2
+  - @transcend-io/airgap.js-types@14.2.6
+
 ## 1.2.2
 
 ### Patch Changes

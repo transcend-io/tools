@@ -6,6 +6,7 @@ export * from './fetchAllPolicies.js';
 export * from './fetchAllPrivacyCenters.js';
 export * from './fetchAllProcessingPurposes.js';
 export * from './fetchConsentManagerId.js';
+export * from './fetchAirgapBundleAnalytics.js';
 export * from './fetchPrivacyCenterId.js';
 export * from './gqls/index.js';
 export * from './syncConsentManager.js';
