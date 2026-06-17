@@ -14,6 +14,8 @@ export interface ConsentUiTheme {
   id: string;
   /** The display name for this UI theme */
   name: string;
+  /** The unique identifier for this UI theme */
+  slug: string;
   /** Theme styling configuration */
   configuration: ThemeConfiguration;
 }

@@ -40365,9 +40365,12 @@
             "allOf": [
               {
                 "type": "object",
-                "required": ["name"],
+                "required": ["name", "slug"],
                 "properties": {
                   "name": {
+                    "type": "string"
+                  },
+                  "slug": {
                     "type": "string"
                   }
                 }
@@ -40375,6 +40378,9 @@
               {
                 "type": "object",
                 "properties": {
+                  "id": {
+                    "type": "string"
+                  },
                   "description": {
                     "type": "string"
                   },
@@ -40605,9 +40611,12 @@
             "allOf": [
               {
                 "type": "object",
-                "required": ["name"],
+                "required": ["name", "slug"],
                 "properties": {
                   "name": {
+                    "type": "string"
+                  },
+                  "slug": {
                     "type": "string"
                   }
                 }

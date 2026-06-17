@@ -20,6 +20,8 @@ export interface ConsentUiVariant {
   id: string;
   /** The display name for this UI variant */
   name: string;
+  /** The unique identifier for this UI variant */
+  slug: string;
   /** Description of this UI variant */
   description?: string;
   /** Locales this UI variant applies to */

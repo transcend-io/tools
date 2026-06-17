@@ -257,6 +257,7 @@ export const FETCH_CONSENT_UI_VARIANTS = gql`
       nodes {
         id
         name
+        slug
         description
         status
         locales
@@ -313,6 +314,7 @@ export const FETCH_CONSENT_UI_THEMES = gql`
       nodes {
         id
         name
+        slug
         configuration {
           buttonThemes {
             backgroundColor

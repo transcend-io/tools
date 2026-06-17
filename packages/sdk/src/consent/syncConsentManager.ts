@@ -18,6 +18,7 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPurposes } from '../preference-management/fetchAllPurposes.js';
 import { fetchConsentManagerExperiences } from './fetchConsentManagerExperiences.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
+import { fetchConsentVariants } from './fetchConsentVariants.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import {
   UPDATE_CONSENT_MANAGER_DOMAINS,
@@ -137,9 +138,11 @@ export async function syncConsentManagerExperiences(
   options: {
     /** Logger instance */
     logger?: Logger;
+    /** Variant inputs from transcend.yml, used to resolve consentUiVariantId by slug */
+    variants?: ConsentVariantInput[];
   } = {},
 ): Promise<void> {
-  const { logger = NOOP_LOGGER } = options;
+  const { logger = NOOP_LOGGER, variants = [] } = options;
 
   const existingExperiences = await fetchConsentManagerExperiences(client, {
     logger,
@@ -148,6 +151,26 @@ export async function syncConsentManagerExperiences(
 
   const purposes = await fetchAllPurposes(client, { logger });
   const purposeLookup = keyBy(purposes, 'trackingType');
+
+  const existingVariants = await fetchConsentVariants(client, { logger });
+  const variantLookupBySlug = keyBy(existingVariants, 'slug');
+  const variantInputById = keyBy(
+    variants.filter((variant): variant is ConsentVariantInput & { id: string } => !!variant.id),
+    'id',
+  );
+
+  const resolveConsentUiVariantId = (
+    consentUiVariantId: string | undefined,
+  ): string | undefined => {
+    if (!consentUiVariantId) {
+      return undefined;
+    }
+
+    const variantInput = variantInputById[consentUiVariantId];
+    const existingVariant = variantInput ? variantLookupBySlug[variantInput.slug] : undefined;
+
+    return existingVariant?.id ?? consentUiVariantId;
+  };
 
   await map(
     experiences,
@@ -173,6 +196,7 @@ export async function syncConsentManagerExperiences(
         return existingPurpose.id;
       });
 
+      const consentUiVariantId = resolveConsentUiVariantId(exp.consentUiVariantId);
       const existingExperience = experienceLookup[exp.name];
       if (existingExperience) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_EXPERIENCE, {
@@ -193,7 +217,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds,
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
-              ...(exp.consentUiVariantId ? { consentUiVariantId: exp.consentUiVariantId } : {}),
+              ...(consentUiVariantId ? { consentUiVariantId } : {}),
             },
           },
           logger,
@@ -215,7 +239,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds || [],
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
-              ...(exp.consentUiVariantId ? { consentUiVariantId: exp.consentUiVariantId } : {}),
+              ...(consentUiVariantId ? { consentUiVariantId } : {}),
             },
           },
           logger,
@@ -368,24 +392,24 @@ export async function syncConsentManager(
     });
   }
 
-  if (consentManager.experiences) {
-    await syncConsentManagerExperiences(client, consentManager.experiences, {
+  if (consentManager.consentThemes) {
+    await syncConsentUiThemes(client, airgapBundleId, consentManager.consentThemes, {
       logger,
     });
   }
 
-  if (consentManager.consentThemes || consentManager.consentVariants) {
-    if (consentManager.consentThemes) {
-      await syncConsentUiThemes(client, airgapBundleId, consentManager.consentThemes, {
-        logger,
-      });
-    }
+  if (consentManager.consentVariants) {
+    await syncConsentUiVariants(client, airgapBundleId, consentManager.consentVariants, {
+      logger,
+      themes: consentManager.consentThemes,
+    });
+  }
 
-    if (consentManager.consentVariants) {
-      await syncConsentUiVariants(client, airgapBundleId, consentManager.consentVariants, {
-        logger,
-      });
-    }
+  if (consentManager.experiences) {
+    await syncConsentManagerExperiences(client, consentManager.experiences, {
+      logger,
+      variants: consentManager.consentVariants,
+    });
   }
 
   if (consentManager.theme) {

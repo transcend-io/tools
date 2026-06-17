@@ -1251,18 +1251,22 @@ export type ConsentManageExperienceInput = t.TypeOf<typeof ConsentManageExperien
 
 export const ConsentVariantInput = t.intersection([
   t.type({
-    /** Name of experience */
+    /** Name of consent variant */
     name: t.string,
+    /** Slug of consent variant */
+    slug: t.string,
+    /** Status of variant */
+    status: valuesOf(UiVariantStatus),
   }),
   t.partial({
+    /** ID of consent variant */
+    id: t.string,
     /** Description of variant */
     description: t.string,
     /** Configuration of variant */
     configuration: t.string,
     /** Locales of variant */
     locales: t.array(valuesOf(LOCALE_KEY)),
-    /** Status of variant */
-    status: valuesOf(UiVariantStatus),
     /** User flow of variant */
     userFlow: t.string,
     /** ID of the consent UI theme associated with this variant */
@@ -1275,11 +1279,13 @@ export type ConsentVariantInput = t.TypeOf<typeof ConsentVariantInput>;
 
 export const ConsentThemeInput = t.intersection([
   t.type({
-    /** Name of experience */
+    /** Name of consent theme */
     name: t.string,
+    /** Slug of consent theme */
+    slug: t.string,
   }),
   t.partial({
-    /** ID of theme */
+    /** ID of consent theme */
     id: t.string,
     /** Configuration of variant */
     configuration: t.string,

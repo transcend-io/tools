@@ -440,7 +440,9 @@ export async function pullTranscendConfiguration(
       })),
       consentVariants: consentVariants.map(
         (variant): ConsentVariantInput => ({
+          id: variant.id,
           name: variant.name,
+          slug: variant.slug,
           description: variant.description || undefined,
           configuration: JSON.stringify(variant.configuration),
           locales: variant.locales as LocaleValue[],
@@ -451,7 +453,9 @@ export async function pullTranscendConfiguration(
       ),
       consentThemes: consentThemes.map(
         (theme): ConsentThemeInput => ({
+          id: theme.id,
           name: theme.name,
+          slug: theme.slug,
           configuration: JSON.stringify(theme.configuration),
         }),
       ),
