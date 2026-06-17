@@ -3,6 +3,8 @@
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
+import { AbsoluteUrlString } from './consentUiConfiguration.js';
+
 /**
  * Types representing the consent UI theme configuration
  * Includes keys for alignment, logo position, content flow, colors, and more
@@ -178,7 +180,16 @@ export const ContainerTheme = t.intersection([Background, Border]);
 /** Override type */
 export type ContainerTheme = t.TypeOf<typeof ContainerTheme>;
 
-/** Represents the header theme configuration */
+/** Represents the header theme configuration (reduced scope) */
+export const HeaderThemeMinimal = t.type({
+  logoPosition: valuesOf(LogoPosition),
+  logoImageUrl: AbsoluteUrlString,
+});
+
+/** Override type */
+export type HeaderThemeMinimal = t.TypeOf<typeof HeaderThemeMinimal>;
+
+/** Represents the header theme configuration (full scope) */
 export const HeaderTheme = t.intersection([Text, t.type({ logoPosition: valuesOf(LogoPosition) })]);
 
 /** Override type */
@@ -245,7 +256,20 @@ export const ToggleTheme = t.intersection([
 /** Override type */
 export type ToggleTheme = t.TypeOf<typeof ToggleTheme>;
 
-/** Theme configuration shared between both First (banner) and Second Layers (modal) */
+/** Theme configuration shared between both First (banner) and Second Layers (modal) (reduced scope) */
+export const CommonLayerThemeMinimal = t.intersection([
+  t.type({
+    alwaysShowScrollbar: t.boolean,
+  }),
+  t.partial({
+    header: HeaderThemeMinimal,
+  }),
+]);
+
+/** Override type */
+export type CommonLayerThemeMinimal = t.TypeOf<typeof CommonLayerThemeMinimal>;
+
+/** Theme configuration shared between both First (banner) and Second Layers (modal) (full scope) */
 export const CommonLayerTheme = t.intersection([
   t.type({
     buttons: t.tuple([
@@ -270,19 +294,46 @@ export const CommonLayerTheme = t.intersection([
 /** Override type */
 export type CommonLayerTheme = t.TypeOf<typeof CommonLayerTheme>;
 
-/** Theme configuration for the First Layer (banner) */
+/** Theme configuration for the First Layer (banner) (reduced scope) */
+export const FirstLayerThemeMinimal = t.intersection([
+  CommonLayerThemeMinimal,
+  t.type({
+    contentLayout: ContentLayout,
+  }),
+]);
+
+/** Override type */
+export type FirstLayerThemeMinimal = t.TypeOf<typeof FirstLayerThemeMinimal>;
+
+/** Theme configuration for the First Layer (banner) (full scope) */
 export const FirstLayerTheme = t.intersection([
   CommonLayerTheme,
   t.type({
     contentFlow: valuesOf(ContentFlows),
     verticalAlign: valuesOf(VerticalAlign),
   }),
+  t.partial({
+    contentLayout: ContentLayout,
+  }),
 ]);
 
 /** Override type */
 export type FirstLayerTheme = t.TypeOf<typeof FirstLayerTheme>;
 
-/** Theme configuration for the Second Layer (modal) */
+/** Theme configuration for the Second Layer (modal) (reduced scope) */
+export const SecondLayerThemeMinimal = t.intersection([
+  CommonLayerThemeMinimal,
+  t.type({
+    // lockToEdges is linked to horizontalAlign left/right. if left/right, this is forced to true.
+    // if horizontalAlign is center and lockEdges is true then top and bottom are locked to edges
+    lockToEdges: t.boolean,
+  }),
+]);
+
+/** Override type */
+export type SecondLayerThemeMinimal = t.TypeOf<typeof SecondLayerThemeMinimal>;
+
+/** Theme configuration for the Second Layer (modal) (full scope) */
 export const SecondLayerTheme = t.intersection([
   CommonLayerTheme,
   t.type({
@@ -323,7 +374,17 @@ export const SharedTopLevelTheme = t.type({
 /** Override type */
 export type SharedTopLevelTheme = t.TypeOf<typeof SharedTopLevelTheme>;
 
-/** Banner-only theme configuration */
+/** Banner-only theme configuration (reduced scope) */
+export const ThemeConfigurationBannerOnlyMinimal = t.type({
+  firstLayer: FirstLayerThemeMinimal,
+});
+
+/** Override type */
+export type ThemeConfigurationBannerOnlyMinimal = t.TypeOf<
+  typeof ThemeConfigurationBannerOnlyMinimal
+>;
+
+/** Banner-only theme configuration (full scope) */
 export const ThemeConfigurationBannerOnly = t.intersection([
   SharedTopLevelTheme,
   t.type({
@@ -334,7 +395,17 @@ export const ThemeConfigurationBannerOnly = t.intersection([
 /** Override type */
 export type ThemeConfigurationBannerOnly = t.TypeOf<typeof ThemeConfigurationBannerOnly>;
 
-/** Modal-only theme configuration */
+/** Modal-only theme configuration (reduced scope) */
+export const ThemeConfigurationModalOnlyMinimal = t.type({
+  secondLayer: SecondLayerThemeMinimal,
+});
+
+/** Override type */
+export type ThemeConfigurationModalOnlyMinimal = t.TypeOf<
+  typeof ThemeConfigurationModalOnlyMinimal
+>;
+
+/** Modal-only theme configuration (full scope) */
 export const ThemeConfigurationModalOnly = t.intersection([
   SharedTopLevelTheme,
   t.type({
@@ -345,7 +416,18 @@ export const ThemeConfigurationModalOnly = t.intersection([
 /** Override type */
 export type ThemeConfigurationModalOnly = t.TypeOf<typeof ThemeConfigurationModalOnly>;
 
-/** Banner into modal theme configuration */
+/** Banner into modal theme configuration (reduced scope) */
+export const ThemeConfigurationBannerIntoModalMinimal = t.type({
+  firstLayer: FirstLayerThemeMinimal,
+  secondLayer: SecondLayerThemeMinimal,
+});
+
+/** Override type */
+export type ThemeConfigurationBannerIntoModalMinimal = t.TypeOf<
+  typeof ThemeConfigurationBannerIntoModalMinimal
+>;
+
+/** Banner into modal theme configuration (full scope) */
 export const ThemeConfigurationBannerIntoModal = t.intersection([
   SharedTopLevelTheme,
   t.type({
@@ -357,7 +439,17 @@ export const ThemeConfigurationBannerIntoModal = t.intersection([
 /** Override type */
 export type ThemeConfigurationBannerIntoModal = t.TypeOf<typeof ThemeConfigurationBannerIntoModal>;
 
-/** Union of all theme configurations */
+/** Union of all reduced-scope theme configurations */
+export const ThemeConfigurationMinimal = t.union([
+  ThemeConfigurationBannerOnlyMinimal,
+  ThemeConfigurationModalOnlyMinimal,
+  ThemeConfigurationBannerIntoModalMinimal,
+]);
+
+/** Override type */
+export type ThemeConfigurationMinimal = t.TypeOf<typeof ThemeConfigurationMinimal>;
+
+/** Union of all full-scope theme configurations */
 export const ThemeConfiguration = t.union([
   ThemeConfigurationBannerOnly,
   ThemeConfigurationModalOnly,
