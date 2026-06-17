@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import { getOAuthRedirectPort } from './config.js';
+import { getOAuthRedirectHost, getOAuthRedirectPort, getOAuthRedirectUri } from './config.js';
 import { OAUTH_CALLBACK_TIMEOUT_MS } from './constants.js';
 import {
   OAuthCallbackError,
@@ -148,7 +148,7 @@ const buildAuthCallbackHtml = (message: string) => `
 </html>`;
 
 /**
- * Starts an HTTP server on `127.0.0.1` at {@link getOAuthRedirectPort} to receive the OAuth redirect.
+ * Starts an HTTP server on {@link getOAuthRedirectHost} at {@link getOAuthRedirectPort} to receive the OAuth redirect.
  */
 export function startCallbackServer(
   options: StartCallbackServerOptions,
@@ -226,7 +226,8 @@ export function startCallbackServer(
     });
 
     const listenPort = getOAuthRedirectPort();
-    server.listen(listenPort, '127.0.0.1', () => {
+    const listenHost = getOAuthRedirectHost();
+    server.listen(listenPort, listenHost, () => {
       const address = server.address();
       if (!address || typeof address === 'string') {
         rejectStart(new Error('Failed to determine OAuth callback server port'));
@@ -234,7 +235,7 @@ export function startCallbackServer(
       }
 
       const port = (address as AddressInfo).port;
-      const redirectUri = `http://127.0.0.1:${port}/callback`;
+      const redirectUri = getOAuthRedirectUri();
 
       timeoutId = setTimeout(() => {
         finishWithError(new Error(`OAuth callback timed out after ${timeoutMs}ms`));

@@ -45,6 +45,7 @@ export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/
 export {
   isOAuthModeEnabled,
   getOAuthIssuer,
+  getOAuthClientIdFromEnv,
   getOAuthClientSecret,
   getOAuthRedirectPort,
   requireOAuthStartupEnv,
@@ -69,7 +70,7 @@ export {
   isLazyOAuthSessionReady,
   resetLazyOAuthState,
 } from './oauth/lazy-auth.js';
-export { fetchOAuthClientInfo } from './oauth/client-info.js';
+export { verifyOAuthClientCredentials } from './oauth/client-verify.js';
 export {
   getOAuthClientId,
   initializeOAuthClient,

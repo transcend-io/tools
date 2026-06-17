@@ -4,11 +4,13 @@
 
 ### Patch Changes
 
+- OAuth callback timeouts are now non-retryable and return an agent-facing message instructing the agent to report the timeout and wait for a new user message.
 - OAuth stdio tokens are **session-only**: access and refresh tokens are kept in process memory and are not written to disk. Restarting the MCP client (or MCP server process) requires signing in again. Expired access tokens are still refreshed silently within the same process when a refresh token is available.
 - **Breaking:** Removed disk token persistence APIs (`readStoredOAuthTokens`, `writeStoredOAuthTokens`, `clearStoredOAuthTokens`, `loadValidOAuthCredentials`, `getOAuthTokenStorePath`) and the `TRANSCEND_OAUTH_TOKEN_STORE_PATH` environment variable. Legacy `~/.config/transcend-mcp/tokens.json` files are ignored and may be deleted manually.
 - **Breaking:** Removed `setActiveOAuthCredentials` export; use `setActiveStoredOAuthTokens` / `getActiveStoredOAuthTokens` for session token state.
-- **Breaking:** Replaced OAuth dynamic client registration (DCR) with pre-issued client secrets. Stdio OAuth mode now requires `TRANSCEND_OAUTH_CLIENT_SECRET` and `TRANSCEND_OAUTH_REDIRECT_PORT` at startup. The MCP exchanges the secret for a `client_id` via `POST {issuer}/oauth/client-info` before connecting. Register redirect URI `http://127.0.0.1:{port}/callback` on the OAuth client to match `TRANSCEND_OAUTH_REDIRECT_PORT`. Removed `TRANSCEND_OAUTH_CALLBACK_PORT` and `getOAuthCallbackPort`.
-- **Breaking:** Removed `TRANSCEND_OAUTH_SCOPES` environment variable and `DEFAULT_OAUTH_SCOPES`. OAuth scopes are declared by each MCP package (`oauthScopes` on `createMCPServer` or `configureOAuthScopes()`). `offline_access` is injected automatically via `mergeOAuthScopes()`.
+- **Breaking:** OAuth mode now requires `TRANSCEND_OAUTH_CLIENT_ID` in addition to `TRANSCEND_OAUTH_CLIENT_SECRET`. Startup verifies credentials via `POST {issuer}/oauth/client-verify` (`{ client_id, client_secret, redirect_uri }` → `{ success: boolean }`). Removed `fetchOAuthClientInfo` export; added `verifyOAuthClientCredentials`.
+- **Breaking:** Replaced OAuth dynamic client registration (DCR) with pre-issued client credentials. Stdio OAuth mode now requires `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT` at startup. Register redirect URI `http://127.0.0.1:{port}/callback` on the OAuth client to match `TRANSCEND_OAUTH_REDIRECT_PORT`. Removed `TRANSCEND_OAUTH_CALLBACK_PORT` and `getOAuthCallbackPort`.
+- Added `TRANSCEND_OAUTH_REDIRECT_HOST` for OAuth stdio callback loopback address (`127.0.0.1` default, or `::1` for `http://[::1]:{port}/callback`). Startup verification, authorize, token exchange, and the callback server all use the configured host.
 
 ## 0.4.5
 

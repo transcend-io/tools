@@ -28,7 +28,7 @@ export interface OAuthAuthorizationGrant {
   codeVerifier: string;
   /** Redirect URI registered for this login attempt */
   redirectUri: string;
-  /** OAuth client identifier from client-info exchange */
+  /** Configured OAuth client identifier */
   clientId: string;
 }
 
@@ -74,7 +74,7 @@ export interface StoredOAuthTokens {
 export interface PendingOAuthSession {
   /** Fixed localhost redirect URI used for this session */
   redirectUri: string;
-  /** OAuth client identifier from client-info exchange */
+  /** Configured OAuth client identifier */
   clientId: string;
   /** PKCE verifier to use during token exchange (phase 3) */
   codeVerifier: string;

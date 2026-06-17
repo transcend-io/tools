@@ -5,15 +5,20 @@ import { generateOAuthState } from '../src/oauth/pkce.js';
 
 describe('startCallbackServer', () => {
   const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+  const originalRedirectHost = process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
   let nextPort = 19000;
 
   beforeEach(() => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = String(nextPort++);
+    delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
   });
 
   afterEach(() => {
     if (originalRedirectPort === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
     else process.env.TRANSCEND_OAUTH_REDIRECT_PORT = originalRedirectPort;
+
+    if (originalRedirectHost === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+    else process.env.TRANSCEND_OAUTH_REDIRECT_HOST = originalRedirectHost;
   });
   it('accepts a valid callback and returns the authorization code', async () => {
     const state = generateOAuthState();
@@ -131,6 +136,26 @@ describe('startCallbackServer', () => {
     }
   });
 
+  it('accepts callbacks on the configured IPv6 loopback host', async () => {
+    process.env.TRANSCEND_OAUTH_REDIRECT_HOST = '::1';
+    const state = generateOAuthState();
+    const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
+
+    try {
+      expect(handle.redirectUri).toMatch(/^http:\/\/\[::1\]:\d+\/callback$/);
+
+      const response = await fetch(
+        `${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`,
+      );
+      expect(response.status).toBe(200);
+
+      const result = await handle.waitForCallback();
+      expect(result.code).toBe('auth-code-123');
+    } finally {
+      await handle.close();
+    }
+  });
+
   it('returns 404 for non-callback paths', async () => {
     const handle = await startCallbackServer({
       expectedState: 'expected-state',
@@ -138,7 +163,8 @@ describe('startCallbackServer', () => {
     });
 
     try {
-      const response = await fetch(`http://127.0.0.1:${handle.port}/other`);
+      const otherUrl = new URL('/other', handle.redirectUri);
+      const response = await fetch(otherUrl);
       expect(response.status).toBe(404);
     } finally {
       await handle.close();

@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { ErrorCode, ToolError } from '../src/errors.js';
+import { OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE } from '../src/oauth/constants.js';
 import {
   ensureLazyOAuthAuth,
   getLazyOAuthCredentials,
@@ -166,7 +167,7 @@ describe('ensureLazyOAuthAuth', () => {
     expect(startSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('surfaces OAuth failures as AUTH_ERROR tool errors', async () => {
+  it('surfaces OAuth callback timeouts as non-retryable AUTH_ERROR tool errors', async () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
 
     vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(new Error('OAuth callback timed out'));
@@ -174,11 +175,27 @@ describe('ensureLazyOAuthAuth', () => {
     await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
       name: 'ToolError',
       code: ErrorCode.AUTH_ERROR,
-      retryable: true,
+      message: OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
+      retryable: false,
     } satisfies Partial<ToolError>);
     expect(isLazyOAuthSessionReady()).toBe(false);
     expect(getStoredAuthorizationGrant()).toBeNull();
     expect(getLazyOAuthCredentials()).toBeNull();
+  });
+
+  it('surfaces non-timeout OAuth failures as non-retryable AUTH_ERROR tool errors', async () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+
+    vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(
+      new Error('OAuth authorization failed'),
+    );
+
+    await expect(ensureLazyOAuthAuth(logger)).rejects.toMatchObject({
+      name: 'ToolError',
+      code: ErrorCode.AUTH_ERROR,
+      message: 'OAuth authorization failed',
+      retryable: false,
+    } satisfies Partial<ToolError>);
   });
 
   it('deduplicates concurrent login attempts', async () => {

@@ -5,12 +5,14 @@ import { resolveStdioStartupAuth } from '../src/oauth/resolve-stdio-auth.js';
 describe('resolveStdioStartupAuth', () => {
   const originalApiKey = process.env.TRANSCEND_API_KEY;
   const originalIssuer = process.env.TRANSCEND_OAUTH_ISSUER;
+  const originalClientId = process.env.TRANSCEND_OAUTH_CLIENT_ID;
   const originalClientSecret = process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
   const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
 
   beforeEach(() => {
     delete process.env.TRANSCEND_API_KEY;
     delete process.env.TRANSCEND_OAUTH_ISSUER;
+    delete process.env.TRANSCEND_OAUTH_CLIENT_ID;
     delete process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
     delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
   });
@@ -22,6 +24,9 @@ describe('resolveStdioStartupAuth', () => {
     if (originalIssuer === undefined) delete process.env.TRANSCEND_OAUTH_ISSUER;
     else process.env.TRANSCEND_OAUTH_ISSUER = originalIssuer;
 
+    if (originalClientId === undefined) delete process.env.TRANSCEND_OAUTH_CLIENT_ID;
+    else process.env.TRANSCEND_OAUTH_CLIENT_ID = originalClientId;
+
     if (originalClientSecret === undefined) delete process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
     else process.env.TRANSCEND_OAUTH_CLIENT_SECRET = originalClientSecret;
 
@@ -31,19 +36,29 @@ describe('resolveStdioStartupAuth', () => {
 
   it('returns null when OAuth issuer and startup env are configured', () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
     expect(resolveStdioStartupAuth()).toBeNull();
   });
 
+  it('throws when OAuth issuer is configured without client id', () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
+    expect(() => resolveStdioStartupAuth()).toThrow(/TRANSCEND_OAUTH_CLIENT_ID/);
+  });
+
   it('throws when OAuth issuer is configured without client secret', () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
     expect(() => resolveStdioStartupAuth()).toThrow(/TRANSCEND_OAUTH_CLIENT_SECRET/);
   });
 
   it('throws when OAuth issuer is configured without redirect port', () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     expect(() => resolveStdioStartupAuth()).toThrow(/TRANSCEND_OAUTH_REDIRECT_PORT/);
   });

@@ -3,6 +3,7 @@ import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
 import { ErrorCode, ToolError } from '../errors.js';
 import { getOAuthClientSecret, getOAuthIssuer, isOAuthModeEnabled } from './config.js';
+import { OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE } from './constants.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { startOAuthLogin, waitForAuthorizationGrant } from './oauth-flow.js';
 import { exchangeAuthorizationCode } from './token-exchange.js';
@@ -118,8 +119,10 @@ async function performLazyOAuthLogin(logger: Logger): Promise<void> {
 
     const message = error instanceof Error ? error.message : String(error);
     logger.error('OAuth login failed', { error: message });
-    const retryable = /timed out/i.test(message);
-    throw new ToolError(ErrorCode.AUTH_ERROR, message, retryable);
+    if (/timed out/i.test(message)) {
+      throw new ToolError(ErrorCode.AUTH_ERROR, OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE, false);
+    }
+    throw new ToolError(ErrorCode.AUTH_ERROR, message, false);
   } finally {
     await session?.close().catch(() => undefined);
   }

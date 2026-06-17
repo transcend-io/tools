@@ -1,10 +1,11 @@
 import type { Logger } from '../clients/graphql/base.js';
-import { fetchOAuthClientInfo } from './client-info.js';
+import { verifyOAuthClientCredentials } from './client-verify.js';
+import { getOAuthRedirectUri } from './config.js';
 
 /** Cached OAuth client identifier resolved at startup. */
 let cachedClientId: string | null = null;
 
-/** In-flight client-info exchange shared across concurrent callers. */
+/** In-flight client verification shared across concurrent callers. */
 let initPromise: Promise<void> | null = null;
 
 /**
@@ -28,10 +29,11 @@ export function getOAuthClientId(): string {
 }
 
 /**
- * Exchanges the client secret for a client identifier and caches it for the process lifetime.
+ * Verifies OAuth client credentials and caches the client identifier for the process lifetime.
  */
 export async function initializeOAuthClient(
   issuer: string,
+  clientId: string,
   clientSecret: string,
   logger: Logger,
 ): Promise<void> {
@@ -45,9 +47,9 @@ export async function initializeOAuthClient(
   }
 
   initPromise = (async () => {
-    const clientId = await fetchOAuthClientInfo(issuer, clientSecret);
+    await verifyOAuthClientCredentials(issuer, clientId, clientSecret, getOAuthRedirectUri());
     cachedClientId = clientId;
-    logger.info('Resolved OAuth client from client secret', { clientId });
+    logger.info('Verified OAuth client credentials', { clientId });
   })();
 
   try {
