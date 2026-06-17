@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.2.4
+
+### Patch Changes
+
+- 0e20155: Added themeConfigMap to UI v2 loadOptions; Add minimal verion of themeConfigMap types for bundling
+
 ## 5.2.3
 
 ### Patch Changes
