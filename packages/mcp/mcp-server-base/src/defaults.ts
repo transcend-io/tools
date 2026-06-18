@@ -1,8 +1,9 @@
 /**
  * Production default URLs for the Transcend backend services that MCP servers
  * talk to. Each is overridable via its corresponding environment variable
- * (`TRANSCEND_API_URL`, `SOMBRA_URL`, `TRANSCEND_DASHBOARD_URL`); callers
- * fall through to these constants when the env var is unset.
+ * (`TRANSCEND_API_URL`, `SOMBRA_URL`, `TRANSCEND_DASHBOARD_URL`,
+ * `TRANSCEND_OAUTH_ISSUER`); callers fall through to these constants when the
+ * env var is unset.
  */
 
 /** GraphQL backend API URL (`api.transcend.io`, regional split lives here). */
@@ -17,3 +18,6 @@ export const DEFAULT_SOMBRA_URL = 'https://multi-tenant.sombra.transcend.io';
  * API backend they're served from.
  */
 export const DEFAULT_DASHBOARD_URL = 'https://app.transcend.io';
+
+/** Default Transcend OAuth authorization server issuer URL. */
+export const DEFAULT_OAUTH_ISSUER = 'https://api.transcend.io';

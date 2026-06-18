@@ -1,8 +1,5 @@
 import { DEFAULT_DASHBOARD_URL } from '../defaults.js';
 
-/** Default Transcend OAuth authorization server issuer URL. */
-export const DEFAULT_OAUTH_ISSUER = 'https://yo.com:4001';
-
 /** Environment variable for the OAuth issuer URL. */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
 
