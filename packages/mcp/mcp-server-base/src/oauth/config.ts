@@ -6,6 +6,7 @@ import {
   TRANSCEND_OAUTH_REDIRECT_HOST_ENV,
   TRANSCEND_OAUTH_REDIRECT_PORT_ENV,
   formatOAuthClientConfigError,
+  getOAuthClientsAdminUrl,
 } from './constants.js';
 
 const ALLOWED_OAUTH_REDIRECT_HOSTS = new Set(['127.0.0.1', '::1']);
@@ -31,6 +32,9 @@ export function getOAuthIssuer(): string {
   return getOAuthIssuerEnv() ?? DEFAULT_OAUTH_ISSUER;
 }
 
+/**
+ * Fetches the oauth issuer from the environment variable.
+ */
 function getOAuthIssuerEnv(): string | undefined {
   const value = process.env.TRANSCEND_OAUTH_ISSUER?.trim();
   return value || undefined;
@@ -85,6 +89,9 @@ export function getOAuthRedirectHost(): string {
   return host;
 }
 
+/**
+ * Formats the OAuth redirect URI host to include brackets for IPv6 addresses.
+ */
 function formatOAuthRedirectUriHost(host: string): string {
   return host.includes(':') ? `[${host}]` : host;
 }
@@ -109,7 +116,7 @@ export function requireOAuthStartupEnv(): void {
     throw new Error(
       formatOAuthClientConfigError(
         `OAuth mode requires ${TRANSCEND_OAUTH_CLIENT_ID_ENV}. ` +
-          'Set it to the client identifier issued for this MCP server.',
+          `Set it to the client identifier issued at ${getOAuthClientsAdminUrl()}.`,
       ),
     );
   }
@@ -118,7 +125,7 @@ export function requireOAuthStartupEnv(): void {
     throw new Error(
       formatOAuthClientConfigError(
         `OAuth mode requires ${TRANSCEND_OAUTH_CLIENT_SECRET_ENV}. ` +
-          'Set it to the client secret issued for this MCP server.',
+          `Set it to the client secret issued at ${getOAuthClientsAdminUrl()}.`,
       ),
     );
   }
