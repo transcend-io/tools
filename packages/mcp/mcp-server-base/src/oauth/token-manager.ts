@@ -2,6 +2,7 @@ import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
 import { getOAuthClientSecret } from './config.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
+import { normalizeIssuer } from './normalize-issuer.js';
 import { refreshOAuthTokens } from './token-refresh.js';
 import { isStoredOAuthTokenValid, storedOAuthTokensToAuth } from './token-store.js';
 import type { StoredOAuthTokens } from './types.js';
@@ -49,7 +50,7 @@ export async function getValidOAuthCredentials(
   logger: Logger,
   nowMs: number = Date.now(),
 ): Promise<OAuthTokenAuth | null> {
-  const normalizedIssuer = issuer.replace(/\/+$/, '');
+  const normalizedIssuer = normalizeIssuer(issuer);
 
   if (!activeStoredTokens || activeStoredTokens.issuer !== normalizedIssuer) {
     return null;
