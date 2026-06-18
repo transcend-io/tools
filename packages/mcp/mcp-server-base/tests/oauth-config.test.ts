@@ -14,6 +14,7 @@ describe('OAuth redirect config', () => {
   const originalClientSecret = process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
   const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
   const originalRedirectHost = process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+  const originalDashboardUrl = process.env.TRANSCEND_DASHBOARD_URL;
 
   beforeEach(() => {
     delete process.env.TRANSCEND_OAUTH_ISSUER;
@@ -22,6 +23,7 @@ describe('OAuth redirect config', () => {
     delete process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
     delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
     delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+    delete process.env.TRANSCEND_DASHBOARD_URL;
   });
 
   afterEach(() => {
@@ -42,6 +44,9 @@ describe('OAuth redirect config', () => {
 
     if (originalRedirectHost === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
     else process.env.TRANSCEND_OAUTH_REDIRECT_HOST = originalRedirectHost;
+
+    if (originalDashboardUrl === undefined) delete process.env.TRANSCEND_DASHBOARD_URL;
+    else process.env.TRANSCEND_DASHBOARD_URL = originalDashboardUrl;
   });
 
   it('defaults redirect host to 127.0.0.1', () => {
@@ -101,5 +106,13 @@ describe('OAuth redirect config', () => {
 
     expect(() => requireOAuthStartupEnv()).toThrow(/TRANSCEND_OAUTH_CLIENT_SECRET/);
     expect(() => requireOAuthStartupEnv()).toThrow(OAUTH_CLIENTS_ADMIN_URL);
+  });
+
+  it('uses TRANSCEND_DASHBOARD_URL for admin guidance when set', () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
+    process.env.TRANSCEND_DASHBOARD_URL = 'https://yo.com:3000';
+
+    expect(() => requireOAuthStartupEnv()).toThrow('https://yo.com:3000/admin/oauth-clients');
   });
 });

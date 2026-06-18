@@ -7,14 +7,7 @@ let configuredScopes: string[] | null = null;
  * Merges one or more scope lists, dedupes, and always includes {@link OFFLINE_ACCESS_SCOPE}.
  */
 export function mergeOAuthScopes(...scopeLists: readonly (readonly string[])[]): string[] {
-  const merged = new Set<string>();
-  for (const scopeList of scopeLists) {
-    for (const scope of scopeList) {
-      if (scope !== OFFLINE_ACCESS_SCOPE) {
-        merged.add(scope);
-      }
-    }
-  }
+  const merged = new Set<string>(scopeLists.flat());
   merged.add(OFFLINE_ACCESS_SCOPE);
   return [...merged];
 }
