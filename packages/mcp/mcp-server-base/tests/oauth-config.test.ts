@@ -118,4 +118,12 @@ describe('OAuth redirect config', () => {
       buildOAuthClientsAdminUrl('https://app.staging.transcend.io'),
     );
   });
+
+  it('uses TRANSCEND_DASHBOARD_URL for admin guidance when set', () => {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
+    process.env.TRANSCEND_DASHBOARD_URL = 'https://yo.com:3000';
+
+    expect(() => requireOAuthStartupEnv()).toThrow('https://yo.com:3000/admin/oauth-clients');
+  });
 });
