@@ -34,6 +34,8 @@ export interface ConsentUiVariant {
   theme?: {
     /** The id of the consent UI theme */
     id: string;
+    /** The slug of the consent UI theme */
+    slug: string;
   };
   /** The user flow for this UI variant */
   userFlow?: ConsentUiUserFlow;

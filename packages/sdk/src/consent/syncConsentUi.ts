@@ -34,8 +34,8 @@ export interface ConsentVariantInput {
   status: UiVariantStatus;
   /** User flow for the variant */
   userFlow?: string;
-  /** ID of the consent UI theme associated with this variant */
-  themeId?: string;
+  /** Slug of the consent UI theme associated with this variant */
+  themeSlug?: string;
 }
 
 /** Consent UI theme input from transcend.yml */
@@ -91,14 +91,14 @@ export async function syncConsentUiThemes(
 ): Promise<void> {
   const { logger = NOOP_LOGGER } = options;
   const remoteThemes = await fetchConsentThemes(client, { logger });
-  const remoteThemeById = keyBy(remoteThemes, 'id');
+  const remoteThemeBySlug = keyBy(remoteThemes, 'slug');
 
   await map(
     yamlThemes,
     async (yamlTheme, index) => {
       const resourceLabel = `consentManager.consentThemes[${index}]`;
       const configuration = parseConsentUiConfiguration(yamlTheme.configuration, resourceLabel);
-      const remoteTheme = yamlTheme.id ? remoteThemeById[yamlTheme.id] : undefined;
+      const remoteTheme = remoteThemeBySlug[yamlTheme.slug];
 
       if (remoteTheme) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_UI_THEME, {
@@ -151,50 +151,23 @@ export async function syncConsentUiVariants(
   options: {
     /** Logger instance */
     logger?: Logger;
-    /** Theme inputs from transcend.yml, used to resolve themeId by slug */
-    yamlThemes?: ConsentThemeInput[];
   } = {},
 ): Promise<void> {
-  const { logger = NOOP_LOGGER, yamlThemes = [] } = options;
+  const { logger = NOOP_LOGGER } = options;
   const remoteVariants = await fetchConsentVariants(client, { logger });
-  const remoteVariantById = keyBy(remoteVariants, 'id');
+  const remoteVariantBySlug = keyBy(remoteVariants, 'slug');
   const remoteThemes = await fetchConsentThemes(client, { logger });
   const remoteThemeBySlug = keyBy(remoteThemes, 'slug');
-  // Variants reference themes by id in yaml (themeId), but that id is only accurate at pull time.
-  // If a theme was deleted and recreated, the yaml id is stale even though the theme entry still
-  // exists in consentThemes with the same slug. Index yaml themes by id so we can bridge stale
-  // themeId -> slug -> the theme that syncConsentUiThemes just created/updated remotely.
-  const yamlThemeById = keyBy(
-    yamlThemes.filter(
-      (yamlTheme): yamlTheme is ConsentThemeInput & { id: string } => !!yamlTheme.id,
-    ),
-    'id',
-  );
-
-  // Remap a yaml themeId to the current remote id: look up the theme in consentThemes by id,
-  // then find the live theme with that slug (themes are synced before variants). themeId is
-  // optional on create/update, so omit it when the yaml entry is missing or slug lookup fails
-  // rather than pass an id that may no longer exist remotely.
-  const resolveRemoteThemeId = (yamlThemeId: string | undefined): string | undefined => {
-    if (!yamlThemeId) {
-      return undefined;
-    }
-
-    const yamlTheme = yamlThemeById[yamlThemeId];
-    if (!yamlTheme) {
-      return undefined;
-    }
-
-    return remoteThemeBySlug[yamlTheme.slug]?.id;
-  };
 
   await map(
     yamlVariants,
     async (yamlVariant, index) => {
       const resourceLabel = `consentManager.consentVariants[${index}]`;
       const configuration = parseConsentUiConfiguration(yamlVariant.configuration, resourceLabel);
-      const remoteThemeId = resolveRemoteThemeId(yamlVariant.themeId);
-      const remoteVariant = yamlVariant.id ? remoteVariantById[yamlVariant.id] : undefined;
+      const remoteThemeId = yamlVariant.themeSlug
+        ? remoteThemeBySlug[yamlVariant.themeSlug]?.id
+        : undefined;
+      const remoteVariant = remoteVariantBySlug[yamlVariant.slug];
 
       if (remoteVariant) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_UI_VARIANT, {

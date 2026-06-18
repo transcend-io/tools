@@ -59,6 +59,8 @@ export interface ConsentExperience {
   consentUiVariant?: {
     /** Variant ID */
     id: string;
+    /** Variant slug */
+    slug: string;
   };
 }
 

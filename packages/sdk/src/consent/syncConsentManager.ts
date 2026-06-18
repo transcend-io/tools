@@ -79,8 +79,8 @@ export interface ConsentManageExperienceInput {
   browserLanguages?: BrowserLanguage[];
   /** Browser time zones that define this regional experience */
   browserTimeZones?: BrowserTimeZone[];
-  /** ID of the consent UI variant assigned to this experience */
-  consentUiVariantId?: string;
+  /** Slug of the consent UI variant assigned to this experience */
+  consentUiVariantSlug?: string;
 }
 
 export interface ConsentManagerInput {
@@ -138,11 +138,9 @@ export async function syncConsentManagerExperiences(
   options: {
     /** Logger instance */
     logger?: Logger;
-    /** Variant inputs from transcend.yml, used to resolve consentUiVariantId by slug */
-    yamlVariants?: ConsentVariantInput[];
   } = {},
 ): Promise<void> {
-  const { logger = NOOP_LOGGER, yamlVariants = [] } = options;
+  const { logger = NOOP_LOGGER } = options;
 
   const existingExperiences = await fetchConsentManagerExperiences(client, {
     logger,
@@ -154,36 +152,6 @@ export async function syncConsentManagerExperiences(
 
   const remoteVariants = await fetchConsentVariants(client, { logger });
   const remoteVariantBySlug = keyBy(remoteVariants, 'slug');
-  // Experiences reference variants by id in yaml (consentUiVariantId), but that id is only
-  // accurate at pull time. If a variant was deleted and recreated, the yaml id is stale even
-  // though the variant entry still exists in consentVariants with the same slug. Index yaml
-  // variants by id so we can bridge stale consentUiVariantId -> slug -> the variant that
-  // syncConsentUiVariants just created/updated remotely.
-  const yamlVariantById = keyBy(
-    yamlVariants.filter(
-      (yamlVariant): yamlVariant is ConsentVariantInput & { id: string } => !!yamlVariant.id,
-    ),
-    'id',
-  );
-
-  // Remap a yaml consentUiVariantId to the current remote id: look up the variant in
-  // consentVariants by id, then find the live variant with that slug (variants are synced
-  // before experiences). consentUiVariantId is optional on create/update, so omit it when the
-  // yaml entry is missing or slug lookup fails rather than pass an id that may no longer exist.
-  const resolveRemoteConsentUiVariantId = (
-    yamlConsentUiVariantId: string | undefined,
-  ): string | undefined => {
-    if (!yamlConsentUiVariantId) {
-      return undefined;
-    }
-
-    const yamlVariant = yamlVariantById[yamlConsentUiVariantId];
-    if (!yamlVariant) {
-      return undefined;
-    }
-
-    return remoteVariantBySlug[yamlVariant.slug]?.id;
-  };
 
   await map(
     experiences,
@@ -209,7 +177,9 @@ export async function syncConsentManagerExperiences(
         return existingPurpose.id;
       });
 
-      const remoteConsentUiVariantId = resolveRemoteConsentUiVariantId(exp.consentUiVariantId);
+      const remoteConsentUiVariantId = exp.consentUiVariantSlug
+        ? remoteVariantBySlug[exp.consentUiVariantSlug]?.id
+        : undefined;
       const existingExperience = experienceLookup[exp.name];
       if (existingExperience) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_EXPERIENCE, {
@@ -414,14 +384,12 @@ export async function syncConsentManager(
   if (consentManager.consentVariants) {
     await syncConsentUiVariants(client, airgapBundleId, consentManager.consentVariants, {
       logger,
-      yamlThemes: consentManager.consentThemes,
     });
   }
 
   if (consentManager.experiences) {
     await syncConsentManagerExperiences(client, consentManager.experiences, {
       logger,
-      yamlVariants: consentManager.consentVariants,
     });
   }
 

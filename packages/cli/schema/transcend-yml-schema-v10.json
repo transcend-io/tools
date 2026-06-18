@@ -40331,7 +40331,7 @@
                       ]
                     }
                   },
-                  "consentUiVariantId": {
+                  "consentUiVariantSlug": {
                     "type": "string"
                   }
                 }
@@ -40597,7 +40597,7 @@
                   "userFlow": {
                     "type": "string"
                   },
-                  "themeId": {
+                  "themeSlug": {
                     "type": "string"
                   }
                 }

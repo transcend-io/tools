@@ -300,6 +300,7 @@ export const FETCH_CONSENT_UI_VARIANTS = gql`
         }
         theme {
           id
+          slug
         }
         userFlow
       }

@@ -1242,7 +1242,7 @@ export const ConsentManageExperienceInput = t.intersection([
     /** Browser time zones that define this regional experience */
     browserTimeZones: t.array(valuesOf(BrowserTimeZone)),
     /** ID of the consent UI variant assigned to this experience */
-    consentUiVariantId: t.string,
+    consentUiVariantSlug: t.string,
   }),
 ]);
 
@@ -1269,8 +1269,8 @@ export const ConsentVariantInput = t.intersection([
     configuration: t.string,
     /** User flow of variant */
     userFlow: t.string,
-    /** ID of the consent UI theme associated with this variant */
-    themeId: t.string,
+    /** Slug of the consent UI theme associated with this variant */
+    themeSlug: t.string,
   }),
 ]);
 

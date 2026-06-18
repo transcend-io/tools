@@ -98,6 +98,7 @@ export const EXPERIENCES = gql`
         browserTimeZones
         consentUiVariant {
           id
+          slug
         }
       }
     }

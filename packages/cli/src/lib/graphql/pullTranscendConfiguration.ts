@@ -436,7 +436,7 @@ export async function pullTranscendConfiguration(
         })),
         browserLanguages: experience.browserLanguages,
         browserTimeZones: experience.browserTimeZones,
-        consentUiVariantId: experience.consentUiVariant?.id,
+        consentUiVariantSlug: experience.consentUiVariant?.slug,
       })),
       consentVariants: consentVariants.map(
         (variant): ConsentVariantInput => ({
@@ -448,7 +448,7 @@ export async function pullTranscendConfiguration(
           locales: variant.locales as LocaleValue[],
           status: variant.status,
           userFlow: variant.userFlow,
-          themeId: variant.theme?.id,
+          themeSlug: variant.theme?.slug,
         }),
       ),
       consentThemes: consentThemes.map(
