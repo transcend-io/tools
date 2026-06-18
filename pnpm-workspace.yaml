@@ -25,6 +25,8 @@ catalog:
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
+  # Renovate security update: js-yaml@4.2.0
+  - js-yaml@4.2.0
 
 onlyBuiltDependencies:
   - esbuild
