@@ -1,8 +1,5 @@
+import { normalizeIssuer } from './normalize-issuer.js';
 import type { AuthorizationServerMetadata } from './types.js';
-
-function normalizeIssuer(issuer: string): string {
-  return issuer.replace(/\/+$/, '');
-}
 
 /**
  * Fetches OAuth 2.0 Authorization Server Metadata (RFC 8414) for the given issuer.

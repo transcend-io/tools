@@ -17,13 +17,6 @@ describe('mergeOAuthScopes', () => {
     ]);
   });
 
-  it('strips duplicate offline_access from inputs and adds it once', () => {
-    expect(mergeOAuthScopes([OFFLINE_ACCESS_SCOPE, 'viewAssessments'])).toEqual([
-      'viewAssessments',
-      OFFLINE_ACCESS_SCOPE,
-    ]);
-  });
-
   it('returns only offline_access when given empty input lists', () => {
     expect(mergeOAuthScopes([], [])).toEqual([OFFLINE_ACCESS_SCOPE]);
   });

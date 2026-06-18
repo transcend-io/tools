@@ -1,8 +1,5 @@
 import { formatOAuthClientConfigError } from './constants.js';
-
-function normalizeIssuer(issuer: string): string {
-  return issuer.replace(/\/+$/, '');
-}
+import { normalizeIssuer } from './normalize-issuer.js';
 
 /**
  * Verifies OAuth client credentials via `/oauth/client-verify`.

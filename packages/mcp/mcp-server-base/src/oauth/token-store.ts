@@ -1,10 +1,7 @@
 import type { OAuthTokenAuth } from '../auth.js';
 import { DEFAULT_OAUTH_EXPIRES_IN_SECONDS, OAUTH_TOKEN_EXPIRY_SKEW_SECONDS } from './constants.js';
+import { normalizeIssuer } from './normalize-issuer.js';
 import type { OAuthTokenResponse, StoredOAuthTokens } from './types.js';
-
-function normalizeIssuer(issuer: string): string {
-  return issuer.replace(/\/+$/, '');
-}
 
 /**
  * Computes the expiry timestamp for a token response with a 60-second skew buffer.
