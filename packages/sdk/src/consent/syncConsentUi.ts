@@ -77,42 +77,42 @@ function parseConsentUiConfiguration(
  *
  * @param client - GraphQL client
  * @param airgapBundleId - Airgap bundle ID
- * @param themes - Theme inputs
+ * @param yamlThemes - Theme inputs from transcend.yml
  * @param options - Options
  */
 export async function syncConsentUiThemes(
   client: GraphQLClient,
   airgapBundleId: string,
-  themes: ConsentThemeInput[],
+  yamlThemes: ConsentThemeInput[],
   options: {
     /** Logger instance */
     logger?: Logger;
   } = {},
 ): Promise<void> {
   const { logger = NOOP_LOGGER } = options;
-  const existingThemes = await fetchConsentThemes(client, { logger });
-  const themeLookup = keyBy(existingThemes, 'name');
+  const remoteThemes = await fetchConsentThemes(client, { logger });
+  const remoteThemeById = keyBy(remoteThemes, 'id');
 
   await map(
-    themes,
-    async (theme, index) => {
+    yamlThemes,
+    async (yamlTheme, index) => {
       const resourceLabel = `consentManager.consentThemes[${index}]`;
-      const configuration = parseConsentUiConfiguration(theme.configuration, resourceLabel);
-      const existingTheme = themeLookup[theme.name];
+      const configuration = parseConsentUiConfiguration(yamlTheme.configuration, resourceLabel);
+      const remoteTheme = yamlTheme.id ? remoteThemeById[yamlTheme.id] : undefined;
 
-      if (existingTheme) {
+      if (remoteTheme) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_UI_THEME, {
           variables: {
             input: {
-              id: existingTheme.id,
+              id: remoteTheme.id,
               airgapBundleId,
-              name: theme.name,
+              name: yamlTheme.name,
               configuration,
             },
           },
           logger,
         });
-        logger.info(`Successfully synced consent UI theme "${theme.name}"!`);
+        logger.info(`Successfully synced consent UI theme "${yamlTheme.name}"!`);
       } else {
         await makeGraphQLRequest<{
           createConsentUiTheme: {
@@ -122,14 +122,14 @@ export async function syncConsentUiThemes(
           variables: {
             input: {
               airgapBundleId,
-              name: theme.name,
-              slug: theme.slug,
+              name: yamlTheme.name,
+              slug: yamlTheme.slug,
               configuration,
             },
           },
           logger,
         });
-        logger.info(`Successfully created consent UI theme "${theme.name}"!`);
+        logger.info(`Successfully created consent UI theme "${yamlTheme.name}"!`);
       }
     },
     { concurrency: 5 },
@@ -141,66 +141,78 @@ export async function syncConsentUiThemes(
  *
  * @param client - GraphQL client
  * @param airgapBundleId - Airgap bundle ID
- * @param variants - Variant inputs
+ * @param yamlVariants - Variant inputs from transcend.yml
  * @param options - Options
  */
 export async function syncConsentUiVariants(
   client: GraphQLClient,
   airgapBundleId: string,
-  variants: ConsentVariantInput[],
+  yamlVariants: ConsentVariantInput[],
   options: {
     /** Logger instance */
     logger?: Logger;
     /** Theme inputs from transcend.yml, used to resolve themeId by slug */
-    themes?: ConsentThemeInput[];
+    yamlThemes?: ConsentThemeInput[];
   } = {},
 ): Promise<void> {
-  const { logger = NOOP_LOGGER, themes = [] } = options;
-  const existingVariants = await fetchConsentVariants(client, { logger });
-  const variantLookup = keyBy(existingVariants, 'name');
-  const existingThemes = await fetchConsentThemes(client, { logger });
-  const themeLookupBySlug = keyBy(existingThemes, 'slug');
-  const themeInputById = keyBy(
-    themes.filter((theme): theme is ConsentThemeInput & { id: string } => !!theme.id),
+  const { logger = NOOP_LOGGER, yamlThemes = [] } = options;
+  const remoteVariants = await fetchConsentVariants(client, { logger });
+  const remoteVariantById = keyBy(remoteVariants, 'id');
+  const remoteThemes = await fetchConsentThemes(client, { logger });
+  const remoteThemeBySlug = keyBy(remoteThemes, 'slug');
+  // Variants reference themes by id in yaml (themeId), but that id is only accurate at pull time.
+  // If a theme was deleted and recreated, the yaml id is stale even though the theme entry still
+  // exists in consentThemes with the same slug. Index yaml themes by id so we can bridge stale
+  // themeId -> slug -> the theme that syncConsentUiThemes just created/updated remotely.
+  const yamlThemeById = keyBy(
+    yamlThemes.filter(
+      (yamlTheme): yamlTheme is ConsentThemeInput & { id: string } => !!yamlTheme.id,
+    ),
     'id',
   );
 
-  const resolveThemeId = (themeId: string | undefined): string | undefined => {
-    if (!themeId) {
+  // Remap a yaml themeId to the current remote id: look up the theme in consentThemes by id,
+  // then find the live theme with that slug (themes are synced before variants). themeId is
+  // optional on create/update, so omit it when the yaml entry is missing or slug lookup fails
+  // rather than pass an id that may no longer exist remotely.
+  const resolveRemoteThemeId = (yamlThemeId: string | undefined): string | undefined => {
+    if (!yamlThemeId) {
       return undefined;
     }
 
-    const themeInput = themeInputById[themeId];
-    const existingTheme = themeInput ? themeLookupBySlug[themeInput.slug] : undefined;
+    const yamlTheme = yamlThemeById[yamlThemeId];
+    if (!yamlTheme) {
+      return undefined;
+    }
 
-    return existingTheme?.id ?? themeId;
+    return remoteThemeBySlug[yamlTheme.slug]?.id;
   };
 
   await map(
-    variants,
-    async (variant, index) => {
+    yamlVariants,
+    async (yamlVariant, index) => {
       const resourceLabel = `consentManager.consentVariants[${index}]`;
-      const configuration = parseConsentUiConfiguration(variant.configuration, resourceLabel);
-      const themeId = resolveThemeId(variant.themeId);
-      const existingVariant = variantLookup[variant.name];
+      const configuration = parseConsentUiConfiguration(yamlVariant.configuration, resourceLabel);
+      const remoteThemeId = resolveRemoteThemeId(yamlVariant.themeId);
+      const remoteVariant = yamlVariant.id ? remoteVariantById[yamlVariant.id] : undefined;
 
-      if (existingVariant) {
+      if (remoteVariant) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_UI_VARIANT, {
           variables: {
             input: {
-              id: existingVariant.id,
+              id: remoteVariant.id,
               airgapBundleId,
-              name: variant.name,
-              description: variant.description,
-              locales: variant.locales,
+              name: yamlVariant.name,
+              description: yamlVariant.description,
+              locales: yamlVariant.locales,
               configuration,
-              status: variant.status,
-              ...(themeId ? { themeId } : {}),
+              status: yamlVariant.status,
+              ...(remoteThemeId ? { themeId: remoteThemeId } : {}),
             },
           },
           logger,
         });
-        logger.info(`Successfully synced consent UI variant "${variant.name}"!`);
+        logger.info(`Successfully synced consent UI variant "${yamlVariant.name}"!`);
       } else {
         await makeGraphQLRequest<{
           createConsentUiVariant: {
@@ -210,18 +222,18 @@ export async function syncConsentUiVariants(
           variables: {
             input: {
               airgapBundleId,
-              name: variant.name,
-              slug: variant.slug,
-              description: variant.description,
-              locales: variant.locales,
+              name: yamlVariant.name,
+              slug: yamlVariant.slug,
+              description: yamlVariant.description,
+              locales: yamlVariant.locales,
               configuration,
-              status: variant.status,
-              ...(themeId ? { themeId } : {}),
+              status: yamlVariant.status,
+              ...(remoteThemeId ? { themeId: remoteThemeId } : {}),
             },
           },
           logger,
         });
-        logger.info(`Successfully created consent UI variant "${variant.name}"!`);
+        logger.info(`Successfully created consent UI variant "${yamlVariant.name}"!`);
       }
     },
     { concurrency: 5 },

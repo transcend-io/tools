@@ -139,10 +139,10 @@ export async function syncConsentManagerExperiences(
     /** Logger instance */
     logger?: Logger;
     /** Variant inputs from transcend.yml, used to resolve consentUiVariantId by slug */
-    variants?: ConsentVariantInput[];
+    yamlVariants?: ConsentVariantInput[];
   } = {},
 ): Promise<void> {
-  const { logger = NOOP_LOGGER, variants = [] } = options;
+  const { logger = NOOP_LOGGER, yamlVariants = [] } = options;
 
   const existingExperiences = await fetchConsentManagerExperiences(client, {
     logger,
@@ -152,24 +152,37 @@ export async function syncConsentManagerExperiences(
   const purposes = await fetchAllPurposes(client, { logger });
   const purposeLookup = keyBy(purposes, 'trackingType');
 
-  const existingVariants = await fetchConsentVariants(client, { logger });
-  const variantLookupBySlug = keyBy(existingVariants, 'slug');
-  const variantInputById = keyBy(
-    variants.filter((variant): variant is ConsentVariantInput & { id: string } => !!variant.id),
+  const remoteVariants = await fetchConsentVariants(client, { logger });
+  const remoteVariantBySlug = keyBy(remoteVariants, 'slug');
+  // Experiences reference variants by id in yaml (consentUiVariantId), but that id is only
+  // accurate at pull time. If a variant was deleted and recreated, the yaml id is stale even
+  // though the variant entry still exists in consentVariants with the same slug. Index yaml
+  // variants by id so we can bridge stale consentUiVariantId -> slug -> the variant that
+  // syncConsentUiVariants just created/updated remotely.
+  const yamlVariantById = keyBy(
+    yamlVariants.filter(
+      (yamlVariant): yamlVariant is ConsentVariantInput & { id: string } => !!yamlVariant.id,
+    ),
     'id',
   );
 
-  const resolveConsentUiVariantId = (
-    consentUiVariantId: string | undefined,
+  // Remap a yaml consentUiVariantId to the current remote id: look up the variant in
+  // consentVariants by id, then find the live variant with that slug (variants are synced
+  // before experiences). consentUiVariantId is optional on create/update, so omit it when the
+  // yaml entry is missing or slug lookup fails rather than pass an id that may no longer exist.
+  const resolveRemoteConsentUiVariantId = (
+    yamlConsentUiVariantId: string | undefined,
   ): string | undefined => {
-    if (!consentUiVariantId) {
+    if (!yamlConsentUiVariantId) {
       return undefined;
     }
 
-    const variantInput = variantInputById[consentUiVariantId];
-    const existingVariant = variantInput ? variantLookupBySlug[variantInput.slug] : undefined;
+    const yamlVariant = yamlVariantById[yamlConsentUiVariantId];
+    if (!yamlVariant) {
+      return undefined;
+    }
 
-    return existingVariant?.id ?? consentUiVariantId;
+    return remoteVariantBySlug[yamlVariant.slug]?.id;
   };
 
   await map(
@@ -196,7 +209,7 @@ export async function syncConsentManagerExperiences(
         return existingPurpose.id;
       });
 
-      const consentUiVariantId = resolveConsentUiVariantId(exp.consentUiVariantId);
+      const remoteConsentUiVariantId = resolveRemoteConsentUiVariantId(exp.consentUiVariantId);
       const existingExperience = experienceLookup[exp.name];
       if (existingExperience) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_EXPERIENCE, {
@@ -217,7 +230,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds,
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
-              ...(consentUiVariantId ? { consentUiVariantId } : {}),
+              ...(remoteConsentUiVariantId ? { consentUiVariantId: remoteConsentUiVariantId } : {}),
             },
           },
           logger,
@@ -239,7 +252,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds || [],
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
-              ...(consentUiVariantId ? { consentUiVariantId } : {}),
+              ...(remoteConsentUiVariantId ? { consentUiVariantId: remoteConsentUiVariantId } : {}),
             },
           },
           logger,
@@ -401,14 +414,14 @@ export async function syncConsentManager(
   if (consentManager.consentVariants) {
     await syncConsentUiVariants(client, airgapBundleId, consentManager.consentVariants, {
       logger,
-      themes: consentManager.consentThemes,
+      yamlThemes: consentManager.consentThemes,
     });
   }
 
   if (consentManager.experiences) {
     await syncConsentManagerExperiences(client, consentManager.experiences, {
       logger,
-      variants: consentManager.consentVariants,
+      yamlVariants: consentManager.consentVariants,
     });
   }
 
