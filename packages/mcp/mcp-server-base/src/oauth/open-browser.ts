@@ -10,6 +10,7 @@ export async function openBrowser(url: string): Promise<void> {
     const child = spawn(command, args, {
       detached: true,
       stdio: 'ignore',
+      windowsHide: true,
     });
 
     child.on('error', reject);
@@ -20,6 +21,9 @@ export async function openBrowser(url: string): Promise<void> {
   });
 }
 
+/**
+ * Determines the appropriate command to open the browser based on the platform.
+ */
 function getOpenCommand(url: string): { command: string; args: string[] } {
   if (process.platform === 'darwin') {
     return { command: 'open', args: [url] };
