@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { verifyOAuthClientCredentials } from '../src/oauth/client-verify.js';
-import { buildOAuthClientsAdminUrl } from '../src/oauth/constants.js';
+import { DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL } from '../src/defaults.js';
+import {
+  resolveRegionalOAuthIssuer,
+  verifyOAuthClientCredentials,
+} from '../src/oauth/client-verify.js';
+import { OAUTH_CLIENTS_ADMIN_URL } from '../src/oauth/constants.js';
 
 describe('verifyOAuthClientCredentials', () => {
   const originalDashboardUrl = process.env.TRANSCEND_DASHBOARD_URL;
@@ -120,7 +124,7 @@ describe('verifyOAuthClientCredentials', () => {
     ).rejects.toThrow(/credentials were rejected/);
   });
 
-  it('uses TRANSCEND_DASHBOARD_URL in error guidance when set', async () => {
+  it('uses TRANSCEND_DASHBOARD_URL in error guidance in test env when set', async () => {
     process.env.TRANSCEND_DASHBOARD_URL = 'https://yo.com:3000';
 
     vi.stubGlobal(
@@ -140,5 +144,116 @@ describe('verifyOAuthClientCredentials', () => {
         'http://127.0.0.1:4567/callback',
       ),
     ).rejects.toThrow('https://yo.com:3000/admin/oauth-clients');
+  });
+});
+
+describe('resolveRegionalOAuthIssuer', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns as soon as one issuer verifies successfully', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        if (url.startsWith(`${DEFAULT_US_TRANSCEND_API_URL}/oauth/client-verify`)) {
+          return new Promise((resolve) => {
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: async () => ({ success: true }),
+                }),
+              50,
+            );
+          });
+        }
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ success: true }),
+        });
+      }),
+    );
+
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).resolves.toBe(DEFAULT_TRANSCEND_API_URL);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(`${DEFAULT_TRANSCEND_API_URL}/oauth/client-verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: 'client-abc',
+        client_secret: 'secret',
+        redirect_uri: 'http://127.0.0.1:4567/callback',
+      }),
+    });
+  });
+
+  it('falls back to the next regional issuer when the first fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          text: async () => 'invalid credentials',
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: true }),
+        }),
+    );
+
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).resolves.toBe(DEFAULT_US_TRANSCEND_API_URL);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws when all regional issuers fail verification', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () => 'invalid credentials',
+      }),
+    );
+
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'bad-secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).rejects.toThrow(/all regional backends/i);
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'bad-secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
   });
 });

@@ -78,7 +78,7 @@ export async function startOAuthLogin(
     });
 
     logger.info('Opening browser for OAuth consent', { authorizationUrl });
-    await openBrowser(authorizationUrl);
+    await openBrowser(authorizationUrl, logger);
 
     return {
       redirectUri: callbackHandle.redirectUri,
