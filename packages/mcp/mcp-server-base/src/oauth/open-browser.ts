@@ -1,24 +1,33 @@
 import { spawn } from 'node:child_process';
 
+import { type Logger } from '../clients/graphql/base.js';
+
 /**
  * Opens the system default browser to the given URL (best-effort).
  */
-export async function openBrowser(url: string): Promise<void> {
+export async function openBrowser(url: string, logger: Logger): Promise<void> {
   const { command, args } = getOpenCommand(url);
 
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(command, args, {
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: true,
-    });
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const child = spawn(command, args, {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+      });
 
-    child.on('error', reject);
-    child.on('spawn', () => {
-      child.unref();
-      resolve();
+      child.on('error', reject);
+      child.on('spawn', () => {
+        child.unref();
+        resolve();
+      });
     });
-  });
+  } catch (error) {
+    logger.warn('Unable to open browser automatically. Please open this URL manually', {
+      url,
+      error,
+    });
+  }
 }
 
 /**

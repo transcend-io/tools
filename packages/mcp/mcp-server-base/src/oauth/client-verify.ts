@@ -38,3 +38,46 @@ export async function verifyOAuthClientCredentials(
     );
   }
 }
+
+/**
+ * Probes regional issuers in parallel and returns as soon as one verifies successfully.
+ */
+export async function resolveRegionalOAuthIssuer(
+  issuers: readonly string[],
+  clientId: string,
+  clientSecret: string,
+  redirectUri: string,
+): Promise<string> {
+  let settled = false;
+
+  return new Promise((resolve, reject) => {
+    const failures: (string | undefined)[] = new Array(issuers.length);
+    let pending = issuers.length;
+
+    issuers.forEach((issuer, index) => {
+      verifyOAuthClientCredentials(issuer, clientId, clientSecret, redirectUri)
+        .then(() => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          resolve(issuer);
+        })
+        .catch((error) => {
+          const detail = error instanceof Error ? error.message : String(error);
+          failures[index] = `${normalizeIssuer(issuer)}: ${detail}`;
+          pending -= 1;
+          if (pending === 0 && !settled) {
+            settled = true;
+            reject(
+              new Error(
+                formatOAuthClientConfigError(
+                  `OAuth client verification failed against all regional backends (${failures.join('; ')})`,
+                ),
+              ),
+            );
+          }
+        });
+    });
+  });
+}

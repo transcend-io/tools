@@ -3,11 +3,12 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   buildMcpServer,
-  DEFAULT_DASHBOARD_URL,
   DEFAULT_SOMBRA_URL,
-  DEFAULT_TRANSCEND_API_URL,
+  isOAuthModeEnabled,
   parseTransportArgs,
   resolveAuth,
+  resolveMcpDashboardUrl,
+  resolveMcpGraphqlUrl,
   runMcpHttp,
   SimpleLogger,
   TranscendRestClient,
@@ -36,8 +37,8 @@ async function main(): Promise<void> {
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
-  const graphqlUrl = process.env.TRANSCEND_API_URL || DEFAULT_TRANSCEND_API_URL;
-  const dashboardUrl = process.env.TRANSCEND_DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
+  const dashboardUrl = resolveMcpDashboardUrl();
+  const graphqlUrl = await resolveMcpGraphqlUrl(logger);
 
   if (isHttpTransport) {
     await runMcpHttp(
@@ -65,8 +66,7 @@ async function main(): Promise<void> {
   }
 
   // stdio mode
-  const auth = resolveAuth();
-  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl, dashboardUrl });
+  const auth = isOAuthModeEnabled() ? null : resolveAuth();
 
   const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
 
