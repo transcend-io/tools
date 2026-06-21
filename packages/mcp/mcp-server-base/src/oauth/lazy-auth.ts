@@ -85,7 +85,7 @@ export async function ensureLazyOAuthAuth(logger: Logger): Promise<void> {
 }
 
 async function performLazyOAuthLogin(logger: Logger): Promise<void> {
-  logger.info('OAuth required — opening browser for consent (lazy auth on first tool use)');
+  logger.info('OAuth required — opening browser for consent');
 
   const issuer = getOAuthIssuer();
   let session: Awaited<ReturnType<typeof startOAuthLogin>> | undefined;
@@ -104,14 +104,7 @@ async function performLazyOAuthLogin(logger: Logger): Promise<void> {
     setActiveStoredOAuthTokens(tokens);
     oauthSessionReady = true;
 
-    logger.info('OAuth token exchange succeeded', {
-      issuer: tokens.issuer,
-      clientId: tokens.clientId,
-      scope: tokens.scope,
-      expiresAt: tokens.expiresAt,
-      hasRefreshToken: Boolean(tokens.refreshToken),
-    });
-    logger.info('OAuth tokens are session-only and will not persist across MCP process restarts');
+    logger.info('OAuth token exchange succeeded');
   } catch (error) {
     setActiveStoredOAuthTokens(null);
     oauthSessionReady = false;
