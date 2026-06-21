@@ -86,15 +86,7 @@ async function refreshSessionOAuthTokens(
       clientSecret: getOAuthClientSecret()!,
     });
     activeStoredTokens = refreshed;
-
-    const credentials = storedOAuthTokensToAuth(refreshed);
-    logger.info('OAuth token refresh succeeded', {
-      issuer: refreshed.issuer,
-      clientId: refreshed.clientId,
-      expiresAt: refreshed.expiresAt,
-      hasRefreshToken: Boolean(refreshed.refreshToken),
-    });
-    return credentials;
+    return storedOAuthTokensToAuth(refreshed);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.error('OAuth token refresh failed — clearing session tokens', { error: message });
