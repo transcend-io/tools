@@ -5,7 +5,7 @@ import {
   resolveRegionalOAuthIssuer,
   verifyOAuthClientCredentials,
 } from '../src/oauth/client-verify.js';
-import { OAUTH_CLIENTS_ADMIN_URL } from '../src/oauth/constants.js';
+import { getOAuthClientsAdminUrl } from '../src/oauth/constants.js';
 
 describe('verifyOAuthClientCredentials', () => {
   const originalDashboardUrl = process.env.TRANSCEND_DASHBOARD_URL;
@@ -75,7 +75,7 @@ describe('verifyOAuthClientCredentials', () => {
         'bad-secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 
   it('throws when success is false', async () => {
@@ -102,7 +102,7 @@ describe('verifyOAuthClientCredentials', () => {
         'secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 
   it('throws when success is missing', async () => {
@@ -254,6 +254,6 @@ describe('resolveRegionalOAuthIssuer', () => {
         'bad-secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 });

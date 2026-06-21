@@ -7,9 +7,7 @@ import {
   isOAuthModeEnabled,
   parseTransportArgs,
   resolveStdioStartupAuth,
-  ensureOAuthStartupReady,
   configureOAuthScopes,
-  resolveAuth,
   resolveMcpDashboardUrl,
   resolveMcpGraphqlUrl,
   runMcpHttp,
@@ -71,13 +69,12 @@ async function main(): Promise<void> {
 
   // stdio mode
   configureOAuthScopes(UMBRELLA_OAUTH_SCOPES);
-  await ensureOAuthStartupReady(logger);
   const auth = resolveStdioStartupAuth();
   logger.info('Initializing Transcend API clients...', {
     sombraUrl,
     graphqlUrl,
     dashboardUrl,
-    authType: auth?.type ?? (process.env.TRANSCEND_OAUTH_ISSUER ? 'oauth-pending' : 'none'),
+    authType: auth?.type ?? (isOAuthModeEnabled() ? 'oauth-pending' : 'none'),
   });
 
   const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
