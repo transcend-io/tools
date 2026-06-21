@@ -1,6 +1,14 @@
 import type { Logger } from '../clients/graphql/base.js';
-import { verifyOAuthClientCredentials } from './client-verify.js';
-import { getOAuthRedirectUri } from './config.js';
+import { resolveRegionalOAuthIssuer } from './client-verify.js';
+import {
+  getOAuthIssuerCandidates,
+  getOAuthRedirectUri,
+  requireOAuthStartupEnv,
+  resetResolvedOAuthIssuer,
+  resetResolvedTranscendApiUrl,
+  setResolvedOAuthIssuer,
+  setResolvedTranscendApiUrl,
+} from './config.js';
 
 /** Cached OAuth client identifier resolved at startup. */
 let cachedClientId: string | null = null;
@@ -14,6 +22,8 @@ let initPromise: Promise<void> | null = null;
 export function resetOAuthClientState(): void {
   cachedClientId = null;
   initPromise = null;
+  resetResolvedOAuthIssuer();
+  resetResolvedTranscendApiUrl();
 }
 
 /**
@@ -29,10 +39,9 @@ export function getOAuthClientId(): string {
 }
 
 /**
- * Verifies OAuth client credentials and caches the client identifier for the process lifetime.
+ * Verifies OAuth client credentials against regional backends and caches the result.
  */
 export async function initializeOAuthClient(
-  issuer: string,
   clientId: string,
   clientSecret: string,
   logger: Logger,
@@ -47,9 +56,17 @@ export async function initializeOAuthClient(
   }
 
   initPromise = (async () => {
-    await verifyOAuthClientCredentials(issuer, clientId, clientSecret, getOAuthRedirectUri());
+    requireOAuthStartupEnv();
+    const issuer = await resolveRegionalOAuthIssuer(
+      getOAuthIssuerCandidates(),
+      clientId,
+      clientSecret,
+      getOAuthRedirectUri(),
+    );
+    setResolvedOAuthIssuer(issuer);
+    setResolvedTranscendApiUrl(issuer);
     cachedClientId = clientId;
-    logger.info('Verified OAuth client credentials', { clientId });
+    logger.info('Verified OAuth client credentials', { clientId, issuer });
   })();
 
   try {

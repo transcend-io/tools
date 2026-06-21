@@ -3,7 +3,6 @@ import { initializeOAuthClient } from './client-registry.js';
 import {
   getOAuthClientIdFromEnv,
   getOAuthClientSecret,
-  getOAuthIssuer,
   isOAuthModeEnabled,
   requireOAuthStartupEnv,
 } from './config.js';
@@ -17,10 +16,5 @@ export async function ensureOAuthStartupReady(logger: Logger): Promise<void> {
   }
 
   requireOAuthStartupEnv();
-  await initializeOAuthClient(
-    getOAuthIssuer(),
-    getOAuthClientIdFromEnv()!,
-    getOAuthClientSecret()!,
-    logger,
-  );
+  await initializeOAuthClient(getOAuthClientIdFromEnv()!, getOAuthClientSecret()!, logger);
 }

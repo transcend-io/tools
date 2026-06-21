@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import * as clientVerify from '../src/oauth/client-verify.js';
-import { buildOAuthClientsAdminUrl, formatOAuthClientConfigError } from '../src/oauth/constants.js';
+import { OAUTH_CLIENTS_ADMIN_URL, formatOAuthClientConfigError } from '../src/oauth/constants.js';
 import { ensureOAuthStartupReady } from '../src/oauth/startup.js';
 
 describe('ensureOAuthStartupReady', () => {
@@ -69,12 +69,12 @@ describe('ensureOAuthStartupReady', () => {
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
 
-    vi.spyOn(clientVerify, 'verifyOAuthClientCredentials').mockResolvedValue(undefined);
+    vi.spyOn(clientVerify, 'resolveRegionalOAuthIssuer').mockResolvedValue('https://yo.com:4001');
 
     await ensureOAuthStartupReady(logger);
 
-    expect(clientVerify.verifyOAuthClientCredentials).toHaveBeenCalledWith(
-      'https://yo.com:4001',
+    expect(clientVerify.resolveRegionalOAuthIssuer).toHaveBeenCalledWith(
+      ['https://yo.com:4001'],
       'client-abc',
       'secret',
       'http://127.0.0.1:4567/callback',
@@ -88,24 +88,26 @@ describe('ensureOAuthStartupReady', () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
     process.env.TRANSCEND_OAUTH_REDIRECT_HOST = '::1';
 
-    vi.spyOn(clientVerify, 'verifyOAuthClientCredentials').mockResolvedValue(undefined);
+    vi.spyOn(clientVerify, 'resolveRegionalOAuthIssuer').mockResolvedValue('https://yo.com:4001');
 
     await ensureOAuthStartupReady(logger);
 
-    expect(clientVerify.verifyOAuthClientCredentials).toHaveBeenCalledWith(
-      'https://yo.com:4001',
+    expect(clientVerify.resolveRegionalOAuthIssuer).toHaveBeenCalledWith(
+      ['https://yo.com:4001'],
       'client-abc',
       'secret',
       'http://[::1]:4567/callback',
     );
   });
 
-  it('throws when OAuth mode is enabled without a client id', async () => {
+  it('no-ops when OAuth client id is not configured', async () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
 
-    await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(/TRANSCEND_OAUTH_CLIENT_ID/);
+    const verifySpy = vi.spyOn(clientVerify, 'resolveRegionalOAuthIssuer');
+    await ensureOAuthStartupReady(logger);
+    expect(verifySpy).not.toHaveBeenCalled();
   });
 
   it('throws when OAuth mode is enabled without a client secret', async () => {
@@ -122,10 +124,10 @@ describe('ensureOAuthStartupReady', () => {
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
 
-    vi.spyOn(clientVerify, 'verifyOAuthClientCredentials').mockRejectedValue(
+    vi.spyOn(clientVerify, 'resolveRegionalOAuthIssuer').mockRejectedValue(
       new Error(formatOAuthClientConfigError('OAuth client verification failed: HTTP 401')),
     );
 
-    await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(buildOAuthClientsAdminUrl());
+    await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
   });
 });

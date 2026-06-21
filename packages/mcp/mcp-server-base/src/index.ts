@@ -103,6 +103,10 @@ export type {
   StoredOAuthTokens,
 } from './oauth/types.js';
 
+export { resolveMcpDashboardUrl } from './server/resolve-dashboard-url.js';
+
+export { resolveMcpGraphqlUrl } from './server/resolve-graphql-url.js';
+
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';
 
