@@ -1,6 +1,7 @@
 import { DEFAULT_DASHBOARD_URL } from '../defaults.js';
+import { isTestEnv } from './env.js';
 
-/** Environment variable for the OAuth issuer URL. */
+/** Environment variable for the OAuth issuer URL (test-only override). */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
 
 /** Environment variable for the OAuth client identifier. */
@@ -31,7 +32,7 @@ export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
 /** Subtract this many seconds from expires_in before treating a token as expired. */
 export const OAUTH_TOKEN_EXPIRY_SKEW_SECONDS = 60;
 
-/** Environment variable for the Transcend admin dashboard base URL. */
+/** Environment variable for the Transcend admin dashboard base URL (test-only override). */
 export const TRANSCEND_DASHBOARD_URL_ENV = 'TRANSCEND_DASHBOARD_URL';
 
 /** Path on the admin dashboard where OAuth clients are managed. */
@@ -41,15 +42,17 @@ export const OAUTH_CLIENTS_ADMIN_PATH = '/admin/oauth-clients';
 export const OAUTH_CLIENTS_ADMIN_URL = `${DEFAULT_DASHBOARD_URL}${OAUTH_CLIENTS_ADMIN_PATH}`;
 
 /**
- * Resolves the admin OAuth clients URL from {@link TRANSCEND_DASHBOARD_URL_ENV}
- * or {@link OAUTH_CLIENTS_ADMIN_URL}.
+ * Returns the admin OAuth clients URL. Production uses the hard-coded dashboard host;
+ * tests may override via {@link TRANSCEND_DASHBOARD_URL_ENV}.
  */
 export function getOAuthClientsAdminUrl(): string {
-  const dashboardUrl = process.env[TRANSCEND_DASHBOARD_URL_ENV]?.trim();
-  if (!dashboardUrl) {
-    return OAUTH_CLIENTS_ADMIN_URL;
+  if (isTestEnv()) {
+    const dashboardUrl = process.env[TRANSCEND_DASHBOARD_URL_ENV]?.trim();
+    if (dashboardUrl) {
+      return `${dashboardUrl.replace(/\/+$/, '')}${OAUTH_CLIENTS_ADMIN_PATH}`;
+    }
   }
-  return `${dashboardUrl.replace(/\/+$/, '')}${OAUTH_CLIENTS_ADMIN_PATH}`;
+  return OAUTH_CLIENTS_ADMIN_URL;
 }
 
 /**
