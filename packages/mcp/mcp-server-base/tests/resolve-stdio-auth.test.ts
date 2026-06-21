@@ -42,11 +42,11 @@ describe('resolveStdioStartupAuth', () => {
     expect(resolveStdioStartupAuth()).toBeNull();
   });
 
-  it('throws when OAuth issuer is configured without client id', () => {
+  it('falls through to resolveAuth when OAuth client id is not configured', () => {
     process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
-    expect(() => resolveStdioStartupAuth()).toThrow(/TRANSCEND_OAUTH_CLIENT_ID/);
+    expect(() => resolveStdioStartupAuth()).toThrow(/No authentication provided/);
   });
 
   it('throws when OAuth issuer is configured without client secret', () => {

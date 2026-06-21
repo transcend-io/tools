@@ -53,7 +53,7 @@ export function getOAuthClientsAdminUrl(): string {
  */
 export function formatOAuthClientConfigError(detail: string): string {
   return (
-    `${detail}. Have an admin navigate to ${buildOAuthClientsAdminUrl()} ` +
+    `${detail}. Have an admin navigate to ${getOAuthClientsAdminUrl()} ` +
     'to fetch or create valid credentials.'
   );
 }

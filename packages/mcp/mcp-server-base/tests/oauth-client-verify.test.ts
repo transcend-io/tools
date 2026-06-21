@@ -75,7 +75,7 @@ describe('verifyOAuthClientCredentials', () => {
         'bad-secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(buildOAuthClientsAdminUrl());
+    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
   });
 
   it('throws when success is false', async () => {
@@ -102,7 +102,7 @@ describe('verifyOAuthClientCredentials', () => {
         'secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(buildOAuthClientsAdminUrl());
+    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
   });
 
   it('throws when success is missing', async () => {

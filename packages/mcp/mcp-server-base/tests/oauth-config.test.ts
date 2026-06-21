@@ -6,7 +6,7 @@ import {
   isOAuthModeEnabled,
   requireOAuthStartupEnv,
 } from '../src/oauth/config.js';
-import { buildOAuthClientsAdminUrl } from '../src/oauth/constants.js';
+import { OAUTH_CLIENTS_ADMIN_URL } from '../src/oauth/constants.js';
 
 describe('OAuth redirect config', () => {
   const originalApiKey = process.env.TRANSCEND_API_KEY;
@@ -109,7 +109,7 @@ describe('OAuth redirect config', () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_HOST = 'example.com';
 
     expect(() => requireOAuthStartupEnv()).toThrow(/TRANSCEND_OAUTH_REDIRECT_HOST/);
-    expect(() => requireOAuthStartupEnv()).toThrow(buildOAuthClientsAdminUrl());
+    expect(() => requireOAuthStartupEnv()).toThrow(OAUTH_CLIENTS_ADMIN_URL);
   });
 
   it('skips startup validation when OAuth mode is disabled', () => {
@@ -125,21 +125,10 @@ describe('OAuth redirect config', () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
 
     expect(() => requireOAuthStartupEnv()).toThrow(/TRANSCEND_OAUTH_CLIENT_SECRET/);
-    expect(() => requireOAuthStartupEnv()).toThrow(buildOAuthClientsAdminUrl());
+    expect(() => requireOAuthStartupEnv()).toThrow(OAUTH_CLIENTS_ADMIN_URL);
   });
 
-  it('uses TRANSCEND_DASHBOARD_URL in admin guidance when client id is missing', () => {
-    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
-    process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
-    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
-    process.env.TRANSCEND_DASHBOARD_URL = 'https://app.staging.transcend.io';
-
-    expect(() => requireOAuthStartupEnv()).toThrow(
-      buildOAuthClientsAdminUrl('https://app.staging.transcend.io'),
-    );
-  });
-
-  it('uses TRANSCEND_DASHBOARD_URL for admin guidance in test env when set', () => {
+  it('includes admin URL when client secret is missing', () => {
     process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
     process.env.TRANSCEND_DASHBOARD_URL = 'https://yo.com:3000';

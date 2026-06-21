@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { ErrorCode, ToolError } from '../src/errors.js';
+import { resetOAuthClientState } from '../src/oauth/client-registry.js';
+import { setResolvedOAuthIssuer, setResolvedTranscendApiUrl } from '../src/oauth/config.js';
 import { OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE } from '../src/oauth/constants.js';
 import {
   ensureLazyOAuthAuth,
@@ -21,21 +23,47 @@ describe('ensureLazyOAuthAuth', () => {
   const logger = new SimpleLogger();
   const originalApiKey = process.env.TRANSCEND_API_KEY;
   const originalIssuer = process.env.TRANSCEND_OAUTH_ISSUER;
+  const originalClientId = process.env.TRANSCEND_OAUTH_CLIENT_ID;
+  const originalClientSecret = process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
+  const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+
+  function enableLazyOAuthTestEnv(): void {
+    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
+    process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
+    setResolvedOAuthIssuer('https://yo.com:4001');
+    setResolvedTranscendApiUrl('https://yo.com:4001');
+  }
 
   beforeEach(() => {
     resetLazyOAuthState();
+    resetOAuthClientState();
     vi.restoreAllMocks();
     delete process.env.TRANSCEND_API_KEY;
     delete process.env.TRANSCEND_OAUTH_ISSUER;
+    delete process.env.TRANSCEND_OAUTH_CLIENT_ID;
+    delete process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
+    delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
   });
 
   afterEach(() => {
     resetLazyOAuthState();
+    resetOAuthClientState();
     if (originalApiKey === undefined) delete process.env.TRANSCEND_API_KEY;
     else process.env.TRANSCEND_API_KEY = originalApiKey;
 
     if (originalIssuer === undefined) delete process.env.TRANSCEND_OAUTH_ISSUER;
     else process.env.TRANSCEND_OAUTH_ISSUER = originalIssuer;
+
+    if (originalClientId === undefined) delete process.env.TRANSCEND_OAUTH_CLIENT_ID;
+    else process.env.TRANSCEND_OAUTH_CLIENT_ID = originalClientId;
+
+    if (originalClientSecret === undefined) delete process.env.TRANSCEND_OAUTH_CLIENT_SECRET;
+    else process.env.TRANSCEND_OAUTH_CLIENT_SECRET = originalClientSecret;
+
+    if (originalRedirectPort === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+    else process.env.TRANSCEND_OAUTH_REDIRECT_PORT = originalRedirectPort;
   });
 
   it('no-ops when OAuth mode is disabled', async () => {
@@ -45,7 +73,7 @@ describe('ensureLazyOAuthAuth', () => {
   });
 
   it('refreshes expired tokens without opening the browser', async () => {
-    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    enableLazyOAuthTestEnv();
     const now = 1_700_000_000_000;
     const expired = storedTokensFromTokenResponse({
       response: {
@@ -90,7 +118,7 @@ describe('ensureLazyOAuthAuth', () => {
   });
 
   it('uses cached tokens without opening the browser', async () => {
-    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    enableLazyOAuthTestEnv();
     const now = Date.now();
     tokenManager.setActiveStoredOAuthTokens(
       storedTokensFromTokenResponse({
@@ -118,7 +146,7 @@ describe('ensureLazyOAuthAuth', () => {
   });
 
   it('runs OAuth login once, exchanges tokens, and marks the session ready', async () => {
-    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    enableLazyOAuthTestEnv();
 
     const waitForCallback = vi.fn().mockResolvedValue({ code: 'abc', state: 'xyz' });
     const close = vi.fn().mockResolvedValue(undefined);
@@ -168,7 +196,7 @@ describe('ensureLazyOAuthAuth', () => {
   });
 
   it('surfaces OAuth callback timeouts as non-retryable AUTH_ERROR tool errors', async () => {
-    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    enableLazyOAuthTestEnv();
 
     vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(new Error('OAuth callback timed out'));
 
@@ -184,7 +212,7 @@ describe('ensureLazyOAuthAuth', () => {
   });
 
   it('surfaces non-timeout OAuth failures as non-retryable AUTH_ERROR tool errors', async () => {
-    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    enableLazyOAuthTestEnv();
 
     vi.spyOn(oauthFlow, 'startOAuthLogin').mockRejectedValue(
       new Error('OAuth authorization failed'),
@@ -199,7 +227,7 @@ describe('ensureLazyOAuthAuth', () => {
   });
 
   it('deduplicates concurrent login attempts', async () => {
-    process.env.TRANSCEND_OAUTH_ISSUER = 'https://yo.com:4001';
+    enableLazyOAuthTestEnv();
 
     let resolveCallback: (() => void) | undefined;
     const waitForCallback = vi.fn(
