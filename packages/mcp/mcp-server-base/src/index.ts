@@ -42,6 +42,8 @@ export type { BuildMcpServerOptions } from './server/build-server.js';
 
 export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 
+export { resolveMcpDashboardUrl } from './server/resolve-dashboard-url.js';
+
 export { resolveMcpGraphqlUrl } from './server/resolve-graphql-url.js';
 
 export { isOAuthModeEnabled } from './oauth/config.js';

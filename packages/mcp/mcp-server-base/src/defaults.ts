@@ -1,10 +1,9 @@
 /**
  * Production default URLs for the Transcend backend services that MCP servers
- * talk to. `TRANSCEND_API_URL`, `SOMBRA_URL`, and `TRANSCEND_DASHBOARD_URL` may
- * override the GraphQL, Sombra, and dashboard hosts when unset callers use
- * these constants. OAuth stdio mode probes {@link OAUTH_REGIONAL_ISSUERS} at
- * startup to pick the matching regional API; `TRANSCEND_OAUTH_ISSUER` is a
- * test-only override.
+ * talk to. `TRANSCEND_API_URL` and `SOMBRA_URL` may override the GraphQL and
+ * Sombra hosts when unset callers use these constants. OAuth stdio mode probes
+ * {@link OAUTH_REGIONAL_ISSUERS} at startup to pick the matching regional API;
+ * `TRANSCEND_OAUTH_ISSUER` and `TRANSCEND_DASHBOARD_URL` are test-only overrides.
  */
 
 /** GraphQL backend API URL (`api.transcend.io`, regional split lives here). */

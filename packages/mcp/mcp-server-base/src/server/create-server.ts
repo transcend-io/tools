@@ -3,12 +3,13 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { TranscendRestClient } from '../clients/rest-client.js';
-import { DEFAULT_DASHBOARD_URL, DEFAULT_SOMBRA_URL } from '../defaults.js';
+import { DEFAULT_SOMBRA_URL } from '../defaults.js';
 import { isOAuthModeEnabled } from '../oauth/config.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
 import { resolveAuth } from './resolve-auth.js';
+import { resolveMcpDashboardUrl } from './resolve-dashboard-url.js';
 import { resolveMcpGraphqlUrl } from './resolve-graphql-url.js';
 import { runMcpHttp } from './run-http.js';
 
@@ -71,7 +72,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
-  const dashboardUrl = process.env.TRANSCEND_DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
+  const dashboardUrl = resolveMcpDashboardUrl();
   const graphqlUrl = await resolveMcpGraphqlUrl(logger);
 
   if (isHttpTransport) {

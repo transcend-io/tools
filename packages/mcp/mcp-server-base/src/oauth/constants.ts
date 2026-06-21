@@ -1,5 +1,5 @@
 import { DEFAULT_DASHBOARD_URL } from '../defaults.js';
-import { isTestEnv } from './env.js';
+import { resolveMcpDashboardUrl } from '../server/resolve-dashboard-url.js';
 
 /** Environment variable for the OAuth issuer URL (test-only override). */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
@@ -42,17 +42,10 @@ export const OAUTH_CLIENTS_ADMIN_PATH = '/admin/oauth-clients';
 export const OAUTH_CLIENTS_ADMIN_URL = `${DEFAULT_DASHBOARD_URL}${OAUTH_CLIENTS_ADMIN_PATH}`;
 
 /**
- * Returns the admin OAuth clients URL. Production uses the hard-coded dashboard host;
- * tests may override via {@link TRANSCEND_DASHBOARD_URL_ENV}.
+ * Returns the admin OAuth clients URL using {@link resolveMcpDashboardUrl}.
  */
 export function getOAuthClientsAdminUrl(): string {
-  if (isTestEnv()) {
-    const dashboardUrl = process.env[TRANSCEND_DASHBOARD_URL_ENV]?.trim();
-    if (dashboardUrl) {
-      return `${dashboardUrl.replace(/\/+$/, '')}${OAUTH_CLIENTS_ADMIN_PATH}`;
-    }
-  }
-  return OAUTH_CLIENTS_ADMIN_URL;
+  return `${resolveMcpDashboardUrl().replace(/\/+$/, '')}${OAUTH_CLIENTS_ADMIN_PATH}`;
 }
 
 /**

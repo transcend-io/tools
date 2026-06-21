@@ -3,11 +3,11 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   buildMcpServer,
-  DEFAULT_DASHBOARD_URL,
   DEFAULT_SOMBRA_URL,
   isOAuthModeEnabled,
   parseTransportArgs,
   resolveAuth,
+  resolveMcpDashboardUrl,
   resolveMcpGraphqlUrl,
   runMcpHttp,
   SimpleLogger,
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
-  const dashboardUrl = process.env.TRANSCEND_DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
+  const dashboardUrl = resolveMcpDashboardUrl();
   const graphqlUrl = await resolveMcpGraphqlUrl(logger);
 
   if (isHttpTransport) {
