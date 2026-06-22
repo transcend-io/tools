@@ -220,10 +220,18 @@ export const FooterTheme = t.intersection([
 /** Override type */
 export type FooterTheme = t.TypeOf<typeof FooterTheme>;
 
+/** Mapping between a content flow and its maximum width */
+export const MaxWidthEntry = t.type({
+  flow: valuesOf(ContentFlows),
+  width: CssUnitString,
+});
+/** Override type */
+export type MaxWidthEntry = t.TypeOf<typeof MaxWidthEntry>;
+
 /** Defines how content should be padded and sized at different breakpoints */
 export const PaddedContentLayout = t.type({
   breakpoint: Breakpoint,
-  maxWidths: t.record(valuesOf(ContentFlows), CssUnitString),
+  maxWidths: t.array(MaxWidthEntry),
 });
 /** Override type */
 export type PaddedContentLayout = t.TypeOf<typeof PaddedContentLayout>;
