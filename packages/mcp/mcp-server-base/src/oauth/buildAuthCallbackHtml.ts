@@ -1,9 +1,6 @@
 import transcendLogoCipherSvg from '@tools/assets/transcend-logo-cipher.svg';
 
-const logoSvg = transcendLogoCipherSvg.replace(
-  '<svg ',
-  '<svg style="height: 37px; width: 154px;" ',
-);
+const logoSvg = transcendLogoCipherSvg.replace('<svg ', '<svg style="height: 37px; width: auto;" ');
 
 /**
  * Helper function to wrap the callback's message in an HTML template that matches the Transcend web app's display.
@@ -16,9 +13,10 @@ export const buildAuthCallbackHtml = (message: string) => `
     <title>Transcend MCP Auth Landing</title>
   </head>
   <body style="margin: 0; font-family: neue-haas-grotesk-display,sans-serif; --color-cipher: rgb(95, 91, 247);">
-    <div style="display: flex; flex-direction: column; align-items: center">
-      <div style="padding: 30px 0">
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <div style="padding: 30px 0; display: flex; gap: 3px;">
         ${logoSvg}
+        <span style="font-size: 22px; font-weight: 600; color: #0f0f16">Transcend</span>
       </div>
       <div style="display: flex; align-self: stretch; padding: 0 50px; justify-content: center">
         <div
