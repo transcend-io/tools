@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.5.5
+
+### Patch Changes
+
+- 32affea: Update undici
+
 ## 10.5.4
 
 ### Patch Changes
