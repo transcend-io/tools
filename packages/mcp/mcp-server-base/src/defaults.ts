@@ -27,6 +27,3 @@ export const DEFAULT_SOMBRA_URL = 'https://multi-tenant.sombra.transcend.io';
  * API backend they're served from.
  */
 export const DEFAULT_DASHBOARD_URL = 'https://app.transcend.io';
-
-/** Default Transcend OAuth authorization server issuer URL. */
-export const DEFAULT_OAUTH_ISSUER = 'https://api.transcend.io';
