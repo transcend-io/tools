@@ -1,14 +1,11 @@
+import type { ConsentThemeInput, ConsentVariantInput } from '@transcend-io/privacy-types';
 import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchConsentThemes, type ConsentUiTheme } from './fetchConsentThemes.js';
-import {
-  fetchConsentVariants,
-  type ConsentUiVariant,
-  type UiVariantStatus,
-} from './fetchConsentVariants.js';
+import { fetchConsentVariants, type ConsentUiVariant } from './fetchConsentVariants.js';
 import {
   CREATE_CONSENT_UI_THEME,
   CREATE_CONSENT_UI_VARIANT,
@@ -16,39 +13,7 @@ import {
   UPDATE_CONSENT_UI_VARIANT,
 } from './gqls/consentManager.js';
 
-/** Consent UI variant input from transcend.yml */
-export interface ConsentVariantInput {
-  /** ID of the variant */
-  id?: string;
-  /** Display name for the variant */
-  name: string;
-  /** Unique slug for the variant */
-  slug: string;
-  /** Description of the variant */
-  description?: string;
-  /** JSON-serialized variant configuration */
-  configuration?: string;
-  /** Locales this variant applies to */
-  locales: string[];
-  /** Status of the variant */
-  status: UiVariantStatus;
-  /** User flow for the variant */
-  userFlow?: string;
-  /** Slug of the consent UI theme associated with this variant */
-  themeSlug?: string;
-}
-
-/** Consent UI theme input from transcend.yml */
-export interface ConsentThemeInput {
-  /** ID of the theme */
-  id?: string;
-  /** Display name for the theme */
-  name: string;
-  /** Unique slug for the theme */
-  slug: string;
-  /** JSON-serialized theme configuration */
-  configuration?: string;
-}
+export type { ConsentThemeInput, ConsentVariantInput };
 
 /**
  * Parse a JSON configuration string from transcend.yml
@@ -58,13 +23,9 @@ export interface ConsentThemeInput {
  * @returns Parsed configuration object
  */
 function parseConsentUiConfiguration(
-  configuration: string | undefined,
+  configuration: string,
   resourceLabel: string,
 ): Record<string, unknown> {
-  if (!configuration) {
-    throw new Error(`Missing configuration for ${resourceLabel}`);
-  }
-
   try {
     return JSON.parse(configuration) as Record<string, unknown>;
   } catch {

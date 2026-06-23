@@ -40365,8 +40365,11 @@
             "allOf": [
               {
                 "type": "object",
-                "required": ["name", "slug", "status", "locales"],
+                "required": ["id", "name", "slug", "status", "locales", "configuration"],
                 "properties": {
+                  "id": {
+                    "type": "string"
+                  },
                   "name": {
                     "type": "string"
                   },
@@ -40579,23 +40582,21 @@
                         "gl-ES"
                       ]
                     }
+                  },
+                  "configuration": {
+                    "type": "string"
                   }
                 }
               },
               {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string"
-                  },
                   "description": {
                     "type": "string"
                   },
-                  "configuration": {
-                    "type": "string"
-                  },
                   "userFlow": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": ["BANNER", "MODAL", "BANNER_AND_MODAL"]
                   },
                   "themeSlug": {
                     "type": "string"
@@ -40608,31 +40609,22 @@
         "consentThemes": {
           "type": "array",
           "items": {
-            "allOf": [
-              {
-                "type": "object",
-                "required": ["name", "slug"],
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "slug": {
-                    "type": "string"
-                  }
-                }
+            "type": "object",
+            "required": ["id", "name", "slug", "configuration"],
+            "properties": {
+              "id": {
+                "type": "string"
               },
-              {
-                "type": "object",
-                "properties": {
-                  "id": {
-                    "type": "string"
-                  },
-                  "configuration": {
-                    "type": "string"
-                  }
-                }
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "configuration": {
+                "type": "string"
               }
-            ]
+            }
           }
         }
       }

@@ -9,6 +9,8 @@ import {
   TelemetryPartitionStrategy,
   SignedIabAgreementOption,
   BrowserTimeZone,
+  type ConsentThemeInput,
+  type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
 import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
@@ -35,8 +37,6 @@ import { UPDATE_CONSENT_EXPERIENCE, CREATE_CONSENT_EXPERIENCE } from './gqls/exp
 import {
   syncConsentUiThemes,
   syncConsentUiVariants,
-  type ConsentThemeInput,
-  type ConsentVariantInput,
   type SyncedConsentUiVariant,
 } from './syncConsentUi.js';
 import { fetchPartitions } from './syncPartitions.js';

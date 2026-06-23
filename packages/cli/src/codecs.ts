@@ -58,6 +58,14 @@ import {
   Controllership,
   RetentionType,
   DataProtectionImpactAssessmentStatus,
+  ConsentThemeInput,
+  ConsentVariantInput,
+} from '@transcend-io/privacy-types';
+export {
+  ConsentThemeInput,
+  ConsentVariantInput,
+  ConsentUiUserFlow,
+  UiVariantStatus,
 } from '@transcend-io/privacy-types';
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // eslint-disable-next-line eslint-comments/disable-enable-pair
@@ -67,16 +75,6 @@ import * as t from 'io-ts';
 import { OpenAIRouteName, PathfinderPolicyName } from './enums.js';
 import { buildAIIntegrationType } from './lib/helpers/buildAIIntegrationType.js';
 import { buildEnabledRouteType } from './lib/helpers/buildEnabledRouteType.js';
-
-/** Status of a consent UI variant */
-export const UiVariantStatus = {
-  DRAFT: 'DRAFT',
-  ACTIVE: 'ACTIVE',
-  PUBLISHED: 'PUBLISHED',
-} as const;
-
-/** Type override */
-export type UiVariantStatus = (typeof UiVariantStatus)[keyof typeof UiVariantStatus];
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -1248,52 +1246,6 @@ export const ConsentManageExperienceInput = t.intersection([
 
 /** Type override */
 export type ConsentManageExperienceInput = t.TypeOf<typeof ConsentManageExperienceInput>;
-
-export const ConsentVariantInput = t.intersection([
-  t.type({
-    /** Name of consent variant */
-    name: t.string,
-    /** Slug of consent variant */
-    slug: t.string,
-    /** Status of variant */
-    status: valuesOf(UiVariantStatus),
-    /** Locales of variant */
-    locales: t.array(valuesOf(LOCALE_KEY)),
-  }),
-  t.partial({
-    /** ID of consent variant */
-    id: t.string,
-    /** Description of variant */
-    description: t.string,
-    /** Configuration of variant */
-    configuration: t.string,
-    /** User flow of variant */
-    userFlow: t.string,
-    /** Slug of the consent UI theme associated with this variant */
-    themeSlug: t.string,
-  }),
-]);
-
-/** Type override */
-export type ConsentVariantInput = t.TypeOf<typeof ConsentVariantInput>;
-
-export const ConsentThemeInput = t.intersection([
-  t.type({
-    /** Name of consent theme */
-    name: t.string,
-    /** Slug of consent theme */
-    slug: t.string,
-  }),
-  t.partial({
-    /** ID of consent theme */
-    id: t.string,
-    /** Configuration of variant */
-    configuration: t.string,
-  }),
-]);
-
-/** Type override */
-export type ConsentThemeInput = t.TypeOf<typeof ConsentThemeInput>;
 
 export const PartitionInput = t.intersection([
   t.type({

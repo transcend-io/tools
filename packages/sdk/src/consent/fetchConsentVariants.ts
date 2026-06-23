@@ -1,4 +1,8 @@
-import type { UIConfiguration } from '@transcend-io/privacy-types';
+import type {
+  ConsentUiUserFlow,
+  UIConfiguration,
+  UiVariantStatus,
+} from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
@@ -6,13 +10,9 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { FETCH_CONSENT_UI_VARIANTS } from './gqls/consentManager.js';
 
+export type { ConsentUiUserFlow, UiVariantStatus };
+
 const PAGE_SIZE = 50;
-
-/** Status of a consent UI variant */
-export type UiVariantStatus = 'DRAFT' | 'ACTIVE' | 'PUBLISHED';
-
-/** User flow for a consent UI variant */
-export type ConsentUiUserFlow = 'BANNER' | 'MODAL' | 'BANNER_AND_MODAL';
 
 /** A consent UI variant returned by the consentUiVariants query */
 export interface ConsentUiVariant {
