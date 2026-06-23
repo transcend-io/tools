@@ -1,4 +1,4 @@
-import { DEFAULT_OAUTH_ISSUER, OAUTH_REGIONAL_ISSUERS } from '../defaults.js';
+import { OAUTH_REGIONAL_ISSUERS } from '../defaults.js';
 import {
   DEFAULT_OAUTH_REDIRECT_HOST,
   TRANSCEND_OAUTH_CLIENT_ID_ENV,
@@ -9,7 +9,7 @@ import {
   formatOAuthClientConfigError,
   getOAuthClientsAdminUrl,
 } from './constants.js';
-import { isTestEnv, resolveTestOverride } from './env.js';
+import { isTestEnv } from './env.js';
 
 /** Validated OAuth startup configuration. */
 interface OAuthStartupConfig {
@@ -57,19 +57,15 @@ export function getOAuthIssuerCandidates(): readonly string[] {
 }
 
 /**
- * Returns the OAuth issuer URL resolved at startup, or the production default
- * when OAuth mode is disabled.
+ * Returns the OAuth issuer URL resolved at startup via client verification.
  */
 export function getOAuthIssuer(): string {
-  if (resolvedOAuthIssuer) {
-    return resolvedOAuthIssuer;
-  }
-  if (isOAuthModeEnabled()) {
+  if (!resolvedOAuthIssuer) {
     throw new Error(
       'OAuth issuer is not resolved. Call ensureOAuthStartupReady() before using OAuth.',
     );
   }
-  return resolveTestOverride(TRANSCEND_OAUTH_ISSUER_ENV, DEFAULT_OAUTH_ISSUER);
+  return resolvedOAuthIssuer;
 }
 
 /**
