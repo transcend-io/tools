@@ -89,8 +89,8 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
-  type ConsentVariantInput,
   type ConsentThemeInput,
+  type ConsentVariantInput,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
@@ -443,7 +443,7 @@ export async function pullTranscendConfiguration(
           id: variant.id,
           name: variant.name,
           slug: variant.slug,
-          description: variant.description || undefined,
+          description: variant.description,
           configuration: JSON.stringify(variant.configuration),
           locales: variant.locales as LocaleValue[],
           status: variant.status,

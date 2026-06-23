@@ -18,7 +18,6 @@ import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPurposes } from '../preference-management/fetchAllPurposes.js';
 import { fetchConsentManagerExperiences } from './fetchConsentManagerExperiences.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { fetchConsentVariants } from './fetchConsentVariants.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import {
   UPDATE_CONSENT_MANAGER_DOMAINS,
@@ -38,6 +37,7 @@ import {
   syncConsentUiVariants,
   type ConsentThemeInput,
   type ConsentVariantInput,
+  type SyncedConsentUiVariant,
 } from './syncConsentUi.js';
 import { fetchPartitions } from './syncPartitions.js';
 
@@ -130,11 +130,13 @@ export interface ConsentManagerInput {
  *
  * @param client - GraphQL client
  * @param experiences - The experience inputs
+ * @param syncedVariants - Variants synced by syncConsentUiVariants, used to resolve consentUiVariantSlug
  * @param options - Options
  */
 export async function syncConsentManagerExperiences(
   client: GraphQLClient,
   experiences: ConsentManageExperienceInput[],
+  syncedVariants: SyncedConsentUiVariant[],
   options: {
     /** Logger instance */
     logger?: Logger;
@@ -150,8 +152,7 @@ export async function syncConsentManagerExperiences(
   const purposes = await fetchAllPurposes(client, { logger });
   const purposeLookup = keyBy(purposes, 'trackingType');
 
-  const remoteVariants = await fetchConsentVariants(client, { logger });
-  const remoteVariantBySlug = keyBy(remoteVariants, 'slug');
+  const syncedVariantBySlug = keyBy(syncedVariants, 'slug');
 
   await map(
     experiences,
@@ -178,7 +179,7 @@ export async function syncConsentManagerExperiences(
       });
 
       const remoteConsentUiVariantId = exp.consentUiVariantSlug
-        ? remoteVariantBySlug[exp.consentUiVariantSlug]?.id
+        ? syncedVariantBySlug[exp.consentUiVariantSlug]?.id
         : undefined;
       const existingExperience = experienceLookup[exp.name];
       if (existingExperience) {
@@ -375,22 +376,32 @@ export async function syncConsentManager(
     });
   }
 
-  if (consentManager.consentThemes) {
-    await syncConsentUiThemes(client, airgapBundleId, consentManager.consentThemes, {
-      logger,
-    });
-  }
+  if (
+    consentManager.consentThemes ||
+    consentManager.consentVariants ||
+    consentManager.experiences
+  ) {
+    const syncedThemes = consentManager.consentThemes
+      ? await syncConsentUiThemes(client, airgapBundleId, consentManager.consentThemes, {
+          logger,
+        })
+      : [];
 
-  if (consentManager.consentVariants) {
-    await syncConsentUiVariants(client, airgapBundleId, consentManager.consentVariants, {
-      logger,
-    });
-  }
+    const syncedVariants = consentManager.consentVariants
+      ? await syncConsentUiVariants(
+          client,
+          airgapBundleId,
+          consentManager.consentVariants,
+          syncedThemes,
+          { logger },
+        )
+      : [];
 
-  if (consentManager.experiences) {
-    await syncConsentManagerExperiences(client, consentManager.experiences, {
-      logger,
-    });
+    if (consentManager.experiences) {
+      await syncConsentManagerExperiences(client, consentManager.experiences, syncedVariants, {
+        logger,
+      });
+    }
   }
 
   if (consentManager.theme) {

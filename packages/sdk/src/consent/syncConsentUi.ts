@@ -72,6 +72,12 @@ function parseConsentUiConfiguration(
   }
 }
 
+/** Consent UI theme synced to Transcend (id + slug for variant theme assignment) */
+export type SyncedConsentUiTheme = Pick<ConsentUiTheme, 'id' | 'slug'>;
+
+/** Consent UI variant synced to Transcend (id + slug for experience consentUiVariantSlug assignment) */
+export type SyncedConsentUiVariant = Pick<ConsentUiVariant, 'id' | 'slug'>;
+
 /**
  * Sync consent UI themes from transcend.yml
  *
@@ -79,6 +85,7 @@ function parseConsentUiConfiguration(
  * @param airgapBundleId - Airgap bundle ID
  * @param yamlThemes - Theme inputs from transcend.yml
  * @param options - Options
+ * @returns Synced themes (id + slug) for resolving variant themeSlug assignments
  */
 export async function syncConsentUiThemes(
   client: GraphQLClient,
@@ -88,10 +95,11 @@ export async function syncConsentUiThemes(
     /** Logger instance */
     logger?: Logger;
   } = {},
-): Promise<void> {
+): Promise<SyncedConsentUiTheme[]> {
   const { logger = NOOP_LOGGER } = options;
   const remoteThemes = await fetchConsentThemes(client, { logger });
   const remoteThemeBySlug = keyBy(remoteThemes, 'slug');
+  const syncedThemes: SyncedConsentUiTheme[] = [];
 
   await map(
     yamlThemes,
@@ -112,9 +120,10 @@ export async function syncConsentUiThemes(
           },
           logger,
         });
+        syncedThemes.push({ id: remoteTheme.id, slug: yamlTheme.slug });
         logger.info(`Successfully synced consent UI theme "${yamlTheme.name}"!`);
       } else {
-        await makeGraphQLRequest<{
+        const result = await makeGraphQLRequest<{
           createConsentUiTheme: {
             consentUiTheme: Pick<ConsentUiTheme, 'id' | 'name'>;
           };
@@ -129,11 +138,17 @@ export async function syncConsentUiThemes(
           },
           logger,
         });
+        syncedThemes.push({
+          id: result.createConsentUiTheme.consentUiTheme.id,
+          slug: yamlTheme.slug,
+        });
         logger.info(`Successfully created consent UI theme "${yamlTheme.name}"!`);
       }
     },
     { concurrency: 5 },
   );
+
+  return syncedThemes;
 }
 
 /**
@@ -142,22 +157,25 @@ export async function syncConsentUiThemes(
  * @param client - GraphQL client
  * @param airgapBundleId - Airgap bundle ID
  * @param yamlVariants - Variant inputs from transcend.yml
+ * @param syncedThemes - Themes synced by syncConsentUiThemes, used to resolve themeSlug
  * @param options - Options
+ * @returns Synced variants (id + slug) for resolving experience consentUiVariantSlug assignments
  */
 export async function syncConsentUiVariants(
   client: GraphQLClient,
   airgapBundleId: string,
   yamlVariants: ConsentVariantInput[],
+  syncedThemes: SyncedConsentUiTheme[],
   options: {
     /** Logger instance */
     logger?: Logger;
   } = {},
-): Promise<void> {
+): Promise<SyncedConsentUiVariant[]> {
   const { logger = NOOP_LOGGER } = options;
   const remoteVariants = await fetchConsentVariants(client, { logger });
   const remoteVariantBySlug = keyBy(remoteVariants, 'slug');
-  const remoteThemes = await fetchConsentThemes(client, { logger });
-  const remoteThemeBySlug = keyBy(remoteThemes, 'slug');
+  const syncedThemeBySlug = keyBy(syncedThemes, 'slug');
+  const syncedVariants: SyncedConsentUiVariant[] = [];
 
   await map(
     yamlVariants,
@@ -165,7 +183,7 @@ export async function syncConsentUiVariants(
       const resourceLabel = `consentManager.consentVariants[${index}]`;
       const configuration = parseConsentUiConfiguration(yamlVariant.configuration, resourceLabel);
       const remoteThemeId = yamlVariant.themeSlug
-        ? remoteThemeBySlug[yamlVariant.themeSlug]?.id
+        ? syncedThemeBySlug[yamlVariant.themeSlug]?.id
         : undefined;
       const remoteVariant = remoteVariantBySlug[yamlVariant.slug];
 
@@ -185,9 +203,10 @@ export async function syncConsentUiVariants(
           },
           logger,
         });
+        syncedVariants.push({ id: remoteVariant.id, slug: yamlVariant.slug });
         logger.info(`Successfully synced consent UI variant "${yamlVariant.name}"!`);
       } else {
-        await makeGraphQLRequest<{
+        const result = await makeGraphQLRequest<{
           createConsentUiVariant: {
             consentUiVariant: Pick<ConsentUiVariant, 'id'>;
           };
@@ -206,9 +225,15 @@ export async function syncConsentUiVariants(
           },
           logger,
         });
+        syncedVariants.push({
+          id: result.createConsentUiVariant.consentUiVariant.id,
+          slug: yamlVariant.slug,
+        });
         logger.info(`Successfully created consent UI variant "${yamlVariant.name}"!`);
       }
     },
     { concurrency: 5 },
   );
+
+  return syncedVariants;
 }
