@@ -59,9 +59,9 @@ export const ContentFlows = makeEnum({
   /** Items are stacked vertically, top to bottom */
   Vertical: 'vertical',
   /** Items are stacked horizontally, often wrapping if space runs out */
-  HorizontalStacked: 'horizontal-stacked',
+  HorizontalStacked: 'horizontalStacked',
   /** Items are laid out horizontally, in a single row */
-  HorizontalFlat: 'horizontal-flat',
+  HorizontalFlat: 'horizontalFlat',
 });
 
 /** Override type */
@@ -220,18 +220,10 @@ export const FooterTheme = t.intersection([
 /** Override type */
 export type FooterTheme = t.TypeOf<typeof FooterTheme>;
 
-/** Mapping between a content flow and its maximum width */
-export const MaxWidthEntry = t.type({
-  flow: valuesOf(ContentFlows),
-  width: CssUnitString,
-});
-/** Override type */
-export type MaxWidthEntry = t.TypeOf<typeof MaxWidthEntry>;
-
 /** Defines how content should be padded and sized at different breakpoints */
 export const PaddedContentLayout = t.type({
   breakpoint: Breakpoint,
-  maxWidths: t.array(MaxWidthEntry),
+  maxWidths: t.record(valuesOf(ContentFlows), CssUnitString),
 });
 /** Override type */
 export type PaddedContentLayout = t.TypeOf<typeof PaddedContentLayout>;
