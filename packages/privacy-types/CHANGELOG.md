@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.2.5
+
+### Patch Changes
+
+- 4ba5bfb: add consent variants and themes to inventory push/pull
+
 ## 5.2.4
 
 ### Patch Changes

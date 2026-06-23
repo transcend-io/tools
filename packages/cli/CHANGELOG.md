@@ -1,5 +1,15 @@
 # @transcend-io/cli
 
+## 10.5.7
+
+### Patch Changes
+
+- 4ba5bfb: add consent variants and themes to inventory push/pull
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+  - @transcend-io/sdk@1.2.6
+  - @transcend-io/airgap.js-types@14.2.9
+
 ## 10.5.5
 
 ### Patch Changes
