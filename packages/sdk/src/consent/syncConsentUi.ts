@@ -13,8 +13,6 @@ import {
   UPDATE_CONSENT_UI_VARIANT,
 } from './gqls/consentManager.js';
 
-export type { ConsentThemeInput, ConsentVariantInput };
-
 /**
  * Parse a JSON configuration string from transcend.yml
  *

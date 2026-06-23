@@ -4,6 +4,8 @@ import {
   ConsentTrackerStatus,
   ActionItemCode,
   RetentionType,
+  type ConsentThemeInput,
+  type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
 import {
   fetchAllActionItemCollections,
@@ -89,8 +91,6 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
-  type ConsentThemeInput,
-  type ConsentVariantInput,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';

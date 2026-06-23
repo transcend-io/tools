@@ -10,8 +10,6 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { FETCH_CONSENT_UI_VARIANTS } from './gqls/consentManager.js';
 
-export type { ConsentUiUserFlow, UiVariantStatus };
-
 const PAGE_SIZE = 50;
 
 /** A consent UI variant returned by the consentUiVariants query */

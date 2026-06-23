@@ -61,12 +61,6 @@ import {
   ConsentThemeInput,
   ConsentVariantInput,
 } from '@transcend-io/privacy-types';
-export {
-  ConsentThemeInput,
-  ConsentVariantInput,
-  ConsentUiUserFlow,
-  UiVariantStatus,
-} from '@transcend-io/privacy-types';
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // eslint-disable-next-line eslint-comments/disable-enable-pair
 /* eslint-disable max-lines */
