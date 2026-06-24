@@ -1,5 +1,14 @@
 # @transcend-io/sdk
 
+## 1.2.6
+
+### Patch Changes
+
+- 4ba5bfb: add consent variants and themes to inventory push/pull
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+  - @transcend-io/airgap.js-types@14.2.9
+
 ## 1.2.5
 
 ### Patch Changes
