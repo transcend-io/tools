@@ -54,6 +54,9 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin find-text-in-folder`](#transcend-admin-find-text-in-folder)
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
+
+  - [`transcend policy lint`](#transcend-policy-lint)
+
 - [Prompt Manager](#prompt-manager)
 - [Proxy usage](#proxy-usage)
 - [Using non-primary Sombra](#using-non-primary-sombra)
@@ -3644,6 +3647,28 @@ transcend migration sync-ot \
 
 ```sh
 transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --transcendAuth="$TRANSCEND_API_KEY"
+```
+
+### `transcend policy lint`
+
+```txt
+USAGE
+  transcend policy lint (--dir value)
+  transcend policy lint --help
+
+Runs `opa check --strict` and `opa fmt --diff` against a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+     --dir   Directory containing Rego policy files
+  -h --help  Print help information and exit
+```
+
+#### Examples
+
+**Lint a local policy directory**
+
+```sh
+transcend policy lint --dir=./policies
 ```
 
 <!-- COMMANDS_END -->
