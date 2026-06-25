@@ -55,6 +55,8 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
 
+  - [`transcend policy publish`](#transcend-policy-publish)
+
   - [`transcend policy eval`](#transcend-policy-eval)
 
   - [`transcend policy test`](#transcend-policy-test)
@@ -3720,6 +3722,57 @@ FLAGS
 ```sh
 transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
 ```
+
+### `transcend policy publish`
+
+```txt
+USAGE
+  transcend policy publish (--dir value) (--bundleName value) (--auth value) [--transcendUrl value] [--version value] [--description value] [--json]
+  transcend policy publish --help
+
+Builds an OPA bundle tarball from a local directory and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH and a Transcend API key with Manage Policy scope.
+
+FLAGS
+      --dir            Directory containing Rego policy files
+      --bundleName     Tenant-unique policy bundle name
+      --auth           The Transcend API key. Requires scopes: "Manage Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--version]       Version label (defaults to git SHA or timestamp)
+     [--description]   Optional description for the uploaded version
+     [--json]          Print the raw JSON API response                                              [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Publish a local policy directory as the main bundle**
+
+```sh
+transcend policy publish --dir=./policies --bundleName=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Publish with an explicit version label and description**
+
+```sh
+transcend policy publish \
+  --dir=./policies \
+  --bundleName=main \
+  --auth="$TRANSCEND_API_KEY" \
+  --version=2026-06-25 \
+  --description="Quarterly policy update"
+```
+
+**Publish to the US-hosted Transcend API**
+
+```sh
+transcend policy publish \
+  --dir=./policies \
+  --bundleName=common \
+  --auth="$TRANSCEND_API_KEY" \
+  --transcendUrl=https://api.us.transcend.io
+```
+
+Requires the **Manage Policy** scope on your API key.
 
 <!-- COMMANDS_END -->
 
