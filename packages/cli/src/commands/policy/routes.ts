@@ -1,5 +1,6 @@
 import { buildRouteMap } from '@stricli/core';
 
+import { activateCommand } from './activate/command.js';
 import { evalCommand } from './eval/command.js';
 import { lintCommand } from './lint/command.js';
 import { publishCommand } from './publish/command.js';
@@ -11,6 +12,7 @@ export const policyRoutes = buildRouteMap({
     test: testCommand,
     eval: evalCommand,
     publish: publishCommand,
+    activate: activateCommand,
   },
   docs: {
     brief: 'Policy Engine commands',
