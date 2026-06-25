@@ -55,6 +55,8 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
 
+  - [`transcend policy test`](#transcend-policy-test)
+
   - [`transcend policy lint`](#transcend-policy-lint)
 
 - [Prompt Manager](#prompt-manager)
@@ -3669,6 +3671,28 @@ FLAGS
 
 ```sh
 transcend policy lint --dir=./policies
+```
+
+### `transcend policy test`
+
+```txt
+USAGE
+  transcend policy test (--dir value)
+  transcend policy test --help
+
+Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+     --dir   Directory containing Rego policy files and tests
+  -h --help  Print help information and exit
+```
+
+#### Examples
+
+**Run tests in a local policy directory**
+
+```sh
+transcend policy test --dir=./policies
 ```
 
 <!-- COMMANDS_END -->
