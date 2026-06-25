@@ -55,6 +55,8 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
 
+  - [`transcend policy eval`](#transcend-policy-eval)
+
   - [`transcend policy test`](#transcend-policy-test)
 
   - [`transcend policy lint`](#transcend-policy-lint)
@@ -3693,6 +3695,30 @@ FLAGS
 
 ```sh
 transcend policy test --dir=./policies
+```
+
+### `transcend policy eval`
+
+```txt
+USAGE
+  transcend policy eval (--pkg value) (--input value) [--bundle value]
+  transcend policy eval --help
+
+Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+      --pkg      OPA package or query to evaluate (e.g. data.transcend.decision)
+      --input    Path to a JSON envelope input file
+     [--bundle]  Optional local policy bundle directory
+  -h  --help     Print help information and exit
+```
+
+#### Examples
+
+**Evaluate a decision query with a local envelope**
+
+```sh
+transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
 ```
 
 <!-- COMMANDS_END -->
