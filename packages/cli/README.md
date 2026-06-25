@@ -55,6 +55,8 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
 
+  - [`transcend policy list`](#transcend-policy-list)
+
   - [`transcend policy activate`](#transcend-policy-activate)
 
   - [`transcend policy publish`](#transcend-policy-publish)
@@ -3827,6 +3829,40 @@ transcend policy activate \
 ```
 
 Requires the **Activate Policy** scope on your API key.
+
+### `transcend policy list`
+
+```txt
+USAGE
+  transcend policy list (--auth value) [--transcendUrl value] [--limit value] [--offset value] [--json]
+  transcend policy list --help
+
+Lists policy bundles registered for the authenticated organization. Requires a Transcend API key with View Policy scope.
+
+FLAGS
+      --auth           The Transcend API key. Requires scopes: "View Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--limit]         Maximum number of bundles to return                                          [default = 50]
+     [--offset]        Number of records to skip before returning results                           [default = 0]
+     [--json]          Print the raw JSON API response                                              [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**List policy bundles for the current organization**
+
+```sh
+transcend policy list --auth="$TRANSCEND_API_KEY"
+```
+
+**Fetch the next page using offset pagination**
+
+```sh
+transcend policy list --auth="$TRANSCEND_API_KEY" --offset=50
+```
+
+Requires the **View Policy** scope on your API key.
 
 <!-- COMMANDS_END -->
 
