@@ -55,6 +55,8 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
 
+  - [`transcend policy versions`](#transcend-policy-versions)
+
   - [`transcend policy list`](#transcend-policy-list)
 
   - [`transcend policy activate`](#transcend-policy-activate)
@@ -3860,6 +3862,41 @@ transcend policy list --auth="$TRANSCEND_API_KEY"
 
 ```sh
 transcend policy list --auth="$TRANSCEND_API_KEY" --offset=50
+```
+
+Requires the **View Policy** scope on your API key.
+
+### `transcend policy versions`
+
+```txt
+USAGE
+  transcend policy versions (--bundleName value) (--auth value) [--transcendUrl value] [--limit value] [--after value] [--json]
+  transcend policy versions --help
+
+Resolves a bundle name to its UUID and lists uploaded versions. Requires a Transcend API key with View Policy scope.
+
+FLAGS
+      --bundleName     Tenant-unique policy bundle name
+      --auth           The Transcend API key. Requires scopes: "View Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--limit]         Maximum number of versions to return                                         [default = 50]
+     [--after]         Opaque cursor from a previous response pageInfo.endCursor
+     [--json]          Print the raw JSON API response                                              [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**List versions for a policy bundle**
+
+```sh
+transcend policy versions --bundleName=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Fetch the next page of versions using an after cursor**
+
+```sh
+transcend policy versions --bundleName=main --auth="$TRANSCEND_API_KEY" --after="$POLICY_VERSION_CURSOR"
 ```
 
 Requires the **View Policy** scope on your API key.
