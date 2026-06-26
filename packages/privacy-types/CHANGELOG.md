@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.3.0
+
+### Minor Changes
+
+- 6d56588: Add `RestartIdentifierStrategy` enum for DSR restart identifier handling (WAL-7712).
+
 ## 5.2.5
 
 ### Patch Changes
