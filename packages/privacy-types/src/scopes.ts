@@ -500,9 +500,9 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     products: [TranscendProduct.PolicyEngine],
   },
   [ScopeName.ActivatePolicyEngineBundles]: {
-    dependencies: [ScopeName.ViewPolicyEngineBundles],
+    dependencies: [ScopeName.ManagePolicyEngineBundles],
     description:
-      'Activate a Policy Engine bundle version, making it the live policy. Kept separate from Manage Policy so publish-only access can be granted without activation rights.',
+      'Activate a Policy Engine bundle version, making it the live policy. Includes all Manage Policy permissions.',
     title: 'Activate Policy',
     type: ScopeType.Modify,
     products: [TranscendProduct.PolicyEngine],
