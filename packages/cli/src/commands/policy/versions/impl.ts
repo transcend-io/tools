@@ -9,7 +9,7 @@ import {
   renderTable,
   resolveBundleIdByName,
   type PolicyBundleVersionListResponse,
-} from '../_helpers.js';
+} from '../helpers.js';
 
 /** CLI flags for `transcend policy versions`. */
 export interface VersionsCommandFlags {

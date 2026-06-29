@@ -16,7 +16,7 @@ import {
   resolveBundleIdByName,
   type CreatePolicyBundleResponse,
   type CreatePolicyBundleVersionResponse,
-} from '../_helpers.js';
+} from '../helpers.js';
 
 /** CLI flags for `transcend policy publish`. */
 export interface PublishCommandFlags {
