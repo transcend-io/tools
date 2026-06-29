@@ -5,8 +5,8 @@ import { list } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 
-vi.mock('../../_helpers.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../_helpers.js')>();
+vi.mock('../../helpers.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../helpers.js')>();
   return {
     ...actual,
     buildPolicyEngineClient: buildPolicyEngineClientMock,

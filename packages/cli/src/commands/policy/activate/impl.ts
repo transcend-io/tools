@@ -10,7 +10,7 @@ import {
   printResult,
   resolvePolicyBundleId,
   type ActivatePolicyBundleVersionResponse,
-} from '../_helpers.js';
+} from '../helpers.js';
 
 /** CLI flags for `transcend policy activate`. */
 export interface ActivateCommandFlags {

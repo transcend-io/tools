@@ -8,7 +8,7 @@ import {
   printResult,
   renderTable,
   type PolicyBundleListResponse,
-} from '../_helpers.js';
+} from '../helpers.js';
 
 /** CLI flags for `transcend policy list`. */
 export interface ListCommandFlags {
