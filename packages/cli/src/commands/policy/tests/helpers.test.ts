@@ -8,7 +8,7 @@ import {
   renderTable,
   resolveBundleIdByName,
   type PolicyBundleListResponse,
-} from '../_helpers.js';
+} from '../helpers.js';
 
 const spawnSyncMock = vi.hoisted(() => vi.fn());
 const gotExtendMock = vi.hoisted(() => vi.fn());
@@ -28,7 +28,7 @@ vi.mock('got', () => ({
   },
 }));
 
-describe('policy _helpers', () => {
+describe('policy helpers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
