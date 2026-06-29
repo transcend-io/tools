@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.3.2
+
+### Patch Changes
+
+- 0da7015: Updates ContentFlows to be camelCased
+
 ## 5.3.1
 
 ### Patch Changes
