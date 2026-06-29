@@ -1,5 +1,14 @@
 # @transcend-io/mcp
 
+## 0.4.23
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.19
+- @transcend-io/mcp-server-assessment@0.3.20
+- @transcend-io/mcp-server-consent@0.3.6
+- @transcend-io/mcp-server-dsr@0.3.20
+
 ## 0.4.22
 
 ### Patch Changes
