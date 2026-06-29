@@ -5,7 +5,7 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { logger } from '../../../logger.js';
-import { assertOpaInstalled, runOpa } from '../helpers.js';
+import { assertOpaInstalled, runOpa } from '../helpers/index.js';
 
 /** CLI flags for `transcend policy lint`. */
 export interface LintCommandFlags {
