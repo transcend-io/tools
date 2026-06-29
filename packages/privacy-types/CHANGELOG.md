@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.3.1
+
+### Patch Changes
+
+- 0ae4785: Make `ActivatePolicyEngineBundles` depend on `ManagePolicyEngineBundles` so the Activate scope includes all Manage and View policy permissions (LINK-7130).
+
 ## 5.3.0
 
 ### Minor Changes
