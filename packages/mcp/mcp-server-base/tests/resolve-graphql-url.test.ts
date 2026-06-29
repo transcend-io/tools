@@ -79,7 +79,7 @@ describe('resolveMcpGraphqlUrl', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true }),
+          json: async () => ({ isValid: true }),
         }),
     );
 
@@ -99,7 +99,7 @@ describe('resolveMcpGraphqlUrl', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ isValid: true }),
       }),
     );
 
@@ -118,7 +118,7 @@ describe('resolveMcpGraphqlUrl', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ isValid: true }),
       }),
     );
 

@@ -48,7 +48,7 @@ describe('initializeOAuthClient', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ isValid: true }),
       }),
     );
 
@@ -65,7 +65,7 @@ describe('initializeOAuthClient', () => {
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ isValid: true }),
       }),
     );
 
