@@ -59,9 +59,9 @@ export const ContentFlows = makeEnum({
   /** Items are stacked vertically, top to bottom */
   Vertical: 'vertical',
   /** Items are stacked horizontally, often wrapping if space runs out */
-  HorizontalStacked: 'horizontal-stacked',
+  HorizontalStacked: 'horizontalStacked',
   /** Items are laid out horizontally, in a single row */
-  HorizontalFlat: 'horizontal-flat',
+  HorizontalFlat: 'horizontalFlat',
 });
 
 /** Override type */
