@@ -9,8 +9,8 @@ const buildOpaBundleTarballMock = vi.hoisted(() => vi.fn());
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 const resolveBundleIdByNameMock = vi.hoisted(() => vi.fn());
 
-vi.mock('../../helpers.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../helpers.js')>();
+vi.mock('../../helpers/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../helpers/index.js')>();
   return {
     ...actual,
     buildOpaBundleTarball: buildOpaBundleTarballMock,
@@ -75,7 +75,7 @@ describe('publish', () => {
       json: true,
     });
 
-    expect(post).toHaveBeenCalledWith('api/v1/policy-engine/policy-bundles', expect.any(Object));
+    expect(post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', expect.any(Object));
     expect(stdout.write).toHaveBeenCalled();
   });
 
@@ -97,7 +97,7 @@ describe('publish', () => {
     });
 
     expect(post).toHaveBeenCalledWith(
-      'api/v1/policy-engine/policy-bundles/existing-bundle-id/versions',
+      'v1/policy-engine/policy-bundles/existing-bundle-id/versions',
       expect.any(Object),
     );
   });
