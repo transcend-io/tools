@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.7.0
+
+### Minor Changes
+
+- ad0a15c: Add `transcend policy test` subcommand for local OPA policy testing (LINK-7093).
+
 ## 10.6.0
 
 ### Minor Changes
