@@ -6,7 +6,7 @@ import { lint } from '../impl.js';
 const runOpaMock = vi.hoisted(() => vi.fn());
 const assertOpaInstalledMock = vi.hoisted(() => vi.fn());
 
-vi.mock('../../helpers.js', () => ({
+vi.mock('../../helpers/index.js', () => ({
   assertOpaInstalled: assertOpaInstalledMock,
   runOpa: runOpaMock,
 }));

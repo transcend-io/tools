@@ -3,12 +3,11 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { logger } from '../../../logger.js';
-import {
-  buildPolicyEngineClient,
-  printResult,
-  renderTable,
-  type PolicyBundleListResponse,
-} from '../helpers.js';
+import { buildPolicyEngineClient, printResult, renderTable } from '../helpers/index.js';
+import type { PolicyBundleListResponse } from '../types.js';
+
+/** Placeholder for nullable API fields in table output. */
+const EMPTY_CELL = '-';
 
 /** CLI flags for `transcend policy list`. */
 export interface ListCommandFlags {
@@ -41,7 +40,7 @@ export async function list(
   logger.info(colors.green('Listing policy bundles...'));
 
   const body = await client
-    .get('api/v1/policy-engine/policy-bundles', {
+    .get('v1/policy-engine/policy-bundles', {
       searchParams: { limit, offset },
     })
     .json<PolicyBundleListResponse>();
@@ -57,8 +56,8 @@ export async function list(
       const rows = body.nodes.map((bundle) => [
         bundle.id,
         bundle.bundleName,
-        bundle.activeVersionId ?? '-',
-        bundle.lastActivatedAt ?? '-',
+        bundle.activeVersionId ?? EMPTY_CELL,
+        bundle.lastActivatedAt ?? EMPTY_CELL,
         bundle.createdAt,
       ]);
 
