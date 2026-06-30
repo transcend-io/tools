@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.10.0
+
+### Minor Changes
+
+- 1bc461f: Add `transcend policy activate` subcommand for activating uploaded policy bundle versions.
+
 ## 10.9.0
 
 ### Minor Changes
