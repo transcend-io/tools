@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.6.0
+
+### Minor Changes
+
+- fa2fc88: Add `transcend policy lint` subcommand for local OPA policy validation.
+
 ## 10.5.11
 
 ### Patch Changes
