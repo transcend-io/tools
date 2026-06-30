@@ -3696,28 +3696,6 @@ FLAGS
 transcend policy lint --dir=./policies
 ```
 
-### `transcend policy test`
-
-```txt
-USAGE
-  transcend policy test (--dir value)
-  transcend policy test --help
-
-Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
-
-FLAGS
-     --dir   Directory containing Rego policy files and tests
-  -h --help  Print help information and exit
-```
-
-#### Examples
-
-**Run tests in a local policy directory**
-
-```sh
-transcend policy test --dir=./policies
-```
-
 ### `transcend policy publish`
 
 ```txt
@@ -3768,6 +3746,28 @@ transcend policy publish \
 ```
 
 Requires the **Manage Policy** scope on your API key.
+
+### `transcend policy test`
+
+```txt
+USAGE
+  transcend policy test (--dir value)
+  transcend policy test --help
+
+Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+     --dir   Directory containing Rego policy files and tests
+  -h --help  Print help information and exit
+```
+
+#### Examples
+
+**Run tests in a local policy directory**
+
+```sh
+transcend policy test --dir=./policies
+```
 
 <!-- COMMANDS_END -->
 
