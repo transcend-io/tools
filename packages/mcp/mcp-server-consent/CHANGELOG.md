@@ -1,5 +1,98 @@
 # @transcend-io/mcp-server-consent
 
+## 0.3.6
+
+### Patch Changes
+
+- Updated dependencies [0da7015]
+  - @transcend-io/privacy-types@5.3.2
+  - @transcend-io/sdk@1.2.9
+
+## 0.3.5
+
+### Patch Changes
+
+- Updated dependencies [0ae4785]
+  - @transcend-io/privacy-types@5.3.1
+  - @transcend-io/sdk@1.2.8
+
+## 0.3.4
+
+### Patch Changes
+
+- Updated dependencies [6d56588]
+  - @transcend-io/privacy-types@5.3.0
+  - @transcend-io/sdk@1.2.7
+
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+  - @transcend-io/sdk@1.2.6
+
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [0e20155]
+  - @transcend-io/privacy-types@5.2.4
+  - @transcend-io/sdk@1.2.5
+
+## 0.3.1
+
+### Patch Changes
+
+- @transcend-io/privacy-types@5.2.3
+- @transcend-io/sdk@1.2.4
+
+## 0.3.0
+
+### Minor Changes
+
+- c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
+
+### Patch Changes
+
+- Updated dependencies [c14ba60]
+  - @transcend-io/privacy-types@5.2.2
+  - @transcend-io/sdk@1.2.3
+
+## 0.2.16
+
+### Patch Changes
+
+- Updated dependencies [3741ca3]
+  - @transcend-io/privacy-types@5.2.1
+  - @transcend-io/sdk@1.2.2
+
+## 0.2.15
+
+### Patch Changes
+
+- Updated dependencies [bf944ab]
+- Updated dependencies [5538d24]
+  - @transcend-io/privacy-types@5.2.0
+  - @transcend-io/sdk@1.2.1
+
+## 0.2.14
+
+### Patch Changes
+
+- Updated dependencies [14459f8]
+  - @transcend-io/sdk@1.2.0
+
+## 0.2.13
+
+### Patch Changes
+
+- Updated dependencies [b90b468]
+- Updated dependencies [85f24d0]
+  - @transcend-io/privacy-types@5.1.8
+  - @transcend-io/mcp-server-base@0.4.5
+  - @transcend-io/sdk@1.1.11
+
 ## 0.2.12
 
 ### Patch Changes

@@ -10,10 +10,12 @@ export const ListVendorsSchema = z.object({
     .optional()
     .default(50)
     .describe('Results per page (1-100, default: 50)'),
-  cursor: z
-    .string()
+  offset: z.coerce
+    .number()
+    .min(0)
     .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
+    .default(0)
+    .describe('Number of results to skip for pagination (default: 0)'),
 });
 export type ListVendorsInput = z.infer<typeof ListVendorsSchema>;
 
@@ -22,15 +24,15 @@ export function createInventoryListVendorsTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_list_vendors',
     description:
-      'List all vendors (third-party data processors) in your organization. Note: API does not support cursor pagination (max ~100 results).',
+      'List vendors (third-party data processors) in your organization. Paginate with `offset` (increment by `limit`) until `hasNextPage` is false; `totalCount` is the full count.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListVendorsSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listVendors({
         first: limit,
-        after: cursor,
+        offset,
       });
 
       return createListResult(result.nodes, {

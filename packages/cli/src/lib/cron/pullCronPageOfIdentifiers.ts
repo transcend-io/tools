@@ -6,31 +6,50 @@ import * as t from 'io-ts';
 
 import { logger } from '../../logger.js';
 
-export const CronIdentifier = t.type({
-  /** The identifier value */
-  identifier: t.string,
-  /** The type of identifier */
-  type: t.string,
-  /** The core identifier of the request */
-  coreIdentifier: t.string,
-  /** The ID of the underlying data silo */
-  dataSiloId: t.string,
-  /** The ID of the underlying request */
-  requestId: t.string,
-  /** The request nonce */
-  nonce: t.string,
-  /** The time the request was created */
-  requestCreatedAt: t.string,
-  /** The number of days until the request is overdue */
-  daysUntilOverdue: t.number,
-  /** Request attributes */
-  attributes: t.array(
-    t.type({
-      key: t.string,
-      values: t.array(t.string),
-    }),
-  ),
+/** Consent partition metadata when a DSR is scoped to a partition */
+export const CronPartition = t.type({
+  /** ID of the partition */
+  id: t.string,
+  /** The human readable name of the partition */
+  name: t.string,
+  /** The unique identifying partition value */
+  partition: t.string,
 });
+
+/** Type override */
+export type CronPartition = t.TypeOf<typeof CronPartition>;
+
+export const CronIdentifier = t.intersection([
+  t.type({
+    /** The identifier value */
+    identifier: t.string,
+    /** The type of identifier */
+    type: t.string,
+    /** The core identifier of the request */
+    coreIdentifier: t.string,
+    /** The ID of the underlying data silo */
+    dataSiloId: t.string,
+    /** The ID of the underlying request */
+    requestId: t.string,
+    /** The request nonce */
+    nonce: t.string,
+    /** The time the request was created */
+    requestCreatedAt: t.string,
+    /** The number of days until the request is overdue */
+    daysUntilOverdue: t.number,
+    /** Request attributes */
+    attributes: t.array(
+      t.type({
+        key: t.string,
+        values: t.array(t.string),
+      }),
+    ),
+  }),
+  t.partial({
+    /** The consent partition that scopes this request, when applicable */
+    partition: t.union([CronPartition, t.null]),
+  }),
+]);
 
 /** Type override */
 export type CronIdentifier = t.TypeOf<typeof CronIdentifier>;

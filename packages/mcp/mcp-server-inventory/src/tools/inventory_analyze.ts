@@ -19,18 +19,21 @@ export function createInventoryAnalyzeTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: EmptySchema,
     handler: async (_args) => {
+      // `all: true` fully paginates each entity so the reported totals and
+      // breakdowns are accurate for orgs with >100 of any.
       const [dataSilosResult, vendorsResult, identifiersResult, categoriesResult] =
         await Promise.all([
-          graphql.listDataSilos({ first: 100 }),
-          graphql.listVendors({ first: 100 }),
-          graphql.listIdentifiers({ first: 100 }),
-          graphql.listDataCategories({ first: 100 }),
+          graphql.listDataSilos({ all: true }),
+          graphql.listVendors({ all: true }),
+          graphql.listIdentifiers({ all: true }),
+          graphql.listDataCategories({ all: true }),
         ]);
 
       const dataSilos = dataSilosResult.nodes;
       const vendors = vendorsResult.nodes;
       const identifiers = identifiersResult.nodes;
       const categories = categoriesResult.nodes;
+      const totalCategories = categories.length;
 
       const liveDataSilos = dataSilos.filter((ds) => ds.isLive);
 
@@ -40,7 +43,7 @@ export function createInventoryAnalyzeTool(clients: ToolClients) {
           liveDataSilos: liveDataSilos.length,
           totalVendors: vendors.length,
           totalIdentifiers: identifiers.length,
-          totalCategories: categories.length,
+          totalCategories,
         },
         breakdown: {
           dataSilosByType: groupBy(dataSilos, 'type'),

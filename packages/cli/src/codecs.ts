@@ -58,6 +58,8 @@ import {
   Controllership,
   RetentionType,
   DataProtectionImpactAssessmentStatus,
+  ConsentThemeInput,
+  ConsentVariantInput,
 } from '@transcend-io/privacy-types';
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // eslint-disable-next-line eslint-comments/disable-enable-pair
@@ -134,6 +136,8 @@ export const TeamInput = t.intersection([
     'sso-group': t.string,
     /** SSO title mapping for automated provisioning */
     'sso-title': t.string,
+    /** Parent organization team name to link this team to */
+    'parent-team-name': t.string,
     /** List of user emails on the team */
     users: t.array(t.string),
     /** List of scopes that the team should have */
@@ -1229,6 +1233,8 @@ export const ConsentManageExperienceInput = t.intersection([
     browserLanguages: t.array(valuesOf(BrowserLanguage)),
     /** Browser time zones that define this regional experience */
     browserTimeZones: t.array(valuesOf(BrowserTimeZone)),
+    /** ID of the consent UI variant assigned to this experience */
+    consentUiVariantSlug: t.string,
   }),
 ]);
 
@@ -1286,6 +1292,8 @@ export const ConsentManagerInput = t.partial({
   // TODO: https://transcend.height.app/T-23919 - reconsider simpler yml shape
   /** The Shared XDI host sync groups config (JSON) for this airgap bundle */
   syncGroups: t.string,
+  consentVariants: t.array(ConsentVariantInput),
+  consentThemes: t.array(ConsentThemeInput),
 });
 
 /** Type override */

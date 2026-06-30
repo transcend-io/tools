@@ -157,7 +157,8 @@
                   "STRUCTURED_DISCOVERY",
                   "UNSTRUCTURED_DISCOVERY",
                   "DATA_LINEAGE",
-                  "RULES_AUTOMATION"
+                  "RULES_AUTOMATION",
+                  "POLICY_ENGINE"
                 ]
               }
             }
@@ -214,6 +215,9 @@
                 "type": "string"
               },
               "sso-title": {
+                "type": "string"
+              },
+              "parent-team-name": {
                 "type": "string"
               },
               "users": {
@@ -313,6 +317,9 @@
                     "viewPreferenceStoreSettings",
                     "managePolicies",
                     "viewPolicies",
+                    "viewPolicyEngineBundles",
+                    "managePolicyEngineBundles",
+                    "activatePolicyEngineBundles",
                     "manageIntlMessages",
                     "viewIntlMessages",
                     "llmLogTransfer",
@@ -40323,6 +40330,9 @@
                         "Pacific/Wallis"
                       ]
                     }
+                  },
+                  "consentUiVariantSlug": {
+                    "type": "string"
                   }
                 }
               }
@@ -40348,6 +40358,274 @@
         },
         "syncGroups": {
           "type": "string"
+        },
+        "consentVariants": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "type": "object",
+                "required": ["id", "name", "slug", "status", "locales", "configuration"],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["DRAFT", "ACTIVE", "PUBLISHED"]
+                  },
+                  "locales": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "en",
+                        "ar",
+                        "fr",
+                        "es",
+                        "de",
+                        "it",
+                        "ja",
+                        "ru",
+                        "af",
+                        "bg",
+                        "zh",
+                        "hr",
+                        "cs",
+                        "da",
+                        "fi",
+                        "el",
+                        "hi",
+                        "hu",
+                        "ko",
+                        "lt",
+                        "ms",
+                        "mr",
+                        "nb",
+                        "no",
+                        "pl",
+                        "pt",
+                        "ro",
+                        "sr",
+                        "sv",
+                        "ta",
+                        "th",
+                        "tr",
+                        "uk",
+                        "vi",
+                        "zu",
+                        "he",
+                        "iw",
+                        "nl",
+                        "et",
+                        "is",
+                        "lv",
+                        "mt",
+                        "sk",
+                        "sl",
+                        "fil",
+                        "bs",
+                        "ca",
+                        "eu",
+                        "gl",
+                        "dv",
+                        "ur",
+                        "sq",
+                        "am",
+                        "hy",
+                        "az",
+                        "bn",
+                        "fa-AF",
+                        "fa",
+                        "tl",
+                        "ka",
+                        "gu",
+                        "ht",
+                        "ha",
+                        "ga",
+                        "kn",
+                        "kk",
+                        "mk",
+                        "ml",
+                        "mn",
+                        "ps",
+                        "pa",
+                        "si",
+                        "so",
+                        "sw",
+                        "te",
+                        "uz",
+                        "cy",
+                        "ar-AE",
+                        "fr-FR",
+                        "de-DE",
+                        "de-AT",
+                        "de-CH",
+                        "it-IT",
+                        "it-CH",
+                        "af-ZA",
+                        "bg-BG",
+                        "zh-CN",
+                        "zh-TW",
+                        "zh-Hans",
+                        "hr-HR",
+                        "cs-CZ",
+                        "da-DK",
+                        "en-GB",
+                        "en-CA",
+                        "en-AE",
+                        "fi-FI",
+                        "el-GR",
+                        "hi-IN",
+                        "hu-HU",
+                        "id-ID",
+                        "ja-JP",
+                        "ko-KR",
+                        "lt-LT",
+                        "ms-MY",
+                        "ms-SG",
+                        "mr-IN",
+                        "no-NO",
+                        "nb-NO",
+                        "pl-PL",
+                        "pt-BR",
+                        "pt-PT",
+                        "ro-RO",
+                        "ru-RU",
+                        "sr-Latn-RS",
+                        "sr-Cyrl-RS",
+                        "sv-SE",
+                        "ta-IN",
+                        "th-TH",
+                        "tr-TR",
+                        "uk-UA",
+                        "vi-VN",
+                        "zu-ZA",
+                        "en-US",
+                        "en-AU",
+                        "fr-BE",
+                        "fr-CA",
+                        "fr-CH",
+                        "en-IE",
+                        "nl-NL",
+                        "nl-BE",
+                        "es-ES",
+                        "es-AR",
+                        "es-CR",
+                        "es-CL",
+                        "es-CO",
+                        "es-MX",
+                        "es-419",
+                        "zh-HK",
+                        "he-IL",
+                        "iw-IL",
+                        "en-NZ",
+                        "et-EE",
+                        "is-IS",
+                        "lv-LV",
+                        "mt-MT",
+                        "sk-SK",
+                        "sl-SL",
+                        "fil-PH",
+                        "sq-AL",
+                        "sq-MK",
+                        "sq-XK",
+                        "am-ET",
+                        "hy-AM",
+                        "az-AZ",
+                        "bn-BD",
+                        "bn-IN",
+                        "bs-BA",
+                        "bs-Cyrl-BA",
+                        "bs-Latn-BA",
+                        "ca-ES",
+                        "ca-AD",
+                        "ca-FR",
+                        "ca-IT",
+                        "tl-PH",
+                        "ka-GE",
+                        "gu-IN",
+                        "ht-HT",
+                        "ha-NG",
+                        "ha-NE",
+                        "ha-GH",
+                        "ga-IE",
+                        "kn-IN",
+                        "kk-KZ",
+                        "mk-MK",
+                        "ml-IN",
+                        "mn-MN",
+                        "ps-AF",
+                        "pa-Guru-IN",
+                        "pa-Arab-PK",
+                        "si-LK",
+                        "so-SO",
+                        "so-DJ",
+                        "so-ET",
+                        "so-KE",
+                        "sw-KE",
+                        "sw-TZ",
+                        "sw-UG",
+                        "sw-CD",
+                        "te-IN",
+                        "ur-PK",
+                        "ur-IN",
+                        "uz-UZ",
+                        "cy-GB",
+                        "eu-ES",
+                        "gl-ES"
+                      ]
+                    }
+                  },
+                  "configuration": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "description": {
+                    "type": "string"
+                  },
+                  "userFlow": {
+                    "type": "string",
+                    "enum": ["BANNER", "MODAL", "BANNER_AND_MODAL"]
+                  },
+                  "themeSlug": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "consentThemes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "slug", "configuration"],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "slug": {
+                "type": "string"
+              },
+              "configuration": {
+                "type": "string"
+              }
+            }
+          }
         }
       }
     },
@@ -41099,6 +41377,12 @@
                   "type": "string"
                 },
                 "modal": {
+                  "type": "string"
+                },
+                "footer": {
+                  "type": "string"
+                },
+                "footerLink": {
                   "type": "string"
                 }
               }

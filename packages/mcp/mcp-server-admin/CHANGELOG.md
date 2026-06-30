@@ -1,5 +1,78 @@
 # @transcend-io/mcp-server-admin
 
+## 0.3.19
+
+### Patch Changes
+
+- Updated dependencies [0da7015]
+  - @transcend-io/privacy-types@5.3.2
+
+## 0.3.18
+
+### Patch Changes
+
+- Updated dependencies [0ae4785]
+  - @transcend-io/privacy-types@5.3.1
+
+## 0.3.17
+
+### Patch Changes
+
+- Updated dependencies [6d56588]
+  - @transcend-io/privacy-types@5.3.0
+
+## 0.3.16
+
+### Patch Changes
+
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+
+## 0.3.15
+
+### Patch Changes
+
+- Updated dependencies [0e20155]
+  - @transcend-io/privacy-types@5.2.4
+
+## 0.3.14
+
+### Patch Changes
+
+- @transcend-io/privacy-types@5.2.3
+
+## 0.3.13
+
+### Patch Changes
+
+- Updated dependencies [c14ba60]
+  - @transcend-io/privacy-types@5.2.2
+
+## 0.3.12
+
+### Patch Changes
+
+- Updated dependencies [3741ca3]
+  - @transcend-io/privacy-types@5.2.1
+
+## 0.3.11
+
+### Patch Changes
+
+- Updated dependencies [bf944ab]
+- Updated dependencies [5538d24]
+  - @transcend-io/privacy-types@5.2.0
+
+## 0.3.10
+
+### Patch Changes
+
+- 6d32f5e: Fix `admin_create_api_key` GraphQL mutation. The previous document selected `scopes` without subfields and read a non-existent top-level `token` field, causing every invocation to fail with `GRAPHQL_VALIDATION_FAILED`. The mutation now selects `scopes { id name }` and reads the plain-text token from its real location at `createApiKey.apiKey.apiKey`. The public return shape `{ apiKey, token }` is unchanged.
+- Updated dependencies [b90b468]
+- Updated dependencies [85f24d0]
+  - @transcend-io/privacy-types@5.1.8
+  - @transcend-io/mcp-server-base@0.4.5
+
 ## 0.3.9
 
 ### Patch Changes

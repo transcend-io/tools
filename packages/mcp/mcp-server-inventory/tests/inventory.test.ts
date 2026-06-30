@@ -97,7 +97,7 @@ describe('Inventory Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
 
-      const result = await tool.handler({ limit: 10 });
+      const result = await tool.handler({ limit: 10, offset: 0 });
 
       expect(result).toMatchObject({
         success: true,
@@ -107,7 +107,25 @@ describe('Inventory Tools', () => {
       });
       expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
         first: 10,
-        after: undefined,
+        offset: 0,
+      });
+    });
+
+    it('forwards offset for pagination', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue({
+        nodes: [],
+        totalCount: 261,
+        pageInfo: { hasNextPage: false, hasPreviousPage: true },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+
+      await tool.handler({ limit: 100, offset: 100 });
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
+        first: 100,
+        offset: 100,
       });
     });
 
@@ -118,6 +136,72 @@ describe('Inventory Tools', () => {
       const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
+    });
+  });
+
+  describe('inventory_analyze', () => {
+    it('reports fully paginated totals and breakdowns, not capped page lengths', async () => {
+      // `inventory_analyze` calls each list* with `{ all: true }`; the mocks
+      // return the fully-paginated result set as a single page.
+      const allPages = <T>(nodes: T[]) => ({
+        nodes,
+        totalCount: nodes.length,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+      // Simulate an org with >100 of several entity types.
+      mockGraphql.listDataSilos.mockResolvedValue(
+        allPages([
+          { id: '1', title: 'A', type: 'database', isLive: true },
+          { id: '2', title: 'B', type: 'database', isLive: false, outerType: 'sombra' },
+          { id: '3', title: 'C', type: 'api', isLive: true },
+        ]),
+      );
+      mockGraphql.listVendors.mockResolvedValue(
+        allPages(Array.from({ length: 150 }, (_, i) => ({ id: String(i), title: `V${i}` }))),
+      );
+      mockGraphql.listIdentifiers.mockResolvedValue(
+        allPages([{ id: 'e', name: 'email', type: 'EMAIL', isRequiredInForm: true }]),
+      );
+      mockGraphql.listDataCategories.mockResolvedValue(
+        allPages(Array.from({ length: 250 }, (_, i) => ({ name: `Cat${i}`, category: 'CONTACT' }))),
+      );
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_analyze')!;
+
+      const result = (await tool.handler({})) as {
+        success: boolean;
+        data: {
+          summary: {
+            totalDataSilos: number;
+            liveDataSilos: number;
+            totalVendors: number;
+            totalIdentifiers: number;
+            totalCategories: number;
+          };
+          breakdown: {
+            dataSilosByType: Record<string, number>;
+            dataSilosByOuterType: Record<string, number>;
+          };
+          topIdentifiers: { name: string; type: string; isRequired?: boolean }[];
+        };
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data.summary).toMatchObject({
+        totalDataSilos: 3,
+        liveDataSilos: 2,
+        totalVendors: 150,
+        totalIdentifiers: 1,
+        totalCategories: 250,
+      });
+      expect(result.data.breakdown.dataSilosByType).toEqual({ database: 2, api: 1 });
+      expect(result.data.breakdown.dataSilosByOuterType).toEqual({ sombra: 1 });
+      expect(result.data.topIdentifiers[0]).toEqual({
+        name: 'email',
+        type: 'EMAIL',
+        isRequired: true,
+      });
     });
   });
 });

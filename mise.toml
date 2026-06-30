@@ -1,6 +1,7 @@
 min_version = "2026.3.17"
 
 [settings]
+idiomatic_version_file_enable_tools = ["node"]
 experimental = true
 lockfile = true
 
@@ -11,23 +12,12 @@ postinstall = "npx corepack enable"
 _.path = ["{{config_root}}/node_modules/.bin"]
 
 [tools]
-node = "22.22.0"
 shellcheck = "0.11.0"
-
-[tasks.bootstrap-ci]
-description = "Install workspace dependencies with pnpm"
-run = '''
-if [ "${CI:-}" = "true" ]; then
-  pnpm install --frozen-lockfile
-else
-  pnpm install
-fi
-'''
 
 [tasks.bootstrap]
 description = "Set up workspace"
-depends = ["bootstrap-ci"]
 run = '''
+pnpm install
 pnpm build
 pnpm quality
 '''

@@ -16,19 +16,11 @@ import {
 
 import { graphql } from './__generated__/gql.js';
 
-const ListDataSilosDoc = graphql(/* GraphQL */ `
-  query InventoryListDataSilos($first: Int) {
-    dataSilos(first: $first) {
-      nodes {
-        id
-        title
-        type
-      }
-      totalCount
-    }
-  }
-`);
-
+// The single-fetch operations (get/create/update) use the typed `graphql()`
+// tag so drift fails at compile time. The `list*` methods below intentionally
+// keep raw query strings because they route through `listConnection`, the
+// shared offset-pagination engine in mcp-server-base that also powers the
+// `all` (fetch-every-page) option.
 const GetDataSiloDoc = graphql(/* GraphQL */ `
   query InventoryGetDataSilo($id: String!) {
     dataSilo(id: $id) {
@@ -84,74 +76,6 @@ const UpdateDataSilosDoc = graphql(/* GraphQL */ `
   }
 `);
 
-const ListVendorsDoc = graphql(/* GraphQL */ `
-  query InventoryListVendors($first: Int) {
-    vendors(first: $first) {
-      nodes {
-        id
-        title
-      }
-      totalCount
-    }
-  }
-`);
-
-const ListDataPointsDoc = graphql(/* GraphQL */ `
-  query InventoryListDataPoints($first: Int) {
-    dataPoints(first: $first) {
-      nodes {
-        id
-        name
-        title {
-          defaultMessage
-        }
-        description {
-          defaultMessage
-        }
-      }
-      totalCount
-    }
-  }
-`);
-
-const ListSubDataPointsDoc = graphql(/* GraphQL */ `
-  query InventoryListSubDataPoints($first: Int, $offset: Int, $filterBy: SubDataPointFiltersInput) {
-    subDataPoints(first: $first, offset: $offset, filterBy: $filterBy) {
-      nodes {
-        id
-        name
-        description
-      }
-      totalCount
-    }
-  }
-`);
-
-const ListIdentifiersDoc = graphql(/* GraphQL */ `
-  query InventoryListIdentifiers($first: Int) {
-    identifiers(first: $first) {
-      nodes {
-        id
-        name
-        type
-      }
-      totalCount
-    }
-  }
-`);
-
-const ListDataCategoriesDoc = graphql(/* GraphQL */ `
-  query InventoryListDataCategories($first: Int) {
-    dataCategories(first: $first) {
-      nodes {
-        name
-        category
-      }
-      totalCount
-    }
-  }
-`);
-
 function mapDataSilo<
   T extends { id: string; title: string; type: string; description?: string | null },
 >(node: T): DataSilo {
@@ -167,23 +91,21 @@ function mapDataSilo<
 
 export class InventoryMixin extends TranscendGraphQLBase {
   async listDataSilos(options?: ListOptions): Promise<PaginatedResponse<DataSilo>> {
-    const data = await this.makeRequest(ListDataSilosDoc, {
-      first: Math.min(options?.first ?? 100, 100),
-    });
-    return {
-      nodes: data.dataSilos.nodes.map((node) => ({
-        id: node.id,
-        title: node.title,
-        type: node.type as DataSiloType,
-        isLive: false,
-        createdAt: '',
-      })),
-      pageInfo: {
-        hasNextPage: data.dataSilos.nodes.length < data.dataSilos.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.dataSilos.totalCount,
-    };
+    const query = `
+      query ListDataSilos($first: Int, $offset: Int) {
+        dataSilos(first: $first, offset: $offset) {
+          nodes {
+            id
+            title
+            type
+            isLive
+            outerType
+          }
+          totalCount
+        }
+      }
+    `;
+    return this.listConnection<DataSilo>(query, 'dataSilos', options);
   }
 
   async getDataSilo(id: string): Promise<DataSiloDetails> {
@@ -224,104 +146,111 @@ export class InventoryMixin extends TranscendGraphQLBase {
   }
 
   async listVendors(options?: ListOptions): Promise<PaginatedResponse<Vendor>> {
-    const data = await this.makeRequest(ListVendorsDoc, {
-      first: Math.min(options?.first ?? 100, 100),
-    });
-    return {
-      nodes: data.vendors.nodes.map((v) => ({
-        id: v.id,
-        title: v.title,
-        createdAt: '',
-      })),
-      pageInfo: {
-        hasNextPage: data.vendors.nodes.length < data.vendors.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.vendors.totalCount,
-    };
+    const query = `
+      query ListVendors($first: Int, $offset: Int) {
+        vendors(first: $first, offset: $offset) {
+          nodes {
+            id
+            title
+          }
+          totalCount
+        }
+      }
+    `;
+    return this.listConnection<Vendor>(query, 'vendors', options);
   }
 
   async listDataPoints(
     _dataSiloId?: string,
     options?: ListOptions,
   ): Promise<PaginatedResponse<DataPoint>> {
-    const data = await this.makeRequest(ListDataPointsDoc, {
-      first: Math.min(options?.first ?? 100, 100),
-    });
-    const points: DataPoint[] = data.dataPoints.nodes.map((dp) => ({
+    const query = `
+      query ListDataPoints($first: Int, $offset: Int) {
+        dataPoints(first: $first, offset: $offset) {
+          nodes {
+            id
+            name
+            title {
+              defaultMessage
+            }
+            description {
+              defaultMessage
+            }
+          }
+          totalCount
+        }
+      }
+    `;
+    type RawDataPoint = {
+      id: string;
+      name: string;
+      title: { defaultMessage: string };
+      description: { defaultMessage: string } | null;
+    };
+    const toDataPoint = (dp: RawDataPoint): DataPoint => ({
       id: dp.id,
       name: dp.name,
       title: dp.title?.defaultMessage,
       description: dp.description?.defaultMessage,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }));
-    return {
-      nodes: points,
-      pageInfo: { hasNextPage: points.length < data.dataPoints.totalCount, hasPreviousPage: false },
-      totalCount: data.dataPoints.totalCount,
-    };
+    });
+    return this.listConnection<RawDataPoint, DataPoint>(query, 'dataPoints', options, {
+      mapNode: toDataPoint,
+    });
   }
 
   async listSubDataPoints(
     dataPointId: string,
     options?: ListOptions,
   ): Promise<PaginatedResponse<SubDataPoint>> {
-    const data = await this.makeRequest(ListSubDataPointsDoc, {
-      first: Math.min(options?.first ?? 100, 100),
-      offset: options?.offset ?? 0,
-      filterBy: { dataPoints: [dataPointId] },
+    const query = `
+      query ListSubDataPoints($first: Int, $offset: Int, $filterBy: SubDataPointFiltersInput) {
+        subDataPoints(first: $first, offset: $offset, filterBy: $filterBy) {
+          nodes {
+            id
+            name
+            description
+            accessRequestVisibilityEnabled
+          }
+          totalCount
+        }
+      }
+    `;
+    return this.listConnection<SubDataPoint>(query, 'subDataPoints', options, {
+      variables: { filterBy: { dataPoints: [dataPointId] } },
     });
-    return {
-      nodes: data.subDataPoints.nodes.map((node) => ({
-        id: node.id,
-        name: node.name,
-        description: node.description ?? undefined,
-      })),
-      pageInfo: {
-        hasNextPage: data.subDataPoints.nodes.length < data.subDataPoints.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.subDataPoints.totalCount,
-    };
   }
 
   async listIdentifiers(options?: ListOptions): Promise<PaginatedResponse<Identifier>> {
-    const data = await this.makeRequest(ListIdentifiersDoc, {
-      first: Math.min(options?.first ?? 100, 100),
-    });
-    return {
-      nodes: data.identifiers.nodes.map((idf) => ({
-        id: idf.id,
-        name: idf.name,
-        type: idf.type,
-      })),
-      pageInfo: {
-        hasNextPage: data.identifiers.nodes.length < data.identifiers.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.identifiers.totalCount,
-    };
+    const query = `
+      query ListIdentifiers($first: Int, $offset: Int) {
+        identifiers(first: $first, offset: $offset) {
+          nodes {
+            id
+            name
+            type
+            isRequiredInForm
+          }
+          totalCount
+        }
+      }
+    `;
+    return this.listConnection<Identifier>(query, 'identifiers', options);
   }
 
   async listDataCategories(options?: ListOptions): Promise<PaginatedResponse<DataCategory>> {
-    const data = await this.makeRequest(ListDataCategoriesDoc, {
-      first: Math.min(options?.first ?? 100, 100),
-    });
-    return {
-      nodes: data.dataCategories.nodes.map((cat) => ({
-        // The dataCategories list endpoint doesn't expose a stable id; use
-        // category::name as a synthetic key. Codegen now flags drift here
-        // -- if Transcend ever surfaces a real `id`, update the selection.
-        id: `${cat.category}::${cat.name ?? ''}`,
-        name: cat.name ?? '',
-        category: cat.category as string,
-      })),
-      pageInfo: {
-        hasNextPage: data.dataCategories.nodes.length < data.dataCategories.totalCount,
-        hasPreviousPage: false,
-      },
-      totalCount: data.dataCategories.totalCount,
-    };
+    const query = `
+      query ListDataCategories($first: Int, $offset: Int) {
+        dataCategories(first: $first, offset: $offset) {
+          nodes {
+            name
+            category
+          }
+          totalCount
+        }
+      }
+    `;
+    return this.listConnection<DataCategory>(query, 'dataCategories', options);
   }
 }

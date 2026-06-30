@@ -83,10 +83,10 @@ See [pnpm Filtering](https://pnpm.io/filtering) for more examples.
 
 ### Release Workflow
 
-Stable releases are driven by Changesets and the [Release workflow](.github/workflows/release.yml):
+Stable releases are driven by Changesets, the [Version workflow](.github/workflows/version.yml), and the [Publish workflow](.github/workflows/publish.yml):
 
 1. Developers merge feature PRs with changesets into `main`.
-2. The `Release` workflow automatically opens a release PR, titled "Version Packages".
+2. The `Version` workflow automatically opens a release PR, titled "Version Packages".
 
    _Or, if there's already an open release PR, then that PR will be updated instead._
 
@@ -95,7 +95,7 @@ Stable releases are driven by Changesets and the [Release workflow](.github/work
    - Package versions are bumped accordingly.
    - [Here's an example of a release PR](https://github.com/transcend-io/tools/pull/24).
 
-3. When the release PR is merged, the `Release` workflow publishes the packages to npm.
+3. When the release PR is merged, the `Publish` workflow publishes the packages to npm.
 
 Thus, after you merge a feature PR, you can either:
 
@@ -131,16 +131,17 @@ Pull requests also get preview packages via `pkg.pr.new`, which you'll see as an
 
 ### Trusted Publishing
 
-This repo is set up for npm trusted publishing via GitHub OIDC. The workflow has `id-token: write`,
-and normal publishing should not require a long-lived `NPM_TOKEN`. Each published package still has
-to be configured in npm to trust this repository and workflow.
+This repo is set up for npm trusted publishing via GitHub OIDC. The publish workflow has
+`id-token: write`, and normal publishing should not require a long-lived `NPM_TOKEN`. Each
+published package still has to be configured in npm to trust this repository and the
+`publish.yml` workflow filename.
 
-If npm trusted publishing is not configured for a package, the release workflow will build and
+If npm trusted publishing is not configured for a package, the publish workflow will build and
 version correctly but fail at publish time.
 
 ### Manual Releases
 
-`release.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
+`publish.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
 release path.
 
 ## Turborepo

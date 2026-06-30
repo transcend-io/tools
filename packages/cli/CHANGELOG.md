@@ -1,5 +1,158 @@
 # @transcend-io/cli
 
+## 10.8.0
+
+### Minor Changes
+
+- 34eb0a1: Add `transcend policy eval` subcommand for local OPA policy debugging.
+
+## 10.7.0
+
+### Minor Changes
+
+- ad0a15c: Add `transcend policy test` subcommand for local OPA policy testing.
+
+## 10.6.0
+
+### Minor Changes
+
+- fa2fc88: Add `transcend policy lint` subcommand for local OPA policy validation.
+
+## 10.5.11
+
+### Patch Changes
+
+- 45f7c5a: Add shared Policy Engine CLI helpers for OPA checks, REST client setup, bundle upload utilities, and table rendering.
+
+## 10.5.10
+
+### Patch Changes
+
+- Updated dependencies [0da7015]
+  - @transcend-io/privacy-types@5.3.2
+  - @transcend-io/airgap.js-types@14.2.12
+  - @transcend-io/sdk@1.2.9
+
+## 10.5.9
+
+### Patch Changes
+
+- Updated dependencies [0ae4785]
+  - @transcend-io/privacy-types@5.3.1
+  - @transcend-io/airgap.js-types@14.2.11
+  - @transcend-io/sdk@1.2.8
+
+## 10.5.8
+
+### Patch Changes
+
+- Updated dependencies [6d56588]
+  - @transcend-io/privacy-types@5.3.0
+  - @transcend-io/airgap.js-types@14.2.10
+  - @transcend-io/sdk@1.2.7
+
+## 10.5.7
+
+### Patch Changes
+
+- 4ba5bfb: add consent variants and themes to inventory push/pull
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+  - @transcend-io/sdk@1.2.6
+  - @transcend-io/airgap.js-types@14.2.9
+
+## 10.5.5
+
+### Patch Changes
+
+- 32affea: Update undici
+
+## 10.5.4
+
+### Patch Changes
+
+- Updated dependencies [0e20155]
+  - @transcend-io/privacy-types@5.2.4
+  - @transcend-io/airgap.js-types@14.2.8
+  - @transcend-io/sdk@1.2.5
+
+## 10.5.3
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+  - @transcend-io/airgap.js-types@14.2.7
+  - @transcend-io/privacy-types@5.2.3
+  - @transcend-io/sdk@1.2.4
+
+## 10.5.2
+
+### Patch Changes
+
+- c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
+- Updated dependencies [c14ba60]
+  - @transcend-io/privacy-types@5.2.2
+  - @transcend-io/sdk@1.2.3
+  - @transcend-io/airgap.js-types@14.2.6
+
+## 10.5.1
+
+### Patch Changes
+
+- 93fd511: Extract the shared `splitDateRange` helper used by the request export and pull commands into a single module, removing the duplicated copies.
+- 3741ca3: Add `Footer` (`footer`) and `FooterLink` (`footerLink`) to the `CustomizableComponent` enum for Privacy Center footer CSS overrides. Regenerate the CLI `transcend.yml` JSON schema so the new components are reflected.
+- Updated dependencies [3741ca3]
+  - @transcend-io/privacy-types@5.2.1
+  - @transcend-io/airgap.js-types@14.2.5
+  - @transcend-io/sdk@1.2.2
+
+## 10.5.0
+
+### Minor Changes
+
+- 5538d24: Add Policy Engine (Seneca) control-plane scopes to the AD scope catalog: `ViewPolicyEngineBundles`, `ManagePolicyEngineBundles`, and `ActivatePolicyEngineBundles` (wire values `viewPolicyEngineBundles` / `managePolicyEngineBundles` / `activatePolicyEngineBundles`), titled "View Policy" / "Manage Policy" / "Activate Policy". These authorize the new `/api/v1/policy-engine/*` REST endpoints on the monolith. Also adds a new `TranscendProduct.PolicyEngine` enum value.
+
+  To disambiguate from the new Policy Engine scopes, the two existing Privacy Center scopes are retitled: `ViewPolicies` "View Policies" → "View Privacy Center Policies", and `ManagePolicies` "Manage Policies" → "Manage Privacy Center Policies". Their enum names and wire values (`viewPolicies` / `managePolicies`) are unchanged, so stored API-key scopes and authorization are unaffected.
+
+  Note: the `transcend admin generate-api-keys --scopes` CLI flag accepts scope **titles**, so the accepted values for the two retitled scopes change accordingly ("View Policies" → "View Privacy Center Policies", "Manage Policies" → "Manage Privacy Center Policies"). Automation passing the old titles must be updated.
+
+### Patch Changes
+
+- Updated dependencies [bf944ab]
+- Updated dependencies [5538d24]
+  - @transcend-io/privacy-types@5.2.0
+  - @transcend-io/airgap.js-types@14.2.4
+  - @transcend-io/sdk@1.2.1
+
+## 10.4.0
+
+### Minor Changes
+
+- 14459f8: Add optional `parent-team-name` to team config. During sync, resolve the name to a parent organization team ID via `parentOrganizationTeams` and pass it to `createTeam`/`updateTeam`. During pull, emit `parent-team-name` from each team's linked `parentTeam`.
+- ad6655d: Document the optional `partition` object on cron pending-requests responses and include `partitionId`, `partitionName`, and `partitionKey` columns in `transcend request cron pull-identifiers` CSV output when a DSR is scoped to a consent partition.
+
+### Patch Changes
+
+- Updated dependencies [14459f8]
+  - @transcend-io/sdk@1.2.0
+
+## 10.3.8
+
+### Patch Changes
+
+- 47bf9a4: Fixed jwt import syntax
+
+## 10.3.7
+
+### Patch Changes
+
+- b90b468: Add `RulesAutomationRuleTerminalFailure` and `RulesAutomationRuleTerminalFailureAssigned` values to the `ActionItemCode` enum so that Rules Automation rule owners can be notified when a rule hits a terminal execution failure. Regenerate the CLI `transcend.yml` JSON schema so the new codes are reflected.
+- Updated dependencies [b90b468]
+  - @transcend-io/privacy-types@5.1.8
+  - @transcend-io/airgap.js-types@14.2.3
+  - @transcend-io/sdk@1.1.11
+
 ## 10.3.6
 
 ### Patch Changes
