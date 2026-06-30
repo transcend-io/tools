@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.9.0
+
+### Minor Changes
+
+- 47219d3: Add `transcend policy publish` subcommand for uploading OPA policy bundles.
+
 ## 10.8.0
 
 ### Minor Changes
