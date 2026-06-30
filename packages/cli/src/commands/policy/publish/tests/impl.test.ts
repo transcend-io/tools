@@ -9,8 +9,8 @@ const buildOpaBundleTarballMock = vi.hoisted(() => vi.fn());
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 const resolveBundleIdByNameMock = vi.hoisted(() => vi.fn());
 
-vi.mock('../../helpers.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../helpers.js')>();
+vi.mock('../../helpers/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../helpers/index.js')>();
   return {
     ...actual,
     buildOpaBundleTarball: buildOpaBundleTarballMock,

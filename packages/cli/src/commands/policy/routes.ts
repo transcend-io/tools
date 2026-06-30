@@ -7,10 +7,10 @@ import { testCommand } from './test/command.js';
 
 export const policyRoutes = buildRouteMap({
   routes: {
-    lint: lintCommand,
-    test: testCommand,
     eval: evalCommand,
+    lint: lintCommand,
     publish: publishCommand,
+    test: testCommand,
   },
   docs: {
     brief: 'Policy Engine commands',

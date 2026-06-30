@@ -14,9 +14,8 @@ import {
   formatPolicyBundleVersionSummary,
   printResult,
   resolveBundleIdByName,
-  type CreatePolicyBundleResponse,
-  type CreatePolicyBundleVersionResponse,
-} from '../helpers.js';
+} from '../helpers/index.js';
+import type { CreatePolicyBundleResponse, CreatePolicyBundleVersionResponse } from '../types.js';
 
 /** CLI flags for `transcend policy publish`. */
 export interface PublishCommandFlags {
