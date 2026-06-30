@@ -54,13 +54,9 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin find-text-in-folder`](#transcend-admin-find-text-in-folder)
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
-
   - [`transcend policy eval`](#transcend-policy-eval)
-
-  - [`transcend policy test`](#transcend-policy-test)
-
   - [`transcend policy lint`](#transcend-policy-lint)
-
+  - [`transcend policy test`](#transcend-policy-test)
 - [Prompt Manager](#prompt-manager)
 - [Proxy usage](#proxy-usage)
 - [Using non-primary Sombra](#using-non-primary-sombra)

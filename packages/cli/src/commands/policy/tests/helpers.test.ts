@@ -7,8 +7,8 @@ import {
   printResult,
   renderTable,
   resolveBundleIdByName,
-  type PolicyBundleListResponse,
-} from '../helpers.js';
+} from '../helpers/index.js';
+import type { PolicyBundleListResponse } from '../types.js';
 
 const spawnSyncMock = vi.hoisted(() => vi.fn());
 const gotExtendMock = vi.hoisted(() => vi.fn());
