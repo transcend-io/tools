@@ -1,5 +1,38 @@
 # @transcend-io/cli
 
+## 10.5.11
+
+### Patch Changes
+
+- 45f7c5a: Add shared Policy Engine CLI helpers for OPA checks, REST client setup, bundle upload utilities, and table rendering.
+
+## 10.5.10
+
+### Patch Changes
+
+- Updated dependencies [0da7015]
+  - @transcend-io/privacy-types@5.3.2
+  - @transcend-io/airgap.js-types@14.2.12
+  - @transcend-io/sdk@1.2.9
+
+## 10.5.9
+
+### Patch Changes
+
+- Updated dependencies [0ae4785]
+  - @transcend-io/privacy-types@5.3.1
+  - @transcend-io/airgap.js-types@14.2.11
+  - @transcend-io/sdk@1.2.8
+
+## 10.5.8
+
+### Patch Changes
+
+- Updated dependencies [6d56588]
+  - @transcend-io/privacy-types@5.3.0
+  - @transcend-io/airgap.js-types@14.2.10
+  - @transcend-io/sdk@1.2.7
+
 ## 10.5.7
 
 ### Patch Changes
