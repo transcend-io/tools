@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.8.0
+
+### Minor Changes
+
+- 34eb0a1: Add `transcend policy eval` subcommand for local OPA policy debugging.
+
 ## 10.7.0
 
 ### Minor Changes
