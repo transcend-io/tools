@@ -4,7 +4,7 @@
 
 ### Minor Changes
 
-- fa2fc88: Add `transcend policy lint` subcommand for local OPA policy validation (LINK-7092).
+- fa2fc88: Add `transcend policy lint` subcommand for local OPA policy validation.
 
 ## 10.5.11
 
