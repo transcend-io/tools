@@ -54,6 +54,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin find-text-in-folder`](#transcend-admin-find-text-in-folder)
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
+  - [`transcend policy activate`](#transcend-policy-activate)
   - [`transcend policy eval`](#transcend-policy-eval)
   - [`transcend policy lint`](#transcend-policy-lint)
   - [`transcend policy publish`](#transcend-policy-publish)
@@ -3649,6 +3650,58 @@ transcend migration sync-ot \
 ```sh
 transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --transcendAuth="$TRANSCEND_API_KEY"
 ```
+
+### `transcend policy activate`
+
+```txt
+USAGE
+  transcend policy activate (--versionId value) [--policyBundleId value] [--bundleName value] (--auth value) [--transcendUrl value] [--dryRun] [--json]
+  transcend policy activate --help
+
+Calls the Policy Engine activate endpoint to make an uploaded version live. Requires the parent bundle UUID or bundle name plus the version UUID. Requires a Transcend API key with Activate Policy scope.
+
+FLAGS
+      --versionId        Policy bundle version UUID to activate
+     [--policyBundleId]  Parent policy bundle UUID
+     [--bundleName]      Parent bundle name (used when policyBundleId is omitted)
+      --auth             The Transcend API key. Requires scopes: "Activate Policy"
+     [--transcendUrl]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--dryRun]          Validate activation without flipping the active version                      [default = false]
+     [--json]            Print the raw JSON API response                                              [default = false]
+  -h  --help             Print help information and exit
+```
+
+#### Examples
+
+**Activate a uploaded policy bundle version by bundle name**
+
+```sh
+transcend policy activate \
+  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
+  --bundleName=main \
+  --auth="$TRANSCEND_API_KEY"
+```
+
+**Activate using explicit parent bundle and version UUIDs**
+
+```sh
+transcend policy activate \
+  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
+  --policyBundleId=6a3218db-5703-44eb-8d01-e3ea57ab8e49 \
+  --auth="$TRANSCEND_API_KEY"
+```
+
+**Validate activation without flipping the active version**
+
+```sh
+transcend policy activate \
+  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
+  --bundleName=main \
+  --auth="$TRANSCEND_API_KEY" \
+  --dryRun
+```
+
+Requires the **Activate Policy** scope on your API key.
 
 ### `transcend policy eval`
 
