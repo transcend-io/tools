@@ -75,7 +75,7 @@ describe('publish', () => {
       json: true,
     });
 
-    expect(post).toHaveBeenCalledWith('api/v1/policy-engine/policy-bundles', expect.any(Object));
+    expect(post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', expect.any(Object));
     expect(stdout.write).toHaveBeenCalled();
   });
 
@@ -97,7 +97,7 @@ describe('publish', () => {
     });
 
     expect(post).toHaveBeenCalledWith(
-      'api/v1/policy-engine/policy-bundles/existing-bundle-id/versions',
+      'v1/policy-engine/policy-bundles/existing-bundle-id/versions',
       expect.any(Object),
     );
   });

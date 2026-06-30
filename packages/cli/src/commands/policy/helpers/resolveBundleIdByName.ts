@@ -18,7 +18,7 @@ export async function resolveBundleIdByName(
 
   while (true) {
     const body = await client
-      .get('api/v1/policy-engine/policy-bundles', {
+      .get('v1/policy-engine/policy-bundles', {
         searchParams: { limit, offset },
       })
       .json<PolicyBundleListResponse>();
