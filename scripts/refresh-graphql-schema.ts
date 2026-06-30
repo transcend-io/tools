@@ -112,16 +112,18 @@ function stripDescriptions(
 async function main(): Promise<void> {
   loadSecretEnv();
 
-  const apiKey = process.env.TRANSCEND_API_KEY;
   const baseUrl = (process.env.TRANSCEND_API_URL ?? DEFAULT_STAGING_URL).replace(/\/$/, '');
   const url = `${baseUrl}/graphql`;
   // eslint-disable-next-line no-console
   console.error(`Introspecting ${url}…`);
 
+  // Introspection is anonymous, so we deliberately send no Authorization
+  // header. Passing an API key adds nothing and an expired/wrong-scope key
+  // would only cause a needless 401 (the backend's own release pipeline also
+  // introspects staging without auth).
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
