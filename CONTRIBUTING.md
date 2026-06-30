@@ -337,9 +337,8 @@ For production deployment patterns (Docker, nginx, cloud), see [`packages/mcp/DE
 These conventions are enforced by `scripts/check-mcp-descriptions.test.ts` and surface as CI failures:
 
 - **camelCase input fields**. Tool names themselves stay snake_case (they are addressable identifiers), but every Zod input field must be camelCase. Snake_case fields are blocked by review and break LLM client tooling that assumes camelCase.
-- **Every field needs a `.describe(...)` call**. Descriptions are the only signal an LLM has for what an argument means; the audit rejects schemas with missing or trivially short (< 8 chars) descriptions.
+- **Every field needs a `.describe(...)` call**. Descriptions are the only signal an LLM has for what an argument means. `defineTool` recursively rejects any input field (at any nesting depth) with a missing or trivially short (< 8 chars) description, throwing at tool construction; the audit test enforces the same across every server in CI.
 - **Pagination**. Reuse `CursorPaginationSchema` or `OffsetPaginationSchema` from `@transcend-io/mcp-server-base` instead of redeclaring `limit`/`offset` per tool. The legacy `PaginationSchema` is deprecated.
-- **Input schemas mirroring GraphQL `input` types**. Wrap codegen-generated Zod inputs with `withDescriptions(schema, descriptions)` so a missing description fails `tsc` instead of silently shipping.
 
 ### GraphQL Operations and Codegen
 

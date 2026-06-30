@@ -63,5 +63,12 @@ camelCase). Tool *names* are unchanged. The full list of renamed fields:
 - `user_id` → `userId`
 - `show_in_privacy_center` (removed; not in schema)
 
-A repo-wide `scripts/check-mcp-descriptions.test.ts` audit now blocks
-PRs where any tool input field is missing a Zod description.
+Removed tools:
+
+- `discovery_start_scan` and `discovery_get_scan` are removed. They called
+  `startClassificationScan` / `classificationScan(id:)`, which do not exist
+  in Transcend's GraphQL schema, so they could only ever fail at runtime.
+
+`defineTool` now recursively rejects any input field (at any nesting depth)
+that is missing a meaningful Zod description, and a repo-wide
+`scripts/check-mcp-descriptions.test.ts` audit enforces the same in CI.

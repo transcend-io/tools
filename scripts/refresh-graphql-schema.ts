@@ -18,11 +18,10 @@
  * field should verify it has actually rolled out to `api.transcend.io`
  * before publishing.
  *
- * Run modes:
- *   - Local:    `pnpm graphql:refresh-schema` (reads `secret.env` for
- *               `TRANSCEND_API_URL` overrides; defaults to staging).
- *   - CI cron:  `.github/workflows/refresh-graphql-schema.yml` invokes
- *               this on a weekly schedule and opens a PR with the diff.
+ * Run it manually with `pnpm graphql:refresh-schema` (reads `secret.env` for
+ * a `TRANSCEND_API_URL` override; defaults to staging). A scheduled workflow
+ * that runs this and opens a refresh PR is proposed separately in a follow-up
+ * PR, not part of this branch.
  *
  * Output post-processing:
  *   The script re-prints the SDL via graphql-js `printSchema` after

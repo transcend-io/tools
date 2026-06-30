@@ -50,7 +50,6 @@
     "@transcend-io/mcp-server-workflows": "workspace:*",
     "@types/node": "catalog:",
     "graphql": "catalog:",
-    "graphql-codegen-typescript-validation-schema": "catalog:",
     "husky": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",

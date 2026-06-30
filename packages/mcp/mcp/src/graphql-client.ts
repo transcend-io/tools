@@ -59,8 +59,6 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
 
   // Discovery
   declare listClassificationScans: InstanceType<typeof DiscoveryMixin>['listClassificationScans'];
-  declare startClassificationScan: InstanceType<typeof DiscoveryMixin>['startClassificationScan'];
-  declare getClassificationScan: InstanceType<typeof DiscoveryMixin>['getClassificationScan'];
   declare listDiscoveryPlugins: InstanceType<typeof DiscoveryMixin>['listDiscoveryPlugins'];
 
   // Assessments

@@ -3,8 +3,12 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { AssessmentsMixin } from '../graphql.js';
 
 export const AnswerQuestionValueSchema = z.object({
-  value: z.string(),
-  isUserCreated: z.boolean(),
+  value: z.string().describe('The free-text answer content to record for the question.'),
+  isUserCreated: z
+    .boolean()
+    .describe(
+      'True when this value is newly authored by the caller (rather than an existing option). Use true for free-text answers.',
+    ),
 });
 export type AnswerQuestionValueInput = z.infer<typeof AnswerQuestionValueSchema>;
 

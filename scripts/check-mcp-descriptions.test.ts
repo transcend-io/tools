@@ -14,7 +14,12 @@
 
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
-import type { ToolClients, ToolDefinition } from '@transcend-io/mcp-server-base';
+import {
+  collectMissingDescriptions,
+  MIN_DESCRIPTION_LENGTH,
+  type ToolClients,
+  type ToolDefinition,
+} from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
@@ -22,13 +27,6 @@ import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, expect, test } from 'vitest';
-import { z } from 'zod';
-
-/**
- * Minimum description length that still conveys intent. Picked empirically
- * — anything shorter is almost always a placeholder like "ID" or "name".
- */
-const MIN_DESCRIPTION_LENGTH = 8;
 
 /**
  * Mock ToolClients sufficient for tool *construction*. Tools dereference
@@ -52,114 +50,47 @@ const serverFactories = [
   { name: 'workflows', getTools: getWorkflowTools },
 ] as const;
 
-type ToolUnderTest = {
-  server: string;
-  tool: ToolDefinition;
-};
-
-const allTools: ToolUnderTest[] = serverFactories.flatMap(({ name, getTools }) =>
-  getTools(mockClients).map((tool) => ({ server: name, tool })),
-);
-
 /**
- * Pulls the underlying ZodObject out of a top-level zodSchema so we can
- * walk its shape. Schemas may arrive as a bare ZodObject or wrapped in
- * a ZodEffects (refine/transform). Anything else is non-introspectable
- * for our purposes and we let the test report it directly.
+ * Construct a server's tools, turning a `defineTool` description failure into
+ * a readable test error rather than an unhandled throw at module load. The
+ * actual enforcement lives in `defineTool` (it throws on a missing
+ * description); this test gives per-server reporting and double-checks every
+ * field recursively via the same `collectMissingDescriptions` helper.
  */
-function unwrapToObject(schema: z.ZodType): z.ZodObject<z.ZodRawShape> | undefined {
-  if (schema instanceof z.ZodObject) {
-    return schema;
+function buildTools(
+  name: string,
+  getTools: (clients: ToolClients) => ToolDefinition[],
+): ToolDefinition[] {
+  try {
+    return getTools(mockClients);
+  } catch (error) {
+    throw new Error(
+      `[${name}] tool construction failed (defineTool rejected an input schema):\n` +
+        `  ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
-  // ZodEffects wraps the inner schema accessible via `.innerType()` in v3
-  // and `._def.schema` in v4. Both are tried so the audit survives a Zod
-  // bump without flapping.
-  const innerTypeFn = (schema as unknown as { innerType?: () => z.ZodType }).innerType;
-  const inner =
-    typeof innerTypeFn === 'function'
-      ? innerTypeFn.call(schema)
-      : ((schema as unknown as { _def?: { schema?: z.ZodType } })._def?.schema ?? undefined);
-  if (inner && inner instanceof z.ZodObject) {
-    return inner;
-  }
-  return undefined;
-}
-
-/**
- * Strips ZodOptional/ZodNullable/ZodDefault wrappers so the test can read
- * the description that the author actually wrote on the inner schema.
- * Authors typically chain `.optional()`/`.default()` after `.describe()`,
- * but Zod 4 surfaces the description on the outer wrapper too — we still
- * unwrap defensively in case any field was authored in the opposite order.
- */
-function describedFor(schema: z.ZodType): string | undefined {
-  const direct = (schema as { description?: string }).description;
-  if (typeof direct === 'string' && direct.length > 0) {
-    return direct;
-  }
-  const inner = (schema as { unwrap?: () => z.ZodType }).unwrap?.();
-  return inner ? describedFor(inner) : undefined;
 }
 
 describe('MCP tool input descriptions', () => {
-  test('every server registers at least one tool', () => {
-    for (const { name, getTools } of serverFactories) {
-      const tools = getTools(mockClients);
+  test.each(serverFactories)(
+    '$name tools construct and document every input field (recursively)',
+    ({ name, getTools }) => {
+      const tools = buildTools(name, getTools);
       expect(tools.length, `${name} server registered no tools`).toBeGreaterThan(0);
-    }
-  });
 
-  test.each(allTools)(
-    '$server $tool.name exposes a non-empty top-level tool description',
-    ({ tool }) => {
-      expect(typeof tool.description).toBe('string');
-      expect(tool.description.trim().length).toBeGreaterThanOrEqual(MIN_DESCRIPTION_LENGTH);
-    },
-  );
+      for (const tool of tools) {
+        expect(
+          typeof tool.description === 'string' &&
+            tool.description.trim().length >= MIN_DESCRIPTION_LENGTH,
+          `[${name}] tool "${tool.name}" is missing a meaningful top-level description`,
+        ).toBe(true);
 
-  test.each(allTools)(
-    '$server $tool.name input fields all carry meaningful descriptions',
-    ({ server, tool }) => {
-      const objectSchema = unwrapToObject(tool.zodSchema);
-      // Tools whose entire zodSchema cannot be unwrapped to a ZodObject
-      // either accept no input (EmptySchema → empty shape) or use a union
-      // we cannot statically introspect. Either way, there are no fields
-      // to audit so we short-circuit.
-      if (!objectSchema) {
-        return;
-      }
-      const shape = objectSchema.shape;
-      const missing: string[] = [];
-      const tooShort: { field: string; description: string }[] = [];
-
-      for (const [field, fieldSchema] of Object.entries(shape)) {
-        const description = describedFor(fieldSchema as z.ZodType);
-        if (!description) {
-          missing.push(field);
-          continue;
-        }
-        if (description.trim().length < MIN_DESCRIPTION_LENGTH) {
-          tooShort.push({ field, description });
-        }
-      }
-
-      if (missing.length > 0 || tooShort.length > 0) {
-        const lines: string[] = [];
-        if (missing.length > 0) {
-          lines.push(
-            `  Missing .describe() on: ${missing.join(', ')}.\n` +
-              `  Add a description that explains what this field is and what valid values look like.`,
-          );
-        }
-        for (const { field, description } of tooShort) {
-          lines.push(
-            `  Field "${field}" description is too short (< ${MIN_DESCRIPTION_LENGTH} chars): "${description}".\n` +
-              `  Expand it to explain intent / constraints / examples.`,
-          );
-        }
-        throw new Error(
-          `[${server}] tool "${tool.name}" has under-documented input fields:\n${lines.join('\n')}`,
-        );
+        const missing = collectMissingDescriptions(tool.zodSchema);
+        expect(
+          missing,
+          `[${name}] tool "${tool.name}" has under-documented input fields ` +
+            `(missing/short .describe(), min ${MIN_DESCRIPTION_LENGTH} chars): ${missing.join(', ')}`,
+        ).toHaveLength(0);
       }
     },
   );

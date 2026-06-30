@@ -36,55 +36,6 @@ const ListDataSiloTypesDoc = graphql(/* GraphQL */ `
   }
 `);
 
-/*
- * `startClassificationScan` and `classificationScan(id:)` don't exist in
- * Transcend's GraphQL schema -- they were declared against an aspirational
- * shape that was never shipped. Tracked in ZEL-XXXX (synthetic discovery
- * queries). Until that ticket lands a real operation, these strings stay
- * bare (not in a `graphql()` tag), so codegen skips them and these methods
- * fail at runtime with a server-side validation error rather than blocking
- * the whole package's typecheck.
- */
-const START_CLASSIFICATION_SCAN_QUERY = `
-  mutation StartClassificationScan($input: StartClassificationScanInput!) {
-    startClassificationScan(input: $input) {
-      scan {
-        id
-        name
-        type
-        status
-        startedAt
-        createdAt
-      }
-    }
-  }
-`;
-
-const GET_CLASSIFICATION_SCAN_QUERY = `
-  query GetClassificationScan($id: ID!) {
-    classificationScan(id: $id) {
-      id
-      name
-      type
-      status
-      startedAt
-      completedAt
-      dataSiloId
-      results {
-        id
-        path
-        dataCategory {
-          id
-          name
-          category
-        }
-        confidence
-      }
-      createdAt
-    }
-  }
-`;
-
 export class DiscoveryMixin extends TranscendGraphQLBase {
   async listClassificationScans(
     options?: ListOptions,
@@ -105,26 +56,6 @@ export class DiscoveryMixin extends TranscendGraphQLBase {
       pageInfo: { hasNextPage: scans.length < data.dataSilos.totalCount, hasPreviousPage: false },
       totalCount: data.dataSilos.totalCount,
     };
-  }
-
-  async startClassificationScan(input: {
-    name: string;
-    dataSiloId?: string;
-    type?: string;
-  }): Promise<ClassificationScan> {
-    const data = await this.makeRequest<{ startClassificationScan: { scan: ClassificationScan } }>(
-      START_CLASSIFICATION_SCAN_QUERY,
-      { input },
-    );
-    return data.startClassificationScan.scan;
-  }
-
-  async getClassificationScan(id: string): Promise<ClassificationScan> {
-    const data = await this.makeRequest<{ classificationScan: ClassificationScan }>(
-      GET_CLASSIFICATION_SCAN_QUERY,
-      { id },
-    );
-    return data.classificationScan;
   }
 
   async listDiscoveryPlugins(options?: ListOptions): Promise<PaginatedResponse<DiscoveryPlugin>> {

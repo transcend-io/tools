@@ -33,7 +33,7 @@ export {
   OffsetPaginationSchema,
   PaginationSchema,
 } from './validation/schemas.js';
-export { withDescriptions } from './validation/with-descriptions.js';
+export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
 
 export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
 export { defineTool } from './tools/types.js';

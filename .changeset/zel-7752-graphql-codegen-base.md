@@ -12,7 +12,7 @@ Add GraphQL Code Generator foundation and supporting utilities.
   for tools that mirror the two pagination styles Transcend's GraphQL API
   uses. The legacy combined `PaginationSchema` is now deprecated; prefer
   the cursor/offset variants.
-- New `withDescriptions(schema, descriptions)` helper enforces, at both
-  TypeScript and runtime, that every field on a Zod input schema carries
-  a non-empty description. Use this when wrapping schemas generated from
-  GraphQL `input` types so LLM clients always have a description to read.
+- `defineTool` now recursively validates that every input field (at any
+  nesting depth) carries a non-empty Zod description, throwing at tool
+  construction otherwise. The reusable `collectMissingDescriptions` helper
+  backs both this check and the repo-wide audit test.
