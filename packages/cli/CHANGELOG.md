@@ -1,5 +1,16 @@
 # @transcend-io/cli
 
+## 10.12.1
+
+### Patch Changes
+
+- 89a23df: Fix `transcend policy lint` formatting detection and add an interactive prompt to format unformatted Rego files in place.
+- 6a48672: Move the `graphql` dependency to the workspace catalog so every package in
+  the monorepo (including the new MCP codegen consumers) resolves it to a
+  single, hermetic version. No runtime behavior change.
+- Updated dependencies [6a48672]
+  - @transcend-io/sdk@1.2.10
+
 ## 10.12.0
 
 ### Minor Changes
