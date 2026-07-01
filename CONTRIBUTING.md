@@ -251,12 +251,19 @@ Each domain package provides a standalone CLI and can be installed independently
 
 ### Local credentials (`secret.env`)
 
-MCP servers read `TRANSCEND_API_KEY` (and optional URL overrides) from the environment. For local runs from this repository, use root **`secret.env`** (gitignored):
+MCP servers read credentials from the environment. For local runs from this repository, use root **`secret.env`** (gitignored):
 
 ```bash
 cp secret.env.example secret.env
-# Edit secret.env — set at least TRANSCEND_API_KEY
+# Edit secret.env — set OAuth vars (recommended) or TRANSCEND_API_KEY
 ```
+
+For stdio / MCP client development, prefer **OAuth** credentials:
+
+- `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, `TRANSCEND_OAUTH_REDIRECT_PORT`
+- Register redirect URI `http://127.0.0.1:{port}/callback` in the [OAuth clients admin page](https://app.transcend.com/admin/oauth-clients)
+
+See [packages/mcp/README.md](./packages/mcp/README.md#quick-start-stdio--oauth) for the full setup guide.
 
 Load variables into your shell before `pnpm` (from the repository root):
 
@@ -284,12 +291,21 @@ pnpm -F @transcend-io/mcp-server-consent typecheck
 
 ### Environment Variables & Authentication
 
-MCP servers support two authentication modes:
+MCP servers support three authentication modes:
 
-- **API key** — set `TRANSCEND_API_KEY` env var (required for stdio; optional for HTTP if using session cookie or per-request API key headers)
+- **OAuth (stdio, recommended)** — set `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. Browser login runs on first tool call; tokens are session-only (in-memory). The issuer is auto-detected in production (`api.transcend.io`, `api.us.transcend.io`).
+- **API key** — set `TRANSCEND_API_KEY` for stdio (alternative to OAuth) or as HTTP default auth. When both API key and OAuth client ID are set, the API key takes precedence.
 - **Session cookie** — in HTTP mode, forward `Cookie` and `x-transcend-active-organization-id` headers for in-app dashboard auth
 
-The `AuthCredentials` discriminated union (`'apiKey' | 'sessionCookie'`) is the internal representation. See `mcp-server-base/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
+The `AuthCredentials` discriminated union represents OAuth tokens, API keys, and session cookies internally. See `mcp-server-base/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
+
+OAuth stdio variables:
+
+- `TRANSCEND_OAUTH_CLIENT_ID` — enables OAuth mode when set (unless `TRANSCEND_API_KEY` is also set)
+- `TRANSCEND_OAUTH_CLIENT_SECRET` — client secret from the OAuth clients admin page
+- `TRANSCEND_OAUTH_REDIRECT_PORT` — localhost callback port; must match registered redirect URI
+- `TRANSCEND_OAUTH_REDIRECT_HOST` — loopback host (default `127.0.0.1`; use `::1` for IPv6)
+- `TRANSCEND_OAUTH_ISSUER` — optional test-only override; production auto-detects region
 
 Optional overrides:
 
