@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.11.0
+
+### Minor Changes
+
+- 40b201e: Add `transcend policy list` subcommand for listing policy bundles.
+
 ## 10.10.0
 
 ### Minor Changes
