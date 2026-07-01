@@ -1,6 +1,7 @@
 import { OAUTH_REGIONAL_ISSUERS } from '../defaults.js';
 import {
   DEFAULT_OAUTH_REDIRECT_HOST,
+  OAUTH_CALLBACK_PATH,
   TRANSCEND_OAUTH_CLIENT_ID_ENV,
   TRANSCEND_OAUTH_CLIENT_SECRET_ENV,
   TRANSCEND_OAUTH_ISSUER_ENV,
@@ -226,7 +227,7 @@ function validateOAuthStartupConfig(): OAuthStartupConfig {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
       formatOAuthClientConfigError(
-        `${detail} Register redirect URI http://<host>:<port>/callback on the OAuth client ` +
+        `${detail} Register redirect URI http://<host>:<port>${OAUTH_CALLBACK_PATH} on the OAuth client ` +
           `(host from ${TRANSCEND_OAUTH_REDIRECT_HOST_ENV}, default ${DEFAULT_OAUTH_REDIRECT_HOST}; ` +
           `port from ${TRANSCEND_OAUTH_REDIRECT_PORT_ENV}).`,
       ),
@@ -262,7 +263,7 @@ function formatOAuthRedirectUriHost(host: string): string {
  */
 export function getOAuthRedirectUri(): string {
   const host = formatOAuthRedirectUriHost(getOAuthRedirectHost());
-  return `http://${host}:${getOAuthRedirectPort()}/callback`;
+  return `http://${host}:${getOAuthRedirectPort()}${OAUTH_CALLBACK_PATH}`;
 }
 
 /**

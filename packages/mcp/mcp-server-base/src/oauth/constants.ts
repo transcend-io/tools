@@ -19,6 +19,9 @@ export const TRANSCEND_OAUTH_REDIRECT_HOST_ENV = 'TRANSCEND_OAUTH_REDIRECT_HOST'
 /** Default loopback host for the OAuth redirect URI (`127.0.0.1`). */
 export const DEFAULT_OAUTH_REDIRECT_HOST = '127.0.0.1';
 
+/** Path on the local loopback server that receives the OAuth redirect. */
+export const OAUTH_CALLBACK_PATH = '/callback';
+
 /** Maximum time to wait for `/oauth/client-verify` during startup credential checks. */
 export const OAUTH_CLIENT_VERIFY_TIMEOUT_MS = 5_000;
 
@@ -28,6 +31,14 @@ export const OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 /** Agent-facing message when the OAuth browser callback times out. */
 export const OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE =
   'OAuth sign-in timed out. Report this to the user and wait for them to send a new message before calling tools again. Do not retry automatically.';
+
+/** Browser callback page message shown after successful OAuth authentication. */
+export const OAUTH_CALLBACK_SUCCESS_MESSAGE =
+  'The Transcend MCP has been successfully authenticated. You can close this window and return to your host application.';
+
+/** Browser callback page message shown when OAuth authentication fails. */
+export const OAUTH_CALLBACK_ERROR_MESSAGE =
+  'The Transcend MCP authentication failed. Return to your host application and try again.';
 
 /** Default OAuth access token lifetime when the token response omits expires_in. */
 export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
