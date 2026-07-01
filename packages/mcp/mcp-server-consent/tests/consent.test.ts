@@ -1,5 +1,13 @@
+import {
+  AirgapBundleAnalyticsDimension,
+  AirgapBundleAnalyticsMetric,
+} from '@transcend-io/privacy-types';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
+import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
+import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
+import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
 import { getConsentTools } from '../src/tools/index.js';
 
 const EXPECTED_TOOL_NAMES = [
@@ -10,7 +18,10 @@ const EXPECTED_TOOL_NAMES = [
   'consent_list_cookies',
   'consent_list_airgap_bundles',
   'consent_list_regimes',
-  'consent_get_triage_stats',
+  'consent_get_inventory_stats',
+  'consent_get_aggregate_analytics',
+  'consent_get_timeseries_analytics',
+  'consent_get_analytics_data',
   'consent_update_cookies',
   'consent_update_data_flows',
   'consent_bulk_triage',
@@ -80,5 +91,96 @@ describe('Consent Tools', () => {
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
     });
+  });
+
+  describe('consent_get_aggregate_analytics', () => {
+    it('queries aggregate analytics with resolved bundle id', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({
+          consentManager: { consentManager: { id: 'bundle-1' } },
+        })
+        .mockResolvedValueOnce({
+          airgapBundleAggregateAnalytics: {
+            items: [{ measure: '10', dimensions: { PURPOSE: 'Advertising' } }],
+          },
+        });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'consent_get_aggregate_analytics')!;
+
+      const result = await tool.handler({
+        metric: AirgapBundleAnalyticsMetric.ConsentChanged,
+        days: 7,
+        include_dimensions: [
+          AirgapBundleAnalyticsDimension.Purpose,
+          AirgapBundleAnalyticsDimension.Regime,
+          AirgapBundleAnalyticsDimension.NewValue,
+        ],
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          airgapBundleId: 'bundle-1',
+          metric: AirgapBundleAnalyticsMetric.ConsentChanged,
+          totalRows: 1,
+        },
+      });
+    });
+  });
+});
+
+describe('normalizeAnalyticsMetric', () => {
+  it('maps common metric aliases to GraphQL enum values', () => {
+    expect(normalizeAnalyticsMetric('PAGE_VIEW')).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    expect(normalizeAnalyticsMetric('page_view')).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    expect(normalizeAnalyticsMetric('CONSENT_SESSION')).toBe(
+      AirgapBundleAnalyticsMetric.SiteSessions,
+    );
+    expect(normalizeAnalyticsMetric('CONSENT_SESSIONS')).toBe(
+      AirgapBundleAnalyticsMetric.SiteSessions,
+    );
+    expect(normalizeAnalyticsMetric('PAGE_VIEWS')).toBe(AirgapBundleAnalyticsMetric.PageViews);
+  });
+
+  it('accepts PAGE_VIEW in timeseries schema', () => {
+    const result = GetTimeseriesAnalyticsSchema.safeParse({
+      metric: 'PAGE_VIEW',
+      days: 30,
+      bin_interval: '1d',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.metric).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    }
+  });
+
+  it('accepts PAGE_VIEW in aggregate schema', () => {
+    const result = GetAggregateAnalyticsSchema.safeParse({
+      metric: 'PAGE_VIEW',
+      days: 7,
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.metric).toBe(AirgapBundleAnalyticsMetric.PageViews);
+    }
+  });
+});
+
+describe('resolveAnalyticsDateRange', () => {
+  it('defaults to a 7-day lookback ending now', () => {
+    const now = Date.now();
+    const range = resolveAnalyticsDateRange({});
+    expect(range.endEpoch).toBeGreaterThanOrEqual(Math.floor(now / 1000) - 2);
+    expect(range.endEpoch - range.startEpoch).toBeGreaterThanOrEqual(7 * 24 * 60 * 60 - 2);
+  });
+
+  it('throws when start is after end', () => {
+    expect(() =>
+      resolveAnalyticsDateRange({
+        start: '2024-01-02T00:00:00.000Z',
+        end: '2024-01-01T00:00:00.000Z',
+      }),
+    ).toThrow('Start date must be before end date');
   });
 });

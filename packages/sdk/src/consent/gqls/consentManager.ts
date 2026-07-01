@@ -249,3 +249,267 @@ export const UPDATE_CONSENT_MANAGER_THEME = gql`
     }
   }
 `;
+
+export const FETCH_CONSENT_UI_VARIANTS = gql`
+  query TranscendCliConsentUiVariants($airgapBundleId: ID!, $first: Int!, $offset: Int!) {
+    consentUiVariants(input: { airgapBundleId: $airgapBundleId }, first: $first, offset: $offset) {
+      totalCount
+      nodes {
+        id
+        name
+        slug
+        description
+        status
+        locales
+        configuration {
+          firstLayerConfig {
+            showCloseButton
+            alphaMask
+            footer {
+              showTranscendBadge
+              showGpcDetected
+              showLocalePicker
+            }
+            links
+            buttons {
+              type
+              action
+            }
+            showHeader
+          }
+          secondLayerConfig {
+            showCloseButton
+            alphaMask
+            footer {
+              showTranscendBadge
+              showGpcDetected
+              showLocalePicker
+            }
+            links
+            buttons {
+              type
+              action
+            }
+            showBulkActions
+            closeAfterBulkAction
+            showPurposeDescriptions
+            showToggleText
+            showToggleIcon
+          }
+          defaultLocale
+        }
+        theme {
+          id
+          slug
+        }
+        userFlow
+      }
+    }
+  }
+`;
+
+export const FETCH_CONSENT_UI_THEMES = gql`
+  query TranscendCliConsentUiThemes($airgapBundleId: ID!, $first: Int!, $offset: Int!) {
+    consentUiThemes(input: { airgapBundleId: $airgapBundleId }, first: $first, offset: $offset) {
+      totalCount
+      nodes {
+        id
+        name
+        slug
+        configuration {
+          buttonThemes {
+            backgroundColor
+            backgroundHoverColor
+            textColor
+            textHoverColor
+            borderRadius
+            borderColor
+            borderHoverColor
+            linkColor
+            linkHoverColor
+            linkUnderline
+          }
+          firstLayer {
+            alwaysShowScrollbar
+            background {
+              backgroundColor
+            }
+            buttons
+            closeButton {
+              backgroundColor
+              backgroundHoverColor
+              borderRadius
+              borderColor
+              borderHoverColor
+              iconColor
+              iconHoverColor
+            }
+            container {
+              backgroundColor
+              borderRadius
+              borderColor
+            }
+            contentFlow
+            contentLayout {
+              breakpoint {
+                value
+                unit
+              }
+              maxWidths {
+                flow
+                width
+              }
+              fullWidth
+            }
+            cookieAndPrivacyPolicy {
+              linkColor
+              linkUnderline
+            }
+            poweredByTranscend {
+              linkColor
+            }
+            description {
+              textColor
+              linkColor
+              linkUnderline
+            }
+            footer {
+              backgroundColor
+              localePickerColor
+            }
+            header {
+              textColor
+              logoPosition
+              logoImageUrl
+            }
+            horizontalAlign
+            verticalAlign
+          }
+          secondLayer {
+            alwaysOnText {
+              textColor
+            }
+            alwaysShowScrollbar
+            background {
+              backgroundColor
+            }
+            bulkActionButtons
+            buttons
+            cardTitle {
+              textColor
+            }
+            caretIcon {
+              iconColor
+            }
+            closeButton {
+              backgroundColor
+              backgroundHoverColor
+              borderColor
+              borderHoverColor
+              borderRadius
+              iconColor
+              iconHoverColor
+            }
+            container {
+              backgroundColor
+              borderRadius
+              borderColor
+            }
+            cookieAndPrivacyPolicy {
+              linkColor
+              linkUnderline
+            }
+            poweredByTranscend {
+              linkColor
+            }
+            description {
+              textColor
+              linkColor
+              linkUnderline
+            }
+            footer {
+              backgroundColor
+              localePickerColor
+            }
+            header {
+              logoImageUrl
+              logoPosition
+              textColor
+            }
+            horizontalAlign
+            lockToEdges
+            maxWidth
+            modalSubtitle {
+              textColor
+            }
+            modalTitle {
+              textColor
+            }
+            purposeCard {
+              backgroundColor
+              borderRadius
+              borderColor
+            }
+            purposeDescription {
+              textColor
+              linkColor
+              linkUnderline
+            }
+            purposeListTitle {
+              textColor
+            }
+            shrinkToFullWidth
+            toggle {
+              textColor
+              iconColor
+              enabledColor
+              disabledColor
+              knobColor
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const CREATE_CONSENT_UI_VARIANT = gql`
+  mutation TranscendCliCreateConsentUiVariant($input: CreateConsentUiVariantInput!) {
+    createConsentUiVariant(input: $input) {
+      consentUiVariant {
+        id
+      }
+    }
+  }
+`;
+
+export const UPDATE_CONSENT_UI_VARIANT = gql`
+  mutation TranscendCliUpdateConsentUiVariant($input: UpdateConsentUiVariantInput!) {
+    updateConsentUiVariant(input: $input) {
+      consentUiVariant {
+        id
+      }
+    }
+  }
+`;
+
+export const CREATE_CONSENT_UI_THEME = gql`
+  mutation TranscendCliCreateConsentUiTheme($input: CreateConsentUiThemeInput!) {
+    createConsentUiTheme(input: $input) {
+      consentUiTheme {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const UPDATE_CONSENT_UI_THEME = gql`
+  mutation TranscendCliUpdateConsentUiTheme($input: UpdateConsentUiThemeInput!) {
+    updateConsentUiTheme(input: $input) {
+      consentUiTheme {
+        id
+      }
+    }
+  }
+`;

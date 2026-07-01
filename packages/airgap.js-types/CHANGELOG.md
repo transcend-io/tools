@@ -1,5 +1,70 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.12
+
+### Patch Changes
+
+- Updated dependencies [0da7015]
+  - @transcend-io/privacy-types@5.3.2
+
+## 14.2.11
+
+### Patch Changes
+
+- Updated dependencies [0ae4785]
+  - @transcend-io/privacy-types@5.3.1
+
+## 14.2.10
+
+### Patch Changes
+
+- Updated dependencies [6d56588]
+  - @transcend-io/privacy-types@5.3.0
+
+## 14.2.9
+
+### Patch Changes
+
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+
+## 14.2.8
+
+### Patch Changes
+
+- Updated dependencies [0e20155]
+  - @transcend-io/privacy-types@5.2.4
+
+## 14.2.7
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+  - @transcend-io/privacy-types@5.2.3
+
+## 14.2.6
+
+### Patch Changes
+
+- Updated dependencies [c14ba60]
+  - @transcend-io/privacy-types@5.2.2
+
+## 14.2.5
+
+### Patch Changes
+
+- Updated dependencies [3741ca3]
+  - @transcend-io/privacy-types@5.2.1
+
+## 14.2.4
+
+### Patch Changes
+
+- Updated dependencies [bf944ab]
+- Updated dependencies [5538d24]
+  - @transcend-io/privacy-types@5.2.0
+
 ## 14.2.3
 
 ### Patch Changes

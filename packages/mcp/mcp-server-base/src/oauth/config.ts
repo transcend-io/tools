@@ -1,6 +1,7 @@
 import { OAUTH_REGIONAL_ISSUERS } from '../defaults.js';
 import {
   DEFAULT_OAUTH_REDIRECT_HOST,
+  OAUTH_CALLBACK_PATH,
   TRANSCEND_OAUTH_CLIENT_ID_ENV,
   TRANSCEND_OAUTH_CLIENT_SECRET_ENV,
   TRANSCEND_OAUTH_ISSUER_ENV,
@@ -23,11 +24,18 @@ interface OAuthStartupConfig {
   redirectPort: number;
 }
 
-/** Regional OAuth issuer resolved at startup via client-verify. */
-let resolvedOAuthIssuer: string | null = null;
+/** Module-scoped OAuth resolution state populated during startup client verification. */
+interface OAuthResolvedState {
+  /** Regional OAuth issuer resolved at startup via client-verify. */
+  issuer: string | null;
+  /** Transcend GraphQL backend URL resolved at startup via client-verify. */
+  transcendApiUrl: string | null;
+}
 
-/** Transcend GraphQL backend URL resolved at startup via client-verify. */
-let resolvedTranscendApiUrl: string | null = null;
+const oauthResolvedState: OAuthResolvedState = {
+  issuer: null,
+  transcendApiUrl: null,
+};
 
 /**
  * Returns true when {@link TRANSCEND_API_KEY} is set in the process environment.
@@ -60,52 +68,52 @@ export function getOAuthIssuerCandidates(): readonly string[] {
  * Returns the OAuth issuer URL resolved at startup via client verification.
  */
 export function getOAuthIssuer(): string {
-  if (!resolvedOAuthIssuer) {
+  if (!oauthResolvedState.issuer) {
     throw new Error(
       'OAuth issuer is not resolved. Call ensureOAuthStartupReady() before using OAuth.',
     );
   }
-  return resolvedOAuthIssuer;
+  return oauthResolvedState.issuer;
 }
 
 /**
  * Returns the Transcend GraphQL backend URL set during OAuth client verification.
  */
 export function getResolvedTranscendApiUrl(): string {
-  if (!resolvedTranscendApiUrl) {
+  if (!oauthResolvedState.transcendApiUrl) {
     throw new Error(
       'Transcend API URL is not resolved. Call ensureOAuthStartupReady() before using OAuth.',
     );
   }
-  return resolvedTranscendApiUrl;
+  return oauthResolvedState.transcendApiUrl;
 }
 
 /**
  * Caches the regional OAuth issuer after successful startup client verification.
  */
 export function setResolvedOAuthIssuer(issuer: string): void {
-  resolvedOAuthIssuer = issuer;
+  oauthResolvedState.issuer = issuer;
 }
 
 /**
  * Caches the Transcend GraphQL backend URL after successful startup client verification.
  */
 export function setResolvedTranscendApiUrl(apiUrl: string): void {
-  resolvedTranscendApiUrl = apiUrl;
+  oauthResolvedState.transcendApiUrl = apiUrl;
 }
 
 /**
  * Clears the cached regional OAuth issuer (for tests).
  */
 export function resetResolvedOAuthIssuer(): void {
-  resolvedOAuthIssuer = null;
+  oauthResolvedState.issuer = null;
 }
 
 /**
  * Clears the cached Transcend GraphQL backend URL (for tests).
  */
 export function resetResolvedTranscendApiUrl(): void {
-  resolvedTranscendApiUrl = null;
+  oauthResolvedState.transcendApiUrl = null;
 }
 
 /**
@@ -219,7 +227,7 @@ function validateOAuthStartupConfig(): OAuthStartupConfig {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(
       formatOAuthClientConfigError(
-        `${detail} Register redirect URI http://<host>:<port>/callback on the OAuth client ` +
+        `${detail} Register redirect URI http://<host>:<port>${OAUTH_CALLBACK_PATH} on the OAuth client ` +
           `(host from ${TRANSCEND_OAUTH_REDIRECT_HOST_ENV}, default ${DEFAULT_OAUTH_REDIRECT_HOST}; ` +
           `port from ${TRANSCEND_OAUTH_REDIRECT_PORT_ENV}).`,
       ),
@@ -255,7 +263,7 @@ function formatOAuthRedirectUriHost(host: string): string {
  */
 export function getOAuthRedirectUri(): string {
   const host = formatOAuthRedirectUriHost(getOAuthRedirectHost());
-  return `http://${host}:${getOAuthRedirectPort()}/callback`;
+  return `http://${host}:${getOAuthRedirectPort()}${OAUTH_CALLBACK_PATH}`;
 }
 
 /**

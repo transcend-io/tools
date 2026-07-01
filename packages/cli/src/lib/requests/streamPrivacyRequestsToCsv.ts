@@ -15,31 +15,7 @@ import { logger } from '../../logger.js';
 import { fetchAllRequests, fetchRequestsTotalCount } from '../graphql/index.js';
 import { initCsvFile, appendCsvRowsOrdered, parseFilePath } from '../helpers/index.js';
 import { formatRequestForCsv, ExportedPrivacyRequest } from './formatRequestForCsv.js';
-
-interface ChunkedDateRange {
-  /** Chunk start */
-  createdAtAfter: Date;
-  /** Chunk end */
-  createdAtBefore: Date;
-}
-
-/**
- * Split a date range into N evenly-spaced chunks.
- *
- * @param after - Start of the date range
- * @param before - End of the date range
- * @param chunks - Number of chunks to split into
- * @returns Array of date range bounds
- */
-function splitDateRange(after: Date, before: Date, chunks: number): ChunkedDateRange[] {
-  const startMs = after.getTime();
-  const endMs = before.getTime();
-  const chunkSize = (endMs - startMs) / chunks;
-  return Array.from({ length: chunks }, (_, i) => ({
-    createdAtAfter: new Date(startMs + chunkSize * i),
-    createdAtBefore: new Date(i === chunks - 1 ? endMs : startMs + chunkSize * (i + 1)),
-  }));
-}
+import { splitDateRange } from './splitDateRange.js';
 
 /**
  * Stream privacy requests directly to CSV files, one file per date-range chunk.

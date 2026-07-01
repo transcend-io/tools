@@ -1,6 +1,6 @@
+import { ConsentManagerMetricBin } from '@transcend-io/privacy-types';
 import {
   type ConsentManagerMetric,
-  ConsentManagerMetricBin,
   fetchConsentManagerAnalyticsData,
   fetchConsentManagerId,
 } from '@transcend-io/sdk';

@@ -285,3 +285,83 @@ export const ConsentTrackerType = makeEnum({
 
 /** Type override */
 export type ConsentTrackerType = (typeof ConsentTrackerType)[keyof typeof ConsentTrackerType];
+
+/**
+ * Metrics supported by airgap bundle aggregate/timeseries analytics
+ */
+export const AirgapBundleAnalyticsMetric = makeEnum({
+  /** User opt-in or opt-out for a consent purpose */
+  ConsentChanged: 'CONSENT_CHANGED',
+  /** Privacy signal detected (e.g. GPC, DNT) */
+  SignalDetected: 'SIGNAL_DETECTED',
+  /** Site session recorded */
+  SiteSessions: 'SITE_SESSIONS',
+  /** Page view recorded */
+  PageViews: 'PAGE_VIEWS',
+});
+
+/** Type override */
+export type AirgapBundleAnalyticsMetric =
+  (typeof AirgapBundleAnalyticsMetric)[keyof typeof AirgapBundleAnalyticsMetric];
+
+/**
+ * Dimensions available for aggregate consent analytics breakdowns
+ */
+export const AirgapBundleAnalyticsDimension = makeEnum({
+  /** Consent value after change (true = opted in, false = opted out) */
+  NewValue: 'NEW_VALUE',
+  /** Privacy regime active when the event was recorded */
+  Regime: 'REGIME',
+  /** Tracking purpose the event relates to */
+  Purpose: 'PURPOSE',
+});
+
+/** Type override */
+export type AirgapBundleAnalyticsDimension =
+  (typeof AirgapBundleAnalyticsDimension)[keyof typeof AirgapBundleAnalyticsDimension];
+
+/**
+ * Bin sizes for airgap bundle timeseries analytics
+ */
+export const AirgapBundleAnalyticsBinInterval = makeEnum({
+  /** One minute bins */
+  Minute: '1m',
+  /** One hour bins */
+  Hourly: '1h',
+  /** One day bins */
+  Daily: '1d',
+});
+
+/** Type override */
+export type AirgapBundleAnalyticsBinInterval =
+  (typeof AirgapBundleAnalyticsBinInterval)[keyof typeof AirgapBundleAnalyticsBinInterval];
+
+/**
+ * analyticsData sources for consent manager metrics
+ */
+export const ConsentManagerAnalyticsDataSource = makeEnum({
+  /** DNT/GPC and other privacy signal counts over time */
+  PrivacySignalTimeseries: 'PRIVACY_SIGNAL_TIMESERIES',
+  /** Explicit opt-in/opt-out events over time */
+  ConsentChangesTimeseries: 'CONSENT_CHANGES_TIMESERIES',
+  /** Session counts grouped by privacy regime */
+  ConsentSessionsByRegime: 'CONSENT_SESSIONS_BY_REGIME',
+});
+
+/** Type override */
+export type ConsentManagerAnalyticsDataSource =
+  (typeof ConsentManagerAnalyticsDataSource)[keyof typeof ConsentManagerAnalyticsDataSource];
+
+/**
+ * Allowed bin sizes for consent manager analyticsData queries
+ */
+export const ConsentManagerMetricBin = makeEnum({
+  /** One hour bins */
+  Hourly: '1h',
+  /** One day bins */
+  Daily: '1d',
+});
+
+/** Type override */
+export type ConsentManagerMetricBin =
+  (typeof ConsentManagerMetricBin)[keyof typeof ConsentManagerMetricBin];
