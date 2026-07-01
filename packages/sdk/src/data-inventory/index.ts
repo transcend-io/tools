@@ -1,3 +1,4 @@
+export * from './ensureAllDataSubjectsExist.js';
 export * from './fetchAllBusinessEntities.js';
 export * from './fetchAllDataCategories.js';
 export * from './fetchAllDataPoints.js';

@@ -2,16 +2,12 @@ import {
   AssessmentFormTemplateSource,
   AssessmentFormTemplateStatus,
 } from '@transcend-io/privacy-types';
-import {
-  makeGraphQLRequest,
-  type AssessmentSection,
-  type RetentionSchedule,
-  type UserPreview,
-} from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { logger } from '../../logger.js';
-import { ASSESSMENT_TEMPLATES } from './gqls/index.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import type { AssessmentSection, RetentionSchedule, UserPreview } from './fetchAllAssessments.js';
+import { ASSESSMENT_TEMPLATES } from './gqls/assessmentTemplate.js';
 
 /**
  * Represents an assessment template with various properties and metadata.
@@ -29,7 +25,7 @@ export interface AssessmentTemplate {
   description: string;
   /** The current status of the assessment template */
   status: AssessmentFormTemplateStatus;
-  /** The source fo the form template */
+  /** The source of the form template */
   source: AssessmentFormTemplateSource;
   /** ID of parent template */
   parentId: string;
@@ -53,11 +49,19 @@ const PAGE_SIZE = 20;
  * Fetch all assessment templates in the organization
  *
  * @param client - GraphQL client
+ * @param options - Options
  * @returns All assessment templates in the organization
  */
 export async function fetchAllAssessmentTemplates(
   client: GraphQLClient,
+  options: {
+    /** Filter criteria */
+    filterBy?: Record<string, unknown>;
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
 ): Promise<AssessmentTemplate[]> {
+  const { filterBy, logger = NOOP_LOGGER } = options;
   const assessmentTemplates: AssessmentTemplate[] = [];
   let offset = 0;
 
@@ -72,7 +76,7 @@ export async function fetchAllAssessmentTemplates(
         nodes: AssessmentTemplate[];
       };
     }>(client, ASSESSMENT_TEMPLATES, {
-      variables: { first: PAGE_SIZE, offset },
+      variables: { first: PAGE_SIZE, offset, filterBy },
       logger,
     });
     assessmentTemplates.push(...nodes);

@@ -1,4 +1,5 @@
 import {
+  ensureAllDataSubjectsExist,
   fetchAllActions,
   fetchAllAttributes,
   fetchAllDataSubjects,
@@ -41,7 +42,6 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { syncDataSilos } from './syncDataSilos.js';
 
 const CONCURRENCY = 10;
@@ -120,7 +120,19 @@ export async function syncConfigurationToTranscend(
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
     dataSilos || dataSubjects || enrichers || processingActivities
-      ? ensureAllDataSubjectsExist(input, client)
+      ? ensureAllDataSubjectsExist(client, {
+          input: {
+            dataSiloDataSubjects: (dataSilos ?? []).map((silo) => silo['data-subjects'] ?? []),
+            processingActivityDataSubjects: (processingActivities ?? []).map(
+              ({ dataSubjectTypes }) => dataSubjectTypes ?? [],
+            ),
+            enricherDataSubjects: (enrichers ?? []).map(
+              (enricher) => enricher['data-subjects'] ?? [],
+            ),
+            dataSubjectTypes: (dataSubjects ?? []).map((subject) => subject.type),
+          },
+          logger,
+        })
       : {},
     // Grab API keys
     dataSilos &&
