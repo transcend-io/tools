@@ -1,3 +1,4 @@
+import { OAuthGrantType } from './constants.js';
 import { postOAuthTokenRequest } from './token-request.js';
 import { storedTokensFromTokenResponse } from './token-store.js';
 import type { OAuthAuthorizationGrant, StoredOAuthTokens } from './types.js';
@@ -22,7 +23,7 @@ export async function exchangeAuthorizationCode(
   const { tokenEndpoint, grant, issuer, clientSecret } = options;
 
   const body = new URLSearchParams({
-    grant_type: 'authorization_code',
+    grant_type: OAuthGrantType.AuthorizationCode,
     code: grant.code,
     redirect_uri: grant.redirectUri,
     client_id: grant.clientId,
