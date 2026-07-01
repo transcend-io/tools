@@ -3,11 +3,9 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { logger } from '../../../logger.js';
+import { EMPTY_CELL } from '../constants.js';
 import { buildPolicyEngineClient, printResult, renderTable } from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
-
-/** Placeholder for nullable API fields in table output. */
-const EMPTY_CELL = '-';
 
 /** CLI flags for `transcend policy list`. */
 export interface ListCommandFlags {
