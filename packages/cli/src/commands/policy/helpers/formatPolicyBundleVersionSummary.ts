@@ -1,3 +1,4 @@
+import { EMPTY_CELL } from '../constants.js';
 import type { PolicyBundleVersion } from '../types.js';
 
 /**
@@ -11,6 +12,6 @@ export function formatPolicyBundleVersionSummary(version: PolicyBundleVersion): 
     `id          ${version.id}`,
     `version     ${version.version}`,
     `createdAt   ${version.createdAt}`,
-    `activatedAt ${version.activatedAt ?? '-'}`,
+    `activatedAt ${version.activatedAt ?? EMPTY_CELL}`,
   ].join('\n');
 }
