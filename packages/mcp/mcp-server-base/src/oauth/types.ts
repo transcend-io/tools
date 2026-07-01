@@ -72,6 +72,8 @@ export interface StoredOAuthTokens {
 
 /** In-flight OAuth login session (phases 1–3). */
 export interface PendingOAuthSession {
+  /** Browser authorization URL opened for this login attempt */
+  authorizationUrl: string;
   /** Fixed localhost redirect URI used for this session */
   redirectUri: string;
   /** Configured OAuth client identifier */

@@ -128,7 +128,7 @@ describe('OAuth redirect config', () => {
     expect(() => requireOAuthStartupEnv()).toThrow(OAUTH_CLIENTS_ADMIN_URL);
   });
 
-  it('uses TRANSCEND_DASHBOARD_URL for admin guidance in test env when set', () => {
+  it('includes admin URL when client secret is missing', () => {
     process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '5555';
     process.env.TRANSCEND_DASHBOARD_URL = 'https://yo.com:3000';

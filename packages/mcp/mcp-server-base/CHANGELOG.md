@@ -4,7 +4,11 @@
 
 ### Patch Changes
 
-- Add OAuth configuration helpers (`TRANSCEND_OAUTH_*` env), PKCE utilities, scope registry, authorization-server metadata fetch, client credential verification (`POST {issuer}/oauth/client-verify`), and token expiry helpers. Library foundation only; interactive login and MCP server wiring land in follow-up PRs.
+- OAuth callback timeouts are now non-retryable and return an agent-facing message instructing the agent to report the timeout and wait for a new user message.
+- OAuth stdio tokens are **session-only**: access and refresh tokens are kept in process memory and are not written to disk. Restarting the MCP client (or MCP server process) requires signing in again. Expired access tokens are still refreshed silently within the same process when a refresh token is available.
+- Added stdio OAuth login (browser consent on first tool use). OAuth mode is opt-in: it activates only when `TRANSCEND_OAUTH_CLIENT_ID` is set and `TRANSCEND_API_KEY` is not. Existing API key auth is unchanged.
+- When OAuth mode is enabled, startup requires `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. Credentials are verified via `POST {issuer}/oauth/client-verify` (`{ client_id, client_secret, redirect_uri }` → `{ success: boolean }`). Register redirect URI `http://127.0.0.1:{port}/callback` on the OAuth client to match `TRANSCEND_OAUTH_REDIRECT_PORT`. Added `verifyOAuthClientCredentials` export.
+- Added `TRANSCEND_OAUTH_REDIRECT_HOST` for OAuth stdio callback loopback address (`127.0.0.1` default, or `::1` for `http://[::1]:{port}/callback`). Startup verification, authorize, token exchange, and the callback server all use the configured host.
 
 ## 0.4.5
 

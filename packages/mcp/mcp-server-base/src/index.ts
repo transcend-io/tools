@@ -1,5 +1,5 @@
 export { authHeaders } from './auth.js';
-export type { AuthCredentials, ApiKeyAuth, SessionCookieAuth } from './auth.js';
+export type { AuthCredentials, ApiKeyAuth, OAuthTokenAuth, SessionCookieAuth } from './auth.js';
 
 export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
@@ -48,11 +48,70 @@ export type { BuildMcpServerOptions } from './server/build-server.js';
 
 export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 
+export {
+  isOAuthModeEnabled,
+  getOAuthIssuer,
+  getOAuthClientIdFromEnv,
+  getOAuthClientSecret,
+  getOAuthRedirectPort,
+  requireOAuthStartupEnv,
+} from './oauth/config.js';
+export {
+  OFFLINE_ACCESS_SCOPE,
+  mergeOAuthScopes,
+  configureOAuthScopes,
+  getOAuthScopes,
+  resetConfiguredOAuthScopes,
+} from './oauth/scopes.js';
+export { resolveStdioStartupAuth } from './oauth/resolve-stdio-auth.js';
+export {
+  startOAuthLogin,
+  buildAuthorizationUrl,
+  waitForAuthorizationGrant,
+} from './oauth/oauth-flow.js';
+export {
+  ensureLazyOAuthAuth,
+  getLazyOAuthCredentials,
+  getStoredAuthorizationGrant,
+  isLazyOAuthSessionReady,
+  resetLazyOAuthState,
+} from './oauth/lazy-auth.js';
+export { verifyOAuthClientCredentials } from './oauth/client-verify.js';
+export {
+  getOAuthClientId,
+  initializeOAuthClient,
+  resetOAuthClientState,
+} from './oauth/client-registry.js';
+export { ensureOAuthStartupReady } from './oauth/startup.js';
+export { OAuthCallbackError, parseOAuthCallbackQuery } from './oauth/parse-callback.js';
+export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
+export { refreshOAuthTokens } from './oauth/token-refresh.js';
+export {
+  getActiveOAuthCredentials,
+  getActiveStoredOAuthTokens,
+  getValidOAuthCredentials,
+  resetOAuthTokenManagerState,
+  setActiveStoredOAuthTokens,
+} from './oauth/token-manager.js';
+export {
+  computeOAuthExpiresAt,
+  isOAuthTokenAuthValid,
+  isStoredOAuthTokenValid,
+  storedOAuthTokensToAuth,
+  storedTokensFromRefreshResponse,
+  storedTokensFromTokenResponse,
+} from './oauth/token-store.js';
+export type {
+  OAuthAuthorizationGrant,
+  OAuthCallbackResult,
+  OAuthTokenResponse,
+  PendingOAuthSession,
+  StoredOAuthTokens,
+} from './oauth/types.js';
+
 export { resolveMcpDashboardUrl } from './server/resolve-dashboard-url.js';
 
 export { resolveMcpGraphqlUrl } from './server/resolve-graphql-url.js';
-
-export { isOAuthModeEnabled } from './oauth/config.js';
 
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';
