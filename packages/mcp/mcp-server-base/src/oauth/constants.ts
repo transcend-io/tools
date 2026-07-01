@@ -19,6 +19,9 @@ export const TRANSCEND_OAUTH_REDIRECT_HOST_ENV = 'TRANSCEND_OAUTH_REDIRECT_HOST'
 /** Default loopback host for the OAuth redirect URI (`127.0.0.1`). */
 export const DEFAULT_OAUTH_REDIRECT_HOST = '127.0.0.1';
 
+/** Maximum time to wait for `/oauth/client-verify` during startup credential checks. */
+export const OAUTH_CLIENT_VERIFY_TIMEOUT_MS = 5_000;
+
 /** Maximum time to wait for the browser OAuth callback. */
 export const OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 

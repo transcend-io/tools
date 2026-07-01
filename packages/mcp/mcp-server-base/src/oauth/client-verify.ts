@@ -1,4 +1,4 @@
-import { formatOAuthClientConfigError } from './constants.js';
+import { formatOAuthClientConfigError, OAUTH_CLIENT_VERIFY_TIMEOUT_MS } from './constants.js';
 import { normalizeIssuer } from './normalize-issuer.js';
 
 /**
@@ -12,15 +12,33 @@ export async function verifyOAuthClientCredentials(
 ): Promise<void> {
   const url = `${normalizeIssuer(issuer)}/oauth/client-verify`;
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), OAUTH_CLIENT_VERIFY_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+      }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(
+        formatOAuthClientConfigError(
+          `OAuth client verification timed out after ${OAUTH_CLIENT_VERIFY_TIMEOUT_MS}ms`,
+        ),
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     const detail = await response.text().catch(() => '');

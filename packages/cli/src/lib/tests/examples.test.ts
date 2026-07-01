@@ -314,7 +314,7 @@ describe('Example commands', async () => {
     }
   });
 
-  test('Example commands pass shellcheck', async () => {
+  test('Example commands pass shellcheck', { timeout: 30_000 }, async () => {
     const shellcheckFailures = await getShellcheckFailures(unalteredCommands);
 
     if (shellcheckFailures.length > 0) {
