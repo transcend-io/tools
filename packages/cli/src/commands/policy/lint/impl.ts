@@ -41,9 +41,9 @@ export async function lint(this: LocalContext, { dir }: LintCommandFlags): Promi
 
   if (unformattedFiles.length > 0) {
     logger.error(colors.red('Policy files are not formatted:'));
-    for (const file of unformattedFiles) {
+    unformattedFiles.forEach((file) => {
       logger.error(colors.red(`  - ${file}`));
-    }
+    });
     logger.error('');
     await runOpa(['fmt', '--diff', resolvedDir]);
 
