@@ -1,3 +1,4 @@
+import { OAuthGrantType } from './constants.js';
 import { postOAuthTokenRequest } from './token-request.js';
 import { storedTokensFromRefreshResponse } from './token-store.js';
 import type { StoredOAuthTokens } from './types.js';
@@ -23,7 +24,7 @@ export async function refreshOAuthTokens(
   }
 
   const body = new URLSearchParams({
-    grant_type: 'refresh_token',
+    grant_type: OAuthGrantType.RefreshToken,
     refresh_token: stored.refreshToken,
     client_id: stored.clientId,
     client_secret: clientSecret,

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { OAuthGrantType } from '../src/oauth/constants.js';
 import { refreshOAuthTokens } from '../src/oauth/token-refresh.js';
 import { storedTokensFromTokenResponse } from '../src/oauth/token-store.js';
 
@@ -51,7 +52,7 @@ describe('refreshOAuthTokens', () => {
         Accept: 'application/json',
       },
       body: new URLSearchParams({
-        grant_type: 'refresh_token',
+        grant_type: OAuthGrantType.RefreshToken,
         refresh_token: 'refresh-token',
         client_id: 'client-xyz',
         client_secret: 'client-secret',
