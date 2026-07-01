@@ -1,0 +1,18 @@
+---
+description: Tests must live next to the code they test
+globs: "**/*.test.ts"
+alwaysApply: false
+---
+
+# Test Colocation
+
+Tests always live in a `tests/` folder next to the source file they cover.
+
+```
+packages/sdk/src/preference-management/
+  getPreferenceIdentifiersFromRow.ts
+  tests/
+    getPreferenceIdentifiersFromRow.test.ts
+```
+
+When moving a function between packages, move its test file too.

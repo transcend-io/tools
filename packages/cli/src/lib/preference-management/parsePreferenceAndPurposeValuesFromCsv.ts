@@ -12,6 +12,7 @@ import { logger } from '../../logger.js';
 /**
  * Parse out the purpose.enabled and preference values from a CSV file
  *
+ * @deprecated Use the version in parsePreferenceAndPurposeValuesInteractive.ts which accepts FileFormatState
  * @param preferences - List of preferences
  * @param currentState - The current file metadata state for parsing this list
  * @param options - Options
