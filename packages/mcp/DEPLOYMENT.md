@@ -1,6 +1,6 @@
 # Deploying Transcend MCP Servers over HTTP
 
-This guide covers running Transcend MCP servers in HTTP mode for remote hosting. For local stdio usage (Claude Desktop, Cursor), see the package READMEs.
+This guide covers running Transcend MCP servers in HTTP mode for remote hosting. For local stdio usage (Claude Desktop, Cursor), see the [MCP root README](./README.md#quick-start-stdio--oauth) and individual package READMEs.
 
 ## Quick start
 
@@ -28,15 +28,15 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 
 ### Environment variables
 
-| Variable                       | Default                                    | Description                                                                                                    |
-| ------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | —                                          | Default API key. Required for stdio; optional for HTTP if using session cookie or per-request API key headers. |
-| `TRANSCEND_API_URL`            | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                               |
-| `SOMBRA_URL`                   | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                             |
-| `TRANSCEND_HTTP_PORT`          | `3000`                                     | HTTP listen port (overridden by `--port`)                                                                      |
-| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                                | HTTP listen host (overridden by `--host`)                                                                      |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | —                                          | Comma-separated allowed CORS origins                                                                           |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)                         | Idle session timeout in milliseconds                                                                           |
+| Variable                       | Default                                    | Description                                                                                                     |
+| ------------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`            | —                                          | Default API key for HTTP transport, or stdio alternative to OAuth. Disables OAuth when set alongside client ID. |
+| `TRANSCEND_API_URL`            | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                |
+| `SOMBRA_URL`                   | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                              |
+| `TRANSCEND_HTTP_PORT`          | `3000`                                     | HTTP listen port (overridden by `--port`)                                                                       |
+| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                                | HTTP listen host (overridden by `--host`)                                                                       |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | —                                          | Comma-separated allowed CORS origins                                                                            |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)                         | Idle session timeout in milliseconds                                                                            |
 
 ## Authentication
 
@@ -64,7 +64,7 @@ For programmatic access (Claude Enterprise, Cursor, custom agents), send an API 
 
 ### 3. Environment variable fallback
 
-If no auth headers are present (or for stdio mode), the server falls back to the `TRANSCEND_API_KEY` environment variable.
+If no auth headers are present in HTTP mode, the server falls back to the `TRANSCEND_API_KEY` environment variable. For stdio transport, use OAuth (recommended — see package READMEs) or `TRANSCEND_API_KEY` as an alternative.
 
 ### Multi-tenant deployments
 
