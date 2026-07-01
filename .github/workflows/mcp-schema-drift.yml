@@ -1,13 +1,8 @@
 name: MCP Schema Drift Check
 
 # Validates each PR's GraphQL operations against the *live* staging schema,
-# not just the committed `schema.graphql` snapshot. This catches drift the
-# hermetic local/CI build cannot: a field an operation relies on that changed
-# or disappeared on staging since the snapshot was last refreshed.
-#
-# Runs only when MCP code or the schema tooling changes, so unrelated PRs are
-# unaffected. It is intentionally network-dependent (it introspects staging),
-# which is why it lives in CI rather than a local commit hook.
+# not just the committed `schema.graphql` snapshot. Runs only when MCP code
+# or the schema tooling changes, so unrelated PRs are unaffected.
 
 on:
   pull_request:
@@ -36,18 +31,43 @@ jobs:
         # Anonymous introspection; no API key required.
         run: pnpm graphql:refresh-schema
 
-      - name: Report drift vs committed schema.graphql
+      - name: Detect schema drift
+        id: drift
         run: |
           if git diff --quiet -- schema.graphql; then
             echo "::notice::Committed schema.graphql matches live staging — no drift."
+            echo "drifted=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::Live staging schema differs from the committed schema.graphql. Consider running 'pnpm graphql:refresh-schema' and committing the result. Drift stat:"
-            git diff --stat -- schema.graphql
+            echo "::warning::Live staging schema differs from the committed schema.graphql. Checking the MCP packages for drift."
+            echo "drifted=true" >> "$GITHUB_OUTPUT"
           fi
 
+      # Only bother regenerating + typechecking when the schema drifted.
       - name: Regenerate codegen against live schema
+        if: steps.drift.outputs.drifted == 'true'
         run: pnpm codegen
 
-      - name: Typecheck operations against live schema
-        # Fails if any MCP operation no longer matches the live staging schema.
-        run: pnpm typecheck
+      - name: Typecheck MCP packages against live schema
+        if: steps.drift.outputs.drifted == 'true'
+        # schema.graphql always drifts in many (usually additive) places, so the
+        # schema diff isn't the useful signal — the tsc errors are. Run only the
+        # MCP typechecks and, on failure, surface exactly which MCP types broke.
+
+        # --force: never let a cached result satisfy this check. The whole
+        # point is to prove the *live* schema doesn't break MCP types, so the
+        # typecheck must actually run against the just-refreshed schema rather
+        # than restore a (possibly stale) cached pass.
+        run: |
+          set -o pipefail
+          if pnpm exec turbo run typecheck --filter='./packages/mcp/*' --force --output-logs=errors-only 2>&1 | tee typecheck.log; then
+            echo "::notice::Live-schema drift is additive — no MCP types broke."
+            exit 0
+          fi
+          {
+            echo "### MCP types broken by live-schema drift"
+            echo '```'
+            grep -E 'error TS[0-9]+' typecheck.log | sort -u
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::Live staging schema drift breaks MCP types (see the job summary)."
+          exit 1
