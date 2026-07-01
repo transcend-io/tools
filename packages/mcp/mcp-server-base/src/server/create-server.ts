@@ -5,10 +5,11 @@ import { SimpleLogger } from '../clients/graphql/base.js';
 import { TranscendRestClient } from '../clients/rest-client.js';
 import { DEFAULT_SOMBRA_URL } from '../defaults.js';
 import { isOAuthModeEnabled } from '../oauth/config.js';
+import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
+import { configureOAuthScopes } from '../oauth/scopes.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
-import { resolveAuth } from './resolve-auth.js';
 import { resolveMcpDashboardUrl } from './resolve-dashboard-url.js';
 import { resolveMcpGraphqlUrl } from './resolve-graphql-url.js';
 import { runMcpHttp } from './run-http.js';
@@ -35,6 +36,8 @@ export interface MCPServerOptions {
   name: string;
   /** Server version */
   version: string;
+  /** Domain OAuth scopes (offline_access is added automatically) */
+  oauthScopes: readonly string[];
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
   /**
@@ -67,6 +70,8 @@ async function buildClients(
  * authenticated via session cookie or API key header.
  */
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
+  configureOAuthScopes(options.oauthScopes);
+
   const config = parseTransportArgs();
   const isHttpTransport = config.transport === 'http';
   SimpleLogger.setInfoToStdout(isHttpTransport);
@@ -101,13 +106,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const auth = isOAuthModeEnabled() ? null : resolveAuth();
-  logger.info('Initializing Transcend API clients...', {
-    sombraUrl,
-    graphqlUrl,
-    dashboardUrl,
-    authType: auth?.type ?? (isOAuthModeEnabled() ? 'oauth-pending' : 'none'),
-  });
+  const auth = resolveStdioStartupAuth();
   const clients = await buildClients(
     { auth, sombraUrl, graphqlUrl, dashboardUrl },
     options.createClients,

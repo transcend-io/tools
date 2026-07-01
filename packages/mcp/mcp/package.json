@@ -51,6 +51,7 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@transcend-io/privacy-types": "workspace:*",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",

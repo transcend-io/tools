@@ -1,4 +1,5 @@
 export { getConsentTools } from './tools/index.js';
+export { CONSENT_OAUTH_SCOPES } from './scopes.js';
 export { resolveAirgapBundleId } from './resolveAirgapBundleId.js';
 export { resolveAnalyticsDateRange } from './analyticsDateRange.js';
 

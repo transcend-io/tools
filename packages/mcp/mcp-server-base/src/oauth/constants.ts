@@ -1,4 +1,3 @@
-import { DEFAULT_DASHBOARD_URL } from '../defaults.js';
 import { resolveMcpDashboardUrl } from '../server/resolve-dashboard-url.js';
 
 /** OAuth 2.0 token endpoint grant_type values used by this package. */
@@ -75,9 +74,6 @@ export const TRANSCEND_DASHBOARD_URL_ENV = 'TRANSCEND_DASHBOARD_URL';
 
 /** Path on the admin dashboard where OAuth clients are managed. */
 export const OAUTH_CLIENTS_ADMIN_PATH = '/admin/oauth-clients';
-
-/** Default URL where admins create and manage OAuth clients. */
-export const OAUTH_CLIENTS_ADMIN_URL = `${DEFAULT_DASHBOARD_URL}${OAUTH_CLIENTS_ADMIN_PATH}`;
 
 /**
  * Returns the admin OAuth clients URL using {@link resolveMcpDashboardUrl}.

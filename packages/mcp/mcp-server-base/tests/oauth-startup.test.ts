@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SimpleLogger } from '../src/clients/graphql/base.js';
 import { resetOAuthClientState } from '../src/oauth/client-registry.js';
 import * as clientVerify from '../src/oauth/client-verify.js';
-import { OAUTH_CLIENTS_ADMIN_URL, formatOAuthClientConfigError } from '../src/oauth/constants.js';
+import { formatOAuthClientConfigError, getOAuthClientsAdminUrl } from '../src/oauth/constants.js';
 import { ensureOAuthStartupReady } from '../src/oauth/startup.js';
 
 describe('ensureOAuthStartupReady', () => {
@@ -128,6 +128,6 @@ describe('ensureOAuthStartupReady', () => {
       new Error(formatOAuthClientConfigError('OAuth client verification failed: HTTP 401')),
     );
 
-    await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    await expect(ensureOAuthStartupReady(logger)).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 });

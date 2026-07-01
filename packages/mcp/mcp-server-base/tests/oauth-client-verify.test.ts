@@ -5,7 +5,7 @@ import {
   resolveRegionalOAuthIssuer,
   verifyOAuthClientCredentials,
 } from '../src/oauth/client-verify.js';
-import { OAUTH_CLIENTS_ADMIN_URL, OAUTH_CLIENT_VERIFY_TIMEOUT_MS } from '../src/oauth/constants.js';
+import { getOAuthClientsAdminUrl, OAUTH_CLIENT_VERIFY_TIMEOUT_MS } from '../src/oauth/constants.js';
 
 describe('verifyOAuthClientCredentials', () => {
   const originalDashboardUrl = process.env.TRANSCEND_DASHBOARD_URL;
@@ -21,12 +21,12 @@ describe('verifyOAuthClientCredentials', () => {
     else process.env.TRANSCEND_DASHBOARD_URL = originalDashboardUrl;
   });
 
-  it('succeeds when the server returns success: true', async () => {
+  it('succeeds when the server returns isValid: true', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ isValid: true }),
       }),
     );
 
@@ -76,15 +76,15 @@ describe('verifyOAuthClientCredentials', () => {
         'bad-secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 
-  it('throws when success is false', async () => {
+  it('throws when isValid is false', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: false }),
+        json: async () => ({ isValid: false }),
       }),
     );
 
@@ -103,10 +103,10 @@ describe('verifyOAuthClientCredentials', () => {
         'secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 
-  it('throws when success is missing', async () => {
+  it('throws when isValid is missing', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -199,7 +199,7 @@ describe('resolveRegionalOAuthIssuer', () => {
               () =>
                 resolve({
                   ok: true,
-                  json: async () => ({ success: true }),
+                  json: async () => ({ isValid: true }),
                 }),
               50,
             );
@@ -208,7 +208,7 @@ describe('resolveRegionalOAuthIssuer', () => {
 
         return Promise.resolve({
           ok: true,
-          json: async () => ({ success: true }),
+          json: async () => ({ isValid: true }),
         });
       }),
     );
@@ -247,7 +247,7 @@ describe('resolveRegionalOAuthIssuer', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ success: true }),
+          json: async () => ({ isValid: true }),
         }),
     );
 
@@ -320,6 +320,6 @@ describe('resolveRegionalOAuthIssuer', () => {
         'bad-secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(OAUTH_CLIENTS_ADMIN_URL);
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 });

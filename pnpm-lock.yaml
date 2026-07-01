@@ -431,6 +431,9 @@ importers:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
         version: 0.18.3
+      '@transcend-io/privacy-types':
+        specifier: workspace:*
+        version: link:../../privacy-types
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.21
@@ -624,6 +627,9 @@ importers:
       '@transcend-io/mcp-server-base':
         specifier: workspace:*
         version: link:../mcp-server-base
+      '@transcend-io/privacy-types':
+        specifier: workspace:*
+        version: link:../../privacy-types
       graphql:
         specifier: 'catalog:'
         version: 16.14.2
@@ -701,6 +707,9 @@ importers:
       '@transcend-io/mcp-server-base':
         specifier: workspace:*
         version: link:../mcp-server-base
+      '@transcend-io/privacy-types':
+        specifier: workspace:*
+        version: link:../../privacy-types
       graphql:
         specifier: 'catalog:'
         version: 16.14.2
@@ -735,6 +744,9 @@ importers:
       '@transcend-io/mcp-server-base':
         specifier: workspace:*
         version: link:../mcp-server-base
+      '@transcend-io/privacy-types':
+        specifier: workspace:*
+        version: link:../../privacy-types
       zod:
         specifier: 'catalog:'
         version: 4.4.3
@@ -769,6 +781,9 @@ importers:
       '@transcend-io/mcp-server-base':
         specifier: workspace:*
         version: link:../mcp-server-base
+      '@transcend-io/privacy-types':
+        specifier: workspace:*
+        version: link:../../privacy-types
       graphql:
         specifier: 'catalog:'
         version: 16.14.2

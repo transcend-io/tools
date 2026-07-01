@@ -50,7 +50,7 @@ export async function verifyOAuthClientCredentials(
   }
 
   const body = (await response.json()) as Record<string, unknown>;
-  if (body.success !== true) {
+  if (body.isValid !== true) {
     throw new Error(
       formatOAuthClientConfigError('OAuth client verification failed: credentials were rejected'),
     );

@@ -6,7 +6,8 @@ import {
   DEFAULT_SOMBRA_URL,
   isOAuthModeEnabled,
   parseTransportArgs,
-  resolveAuth,
+  resolveStdioStartupAuth,
+  configureOAuthScopes,
   resolveMcpDashboardUrl,
   resolveMcpGraphqlUrl,
   runMcpHttp,
@@ -16,6 +17,7 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import { TranscendGraphQLClient } from './graphql-client.js';
+import { UMBRELLA_OAUTH_SCOPES } from './oauth-scopes.js';
 import { ToolRegistry } from './registry.js';
 
 const VERSION = '3.0.2';
@@ -66,7 +68,14 @@ async function main(): Promise<void> {
   }
 
   // stdio mode
-  const auth = isOAuthModeEnabled() ? null : resolveAuth();
+  configureOAuthScopes(UMBRELLA_OAUTH_SCOPES);
+  const auth = resolveStdioStartupAuth();
+  logger.info('Initializing Transcend API clients...', {
+    sombraUrl,
+    graphqlUrl,
+    dashboardUrl,
+    authType: auth?.type ?? (isOAuthModeEnabled() ? 'oauth-pending' : 'none'),
+  });
 
   const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
 
