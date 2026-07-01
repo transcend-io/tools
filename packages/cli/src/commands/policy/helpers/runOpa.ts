@@ -44,7 +44,7 @@ export function runOpa(args: string[], options: { cwd?: string } = {}): Promise<
  * @param options - Optional working directory
  * @returns Exit code and captured output
  */
-export function runOpaCapture(
+export function runOPACapture(
   args: string[],
   options: { cwd?: string } = {},
 ): Promise<RunOpaCaptureResult> {

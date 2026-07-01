@@ -7,14 +7,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildOpaBundleTarball } from '../buildOpaBundleTarball.js';
 
-const runOpaCaptureMock = vi.hoisted(() => vi.fn());
+const runOPACaptureMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../assertOpaInstalled.js', () => ({
   assertOpaInstalled: vi.fn(),
 }));
 
 vi.mock('../runOpa.js', () => ({
-  runOpaCapture: runOpaCaptureMock,
+  runOPACapture: runOPACaptureMock,
 }));
 
 describe('buildOpaBundleTarball', () => {
@@ -23,7 +23,7 @@ describe('buildOpaBundleTarball', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    runOpaCaptureMock.mockResolvedValue({ code: 0, stdout: '', stderr: '' });
+    runOPACaptureMock.mockResolvedValue({ code: 0, stdout: '', stderr: '' });
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-bundle-test-'));
     outputPaths = [];
   });

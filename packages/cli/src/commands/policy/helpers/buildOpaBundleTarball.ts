@@ -8,7 +8,7 @@ import fg from 'fast-glob';
 
 import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '../constants.js';
 import { assertOpaInstalled } from './assertOpaInstalled.js';
-import { runOpaCapture } from './runOpa.js';
+import { runOPACapture } from './runOpa.js';
 
 /**
  * Returns whether a relative path is a publishable Rego policy file.
@@ -70,7 +70,7 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
   }
 
   // Match the Rego v1 validation the Policy Engine API runs on upload.
-  const { code: checkCode, stderr: checkStderr } = await runOpaCapture([
+  const { code: checkCode, stderr: checkStderr } = await runOPACapture([
     'check',
     '--strict',
     '--v0-compatible',
