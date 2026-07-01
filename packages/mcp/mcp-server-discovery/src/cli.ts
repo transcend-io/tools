@@ -3,10 +3,11 @@ import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-b
 
 import { DiscoveryMixin } from './graphql.js';
 import { getDiscoveryTools } from './tools/index.js';
+import { packageVersion } from './version.js';
 
 createMCPServer({
   name: 'transcend-mcp-discovery',
-  version: '1.0.0',
+  version: packageVersion,
   getTools: getDiscoveryTools,
   createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
     rest: new TranscendRestClient(auth, sombraUrl),
