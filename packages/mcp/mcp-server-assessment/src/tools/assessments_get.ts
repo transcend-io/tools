@@ -4,8 +4,8 @@ import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 
 export const GetAssessmentSchema = z.object({
-  assessment_id: z.string().describe('ID of the assessment to retrieve'),
-  assessment_name: z
+  assessmentId: z.string().describe('ID of the assessment to retrieve'),
+  assessmentName: z
     .string()
     .optional()
     .describe(
@@ -25,8 +25,8 @@ export function createAssessmentsGetTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetAssessmentSchema,
-    handler: async ({ assessment_id }) => {
-      const result = await graphql.getAssessment(assessment_id);
+    handler: async ({ assessmentId }) => {
+      const result = await graphql.getAssessment(assessmentId);
       const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });
       return createToolResult(true, { ...result, ...links });
     },

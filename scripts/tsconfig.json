@@ -10,6 +10,12 @@
     "noEmit": true,
     "rootDir": ".",
     "types": ["node", "vitest/globals"],
+    // The MCP description audit imports `@transcend-io/mcp-server-consent`,
+    // which transitively re-exports types from `@transcend-io/airgap.js-types`
+    // referencing global DOM types (Node, Element, Window). Including `DOM`
+    // here surfaces those types only in this script project; library-style
+    // packages keep their own narrower lib lists untouched.
+    "lib": ["ES2022", "DOM"],
     "composite": false
   },
   "include": ["./**/*.ts"]

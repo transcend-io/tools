@@ -12,31 +12,31 @@ import { resolveTemplateToGroupId } from './_helpers.js';
 
 export const PrefillSchema = z.object({
   title: z.string().describe('Title for the new assessment form'),
-  template_id: z
+  templateId: z
     .string()
     .optional()
     .describe(
       'Template ID to create the form from. Will auto-resolve to the first matching assessment group.',
     ),
-  assessment_group_id: z
+  assessmentGroupId: z
     .string()
     .optional()
-    .describe('Assessment group ID (alternative to template_id)'),
+    .describe('Assessment group ID (alternative to templateId)'),
   answers: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .describe(
       'Map of answers keyed by question title or referenceId. Values should be strings for text/single-select, or arrays of strings for multi-select.',
     ),
-  assignee_ids: z
+  assigneeIds: z
     .array(z.string())
     .optional()
     .describe('Internal user IDs to assign the form to (optional)'),
-  assignee_emails: z
+  assigneeEmails: z
     .array(z.string())
     .optional()
     .describe('External email addresses to assign the form to (optional)'),
-  reviewer_ids: z.array(z.string()).optional().describe('User IDs to set as reviewers (optional)'),
-  submit_for_review: z
+  reviewerIds: z.array(z.string()).optional().describe('User IDs to set as reviewers (optional)'),
+  submitForReview: z
     .boolean()
     .optional()
     .describe(
@@ -64,30 +64,30 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
     handler: async ({
       answers,
       title,
-      assessment_group_id,
-      template_id,
-      assignee_ids,
-      assignee_emails,
-      reviewer_ids,
-      submit_for_review,
+      assessmentGroupId,
+      templateId,
+      assigneeIds,
+      assigneeEmails,
+      reviewerIds,
+      submitForReview,
     }) => {
-      let assessmentGroupId = assessment_group_id;
-      if (!assessmentGroupId && template_id) {
-        const resolved = await resolveTemplateToGroupId(graphql, template_id);
+      let resolvedAssessmentGroupId = assessmentGroupId;
+      if (!resolvedAssessmentGroupId && templateId) {
+        const resolved = await resolveTemplateToGroupId(graphql, templateId);
         if ('error' in resolved) return resolved.error;
-        assessmentGroupId = resolved.groupId;
+        resolvedAssessmentGroupId = resolved.groupId;
       }
-      if (!assessmentGroupId) {
+      if (!resolvedAssessmentGroupId) {
         return createToolResult(
           false,
           undefined,
-          'Either template_id or assessment_group_id is required.',
+          'Either templateId or assessmentGroupId is required.',
         );
       }
 
       const assessment = await graphql.createAssessment({
         title,
-        assessmentGroupId,
+        assessmentGroupId: resolvedAssessmentGroupId,
       });
       const assessmentId = assessment.id;
 
@@ -199,23 +199,23 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       }
 
       let assignmentResult: Record<string, unknown> | null = null;
-      if (assignee_ids || assignee_emails) {
+      if (assigneeIds || assigneeEmails) {
         assignmentResult = await graphql.updateAssessmentFormAssignees({
           id: assessmentId,
-          assigneeIds: assignee_ids,
-          externalAssigneeEmails: assignee_emails,
+          assigneeIds,
+          externalAssigneeEmails: assigneeEmails,
         });
       }
 
-      if (reviewer_ids) {
+      if (reviewerIds) {
         await graphql.updateAssessment({
           id: assessmentId,
-          reviewerIds: reviewer_ids,
+          reviewerIds,
         });
       }
 
       let submitResult: Assessment | null = null;
-      if (submit_for_review) {
+      if (submitForReview) {
         const sectionIds = (fullForm.sections as AssessmentSection[]).map((s) => s.id);
         if (sectionIds.length > 0) {
           submitResult = await graphql.submitAssessmentForReview({

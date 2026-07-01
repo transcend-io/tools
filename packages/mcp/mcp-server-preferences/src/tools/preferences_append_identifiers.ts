@@ -4,7 +4,7 @@ import { IdentifierSchema } from './preferences_query.js';
 
 export const AppendIdentifiersSchema = z.object({
   partition: z.string().describe('Partition/organization context'),
-  user_id: z.string().describe('User ID to append identifiers to'),
+  userId: z.string().describe('User ID to append identifiers to'),
   identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to append'),
 });
 export type AppendIdentifiersInput = z.infer<typeof AppendIdentifiersSchema>;
@@ -19,10 +19,10 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Appends identifiers to the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AppendIdentifiersSchema,
-    handler: async ({ partition, user_id, identifiers }) => {
+    handler: async ({ partition, userId, identifiers }) => {
       const result = await rest.appendIdentifiers(
         partition,
-        user_id,
+        userId,
         identifiers.map((id) => ({
           value: id.value,
           type: id.type,

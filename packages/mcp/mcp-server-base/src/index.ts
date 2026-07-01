@@ -27,7 +27,13 @@ export { ToolError, ErrorCode, classifyHttpError } from './errors.js';
 
 export { validateArgs, z } from './validation/index.js';
 export type { ValidationResult } from './validation/index.js';
-export { EmptySchema, PaginationSchema } from './validation/schemas.js';
+export {
+  CursorPaginationSchema,
+  EmptySchema,
+  OffsetPaginationSchema,
+  PaginationSchema,
+} from './validation/schemas.js';
+export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
 
 export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
 export { defineTool } from './tools/types.js';

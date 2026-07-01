@@ -332,6 +332,38 @@ For production deployment patterns (Docker, nginx, cloud), see [`packages/mcp/DE
 6. Add or extend tests in the domain package's `tests/` directory.
 7. The unified `mcp` package picks up the new tool automatically through its `ToolRegistry`.
 
+### Tool Input Conventions
+
+These conventions are enforced by `scripts/check-mcp-descriptions.test.ts` and surface as CI failures:
+
+- **camelCase input fields**. Tool names themselves stay snake_case (they are addressable identifiers), but every Zod input field must be camelCase. Snake_case fields are blocked by review and break LLM client tooling that assumes camelCase.
+- **Every field needs a `.describe(...)` call**. Descriptions are the only signal an LLM has for what an argument means. `defineTool` recursively rejects any input field (at any nesting depth) with a missing or trivially short (< 8 chars) description, throwing at tool construction; the audit test enforces the same across every server in CI.
+- **Pagination**. Reuse `CursorPaginationSchema` or `OffsetPaginationSchema` from `@transcend-io/mcp-server-base` instead of redeclaring `limit`/`offset` per tool. The legacy `PaginationSchema` is deprecated.
+
+### GraphQL Operations and Codegen
+
+Every MCP server's GraphQL operations are validated against the committed schema at compile time:
+
+- Author operations with the generated `graphql()` tag in each domain's `src/graphql.ts`. The tag returns a `TypedDocumentNode<Result, Variables>`, which `TranscendGraphQLBase.makeRequest` consumes natively. Drift between an operation and the staging schema fails `tsc` rather than surfacing as a runtime error.
+- The schema lives at `schema.graphql` (committed). Do not edit it by hand. Refresh it with `pnpm graphql:refresh-schema` and let CI flag any tools that break against the new shape.
+- After editing operations, run `pnpm codegen` to regenerate `__generated__/` artifacts. The artifacts are gitignored — `pnpm build`/`pnpm typecheck`/`pnpm test` invoke the codegen task automatically through Turbo's dependency graph, so the only time you need to run codegen by hand is during local development.
+
+### Updating `schema.graphql`
+
+`schema.graphql` is a committed snapshot of the staging GraphQL schema (`api.staging.transcen.dental`). It is the offline source of truth so local and CI builds stay hermetic. Refresh it when:
+
+- Staging adds or removes a type/field that an MCP tool needs to consume.
+- A failing `pnpm codegen` traces back to a missing schema element.
+
+To refresh:
+
+1. Run `pnpm graphql:refresh-schema`. The script anonymously introspects staging, strips type/field descriptions (so internal prose never lands in this public repo), and writes `schema.graphql`. No API key or extra tooling is required.
+2. Run `pnpm codegen && pnpm typecheck` to confirm the new shape works for every operation, then commit `schema.graphql` alongside any operation/test updates.
+
+Manual refreshes (e.g., when developing against a feature schema before it lands in staging) are fine; just make sure the resulting `pnpm typecheck` is green before pushing.
+
+> **Heads-up**: staging usually leads prod by days or weeks. If you author a tool that depends on a brand-new field, double-check the field has actually rolled out to `api.transcend.io` before publishing the package — typed operations against fields that don't yet exist in prod will fail at runtime for customers.
+
 ### Changesets
 
 MCP packages are publishable. Run `pnpm changeset` when your change modifies package code under `packages/mcp/`, just like any other publishable package.
