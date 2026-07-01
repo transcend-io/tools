@@ -22,15 +22,6 @@ import {
 } from './token-manager.js';
 import type { OAuthAuthorizationGrant } from './types.js';
 
-/** Whether OAuth tokens are available in this process lifetime. */
-let oauthSessionReady = false;
-
-/** Authorization grant from the most recent successful callback (debug / phase 3 input). */
-let storedAuthorizationGrant: OAuthAuthorizationGrant | null = null;
-
-/** In-flight OAuth login shared across concurrent tool calls. */
-let inFlightLogin: InFlightOAuthLogin | null = null;
-
 interface InFlightOAuthLogin {
   /** Shared login lifecycle promise */
   promise: Promise<void>;
@@ -42,13 +33,29 @@ interface InFlightOAuthLogin {
   urlNudgeSent: boolean;
 }
 
+/** Module-scoped lazy OAuth session state. */
+interface OAuthLazyAuthState {
+  /** Whether OAuth tokens are available in this process lifetime. */
+  sessionReady: boolean;
+  /** Authorization grant from the most recent successful callback (debug / phase 3 input). */
+  authorizationGrant: OAuthAuthorizationGrant | null;
+  /** In-flight OAuth login shared across concurrent tool calls. */
+  inFlightLogin: InFlightOAuthLogin | null;
+}
+
+const oauthLazyAuthState: OAuthLazyAuthState = {
+  sessionReady: false,
+  authorizationGrant: null,
+  inFlightLogin: null,
+};
+
 /**
  * Resets lazy OAuth session state (for tests).
  */
 export function resetLazyOAuthState(): void {
-  oauthSessionReady = false;
-  storedAuthorizationGrant = null;
-  inFlightLogin = null;
+  oauthLazyAuthState.sessionReady = false;
+  oauthLazyAuthState.authorizationGrant = null;
+  oauthLazyAuthState.inFlightLogin = null;
   resetOAuthTokenManagerState();
 }
 
@@ -56,7 +63,7 @@ export function resetLazyOAuthState(): void {
  * Returns the authorization grant from the latest successful lazy OAuth login.
  */
 export function getStoredAuthorizationGrant(): OAuthAuthorizationGrant | null {
-  return storedAuthorizationGrant;
+  return oauthLazyAuthState.authorizationGrant;
 }
 
 /**
@@ -70,7 +77,7 @@ export function getLazyOAuthCredentials(): OAuthTokenAuth | null {
  * Returns true when OAuth tokens are available in this process.
  */
 export function isLazyOAuthSessionReady(): boolean {
-  return oauthSessionReady;
+  return oauthLazyAuthState.sessionReady;
 }
 
 /**
@@ -89,17 +96,17 @@ export async function ensureLazyOAuthAuth(logger: Logger): Promise<void> {
   const issuer = getOAuthIssuer();
   const credentials = await getValidOAuthCredentials(issuer, logger);
   if (credentials) {
-    oauthSessionReady = true;
+    oauthLazyAuthState.sessionReady = true;
     return;
   }
 
-  if (!inFlightLogin) {
-    inFlightLogin = startInFlightLogin(logger);
+  if (!oauthLazyAuthState.inFlightLogin) {
+    oauthLazyAuthState.inFlightLogin = startInFlightLogin(logger);
   } else {
-    await maybeHandleLateJoiner(inFlightLogin, logger);
+    await maybeHandleLateJoiner(oauthLazyAuthState.inFlightLogin, logger);
   }
 
-  await inFlightLogin.promise;
+  await oauthLazyAuthState.inFlightLogin.promise;
 }
 
 function startInFlightLogin(logger: Logger): InFlightOAuthLogin {
@@ -110,7 +117,7 @@ function startInFlightLogin(logger: Logger): InFlightOAuthLogin {
     urlNudgeSent: false,
   };
   state.promise = performLazyOAuthLogin(state, logger).finally(() => {
-    inFlightLogin = null;
+    oauthLazyAuthState.inFlightLogin = null;
   });
   return state;
 }
@@ -150,7 +157,7 @@ async function performLazyOAuthLogin(state: InFlightOAuthLogin, logger: Logger):
     state.browserOpenedAt = Date.now();
 
     const grant = await waitForAuthorizationGrant(session);
-    storedAuthorizationGrant = grant;
+    oauthLazyAuthState.authorizationGrant = grant;
 
     const metadata = await fetchAuthorizationServerMetadata(issuer);
     const tokens = await exchangeAuthorizationCode({
@@ -160,13 +167,13 @@ async function performLazyOAuthLogin(state: InFlightOAuthLogin, logger: Logger):
       clientSecret: getOAuthClientSecret()!,
     });
     setActiveStoredOAuthTokens(tokens);
-    oauthSessionReady = true;
+    oauthLazyAuthState.sessionReady = true;
 
     logger.info('OAuth token exchange succeeded');
   } catch (error) {
     setActiveStoredOAuthTokens(null);
-    oauthSessionReady = false;
-    storedAuthorizationGrant = null;
+    oauthLazyAuthState.sessionReady = false;
+    oauthLazyAuthState.authorizationGrant = null;
 
     const message = error instanceof Error ? error.message : String(error);
     logger.error('OAuth login failed', { error: message });
