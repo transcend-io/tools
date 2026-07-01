@@ -12,6 +12,7 @@ import {
   buildOpaBundleTarball,
   defaultPolicyVersionLabel,
   formatPolicyBundleVersionSummary,
+  formatPolicyEngineRequestError,
   printResult,
   resolveBundleIdByName,
 } from '../helpers/index.js';
@@ -67,9 +68,13 @@ export async function publish(
         version: versionLabel,
         description,
       });
-      responseBody = await client
-        .post(`v1/policy-engine/policy-bundles/${existingBundleId}/versions`, { body: form })
-        .json<CreatePolicyBundleVersionResponse>();
+      try {
+        responseBody = await client
+          .post(`v1/policy-engine/policy-bundles/${existingBundleId}/versions`, { body: form })
+          .json<CreatePolicyBundleVersionResponse>();
+      } catch (err) {
+        throw new Error(formatPolicyEngineRequestError(err), { cause: err });
+      }
     } else {
       logger.info(colors.green(`Creating bundle "${bundleName}" and uploading first version...`));
       const createForm = buildPolicyBundleFormData({
@@ -78,11 +83,15 @@ export async function publish(
         description,
         bundleName,
       });
-      responseBody = await client
-        .post('v1/policy-engine/policy-bundles', {
-          body: createForm,
-        })
-        .json<CreatePolicyBundleResponse>();
+      try {
+        responseBody = await client
+          .post('v1/policy-engine/policy-bundles', {
+            body: createForm,
+          })
+          .json<CreatePolicyBundleResponse>();
+      } catch (err) {
+        throw new Error(formatPolicyEngineRequestError(err), { cause: err });
+      }
     }
 
     printResult(this.process.stdout, {
