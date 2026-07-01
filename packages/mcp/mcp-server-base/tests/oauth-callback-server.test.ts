@@ -156,18 +156,20 @@ describe('startCallbackServer', () => {
     }
   });
 
-  it('returns 404 for non-callback paths', async () => {
-    const handle = await startCallbackServer({
-      expectedState: 'expected-state',
-      timeoutMs: 5000,
-    });
+  it.each(['/other', '/callback-evil', '/callback/'])(
+    'returns 404 for non-callback path %s',
+    async (path) => {
+      const handle = await startCallbackServer({
+        expectedState: 'expected-state',
+        timeoutMs: 5000,
+      });
 
-    try {
-      const otherUrl = new URL('/other', handle.redirectUri);
-      const response = await fetch(otherUrl);
-      expect(response.status).toBe(404);
-    } finally {
-      await handle.close();
-    }
-  });
+      try {
+        const response = await fetch(new URL(path, handle.redirectUri));
+        expect(response.status).toBe(404);
+      } finally {
+        await handle.close();
+      }
+    },
+  );
 });

@@ -10,18 +10,25 @@ import {
   setResolvedTranscendApiUrl,
 } from './config.js';
 
-/** Cached OAuth client identifier resolved at startup. */
-let cachedClientId: string | null = null;
+/** Module-scoped OAuth client initialization state. */
+interface OAuthClientState {
+  /** Cached OAuth client identifier resolved at startup. */
+  clientId: string | null;
+  /** In-flight client verification shared across concurrent callers. */
+  initPromise: Promise<void> | null;
+}
 
-/** In-flight client verification shared across concurrent callers. */
-let initPromise: Promise<void> | null = null;
+const oauthClientState: OAuthClientState = {
+  clientId: null,
+  initPromise: null,
+};
 
 /**
  * Resets cached OAuth client state (for tests).
  */
 export function resetOAuthClientState(): void {
-  cachedClientId = null;
-  initPromise = null;
+  oauthClientState.clientId = null;
+  oauthClientState.initPromise = null;
   resetResolvedOAuthIssuer();
   resetResolvedTranscendApiUrl();
 }
@@ -30,12 +37,12 @@ export function resetOAuthClientState(): void {
  * Returns the OAuth client identifier resolved at startup.
  */
 export function getOAuthClientId(): string {
-  if (!cachedClientId) {
+  if (!oauthClientState.clientId) {
     throw new Error(
       'OAuth client is not initialized. Call ensureOAuthStartupReady() before using OAuth.',
     );
   }
-  return cachedClientId;
+  return oauthClientState.clientId;
 }
 
 /**
@@ -46,16 +53,16 @@ export async function initializeOAuthClient(
   clientSecret: string,
   logger: Logger,
 ): Promise<void> {
-  if (cachedClientId) {
+  if (oauthClientState.clientId) {
     return;
   }
 
-  if (initPromise) {
-    await initPromise;
+  if (oauthClientState.initPromise) {
+    await oauthClientState.initPromise;
     return;
   }
 
-  initPromise = (async () => {
+  oauthClientState.initPromise = (async () => {
     requireOAuthStartupEnv();
     const issuer = await resolveRegionalOAuthIssuer(
       getOAuthIssuerCandidates(),
@@ -65,13 +72,13 @@ export async function initializeOAuthClient(
     );
     setResolvedOAuthIssuer(issuer);
     setResolvedTranscendApiUrl(issuer);
-    cachedClientId = clientId;
+    oauthClientState.clientId = clientId;
     logger.info('Verified OAuth client credentials', { clientId, issuer });
   })();
 
   try {
-    await initPromise;
+    await oauthClientState.initPromise;
   } finally {
-    initPromise = null;
+    oauthClientState.initPromise = null;
   }
 }

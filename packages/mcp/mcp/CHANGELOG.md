@@ -1,5 +1,88 @@
 # @transcend-io/mcp
 
+## 0.4.23
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.19
+- @transcend-io/mcp-server-assessment@0.3.20
+- @transcend-io/mcp-server-consent@0.3.6
+- @transcend-io/mcp-server-dsr@0.3.20
+
+## 0.4.22
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.18
+- @transcend-io/mcp-server-assessment@0.3.19
+- @transcend-io/mcp-server-consent@0.3.5
+- @transcend-io/mcp-server-dsr@0.3.19
+
+## 0.4.21
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.17
+- @transcend-io/mcp-server-assessment@0.3.18
+- @transcend-io/mcp-server-consent@0.3.4
+- @transcend-io/mcp-server-dsr@0.3.18
+
+## 0.4.20
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.16
+- @transcend-io/mcp-server-assessment@0.3.17
+- @transcend-io/mcp-server-consent@0.3.3
+- @transcend-io/mcp-server-dsr@0.3.17
+
+## 0.4.19
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.15
+- @transcend-io/mcp-server-assessment@0.3.16
+- @transcend-io/mcp-server-consent@0.3.2
+- @transcend-io/mcp-server-dsr@0.3.16
+
+## 0.4.18
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.14
+- @transcend-io/mcp-server-assessment@0.3.15
+- @transcend-io/mcp-server-consent@0.3.1
+- @transcend-io/mcp-server-dsr@0.3.15
+
+## 0.4.17
+
+### Patch Changes
+
+- c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
+- Updated dependencies [c14ba60]
+  - @transcend-io/mcp-server-consent@0.3.0
+  - @transcend-io/mcp-server-admin@0.3.13
+  - @transcend-io/mcp-server-assessment@0.3.14
+  - @transcend-io/mcp-server-dsr@0.3.14
+
+## 0.4.16
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.12
+- @transcend-io/mcp-server-assessment@0.3.13
+- @transcend-io/mcp-server-consent@0.2.16
+- @transcend-io/mcp-server-dsr@0.3.13
+
+## 0.4.15
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.3.11
+- @transcend-io/mcp-server-assessment@0.3.12
+- @transcend-io/mcp-server-consent@0.2.15
+- @transcend-io/mcp-server-dsr@0.3.12
+
 ## 0.4.14
 
 ### Patch Changes

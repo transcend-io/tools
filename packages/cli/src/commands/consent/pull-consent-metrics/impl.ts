@@ -1,7 +1,8 @@
 import fs, { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { buildTranscendGraphQLClient, ConsentManagerMetricBin } from '@transcend-io/sdk';
+import { ConsentManagerMetricBin } from '@transcend-io/privacy-types';
+import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
 
