@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## Unreleased
+
+### Patch Changes
+
+- Add OAuth configuration helpers (`TRANSCEND_OAUTH_*` env), PKCE utilities, scope registry, authorization-server metadata fetch, client credential verification (`POST {issuer}/oauth/client-verify`), and token expiry helpers. Library foundation only; interactive login and MCP server wiring land in follow-up PRs.
+
 ## 0.4.5
 
 ### Patch Changes

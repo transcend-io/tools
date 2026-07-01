@@ -18,22 +18,36 @@ export interface SessionCookieAuth {
   organizationId: string;
 }
 
+/** OAuth access token authentication (stdio MCP OAuth flow) */
+export interface OAuthTokenAuth {
+  /** Discriminant */
+  type: 'oauthToken';
+  /** OAuth access token */
+  accessToken: string;
+  /** OAuth refresh token (when offline_access was granted) */
+  refreshToken?: string;
+  /** Unix timestamp (ms) when the access token expires */
+  expiresAt?: number;
+}
+
 /**
  * Discriminated union representing how the MCP server authenticates
  * outbound requests to the Transcend GraphQL/REST backend.
  *
  * - `apiKey`        — Bearer token auth (external customers, stdio transport)
  * - `sessionCookie` — Cookie + org-ID forwarding (in-app dashboard, HTTP transport)
+ * - `oauthToken`    — OAuth Bearer token (stdio MCP OAuth flow)
  */
-export type AuthCredentials = ApiKeyAuth | SessionCookieAuth;
+export type AuthCredentials = ApiKeyAuth | SessionCookieAuth | OAuthTokenAuth;
 
 /**
  * Converts {@link AuthCredentials} into the HTTP headers required by the
  * Transcend backend for the given auth mode.
  */
 export function authHeaders(creds: AuthCredentials): Record<string, string> {
-  if (creds.type === 'apiKey') {
-    return { Authorization: `Bearer ${creds.apiKey}` };
+  if (creds.type === 'apiKey' || creds.type === 'oauthToken') {
+    const token = creds.type === 'apiKey' ? creds.apiKey : creds.accessToken;
+    return { Authorization: `Bearer ${token}` };
   }
   return {
     Cookie: creds.cookie,

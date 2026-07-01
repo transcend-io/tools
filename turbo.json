@@ -7,6 +7,8 @@
     "tsconfig.base.json",
     "tsdown.config.base.ts",
     "vitest.config.ts",
+    "types/**",
+    "assets/**",
     "oxlint.json",
     ".oxfmtrc.jsonc",
     "codegen.ts",

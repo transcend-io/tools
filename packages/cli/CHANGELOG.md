@@ -1,5 +1,29 @@
 # @transcend-io/cli
 
+## 10.12.0
+
+### Minor Changes
+
+- c2ed85f: Add `transcend policy versions` subcommand for listing uploaded policy bundle versions.
+
+## 10.11.0
+
+### Minor Changes
+
+- 40b201e: Add `transcend policy list` subcommand for listing policy bundles.
+
+## 10.10.0
+
+### Minor Changes
+
+- 1bc461f: Add `transcend policy activate` subcommand for activating uploaded policy bundle versions.
+
+## 10.9.0
+
+### Minor Changes
+
+- 47219d3: Add `transcend policy publish` subcommand for uploading OPA policy bundles.
+
 ## 10.8.0
 
 ### Minor Changes

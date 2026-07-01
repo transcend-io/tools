@@ -91,10 +91,10 @@ describe('policy helpers', () => {
     const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key');
 
     await expect(resolveBundleIdByName(client, 'main')).resolves.toBe('main-id');
-    expect(get).toHaveBeenNthCalledWith(1, 'api/v1/policy-engine/policy-bundles', {
+    expect(get).toHaveBeenNthCalledWith(1, 'v1/policy-engine/policy-bundles', {
       searchParams: { limit: 100, offset: 0 },
     });
-    expect(get).toHaveBeenNthCalledWith(2, 'api/v1/policy-engine/policy-bundles', {
+    expect(get).toHaveBeenNthCalledWith(2, 'v1/policy-engine/policy-bundles', {
       searchParams: { limit: 100, offset: 1 },
     });
   });
