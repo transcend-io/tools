@@ -77,18 +77,30 @@ describe('Admin Tools', () => {
     });
 
     it('creates API key on success', async () => {
-      const response = {
-        apiKey: { id: 'key-1', title: 'Test Key', scopes: ['readWrite'], createdAt: '2024-01-01' },
+      // The mixin now returns a flat CreatedApiKey (extends ApiKey) carrying
+      // the plain-text bearer in `token`. There is no longer a nested
+      // `apiKey` wrapper -- that shape was the original schema-drift bug.
+      const created = {
+        id: 'key-1',
+        title: 'Test Key',
+        scopes: [{ id: 'scope-1', name: 'readWrite' }],
+        createdAt: '2024-01-01',
         token: 'secret-token',
       };
-      mockGraphql.createApiKey.mockResolvedValue(response);
+      mockGraphql.createApiKey.mockResolvedValue(created);
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'admin_create_api_key')!;
 
       const result = await tool.handler({ title: 'Test Key', scopes: ['readWrite'] });
 
-      expect(result).toMatchObject({ success: true });
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          apiKey: { id: 'key-1', title: 'Test Key' },
+          token: 'secret-token',
+        },
+      });
       expect(mockGraphql.createApiKey).toHaveBeenCalledWith({
         title: 'Test Key',
         scopes: ['readWrite'],
@@ -161,21 +173,25 @@ describe('AdminMixin.createApiKey', () => {
     const body = JSON.parse(init.body as string) as { query: string };
     const normalized = body.query.replace(/\s+/g, ' ').trim();
 
-    expect(normalized).toContain('mutation CreateApiKey($input: ApiKeyInput!)');
-    expect(normalized).toContain('apiKey { id title apiKey scopes { id name } createdAt }');
-    // Guard against regression: there must not be a bare `token` selection on
-    // the payload, and `scopes` must never appear without subfield selection.
+    // The graphql() codegen migration renamed the operation to
+    // `AdminCreateApiKey` to keep client-preset doc IDs unique across
+    // packages. The structural guards from #173 still apply: scopes must be
+    // selected with subfields, and there must be no bare top-level token.
+    expect(normalized).toContain('mutation AdminCreateApiKey($input: ApiKeyInput!)');
+    expect(normalized).toContain('scopes { id name }');
+    expect(normalized).toContain('apiKey { id title apiKey');
     expect(normalized).not.toMatch(/\}\s*token\s*\}/);
     expect(normalized).not.toMatch(/scopes\s+createdAt/);
   });
 
-  it('returns { apiKey, token } with token sourced from the nested apiKey.apiKey field', async () => {
+  it('returns a flat shape with token sourced from the nested apiKey.apiKey field', async () => {
     const mockFetch = mockFetchOnce({
       createApiKey: {
         apiKey: {
           id: 'key-1',
           title: 'Test Key',
           apiKey: 'tok_xxx',
+          preview: 'tok_***',
           scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
           createdAt: '2024-01-01',
         },
@@ -189,16 +205,18 @@ describe('AdminMixin.createApiKey', () => {
       scopes: ['viewDataMap'],
     });
 
+    // After the graphql() migration AdminMixin.createApiKey returns a flat
+    // CreatedApiKey rather than { apiKey, token }; the consuming tool does
+    // the destructure into { apiKey, token } itself. The original #173
+    // invariant — token comes from the nested `apiKey.apiKey` field, never
+    // from a (non-existent) top-level `token` — still holds.
     expect(result).toEqual({
-      apiKey: {
-        id: 'key-1',
-        title: 'Test Key',
-        scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
-        createdAt: '2024-01-01',
-      },
+      id: 'key-1',
+      title: 'Test Key',
+      scopes: [{ id: 'scope-1', name: 'viewDataMap' }],
+      createdAt: '2024-01-01',
       token: 'tok_xxx',
     });
-    // The plain-text token must not leak back onto the returned ApiKey object.
-    expect(result.apiKey).not.toHaveProperty('apiKey');
+    expect(result).not.toHaveProperty('apiKey');
   });
 });

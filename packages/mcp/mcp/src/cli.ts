@@ -3,13 +3,13 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   buildMcpServer,
-  DEFAULT_DASHBOARD_URL,
   DEFAULT_SOMBRA_URL,
-  DEFAULT_TRANSCEND_API_URL,
+  isOAuthModeEnabled,
   parseTransportArgs,
   resolveStdioStartupAuth,
-  ensureOAuthStartupReady,
   configureOAuthScopes,
+  resolveMcpDashboardUrl,
+  resolveMcpGraphqlUrl,
   runMcpHttp,
   SimpleLogger,
   TranscendRestClient,
@@ -39,8 +39,8 @@ async function main(): Promise<void> {
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
-  const graphqlUrl = process.env.TRANSCEND_API_URL || DEFAULT_TRANSCEND_API_URL;
-  const dashboardUrl = process.env.TRANSCEND_DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
+  const dashboardUrl = resolveMcpDashboardUrl();
+  const graphqlUrl = await resolveMcpGraphqlUrl(logger);
 
   if (isHttpTransport) {
     await runMcpHttp(
@@ -69,13 +69,12 @@ async function main(): Promise<void> {
 
   // stdio mode
   configureOAuthScopes(UMBRELLA_OAUTH_SCOPES);
-  await ensureOAuthStartupReady(logger);
   const auth = resolveStdioStartupAuth();
   logger.info('Initializing Transcend API clients...', {
     sombraUrl,
     graphqlUrl,
     dashboardUrl,
-    authType: auth?.type ?? (process.env.TRANSCEND_OAUTH_ISSUER ? 'oauth-pending' : 'none'),
+    authType: auth?.type ?? (isOAuthModeEnabled() ? 'oauth-pending' : 'none'),
   });
 
   const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);

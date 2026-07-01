@@ -3,7 +3,7 @@ import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 import { AbsoluteUrlString, UIConfiguration } from './consentUiConfiguration.js';
-import { ThemeConfiguration } from './consentUiTheme.js';
+import { ThemeConfiguration, ThemeConfigurationMinimal } from './consentUiTheme.js';
 
 /**
  * Types representing the top-level consent UI configuration
@@ -90,7 +90,7 @@ export const LoadOptions = t.intersection([
     regimeAutoPromptMap: t.record(RegimeKey, t.boolean),
     variantConfigMap: t.record(VariantKey, UIConfiguration),
     variantThemeMap: t.record(VariantKey, ThemeKey),
-    themeConfigMap: t.record(ThemeKey, ThemeConfiguration),
+    themeConfigMap: t.record(ThemeKey, t.union([ThemeConfiguration, ThemeConfigurationMinimal])),
     autofocus: AutofocusValues,
     uiZIndex: IntegerString,
     // If messageMap is not defined, messages will be fetched from `${messageFolder}/${localeKey}.json`

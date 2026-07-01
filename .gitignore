@@ -9,3 +9,8 @@ node_modules
 *.tsbuildinfo
 .worktrees
 secret.env
+
+# Codegen output. The schema.graphql at the repo root is the offline source
+# of truth (committed); the per-package generated TS lives under __generated__/
+# and is rebuilt on every `pnpm codegen`/`pnpm typecheck`/`pnpm build`.
+**/__generated__/

@@ -10,13 +10,13 @@ import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const UpdateCookieItemSchema = z.object({
   name: z.string().describe('Cookie name (used as the identifier for upsert)'),
-  tracking_purposes: z
+  trackingPurposes: z
     .array(z.string())
     .optional()
     .describe('Tracking purpose slugs (e.g., "Advertising", "Analytics")'),
   description: z.string().optional().describe('Cookie description'),
   service: z.string().optional().describe('Service/integration name'),
-  is_junk: z.boolean().optional().describe('Mark as junk'),
+  isJunk: z.boolean().optional().describe('Mark as junk'),
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .optional()
@@ -33,7 +33,7 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
   return defineTool({
     name: 'consent_update_cookies',
     description:
-      'Update one or more cookies. Use to approve (status=LIVE), junk (is_junk=true), ' +
+      'Update one or more cookies. Use to approve (status=LIVE), junk (isJunk=true), ' +
       'assign tracking purposes, or set a service. The cookie "name" field is the identifier ' +
       'for upsert — existing cookies with matching names will be updated.',
     category: 'Consent Management',
@@ -45,10 +45,10 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const cookieInputs: TranscendUpdateCookieInputGql[] = cookies.map((c) => ({
         name: c.name,
-        ...(c.tracking_purposes ? { trackingPurposes: c.tracking_purposes } : {}),
+        ...(c.trackingPurposes ? { trackingPurposes: c.trackingPurposes } : {}),
         ...(c.description !== undefined ? { description: c.description } : {}),
         ...(c.service !== undefined ? { service: c.service } : {}),
-        ...(c.is_junk !== undefined ? { isJunk: c.is_junk } : {}),
+        ...(c.isJunk !== undefined ? { isJunk: c.isJunk } : {}),
         ...(c.status !== undefined ? { status: c.status } : {}),
       }));
       await clients.graphql.makeRequest<TranscendCliUpdateOrCreateCookiesResponse>(

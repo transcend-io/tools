@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-assessment",
-  "version": "0.3.11",
+  "version": "0.3.20",
   "description": "Transcend MCP Server — Assessments tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-assessment",
   "license": "Apache-2.0",
@@ -37,9 +37,11 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
+    "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
+    "graphql": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

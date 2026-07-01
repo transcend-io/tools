@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { verifyOAuthClientCredentials } from '../src/oauth/client-verify.js';
-import { buildOAuthClientsAdminUrl } from '../src/oauth/constants.js';
+import { DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL } from '../src/defaults.js';
+import {
+  resolveRegionalOAuthIssuer,
+  verifyOAuthClientCredentials,
+} from '../src/oauth/client-verify.js';
+import { getOAuthClientsAdminUrl, OAUTH_CLIENT_VERIFY_TIMEOUT_MS } from '../src/oauth/constants.js';
 
 describe('verifyOAuthClientCredentials', () => {
   const originalDashboardUrl = process.env.TRANSCEND_DASHBOARD_URL;
@@ -17,12 +21,12 @@ describe('verifyOAuthClientCredentials', () => {
     else process.env.TRANSCEND_DASHBOARD_URL = originalDashboardUrl;
   });
 
-  it('succeeds when the server returns success: true', async () => {
+  it('succeeds when the server returns isValid: true', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: true }),
+        json: async () => ({ isValid: true }),
       }),
     );
 
@@ -43,6 +47,7 @@ describe('verifyOAuthClientCredentials', () => {
         client_secret: 'secret-value',
         redirect_uri: 'http://127.0.0.1:4567/callback',
       }),
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -71,15 +76,15 @@ describe('verifyOAuthClientCredentials', () => {
         'bad-secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(buildOAuthClientsAdminUrl());
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 
-  it('throws when success is false', async () => {
+  it('throws when isValid is false', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
         ok: true,
-        json: async () => ({ success: false }),
+        json: async () => ({ isValid: false }),
       }),
     );
 
@@ -98,10 +103,10 @@ describe('verifyOAuthClientCredentials', () => {
         'secret',
         'http://127.0.0.1:4567/callback',
       ),
-    ).rejects.toThrow(buildOAuthClientsAdminUrl());
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 
-  it('throws when success is missing', async () => {
+  it('throws when isValid is missing', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -120,7 +125,39 @@ describe('verifyOAuthClientCredentials', () => {
     ).rejects.toThrow(/credentials were rejected/);
   });
 
-  it('uses TRANSCEND_DASHBOARD_URL in error guidance when set', async () => {
+  it('throws when the request times out', async () => {
+    vi.useFakeTimers();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url, init) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const error = new Error('The operation was aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        });
+      }),
+    );
+
+    const promise = verifyOAuthClientCredentials(
+      'https://yo.com:4001',
+      'client-abc',
+      'secret',
+      'http://127.0.0.1:4567/callback',
+    );
+    const assertion = expect(promise).rejects.toThrow(
+      /OAuth client verification timed out after 5000ms/,
+    );
+
+    await vi.advanceTimersByTimeAsync(OAUTH_CLIENT_VERIFY_TIMEOUT_MS);
+    await assertion;
+
+    vi.useRealTimers();
+  });
+
+  it('uses TRANSCEND_DASHBOARD_URL in error guidance in test env when set', async () => {
     process.env.TRANSCEND_DASHBOARD_URL = 'https://yo.com:3000';
 
     vi.stubGlobal(
@@ -140,5 +177,149 @@ describe('verifyOAuthClientCredentials', () => {
         'http://127.0.0.1:4567/callback',
       ),
     ).rejects.toThrow('https://yo.com:3000/admin/oauth-clients');
+  });
+});
+
+describe('resolveRegionalOAuthIssuer', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('returns as soon as one issuer verifies successfully', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        if (url.startsWith(`${DEFAULT_US_TRANSCEND_API_URL}/oauth/client-verify`)) {
+          return new Promise((resolve) => {
+            setTimeout(
+              () =>
+                resolve({
+                  ok: true,
+                  json: async () => ({ isValid: true }),
+                }),
+              50,
+            );
+          });
+        }
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ isValid: true }),
+        });
+      }),
+    );
+
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).resolves.toBe(DEFAULT_TRANSCEND_API_URL);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(`${DEFAULT_TRANSCEND_API_URL}/oauth/client-verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: 'client-abc',
+        client_secret: 'secret',
+        redirect_uri: 'http://127.0.0.1:4567/callback',
+      }),
+      signal: expect.any(AbortSignal),
+    });
+  });
+
+  it('falls back to the next regional issuer when the first fails', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          text: async () => 'invalid credentials',
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ isValid: true }),
+        }),
+    );
+
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).resolves.toBe(DEFAULT_US_TRANSCEND_API_URL);
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws when all regional issuers time out', async () => {
+    vi.useFakeTimers();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url, init) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const error = new Error('The operation was aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        });
+      }),
+    );
+
+    const promise = resolveRegionalOAuthIssuer(
+      [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+      'client-abc',
+      'secret',
+      'http://127.0.0.1:4567/callback',
+    );
+    const assertion = expect(promise).rejects.toThrow(
+      /all regional backends.*timed out after 5000ms/s,
+    );
+
+    await vi.advanceTimersByTimeAsync(OAUTH_CLIENT_VERIFY_TIMEOUT_MS);
+    await assertion;
+
+    vi.useRealTimers();
+  });
+
+  it('throws when all regional issuers fail verification', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        text: async () => 'invalid credentials',
+      }),
+    );
+
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'bad-secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).rejects.toThrow(/all regional backends/i);
+    await expect(
+      resolveRegionalOAuthIssuer(
+        [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+        'client-abc',
+        'bad-secret',
+        'http://127.0.0.1:4567/callback',
+      ),
+    ).rejects.toThrow(getOAuthClientsAdminUrl());
   });
 });

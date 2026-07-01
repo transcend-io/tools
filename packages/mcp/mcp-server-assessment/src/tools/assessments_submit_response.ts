@@ -4,8 +4,8 @@ import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 
 export const SubmitResponseSchema = z.object({
-  assessment_id: z.string().describe('ID of the assessment to submit for review'),
-  assessment_section_ids: z
+  assessmentId: z.string().describe('ID of the assessment to submit for review'),
+  assessmentSectionIds: z
     .array(z.string())
     .describe('Array of section IDs to submit for review. Required by the API.'),
 });
@@ -23,10 +23,10 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
     confirmationHint: 'Submits assessment for review — cannot be undone',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: SubmitResponseSchema,
-    handler: async ({ assessment_id, assessment_section_ids }) => {
+    handler: async ({ assessmentId, assessmentSectionIds }) => {
       const result = await graphql.submitAssessmentForReview({
-        id: assessment_id,
-        assessmentSectionIds: assessment_section_ids,
+        id: assessmentId,
+        assessmentSectionIds,
       });
 
       const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });

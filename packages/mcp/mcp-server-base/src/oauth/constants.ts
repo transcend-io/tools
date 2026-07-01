@@ -1,9 +1,12 @@
-import { DEFAULT_DASHBOARD_URL } from '../defaults.js';
+import { resolveMcpDashboardUrl } from '../server/resolve-dashboard-url.js';
 
-/** Default Transcend OAuth authorization server issuer URL. */
-export const DEFAULT_OAUTH_ISSUER = 'https://yo.com:4001';
+/** OAuth 2.0 token endpoint grant_type values used by this package. */
+export enum OAuthGrantType {
+  AuthorizationCode = 'authorization_code',
+  RefreshToken = 'refresh_token',
+}
 
-/** Environment variable for the OAuth issuer URL. */
+/** Environment variable for the OAuth issuer URL (test-only override). */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
 
 /** Environment variable for the OAuth client identifier. */
@@ -21,12 +24,44 @@ export const TRANSCEND_OAUTH_REDIRECT_HOST_ENV = 'TRANSCEND_OAUTH_REDIRECT_HOST'
 /** Default loopback host for the OAuth redirect URI (`127.0.0.1`). */
 export const DEFAULT_OAUTH_REDIRECT_HOST = '127.0.0.1';
 
+/** Path on the local loopback server that receives the OAuth redirect. */
+export const OAUTH_CALLBACK_PATH = '/callback';
+
+/** Maximum time to wait for `/oauth/client-verify` during startup credential checks. */
+export const OAUTH_CLIENT_VERIFY_TIMEOUT_MS = 5_000;
+
 /** Maximum time to wait for the browser OAuth callback. */
 export const OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 
+/** Elapsed time before a late joiner nudges the user with the consent URL. */
+export const OAUTH_LOGIN_SILENT_ATTACH_MS = 5_000;
+
+/** Elapsed time before a late joiner reopens the browser in addition to the URL nudge. */
+export const OAUTH_LOGIN_REOPEN_MS = 60_000;
+
+/** Instruction appended to agent-facing OAuth callback failures that require user action. */
+const OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION =
+  'Report this to the user and wait for them to send a new message before calling tools again. Do not retry automatically.';
+
 /** Agent-facing message when the OAuth browser callback times out. */
-export const OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE =
-  'OAuth sign-in timed out. Report this to the user and wait for them to send a new message before calling tools again. Do not retry automatically.';
+export const OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE = `OAuth sign-in timed out. ${OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION}`;
+
+/** Agent-facing message when the user denies OAuth consent in the browser. */
+export const OAUTH_CALLBACK_DENIED_AGENT_MESSAGE = `OAuth sign-in was denied. ${OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION}`;
+
+/** Agent-facing message when an in-flight OAuth login has not completed yet. */
+export const OAUTH_LOGIN_PENDING_NUDGE_AGENT_MESSAGE =
+  'OAuth sign-in from an earlier request is still in progress and has not completed. ' +
+  'If the user closed the consent window, ask them to open this URL to continue: {authorizationUrl}. ' +
+  'Wait for the user to complete sign-in before proceeding. Do not retry automatically.';
+
+/** Browser callback page message shown after successful OAuth authentication. */
+export const OAUTH_CALLBACK_SUCCESS_MESSAGE =
+  'The Transcend MCP has been successfully authenticated. You can close this window and return to your host application.';
+
+/** Browser callback page message shown when OAuth authentication fails. */
+export const OAUTH_CALLBACK_ERROR_MESSAGE =
+  'The Transcend MCP authentication failed. Return to your host application and try again.';
 
 /** Default OAuth access token lifetime when the token response omits expires_in. */
 export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
@@ -34,25 +69,17 @@ export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
 /** Subtract this many seconds from expires_in before treating a token as expired. */
 export const OAUTH_TOKEN_EXPIRY_SKEW_SECONDS = 60;
 
-/** Environment variable for the Transcend admin dashboard base URL. */
+/** Environment variable for the Transcend admin dashboard base URL (test-only override). */
 export const TRANSCEND_DASHBOARD_URL_ENV = 'TRANSCEND_DASHBOARD_URL';
 
 /** Path on the admin dashboard where OAuth clients are managed. */
 export const OAUTH_CLIENTS_ADMIN_PATH = '/admin/oauth-clients';
 
-/** Default URL where admins create and manage OAuth clients. */
-export const OAUTH_CLIENTS_ADMIN_URL = `${DEFAULT_DASHBOARD_URL}${OAUTH_CLIENTS_ADMIN_PATH}`;
-
 /**
- * Resolves the admin OAuth clients URL from {@link TRANSCEND_DASHBOARD_URL_ENV}
- * or {@link OAUTH_CLIENTS_ADMIN_URL}.
+ * Returns the admin OAuth clients URL using {@link resolveMcpDashboardUrl}.
  */
-export function buildOAuthClientsAdminUrl(): string {
-  const dashboardUrl = process.env[TRANSCEND_DASHBOARD_URL_ENV]?.trim();
-  if (!dashboardUrl) {
-    return OAUTH_CLIENTS_ADMIN_URL;
-  }
-  return `${dashboardUrl.replace(/\/+$/, '')}${OAUTH_CLIENTS_ADMIN_PATH}`;
+export function getOAuthClientsAdminUrl(): string {
+  return `${resolveMcpDashboardUrl().replace(/\/+$/, '')}${OAUTH_CLIENTS_ADMIN_PATH}`;
 }
 
 /**
@@ -60,7 +87,14 @@ export function buildOAuthClientsAdminUrl(): string {
  */
 export function formatOAuthClientConfigError(detail: string): string {
   return (
-    `${detail}. Have an admin navigate to ${buildOAuthClientsAdminUrl()} ` +
+    `${detail}. Have an admin navigate to ${getOAuthClientsAdminUrl()} ` +
     'to fetch or create valid credentials.'
   );
+}
+
+/**
+ * Returns the agent-facing message for an in-flight OAuth login that has not completed.
+ */
+export function formatOAuthLoginPendingNudgeMessage(authorizationUrl: string): string {
+  return OAUTH_LOGIN_PENDING_NUDGE_AGENT_MESSAGE.replace('{authorizationUrl}', authorizationUrl);
 }

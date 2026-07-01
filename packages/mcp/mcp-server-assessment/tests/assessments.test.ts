@@ -90,7 +90,7 @@ describe('Assessment Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_create')!;
 
-      const result = tool.zodSchema.safeParse({ assessment_group_id: 'grp-1' });
+      const result = tool.zodSchema.safeParse({ assessmentGroupId: 'grp-1' });
       expect(result.success).toBe(false);
       expect((result as any).error.issues[0].path).toEqual(['title']);
     });
@@ -108,7 +108,7 @@ describe('Assessment Tools', () => {
 
       const result = await tool.handler({
         title: 'My Assessment',
-        assessment_group_id: 'grp-123',
+        assessmentGroupId: 'grp-123',
       });
 
       expect(result).toMatchObject({
@@ -125,7 +125,7 @@ describe('Assessment Tools', () => {
       });
     });
 
-    it('resolves template_id to group_id when assessment_group_id not provided', async () => {
+    it('resolves templateId to assessmentGroupId when assessmentGroupId not provided', async () => {
       const mockGroup = {
         id: 'grp-from-template',
         assessmentFormTemplate: { id: 'tpl-1' },
@@ -148,7 +148,7 @@ describe('Assessment Tools', () => {
 
       const result = await tool.handler({
         title: 'From Template',
-        template_id: 'tpl-1',
+        templateId: 'tpl-1',
       });
 
       expect(result).toMatchObject({
@@ -174,7 +174,7 @@ describe('Assessment Tools', () => {
       await expect(
         tool.handler({
           title: 'Test',
-          assessment_group_id: 'grp-bad',
+          assessmentGroupId: 'grp-bad',
         }),
       ).rejects.toThrow('Group not found');
     });
@@ -254,13 +254,13 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_answer_question', () => {
-    it('zodSchema rejects when assessment_question_id is missing', () => {
+    it('zodSchema rejects when assessmentQuestionId is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_answer_question')!;
 
-      const result = tool.zodSchema.safeParse({ assessment_answer_ids: ['ans-1'] });
+      const result = tool.zodSchema.safeParse({ assessmentAnswerIds: ['ans-1'] });
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['assessment_question_id']);
+      expect((result as any).error.issues[0].path).toEqual(['assessmentQuestionId']);
     });
 
     it('answers question with answer IDs on success', async () => {
@@ -271,8 +271,8 @@ describe('Assessment Tools', () => {
       const tool = tools.find((t) => t.name === 'assessments_answer_question')!;
 
       const result = await tool.handler({
-        assessment_question_id: 'q1',
-        assessment_answer_ids: ['ans-1'],
+        assessmentQuestionId: 'q1',
+        assessmentAnswerIds: ['ans-1'],
       });
 
       expect(result).toMatchObject({
@@ -296,8 +296,8 @@ describe('Assessment Tools', () => {
       const tool = tools.find((t) => t.name === 'assessments_answer_question')!;
 
       const result = await tool.handler({
-        assessment_question_id: 'q2',
-        assessment_answer_values: [{ value: 'My text answer', isUserCreated: true }],
+        assessmentQuestionId: 'q2',
+        assessmentAnswerValues: [{ value: 'My text answer', isUserCreated: true }],
       });
 
       expect(result).toMatchObject({
@@ -322,8 +322,8 @@ describe('Assessment Tools', () => {
 
       await expect(
         tool.handler({
-          assessment_question_id: 'q-bad',
-          assessment_answer_ids: ['ans-1'],
+          assessmentQuestionId: 'q-bad',
+          assessmentAnswerIds: ['ans-1'],
         }),
       ).rejects.toThrow('Question not found');
     });
@@ -335,7 +335,7 @@ describe('Assessment Tools', () => {
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
       const result = tool.zodSchema.safeParse({
-        assessment_group_id: 'grp-1',
+        assessmentGroupId: 'grp-1',
         answers: { Q1: 'A1' },
       });
       expect(result.success).toBe(false);
@@ -348,13 +348,13 @@ describe('Assessment Tools', () => {
 
       const result = tool.zodSchema.safeParse({
         title: 'Prefill Test',
-        assessment_group_id: 'grp-1',
+        assessmentGroupId: 'grp-1',
       });
       expect(result.success).toBe(false);
       expect((result as any).error.issues[0].path).toEqual(['answers']);
     });
 
-    it('returns error when neither template_id nor assessment_group_id provided', async () => {
+    it('returns error when neither templateId nor assessmentGroupId provided', async () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
 
@@ -365,7 +365,7 @@ describe('Assessment Tools', () => {
 
       expect(result).toMatchObject({
         success: false,
-        error: expect.stringContaining('template_id or assessment_group_id'),
+        error: expect.stringContaining('templateId or assessmentGroupId'),
       });
       expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
@@ -415,7 +415,7 @@ describe('Assessment Tools', () => {
 
       const result = await tool.handler({
         title: 'Prefilled Assessment',
-        assessment_group_id: 'grp-prefill',
+        assessmentGroupId: 'grp-prefill',
         answers: {
           'What is your name?': 'Alice',
           'Select one': 'Option A',
@@ -459,7 +459,7 @@ describe('Assessment Tools', () => {
 
       const result = await tool.handler({
         title: 'Empty Form',
-        assessment_group_id: 'grp-1',
+        assessmentGroupId: 'grp-1',
         answers: { Q1: 'A1' },
       });
 
@@ -483,7 +483,7 @@ describe('Assessment Tools', () => {
       await expect(
         tool.handler({
           title: 'Failing Prefill',
-          assessment_group_id: 'grp-1',
+          assessmentGroupId: 'grp-1',
           answers: { Q1: 'A1' },
         }),
       ).rejects.toThrow('Create failed');
@@ -505,7 +505,7 @@ describe('Assessment Tools', () => {
       const tool = getTools().find((t) => t.name === 'assessments_create')!;
       const result = (await tool.handler({
         title: 'DPIA',
-        assessment_group_id: GROUP_ID,
+        assessmentGroupId: GROUP_ID,
       })) as { success: boolean; data: Record<string, unknown> };
 
       expect(result.success).toBe(true);
@@ -538,8 +538,8 @@ describe('Assessment Tools', () => {
 
       const tool = getTools().find((t) => t.name === 'assessments_submit_response')!;
       const result = (await tool.handler({
-        assessment_id: FORM_ID,
-        assessment_section_ids: ['sec-1'],
+        assessmentId: FORM_ID,
+        assessmentSectionIds: ['sec-1'],
       })) as { success: boolean; data: Record<string, unknown> };
 
       expect(result.success).toBe(true);
@@ -561,7 +561,7 @@ describe('Assessment Tools', () => {
       });
 
       const tool = getTools().find((t) => t.name === 'assessments_get')!;
-      const result = (await tool.handler({ assessment_id: FORM_ID })) as {
+      const result = (await tool.handler({ assessmentId: FORM_ID })) as {
         success: boolean;
         data: Record<string, unknown>;
       };
@@ -640,7 +640,7 @@ describe('Assessment Tools', () => {
       )!;
       const result = (await tool.handler({
         title: 'DPIA',
-        assessment_group_id: GROUP_ID,
+        assessmentGroupId: GROUP_ID,
       })) as { success: boolean; data: Record<string, unknown> };
 
       expect(result.data.url).toBe(

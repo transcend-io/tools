@@ -54,6 +54,13 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin find-text-in-folder`](#transcend-admin-find-text-in-folder)
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
+  - [`transcend policy activate`](#transcend-policy-activate)
+  - [`transcend policy eval`](#transcend-policy-eval)
+  - [`transcend policy lint`](#transcend-policy-lint)
+  - [`transcend policy list`](#transcend-policy-list)
+  - [`transcend policy publish`](#transcend-policy-publish)
+  - [`transcend policy test`](#transcend-policy-test)
+  - [`transcend policy versions`](#transcend-policy-versions)
 - [Prompt Manager](#prompt-manager)
 - [Proxy usage](#proxy-usage)
 - [Using non-primary Sombra](#using-non-primary-sombra)
@@ -2471,7 +2478,7 @@ The API key permissions for this command vary based on the `resources` argument:
 | `actionItemCollections` | `action-item-collections` | Onboarding-related action item group names                                                                                                                       | View All Action Items                                | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
 | `teams`                 | `teams`                   | Team definitions of users and scope groupings                                                                                                                    | View Scopes                                          | [Administration -> Teams](https://app.transcend.io/admin/teams)                                                                                                                                                                                        |
 | `privacyCenters`        | `privacy-center`          | The Privacy Center settings.                                                                                                                                     | View Privacy Center Layout                           | [Privacy Center](https://app.transcend.io/privacy-center/general-settings)                                                                                                                                                                             |
-| `policies`              | `policies`                | The Privacy Center policies.                                                                                                                                     | View Policies                                        | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
+| `policies`              | `policies`                | The Privacy Center policies.                                                                                                                                     | View Privacy Center Policies                         | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
 | `messages`              | `messages`                | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                | View Internationalization Messages                   | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
 | `assessments`           | `assessments`             | Assessment responses.                                                                                                                                            | View Assessments                                     | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
 | `assessmentTemplates`   | `assessment-templates`    | Assessment template configurations.                                                                                                                              | View Assessments                                     | [Assessment -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                         |
@@ -2683,7 +2690,7 @@ The API key permissions for this command vary based on the resources declared as
 | `actionItemCollections` | `action-item-collections` | Onboarding-related action item group names                                                                                                                       | Manage Action Item Collections                           | [Action Items](https://app.transcend.io/action-items/all)                                                                                                                                                                                              |
 | `teams`                 | `teams`                   | Team definitions of users and scope groupings                                                                                                                    | Manage Access Controls                                   | [Administration -> Teams](https://app.transcend.io/admin/teams)                                                                                                                                                                                        |
 | `privacyCenters`        | `privacy-center`          | The Privacy Center settings.                                                                                                                                     | Manage Privacy Center Layout                             | [Privacy Center](https://app.transcend.io/privacy-center/general-settings)                                                                                                                                                                             |
-| `policies`              | `policies`                | The Privacy Center policies.                                                                                                                                     | Manage Policies                                          | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
+| `policies`              | `policies`                | The Privacy Center policies.                                                                                                                                     | Manage Privacy Center Policies                           | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
 | `messages`              | `messages`                | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                | Manage Internationalization Messages                     | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
 | `assessments`           | `assessments`             | Assessment responses.                                                                                                                                            | Manage Assessments                                       | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
 | `assessmentTemplates`   | `assessment-templates`    | Assessment template configurations.                                                                                                                              | Manage Assessments                                       | [Assessment -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                         |
@@ -3293,7 +3300,7 @@ transcend inventory consent-managers-to-business-entities \
 
 ```txt
 USAGE
-  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Policies|View Policies|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
+  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
   transcend admin generate-api-keys --help
 
 This command allows for creating API keys across multiple Transcend instances. This is useful for customers that are managing many Transcend instances and need to regularly create, cycle or delete API keys across all of their instances.
@@ -3307,7 +3314,7 @@ FLAGS
       --password                                        The password for your account login
       --apiKeyTitle                                     The title of the API key being generated or destroyed
       --file                                            The file where API keys should be written to
-      --scopes                                          The list of scopes that should be given to the API key                                                        [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Policies|View Policies|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules, separator = ,]
+      --scopes                                          The list of scopes that should be given to the API key                                                        [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules, separator = ,]
      [--deleteExistingApiKey/--noDeleteExistingApiKey]  When true, if an API key exists with the specified apiKeyTitle, the existing API key is deleted               [default = true]
      [--createNewApiKey/--noCreateNewApiKey]            When true, new API keys will be created. Set to false if you simply want to delete all API keys with a title  [default = true]
      [--parentOrganizationId]                           Filter for only a specific organization by ID, returning all child accounts associated with that organization
@@ -3645,6 +3652,246 @@ transcend migration sync-ot \
 ```sh
 transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --transcendAuth="$TRANSCEND_API_KEY"
 ```
+
+### `transcend policy activate`
+
+```txt
+USAGE
+  transcend policy activate (--versionId value) [--policyBundleId value] [--bundleName value] (--auth value) [--transcendUrl value] [--dryRun] [--json]
+  transcend policy activate --help
+
+Calls the Policy Engine activate endpoint to make an uploaded version live. Requires the parent bundle UUID or bundle name plus the version UUID. Requires a Transcend API key with Activate Policy scope.
+
+FLAGS
+      --versionId        Policy bundle version UUID to activate
+     [--policyBundleId]  Parent policy bundle UUID
+     [--bundleName]      Parent bundle name (used when policyBundleId is omitted)
+      --auth             The Transcend API key. Requires scopes: "Activate Policy"
+     [--transcendUrl]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--dryRun]          Validate activation without flipping the active version                      [default = false]
+     [--json]            Print the raw JSON API response                                              [default = false]
+  -h  --help             Print help information and exit
+```
+
+#### Examples
+
+**Activate a uploaded policy bundle version by bundle name**
+
+```sh
+transcend policy activate \
+  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
+  --bundleName=main \
+  --auth="$TRANSCEND_API_KEY"
+```
+
+**Activate using explicit parent bundle and version UUIDs**
+
+```sh
+transcend policy activate \
+  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
+  --policyBundleId=6a3218db-5703-44eb-8d01-e3ea57ab8e49 \
+  --auth="$TRANSCEND_API_KEY"
+```
+
+**Validate activation without flipping the active version**
+
+```sh
+transcend policy activate \
+  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
+  --bundleName=main \
+  --auth="$TRANSCEND_API_KEY" \
+  --dryRun
+```
+
+Requires the **Activate Policy** scope on your API key.
+
+### `transcend policy eval`
+
+```txt
+USAGE
+  transcend policy eval (--pkg value) (--input value) [--bundle value]
+  transcend policy eval --help
+
+Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+      --pkg      OPA package or query to evaluate (e.g. data.transcend.decision)
+      --input    Path to a JSON envelope input file
+     [--bundle]  Optional local policy bundle directory
+  -h  --help     Print help information and exit
+```
+
+#### Examples
+
+**Evaluate a decision query with a local envelope**
+
+```sh
+transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
+```
+
+### `transcend policy lint`
+
+```txt
+USAGE
+  transcend policy lint (--dir value)
+  transcend policy lint --help
+
+Runs `opa check --strict` for Rego validation and `opa fmt` for formatting. When files are not formatted, lists the affected paths, prints a diff, and prompts to format them in place. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+     --dir   Directory containing Rego policy files
+  -h --help  Print help information and exit
+```
+
+#### Examples
+
+**Lint a local policy directory and optionally format Rego files**
+
+```sh
+transcend policy lint --dir=./policies
+```
+
+### `transcend policy list`
+
+```txt
+USAGE
+  transcend policy list (--auth value) [--transcendUrl value] [--limit value] [--offset value] [--json]
+  transcend policy list --help
+
+Lists policy bundles registered for the authenticated organization. Requires a Transcend API key with View Policy scope.
+
+FLAGS
+      --auth           The Transcend API key. Requires scopes: "View Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--limit]         Maximum number of bundles to return                                          [default = 50]
+     [--offset]        Number of records to skip before returning results                           [default = 0]
+     [--json]          Print the raw JSON API response                                              [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**List policy bundles for the current organization**
+
+```sh
+transcend policy list --auth="$TRANSCEND_API_KEY"
+```
+
+**Fetch the next page using offset pagination**
+
+```sh
+transcend policy list --auth="$TRANSCEND_API_KEY" --offset=50
+```
+
+Requires the **View Policy** scope on your API key.
+
+### `transcend policy publish`
+
+```txt
+USAGE
+  transcend policy publish (--dir value) (--bundleName value) (--auth value) [--transcendUrl value] [--version value] [--description value] [--json]
+  transcend policy publish --help
+
+Builds an OPA bundle tarball from a local directory and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH and a Transcend API key with Manage Policy scope.
+
+FLAGS
+      --dir            Directory containing Rego policy files
+      --bundleName     Tenant-unique policy bundle name
+      --auth           The Transcend API key. Requires scopes: "Manage Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--version]       Version label (defaults to git SHA or timestamp)
+     [--description]   Optional description for the uploaded version
+     [--json]          Print the raw JSON API response                                              [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Publish a local policy directory as the main bundle**
+
+```sh
+transcend policy publish --dir=./policies --bundleName=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Publish with an explicit version label and description**
+
+```sh
+transcend policy publish \
+  --dir=./policies \
+  --bundleName=main \
+  --auth="$TRANSCEND_API_KEY" \
+  --version=2026-06-25 \
+  --description="Quarterly policy update"
+```
+
+**Publish to the US-hosted Transcend API**
+
+```sh
+transcend policy publish \
+  --dir=./policies \
+  --bundleName=common \
+  --auth="$TRANSCEND_API_KEY" \
+  --transcendUrl=https://api.us.transcend.io
+```
+
+Requires the **Manage Policy** scope on your API key.
+
+### `transcend policy test`
+
+```txt
+USAGE
+  transcend policy test (--dir value)
+  transcend policy test --help
+
+Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+     --dir   Directory containing Rego policy files and tests
+  -h --help  Print help information and exit
+```
+
+#### Examples
+
+**Run tests in a local policy directory**
+
+```sh
+transcend policy test --dir=./policies
+```
+
+### `transcend policy versions`
+
+```txt
+USAGE
+  transcend policy versions (--bundleName value) (--auth value) [--transcendUrl value] [--limit value] [--after value] [--json]
+  transcend policy versions --help
+
+Resolves a bundle name to its UUID and lists uploaded versions. Requires a Transcend API key with View Policy scope.
+
+FLAGS
+      --bundleName     Tenant-unique policy bundle name
+      --auth           The Transcend API key. Requires scopes: "View Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--limit]         Maximum number of versions to return                                         [default = 50]
+     [--after]         Opaque cursor from a previous response pageInfo.endCursor
+     [--json]          Print the raw JSON API response                                              [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**List versions for a policy bundle**
+
+```sh
+transcend policy versions --bundleName=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Fetch the next page of versions using an after cursor**
+
+```sh
+transcend policy versions --bundleName=main --auth="$TRANSCEND_API_KEY" --after="$POLICY_VERSION_CURSOR"
+```
+
+Requires the **View Policy** scope on your API key.
 
 <!-- COMMANDS_END -->
 

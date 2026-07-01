@@ -1,6 +1,7 @@
 export { getConsentTools } from './tools/index.js';
 export { CONSENT_OAUTH_SCOPES } from './scopes.js';
 export { resolveAirgapBundleId } from './resolveAirgapBundleId.js';
+export { resolveAnalyticsDateRange } from './analyticsDateRange.js';
 
 export { GetPreferencesSchema, type GetPreferencesInput } from './tools/consent_get_preferences.js';
 export {
@@ -18,9 +19,21 @@ export { ListDataFlowsSchema, type ListDataFlowsInput } from './tools/consent_li
 export { ListPurposesSchema, type ListPurposesInput } from './tools/consent_list_purposes.js';
 export { ListRegimesSchema, type ListRegimesInput } from './tools/consent_list_regimes.js';
 export {
-  GetCookieStatsSchema,
-  type GetCookieStatsInput,
-} from './tools/consent_get_triage_stats.js';
+  GetInventoryStatsSchema,
+  type GetInventoryStatsInput,
+} from './tools/consent_get_inventory_stats.js';
+export {
+  GetAggregateAnalyticsSchema,
+  type GetAggregateAnalyticsInput,
+} from './tools/consent_get_aggregate_analytics.js';
+export {
+  GetTimeseriesAnalyticsSchema,
+  type GetTimeseriesAnalyticsInput,
+} from './tools/consent_get_timeseries_analytics.js';
+export {
+  GetAnalyticsDataSchema,
+  type GetAnalyticsDataInput,
+} from './tools/consent_get_analytics_data.js';
 export {
   UpdateCookieItemSchema,
   type UpdateCookieItemInput,

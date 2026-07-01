@@ -177,7 +177,6 @@ describe('SimpleLogger', () => {
       expect(stderrSpy).toHaveBeenCalledOnce();
       const written = stderrSpy.mock.calls[0]?.[0] as string;
       expect(written).toBe('Failed to start server: OAuth client verification failed\n');
-      expect(() => JSON.parse(written.trim())).toThrow();
     });
 
     it('appends stack trace in stdio mode when LOG_LEVEL=debug', () => {

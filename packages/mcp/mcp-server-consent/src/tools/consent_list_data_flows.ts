@@ -9,17 +9,28 @@ import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sd
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const ListDataFlowsSchema = z.object({
-  limit: z.number().min(1).max(200).optional().default(50),
-  offset: z.number().min(0).optional().default(0),
+  limit: z
+    .number()
+    .min(1)
+    .max(200)
+    .optional()
+    .default(50)
+    .describe('Maximum number of data flows to return per page (1-200, default 50).'),
+  offset: z
+    .number()
+    .min(0)
+    .optional()
+    .default(0)
+    .describe('Number of results to skip for pagination (default 0).'),
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),
-  is_junk: z.boolean().optional().describe('Filter by junk status'),
-  show_zero_activity: z.boolean().optional().describe('Include items with zero activity'),
+  isJunk: z.boolean().optional().describe('Filter by junk status'),
+  showZeroActivity: z.boolean().optional().describe('Include items with zero activity'),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
-  order_field: z.nativeEnum(DataFlowOrderField).optional().describe('Field to sort by'),
-  order_direction: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
+  orderField: z.nativeEnum(DataFlowOrderField).optional().describe('Field to sort by'),
+  orderDirection: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
 });
 export type ListDataFlowsInput = z.infer<typeof ListDataFlowsSchema>;
 
@@ -38,12 +49,12 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       limit,
       offset,
       status,
-      is_junk,
-      show_zero_activity,
+      isJunk,
+      showZeroActivity,
       text,
       service,
-      order_field,
-      order_direction,
+      orderField,
+      orderDirection,
     }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
@@ -52,13 +63,13 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
         offset,
         filterBy: {
           status,
-          ...(is_junk !== undefined ? { isJunk: is_junk } : {}),
-          ...(show_zero_activity !== undefined ? { showZeroActivity: show_zero_activity } : {}),
+          ...(isJunk !== undefined ? { isJunk } : {}),
+          ...(showZeroActivity !== undefined ? { showZeroActivity } : {}),
           ...(text ? { text } : {}),
           ...(service ? { service } : {}),
         },
-        ...(order_field && order_direction
-          ? { orderBy: [{ field: order_field, direction: order_direction }] }
+        ...(orderField && orderDirection
+          ? { orderBy: [{ field: orderField, direction: orderDirection }] }
           : {}),
       });
       const { nodes, totalCount } = data.dataFlows;

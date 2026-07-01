@@ -27,7 +27,13 @@ export { ToolError, ErrorCode, classifyHttpError } from './errors.js';
 
 export { validateArgs, z } from './validation/index.js';
 export type { ValidationResult } from './validation/index.js';
-export { EmptySchema, PaginationSchema } from './validation/schemas.js';
+export {
+  CursorPaginationSchema,
+  EmptySchema,
+  OffsetPaginationSchema,
+  PaginationSchema,
+} from './validation/schemas.js';
+export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
 
 export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
 export { defineTool } from './tools/types.js';
@@ -102,6 +108,10 @@ export type {
   PendingOAuthSession,
   StoredOAuthTokens,
 } from './oauth/types.js';
+
+export { resolveMcpDashboardUrl } from './server/resolve-dashboard-url.js';
+
+export { resolveMcpGraphqlUrl } from './server/resolve-graphql-url.js';
 
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';

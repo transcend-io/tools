@@ -2,7 +2,13 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 import { PURPOSES, type TranscendCliPurposesResponse } from '@transcend-io/sdk';
 
 export const ListPurposesSchema = z.object({
-  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(50)
+    .describe('Maximum number of purposes to return (1-100, default 50).'),
 });
 export type ListPurposesInput = z.infer<typeof ListPurposesSchema>;
 

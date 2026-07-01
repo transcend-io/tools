@@ -1,17 +1,19 @@
 import {
   TranscendGraphQLBase,
-  type PaginatedResponse,
   type Assessment,
-  type AssessmentTemplate,
-  type AssessmentGroup,
   type AssessmentCreateInput,
-  type AssessmentUpdateInput,
+  type AssessmentGroup,
+  type AssessmentQuestionInput,
   type AssessmentSubmitForReviewInput,
+  type AssessmentTemplate,
   type AssessmentTemplateCreateInput,
   type AssessmentTemplateExport,
-  type AssessmentQuestionInput,
+  type AssessmentUpdateInput,
   type ListOptions,
+  type PaginatedResponse,
 } from '@transcend-io/mcp-server-base';
+
+import { graphql } from './__generated__/gql.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -55,39 +57,289 @@ function normalizeQuestion(q: AssessmentQuestionInput): Record<string, unknown> 
   };
 }
 
+const ListAssessmentsDoc = graphql(/* GraphQL */ `
+  query AssessmentsList($first: Int, $filterBy: AssessmentFormFiltersInput) {
+    assessmentForms(first: $first, filterBy: $filterBy) {
+      nodes {
+        id
+        title
+        status
+        createdAt
+        assessmentGroup {
+          id
+        }
+      }
+      totalCount
+    }
+  }
+`);
+
+const GetAssessmentDoc = graphql(/* GraphQL */ `
+  query AssessmentsGet($ids: [ID!]!) {
+    assessmentForms(first: 1, filterBy: { ids: $ids }) {
+      nodes {
+        id
+        title
+        status
+        dueDate
+        submittedAt
+        createdAt
+        updatedAt
+        assessmentGroup {
+          id
+        }
+        sections {
+          id
+          title
+          index
+          status
+          questions {
+            id
+            title
+            index
+            type
+            subType
+            description
+            isRequired
+            placeholder
+            answerOptions {
+              id
+              index
+              value
+            }
+            selectedAnswers {
+              id
+              index
+              value
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
+const SelectAssessmentQuestionAnswersDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsSelectAnswers($input: SelectAssessmentQuestionAnswerInput!) {
+    selectAssessmentQuestionAnswers(input: $input) {
+      selectedAnswers {
+        id
+        index
+        value
+      }
+    }
+  }
+`);
+
+const UpdateAssessmentFormAssigneesDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsUpdateAssignees($input: UpdateAssessmentFormAssigneesInput!) {
+    updateAssessmentFormAssignees(input: $input) {
+      assessmentForm {
+        id
+        title
+        status
+      }
+    }
+  }
+`);
+
+const ListAssessmentGroupsDoc = graphql(/* GraphQL */ `
+  query AssessmentsListGroups($first: Int) {
+    assessmentGroups(first: $first) {
+      nodes {
+        id
+        title
+        assessmentFormTemplate {
+          id
+          title
+        }
+      }
+      totalCount
+    }
+  }
+`);
+
+const CreateAssessmentGroupDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreateGroup($input: CreateAssessmentGroupInput!) {
+    createAssessmentGroup(input: $input) {
+      assessmentGroup {
+        id
+        title
+      }
+    }
+  }
+`);
+
+const CreateAssessmentFormsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreate($input: CreateAssessmentFormsInput!) {
+    createAssessmentForms(input: $input) {
+      assessmentForms {
+        id
+        title
+        status
+        createdAt
+      }
+    }
+  }
+`);
+
+const UpdateAssessmentFormDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsUpdate($input: UpdateAssessmentFormInput!) {
+    updateAssessmentForm(input: $input) {
+      assessmentForm {
+        id
+        title
+        description
+        status
+        dueDate
+        updatedAt
+        assessmentGroup {
+          id
+        }
+      }
+    }
+  }
+`);
+
+const ListAssessmentTemplatesDoc = graphql(/* GraphQL */ `
+  query AssessmentsListTemplates($first: Int) {
+    assessmentFormTemplates(first: $first) {
+      nodes {
+        id
+        title
+        description
+      }
+      totalCount
+    }
+  }
+`);
+
+const SubmitAssessmentForReviewDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsSubmitForReview($input: SubmitAssessmentFormForReviewInput!) {
+    submitAssessmentFormForReview(input: $input) {
+      clientMutationId
+    }
+  }
+`);
+
+const CreateAssessmentFormTemplateDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreateTemplate($input: CreateAssessmentFormTemplateInput!) {
+    createAssessmentFormTemplate(input: $input) {
+      assessmentFormTemplate {
+        id
+        title
+        status
+        sections {
+          id
+          title
+          index
+          questions {
+            id
+            title
+            index
+            type
+            subType
+            referenceId
+          }
+        }
+      }
+    }
+  }
+`);
+
+const CreateAssessmentSectionDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreateSection($input: CreateAssessmentSectionInput!) {
+    createAssessmentSection(input: $input) {
+      assessmentSection {
+        id
+        title
+        index
+        questions {
+          id
+          title
+          index
+          type
+          subType
+          referenceId
+        }
+      }
+    }
+  }
+`);
+
+const CreateAssessmentQuestionsDoc = graphql(/* GraphQL */ `
+  mutation AssessmentsCreateQuestions($input: [CreateAssessmentQuestionInput!]!) {
+    createAssessmentQuestions(input: $input) {
+      assessmentQuestions {
+        id
+        title
+        index
+        type
+        subType
+        referenceId
+      }
+    }
+  }
+`);
+
+const GetAssessmentFormTemplateDoc = graphql(/* GraphQL */ `
+  query AssessmentsGetTemplate($ids: [ID!]) {
+    assessmentFormTemplates(first: 1, filterBy: { ids: $ids }) {
+      nodes {
+        id
+        title
+        description
+        status
+        source
+        createdAt
+        updatedAt
+        sections {
+          id
+          title
+          index
+          questions {
+            id
+            title
+            index
+            type
+            subType
+            description
+            placeholder
+            isRequired
+            referenceId
+            allowSelectOther
+            requireRiskEvaluation
+            answerOptions {
+              id
+              index
+              value
+            }
+          }
+        }
+      }
+    }
+  }
+`);
+
 export class AssessmentsMixin extends TranscendGraphQLBase {
   async listAssessments(
     options?: ListOptions & { filterBy?: { statuses?: string[] } },
   ): Promise<PaginatedResponse<Assessment>> {
-    const query = `
-      query ListAssessments($first: Int, $filterBy: AssessmentFormFiltersInput) {
-        assessmentForms(first: $first, filterBy: $filterBy) {
-          nodes {
-            id
-            title
-            status
-            createdAt
-            assessmentGroup {
-              id
-            }
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      assessmentForms: {
-        nodes: Array<Omit<Assessment, 'assessmentGroupId'> & { assessmentGroup?: { id: string } }>;
-        totalCount: number;
-      };
-    }>(query, {
-      first: Math.min(options?.first || 50, 100),
-      filterBy: options?.filterBy?.statuses ? { statuses: options.filterBy.statuses } : undefined,
+    const data = await this.makeRequest(ListAssessmentsDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+      filterBy: options?.filterBy?.statuses
+        ? // The codegen-emitted enum is structurally equivalent to the manual
+          // string array we accept here; the server validates it strictly.
+          ({ statuses: options.filterBy.statuses } as never)
+        : null,
     });
     return {
-      nodes: data.assessmentForms.nodes.map(({ assessmentGroup, ...rest }) => ({
-        ...rest,
-        assessmentGroupId: assessmentGroup?.id,
+      nodes: data.assessmentForms.nodes.map((node) => ({
+        id: node.id,
+        title: node.title,
+        status: node.status as Assessment['status'],
+        createdAt: node.createdAt,
+        assessmentGroupId: node.assessmentGroup?.id,
       })),
       pageInfo: {
         hasNextPage: data.assessmentForms.nodes.length < data.assessmentForms.totalCount,
@@ -98,61 +350,47 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
   }
 
   async getAssessment(id: string): Promise<Assessment> {
-    const query = `
-      query GetAssessment($ids: [ID!]!) {
-        assessmentForms(first: 1, filterBy: { ids: $ids }) {
-          nodes {
-            id
-            title
-            status
-            dueDate
-            submittedAt
-            createdAt
-            updatedAt
-            assessmentGroup {
-              id
-            }
-            sections {
-              id
-              title
-              index
-              status
-              questions {
-                id
-                title
-                index
-                type
-                subType
-                description
-                isRequired
-                placeholder
-                answerOptions {
-                  id
-                  index
-                  value
-                }
-                selectedAnswers {
-                  id
-                  index
-                  value
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      assessmentForms: {
-        nodes: Array<Omit<Assessment, 'assessmentGroupId'> & { assessmentGroup?: { id: string } }>;
-      };
-    }>(query, { ids: [id] });
+    const data = await this.makeRequest(GetAssessmentDoc, { ids: [id] });
     const node = data.assessmentForms.nodes[0];
     if (!node) {
       throw new Error(`Assessment with id ${id} not found`);
     }
-    const { assessmentGroup, ...rest } = node;
-    return { ...rest, assessmentGroupId: assessmentGroup?.id };
+    return {
+      id: node.id,
+      title: node.title,
+      status: node.status as Assessment['status'],
+      dueDate: node.dueDate ?? undefined,
+      submittedAt: node.submittedAt ?? undefined,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt ?? undefined,
+      assessmentGroupId: node.assessmentGroup?.id,
+      sections: node.sections?.map((section) => ({
+        id: section.id,
+        title: section.title ?? undefined,
+        index: section.index ?? undefined,
+        status: section.status ?? undefined,
+        questions: section.questions?.map((q) => ({
+          id: q.id,
+          title: q.title ?? undefined,
+          index: q.index ?? undefined,
+          type: q.type,
+          subType: q.subType ?? undefined,
+          description: q.description ?? undefined,
+          isRequired: q.isRequired ?? undefined,
+          placeholder: q.placeholder ?? undefined,
+          answerOptions: q.answerOptions?.map((a) => ({
+            id: a.id,
+            index: a.index,
+            value: a.value,
+          })),
+          selectedAnswers: q.selectedAnswers?.map((a) => ({
+            id: a.id,
+            index: a.index,
+            value: a.value,
+          })),
+        })),
+      })),
+    };
   }
 
   async selectAssessmentQuestionAnswers(input: {
@@ -160,22 +398,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     assessmentAnswerIds?: string[];
     assessmentAnswerValues?: { value: string; isUserCreated: boolean }[];
   }): Promise<Array<{ id: string; index: number; value: string }>> {
-    const mutation = `
-      mutation SelectAssessmentQuestionAnswers($input: SelectAssessmentQuestionAnswerInput!) {
-        selectAssessmentQuestionAnswers(input: $input) {
-          selectedAnswers {
-            id
-            index
-            value
-          }
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      selectAssessmentQuestionAnswers: {
-        selectedAnswers: Array<{ id: string; index: number; value: string }>;
-      };
-    }>(mutation, { input });
+    const data = await this.makeRequest(SelectAssessmentQuestionAnswersDoc, { input });
     return data.selectAssessmentQuestionAnswers.selectedAnswers;
   }
 
@@ -184,46 +407,22 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     assigneeIds?: string[];
     externalAssigneeEmails?: string[];
   }): Promise<{ id: string; title: string; status: string }> {
-    const mutation = `
-      mutation UpdateAssessmentFormAssignees($input: UpdateAssessmentFormAssigneesInput!) {
-        updateAssessmentFormAssignees(input: $input) {
-          assessmentForm {
-            id
-            title
-            status
-          }
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      updateAssessmentFormAssignees: {
-        assessmentForm: { id: string; title: string; status: string };
-      };
-    }>(mutation, { input });
+    const data = await this.makeRequest(UpdateAssessmentFormAssigneesDoc, { input });
     return data.updateAssessmentFormAssignees.assessmentForm;
   }
 
   async listAssessmentGroups(options?: ListOptions): Promise<PaginatedResponse<AssessmentGroup>> {
-    const query = `
-      query ListAssessmentGroups($first: Int) {
-        assessmentGroups(first: $first) {
-          nodes {
-            id
-            title
-            assessmentFormTemplate {
-              id
-              title
-            }
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      assessmentGroups: { nodes: AssessmentGroup[]; totalCount: number };
-    }>(query, { first: Math.min(options?.first || 50, 100) });
+    const data = await this.makeRequest(ListAssessmentGroupsDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+    });
     return {
-      nodes: data.assessmentGroups.nodes,
+      nodes: data.assessmentGroups.nodes.map((node) => ({
+        id: node.id,
+        title: node.title,
+        assessmentFormTemplate: node.assessmentFormTemplate
+          ? { id: node.assessmentFormTemplate.id, title: node.assessmentFormTemplate.title }
+          : undefined,
+      })),
       pageInfo: {
         hasNextPage: data.assessmentGroups.nodes.length < data.assessmentGroups.totalCount,
         hasPreviousPage: false,
@@ -239,35 +438,11 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     isTriggerEnabled?: boolean;
     reviewerIds?: string[];
   }): Promise<{ id: string; title: string }> {
-    const mutation = `
-      mutation CreateAssessmentGroup($input: CreateAssessmentGroupInput!) {
-        createAssessmentGroup(input: $input) {
-          assessmentGroup {
-            id
-            title
-          }
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      createAssessmentGroup: { assessmentGroup: { id: string; title: string } };
-    }>(mutation, { input });
+    const data = await this.makeRequest(CreateAssessmentGroupDoc, { input });
     return data.createAssessmentGroup.assessmentGroup;
   }
 
   async createAssessment(input: AssessmentCreateInput): Promise<Assessment> {
-    const mutation = `
-      mutation CreateAssessmentForms($input: CreateAssessmentFormsInput!) {
-        createAssessmentForms(input: $input) {
-          assessmentForms {
-            id
-            title
-            status
-            createdAt
-          }
-        }
-      }
-    `;
     const batchInput = {
       assessmentForms: [
         {
@@ -277,71 +452,46 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         },
       ],
     };
-    const data = await this.makeRequest<{
-      createAssessmentForms: { assessmentForms: Assessment[] };
-    }>(mutation, { input: batchInput });
+    const data = await this.makeRequest(CreateAssessmentFormsDoc, { input: batchInput });
     const created = data.createAssessmentForms.assessmentForms[0];
     if (!created) throw new Error('createAssessmentForms returned an empty array');
-    // The mutation response doesn't echo `assessmentGroup`, but we know the
-    // ID from the input — surface it so callers can build a deep link without
-    // an extra round trip.
-    return { ...created, assessmentGroupId: input.assessmentGroupId };
+    return {
+      id: created.id,
+      title: created.title,
+      status: created.status as Assessment['status'],
+      createdAt: created.createdAt,
+      // The mutation response doesn't echo `assessmentGroup`, but we know the
+      // ID from the input -- surface it so callers can build a deep link
+      // without an extra round trip.
+      assessmentGroupId: input.assessmentGroupId,
+    };
   }
 
   async updateAssessment(input: AssessmentUpdateInput): Promise<Assessment> {
-    const mutation = `
-      mutation UpdateAssessmentForm($input: UpdateAssessmentFormInput!) {
-        updateAssessmentForm(input: $input) {
-          assessmentForm {
-            id
-            title
-            description
-            status
-            dueDate
-            updatedAt
-            assessmentGroup {
-              id
-            }
-          }
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      updateAssessmentForm: {
-        assessmentForm: Omit<Assessment, 'assessmentGroupId'> & {
-          assessmentGroup?: { id: string };
-        };
-      };
-    }>(mutation, { input });
-    const { assessmentGroup, ...rest } = data.updateAssessmentForm.assessmentForm;
-    return { ...rest, assessmentGroupId: assessmentGroup?.id };
+    const data = await this.makeRequest(UpdateAssessmentFormDoc, { input });
+    const form = data.updateAssessmentForm.assessmentForm;
+    return {
+      id: form.id,
+      title: form.title,
+      description: form.description ?? undefined,
+      status: form.status as Assessment['status'],
+      dueDate: form.dueDate ?? undefined,
+      updatedAt: form.updatedAt ?? undefined,
+      createdAt: '',
+      assessmentGroupId: form.assessmentGroup?.id,
+    };
   }
 
   async listAssessmentTemplates(
     options?: ListOptions,
   ): Promise<PaginatedResponse<AssessmentTemplate>> {
-    const query = `
-      query ListAssessmentTemplates($first: Int) {
-        assessmentFormTemplates(first: $first) {
-          nodes {
-            id
-            title
-            description
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      assessmentFormTemplates: {
-        nodes: Array<{ id: string; title: string; description: string | null }>;
-        totalCount: number;
-      };
-    }>(query, { first: Math.min(options?.first || 50, 100) });
+    const data = await this.makeRequest(ListAssessmentTemplatesDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+    });
     const templates: AssessmentTemplate[] = data.assessmentFormTemplates.nodes.map((t) => ({
       id: t.id,
       title: t.title,
-      description: t.description || undefined,
+      description: t.description ?? undefined,
       version: '1.0.0',
       isActive: true,
       createdAt: new Date().toISOString(),
@@ -358,47 +508,13 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
   }
 
   async submitAssessmentForReview(input: AssessmentSubmitForReviewInput): Promise<Assessment> {
-    const mutation = `
-      mutation SubmitAssessmentFormForReview($input: SubmitAssessmentFormForReviewInput!) {
-        submitAssessmentFormForReview(input: $input) {
-          clientMutationId
-        }
-      }
-    `;
-    await this.makeRequest<{ submitAssessmentFormForReview: { clientMutationId?: string } }>(
-      mutation,
-      { input },
-    );
+    await this.makeRequest(SubmitAssessmentForReviewDoc, { input });
     return this.getAssessment(input.id);
   }
 
   async createAssessmentFormTemplate(
     input: AssessmentTemplateCreateInput,
   ): Promise<{ id: string; title: string; status: string }> {
-    const mutation = `
-      mutation CreateAssessmentFormTemplate($input: CreateAssessmentFormTemplateInput!) {
-        createAssessmentFormTemplate(input: $input) {
-          assessmentFormTemplate {
-            id
-            title
-            status
-            sections {
-              id
-              title
-              index
-              questions {
-                id
-                title
-                index
-                type
-                subType
-                referenceId
-              }
-            }
-          }
-        }
-      }
-    `;
     const gqlInput: Record<string, unknown> = {
       title: input.title,
       description: input.description || '',
@@ -411,28 +527,12 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         questions: s.questions?.map(normalizeQuestion) || [],
       }));
     }
-    const data = await this.makeRequest<{
-      createAssessmentFormTemplate: {
-        assessmentFormTemplate: {
-          id: string;
-          title: string;
-          status: string;
-          sections: Array<{
-            id: string;
-            title: string;
-            index: number;
-            questions: Array<{
-              id: string;
-              title: string;
-              index: number;
-              type: string;
-              subType: string;
-              referenceId: string;
-            }>;
-          }>;
-        };
-      };
-    }>(mutation, { input: gqlInput });
+    const data = await this.makeRequest(CreateAssessmentFormTemplateDoc, {
+      // The schema's `CreateAssessmentFormTemplateInput` is strictly typed;
+      // we pre-shape the questions through `normalizeQuestion` and let the
+      // boundary cast accept whatever subset the manual input declares.
+      input: gqlInput as never,
+    });
     return data.createAssessmentFormTemplate.assessmentFormTemplate;
   }
 
@@ -441,25 +541,6 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     title: string;
     questions?: AssessmentQuestionInput[];
   }): Promise<{ id: string; title: string; index: number }> {
-    const mutation = `
-      mutation CreateAssessmentSection($input: CreateAssessmentSectionInput!) {
-        createAssessmentSection(input: $input) {
-          assessmentSection {
-            id
-            title
-            index
-            questions {
-              id
-              title
-              index
-              type
-              subType
-              referenceId
-            }
-          }
-        }
-      }
-    `;
     const gqlInput: Record<string, unknown> = {
       assessmentFormTemplateId: input.assessmentFormTemplateId,
       title: input.title,
@@ -467,23 +548,9 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     if (input.questions) {
       gqlInput.questions = input.questions.map(normalizeQuestion);
     }
-    const data = await this.makeRequest<{
-      createAssessmentSection: {
-        assessmentSection: {
-          id: string;
-          title: string;
-          index: number;
-          questions: Array<{
-            id: string;
-            title: string;
-            index: number;
-            type: string;
-            subType: string;
-            referenceId: string;
-          }>;
-        };
-      };
-    }>(mutation, { input: gqlInput });
+    const data = await this.makeRequest(CreateAssessmentSectionDoc, {
+      input: gqlInput as never,
+    });
     return data.createAssessmentSection.assessmentSection;
   }
 
@@ -500,20 +567,6 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       referenceId: string;
     }>
   > {
-    const mutation = `
-      mutation CreateAssessmentQuestions($input: [CreateAssessmentQuestionInput!]!) {
-        createAssessmentQuestions(input: $input) {
-          assessmentQuestions {
-            id
-            title
-            index
-            type
-            subType
-            referenceId
-          }
-        }
-      }
-    `;
     const input = questions.map((q) => ({
       title: q.title,
       type: q.type,
@@ -527,67 +580,49 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       allowSelectOther: q.allowSelectOther ?? false,
       requireRiskEvaluation: q.requireRiskEvaluation ?? false,
     }));
-    const data = await this.makeRequest<{
-      createAssessmentQuestions: {
-        assessmentQuestions: Array<{
-          id: string;
-          title: string;
-          index: number;
-          type: string;
-          subType: string;
-          referenceId: string;
-        }>;
-      };
-    }>(mutation, { input });
+    const data = await this.makeRequest(CreateAssessmentQuestionsDoc, {
+      input: input as never,
+    });
     return data.createAssessmentQuestions.assessmentQuestions;
   }
 
   async getAssessmentFormTemplate(templateId: string): Promise<AssessmentTemplateExport> {
-    const query = `
-      query GetAssessmentFormTemplate($ids: [ID!]) {
-        assessmentFormTemplates(first: 1, filterBy: { ids: $ids }) {
-          nodes {
-            id
-            title
-            description
-            status
-            source
-            createdAt
-            updatedAt
-            sections {
-              id
-              title
-              index
-              questions {
-                id
-                title
-                index
-                type
-                subType
-                description
-                placeholder
-                isRequired
-                referenceId
-                allowSelectOther
-                requireRiskEvaluation
-                answerOptions {
-                  id
-                  index
-                  value
-                }
-              }
-            }
-          }
-        }
-      }
-    `;
-    const data = await this.makeRequest<{
-      assessmentFormTemplates: { nodes: AssessmentTemplateExport[] };
-    }>(query, { ids: [templateId] });
+    const data = await this.makeRequest(GetAssessmentFormTemplateDoc, { ids: [templateId] });
     const node = data.assessmentFormTemplates.nodes[0];
     if (!node) {
       throw new Error(`Assessment template with id ${templateId} not found`);
     }
-    return node;
+    return {
+      id: node.id,
+      title: node.title,
+      description: node.description ?? '',
+      status: node.status,
+      source: node.source,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt ?? '',
+      sections: (node.sections ?? []).map((s) => ({
+        id: s.id,
+        title: s.title ?? '',
+        index: s.index ?? 0,
+        questions: (s.questions ?? []).map((q) => ({
+          id: q.id,
+          title: q.title ?? '',
+          index: q.index ?? 0,
+          type: q.type,
+          subType: q.subType ?? '',
+          description: q.description ?? '',
+          placeholder: q.placeholder ?? '',
+          isRequired: q.isRequired ?? false,
+          referenceId: q.referenceId ?? '',
+          allowSelectOther: q.allowSelectOther ?? false,
+          requireRiskEvaluation: q.requireRiskEvaluation ?? false,
+          answerOptions: (q.answerOptions ?? []).map((a) => ({
+            id: a.id,
+            index: a.index,
+            value: a.value,
+          })),
+        })),
+      })),
+    };
   }
 }
