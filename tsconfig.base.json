@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
+  "files": ["./types/svg.d.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
@@ -17,6 +18,9 @@
     "noUncheckedIndexedAccess": true,
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
-    "customConditions": ["@transcend-io/source"]
+    "customConditions": ["@transcend-io/source"],
+    "paths": {
+      "@tools/assets/*": ["./assets/*"]
+    }
   }
 }
