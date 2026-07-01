@@ -1,0 +1,53 @@
+name: MCP Schema Drift Check
+
+# Validates each PR's GraphQL operations against the *live* staging schema,
+# not just the committed `schema.graphql` snapshot. This catches drift the
+# hermetic local/CI build cannot: a field an operation relies on that changed
+# or disappeared on staging since the snapshot was last refreshed.
+#
+# Runs only when MCP code or the schema tooling changes, so unrelated PRs are
+# unaffected. It is intentionally network-dependent (it introspects staging),
+# which is why it lives in CI rather than a local commit hook.
+
+on:
+  pull_request:
+    paths:
+      - 'packages/mcp/**'
+      - 'schema.graphql'
+      - 'codegen.ts'
+      - 'scripts/refresh-graphql-schema.ts'
+
+concurrency:
+  group: mcp-schema-drift-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Refresh schema from live staging
+        # Anonymous introspection; no API key required.
+        run: pnpm graphql:refresh-schema
+
+      - name: Report drift vs committed schema.graphql
+        run: |
+          if git diff --quiet -- schema.graphql; then
+            echo "::notice::Committed schema.graphql matches live staging — no drift."
+          else
+            echo "::warning::Live staging schema differs from the committed schema.graphql. Consider running 'pnpm graphql:refresh-schema' and committing the result. Drift stat:"
+            git diff --stat -- schema.graphql
+          fi
+
+      - name: Regenerate codegen against live schema
+        run: pnpm codegen
+
+      - name: Typecheck operations against live schema
+        # Fails if any MCP operation no longer matches the live staging schema.
+        run: pnpm typecheck
