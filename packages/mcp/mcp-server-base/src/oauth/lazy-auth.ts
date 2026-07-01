@@ -3,9 +3,16 @@ import type { OAuthTokenAuth } from '../auth.js';
 import type { Logger } from '../clients/graphql/base.js';
 import { ErrorCode, ToolError } from '../errors.js';
 import { getOAuthClientSecret, getOAuthIssuer, isOAuthModeEnabled } from './config.js';
-import { OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE } from './constants.js';
+import {
+  OAUTH_CALLBACK_DENIED_AGENT_MESSAGE,
+  OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE,
+  OAUTH_LOGIN_REOPEN_MS,
+  OAUTH_LOGIN_SILENT_ATTACH_MS,
+  formatOAuthLoginPendingNudgeMessage,
+} from './constants.js';
 import { fetchAuthorizationServerMetadata } from './metadata.js';
 import { startOAuthLogin, waitForAuthorizationGrant } from './oauth-flow.js';
+import { openBrowser } from './open-browser.js';
 import { exchangeAuthorizationCode } from './token-exchange.js';
 import {
   getActiveOAuthCredentials,
@@ -21,8 +28,19 @@ let oauthSessionReady = false;
 /** Authorization grant from the most recent successful callback (debug / phase 3 input). */
 let storedAuthorizationGrant: OAuthAuthorizationGrant | null = null;
 
-/** In-flight login promise shared across concurrent tool calls. */
-let loginPromise: Promise<void> | null = null;
+/** In-flight OAuth login shared across concurrent tool calls. */
+let inFlightLogin: InFlightOAuthLogin | null = null;
+
+interface InFlightOAuthLogin {
+  /** Shared login lifecycle promise */
+  promise: Promise<void>;
+  /** Authorization URL for nudges/reopens */
+  authorizationUrl: string;
+  /** Timestamp when browser was last opened (initial open or reopen) */
+  browserOpenedAt: number;
+  /** Whether the URL-only nudge has been emitted for the current open window */
+  urlNudgeSent: boolean;
+}
 
 /**
  * Resets lazy OAuth session state (for tests).
@@ -30,7 +48,7 @@ let loginPromise: Promise<void> | null = null;
 export function resetLazyOAuthState(): void {
   oauthSessionReady = false;
   storedAuthorizationGrant = null;
-  loginPromise = null;
+  inFlightLogin = null;
   resetOAuthTokenManagerState();
 }
 
@@ -75,22 +93,62 @@ export async function ensureLazyOAuthAuth(logger: Logger): Promise<void> {
     return;
   }
 
-  if (!loginPromise) {
-    loginPromise = performLazyOAuthLogin(logger).finally(() => {
-      loginPromise = null;
-    });
+  if (!inFlightLogin) {
+    inFlightLogin = startInFlightLogin(logger);
+  } else {
+    await maybeHandleLateJoiner(inFlightLogin, logger);
   }
 
-  await loginPromise;
+  await inFlightLogin.promise;
 }
 
-async function performLazyOAuthLogin(logger: Logger): Promise<void> {
+function startInFlightLogin(logger: Logger): InFlightOAuthLogin {
+  const state: InFlightOAuthLogin = {
+    promise: Promise.resolve(),
+    authorizationUrl: '',
+    browserOpenedAt: 0,
+    urlNudgeSent: false,
+  };
+  state.promise = performLazyOAuthLogin(state, logger).finally(() => {
+    inFlightLogin = null;
+  });
+  return state;
+}
+
+async function maybeHandleLateJoiner(state: InFlightOAuthLogin, logger: Logger): Promise<void> {
+  if (!state.authorizationUrl) {
+    return;
+  }
+
+  const elapsed = Date.now() - state.browserOpenedAt;
+  if (elapsed < OAUTH_LOGIN_SILENT_ATTACH_MS) {
+    return;
+  }
+
+  if (elapsed >= OAUTH_LOGIN_REOPEN_MS) {
+    await openBrowser(state.authorizationUrl, logger);
+    state.browserOpenedAt = Date.now();
+    state.urlNudgeSent = false;
+  }
+
+  if (!state.urlNudgeSent) {
+    logger.warn(formatOAuthLoginPendingNudgeMessage(state.authorizationUrl), {
+      authorizationUrl: state.authorizationUrl,
+    });
+    state.urlNudgeSent = true;
+  }
+}
+
+async function performLazyOAuthLogin(state: InFlightOAuthLogin, logger: Logger): Promise<void> {
   logger.info('OAuth required — opening browser for consent');
 
   const issuer = getOAuthIssuer();
   let session: Awaited<ReturnType<typeof startOAuthLogin>> | undefined;
   try {
     session = await startOAuthLogin({ issuer, logger });
+    state.authorizationUrl = session.authorizationUrl;
+    state.browserOpenedAt = Date.now();
+
     const grant = await waitForAuthorizationGrant(session);
     storedAuthorizationGrant = grant;
 
@@ -114,6 +172,9 @@ async function performLazyOAuthLogin(logger: Logger): Promise<void> {
     logger.error('OAuth login failed', { error: message });
     if (/timed out/i.test(message)) {
       throw new ToolError(ErrorCode.AUTH_ERROR, OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE, false);
+    }
+    if (/access_denied/i.test(message)) {
+      throw new ToolError(ErrorCode.AUTH_ERROR, OAUTH_CALLBACK_DENIED_AGENT_MESSAGE, false);
     }
     throw new ToolError(ErrorCode.AUTH_ERROR, message, false);
   } finally {
