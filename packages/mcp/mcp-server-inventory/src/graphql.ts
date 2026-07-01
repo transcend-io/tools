@@ -77,15 +77,22 @@ const UpdateDataSilosDoc = graphql(/* GraphQL */ `
 `);
 
 function mapDataSilo<
-  T extends { id: string; title: string; type: string; description?: string | null },
+  T extends {
+    id: string;
+    title: string;
+    type: string;
+    description?: string | null;
+    isLive: boolean;
+    createdAt: string;
+  },
 >(node: T): DataSilo {
   return {
     id: node.id,
     title: node.title,
     type: node.type as DataSiloType,
     description: node.description ?? undefined,
-    isLive: false,
-    createdAt: '',
+    isLive: node.isLive,
+    createdAt: node.createdAt,
   };
 }
 
@@ -100,6 +107,7 @@ export class InventoryMixin extends TranscendGraphQLBase {
             type
             isLive
             outerType
+            createdAt
           }
           totalCount
         }
