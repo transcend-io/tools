@@ -46,6 +46,11 @@ export interface TranscendExperienceGql {
   browserLanguages: string[];
   /** Browser time zones for this experience */
   browserTimeZones: string[];
+  /** Consent UI variant assigned to this experience */
+  consentUiVariant?: {
+    /** Variant ID */
+    id: string;
+  };
 }
 
 // ---- EXPERIENCES query ----
@@ -91,6 +96,10 @@ export const EXPERIENCES = gql`
         }
         browserLanguages
         browserTimeZones
+        consentUiVariant {
+          id
+          slug
+        }
       }
     }
   }
