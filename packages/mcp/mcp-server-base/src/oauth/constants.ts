@@ -1,6 +1,12 @@
 import { DEFAULT_DASHBOARD_URL } from '../defaults.js';
 import { resolveMcpDashboardUrl } from '../server/resolve-dashboard-url.js';
 
+/** OAuth 2.0 token endpoint grant_type values used by this package. */
+export enum OAuthGrantType {
+  AuthorizationCode = 'authorization_code',
+  RefreshToken = 'refresh_token',
+}
+
 /** Environment variable for the OAuth issuer URL (test-only override). */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
 
