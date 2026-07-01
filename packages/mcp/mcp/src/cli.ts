@@ -32,7 +32,7 @@ function createToolRegistry(
 }
 
 async function main(): Promise<void> {
-  const config = parseTransportArgs();
+  const config = parseTransportArgs({ name: 'transcend-mcp', version: VERSION });
   const isHttpTransport = config.transport === 'http';
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();

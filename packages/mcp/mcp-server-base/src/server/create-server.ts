@@ -67,7 +67,7 @@ async function buildClients(
  * authenticated via session cookie or API key header.
  */
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
-  const config = parseTransportArgs();
+  const config = parseTransportArgs({ name: options.name, version: options.version });
   const isHttpTransport = config.transport === 'http';
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
