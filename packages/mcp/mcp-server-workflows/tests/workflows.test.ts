@@ -37,23 +37,25 @@ describe('Workflows Tools', () => {
   });
 
   describe('workflows_update_config', () => {
-    it('zodSchema rejects input when workflow_config_id is missing', () => {
+    it('zodSchema rejects input when workflowConfigId is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'workflows_update_config')!;
 
       const result = tool.zodSchema.safeParse({});
 
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['workflow_config_id']);
+      expect((result as any).error.issues[0].path).toEqual(['workflowConfigId']);
     });
 
     it('updates workflow config on success', async () => {
+      // The tool now takes camelCase `workflowConfigId` (matching the GraphQL
+      // input name), and the mixin no longer surfaces `showInPrivacyCenter`
+      // since the underlying schema does not expose it.
       const config = {
         id: 'wf-1',
-        title: { defaultMessage: 'Updated' },
-        subtitle: { defaultMessage: '' },
-        description: { defaultMessage: '' },
-        showInPrivacyCenter: true,
+        title: 'Updated',
+        subtitle: '',
+        description: '',
       };
       mockGraphql.updateWorkflowConfig.mockResolvedValue(config);
 
@@ -61,7 +63,7 @@ describe('Workflows Tools', () => {
       const tool = tools.find((t) => t.name === 'workflows_update_config')!;
 
       const result = await tool.handler({
-        workflow_config_id: 'wf-1',
+        workflowConfigId: 'wf-1',
         title: 'Updated',
       });
 

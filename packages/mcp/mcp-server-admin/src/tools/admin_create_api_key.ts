@@ -13,7 +13,7 @@ const scopeSummary = Object.entries(TRANSCEND_SCOPES)
 export const CreateApiKeySchema = z.object({
   title: z.string().describe('Name/title for the API key'),
   scopes: z.array(z.nativeEnum(ScopeName)).describe('Array of permission scopes for the key'),
-  data_silos: z
+  dataSilos: z
     .array(z.string())
     .optional()
     .describe('Array of data silo IDs to assign the key to (optional)'),
@@ -38,15 +38,12 @@ export function createAdminCreateApiKeyTool(clients: ToolClients) {
     confirmationHint: 'Creates a new API key with the specified scopes',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateApiKeySchema,
-    handler: async ({ title, scopes, data_silos }) => {
-      const result = await graphql.createApiKey({
-        title,
-        scopes,
-        dataSilos: data_silos,
-      });
+    handler: async ({ title, scopes, dataSilos }) => {
+      const created = await graphql.createApiKey({ title, scopes, dataSilos });
+      const { token, ...apiKey } = created;
       return createToolResult(true, {
-        apiKey: result.apiKey,
-        token: result.token,
+        apiKey,
+        token,
         warning: 'IMPORTANT: Save this token now! It will not be shown again.',
         message: `API key "${title}" created successfully`,
       });

@@ -5,9 +5,9 @@ import { buildAssessmentGroupUrl } from '../helpers/buildAssessmentLinks.js';
 
 export const CreateGroupSchema = z.object({
   title: z.string().describe('Title of the assessment group'),
-  template_id: z.string().describe('ID of the assessment template to link this group to'),
+  templateId: z.string().describe('ID of the assessment template to link this group to'),
   description: z.string().optional().describe('Description of the assessment group (optional)'),
-  reviewer_ids: z
+  reviewerIds: z
     .array(z.string())
     .optional()
     .describe('IDs of users assigned to review new assessments in this group (optional)'),
@@ -26,12 +26,12 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients) {
     confirmationHint: 'Creates a new assessment group',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateGroupSchema,
-    handler: async ({ title, template_id, description, reviewer_ids }) => {
+    handler: async ({ title, templateId, description, reviewerIds }) => {
       const result = await graphql.createAssessmentGroup({
         title,
-        assessmentFormTemplateId: template_id,
+        assessmentFormTemplateId: templateId,
         description,
-        reviewerIds: reviewer_ids,
+        reviewerIds,
       });
 
       const groupUrl = buildAssessmentGroupUrl(dashboardUrl, result.id);

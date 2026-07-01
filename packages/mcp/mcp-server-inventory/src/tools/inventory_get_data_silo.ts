@@ -3,7 +3,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { InventoryMixin } from '../graphql.js';
 
 export const GetDataSiloSchema = z.object({
-  data_silo_id: z.string().describe('ID of the data silo to retrieve'),
+  dataSiloId: z.string().describe('ID of the data silo to retrieve'),
 });
 export type GetDataSiloInput = z.infer<typeof GetDataSiloSchema>;
 
@@ -17,8 +17,8 @@ export function createInventoryGetDataSiloTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetDataSiloSchema,
-    handler: async ({ data_silo_id }) => {
-      const result = await graphql.getDataSilo(data_silo_id);
+    handler: async ({ dataSiloId }) => {
+      const result = await graphql.getDataSilo(dataSiloId);
       return createToolResult(true, result);
     },
   });

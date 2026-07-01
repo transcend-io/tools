@@ -37,8 +37,10 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
+    "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
     "@transcend-io/mcp-server-base": "workspace:*",
+    "graphql": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

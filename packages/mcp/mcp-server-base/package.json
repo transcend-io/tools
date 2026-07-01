@@ -34,9 +34,11 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
+    "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
     "cors": "^2.8.5",
     "express": "^5.2.1",
+    "graphql": "catalog:",
     "open": "^11.0.0",
     "zod": "catalog:"
   },

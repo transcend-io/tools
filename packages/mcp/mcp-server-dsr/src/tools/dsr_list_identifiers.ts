@@ -8,7 +8,7 @@ import {
 
 export const listIdentifiersSchema = z
   .object({
-    request_id: z.string().describe('ID of the DSR'),
+    requestId: z.string().describe('ID of the DSR'),
   })
   .merge(PaginationSchema);
 export type ListIdentifiersInput = z.infer<typeof listIdentifiersSchema>;
@@ -23,8 +23,8 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: listIdentifiersSchema,
-    handler: async ({ request_id }) => {
-      const identifiers = await rest.listRequestIdentifiers(request_id);
+    handler: async ({ requestId }) => {
+      const identifiers = await rest.listRequestIdentifiers(requestId);
       return createListResult(identifiers);
     },
   });

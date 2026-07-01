@@ -1,7 +1,13 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["import"],
-  "ignorePatterns": ["dist/**", "coverage/**", ".turbo/**", "node_modules/**"],
+  "ignorePatterns": [
+    "dist/**",
+    "coverage/**",
+    ".turbo/**",
+    "node_modules/**",
+    "**/__generated__/**"
+  ],
   "rules": {
     "no-console": "warn",
     "no-debugger": "error",
