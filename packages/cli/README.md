@@ -3736,7 +3736,7 @@ USAGE
   transcend policy lint (--dir value)
   transcend policy lint --help
 
-Runs `opa check --strict` and `opa fmt --diff` against a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Runs `opa check --strict` for Rego validation and `opa fmt` for formatting. When files are not formatted, lists the affected paths, prints a diff, and prompts to format them in place. Requires the `opa` CLI on PATH. No Transcend API key is needed.
 
 FLAGS
      --dir   Directory containing Rego policy files
@@ -3745,7 +3745,7 @@ FLAGS
 
 #### Examples
 
-**Lint a local policy directory**
+**Lint a local policy directory and optionally format Rego files**
 
 ```sh
 transcend policy lint --dir=./policies
