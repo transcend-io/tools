@@ -1,15 +1,14 @@
 name: Refresh GraphQL Schema
 
-# Weekly (and on-demand) refresh of the committed schema.graphql from the live
+# Daily (and on-demand) refresh of the committed schema.graphql from the live
 # staging schema. When staging has drifted, it opens a chore PR with the
-# regenerated schema + codegen output so CI can flag any MCP breakage — the
-# proactive net for drift that lands while nobody is editing MCP code.
+# refreshed schema so CI can flag any MCP breakage — the proactive net for
+# drift that lands while nobody is editing MCP code.
 
 on:
   schedule:
-    # Tuesdays at 12:00 UTC. Staging is most stable mid-week and this gives
-    # the team a few days to react before the next refresh.
-    - cron: '0 12 * * 2'
+    # Daily at 12:00 UTC schema refresh.
+    - cron: '0 12 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -29,10 +28,7 @@ jobs:
       - name: Bootstrap
         uses: ./.github/commands/bootstrap
 
-      - name: Refresh schema.graphql from staging
-        # Introspection on Transcend's staging GraphQL endpoint is open, so
-        # this runs without an API key. The script strips author-written
-        # descriptions before writing the SDL.
+      - name: Refresh schema
         run: pnpm graphql:refresh-schema
 
       - name: Regenerate __generated__ artifacts
@@ -64,21 +60,18 @@ jobs:
         uses: peter-evans/create-pull-request@271a8d0340265f705aeb732cdb5c1d678d28e1f0 # v7
         with:
           token: ${{ steps.refresh_app.outputs.token }}
-          branch: chore/refresh-graphql-schema
+          branch: chore/refresh-mcp-graphql-schema
           base: main
-          commit-message: 'chore(graphql): refresh staging schema'
-          title: 'chore(graphql): refresh staging schema'
+          commit-message: 'chore(MCP): Refresh staging GraphQL schema'
+          title: 'chore(MCP): Refresh staging GraphQL schema'
           body: |
-            Automated refresh of `schema.graphql` from the staging GraphQL
-            endpoint, plus a re-run of `pnpm codegen`.
+            Automated refresh of schema, plus a re-run of `pnpm codegen`.
 
             * If CI passes, this PR is safe to merge as-is.
             * If CI fails, the staging schema has drifted in a way that
               breaks one of the MCP servers; investigate the failure
               before merging.
           labels: |
-            graphql
+            MCP
             automation
-          add-paths: |
-            schema.graphql
-            packages/mcp/**/__generated__
+          add-paths: schema.graphql

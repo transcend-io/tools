@@ -7,6 +7,7 @@ name: MCP Schema Drift Check
 on:
   pull_request:
     paths:
+      - '.github/workflows/mcp-schema-drift.yml'
       - 'packages/mcp/**'
       - 'schema.graphql'
       - 'codegen.ts'
@@ -66,7 +67,12 @@ jobs:
           {
             echo "### MCP types broken by live-schema drift"
             echo '```'
-            grep -E 'error TS[0-9]+' typecheck.log | sort -u
+            errors="$(grep -E 'error TS[0-9]+' typecheck.log | sort -u || true)"
+            if [ -n "$errors" ]; then
+              echo "$errors"
+            else
+              tail -50 typecheck.log
+            fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           echo "::error::Live staging schema drift breaks MCP types (see the job summary)."
