@@ -30,6 +30,18 @@ describe('authHeaders', () => {
     expect(headers).not.toHaveProperty(TRANSCEND_ACTIVE_ORG_ID_HEADER);
   });
 
+  it('produces Authorization header for OAuth token auth', () => {
+    const creds: AuthCredentials = {
+      type: 'oauthToken',
+      accessToken: 'oauth-access-token',
+      refreshToken: 'oauth-refresh-token',
+      expiresAt: Date.now() + 60_000,
+    };
+    expect(authHeaders(creds)).toEqual({
+      Authorization: 'Bearer oauth-access-token',
+    });
+  });
+
   it('does not include Authorization header for session cookie auth', () => {
     const creds: AuthCredentials = {
       type: 'sessionCookie',
