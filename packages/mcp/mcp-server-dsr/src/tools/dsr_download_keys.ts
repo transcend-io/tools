@@ -1,7 +1,7 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
 
 export const downloadKeysSchema = z.object({
-  request_id: z.string().describe('ID of the completed DSR'),
+  requestId: z.string().describe('ID of the completed DSR'),
 });
 export type DownloadKeysInput = z.infer<typeof downloadKeysSchema>;
 
@@ -16,8 +16,8 @@ export function createDsrDownloadKeysTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: downloadKeysSchema,
-    handler: async ({ request_id }) => {
-      const keys = await rest.getDSRDownloadKeys(request_id);
+    handler: async ({ requestId }) => {
+      const keys = await rest.getDSRDownloadKeys(requestId);
       return createToolResult(true, {
         downloadKeys: keys,
         count: keys.length,

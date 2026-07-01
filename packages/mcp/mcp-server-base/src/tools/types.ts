@@ -2,6 +2,7 @@ import { type z } from 'zod';
 
 import type { TranscendGraphQLBase } from '../clients/graphql/base.js';
 import type { TranscendRestClient } from '../clients/rest-client.js';
+import { collectMissingDescriptions } from '../validation/describe-audit.js';
 
 export interface ToolAnnotations {
   /** Whether this tool only reads data */
@@ -68,5 +69,18 @@ export function defineTool<T>(config: {
   /** Handler receives pre-validated, fully typed args */
   handler: (args: T) => Promise<unknown>;
 }): ToolDefinition {
+  // Descriptions are the only signal an LLM caller has for what each argument
+  // means, so refuse to construct a tool whose input schema has any field
+  // (at any nesting depth) without a meaningful description. Failing loudly at
+  // construction surfaces the gap during local dev / tests / server startup
+  // instead of silently degrading tool quality in production.
+  const missing = collectMissingDescriptions(config.zodSchema);
+  if (missing.length > 0) {
+    throw new Error(
+      `Tool "${config.name}" has input fields missing a meaningful Zod ` +
+        `.describe(): ${missing.join(', ')}. Add a description explaining ` +
+        'what each field is and what valid values look like.',
+    );
+  }
   return config;
 }

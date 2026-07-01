@@ -2,7 +2,7 @@ import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io
 
 export const NerExtractSchema = z.object({
   text: z.string().describe('Text to extract entities from'),
-  entity_types: z
+  entityTypes: z
     .array(z.string())
     .optional()
     .describe('Specific entity types to extract (optional)'),
@@ -18,10 +18,10 @@ export function createDiscoveryNerExtractTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: NerExtractSchema,
-    handler: async ({ text, entity_types }) => {
+    handler: async ({ text, entityTypes }) => {
       const result = await rest.extractEntities({
         text,
-        entityTypes: entity_types,
+        entityTypes,
       });
 
       return createToolResult(true, {

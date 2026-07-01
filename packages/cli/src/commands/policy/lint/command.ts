@@ -15,9 +15,10 @@ export const lintCommand = buildCommand({
     },
   },
   docs: {
-    brief: 'Lint and format-check a local policy bundle',
+    brief: 'Lint and optionally format a local policy bundle',
     fullDescription:
-      'Runs `opa check --strict` and `opa fmt --diff` against a local policy directory. ' +
+      'Runs `opa check --strict` for Rego validation and `opa fmt` for formatting. ' +
+      'When files are not formatted, lists the affected paths, prints a diff, and prompts to format them in place. ' +
       'Requires the `opa` CLI on PATH. No Transcend API key is needed.',
   },
 });

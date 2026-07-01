@@ -9,7 +9,7 @@ import {
 import type { AssessmentsMixin } from '../graphql.js';
 
 export const AddSectionSchema = z.object({
-  template_id: z.string().describe('ID of the assessment form template to add the section to'),
+  templateId: z.string().describe('ID of the assessment form template to add the section to'),
   title: z.string().describe('Title of the new section'),
   questions: z
     .array(z.record(z.string(), z.unknown()))
@@ -33,9 +33,9 @@ export function createAssessmentsAddSectionTool(clients: ToolClients) {
     confirmationHint: 'Adds a section to the assessment template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AddSectionSchema,
-    handler: async ({ template_id, title, questions }) => {
+    handler: async ({ templateId, title, questions }) => {
       const result = await graphql.createAssessmentSection({
-        assessmentFormTemplateId: template_id,
+        assessmentFormTemplateId: templateId,
         title,
         questions: questions as AssessmentSectionInput['questions'],
       });

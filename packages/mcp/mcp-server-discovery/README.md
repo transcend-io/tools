@@ -77,8 +77,6 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 ## Tools
 
 - `discovery_list_scans` — List data discovery scans
-- `discovery_get_scan` — Get scan details
-- `discovery_start_scan` — Start a new scan
 - `discovery_list_plugins` — List discovery plugins
 - `discovery_classify_text` — Classify text into data categories
 - `discovery_ner_extract` — Extract named entities from text

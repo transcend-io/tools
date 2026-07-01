@@ -3,7 +3,7 @@ import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io
 import type { DSRMixin } from '../graphql.js';
 
 export const cancelDsrSchema = z.object({
-  request_id: z.string().describe('ID of the DSR to cancel'),
+  requestId: z.string().describe('ID of the DSR to cancel'),
   reason: z.string().optional().describe('Reason for cancellation (optional)'),
 });
 export type CancelDsrInput = z.infer<typeof cancelDsrSchema>;
@@ -19,9 +19,9 @@ export function createDsrCancelTool(clients: ToolClients) {
     confirmationHint: 'Cancels the specified request permanently',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: cancelDsrSchema,
-    handler: async ({ request_id, reason }) => {
+    handler: async ({ requestId, reason }) => {
       const input: { requestId: string; template?: string; subject?: string } = {
-        requestId: request_id,
+        requestId,
       };
       if (reason) {
         input.subject = reason;

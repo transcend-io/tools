@@ -10,10 +10,10 @@ import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const UpdateDataFlowItemSchema = z.object({
   id: z.string().describe('Data flow ID'),
-  tracking_purposes: z.array(z.string()).optional().describe('Tracking purpose slugs'),
+  trackingPurposes: z.array(z.string()).optional().describe('Tracking purpose slugs'),
   description: z.string().optional().describe('Data flow description'),
   service: z.string().optional().describe('Service/integration name'),
-  is_junk: z.boolean().optional().describe('Mark as junk'),
+  isJunk: z.boolean().optional().describe('Mark as junk'),
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .optional()
@@ -22,7 +22,7 @@ export const UpdateDataFlowItemSchema = z.object({
 export type UpdateDataFlowItemInput = z.infer<typeof UpdateDataFlowItemSchema>;
 
 export const UpdateDataFlowsSchema = z.object({
-  data_flows: z.array(UpdateDataFlowItemSchema).min(1).describe('Data flows to update'),
+  dataFlows: z.array(UpdateDataFlowItemSchema).min(1).describe('Data flows to update'),
 });
 export type UpdateDataFlowsInput = z.infer<typeof UpdateDataFlowsSchema>;
 
@@ -30,21 +30,21 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
   return defineTool({
     name: 'consent_update_data_flows',
     description:
-      'Update one or more data flows. Use to approve (status=LIVE), junk (is_junk=true), ' +
+      'Update one or more data flows. Use to approve (status=LIVE), junk (isJunk=true), ' +
       'assign tracking purposes, or set a service.',
     category: 'Consent Management',
     readOnly: false,
     confirmationHint: 'Updates data flows in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateDataFlowsSchema,
-    handler: async ({ data_flows }) => {
+    handler: async ({ dataFlows }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const dfInputs: TranscendUpdateDataFlowInputGql[] = data_flows.map((df) => ({
+      const dfInputs: TranscendUpdateDataFlowInputGql[] = dataFlows.map((df) => ({
         id: df.id,
-        ...(df.tracking_purposes ? { purposeIds: df.tracking_purposes } : {}),
+        ...(df.trackingPurposes ? { purposeIds: df.trackingPurposes } : {}),
         ...(df.description !== undefined ? { description: df.description } : {}),
         ...(df.service !== undefined ? { service: df.service } : {}),
-        ...(df.is_junk !== undefined ? { isJunk: df.is_junk } : {}),
+        ...(df.isJunk !== undefined ? { isJunk: df.isJunk } : {}),
         ...(df.status !== undefined ? { status: df.status } : {}),
       }));
       const data = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(

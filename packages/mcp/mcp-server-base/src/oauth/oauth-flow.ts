@@ -81,6 +81,7 @@ export async function startOAuthLogin(
     await openBrowser(authorizationUrl, logger);
 
     return {
+      authorizationUrl,
       redirectUri: callbackHandle.redirectUri,
       clientId,
       codeVerifier,

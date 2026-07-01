@@ -31,6 +31,7 @@ describe('buildAuthorizationUrl', () => {
 describe('waitForAuthorizationGrant', () => {
   it('merges callback result with session fields for token exchange', async () => {
     const grant = await waitForAuthorizationGrant({
+      authorizationUrl: 'https://yo.com:4001/oauth/authorize?client_id=client-123',
       redirectUri: 'http://127.0.0.1:4567/callback',
       clientId: 'client-123',
       codeVerifier: 'verifier-abc',

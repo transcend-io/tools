@@ -1,7 +1,7 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
 
 export const pollStatusSchema = z.object({
-  request_id: z.string().describe('ID of the DSR to check'),
+  requestId: z.string().describe('ID of the DSR to check'),
 });
 export type PollStatusInput = z.infer<typeof pollStatusSchema>;
 
@@ -15,8 +15,8 @@ export function createDsrPollStatusTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: pollStatusSchema,
-    handler: async ({ request_id }) => {
-      const result = await rest.getDSRStatus(request_id);
+    handler: async ({ requestId }) => {
+      const result = await rest.getDSRStatus(requestId);
       return createToolResult(true, result);
     },
   });

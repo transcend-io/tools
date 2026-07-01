@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.12.0
+
+### Minor Changes
+
+- c2ed85f: Add `transcend policy versions` subcommand for listing uploaded policy bundle versions.
+
 ## 10.11.0
 
 ### Minor Changes

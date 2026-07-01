@@ -5,7 +5,7 @@ const examples = buildExamples<LintCommandFlags>(
   ['policy', 'lint'],
   [
     {
-      description: 'Lint a local policy directory',
+      description: 'Lint a local policy directory and optionally format Rego files',
       flags: {
         dir: './policies',
       },

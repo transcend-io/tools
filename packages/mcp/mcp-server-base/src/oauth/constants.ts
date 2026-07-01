@@ -33,9 +33,27 @@ export const OAUTH_CLIENT_VERIFY_TIMEOUT_MS = 5_000;
 /** Maximum time to wait for the browser OAuth callback. */
 export const OAUTH_CALLBACK_TIMEOUT_MS = 5 * 60 * 1000;
 
+/** Elapsed time before a late joiner nudges the user with the consent URL. */
+export const OAUTH_LOGIN_SILENT_ATTACH_MS = 5_000;
+
+/** Elapsed time before a late joiner reopens the browser in addition to the URL nudge. */
+export const OAUTH_LOGIN_REOPEN_MS = 60_000;
+
+/** Instruction appended to agent-facing OAuth callback failures that require user action. */
+const OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION =
+  'Report this to the user and wait for them to send a new message before calling tools again. Do not retry automatically.';
+
 /** Agent-facing message when the OAuth browser callback times out. */
-export const OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE =
-  'OAuth sign-in timed out. Report this to the user and wait for them to send a new message before calling tools again. Do not retry automatically.';
+export const OAUTH_CALLBACK_TIMEOUT_AGENT_MESSAGE = `OAuth sign-in timed out. ${OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION}`;
+
+/** Agent-facing message when the user denies OAuth consent in the browser. */
+export const OAUTH_CALLBACK_DENIED_AGENT_MESSAGE = `OAuth sign-in was denied. ${OAUTH_CALLBACK_AGENT_NO_RETRY_INSTRUCTION}`;
+
+/** Agent-facing message when an in-flight OAuth login has not completed yet. */
+export const OAUTH_LOGIN_PENDING_NUDGE_AGENT_MESSAGE =
+  'OAuth sign-in from an earlier request is still in progress and has not completed. ' +
+  'If the user closed the consent window, ask them to open this URL to continue: {authorizationUrl}. ' +
+  'Wait for the user to complete sign-in before proceeding. Do not retry automatically.';
 
 /** Browser callback page message shown after successful OAuth authentication. */
 export const OAUTH_CALLBACK_SUCCESS_MESSAGE =
@@ -72,4 +90,11 @@ export function formatOAuthClientConfigError(detail: string): string {
     `${detail}. Have an admin navigate to ${getOAuthClientsAdminUrl()} ` +
     'to fetch or create valid credentials.'
   );
+}
+
+/**
+ * Returns the agent-facing message for an in-flight OAuth login that has not completed.
+ */
+export function formatOAuthLoginPendingNudgeMessage(authorizationUrl: string): string {
+  return OAUTH_LOGIN_PENDING_NUDGE_AGENT_MESSAGE.replace('{authorizationUrl}', authorizationUrl);
 }
