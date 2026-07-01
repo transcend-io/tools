@@ -4723,6 +4723,9 @@ enum PrivacyCenterIntlMessageType {
   FILE_UPLOAD_LABEL
   FILE_UPLOAD_INFO
   CONSENT_PURPOSE_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_MESSAGE
   PREFERENCE_TOPIC_TITLE
   PREFERENCE_TOPIC_DESCRIPTION
   PREFERENCE_OPTION_TITLE
@@ -4735,6 +4738,9 @@ enum ConsentManagerIntlMessageType {
   CONSENT_MANAGER_MESSAGE
   CONSENT_PURPOSE_TITLE
   CONSENT_PURPOSE_DESCRIPTION
+  CONSENT_PURPOSE_DISCLOSURE_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_MESSAGE
   CONSENT_MANAGER_TCF_MESSAGE
   CONSENT_MANAGER_VARIANT
 }
@@ -4770,6 +4776,9 @@ enum IntlMessageType {
   FILE_UPLOAD_LABEL
   FILE_UPLOAD_INFO
   CONSENT_PURPOSE_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_TITLE
+  CONSENT_PURPOSE_DISCLOSURE_MODAL_MESSAGE
   PREFERENCE_TOPIC_TITLE
   PREFERENCE_TOPIC_DESCRIPTION
   PREFERENCE_OPTION_TITLE
@@ -4923,6 +4932,8 @@ type Query {
   newIdentifierTypes: [NewIdentifierType!]!
   oauthClients(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: OauthClientFiltersInput): OauthClientsPayload!
   oauthConnectionStatus(input: OAuthConnectionStatusInput!): OauthConnectionStatusPayload!
+  oauthConsentScopePreview(input: OAuthConsentScopePreviewInput!): OAuthConsentScopePreview!
+  oauthInteractionDetails(input: OAuthInteractionDetailsInput!): OAuthInteractionDetails!
   organization: Organization!
   orgTcfPurposes(input: OptionalAirgapBundleInput!, filterBy: OrgTcfPurposeFilterInput): OrgTcfPurposesPayload!
   orgTcfSpecialFeatures(input: OptionalAirgapBundleInput!, filterBy: OrgTcfSpecialFeatureFilterInput): OrgTcfSpecialFeaturesPayload!
@@ -10677,6 +10688,7 @@ input CreatePurposeInput {
   authLevel: PreferenceStoreAuthLevel
   showInPrivacyCenter: Boolean
   communicationPreferencesIdentifierId: ID
+  showDisclosureInCommPreferences: Boolean
 }
 
 type CreateRepositoryPayload {
@@ -14836,6 +14848,22 @@ input OAuthConnectionStatusInput {
   externalServiceCode: ExternalOauthServiceCode!
 }
 
+type OAuthConsentScopePreview {
+  scopes: [OAuthConsentScopePreviewEntry!]!
+  grantableScopeCount: Int!
+}
+
+type OAuthConsentScopePreviewEntry {
+  name: ScopeName!
+  title: String!
+  description: String!
+  granted: Boolean!
+}
+
+input OAuthConsentScopePreviewInput {
+  uid: String!
+}
+
 type OAuthExternalAccessEntryIds {
   entityId: String!
   entityType: OAuthEntityType!
@@ -14846,6 +14874,22 @@ input OAuthIDInput {
   entityId: String!
   entityType: OAuthEntityType!
   externalServiceCode: ExternalOauthServiceCode!
+}
+
+type OAuthInteractionDetails {
+  uid: String!
+  clientId: String!
+  clientName: String
+  redirectUri: String!
+  requestedScopes: [ScopeName!]!
+  organizationId: ID
+  organizationName: String
+  expired: Boolean!
+  createdAt: Date
+}
+
+input OAuthInteractionDetailsInput {
+  uid: String!
 }
 
 type OauthLinkPayload {
@@ -15699,6 +15743,10 @@ type PrivacyCenterTrackingPurposePreview {
   isActive: Boolean!
   authLevel: PreferenceStoreAuthLevel!
   showInPrivacyCenter: Boolean!
+  showDisclosureInCommPreferences: Boolean!
+  disclosureTitle: DefinedMessage
+  disclosureModalTitle: DefinedMessage
+  disclosureModalMessage: DefinedMessage
   preferenceTopics: [PrivacyCenterPreferenceTopic!]
   dataSubjects: [PurposeSubjectPreview!]!
   communicationPreferencesIdentifier: PrivacyCenterPurposeIdentifierPreview
@@ -17951,7 +17999,7 @@ type RunCustomFunctionPayload {
 }
 
 input RunCustomFunctionInput {
-  source: CustomFunctionSource!
+  type: CustomFunctionType
   id: ID
   sombraId: ID
   payload: String!
@@ -19868,6 +19916,7 @@ type TrackingPurpose {
   deletedAt: Date
   authLevel: PreferenceStoreAuthLevel!
   showInPrivacyCenter: Boolean!
+  showDisclosureInCommPreferences: Boolean!
   title: String
   preferenceTopics: [PreferenceTopicPreview!]!
   purposeDataPointCount: Int!
@@ -21736,6 +21785,7 @@ input UpdatePurposeInput {
   isActive: Boolean
   authLevel: PreferenceStoreAuthLevel
   showInPrivacyCenter: Boolean
+  showDisclosureInCommPreferences: Boolean
   dataSubjectIds: [ID!]
   communicationPreferencesIdentifierId: ID
 }
