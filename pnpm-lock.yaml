@@ -18,9 +18,6 @@ catalogs:
     '@graphql-codegen/client-preset':
       specifier: ^6.0.1
       version: 6.0.1
-    '@graphql-codegen/typescript':
-      specifier: ^6.0.2
-      version: 6.0.2
     '@graphql-typed-document-node/core':
       specifier: ^3.2.0
       version: 3.2.0
@@ -86,9 +83,6 @@ importers:
       '@graphql-codegen/client-preset':
         specifier: 'catalog:'
         version: 6.0.1(graphql@16.14.2)
-      '@graphql-codegen/typescript':
-        specifier: 'catalog:'
-        version: 6.0.2(graphql@16.14.2)
       '@transcend-io/mcp-server-admin':
         specifier: workspace:*
         version: link:packages/mcp/mcp-server-admin

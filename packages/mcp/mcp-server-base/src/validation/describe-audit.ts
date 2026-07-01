@@ -16,6 +16,18 @@ export const MIN_DESCRIPTION_LENGTH = 8;
  * source on `_def`. We try both and guard against returning the schema itself.
  */
 function unwrapOnce(schema: z.ZodType): z.ZodType | undefined {
+  // Structural containers are the recursion targets, not wrappers — descend()
+  // handles them explicitly (with `[]` / `{}` path segments). Never peel them
+  // here, otherwise an array/record would collapse into its element/value and
+  // lose that distinction.
+  if (
+    schema instanceof z.ZodObject ||
+    schema instanceof z.ZodArray ||
+    schema instanceof z.ZodRecord
+  ) {
+    return undefined;
+  }
+
   const unwrapFn = (schema as { unwrap?: () => z.ZodType }).unwrap;
   if (typeof unwrapFn === 'function') {
     try {

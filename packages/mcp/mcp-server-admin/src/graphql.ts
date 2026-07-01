@@ -210,12 +210,8 @@ export class AdminMixin extends TranscendGraphQLBase {
   /**
    * Create a new API key. The returned `token` is the plain-text bearer the
    * caller must surface to the user immediately -- the API key endpoint never
-   * returns it again. The previous implementation read a top-level `token`
-   * field that does not exist in the schema; the token is on
-   * `createApiKey.apiKey.apiKey` (a sibling of `id`/`title`/`scopes`).
-   *
-   * #173 fixed the same bug independently with a hand-rolled mutation; this
-   * branch's typed `graphql()` form is a strict superset, so we keep ours.
+   * returns it again. The token is on `createApiKey.apiKey.apiKey` (a sibling
+   * of `id`/`title`/`scopes`), not a top-level `token` field.
    */
   async createApiKey(input: ApiKeyCreateInput): Promise<CreatedApiKey> {
     const data = await this.makeRequest(CreateApiKeyDoc, {

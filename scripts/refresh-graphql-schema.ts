@@ -1,34 +1,11 @@
 /**
- * Refresh the committed `schema.graphql` at the repo root by introspecting
- * the Transcend staging GraphQL endpoint.
+ * Refresh the committed `schema.graphql` by introspecting the Transcend
+ * staging GraphQL endpoint.
  *
- * Why staging (vs Apollo Studio):
- *   - Zero-friction: introspection is anonymous, so any contributor can
- *     refresh without provisioning an Apollo Studio key or installing the
- *     Rover CLI.
- *   - Same content: Apollo Studio's `Transcend-io@current` graph variant
- *     is itself produced by `rover graph introspect <staging>` in the
- *     backend release pipeline, so the bytes are identical at any moment
- *     when both are in sync.
- *   - Better dev velocity: catches schema changes the moment they hit
- *     staging, rather than waiting for the next prod release.
- *
- * Trade-off: the schema may include staging-only types that haven't yet
- * shipped to prod. Anyone shipping a tool that depends on a brand-new
- * field should verify it has actually rolled out to `api.transcend.io`
- * before publishing.
- *
- * Run it manually with `pnpm graphql:refresh-schema` (reads `secret.env` for
- * a `TRANSCEND_API_URL` override; defaults to staging). A scheduled workflow
- * that runs this and opens a refresh PR is proposed separately in a follow-up
- * PR, not part of this branch.
- *
- * Output post-processing:
- *   The script re-prints the SDL via graphql-js `printSchema` after
- *   stripping every type/field description. Author-written descriptions
- *   on the schema may include internal context (deprecation notes,
- *   partner names, business rules) that we do not want to surface via
- *   this public repository.
+ * Run this (`pnpm graphql:refresh-schema`) when:
+ *   - An MCP operation needs a type/field that staging has added since the
+ *     last refresh (e.g. `pnpm codegen`/`tsc` fails on a missing element).
+ *   - You want the committed snapshot to reflect the latest staging schema.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';

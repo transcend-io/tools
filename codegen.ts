@@ -27,11 +27,10 @@ const SERVERS = ['admin', 'assessment', 'discovery', 'dsr', 'inventory', 'workfl
 
 const config: CodegenConfig = {
   schema: SCHEMA_PATH,
-  // Tolerate servers that haven't migrated to the typed `graphql()` tag yet.
-  // Once every operation in a package is on the typed tag, the
-  // `description-audit` test guarantees coverage; this flag keeps codegen
-  // green while migrations land incrementally.
-  ignoreNoDocuments: true,
+  // Every server in SERVERS has migrated to the typed `graphql()` tag, so a
+  // generates target with no documents means a broken glob or an empty
+  // package — fail loudly rather than silently emitting nothing.
+  ignoreNoDocuments: false,
   generates: Object.fromEntries(
     SERVERS.flatMap((server) => {
       const pkgRoot = `packages/mcp/mcp-server-${server}/src`;
