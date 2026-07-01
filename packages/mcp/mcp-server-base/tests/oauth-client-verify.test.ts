@@ -5,7 +5,7 @@ import {
   resolveRegionalOAuthIssuer,
   verifyOAuthClientCredentials,
 } from '../src/oauth/client-verify.js';
-import { getOAuthClientsAdminUrl } from '../src/oauth/constants.js';
+import { getOAuthClientsAdminUrl, OAUTH_CLIENT_VERIFY_TIMEOUT_MS } from '../src/oauth/constants.js';
 
 describe('verifyOAuthClientCredentials', () => {
   const originalDashboardUrl = process.env.TRANSCEND_DASHBOARD_URL;
@@ -47,6 +47,7 @@ describe('verifyOAuthClientCredentials', () => {
         client_secret: 'secret-value',
         redirect_uri: 'http://127.0.0.1:4567/callback',
       }),
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -124,6 +125,38 @@ describe('verifyOAuthClientCredentials', () => {
     ).rejects.toThrow(/credentials were rejected/);
   });
 
+  it('throws when the request times out', async () => {
+    vi.useFakeTimers();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url, init) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const error = new Error('The operation was aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        });
+      }),
+    );
+
+    const promise = verifyOAuthClientCredentials(
+      'https://yo.com:4001',
+      'client-abc',
+      'secret',
+      'http://127.0.0.1:4567/callback',
+    );
+    const assertion = expect(promise).rejects.toThrow(
+      /OAuth client verification timed out after 5000ms/,
+    );
+
+    await vi.advanceTimersByTimeAsync(OAUTH_CLIENT_VERIFY_TIMEOUT_MS);
+    await assertion;
+
+    vi.useRealTimers();
+  });
+
   it('uses TRANSCEND_DASHBOARD_URL in error guidance in test env when set', async () => {
     process.env.TRANSCEND_DASHBOARD_URL = 'https://yo.com:3000';
 
@@ -198,6 +231,7 @@ describe('resolveRegionalOAuthIssuer', () => {
         client_secret: 'secret',
         redirect_uri: 'http://127.0.0.1:4567/callback',
       }),
+      signal: expect.any(AbortSignal),
     });
   });
 
@@ -227,6 +261,38 @@ describe('resolveRegionalOAuthIssuer', () => {
     ).resolves.toBe(DEFAULT_US_TRANSCEND_API_URL);
 
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws when all regional issuers time out', async () => {
+    vi.useFakeTimers();
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url, init) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            const error = new Error('The operation was aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        });
+      }),
+    );
+
+    const promise = resolveRegionalOAuthIssuer(
+      [DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL],
+      'client-abc',
+      'secret',
+      'http://127.0.0.1:4567/callback',
+    );
+    const assertion = expect(promise).rejects.toThrow(
+      /all regional backends.*timed out after 5000ms/s,
+    );
+
+    await vi.advanceTimersByTimeAsync(OAUTH_CLIENT_VERIFY_TIMEOUT_MS);
+    await assertion;
+
+    vi.useRealTimers();
   });
 
   it('throws when all regional issuers fail verification', async () => {

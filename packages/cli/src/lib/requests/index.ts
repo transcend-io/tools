@@ -30,3 +30,4 @@ export * from './pullPrivacyRequests.js';
 export * from './streamPrivacyRequestsToCsv.js';
 export * from './skipRequestDataSilos.js';
 export * from './removeUnverifiedRequestIdentifiers.js';
+export * from './splitDateRange.js';

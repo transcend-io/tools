@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { OAuthGrantType } from '../src/oauth/constants.js';
 import { exchangeAuthorizationCode } from '../src/oauth/token-exchange.js';
 
 describe('exchangeAuthorizationCode', () => {
@@ -48,7 +49,7 @@ describe('exchangeAuthorizationCode', () => {
         Accept: 'application/json',
       },
       body: new URLSearchParams({
-        grant_type: 'authorization_code',
+        grant_type: OAuthGrantType.AuthorizationCode,
         code: 'auth-code',
         redirect_uri: 'http://127.0.0.1:8765/callback',
         client_id: 'client-xyz',

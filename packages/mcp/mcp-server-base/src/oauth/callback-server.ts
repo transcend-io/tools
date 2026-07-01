@@ -1,9 +1,8 @@
 import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
 
 import { buildAuthCallbackHtml } from './buildAuthCallbackHtml.js';
 import { getOAuthRedirectHost, getOAuthRedirectPort, getOAuthRedirectUri } from './config.js';
-import { OAUTH_CALLBACK_TIMEOUT_MS } from './constants.js';
+import { OAUTH_CALLBACK_PATH, OAUTH_CALLBACK_TIMEOUT_MS } from './constants.js';
 import {
   OAuthCallbackError,
   parseOAuthCallbackQuery,
@@ -28,12 +27,6 @@ export interface CallbackServerHandle {
   /** Stops the callback HTTP server */
   close: () => Promise<void>;
 }
-
-const SUCCESS_MESSAGE =
-  'The Transcend MCP has been successfully authenticated. You can close this window and return to your host application.';
-
-const ERROR_MESSAGE =
-  'The Transcend MCP authentication failed. Return to your host application and try again.';
 
 /**
  * Starts an HTTP server on {@link getOAuthRedirectHost} at {@link getOAuthRedirectPort} to receive the OAuth redirect.
@@ -62,7 +55,14 @@ export function startCallbackServer(
         return;
       }
 
-      if (!req.url?.startsWith('/callback')) {
+      if (!req.url) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+
+      const { pathname } = new URL(req.url, 'http://127.0.0.1');
+      if (pathname !== OAUTH_CALLBACK_PATH) {
         res.writeHead(404);
         res.end('Not found');
         return;
@@ -70,7 +70,7 @@ export function startCallbackServer(
 
       if (settled) {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(buildAuthCallbackHtml(SUCCESS_MESSAGE));
+        res.end(buildAuthCallbackHtml(true));
         return;
       }
 
@@ -79,14 +79,14 @@ export function startCallbackServer(
         const result = validateOAuthCallbackQuery(query, options.expectedState);
         finishWithSuccess(result);
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(buildAuthCallbackHtml(SUCCESS_MESSAGE));
+        res.end(buildAuthCallbackHtml(true));
         void closeServer();
       } catch (error) {
         const message =
           error instanceof OAuthCallbackError ? error.message : 'OAuth callback validation failed';
         finishWithError(error instanceof Error ? error : new Error(message));
         res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(buildAuthCallbackHtml(ERROR_MESSAGE));
+        res.end(buildAuthCallbackHtml(false));
         void closeServer();
       }
     });

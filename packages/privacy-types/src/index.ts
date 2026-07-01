@@ -6,6 +6,7 @@ export * from './attribute.js';
 export * from './browserTimeZones.js';
 export * from './code.js';
 export * from './consentManager.js';
+export * from './consentUiInventory.js';
 export * from './consentUi.js';
 export * from './consentUiTheme.js';
 export * from './consentUiConfiguration.js';
