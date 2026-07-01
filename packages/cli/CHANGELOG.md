@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.12.2
+
+### Patch Changes
+
+- 07f1081: Fix `transcend policy publish` to upload a Policy Engine-compatible tarball (`manifest.json` plus `.rego` files) instead of `opa build` output, validate Rego with `opa check --v0-compatible`, and surface API error messages on upload failure.
+
 ## 10.12.1
 
 ### Patch Changes
