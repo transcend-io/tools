@@ -10,12 +10,12 @@ import { versionsCommand } from './versions/command.js';
 
 export const policyRoutes = buildRouteMap({
   routes: {
-    lint: lintCommand,
-    test: testCommand,
-    eval: evalCommand,
-    publish: publishCommand,
     activate: activateCommand,
+    eval: evalCommand,
+    lint: lintCommand,
     list: listCommand,
+    publish: publishCommand,
+    test: testCommand,
     versions: versionsCommand,
   },
   docs: {

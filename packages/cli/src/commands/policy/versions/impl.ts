@@ -8,8 +8,11 @@ import {
   printResult,
   renderTable,
   resolveBundleIdByName,
-  type PolicyBundleVersionListResponse,
-} from '../helpers.js';
+} from '../helpers/index.js';
+import type { PolicyBundleVersionListResponse } from '../types.js';
+
+/** Placeholder for nullable API fields in table output. */
+const EMPTY_CELL = '-';
 
 /** CLI flags for `transcend policy versions`. */
 export interface VersionsCommandFlags {
@@ -54,7 +57,7 @@ export async function versions(
   }
 
   const body = await client
-    .get(`api/v1/policy-engine/policy-bundles/${bundleId}/versions`, {
+    .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
       searchParams,
     })
     .json<PolicyBundleVersionListResponse>();
@@ -71,8 +74,8 @@ export async function versions(
         version.id,
         version.version,
         version.createdAt,
-        version.activatedAt ?? '-',
-        version.deactivatedAt ?? '-',
+        version.activatedAt ?? EMPTY_CELL,
+        version.deactivatedAt ?? EMPTY_CELL,
       ]);
 
       let table = renderTable(['id', 'version', 'createdAt', 'activatedAt', 'deactivatedAt'], rows);

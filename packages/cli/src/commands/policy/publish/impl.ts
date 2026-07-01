@@ -14,9 +14,8 @@ import {
   formatPolicyBundleVersionSummary,
   printResult,
   resolveBundleIdByName,
-  type CreatePolicyBundleResponse,
-  type CreatePolicyBundleVersionResponse,
-} from '../helpers.js';
+} from '../helpers/index.js';
+import type { CreatePolicyBundleResponse, CreatePolicyBundleVersionResponse } from '../types.js';
 
 /** CLI flags for `transcend policy publish`. */
 export interface PublishCommandFlags {
@@ -69,7 +68,7 @@ export async function publish(
         description,
       });
       responseBody = await client
-        .post(`api/v1/policy-engine/policy-bundles/${existingBundleId}/versions`, { body: form })
+        .post(`v1/policy-engine/policy-bundles/${existingBundleId}/versions`, { body: form })
         .json<CreatePolicyBundleVersionResponse>();
     } else {
       logger.info(colors.green(`Creating bundle "${bundleName}" and uploading first version...`));
@@ -80,7 +79,7 @@ export async function publish(
         bundleName,
       });
       responseBody = await client
-        .post('api/v1/policy-engine/policy-bundles', {
+        .post('v1/policy-engine/policy-bundles', {
           body: createForm,
         })
         .json<CreatePolicyBundleResponse>();

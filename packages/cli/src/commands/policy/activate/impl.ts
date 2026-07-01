@@ -9,8 +9,8 @@ import {
   formatPolicyBundleVersionSummary,
   printResult,
   resolvePolicyBundleId,
-  type ActivatePolicyBundleVersionResponse,
-} from '../helpers.js';
+} from '../helpers/index.js';
+import type { ActivatePolicyBundleVersionResponse } from '../types.js';
 
 /** CLI flags for `transcend policy activate`. */
 export interface ActivateCommandFlags {
@@ -59,7 +59,7 @@ export async function activate(
 
   const body = await client
     .post(
-      `api/v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${parsedVersionId}/activate`,
+      `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${parsedVersionId}/activate`,
       {
         json: dryRun ? { dryRun: true } : {},
       },

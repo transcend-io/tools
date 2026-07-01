@@ -5,8 +5,8 @@ import { list } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 
-vi.mock('../../helpers.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../helpers.js')>();
+vi.mock('../../helpers/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../helpers/index.js')>();
   return {
     ...actual,
     buildPolicyEngineClient: buildPolicyEngineClientMock,
@@ -52,7 +52,7 @@ describe('list', () => {
       json: false,
     });
 
-    expect(get).toHaveBeenCalledWith('api/v1/policy-engine/policy-bundles', {
+    expect(get).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
       searchParams: { limit: 50, offset: 0 },
     });
     expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('bundle-id'));

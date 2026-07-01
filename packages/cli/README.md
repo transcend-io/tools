@@ -54,21 +54,13 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin find-text-in-folder`](#transcend-admin-find-text-in-folder)
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
-
-  - [`transcend policy versions`](#transcend-policy-versions)
-
-  - [`transcend policy list`](#transcend-policy-list)
-
   - [`transcend policy activate`](#transcend-policy-activate)
-
-  - [`transcend policy publish`](#transcend-policy-publish)
-
   - [`transcend policy eval`](#transcend-policy-eval)
-
-  - [`transcend policy test`](#transcend-policy-test)
-
   - [`transcend policy lint`](#transcend-policy-lint)
-
+  - [`transcend policy list`](#transcend-policy-list)
+  - [`transcend policy versions`](#transcend-policy-versions)
+  - [`transcend policy publish`](#transcend-policy-publish)
+  - [`transcend policy test`](#transcend-policy-test)
 - [Prompt Manager](#prompt-manager)
 - [Proxy usage](#proxy-usage)
 - [Using non-primary Sombra](#using-non-primary-sombra)
@@ -3661,125 +3653,6 @@ transcend migration sync-ot \
 transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --transcendAuth="$TRANSCEND_API_KEY"
 ```
 
-### `transcend policy lint`
-
-```txt
-USAGE
-  transcend policy lint (--dir value)
-  transcend policy lint --help
-
-Runs `opa check --strict` and `opa fmt --diff` against a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
-
-FLAGS
-     --dir   Directory containing Rego policy files
-  -h --help  Print help information and exit
-```
-
-#### Examples
-
-**Lint a local policy directory**
-
-```sh
-transcend policy lint --dir=./policies
-```
-
-### `transcend policy test`
-
-```txt
-USAGE
-  transcend policy test (--dir value)
-  transcend policy test --help
-
-Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
-
-FLAGS
-     --dir   Directory containing Rego policy files and tests
-  -h --help  Print help information and exit
-```
-
-#### Examples
-
-**Run tests in a local policy directory**
-
-```sh
-transcend policy test --dir=./policies
-```
-
-### `transcend policy eval`
-
-```txt
-USAGE
-  transcend policy eval (--pkg value) (--input value) [--bundle value]
-  transcend policy eval --help
-
-Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. No Transcend API key is needed.
-
-FLAGS
-      --pkg      OPA package or query to evaluate (e.g. data.transcend.decision)
-      --input    Path to a JSON envelope input file
-     [--bundle]  Optional local policy bundle directory
-  -h  --help     Print help information and exit
-```
-
-#### Examples
-
-**Evaluate a decision query with a local envelope**
-
-```sh
-transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
-```
-
-### `transcend policy publish`
-
-```txt
-USAGE
-  transcend policy publish (--dir value) (--bundleName value) (--auth value) [--transcendUrl value] [--version value] [--description value] [--json]
-  transcend policy publish --help
-
-Builds an OPA bundle tarball from a local directory and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH and a Transcend API key with Manage Policy scope.
-
-FLAGS
-      --dir            Directory containing Rego policy files
-      --bundleName     Tenant-unique policy bundle name
-      --auth           The Transcend API key. Requires scopes: "Manage Policy"
-     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
-     [--version]       Version label (defaults to git SHA or timestamp)
-     [--description]   Optional description for the uploaded version
-     [--json]          Print the raw JSON API response                                              [default = false]
-  -h  --help           Print help information and exit
-```
-
-#### Examples
-
-**Publish a local policy directory as the main bundle**
-
-```sh
-transcend policy publish --dir=./policies --bundleName=main --auth="$TRANSCEND_API_KEY"
-```
-
-**Publish with an explicit version label and description**
-
-```sh
-transcend policy publish \
-  --dir=./policies \
-  --bundleName=main \
-  --auth="$TRANSCEND_API_KEY" \
-  --version=2026-06-25 \
-  --description="Quarterly policy update"
-```
-
-**Publish to the US-hosted Transcend API**
-
-```sh
-transcend policy publish \
-  --dir=./policies \
-  --bundleName=common \
-  --auth="$TRANSCEND_API_KEY" \
-  --transcendUrl=https://api.us.transcend.io
-```
-
-Requires the **Manage Policy** scope on your API key.
-
 ### `transcend policy activate`
 
 ```txt
@@ -3831,6 +3704,52 @@ transcend policy activate \
 ```
 
 Requires the **Activate Policy** scope on your API key.
+
+### `transcend policy eval`
+
+```txt
+USAGE
+  transcend policy eval (--pkg value) (--input value) [--bundle value]
+  transcend policy eval --help
+
+Wraps `opa eval` for local policy debugging. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+      --pkg      OPA package or query to evaluate (e.g. data.transcend.decision)
+      --input    Path to a JSON envelope input file
+     [--bundle]  Optional local policy bundle directory
+  -h  --help     Print help information and exit
+```
+
+#### Examples
+
+**Evaluate a decision query with a local envelope**
+
+```sh
+transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
+```
+
+### `transcend policy lint`
+
+```txt
+USAGE
+  transcend policy lint (--dir value)
+  transcend policy lint --help
+
+Runs `opa check --strict` and `opa fmt --diff` against a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+     --dir   Directory containing Rego policy files
+  -h --help  Print help information and exit
+```
+
+#### Examples
+
+**Lint a local policy directory**
+
+```sh
+transcend policy lint --dir=./policies
+```
 
 ### `transcend policy list`
 
@@ -3900,6 +3819,79 @@ transcend policy versions --bundleName=main --auth="$TRANSCEND_API_KEY" --after=
 ```
 
 Requires the **View Policy** scope on your API key.
+
+### `transcend policy publish`
+
+```txt
+USAGE
+  transcend policy publish (--dir value) (--bundleName value) (--auth value) [--transcendUrl value] [--version value] [--description value] [--json]
+  transcend policy publish --help
+
+Builds an OPA bundle tarball from a local directory and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH and a Transcend API key with Manage Policy scope.
+
+FLAGS
+      --dir            Directory containing Rego policy files
+      --bundleName     Tenant-unique policy bundle name
+      --auth           The Transcend API key. Requires scopes: "Manage Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
+     [--version]       Version label (defaults to git SHA or timestamp)
+     [--description]   Optional description for the uploaded version
+     [--json]          Print the raw JSON API response                                              [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Publish a local policy directory as the main bundle**
+
+```sh
+transcend policy publish --dir=./policies --bundleName=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Publish with an explicit version label and description**
+
+```sh
+transcend policy publish \
+  --dir=./policies \
+  --bundleName=main \
+  --auth="$TRANSCEND_API_KEY" \
+  --version=2026-06-25 \
+  --description="Quarterly policy update"
+```
+
+**Publish to the US-hosted Transcend API**
+
+```sh
+transcend policy publish \
+  --dir=./policies \
+  --bundleName=common \
+  --auth="$TRANSCEND_API_KEY" \
+  --transcendUrl=https://api.us.transcend.io
+```
+
+Requires the **Manage Policy** scope on your API key.
+
+### `transcend policy test`
+
+```txt
+USAGE
+  transcend policy test (--dir value)
+  transcend policy test --help
+
+Wraps `opa test` for a local policy directory. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+
+FLAGS
+     --dir   Directory containing Rego policy files and tests
+  -h --help  Print help information and exit
+```
+
+#### Examples
+
+**Run tests in a local policy directory**
+
+```sh
+transcend policy test --dir=./policies
+```
 
 <!-- COMMANDS_END -->
 
