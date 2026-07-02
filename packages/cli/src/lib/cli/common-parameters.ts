@@ -80,7 +80,8 @@ export const createTranscendUrlParameter = (
 ): TypedFlagParameter<string, LocalContext> => ({
   kind: 'parsed',
   parse: urlParser,
-  brief: 'URL of the Transcend backend. Use https://api.us.transcend.io for US hosting',
+  brief:
+    'URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.',
   default: defaultUrl,
 });
 
@@ -95,7 +96,8 @@ export const createConsentUrlParameter = (
 ): TypedFlagParameter<string, LocalContext> => ({
   kind: 'parsed',
   parse: urlParser,
-  brief: 'URL of the Transcend consent backend. Use https://consent.us.transcend.io for US hosting',
+  brief:
+    'URL of the Transcend consent backend. Use https://consent.us.transcend.io for US hosting. Defaults to the TRANSCEND_CONSENT_API_URL environment variable when set, so --consentUrl may be omitted if it is exported.',
   default: defaultUrl,
 });
 
