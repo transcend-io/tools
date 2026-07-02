@@ -87,15 +87,14 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable                        | Required (stdio OAuth) | Default            | Description                                                                                           |
-| ------------------------------- | ---------------------- | ------------------ | ----------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                  | Client ID from [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients) |
-| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                  | Client secret from the same OAuth clients page                                                        |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                  | Localhost port for the OAuth callback server; **must match the port in your registered redirect URI** |
-| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`        | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)        |
-| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected      | OAuth issuer URL; production auto-detects region. Test-only override                                  |
-| `TRANSCEND_API_KEY`             | No                     | —                  | API key for stdio (alternative to OAuth). Disables OAuth when set alongside client ID                 |
-| `DOCS_INDEX_TTL_MS`             | No                     | `3600000` (1 hour) | In-memory TTL for cached `llms.txt` index                                                             |
+| Variable                        | Required (stdio OAuth) | Default       | Description                                                                                           |
+| ------------------------------- | ---------------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —             | Client ID from [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients) |
+| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —             | Client secret from the same OAuth clients page                                                        |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —             | Localhost port for the OAuth callback server; **must match the port in your registered redirect URI** |
+| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`   | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)        |
+| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected | OAuth issuer URL; production auto-detects region. Test-only override                                  |
+| `TRANSCEND_API_KEY`             | No                     | —             | API key for stdio (alternative to OAuth). Disables OAuth when set alongside client ID                 |
 
 **Monorepo:** keep OAuth variables in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 
