@@ -5,7 +5,9 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
+import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
 import { logger } from '../../../logger.js';
+import type { ActivateCommandFlags } from '../activate/impl.js';
 import {
   buildPolicyBundleFormData,
   buildPolicyEngineClient,
@@ -101,6 +103,16 @@ export async function publish(
     });
 
     logger.info(colors.green('Policy bundle version uploaded successfully.'));
+
+    const activateCommand = buildExampleCommand<ActivateCommandFlags>(['policy', 'activate'], {
+      versionId: responseBody.version.id,
+      bundleName,
+    });
+    logger.info(
+      colors.yellow(
+        `Publishing a policy does not activate it. To activate this version, run:\n  ${activateCommand}`,
+      ),
+    );
   } finally {
     if (bundlePath && fs.existsSync(bundlePath)) {
       fs.unlinkSync(bundlePath);
