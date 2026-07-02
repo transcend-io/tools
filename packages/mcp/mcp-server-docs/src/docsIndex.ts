@@ -7,7 +7,7 @@ export const LLMS_TXT_URL = 'https://docs.transcend.io/llms.txt';
 export const DOCS_HOST = 'docs.transcend.io';
 
 const INDEX_CACHE_KEY = 'index';
-const DEFAULT_INDEX_TTL_MS = 60 * 60 * 1000;
+const DEFAULT_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_BODY_TTL_MS = 6 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 8_000;
 const MAX_BODY_CACHE_ENTRIES = 400;
@@ -50,17 +50,6 @@ export function parseLlmsTxt(raw: string): DocEntry[] {
   return entries;
 }
 
-function indexTtlMs(): number {
-  const env = process.env.DOCS_INDEX_TTL_MS;
-  if (env) {
-    const parsed = Number(env);
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed;
-    }
-  }
-  return DEFAULT_INDEX_TTL_MS;
-}
-
 async function fetchText(url: string, signal?: AbortSignal): Promise<string> {
   const response = await fetch(url, {
     headers: { Accept: 'text/markdown, text/plain' },
@@ -74,7 +63,7 @@ async function fetchText(url: string, signal?: AbortSignal): Promise<string> {
 
 const indexCache = new LRUCache<string, DocEntry[]>({
   max: 1,
-  ttl: indexTtlMs(),
+  ttl: DEFAULT_INDEX_TTL_MS,
   allowStale: true,
   allowStaleOnFetchRejection: true,
   fetchMethod: async (_key, _stale, { signal }) => {
