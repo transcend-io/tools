@@ -30,7 +30,7 @@ export interface PublishCommandFlags {
   auth: string;
   /** Transcend API URL */
   transcendUrl: string;
-  /** Version label (defaults to git SHA or timestamp) */
+  /** Version label (defaults to `{bundleName}-yyyy-mm-dd-hh-mm-ss`) */
   version?: string;
   /** Optional version description */
   description?: string;
@@ -51,7 +51,7 @@ export async function publish(
   doneInputValidation(this.process.exit);
 
   const resolvedDir = path.resolve(dir);
-  const versionLabel = version ?? defaultPolicyVersionLabel(resolvedDir);
+  const versionLabel = version ?? defaultPolicyVersionLabel(bundleName);
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
   let bundlePath: string | undefined;

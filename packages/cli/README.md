@@ -3812,7 +3812,7 @@ FLAGS
       --bundleName     Tenant-unique policy bundle name
       --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--version]       Version label (defaults to git SHA or timestamp)
+     [--version]       Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
      [--description]   Optional description for the uploaded version
      [--json]          Print the raw JSON API response                                                                                                                                                                    [default = false]
   -h  --help           Print help information and exit

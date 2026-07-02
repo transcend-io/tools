@@ -45,10 +45,10 @@ describe('policy helpers', () => {
     expect(() => assertOpaInstalled()).not.toThrow();
   });
 
-  it('defaultPolicyVersionLabel prefers git sha', () => {
-    spawnSyncMock.mockReturnValue({ status: 0, stdout: 'abc1234\n' });
-
-    expect(defaultPolicyVersionLabel()).toBe('abc1234');
+  it('defaultPolicyVersionLabel uses bundle name and UTC timestamp', () => {
+    expect(defaultPolicyVersionLabel('main', new Date('2026-07-02T16:08:30.000Z'))).toBe(
+      'main-2026-07-02-16-08-30',
+    );
   });
 
   it('resolveBundleIdByName paginates with offset until a bundle name matches', async () => {
