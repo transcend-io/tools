@@ -361,7 +361,7 @@ These conventions are enforced by `scripts/check-mcp-descriptions.test.ts` and s
 Every MCP server's GraphQL operations are validated against the committed schema at compile time:
 
 - Author operations with the generated `graphql()` tag in each domain's `src/graphql.ts`. The tag returns a `TypedDocumentNode<Result, Variables>`, which `TranscendGraphQLBase.makeRequest` consumes natively. Drift between an operation and the staging schema fails `tsc` rather than surfacing as a runtime error.
-- The schema lives at `schema.graphql` (committed). Do not edit it by hand. Refresh it with `pnpm graphql:refresh-schema` (or let the scheduled `Refresh GraphQL Schema` workflow do it weekly) and let CI flag any tools that break against the new shape.
+- The schema lives at `schema.graphql` (committed). Do not edit it by hand. Refresh it with `pnpm graphql:refresh-schema` (or let the scheduled `Refresh GraphQL Schema` workflow do it daily) and let CI flag any tools that break against the new shape.
 - After editing operations, run `pnpm codegen` to regenerate `__generated__/` artifacts. The artifacts are gitignored — `pnpm build`/`pnpm typecheck`/`pnpm test` invoke the codegen task automatically through Turbo's dependency graph, so the only time you need to run codegen by hand is during local development.
 
 ### Updating `schema.graphql`
