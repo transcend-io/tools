@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.4.0
+
+### Minor Changes
+
+- b12d8c6: Add `WorkflowConfigType` and `WorkflowConfigVisibility` enums for DSR and preference management workflows, with draft/internal/published visibility tiers.
+
 ## 5.3.2
 
 ### Patch Changes
