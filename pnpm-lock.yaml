@@ -661,9 +661,18 @@ importers:
 
   packages/mcp/mcp-server-docs:
     dependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: 'catalog:'
+        version: 1.29.0(zod@4.4.3)
+      '@transcend-io/mcp-server-base':
+        specifier: workspace:*
+        version: link:../mcp-server-base
       lru-cache:
         specifier: 'catalog:'
         version: 11.5.1
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 'catalog:'
