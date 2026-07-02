@@ -11,6 +11,7 @@
     { "path": "./packages/mcp/mcp-server-consent" },
     { "path": "./packages/mcp/mcp-server-base" },
     { "path": "./packages/mcp/mcp-server-discovery" },
+    { "path": "./packages/mcp/mcp-server-docs" },
     { "path": "./packages/mcp/mcp-server-dsr" },
     { "path": "./packages/mcp/mcp-server-inventory" },
     { "path": "./packages/mcp/mcp-server-preferences" },
