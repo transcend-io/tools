@@ -3659,13 +3659,13 @@ transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --tr
 
 ```txt
 USAGE
-  transcend policy activate (--versionId value) [--policyBundleId value] [--bundleName value] (--auth value) [--transcendUrl value] [--dryRun] [--json]
+  transcend policy activate [--version value] [--policyBundleId value] [--bundleName value] (--auth value) [--transcendUrl value] [--dryRun] [--json]
   transcend policy activate --help
 
-Calls the Policy Engine activate endpoint to make an uploaded version live. Requires the parent bundle UUID or bundle name plus the version UUID. Requires a Transcend API key with Activate Policy scope.
+Calls the Policy Engine activate endpoint to make an uploaded version live. Requires the parent bundle UUID or bundle name. When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --versionId        Policy bundle version UUID to activate
+     [--version]         Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
      [--policyBundleId]  Parent policy bundle UUID
      [--bundleName]      Parent bundle name (used when policyBundleId is omitted)
       --auth             The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
@@ -3677,20 +3677,23 @@ FLAGS
 
 #### Examples
 
-**Activate a uploaded policy bundle version by bundle name**
+**Activate the latest uploaded version for a bundle**
 
 ```sh
-transcend policy activate \
-  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
-  --bundleName=main \
-  --auth="$TRANSCEND_API_KEY"
+transcend policy activate --bundleName=main --auth="$TRANSCEND_API_KEY"
 ```
 
-**Activate using explicit parent bundle and version UUIDs**
+**Activate a specific version label by bundle name**
+
+```sh
+transcend policy activate --version=abc123 --bundleName=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Activate using explicit parent bundle UUID**
 
 ```sh
 transcend policy activate \
-  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
+  --version=abc123 \
   --policyBundleId=6a3218db-5703-44eb-8d01-e3ea57ab8e49 \
   --auth="$TRANSCEND_API_KEY"
 ```
@@ -3698,17 +3701,13 @@ transcend policy activate \
 **Validate activation without flipping the active version**
 
 ```sh
-transcend policy activate \
-  --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 \
-  --bundleName=main \
-  --auth="$TRANSCEND_API_KEY" \
-  --dryRun
+transcend policy activate --version=abc123 --bundleName=main --auth="$TRANSCEND_API_KEY" --dryRun
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy activate --versionId=7098bb38-070d-4f26-8fa4-1b61b9cdef77 --bundleName=main
+transcend policy activate --bundleName=main
 ```
 
 Requires the **Activate Policy** scope on your API key.

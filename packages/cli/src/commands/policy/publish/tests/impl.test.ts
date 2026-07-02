@@ -86,7 +86,7 @@ describe('publish', () => {
     );
     expect(logger.info).toHaveBeenCalledWith(
       expect.stringMatching(
-        /transcend policy activate[\s\S]*--versionId=version-id[\s\S]*--bundleName=main/,
+        /transcend policy activate[\s\S]*--version=abc123[\s\S]*--bundleName=main/,
       ),
     );
   });

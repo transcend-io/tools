@@ -14,10 +14,12 @@ export const activateCommand = buildCommand({
   },
   parameters: {
     flags: {
-      versionId: {
+      version: {
         kind: 'parsed',
-        parse: uuidParser,
-        brief: 'Policy bundle version UUID to activate',
+        parse: String,
+        brief:
+          'Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt',
+        optional: true,
       },
       policyBundleId: {
         kind: 'parsed',
@@ -51,7 +53,8 @@ export const activateCommand = buildCommand({
     brief: 'Activate an uploaded policy bundle version',
     fullDescription:
       'Calls the Policy Engine activate endpoint to make an uploaded version live. ' +
-      'Requires the parent bundle UUID or bundle name plus the version UUID. ' +
+      'Requires the parent bundle UUID or bundle name. When --version is omitted, ' +
+      'activates the latest uploaded version by createdAt. ' +
       'Requires a Transcend API key with Activate Policy scope.',
   },
 });

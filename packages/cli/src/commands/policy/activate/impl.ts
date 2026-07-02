@@ -9,13 +9,14 @@ import {
   formatPolicyBundleVersionSummary,
   printResult,
   resolvePolicyBundleId,
+  resolvePolicyBundleVersion,
 } from '../helpers/index.js';
 import type { ActivatePolicyBundleVersionResponse } from '../types.js';
 
 /** CLI flags for `transcend policy activate`. */
 export interface ActivateCommandFlags {
-  /** Version UUID to activate */
-  versionId: string;
+  /** Caller-supplied version label to activate */
+  version?: string;
   /** Parent bundle UUID */
   policyBundleId?: string;
   /** Parent bundle name (resolved when policyBundleId is omitted) */
@@ -38,28 +39,28 @@ export interface ActivateCommandFlags {
  */
 export async function activate(
   this: LocalContext,
-  { versionId, policyBundleId, bundleName, auth, transcendUrl, dryRun, json }: ActivateCommandFlags,
+  { version, policyBundleId, bundleName, auth, transcendUrl, dryRun, json }: ActivateCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
 
-  const parsedVersionId = uuidParser(versionId);
   const client = buildPolicyEngineClient(transcendUrl, auth);
   const resolvedBundleId = await resolvePolicyBundleId(client, {
     policyBundleId: policyBundleId ? uuidParser(policyBundleId) : undefined,
     bundleName,
   });
+  const resolvedVersion = await resolvePolicyBundleVersion(client, resolvedBundleId, { version });
 
   logger.info(
     colors.green(
       dryRun
-        ? `Validating activation for version ${parsedVersionId}...`
-        : `Activating version ${parsedVersionId}...`,
+        ? `Validating activation for version "${resolvedVersion.version}"...`
+        : `Activating version "${resolvedVersion.version}"...`,
     ),
   );
 
   const body = await client
     .post(
-      `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${parsedVersionId}/activate`,
+      `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
       {
         json: dryRun ? { dryRun: true } : {},
       },

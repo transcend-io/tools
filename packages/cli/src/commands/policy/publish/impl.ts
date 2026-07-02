@@ -105,7 +105,7 @@ export async function publish(
     logger.info(colors.green('Policy bundle version uploaded successfully.'));
 
     const activateCommand = buildExampleCommand<ActivateCommandFlags>(['policy', 'activate'], {
-      versionId: responseBody.version.id,
+      version: responseBody.version.version,
       bundleName,
     });
     logger.info(

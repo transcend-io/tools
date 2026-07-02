@@ -7,17 +7,24 @@ const examples = buildExamples<ActivateCommandFlags>(
   ['policy', 'activate'],
   [
     {
-      description: 'Activate a uploaded policy bundle version by bundle name',
+      description: 'Activate the latest uploaded version for a bundle',
       flags: {
-        versionId: '7098bb38-070d-4f26-8fa4-1b61b9cdef77',
         bundleName: 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
     {
-      description: 'Activate using explicit parent bundle and version UUIDs',
+      description: 'Activate a specific version label by bundle name',
       flags: {
-        versionId: '7098bb38-070d-4f26-8fa4-1b61b9cdef77',
+        version: 'abc123',
+        bundleName: 'main',
+        auth: '$TRANSCEND_API_KEY',
+      },
+    },
+    {
+      description: 'Activate using explicit parent bundle UUID',
+      flags: {
+        version: 'abc123',
         policyBundleId: '6a3218db-5703-44eb-8d01-e3ea57ab8e49',
         auth: '$TRANSCEND_API_KEY',
       },
@@ -25,7 +32,7 @@ const examples = buildExamples<ActivateCommandFlags>(
     {
       description: 'Validate activation without flipping the active version',
       flags: {
-        versionId: '7098bb38-070d-4f26-8fa4-1b61b9cdef77',
+        version: 'abc123',
         bundleName: 'main',
         auth: '$TRANSCEND_API_KEY',
         dryRun: true,
@@ -34,7 +41,6 @@ const examples = buildExamples<ActivateCommandFlags>(
     {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
-        versionId: '7098bb38-070d-4f26-8fa4-1b61b9cdef77',
         bundleName: 'main',
       },
     },
