@@ -43,6 +43,7 @@
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/mcp-server-consent": "workspace:*",
     "@transcend-io/mcp-server-discovery": "workspace:*",
+    "@transcend-io/mcp-server-docs": "workspace:*",
     "@transcend-io/mcp-server-dsr": "workspace:*",
     "@transcend-io/mcp-server-inventory": "workspace:*",
     "@transcend-io/mcp-server-preferences": "workspace:*",
