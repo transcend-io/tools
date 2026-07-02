@@ -19,6 +19,10 @@ const examples = buildExamples<ListCommandFlags>(
         offset: 50,
       },
     },
+    {
+      description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
+      flags: {},
+    },
   ],
 );
 

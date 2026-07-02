@@ -31,6 +31,13 @@ const examples = buildExamples<ActivateCommandFlags>(
         dryRun: true,
       },
     },
+    {
+      description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
+      flags: {
+        versionId: '7098bb38-070d-4f26-8fa4-1b61b9cdef77',
+        bundleName: 'main',
+      },
+    },
   ],
 );
 

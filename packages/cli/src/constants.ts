@@ -22,6 +22,14 @@ export const ADMIN_DASH_DATAPOINTS = `${ADMIN_DASH}/data-map/data-inventory/data
 export const DEFAULT_TRANSCEND_API = process.env.TRANSCEND_API_URL || 'https://api.transcend.io';
 
 /**
+ * Default the `--auth` flag to the `TRANSCEND_API_KEY` environment variable
+ * when it is set, so callers do not need to pass `--auth` on every invocation:
+ *   TRANSCEND_API_KEY=... transcend policy list
+ * When unset, `--auth` remains required.
+ */
+export const DEFAULT_TRANSCEND_API_KEY = process.env.TRANSCEND_API_KEY || undefined;
+
+/**
  * Override default transcend API url using
  * TRANSCEND_CONSENT_API_URL=https://consent.us.transcend.io transcend ...
  */

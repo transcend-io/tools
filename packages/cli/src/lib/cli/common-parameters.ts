@@ -1,7 +1,11 @@
 import type { TypedFlagParameter } from '@stricli/core';
 import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 
-import { DEFAULT_TRANSCEND_API, DEFAULT_TRANSCEND_CONSENT_API } from '../../constants.js';
+import {
+  DEFAULT_TRANSCEND_API,
+  DEFAULT_TRANSCEND_API_KEY,
+  DEFAULT_TRANSCEND_CONSENT_API,
+} from '../../constants.js';
 import type { LocalContext } from '../../context.js';
 import { urlParser } from './parsers.js';
 
@@ -28,7 +32,11 @@ export const createAuthParameter = ({
   const parameter = {
     kind: 'parsed' as const,
     parse: String,
-    brief: 'The Transcend API key.',
+    brief:
+      'The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported.',
+    // When TRANSCEND_API_KEY is exported, make the flag optional by seeding a
+    // default. When it is unset, omit `default` so the flag stays required.
+    ...(DEFAULT_TRANSCEND_API_KEY ? { default: DEFAULT_TRANSCEND_API_KEY } : {}),
   };
 
   if (requiresSiloScope) {

@@ -33,6 +33,13 @@ const examples = buildExamples<PublishCommandFlags>(
         transcendUrl: 'https://api.us.transcend.io',
       },
     },
+    {
+      description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
+      flags: {
+        dir: './policies',
+        bundleName: 'main',
+      },
+    },
   ],
 );
 
