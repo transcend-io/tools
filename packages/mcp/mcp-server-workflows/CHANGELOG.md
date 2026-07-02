@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-workflows
 
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [b12d8c6]
+  - @transcend-io/privacy-types@5.4.0
+
 ## 0.4.0
 
 ### Minor Changes
