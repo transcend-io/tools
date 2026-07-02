@@ -1,5 +1,13 @@
 # @transcend-io/sdk
 
+## 1.2.10
+
+### Patch Changes
+
+- 6a48672: Move the `graphql` dependency to the workspace catalog so every package in
+  the monorepo (including the new MCP codegen consumers) resolves it to a
+  single, hermetic version. No runtime behavior change.
+
 ## 1.2.9
 
 ### Patch Changes

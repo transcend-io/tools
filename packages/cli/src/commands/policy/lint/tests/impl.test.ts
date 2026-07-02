@@ -4,14 +4,14 @@ import type { LocalContext } from '../../../../context.js';
 import { lint } from '../impl.js';
 
 const runOpaMock = vi.hoisted(() => vi.fn());
-const runOpaCaptureMock = vi.hoisted(() => vi.fn());
+const runOPACaptureMock = vi.hoisted(() => vi.fn());
 const assertOpaInstalledMock = vi.hoisted(() => vi.fn());
 const inquirerConfirmBooleanMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../helpers/index.js', () => ({
   assertOpaInstalled: assertOpaInstalledMock,
   runOpa: runOpaMock,
-  runOpaCapture: runOpaCaptureMock,
+  runOPACapture: runOPACaptureMock,
 }));
 
 vi.mock('../../../../lib/helpers/inquirer.js', () => ({
@@ -43,12 +43,12 @@ describe('lint', () => {
 
     expect(assertOpaInstalledMock).toHaveBeenCalled();
     expect(runOpaMock).toHaveBeenCalledWith(['check', '--strict', expect.any(String)]);
-    expect(runOpaCaptureMock).not.toHaveBeenCalled();
+    expect(runOPACaptureMock).not.toHaveBeenCalled();
   });
 
   it('exits when the user declines formatting unformatted files', async () => {
     runOpaMock.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-    runOpaCaptureMock.mockResolvedValueOnce({
+    runOPACaptureMock.mockResolvedValueOnce({
       code: 0,
       stdout: '/tmp/policies/policy.rego\n',
       stderr: '',
@@ -57,7 +57,7 @@ describe('lint', () => {
 
     await expect(lint.call(context, { dir: './policies' })).rejects.toThrow('exit:1');
 
-    expect(runOpaCaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
+    expect(runOPACaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
     expect(runOpaMock).toHaveBeenNthCalledWith(2, ['fmt', '--diff', expect.any(String)]);
     expect(inquirerConfirmBooleanMock).toHaveBeenCalledWith({
       message: 'Format the unformatted policy files listed above?',
@@ -67,7 +67,7 @@ describe('lint', () => {
 
   it('formats unformatted files when the user confirms', async () => {
     runOpaMock.mockResolvedValueOnce(0).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-    runOpaCaptureMock.mockResolvedValueOnce({
+    runOPACaptureMock.mockResolvedValueOnce({
       code: 0,
       stdout: '/tmp/policies/policy.rego\n',
       stderr: '',
@@ -90,7 +90,7 @@ describe('lint', () => {
     } as unknown as LocalContext;
 
     runOpaMock.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-    runOpaCaptureMock.mockResolvedValueOnce({
+    runOPACaptureMock.mockResolvedValueOnce({
       code: 0,
       stdout: '/tmp/policies/policy.rego\n',
       stderr: '',
@@ -104,7 +104,7 @@ describe('lint', () => {
 
   it('passes when all files are formatted', async () => {
     runOpaMock.mockResolvedValueOnce(0);
-    runOpaCaptureMock.mockResolvedValueOnce({
+    runOPACaptureMock.mockResolvedValueOnce({
       code: 0,
       stdout: '',
       stderr: '',
@@ -113,6 +113,6 @@ describe('lint', () => {
     await lint.call(context, { dir: './policies' });
 
     expect(runOpaMock).toHaveBeenCalledTimes(1);
-    expect(runOpaCaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
+    expect(runOPACaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
   });
 });

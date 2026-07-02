@@ -6,7 +6,7 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
 import { logger } from '../../../logger.js';
-import { assertOpaInstalled, runOpa, runOpaCapture } from '../helpers/index.js';
+import { assertOpaInstalled, runOpa, runOPACapture } from '../helpers/index.js';
 
 /** CLI flags for `transcend policy lint`. */
 export interface LintCommandFlags {
@@ -33,7 +33,7 @@ export async function lint(this: LocalContext, { dir }: LintCommandFlags): Promi
     this.process.exit(checkCode);
   }
 
-  const { stdout } = await runOpaCapture(['fmt', '--list', resolvedDir]);
+  const { stdout } = await runOPACapture(['fmt', '--list', resolvedDir]);
   const unformattedFiles = stdout
     .trim()
     .split('\n')
@@ -41,9 +41,9 @@ export async function lint(this: LocalContext, { dir }: LintCommandFlags): Promi
 
   if (unformattedFiles.length > 0) {
     logger.error(colors.red('Policy files are not formatted:'));
-    for (const file of unformattedFiles) {
+    unformattedFiles.forEach((file) => {
       logger.error(colors.red(`  - ${file}`));
-    }
+    });
     logger.error('');
     await runOpa(['fmt', '--diff', resolvedDir]);
 

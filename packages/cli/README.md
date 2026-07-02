@@ -3792,10 +3792,10 @@ USAGE
   transcend policy publish (--dir value) (--bundleName value) (--auth value) [--transcendUrl value] [--version value] [--description value] [--json]
   transcend policy publish --help
 
-Builds an OPA bundle tarball from a local directory and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH and a Transcend API key with Manage Policy scope.
+Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check`) and a Transcend API key with Manage Policy scope.
 
 FLAGS
-      --dir            Directory containing Rego policy files
+      --dir            Directory containing manifest.json and Rego policy files
       --bundleName     Tenant-unique policy bundle name
       --auth           The Transcend API key. Requires scopes: "Manage Policy"
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting [default = https://api.transcend.io]
