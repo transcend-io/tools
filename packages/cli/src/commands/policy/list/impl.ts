@@ -12,7 +12,7 @@ export interface ListCommandFlags {
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
-  transcendUrl: string;
+  'transcend-url': string;
   /** Page size */
   limit: number;
   /** Number of records to skip */
@@ -29,7 +29,7 @@ export interface ListCommandFlags {
  */
 export async function list(
   this: LocalContext,
-  { auth, transcendUrl, limit, offset, json }: ListCommandFlags,
+  { auth, 'transcend-url': transcendUrl, limit, offset, json }: ListCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
 

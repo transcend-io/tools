@@ -13,7 +13,7 @@ export const versionsCommand = buildCommand({
   },
   parameters: {
     flags: {
-      bundleName: {
+      'bundle-name': {
         kind: 'parsed',
         parse: String,
         brief: 'Tenant-unique policy bundle name',
@@ -21,7 +21,7 @@ export const versionsCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),
-      transcendUrl: createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(),
       limit: {
         kind: 'parsed',
         parse: (value: string) => {

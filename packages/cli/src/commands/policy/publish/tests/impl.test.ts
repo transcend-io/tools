@@ -71,9 +71,9 @@ describe('publish', () => {
 
     await publish.call(context, {
       dir: './policies',
-      bundleName: 'main',
+      'bundle-name': 'main',
       auth: 'test-key',
-      transcendUrl: 'https://api.transcend.io',
+      'transcend-url': 'https://api.transcend.io',
       json: true,
     });
 
@@ -86,7 +86,7 @@ describe('publish', () => {
     );
     expect(logger.info).toHaveBeenCalledWith(
       expect.stringMatching(
-        /transcend policy activate[\s\S]*--version=abc123[\s\S]*--bundleName=main/,
+        /transcend policy activate[\s\S]*--version=abc123[\s\S]*--bundle-name=main/,
       ),
     );
   });
@@ -102,9 +102,9 @@ describe('publish', () => {
 
     await publish.call(context, {
       dir: './policies',
-      bundleName: 'main',
+      'bundle-name': 'main',
       auth: 'test-key',
-      transcendUrl: 'https://api.transcend.io',
+      'transcend-url': 'https://api.transcend.io',
       json: false,
     });
 

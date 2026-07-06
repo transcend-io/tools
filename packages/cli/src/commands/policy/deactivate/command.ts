@@ -13,7 +13,7 @@ export const deactivateCommand = buildCommand({
   },
   parameters: {
     flags: {
-      bundleName: {
+      'bundle-name': {
         kind: 'parsed',
         parse: String,
         brief:
@@ -22,7 +22,7 @@ export const deactivateCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ActivatePolicyEngineBundles],
       }),
-      transcendUrl: createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(),
       json: {
         kind: 'boolean',
         brief: 'Print the raw JSON API response',

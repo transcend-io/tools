@@ -9,14 +9,14 @@ const examples = buildExamples<VersionsCommandFlags>(
     {
       description: 'List versions for a policy bundle',
       flags: {
-        bundleName: 'main',
+        'bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
     {
       description: 'Fetch the next page of versions using an after cursor',
       flags: {
-        bundleName: 'main',
+        'bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
         after: '$POLICY_VERSION_CURSOR',
       },
@@ -24,7 +24,7 @@ const examples = buildExamples<VersionsCommandFlags>(
     {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
-        bundleName: 'main',
+        'bundle-name': 'main',
       },
     },
   ],

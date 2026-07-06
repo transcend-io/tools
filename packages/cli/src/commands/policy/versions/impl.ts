@@ -15,11 +15,11 @@ import type { PolicyBundleVersionListResponse } from '../types.js';
 /** CLI flags for `transcend policy versions`. */
 export interface VersionsCommandFlags {
   /** Tenant-unique bundle name */
-  bundleName: string;
+  'bundle-name': string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
-  transcendUrl: string;
+  'transcend-url': string;
   /** Page size */
   limit: number;
   /** Cursor from a previous page's pageInfo.endCursor */
@@ -36,7 +36,14 @@ export interface VersionsCommandFlags {
  */
 export async function versions(
   this: LocalContext,
-  { bundleName, auth, transcendUrl, limit, after, json }: VersionsCommandFlags,
+  {
+    'bundle-name': bundleName,
+    auth,
+    'transcend-url': transcendUrl,
+    limit,
+    after,
+    json,
+  }: VersionsCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
 

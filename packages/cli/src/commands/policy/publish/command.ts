@@ -18,7 +18,7 @@ export const publishCommand = buildCommand({
         parse: String,
         brief: 'Directory containing manifest.json and Rego policy files',
       },
-      bundleName: {
+      'bundle-name': {
         kind: 'parsed',
         parse: String,
         brief: 'Tenant-unique policy bundle name',
@@ -26,7 +26,7 @@ export const publishCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ManagePolicyEngineBundles],
       }),
-      transcendUrl: createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(),
       version: {
         kind: 'parsed',
         parse: String,

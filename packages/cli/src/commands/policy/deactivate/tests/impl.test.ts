@@ -59,9 +59,9 @@ describe('deactivate', () => {
     resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
 
     await deactivate.call(context, {
-      bundleName: 'main',
+      'bundle-name': 'main',
       auth: 'test-key',
-      transcendUrl: 'https://api.transcend.io',
+      'transcend-url': 'https://api.transcend.io',
       json: false,
     });
 
@@ -86,9 +86,9 @@ describe('deactivate', () => {
     resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
 
     await deactivate.call(context, {
-      bundleName: 'main',
+      'bundle-name': 'main',
       auth: 'test-key',
-      transcendUrl: 'https://api.transcend.io',
+      'transcend-url': 'https://api.transcend.io',
       json: true,
     });
 
@@ -102,9 +102,9 @@ describe('deactivate', () => {
 
     await expect(
       deactivate.call(context, {
-        bundleName: 'missing',
+        'bundle-name': 'missing',
         auth: 'test-key',
-        transcendUrl: 'https://api.transcend.io',
+        'transcend-url': 'https://api.transcend.io',
         json: false,
       }),
     ).rejects.toThrow('Policy bundle "missing" was not found for this organization.');
@@ -129,9 +129,9 @@ describe('deactivate', () => {
 
     await expect(
       deactivate.call(context, {
-        bundleName: 'main',
+        'bundle-name': 'main',
         auth: 'test-key',
-        transcendUrl: 'https://api.transcend.io',
+        'transcend-url': 'https://api.transcend.io',
         json: false,
       }),
     ).rejects.toThrow('Policy bundle "main" has no active version.');
@@ -152,9 +152,9 @@ describe('deactivate', () => {
 
     await expect(
       deactivate.call(context, {
-        bundleName: 'main',
+        'bundle-name': 'main',
         auth: 'test-key',
-        transcendUrl: 'https://api.transcend.io',
+        'transcend-url': 'https://api.transcend.io',
         json: false,
       }),
     ).rejects.toThrow('Missing required scope.');

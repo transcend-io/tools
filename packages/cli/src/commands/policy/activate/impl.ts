@@ -18,15 +18,15 @@ export interface ActivateCommandFlags {
   /** Caller-supplied version label to activate */
   version?: string;
   /** Parent bundle UUID */
-  policyBundleId?: string;
-  /** Parent bundle name (resolved when policyBundleId is omitted) */
-  bundleName?: string;
+  'policy-bundle-id'?: string;
+  /** Parent bundle name (resolved when --policy-bundle-id is omitted) */
+  'bundle-name'?: string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
-  transcendUrl: string;
+  'transcend-url': string;
   /** Validate activation without flipping */
-  dryRun: boolean;
+  'dry-run': boolean;
   /** Print raw JSON response */
   json: boolean;
 }
@@ -39,7 +39,15 @@ export interface ActivateCommandFlags {
  */
 export async function activate(
   this: LocalContext,
-  { version, policyBundleId, bundleName, auth, transcendUrl, dryRun, json }: ActivateCommandFlags,
+  {
+    version,
+    'policy-bundle-id': policyBundleId,
+    'bundle-name': bundleName,
+    auth,
+    'transcend-url': transcendUrl,
+    'dry-run': dryRun,
+    json,
+  }: ActivateCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
 

@@ -15,11 +15,11 @@ import type { DeactivatePolicyBundleResponse } from '../types.js';
 /** CLI flags for `transcend policy deactivate`. */
 export interface DeactivateCommandFlags {
   /** Logical bundle name to deactivate */
-  bundleName: string;
+  'bundle-name': string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
-  transcendUrl: string;
+  'transcend-url': string;
   /** Print raw JSON response */
   json: boolean;
 }
@@ -36,7 +36,7 @@ export interface DeactivateCommandFlags {
  */
 export async function deactivate(
   this: LocalContext,
-  { bundleName, auth, transcendUrl, json }: DeactivateCommandFlags,
+  { 'bundle-name': bundleName, auth, 'transcend-url': transcendUrl, json }: DeactivateCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
 
