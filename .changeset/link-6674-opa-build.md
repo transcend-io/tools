@@ -2,27 +2,15 @@
 '@transcend-io/cli': minor
 ---
 
-Compile policy bundles client-side with `opa build` in `transcend policy publish`
+Validate policy bundles compile with `opa build` before `transcend policy publish`
 
-`transcend policy publish` now shells out to `opa build` to produce a standard
-compiled OPA bundle (`.tar.gz` containing `/.manifest`, `/data.json`, and
-`.rego`/`wasm` files) in a temp directory, then uploads the compiled blob to
-`POST /api/v1/policy-engine/policy-bundles/:id/versions`. This replaces the
-previous manual `tar` of `manifest.json` + `.rego` files.
+`transcend policy publish` now runs `opa build` against the policy directory
+before packaging the upload tarball, so compile failures (syntax errors,
+missing imports, undefined references, etc.) surface client-side with a clear
+non-zero exit instead of after upload.
 
-This reverses the v10.12.2 workaround: the Policy Engine API now accepts and
-validates standard OPA bundle structure (`.manifest`, `data.json`, `*.rego` or
-`wasm`) and content-addresses the blob by SHA-256, so `opa build` output is
-first-class. Server-side recompilation is no longer required.
-
-Behavior changes:
-
-- Rego compilation happens locally via `opa build`; the CLI exits non-zero with
-  a clear error (Rego syntax errors, missing imports, etc.) on build failure.
-- Rego test files (`*_test.rego`) are excluded from the compiled bundle via
-  `opa build --ignore '*_test.rego'`.
-- The pre-flight `opa` on PATH check is unchanged (still errors with an install
-  hint when missing).
-- The client-side compressed size pre-check is unchanged at 5 KiB to mirror the
-  server-side `BUNDLE_MAX_BYTES` limit. The decompressed size pre-check has
-  been removed (the server only enforces the compressed limit).
+The upload payload is unchanged: the CLI still packages `manifest.json` plus
+publishable `.rego` files (excluding `*_test.rego`) into the gzip tarball the
+Policy Engine API expects. The `opa build` output is discarded — it is a
+pre-publish compilation gate only, run in addition to the existing
+`opa check --strict --v0-compatible` lint.
