@@ -128,6 +128,7 @@ If 73 tools is too many for your AI agent, install individual domain packages in
 | `@transcend-io/mcp-server-consent`     | `transcend-mcp-consent`     | Consent management, cookie triage |
 | `@transcend-io/mcp-server-base`        | —                           | Shared infrastructure             |
 | `@transcend-io/mcp-server-discovery`   | `transcend-mcp-discovery`   | Data discovery, classification    |
+| `@transcend-io/mcp-server-docs`        | `transcend-mcp-docs`        | Documentation lookup              |
 | `@transcend-io/mcp-server-dsr`         | `transcend-mcp-dsr`         | Data subject requests             |
 | `@transcend-io/mcp-server-inventory`   | `transcend-mcp-inventory`   | Data inventory, silos, vendors    |
 | `@transcend-io/mcp-server-preferences` | `transcend-mcp-preferences` | Privacy preferences               |

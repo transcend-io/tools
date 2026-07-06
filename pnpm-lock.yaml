@@ -415,6 +415,9 @@ importers:
       '@transcend-io/mcp-server-discovery':
         specifier: workspace:*
         version: link:../mcp-server-discovery
+      '@transcend-io/mcp-server-docs':
+        specifier: workspace:*
+        version: link:../mcp-server-docs
       '@transcend-io/mcp-server-dsr':
         specifier: workspace:*
         version: link:../mcp-server-dsr
