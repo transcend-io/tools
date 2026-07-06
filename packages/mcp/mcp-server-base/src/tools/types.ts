@@ -31,6 +31,11 @@ export interface ToolDefinition {
   zodSchema: z.ZodType<any>;
   /** Handler receives pre-validated args */
   handler: (args: any) => Promise<unknown>;
+  /**
+   * When false, this tool runs without lazy OAuth or request auth injection.
+   * Use for tools that only access public resources. Default true.
+   */
+  requireAuth?: boolean;
 }
 
 export interface ToolClients {
@@ -68,6 +73,11 @@ export function defineTool<T>(config: {
   zodSchema: z.ZodType<T>;
   /** Handler receives pre-validated, fully typed args */
   handler: (args: T) => Promise<unknown>;
+  /**
+   * When false, this tool runs without lazy OAuth or request auth injection.
+   * Use for tools that only access public resources. Default true.
+   */
+  requireAuth?: boolean;
 }): ToolDefinition {
   // Descriptions are the only signal an LLM caller has for what each argument
   // means, so refuse to construct a tool whose input schema has any field

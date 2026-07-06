@@ -38,12 +38,12 @@ export class ToolRegistry {
   }
 
   private registerAllTools(): void {
+    this.registerToolsFromModule(getDocsTools(this.clients));
     this.registerToolsFromModule(getDSRTools(this.clients));
     this.registerToolsFromModule(getConsentTools(this.clients));
     this.registerToolsFromModule(getPreferenceTools(this.clients));
     this.registerToolsFromModule(getInventoryTools(this.clients));
     this.registerToolsFromModule(getDiscoveryTools(this.clients));
-    this.registerToolsFromModule(getDocsTools(this.clients));
     this.registerToolsFromModule(getAssessmentTools(this.clients));
     this.registerToolsFromModule(getWorkflowTools(this.clients));
     this.registerToolsFromModule(getAdminTools(this.clients));

@@ -38,6 +38,7 @@ export function createDocsListTool(_clients?: ToolClients) {
       'Pick the best matching url, then call transcend_docs_fetch for full markdown content.',
     category: 'Documentation',
     readOnly: true,
+    requireAuth: false,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: DocsListSchema,
     handler: async ({ section, keyword }) => {

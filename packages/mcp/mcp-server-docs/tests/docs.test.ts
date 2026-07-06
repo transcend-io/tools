@@ -17,6 +17,7 @@ describe('getDocsTools', () => {
     const tools = getDocsTools();
     expect(tools).toHaveLength(2);
     expect(tools.map((tool) => tool.name)).toEqual(['transcend_docs_list', 'transcend_docs_fetch']);
+    expect(tools.every((tool) => tool.requireAuth === false)).toBe(true);
   });
 });
 

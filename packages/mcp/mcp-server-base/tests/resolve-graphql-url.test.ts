@@ -108,6 +108,25 @@ describe('resolveMcpGraphqlUrl', () => {
     );
   });
 
+  it('skips OAuth startup when requireAuth is false even with OAuth env vars set', async () => {
+    process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
+    process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ isValid: true }),
+      }),
+    );
+
+    await expect(resolveMcpGraphqlUrl(new SimpleLogger(), { requireAuth: false })).resolves.toBe(
+      DEFAULT_TRANSCEND_API_URL,
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
   it('deduplicates regional client verification across concurrent resolvers', async () => {
     process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
