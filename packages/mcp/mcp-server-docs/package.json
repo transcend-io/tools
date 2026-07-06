@@ -10,6 +10,9 @@
     "url": "https://github.com/transcend-io/tools.git",
     "directory": "packages/mcp/mcp-server-docs"
   },
+  "bin": {
+    "transcend-mcp-docs": "./dist/cli.mjs"
+  },
   "files": [
     "dist"
   ],

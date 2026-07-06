@@ -7,9 +7,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LLMS_TXT_URL, resetDocsCachesForTests } from '../src/docsIndex.js';
 import { createDocsFetchTool } from '../src/tools/docs_fetch.js';
 import { createDocsListTool } from '../src/tools/docs_list.js';
+import { getDocsTools } from '../src/tools/index.js';
 
 const fixturePath = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/llms.txt');
 const fixtureLlmsTxt = readFileSync(fixturePath, 'utf8');
+
+describe('getDocsTools', () => {
+  it('registers list and fetch tools', () => {
+    const tools = getDocsTools();
+    expect(tools).toHaveLength(2);
+    expect(tools.map((tool) => tool.name)).toEqual(['transcend_docs_list', 'transcend_docs_fetch']);
+  });
+});
 
 describe('transcend_docs_list', () => {
   afterEach(() => {
