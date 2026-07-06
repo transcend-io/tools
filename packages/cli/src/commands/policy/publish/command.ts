@@ -16,7 +16,7 @@ export const publishCommand = buildCommand({
       dir: {
         kind: 'parsed',
         parse: String,
-        brief: 'Directory containing manifest.json and Rego policy files',
+        brief: 'Directory containing Rego policy files (and optional data.json)',
       },
       bundleName: {
         kind: 'parsed',
@@ -49,8 +49,8 @@ export const publishCommand = buildCommand({
   docs: {
     brief: 'Build and upload a new policy bundle version',
     fullDescription:
-      'Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. ' +
+      'Compiles a local directory of Rego policy files into an OPA bundle with `opa build` and uploads it to Transcend. ' +
       'Creates the bundle on first upload, then appends immutable versions. ' +
-      'Requires the `opa` CLI on PATH (for `opa check`) and a Transcend API key with Manage Policy scope.',
+      'Requires the `opa` CLI on PATH and a Transcend API key with Manage Policy scope.',
   },
 });

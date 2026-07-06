@@ -1,64 +1,23 @@
-import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { gunzipSync } from 'node:zlib';
 
-import fg from 'fast-glob';
-
-import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '../constants.js';
+import { MAX_BUNDLE_COMPRESSED_BYTES } from '../constants.js';
 import { assertOpaInstalled } from './assertOpaInstalled.js';
 import { runOPACapture } from './runOpa.js';
 
 /**
- * Returns whether a relative path is a publishable Rego policy file.
+ * Builds a compiled OPA policy bundle (`.tar.gz`) for upload to Transcend.
  *
- * OPA test files (`*_test.rego`) are excluded because they are for local
- * validation only and are not part of the upload contract.
+ * Shells out to `opa build` to produce a standard OPA bundle — a gzipped
+ * tarball containing `/.manifest`, `/data.json`, and one or more compiled
+ * `.rego` (or `wasm`) files. The server validates this bundle structure and
+ * content-addresses the blob by SHA-256; it does not recompile.
  *
- * @param relativePath - Path relative to the bundle directory
- * @returns Whether the file should be included in the upload archive
- */
-function isPublishableRegoFile(relativePath: string): boolean {
-  return relativePath.endsWith('.rego') && !relativePath.endsWith('_test.rego');
-}
-
-/**
- * Collects `manifest.json` and publishable `.rego` files from a policy directory.
+ * Rego test files (`*_test.rego`) are excluded from the compiled bundle since
+ * they are for local validation only and are not part of the upload contract.
  *
- * @param dir - Absolute path to the policy bundle directory
- * @returns Relative paths to include in the upload tarball
- */
-function collectPolicyBundleArchiveEntries(dir: string): string[] {
-  const manifestPath = path.join(dir, 'manifest.json');
-  if (!fs.existsSync(manifestPath)) {
-    throw new Error('Policy bundle directory must contain a manifest.json file.');
-  }
-
-  const regoFiles = fg
-    .sync('**/*.rego', {
-      cwd: dir,
-      onlyFiles: true,
-      dot: false,
-    })
-    .filter(isPublishableRegoFile);
-
-  if (regoFiles.length === 0) {
-    throw new Error('Policy bundle directory must contain at least one .rego policy file.');
-  }
-
-  return ['manifest.json', ...regoFiles.sort()];
-}
-
-/**
- * Builds a gzip-compressed policy bundle tarball for upload to Transcend.
- *
- * The Policy Engine API expects a plain archive containing `manifest.json` and
- * one or more `.rego` files. This differs from `opa build` output, which embeds
- * `.manifest`, `data.json`, and other OPA bundle metadata that the server
- * rejects.
- *
- * @param dir - Directory containing `manifest.json` and `.rego` policy files
+ * @param dir - Directory containing `.rego` policy files (and optional `data.json`)
  * @returns Absolute path to the generated `.tar.gz` bundle
  */
 export async function buildOpaBundleTarball(dir: string): Promise<string> {
@@ -69,47 +28,36 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
     throw new Error(`Policy directory does not exist or is not a directory: ${resolvedDir}`);
   }
 
-  // Match the Rego v1 validation the Policy Engine API runs on upload.
-  const { code: checkCode, stderr: checkStderr } = await runOPACapture([
-    'check',
-    '--strict',
-    '--v0-compatible',
-    resolvedDir,
-  ]);
-  if (checkCode !== 0) {
-    throw new Error(checkStderr.trim() || `opa check failed with exit code ${checkCode}`);
-  }
-
-  const archiveEntries = collectPolicyBundleArchiveEntries(resolvedDir);
   const outputPath = path.join(
     os.tmpdir(),
     `transcend-policy-bundle-${Date.now()}-${Math.random().toString(36).slice(2)}.tar.gz`,
   );
 
-  const tarResult = spawnSync('tar', ['-czf', outputPath, '-C', resolvedDir, ...archiveEntries], {
-    env: { ...process.env, COPYFILE_DISABLE: '1' },
-    encoding: 'utf8',
-  });
-  if (tarResult.status !== 0) {
-    throw new Error(
-      `Failed to create policy bundle archive: ${tarResult.stderr.trim() || 'tar failed'}`,
-    );
+  // `opa build` compiles the Rego and emits a standard OPA bundle. Run with
+  // `cwd` set to the bundle directory and pass `.` so archive entries are
+  // rooted at the bundle root (passing an absolute path would embed the full
+  // filesystem prefix in every entry). Failures (syntax errors, missing
+  // imports, etc.) surface a non-zero exit code and a descriptive stderr —
+  // propagate both so the CLI exits non-zero with a clear error.
+  const { code, stderr } = await runOPACapture(
+    ['build', '--v0-compatible', '--ignore', '*_test.rego', '-o', outputPath, '.'],
+    { cwd: resolvedDir },
+  );
+  if (code !== 0) {
+    if (fs.existsSync(outputPath)) {
+      fs.unlinkSync(outputPath);
+    }
+    throw new Error(stderr.trim() || `opa build failed with exit code ${code}`);
   }
 
-  const compressedBytes = fs.readFileSync(outputPath);
-  if (compressedBytes.byteLength > MAX_BUNDLE_COMPRESSED_BYTES) {
-    fs.unlinkSync(outputPath);
-    throw new Error(
-      `Policy bundle exceeds the ${MAX_BUNDLE_COMPRESSED_BYTES} byte compressed upload limit (${compressedBytes.byteLength} bytes). ` +
-        `The server also rejects decompressed bundles larger than ${MAX_BUNDLE_DECOMPRESSED_BYTES} bytes.`,
-    );
+  const compressedBytes = fs.existsSync(outputPath) ? fs.readFileSync(outputPath).byteLength : 0;
+  if (compressedBytes === 0) {
+    throw new Error('opa build did not produce a bundle tarball.');
   }
-
-  const decompressedBytes = gunzipSync(compressedBytes);
-  if (decompressedBytes.byteLength > MAX_BUNDLE_DECOMPRESSED_BYTES) {
+  if (compressedBytes > MAX_BUNDLE_COMPRESSED_BYTES) {
     fs.unlinkSync(outputPath);
     throw new Error(
-      `Policy bundle exceeds the ${MAX_BUNDLE_DECOMPRESSED_BYTES} byte decompressed upload limit (${decompressedBytes.byteLength} bytes).`,
+      `Policy bundle exceeds the ${MAX_BUNDLE_COMPRESSED_BYTES} byte compressed upload limit (${compressedBytes} bytes).`,
     );
   }
 
