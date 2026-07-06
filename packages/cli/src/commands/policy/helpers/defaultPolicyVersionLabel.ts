@@ -5,16 +5,7 @@
  * @returns Timestamp label
  */
 function formatPolicyVersionTimestamp(date: Date): string {
-  const pad = (value: number): string => String(value).padStart(2, '0');
-
-  return [
-    date.getUTCFullYear(),
-    pad(date.getUTCMonth() + 1),
-    pad(date.getUTCDate()),
-    pad(date.getUTCHours()),
-    pad(date.getUTCMinutes()),
-    pad(date.getUTCSeconds()),
-  ].join('-');
+  return date.toISOString().slice(0, 19).replace(/[T:]/g, '-');
 }
 
 /**
