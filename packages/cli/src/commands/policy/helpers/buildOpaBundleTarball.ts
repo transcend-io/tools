@@ -51,12 +51,46 @@ function collectPolicyBundleArchiveEntries(dir: string): string[] {
 }
 
 /**
+ * Verifies that a policy directory compiles end-to-end with `opa build`.
+ *
+ * The compiled output is discarded — the server receives the `manifest.json` +
+ * `.rego` archive produced by {@link buildOpaBundleTarball}, not the OPA bundle
+ * — but a successful build guarantees the policies compile and link, surfacing
+ * errors (syntax, missing imports, undefined references, etc.) before upload.
+ *
+ * @param dir - Absolute path to the policy bundle directory
+ */
+async function assertBundleCompiles(dir: string): Promise<void> {
+  const buildOutputPath = path.join(
+    os.tmpdir(),
+    `transcend-policy-bundle-build-${Date.now()}-${Math.random().toString(36).slice(2)}.tar.gz`,
+  );
+  try {
+    // Run with `cwd` set to the bundle directory and pass `.` so `opa build`
+    // resolves the bundle root correctly. `*_test.rego` files are local-only.
+    const { code, stderr } = await runOPACapture(
+      ['build', '--v0-compatible', '--ignore', '*_test.rego', '-o', buildOutputPath, '.'],
+      { cwd: dir },
+    );
+    if (code !== 0) {
+      throw new Error(stderr.trim() || `opa build failed with exit code ${code}`);
+    }
+  } finally {
+    if (fs.existsSync(buildOutputPath)) {
+      fs.unlinkSync(buildOutputPath);
+    }
+  }
+}
+
+/**
  * Builds a gzip-compressed policy bundle tarball for upload to Transcend.
  *
  * The Policy Engine API expects a plain archive containing `manifest.json` and
  * one or more `.rego` files. This differs from `opa build` output, which embeds
  * `.manifest`, `data.json`, and other OPA bundle metadata that the server
- * rejects.
+ * rejects. Before packaging, the bundle is validated with `opa check` (strict
+ * Rego linting) and `opa build` (full compilation) so compile failures surface
+ * client-side rather than after upload.
  *
  * @param dir - Directory containing `manifest.json` and `.rego` policy files
  * @returns Absolute path to the generated `.tar.gz` bundle
@@ -79,6 +113,9 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
   if (checkCode !== 0) {
     throw new Error(checkStderr.trim() || `opa check failed with exit code ${checkCode}`);
   }
+
+  // Ensure the bundle compiles end-to-end before packaging for upload.
+  await assertBundleCompiles(resolvedDir);
 
   const archiveEntries = collectPolicyBundleArchiveEntries(resolvedDir);
   const outputPath = path.join(

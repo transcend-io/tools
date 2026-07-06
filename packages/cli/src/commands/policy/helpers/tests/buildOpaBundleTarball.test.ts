@@ -23,6 +23,7 @@ describe('buildOpaBundleTarball', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default: both `opa check` and `opa build` succeed.
     runOPACaptureMock.mockResolvedValue({ code: 0, stdout: '', stderr: '' });
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-bundle-test-'));
     outputPaths = [];
@@ -64,6 +65,73 @@ describe('buildOpaBundleTarball', () => {
     expect(entries).not.toContain('policy_engine/decision_test.rego');
     expect(entries).not.toContain('data.json');
     expect(entries).not.toContain('.manifest');
+  });
+
+  it('validates the bundle compiles with `opa build` before packaging', async () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'manifest.json'),
+      JSON.stringify({ roots: ['policy_engine'] }),
+    );
+    fs.mkdirSync(path.join(tempDir, 'policy_engine'));
+    fs.writeFileSync(
+      path.join(tempDir, 'policy_engine', 'decision.rego'),
+      'package policy_engine\n\ndefault decision := "deny"\n',
+    );
+
+    const outputPath = await buildOpaBundleTarball(tempDir);
+    outputPaths.push(outputPath);
+
+    // Two OPA invocations: `opa check` then `opa build`.
+    expect(runOPACaptureMock).toHaveBeenCalledTimes(2);
+    const checkArgs = runOPACaptureMock.mock.calls[0][0] as string[];
+    const buildArgs = runOPACaptureMock.mock.calls[1][0] as string[];
+    const buildOptions = runOPACaptureMock.mock.calls[1][1] as { cwd?: string };
+    expect(checkArgs[0]).toBe('check');
+    expect(buildArgs[0]).toBe('build');
+    expect(buildArgs).toContain('--v0-compatible');
+    expect(buildArgs).toContain('--ignore');
+    expect(buildArgs[buildArgs.indexOf('--ignore') + 1]).toBe('*_test.rego');
+    expect(buildArgs.at(-1)).toBe('.');
+    expect(buildOptions).toEqual({ cwd: tempDir });
+  });
+
+  it('throws a clear error when `opa check` fails', async () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'manifest.json'),
+      JSON.stringify({ roots: ['policy_engine'] }),
+    );
+    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    runOPACaptureMock.mockResolvedValueOnce({
+      code: 2,
+      stdout: '',
+      stderr: 'policy.rego:3: rego parse error: unexpected assign token',
+    });
+
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+      /rego parse error: unexpected assign token/,
+    );
+    // `opa build` must not run once `opa check` has failed.
+    expect(runOPACaptureMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws a clear error when `opa build` fails to compile the bundle', async () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'manifest.json'),
+      JSON.stringify({ roots: ['policy_engine'] }),
+    );
+    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+    runOPACaptureMock
+      .mockResolvedValueOnce({ code: 0, stdout: '', stderr: '' }) // opa check
+      .mockResolvedValueOnce({
+        code: 1,
+        stdout: '',
+        stderr: 'policy.rego:5: undefined function data.foo.bar',
+      }); // opa build
+
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+      /undefined function data\.foo\.bar/,
+    );
+    expect(runOPACaptureMock).toHaveBeenCalledTimes(2);
   });
 
   it('throws when manifest.json is missing', async () => {

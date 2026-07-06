@@ -51,6 +51,6 @@ export const publishCommand = buildCommand({
     fullDescription:
       'Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. ' +
       'Creates the bundle on first upload, then appends immutable versions. ' +
-      'Requires the `opa` CLI on PATH (for `opa check`) and a Transcend API key with Manage Policy scope.',
+      'Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.',
   },
 });
