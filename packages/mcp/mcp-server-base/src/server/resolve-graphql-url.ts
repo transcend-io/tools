@@ -9,7 +9,7 @@ const TRANSCEND_API_URL_ENV = 'TRANSCEND_API_URL';
 
 export interface ResolveMcpGraphqlUrlOptions {
   /** When false, skip OAuth client verification even if OAuth env vars are set. Default true. */
-  requireAuth?: boolean;
+  requireStartupAuth?: boolean;
 }
 
 /**
@@ -22,8 +22,8 @@ export async function resolveMcpGraphqlUrl(
   logger: Logger,
   options?: ResolveMcpGraphqlUrlOptions,
 ): Promise<string> {
-  const requireAuth = options?.requireAuth !== false;
-  if (requireAuth && isOAuthModeEnabled()) {
+  const requireStartupAuth = options?.requireStartupAuth !== false;
+  if (requireStartupAuth && isOAuthModeEnabled()) {
     await ensureOAuthStartupReady(logger);
     return getResolvedTranscendApiUrl();
   }

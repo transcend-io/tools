@@ -108,7 +108,7 @@ describe('resolveMcpGraphqlUrl', () => {
     );
   });
 
-  it('skips OAuth startup when requireAuth is false even with OAuth env vars set', async () => {
+  it('skips OAuth startup when requireStartupAuth is false even with OAuth env vars set', async () => {
     process.env.TRANSCEND_OAUTH_CLIENT_ID = 'client-abc';
     process.env.TRANSCEND_OAUTH_CLIENT_SECRET = 'secret';
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = '4567';
@@ -121,9 +121,9 @@ describe('resolveMcpGraphqlUrl', () => {
       }),
     );
 
-    await expect(resolveMcpGraphqlUrl(new SimpleLogger(), { requireAuth: false })).resolves.toBe(
-      DEFAULT_TRANSCEND_API_URL,
-    );
+    await expect(
+      resolveMcpGraphqlUrl(new SimpleLogger(), { requireStartupAuth: false }),
+    ).resolves.toBe(DEFAULT_TRANSCEND_API_URL);
     expect(fetch).not.toHaveBeenCalled();
   });
 

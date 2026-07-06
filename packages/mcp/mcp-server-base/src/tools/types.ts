@@ -32,7 +32,8 @@ export interface ToolDefinition {
   /** Handler receives pre-validated args */
   handler: (args: any) => Promise<unknown>;
   /**
-   * When false, this tool runs without lazy OAuth or request auth injection.
+   * When false, this tool runs without lazy OAuth or request auth injection at call time.
+   * Server startup auth is controlled separately via {@link MCPServerOptions.requireStartupAuth}.
    * Use for tools that only access public resources. Default true.
    */
   requireAuth?: boolean;
@@ -74,7 +75,8 @@ export function defineTool<T>(config: {
   /** Handler receives pre-validated, fully typed args */
   handler: (args: T) => Promise<unknown>;
   /**
-   * When false, this tool runs without lazy OAuth or request auth injection.
+   * When false, this tool runs without lazy OAuth or request auth injection at call time.
+   * Server startup auth is controlled separately via {@link MCPServerOptions.requireStartupAuth}.
    * Use for tools that only access public resources. Default true.
    */
   requireAuth?: boolean;

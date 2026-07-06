@@ -7,7 +7,7 @@ import { getDocsTools } from './tools/index.js';
 createMCPServer({
   name: 'transcend-mcp-docs',
   version: packageJson.version,
-  requireAuth: false,
+  requireStartupAuth: false,
   oauthScopes: [],
   getTools: getDocsTools,
 });

@@ -38,9 +38,9 @@ export interface MCPServerOptions {
   version: string;
   /**
    * When false, starts without API key or OAuth and skips OAuth client verification at startup.
-   * Tool-call auth is controlled per tool via {@link ToolDefinition.requireAuth}. Default true.
+   * Per-call auth is controlled per tool via {@link ToolDefinition.requireAuth}. Default true.
    */
-  requireAuth?: boolean;
+  requireStartupAuth?: boolean;
   /** Domain OAuth scopes (offline_access is added automatically) */
   oauthScopes: readonly string[];
   /** Factory that returns tool definitions given API clients */
@@ -77,7 +77,7 @@ async function buildClients(
  * authenticated via session cookie or API key header.
  */
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
-  const requireAuth = options.requireAuth !== false;
+  const requireStartupAuth = options.requireStartupAuth !== false;
   configureOAuthScopes(options.oauthScopes);
 
   const config = parseTransportArgs();
@@ -86,7 +86,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
   const dashboardUrl = resolveMcpDashboardUrl();
-  const graphqlUrl = await resolveMcpGraphqlUrl(logger, { requireAuth });
+  const graphqlUrl = await resolveMcpGraphqlUrl(logger, { requireStartupAuth });
 
   if (isHttpTransport) {
     await runMcpHttp(
@@ -119,7 +119,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const auth = requireAuth ? resolveStdioStartupAuth() : null;
+  const auth = requireStartupAuth ? resolveStdioStartupAuth() : null;
   const clients = await buildClients(
     { auth, sombraUrl, graphqlUrl, dashboardUrl },
     options.createClients,
