@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-docs
 
+## 0.2.1
+
+### Patch Changes
+
+- c7dece4: Add getDocsTools exports and standalone transcend-mcp-docs CLI binary.
+
 ## 0.2.0
 
 ### Minor Changes
