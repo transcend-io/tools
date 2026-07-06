@@ -23,7 +23,6 @@ Behavior changes:
   `opa build --ignore '*_test.rego'`.
 - The pre-flight `opa` on PATH check is unchanged (still errors with an install
   hint when missing).
-- The client-side compressed size pre-check is raised from 5 KiB to ~10 MiB to
-  mirror the server-side `BUNDLE_MAX_BYTES` limit. The decompressed size
-  pre-check has been removed (the server now only enforces the compressed
-  limit).
+- The client-side compressed size pre-check is unchanged at 5 KiB to mirror the
+  server-side `BUNDLE_MAX_BYTES` limit. The decompressed size pre-check has
+  been removed (the server only enforces the compressed limit).
