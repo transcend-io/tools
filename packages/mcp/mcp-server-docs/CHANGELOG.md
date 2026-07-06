@@ -1,5 +1,15 @@
 # @transcend-io/mcp-server-docs
 
+## 0.2.0
+
+### Minor Changes
+
+- 105767b: Initial package scaffold with llms.txt index engine and cached fetch helpers.
+
+### Patch Changes
+
+- 715d553: Add transcend_docs_list and transcend_docs_fetch documentation lookup tools.
+
 ## 0.1.0
 
 ### Minor Changes
