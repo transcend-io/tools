@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import type { LocalContext } from '../../../../context.js';
+import { logger } from '../../../../logger.js';
 import { publish } from '../impl.js';
 
 const buildOpaBundleTarballMock = vi.hoisted(() => vi.fn());
@@ -43,6 +44,7 @@ describe('publish', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
     process.env.DEVELOPMENT_MODE_VALIDATE_ONLY = 'false';
     buildOpaBundleTarballMock.mockResolvedValue('/tmp/bundle.tar.gz');
     vi.spyOn(fs, 'existsSync').mockReturnValue(true);
@@ -77,6 +79,16 @@ describe('publish', () => {
 
     expect(post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', expect.any(Object));
     expect(stdout.write).toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Publishing a policy does not activate it. To activate this version, run:',
+      ),
+    );
+    expect(logger.info).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /transcend policy activate[\s\S]*--version=abc123[\s\S]*--bundleName=main/,
+      ),
+    );
   });
 
   it('uploads a new version when the bundle already exists', async () => {

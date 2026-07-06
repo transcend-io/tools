@@ -21,6 +21,12 @@ const examples = buildExamples<VersionsCommandFlags>(
         after: '$POLICY_VERSION_CURSOR',
       },
     },
+    {
+      description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
+      flags: {
+        bundleName: 'main',
+      },
+    },
   ],
 );
 

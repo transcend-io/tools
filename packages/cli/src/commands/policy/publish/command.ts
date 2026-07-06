@@ -30,7 +30,7 @@ export const publishCommand = buildCommand({
       version: {
         kind: 'parsed',
         parse: String,
-        brief: 'Version label (defaults to git SHA or timestamp)',
+        brief: 'Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)',
         optional: true,
       },
       description: {
