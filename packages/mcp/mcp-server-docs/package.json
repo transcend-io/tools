@@ -34,7 +34,10 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
-    "lru-cache": "catalog:"
+    "@modelcontextprotocol/sdk": "catalog:",
+    "@transcend-io/mcp-server-base": "workspace:*",
+    "lru-cache": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
