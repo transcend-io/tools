@@ -1,4 +1,5 @@
-import { FileMetadataState } from '@transcend-io/sdk';
+import type { PersistedState } from '@transcend-io/persisted-state';
+import { FileFormatState } from '@transcend-io/sdk';
 import colors from 'colors';
 import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
@@ -7,10 +8,8 @@ import { logger } from '../../logger.js';
 
 export const NONE_PREFERENCE_MAP = '[NONE]';
 
-/* eslint-disable no-param-reassign */
-
 /**
- * Parse timestamps from a CSV list of preferences
+ * Parse timestamps and other file format mapping from a CSV list of preferences
  *
  * When timestamp is requested, this script
  * ensures that all rows have a valid timestamp.
@@ -19,23 +18,36 @@ export const NONE_PREFERENCE_MAP = '[NONE]';
  *
  * @param preferences - List of preferences
  * @param currentState - The current file metadata state for parsing this list
+ * @param options - Options
  * @returns The updated file metadata state
  */
-export async function parsePreferenceTimestampsFromCsv(
+export async function parsePreferenceFileFormatFromCsv(
   preferences: Record<string, string>[],
-  currentState: FileMetadataState,
-): Promise<FileMetadataState> {
+  currentState: PersistedState<typeof FileFormatState>,
+  {
+    nonInteractive = false,
+  }: {
+    /** When true, throw instead of prompting */ nonInteractive?: boolean;
+  } = {},
+): Promise<PersistedState<typeof FileFormatState>> {
   // Determine columns to map
   const columnNames = uniq(preferences.map((x) => Object.keys(x)).flat());
 
   // Determine the columns that could potentially be used for timestamp
   const remainingColumnsForTimestamp = difference(columnNames, [
-    ...(currentState.identifierColumn ? [currentState.identifierColumn] : []),
-    ...Object.keys(currentState.columnToPurposeName),
+    ...Object.keys(currentState.getValue('columnToIdentifier')),
+    ...Object.keys(currentState.getValue('columnToPurposeName')),
   ]);
 
   // Determine the timestamp column to work off of
-  if (!currentState.timestampColum) {
+  if (!currentState.getValue('timestampColumn')) {
+    if (nonInteractive) {
+      throw new Error(
+        'No timestamp column configured. ' +
+          "Run 'transcend consent configure-preference-upload' to set it.",
+      );
+    }
+
     const { timestampName } = await inquirer.prompt<{
       /** timestamp name */
       timestampName: string;
@@ -51,29 +63,31 @@ export async function parsePreferenceTimestampsFromCsv(
         choices: [...remainingColumnsForTimestamp, NONE_PREFERENCE_MAP],
       },
     ]);
-    currentState.timestampColum = timestampName;
+
+    currentState.setValue(timestampName, 'timestampColumn');
   }
-  logger.info(colors.magenta(`Using timestamp column "${currentState.timestampColum}"`));
+  logger.info(
+    colors.magenta(`Using timestamp column "${currentState.getValue('timestampColumn')}"`),
+  );
 
   // Validate that all rows have valid timestamp
-  if (currentState.timestampColum !== NONE_PREFERENCE_MAP) {
+  if (currentState.getValue('timestampColumn') !== NONE_PREFERENCE_MAP) {
     const timestampColumnsMissing = preferences
-      .map((pref, ind) => (pref[currentState.timestampColum!] ? null : [ind]))
+      .map((pref, ind) => (pref[currentState.getValue('timestampColumn')!] ? null : [ind]))
       .filter((x): x is number[] => !!x)
       .flat();
     if (timestampColumnsMissing.length > 0) {
       throw new Error(
-        `The timestamp column "${
-          currentState.timestampColum
-        }" is missing a value for the following rows: ${timestampColumnsMissing.join('\n')}`,
+        `The timestamp column "${currentState.getValue(
+          'timestampColumn',
+        )}" is missing a value for the following rows: ${timestampColumnsMissing.join('\n')}`,
       );
     }
     logger.info(
       colors.magenta(
-        `The timestamp column "${currentState.timestampColum}" is present for all row`,
+        `The timestamp column "${currentState.getValue('timestampColumn')}" is present for all row`,
       ),
     );
   }
   return currentState;
 }
-/* eslint-enable no-param-reassign */

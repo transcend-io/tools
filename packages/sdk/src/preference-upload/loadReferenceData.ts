@@ -2,8 +2,11 @@ import type { Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 
 import { fetchAllIdentifiers, type Identifier } from '../data-inventory/fetchAllIdentifiers.js';
-import { fetchAllPreferenceTopics, type PreferenceTopic } from './fetchAllPreferenceTopics.js';
-import { fetchAllPurposes, type Purpose } from './fetchAllPurposes.js';
+import {
+  fetchAllPreferenceTopics,
+  type PreferenceTopic,
+} from '../preference-management/fetchAllPreferenceTopics.js';
+import { fetchAllPurposes, type Purpose } from '../preference-management/fetchAllPurposes.js';
 
 export interface PreferenceUploadReferenceData {
   /** List of purposes in the organization */

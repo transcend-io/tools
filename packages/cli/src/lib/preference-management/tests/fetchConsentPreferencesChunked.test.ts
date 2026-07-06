@@ -39,7 +39,7 @@ const H = vi.hoisted(() => ({
   // Each call to iterateConsentPages will shift one generator from here:
   iterators: [] as Array<AsyncGenerator<PreferenceQueryResponseItem[], void, unknown>>,
   makeIter: (pages: PreferenceQueryResponseItem[][]) =>
-    // eslint-disable-next-line wrap-iife
+    // eslint-disable-next-line wrap-iife, func-names
     (async function* () {
       for (const p of pages) yield p;
     })(),

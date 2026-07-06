@@ -20,4 +20,3 @@ export * from './discoverConsentWindow.js';
 export * from './fetchConsentPreferences.js';
 export * from './getPreferencesForIdentifiers.js';
 export * from './fetchConsentPreferencesChunked.js';
-export * from './loadReferenceData.js';

@@ -46,3 +46,13 @@ export type PreferencesQueryFilter = {
 
 /** Which dimension we chunk on */
 export type ChunkMode = 'timestamp' | 'updated';
+
+/** Progress info emitted during preference upload/fetch operations */
+export interface PreferenceUploadProgress {
+  /** how many records just succeeded */
+  successDelta: number;
+  /** cumulative successes in this file */
+  successTotal: number;
+  /** total records that will be uploaded in this file */
+  fileTotal: number;
+}
