@@ -55,6 +55,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend admin parquet-to-csv`](#transcend-admin-parquet-to-csv)
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
   - [`transcend policy activate`](#transcend-policy-activate)
+  - [`transcend policy deactivate`](#transcend-policy-deactivate)
   - [`transcend policy eval`](#transcend-policy-eval)
   - [`transcend policy lint`](#transcend-policy-lint)
   - [`transcend policy list`](#transcend-policy-list)
@@ -3708,6 +3709,45 @@ transcend policy activate --version=abc123 --bundleName=main --auth="$TRANSCEND_
 
 ```sh
 transcend policy activate --bundleName=main
+```
+
+Requires the **Activate Policy** scope on your API key.
+
+### `transcend policy deactivate`
+
+```txt
+USAGE
+  transcend policy deactivate (--bundleName value) (--auth value) [--transcendUrl value] [--json]
+  transcend policy deactivate --help
+
+Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
+
+FLAGS
+      --bundleName     Logical policy bundle name (the same string used in publish/list); resolved to the parent bundle UUID internally
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]          Print the raw JSON API response                                                                                                                                                                    [default = false]
+  -h  --help           Print help information and exit
+```
+
+#### Examples
+
+**Deactivate the active version of a bundle by name**
+
+```sh
+transcend policy deactivate --bundleName=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Print the raw JSON response**
+
+```sh
+transcend policy deactivate --bundleName=main --auth="$TRANSCEND_API_KEY" --json
+```
+
+**Omit --auth by exporting TRANSCEND_API_KEY in the environment**
+
+```sh
+transcend policy deactivate --bundleName=main
 ```
 
 Requires the **Activate Policy** scope on your API key.
