@@ -24,7 +24,7 @@ export const DEFAULT_TRANSCEND_API = process.env.TRANSCEND_API_URL || 'https://a
 /**
  * Default the `--auth` flag to the `TRANSCEND_API_KEY` environment variable
  * when it is set, so callers do not need to pass `--auth` on every invocation:
- *   TRANSCEND_API_KEY=... transcend policy list
+ *   TRANSCEND_API_KEY=... transcend policy bundles
  * When unset, `--auth` remains required.
  */
 export const DEFAULT_TRANSCEND_API_KEY = process.env.TRANSCEND_API_KEY || undefined;

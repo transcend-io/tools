@@ -1,10 +1,10 @@
 import { buildRouteMap } from '@stricli/core';
 
 import { activateCommand } from './activate/command.js';
+import { bundlesCommand } from './bundles/command.js';
 import { deactivateCommand } from './deactivate/command.js';
 import { evalCommand } from './eval/command.js';
 import { lintCommand } from './lint/command.js';
-import { listCommand } from './list/command.js';
 import { publishCommand } from './publish/command.js';
 import { testCommand } from './test/command.js';
 import { versionsCommand } from './versions/command.js';
@@ -15,7 +15,7 @@ export const policyRoutes = buildRouteMap({
     deactivate: deactivateCommand,
     eval: evalCommand,
     lint: lintCommand,
-    list: listCommand,
+    bundles: bundlesCommand,
     publish: publishCommand,
     test: testCommand,
     versions: versionsCommand,

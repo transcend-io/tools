@@ -1,10 +1,10 @@
 import { ScopeName, TRANSCEND_SCOPES } from '@transcend-io/privacy-types';
 
 import { buildExamples } from '../../../lib/docgen/buildExamples.js';
-import type { ListCommandFlags } from './impl.js';
+import type { BundlesCommandFlags } from './impl.js';
 
-const examples = buildExamples<ListCommandFlags>(
-  ['policy', 'list'],
+const examples = buildExamples<BundlesCommandFlags>(
+  ['policy', 'bundles'],
   [
     {
       description: 'List policy bundles for the current organization',
