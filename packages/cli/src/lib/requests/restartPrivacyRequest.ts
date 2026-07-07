@@ -1,4 +1,4 @@
-import { IdentifierType } from '@transcend-io/privacy-types';
+import { IdentifierType, RestartIdentifierStrategy } from '@transcend-io/privacy-types';
 import type { RequestIdentifier } from '@transcend-io/sdk';
 import { apply, decodeCodec } from '@transcend-io/type-utils';
 import type { Got } from 'got';
@@ -25,6 +25,7 @@ export async function restartPrivacyRequest(
     skipWaitingPeriod = false,
     emailIsVerified = true,
     requestIdentifiers = [],
+    restartIdentifierStrategy,
   }: {
     /** List of request identifiers to include */
     requestIdentifiers?: RequestIdentifier[];
@@ -34,6 +35,8 @@ export async function restartPrivacyRequest(
     emailIsVerified?: boolean;
     /** Whether to skip waiting period */
     skipWaitingPeriod?: boolean;
+    /** How request identifiers should be handled when restarting */
+    restartIdentifierStrategy?: RestartIdentifierStrategy;
   } = {},
 ): Promise<PrivacyRequestResponse> {
   // Make the GraphQL request
@@ -84,6 +87,7 @@ export async function restartPrivacyRequest(
         createdAt: request.createdAt,
         details: `Restarted by Transcend cli: "tr-request-restart" - ${request.details}`,
         skipSendingReceipt: !sendEmailReceipt,
+        ...(restartIdentifierStrategy ? { restartIdentifierStrategy } : {}),
       },
     })
     .json();

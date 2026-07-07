@@ -54,6 +54,7 @@ Each server requests domain-specific OAuth scopes during browser consent (plus `
 | [`mcp-server-assessment`](./mcp-server-assessment/)   | `ViewAssessments`, `ViewAssignedAssessments`, `ManageAssessments`, `ManageAssignedAssessments`                                                                                                   |
 | [`mcp-server-consent`](./mcp-server-consent/)         | `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`                                                     |
 | [`mcp-server-discovery`](./mcp-server-discovery/)     | `ViewDataMap`, `ViewAssignedIntegrations`, `ViewCodeScanning`, `ManageCodeScanning`, `ViewPrompts`, `ViewPromptRuns`, `ExecutePrompt`                                                            |
+| [`mcp-server-docs`](./mcp-server-docs/)               | _(none — tools fetch public docs URLs only)_                                                                                                                                                     |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                 | `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`                                                 |
 | [`mcp-server-inventory`](./mcp-server-inventory/)     | `ViewDataMap`, `ViewAssignedIntegrations`, `ManageDataMap`, `ManageAssignedIntegrations`, `ViewDataInventory`, `ViewAssignedDataInventory`, `ManageDataInventory`, `ManageAssignedDataInventory` |
 | [`mcp-server-preferences`](./mcp-server-preferences/) | `ViewPrivacyCenter`, `ManagePrivacyCenter`                                                                                                                                                       |
@@ -242,6 +243,7 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    14 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)   |
 | [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     6 | Data discovery, classification, NER              |
+| [`mcp-server-docs`](./mcp-server-docs/)               | `transcend-mcp-docs`        |     2 | Transcend documentation lookup (list + fetch)    |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    12 | Data subject requests (submit, track, respond)   |
 | [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    10 | Data inventory, silos, vendors, data points      |
 | [`mcp-server-preferences`](./mcp-server-preferences/) | `transcend-mcp-preferences` |     6 | Privacy preference store (query, upsert, delete) |

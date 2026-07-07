@@ -63,7 +63,10 @@ export {
   getOAuthScopes,
   resetConfiguredOAuthScopes,
 } from './oauth/scopes.js';
-export { resolveStdioStartupAuth } from './oauth/resolve-stdio-auth.js';
+export {
+  resolveStdioStartupAuth,
+  resolveStdioStartupAuthOptional,
+} from './oauth/resolve-stdio-auth.js';
 export {
   startOAuthLogin,
   buildAuthorizationUrl,

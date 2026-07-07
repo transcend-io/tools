@@ -1,4 +1,8 @@
-import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import {
+  RequestAction,
+  RequestStatus,
+  RestartIdentifierStrategy,
+} from '@transcend-io/privacy-types';
 
 import { buildExamples } from '../../../lib/docgen/buildExamples.js';
 import { getExampleDate } from '../../../lib/docgen/getExampleDate.js';
@@ -109,6 +113,15 @@ const examples = buildExamples<RestartCommandFlags>(
         statuses: [RequestStatus.Compiling, RequestStatus.Enriching],
         actions: [RequestAction.Access, RequestAction.Erasure],
         copyIdentifiers: true,
+      },
+    },
+    {
+      description: 'Preserve all identifier verifications when restarting',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        statuses: [RequestStatus.Compiling, RequestStatus.Enriching],
+        actions: [RequestAction.Access, RequestAction.Erasure],
+        restartIdentifierStrategy: RestartIdentifierStrategy.PreserveAllVerifications,
       },
     },
     {

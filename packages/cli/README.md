@@ -572,7 +572,7 @@ transcend request cancel \
 
 ```txt
 USAGE
-  transcend request restart (--auth value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--transcendUrl value] [--requestReceiptFolder value] [--sombraAuth value] [--concurrency value] [--requestIds value]... [--emailIsVerified] [--createdAt value] [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--sendEmailReceipt] [--copyIdentifiers] [--skipWaitingPeriod]
+  transcend request restart (--auth value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--transcendUrl value] [--requestReceiptFolder value] [--sombraAuth value] [--concurrency value] [--requestIds value]... [--emailIsVerified] [--createdAt value] [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--sendEmailReceipt] [--copyIdentifiers] [--restartIdentifierStrategy PRESERVE_INITIAL_VERIFICATIONS_ONLY|PRESERVE_ALL_VERIFICATIONS|REMOVE_ENRICHED_IDENTIFIERS] [--skipWaitingPeriod]
   transcend request restart --help
 
 Bulk update a set of privacy requests based on a set of request filters.
@@ -595,6 +595,7 @@ FLAGS
      [--updatedAtAfter]                       Restart requests that were last updated after this time
      [--sendEmailReceipt]                     Send email receipts to the restarted requests                                                                                                                                                                          [default = false]
      [--copyIdentifiers]                      Copy over all enriched identifiers from the initial request                                                                                                                                                            [default = false]
+     [--restartIdentifierStrategy]            How request identifiers should be handled when restarting                                                                                                                                                              [PRESERVE_INITIAL_VERIFICATIONS_ONLY|PRESERVE_ALL_VERIFICATIONS|REMOVE_ENRICHED_IDENTIFIERS]
      [--skipWaitingPeriod]                    Skip queued state of request and go straight to compiling                                                                                                                                                              [default = false]
   -h  --help                                  Print help information and exit
 ```
@@ -707,6 +708,16 @@ transcend request restart \
   --statuses=COMPILING,ENRICHING \
   --actions=ACCESS,ERASURE \
   --copyIdentifiers
+```
+
+**Preserve all identifier verifications when restarting**
+
+```sh
+transcend request restart \
+  --auth="$TRANSCEND_API_KEY" \
+  --statuses=COMPILING,ENRICHING \
+  --actions=ACCESS,ERASURE \
+  --restartIdentifierStrategy=PRESERVE_ALL_VERIFICATIONS
 ```
 
 **Skip queued state of request and go straight to compiling**

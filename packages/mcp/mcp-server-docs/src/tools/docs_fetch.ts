@@ -27,6 +27,7 @@ export function createDocsFetchTool(_clients?: ToolClients) {
       'Use urls returned by transcend_docs_list.',
     category: 'Documentation',
     readOnly: true,
+    requireAuth: false,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: DocsFetchSchema,
     handler: async ({ url }) => {

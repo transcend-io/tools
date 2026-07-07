@@ -18,6 +18,8 @@ export interface BuildMcpServerOptions {
   version: string;
   /** Pre-constructed tool definitions */
   tools: ToolDefinition[];
+  /** Optional MCP initialize instructions injected into the client system prompt. */
+  instructions?: string;
 }
 
 /**
@@ -46,7 +48,10 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   const server = new Server(
     { name: options.name, version: options.version },
-    { capabilities: { tools: {} } },
+    {
+      capabilities: { tools: {} },
+      ...(options.instructions ? { instructions: options.instructions } : {}),
+    },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -86,14 +91,18 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         };
       }
 
-      await ensureLazyOAuthAuth(logger);
-      const oauthCredentials = getLazyOAuthCredentials();
+      const toolRequiresAuth = tool.requireAuth !== false;
+      let oauthCredentials: ReturnType<typeof getLazyOAuthCredentials> = null;
+      if (toolRequiresAuth) {
+        await ensureLazyOAuthAuth(logger);
+        oauthCredentials = getLazyOAuthCredentials();
+      }
 
       const result = await toolCallContext.run(
         { toolName: name, correlationId: randomUUID() },
         () => {
           const execute = () => tool.handler(parseResult.data);
-          if (!getRequestAuth() && oauthCredentials) {
+          if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {
             return requestAuthContext.run(oauthCredentials, execute);
           }
           return execute();

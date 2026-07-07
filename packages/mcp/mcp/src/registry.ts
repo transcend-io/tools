@@ -9,6 +9,7 @@ import {
 } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
+import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
@@ -37,6 +38,7 @@ export class ToolRegistry {
   }
 
   private registerAllTools(): void {
+    this.registerToolsFromModule(getDocsTools(this.clients));
     this.registerToolsFromModule(getDSRTools(this.clients));
     this.registerToolsFromModule(getConsentTools(this.clients));
     this.registerToolsFromModule(getPreferenceTools(this.clients));
