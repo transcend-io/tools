@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-docs
 
+## 0.3.0
+
+### Minor Changes
+
+- 02bab58: Rename docs MCP tools to match domain-server naming: `transcend_docs_list` → `docs_list`, `transcend_docs_fetch` → `docs_fetch`. Update umbrella server initialize instructions accordingly.
+
 ## 0.2.2
 
 ### Patch Changes
