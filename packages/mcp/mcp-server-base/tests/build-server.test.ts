@@ -171,7 +171,7 @@ describe('buildMcpServer instructions', () => {
             name: 'instructions-test',
             version: '0.0.1',
             tools: [publicTool],
-            instructions: 'Call transcend_docs_list before API tools.',
+            instructions: 'Call docs_list before API tools.',
           }),
       },
       testConfig(0),
@@ -203,6 +203,6 @@ describe('buildMcpServer instructions', () => {
 
     expect(res.status).toBe(200);
     const text = await res.text();
-    expect(text).toContain('Call transcend_docs_list before API tools.');
+    expect(text).toContain('Call docs_list before API tools.');
   });
 });

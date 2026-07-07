@@ -9,7 +9,7 @@ export const DocsFetchSchema = z.object({
   url: z
     .string()
     .url()
-    .describe('Absolute https URL of a docs.transcend.io article (.md) from transcend_docs_list.'),
+    .describe('Absolute https URL of a docs.transcend.io article (.md) from docs_list.'),
 });
 export type DocsFetchInput = z.infer<typeof DocsFetchSchema>;
 
@@ -21,10 +21,10 @@ function formatBody(body: string, url: string): string {
 
 export function createDocsFetchTool(_clients?: ToolClients) {
   return defineTool({
-    name: 'transcend_docs_fetch',
+    name: 'docs_fetch',
     description:
       'Fetch full markdown content for a Transcend documentation article by URL. ' +
-      'Use urls returned by transcend_docs_list.',
+      'Use urls returned by docs_list.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,
