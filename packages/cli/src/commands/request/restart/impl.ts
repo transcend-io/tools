@@ -1,4 +1,8 @@
-import type { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import type {
+  RequestAction,
+  RequestStatus,
+  RestartIdentifierStrategy,
+} from '@transcend-io/privacy-types';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
@@ -22,6 +26,7 @@ export interface RestartCommandFlags {
   updatedAtAfter?: Date;
   sendEmailReceipt: boolean;
   copyIdentifiers: boolean;
+  restartIdentifierStrategy?: RestartIdentifierStrategy;
   skipWaitingPeriod: boolean;
 }
 
@@ -39,6 +44,7 @@ export async function restart(
     silentModeBefore,
     sendEmailReceipt,
     copyIdentifiers,
+    restartIdentifierStrategy,
     skipWaitingPeriod,
     createdAtBefore,
     createdAtAfter,
@@ -62,6 +68,7 @@ export async function restart(
     silentModeBefore,
     sendEmailReceipt,
     copyIdentifiers,
+    restartIdentifierStrategy,
     skipWaitingPeriod,
     createdAtBefore,
     createdAtAfter,

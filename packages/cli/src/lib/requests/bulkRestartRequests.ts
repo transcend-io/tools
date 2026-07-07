@@ -1,7 +1,11 @@
 import { join, resolve } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
-import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
+import {
+  RequestAction,
+  RequestStatus,
+  RestartIdentifierStrategy,
+} from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
@@ -60,6 +64,7 @@ export async function bulkRestartRequests({
   sendEmailReceipt = false,
   emailIsVerified = true,
   copyIdentifiers = false,
+  restartIdentifierStrategy,
   skipWaitingPeriod = false,
   concurrency = 20,
 }: {
@@ -87,6 +92,8 @@ export async function bulkRestartRequests({
   sendEmailReceipt?: boolean;
   /** Copy over all identifiers rather than restarting the request only with the core identifier */
   copyIdentifiers?: boolean;
+  /** How request identifiers should be handled when restarting */
+  restartIdentifierStrategy?: RestartIdentifierStrategy;
   /** Skip the waiting period when restarting requests */
   skipWaitingPeriod?: boolean;
   /** Filter for requests created before this date */
@@ -138,6 +145,11 @@ export async function bulkRestartRequests({
 
   if (copyIdentifiers) {
     logger.info('copyIdentifiers detected - All Identifiers will be copied.');
+  }
+  if (restartIdentifierStrategy) {
+    logger.info(
+      `restartIdentifierStrategy detected - Using "${restartIdentifierStrategy}" strategy.`,
+    );
   }
   if (sendEmailReceipt) {
     logger.info('sendEmailReceipt detected - Email receipts will be sent.');
@@ -196,6 +208,7 @@ export async function bulkRestartRequests({
             skipWaitingPeriod,
             sendEmailReceipt,
             emailIsVerified,
+            restartIdentifierStrategy,
           },
         );
 
