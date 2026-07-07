@@ -16,7 +16,7 @@ export const listCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ViewPolicyEngineBundles],
       }),
-      transcendUrl: createTranscendUrlParameter(),
+      'transcend-url': createTranscendUrlParameter(),
       limit: {
         kind: 'parsed',
         parse: (value: string) => {

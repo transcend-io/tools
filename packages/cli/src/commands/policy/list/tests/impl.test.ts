@@ -46,7 +46,7 @@ describe('list', () => {
 
     await list.call(context, {
       auth: 'test-key',
-      transcendUrl: 'https://api.transcend.io',
+      'transcend-url': 'https://api.transcend.io',
       limit: 50,
       offset: 0,
       json: false,

@@ -89,3 +89,11 @@ export interface ActivatePolicyBundleVersionResponse {
   /** Activated version */
   version: PolicyBundleVersion;
 }
+
+/** Response from deactivating a bundle's active version. */
+export interface DeactivatePolicyBundleResponse {
+  /** Updated bundle with `activeVersionId` cleared */
+  bundle: PolicyBundle;
+  /** Previously-active version, now stamped with `deactivatedAt` */
+  version: PolicyBundleVersion;
+}

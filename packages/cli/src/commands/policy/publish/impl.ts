@@ -25,11 +25,11 @@ export interface PublishCommandFlags {
   /** Directory containing Rego policy files */
   dir: string;
   /** Tenant-unique bundle name */
-  bundleName: string;
+  'bundle-name': string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
-  transcendUrl: string;
+  'transcend-url': string;
   /** Version label (defaults to `{bundleName}-yyyy-mm-dd-hh-mm-ss`) */
   version?: string;
   /** Optional version description */
@@ -46,7 +46,15 @@ export interface PublishCommandFlags {
  */
 export async function publish(
   this: LocalContext,
-  { dir, bundleName, auth, transcendUrl, version, description, json }: PublishCommandFlags,
+  {
+    dir,
+    'bundle-name': bundleName,
+    auth,
+    'transcend-url': transcendUrl,
+    version,
+    description,
+    json,
+  }: PublishCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
 
@@ -106,7 +114,7 @@ export async function publish(
 
     const activateCommand = buildExampleCommand<ActivateCommandFlags>(['policy', 'activate'], {
       version: responseBody.version.version,
-      bundleName,
+      'bundle-name': bundleName,
     });
     logger.info(
       colors.yellow(

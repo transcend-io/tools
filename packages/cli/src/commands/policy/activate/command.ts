@@ -21,23 +21,23 @@ export const activateCommand = buildCommand({
           'Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt',
         optional: true,
       },
-      policyBundleId: {
+      'policy-bundle-id': {
         kind: 'parsed',
         parse: uuidParser,
         brief: 'Parent policy bundle UUID',
         optional: true,
       },
-      bundleName: {
+      'bundle-name': {
         kind: 'parsed',
         parse: String,
-        brief: 'Parent bundle name (used when policyBundleId is omitted)',
+        brief: 'Parent bundle name (used when --policy-bundle-id is omitted)',
         optional: true,
       },
       auth: createAuthParameter({
         scopes: [ScopeName.ActivatePolicyEngineBundles],
       }),
-      transcendUrl: createTranscendUrlParameter(),
-      dryRun: {
+      'transcend-url': createTranscendUrlParameter(),
+      'dry-run': {
         kind: 'boolean',
         brief: 'Validate activation without flipping the active version',
         default: false,

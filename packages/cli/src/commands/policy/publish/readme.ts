@@ -10,7 +10,7 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Publish a local policy directory as the main bundle',
       flags: {
         dir: './policies',
-        bundleName: 'main',
+        'bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
       },
     },
@@ -18,7 +18,7 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Publish with an explicit version label and description',
       flags: {
         dir: './policies',
-        bundleName: 'main',
+        'bundle-name': 'main',
         auth: '$TRANSCEND_API_KEY',
         version: '2026-06-25',
         description: 'Quarterly policy update',
@@ -28,16 +28,16 @@ const examples = buildExamples<PublishCommandFlags>(
       description: 'Publish to the US-hosted Transcend API',
       flags: {
         dir: './policies',
-        bundleName: 'common',
+        'bundle-name': 'common',
         auth: '$TRANSCEND_API_KEY',
-        transcendUrl: 'https://api.us.transcend.io',
+        'transcend-url': 'https://api.us.transcend.io',
       },
     },
     {
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
         dir: './policies',
-        bundleName: 'main',
+        'bundle-name': 'main',
       },
     },
   ],
