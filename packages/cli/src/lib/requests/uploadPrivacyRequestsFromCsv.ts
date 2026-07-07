@@ -105,13 +105,15 @@ export async function uploadPrivacyRequestsFromCsv({
     regionToCountry: {},
   });
 
-  // Create a new state file to store the requests from this run
+  // Create a new state file to store the requests from this run.
+  // `toISOString()` contains colons (e.g. 2026-07-06T04:33:12.345Z) which are
+  // illegal characters in Windows filenames, so strip them out to keep the
+  // auto-generated receipt filename cross-platform.
   const requestCacheFile = join(
     requestReceiptFolder,
-    `tr-request-upload-${new Date().toISOString()}-${file.split('/').pop()}`.replace(
-      '.csv',
-      '.json',
-    ),
+    `tr-request-upload-${new Date()
+      .toISOString()
+      .replace(/:/g, '-')}-${file.split('/').pop()}`.replace('.csv', '.json'),
   );
   const requestState = new PersistedState(requestCacheFile, CachedRequestState, {
     successfulRequests: [],

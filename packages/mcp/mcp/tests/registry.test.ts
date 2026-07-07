@@ -7,6 +7,7 @@ import {
 } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
+import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
@@ -33,6 +34,7 @@ const allTools = [
   ...getPreferenceTools(mockClients),
   ...getInventoryTools(mockClients),
   ...getDiscoveryTools(mockClients),
+  ...getDocsTools(mockClients),
   ...getAssessmentTools(mockClients),
   ...getWorkflowTools(mockClients),
   ...getAdminTools(mockClients),

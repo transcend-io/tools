@@ -7,14 +7,23 @@ import { ensureOAuthStartupReady } from '../oauth/startup.js';
 /** Environment variable for the Transcend GraphQL backend API URL. */
 const TRANSCEND_API_URL_ENV = 'TRANSCEND_API_URL';
 
+export interface ResolveMcpGraphqlUrlOptions {
+  /** When false, skip OAuth client verification even if OAuth env vars are set. Default true. */
+  requireStartupAuth?: boolean;
+}
+
 /**
  * Resolves the GraphQL backend URL for MCP server startup.
  *
  * OAuth stdio mode verifies regional client credentials and uses the matching
  * issuer host. API-key and HTTP session modes honor {@link TRANSCEND_API_URL}.
  */
-export async function resolveMcpGraphqlUrl(logger: Logger): Promise<string> {
-  if (isOAuthModeEnabled()) {
+export async function resolveMcpGraphqlUrl(
+  logger: Logger,
+  options?: ResolveMcpGraphqlUrlOptions,
+): Promise<string> {
+  const requireStartupAuth = options?.requireStartupAuth !== false;
+  if (requireStartupAuth && isOAuthModeEnabled()) {
     await ensureOAuthStartupReady(logger);
     return getResolvedTranscendApiUrl();
   }

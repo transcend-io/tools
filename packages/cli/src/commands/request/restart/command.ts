@@ -1,5 +1,10 @@
 import { buildCommand, numberParser } from '@stricli/core';
-import { RequestAction, RequestStatus, ScopeName } from '@transcend-io/privacy-types';
+import {
+  RequestAction,
+  RequestStatus,
+  RestartIdentifierStrategy,
+  ScopeName,
+} from '@transcend-io/privacy-types';
 
 import {
   createAuthParameter,
@@ -102,6 +107,12 @@ export const restartCommand = buildCommand({
         kind: 'boolean',
         brief: 'Copy over all enriched identifiers from the initial request',
         default: false,
+      },
+      restartIdentifierStrategy: {
+        kind: 'enum',
+        values: Object.values(RestartIdentifierStrategy),
+        brief: 'How request identifiers should be handled when restarting',
+        optional: true,
       },
       skipWaitingPeriod: {
         kind: 'boolean',

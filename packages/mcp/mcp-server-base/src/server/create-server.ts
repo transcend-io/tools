@@ -36,6 +36,11 @@ export interface MCPServerOptions {
   name: string;
   /** Server version */
   version: string;
+  /**
+   * When false, starts without API key or OAuth and skips OAuth client verification at startup.
+   * Per-call auth is controlled per tool via {@link ToolDefinition.requireAuth}. Default true.
+   */
+  requireStartupAuth?: boolean;
   /** Domain OAuth scopes (offline_access is added automatically) */
   oauthScopes: readonly string[];
   /** Factory that returns tool definitions given API clients */
@@ -45,6 +50,8 @@ export interface MCPServerOptions {
    * object so new fields can be added without breaking call sites.
    */
   createClients?: (args: CreateClientsArgs) => ToolClients;
+  /** Optional MCP initialize instructions injected into the client system prompt. */
+  instructions?: string;
 }
 
 async function buildClients(
@@ -70,6 +77,7 @@ async function buildClients(
  * authenticated via session cookie or API key header.
  */
 export async function createMCPServer(options: MCPServerOptions): Promise<void> {
+  const requireStartupAuth = options.requireStartupAuth !== false;
   configureOAuthScopes(options.oauthScopes);
 
   const config = parseTransportArgs();
@@ -78,7 +86,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
   const dashboardUrl = resolveMcpDashboardUrl();
-  const graphqlUrl = await resolveMcpGraphqlUrl(logger);
+  const graphqlUrl = await resolveMcpGraphqlUrl(logger, { requireStartupAuth });
 
   if (isHttpTransport) {
     await runMcpHttp(
@@ -97,7 +105,12 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
             options.createClients,
           );
           const tools = options.getTools(clients);
-          return buildMcpServer({ name: options.name, version: options.version, tools });
+          return buildMcpServer({
+            name: options.name,
+            version: options.version,
+            tools,
+            instructions: options.instructions,
+          });
         },
       },
       config,
@@ -106,13 +119,18 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
   }
 
   // stdio mode — single process, single Server
-  const auth = resolveStdioStartupAuth();
+  const auth = requireStartupAuth ? resolveStdioStartupAuth() : null;
   const clients = await buildClients(
     { auth, sombraUrl, graphqlUrl, dashboardUrl },
     options.createClients,
   );
   const tools = options.getTools(clients);
-  const server = buildMcpServer({ name: options.name, version: options.version, tools });
+  const server = buildMcpServer({
+    name: options.name,
+    version: options.version,
+    tools,
+    instructions: options.instructions,
+  });
 
   logger.info(`Starting ${options.name} v${options.version}...`, { toolCount: tools.length });
 

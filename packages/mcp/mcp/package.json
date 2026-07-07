@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Transcend MCP Server — unified server with all domain tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp",
   "license": "Apache-2.0",
@@ -43,6 +43,7 @@
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/mcp-server-consent": "workspace:*",
     "@transcend-io/mcp-server-discovery": "workspace:*",
+    "@transcend-io/mcp-server-docs": "workspace:*",
     "@transcend-io/mcp-server-dsr": "workspace:*",
     "@transcend-io/mcp-server-inventory": "workspace:*",
     "@transcend-io/mcp-server-preferences": "workspace:*",

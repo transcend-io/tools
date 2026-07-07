@@ -8,7 +8,6 @@ export {
   parseLlmsTxt,
   resetDocsCachesForTests,
 } from './docsIndex.js';
-export { DOCS_OAUTH_SCOPES } from './scopes.js';
 export { getDocsTools } from './tools/index.js';
 
 export { DocsFetchSchema, type DocsFetchInput } from './tools/docs_fetch.js';

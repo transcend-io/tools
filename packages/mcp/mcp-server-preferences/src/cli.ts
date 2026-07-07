@@ -5,12 +5,13 @@ import {
   TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
 
+import packageJson from '../package.json' with { type: 'json' };
 import { PREFERENCE_OAUTH_SCOPES } from './scopes.js';
 import { getPreferenceTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-preferences',
-  version: '1.0.0',
+  version: packageJson.version,
   oauthScopes: PREFERENCE_OAUTH_SCOPES,
   getTools: getPreferenceTools,
   createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
