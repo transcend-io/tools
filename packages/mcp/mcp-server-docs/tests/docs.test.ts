@@ -16,12 +16,12 @@ describe('getDocsTools', () => {
   it('registers list and fetch tools', () => {
     const tools = getDocsTools();
     expect(tools).toHaveLength(2);
-    expect(tools.map((tool) => tool.name)).toEqual(['transcend_docs_list', 'transcend_docs_fetch']);
+    expect(tools.map((tool) => tool.name)).toEqual(['docs_list', 'docs_fetch']);
     expect(tools.every((tool) => tool.requireAuth === false)).toBe(true);
   });
 });
 
-describe('transcend_docs_list', () => {
+describe('docs_list', () => {
   afterEach(() => {
     resetDocsCachesForTests();
     vi.restoreAllMocks();
@@ -57,7 +57,7 @@ describe('transcend_docs_list', () => {
   });
 });
 
-describe('transcend_docs_fetch', () => {
+describe('docs_fetch', () => {
   afterEach(() => {
     resetDocsCachesForTests();
     vi.restoreAllMocks();

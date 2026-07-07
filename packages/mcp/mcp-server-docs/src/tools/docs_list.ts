@@ -32,10 +32,10 @@ function filterEntries(entries: DocEntry[], section?: string, keyword?: string) 
 
 export function createDocsListTool(_clients?: ToolClients) {
   return defineTool({
-    name: 'transcend_docs_list',
+    name: 'docs_list',
     description:
       'List Transcend documentation articles from the public docs index. ' +
-      'Pick the best matching url, then call transcend_docs_fetch for full markdown content.',
+      'Pick the best matching url, then call docs_fetch for full markdown content.',
     category: 'Documentation',
     readOnly: true,
     requireAuth: false,

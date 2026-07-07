@@ -70,8 +70,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-- `transcend_docs_list` — List/search the Transcend docs index (`llms.txt`); optional `section` and `keyword` filters
-- `transcend_docs_fetch` — Fetch full markdown for a docs article URL (host restricted to `docs.transcend.io`)
+- `docs_list` — List/search the Transcend docs index (`llms.txt`); optional `section` and `keyword` filters
+- `docs_fetch` — Fetch full markdown for a docs article URL (host restricted to `docs.transcend.io`)
 
 ## Related packages
 
