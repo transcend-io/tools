@@ -3,7 +3,6 @@ import { ASSESSMENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-assessment';
 import { mergeOAuthScopes } from '@transcend-io/mcp-server-base';
 import { CONSENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-consent';
 import { DISCOVERY_OAUTH_SCOPES } from '@transcend-io/mcp-server-discovery';
-import { DOCS_OAUTH_SCOPES } from '@transcend-io/mcp-server-docs';
 import { DSR_OAUTH_SCOPES } from '@transcend-io/mcp-server-dsr';
 import { INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
 import { PREFERENCE_OAUTH_SCOPES } from '@transcend-io/mcp-server-preferences';
@@ -15,7 +14,6 @@ export const UMBRELLA_OAUTH_SCOPES = mergeOAuthScopes(
   ASSESSMENT_OAUTH_SCOPES,
   CONSENT_OAUTH_SCOPES,
   DISCOVERY_OAUTH_SCOPES,
-  DOCS_OAUTH_SCOPES,
   DSR_OAUTH_SCOPES,
   INVENTORY_OAUTH_SCOPES,
   PREFERENCE_OAUTH_SCOPES,
