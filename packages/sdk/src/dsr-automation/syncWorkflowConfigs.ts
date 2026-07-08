@@ -1,9 +1,16 @@
+import {
+  CollectDataSubjectRegions,
+  IsoCountryCode,
+  IsoCountrySubdivisionCode,
+  RequestAction,
+  WorkflowConfigVisibility,
+} from '@transcend-io/privacy-types';
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { groupBy, keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { fetchAllActions, type Action } from './fetchAllActions.js';
+import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllRequestAttributeKeys, type AttributeKey } from './fetchAllAttributeKeys.js';
 import { fetchAllWorkflowConfigs } from './fetchAllWorkflowConfigs.js';
 import { fetchAllDataSubjects, type DataSubject } from './fetchDataSubjects.js';
@@ -11,31 +18,31 @@ import { UPDATE_WORKFLOW_CONFIG } from './gqls/workflowConfig.js';
 
 export interface WorkflowConfigSyncInput {
   /**
-   * Title of the workflow config. This is the unique, human-readable key used
-   * to match an existing workflow config (configs are created in the Admin
-   * Dashboard, so this sync is update-only).
+   * Internal name of the workflow config. This is the stable key used to match
+   * an existing workflow config (configs are created in the Admin Dashboard,
+   * so this sync is update-only).
    */
-  title: string;
+  'internal-name': string;
+  /** Request action type */
+  'action-type': RequestAction;
+  /** User-facing title */
+  title?: string;
   /** Subtitle */
   subtitle?: string;
   /** Description */
   description?: string;
-  /** Internal name */
-  'internal-name'?: string;
-  /** Request action type */
-  'action-type'?: string;
   /** Data subject type */
   'data-subject-type'?: string;
   /** Visibility tier (DRAFT, INTERNAL, PUBLISHED) */
-  visibility?: string;
+  visibility?: WorkflowConfigVisibility;
   /** Whether to collect the data subject's region (COLLECT, DO_NOT_COLLECT) */
-  'collect-data-subject-regions'?: string;
+  'collect-data-subject-regions'?: CollectDataSubjectRegions;
   /** Region allow list */
-  'region-list'?: string[];
+  'region-list'?: (IsoCountryCode | IsoCountrySubdivisionCode)[];
   /** Per-region request expiry times */
   'expiry-time'?: {
     /** Region code (or 'default') */
-    region: string;
+    region: 'default' | IsoCountryCode | IsoCountrySubdivisionCode;
     /** Expiry time in days */
     value: number;
   }[];
@@ -44,10 +51,10 @@ export interface WorkflowConfigSyncInput {
 }
 
 /**
- * Sync DSR workflow configs to Transcend.
+ * Sync workflow configs to Transcend.
  *
  * Workflow configs are created in the Admin Dashboard, so this is update-only:
- * each input is matched to an existing config by its (unique) title.
+ * each input is matched to an existing config by its internal name.
  *
  * @param client - GraphQL client
  * @param inputs - Workflow config inputs from YAML
@@ -67,36 +74,44 @@ export async function syncWorkflowConfigs(
 
   let encounteredError = false;
 
-  const needsActions = inputs.some((config) => config['action-type']);
   const needsSubjects = inputs.some((config) => config['data-subject-type']);
   const needsAttributeKeys = inputs.some((config) => config['attribute-keys']?.length);
 
-  const [existingConfigs, actions, dataSubjects, attributeKeys] = await Promise.all([
+  const [existingConfigs, actions] = await Promise.all([
     fetchAllWorkflowConfigs(client, { logger }),
-    needsActions ? fetchAllActions(client, { logger }) : ([] as Action[]),
-    needsSubjects ? fetchAllDataSubjects(client, { logger }) : ([] as DataSubject[]),
-    needsAttributeKeys ? fetchAllRequestAttributeKeys(client, { logger }) : ([] as AttributeKey[]),
+    fetchAllActions(client, { logger }),
   ]);
 
-  const configsByTitle = groupBy(existingConfigs, 'title');
-  const actionByType = keyBy(actions, 'type') as Record<string, Action>;
-  const dataSubjectByType = keyBy(dataSubjects, 'type') as Record<string, DataSubject>;
-  const attributeKeyByName = keyBy(attributeKeys, 'name') as Record<string, AttributeKey>;
+  let dataSubjects: DataSubject[] = [];
+  if (needsSubjects) {
+    dataSubjects = await fetchAllDataSubjects(client, { logger });
+  }
+
+  let attributeKeys: AttributeKey[] = [];
+  if (needsAttributeKeys) {
+    attributeKeys = await fetchAllRequestAttributeKeys(client, { logger });
+  }
+
+  const configsByInternalName = groupBy(existingConfigs, (config) => config.internalName);
+  const actionByType = keyBy(actions, 'type');
+  const dataSubjectByType = keyBy(dataSubjects, 'type');
+  const attributeKeyByName = keyBy(attributeKeys, 'name');
 
   await mapSeries(inputs, async (config) => {
+    const internalName = config['internal-name'];
     try {
-      const matches = configsByTitle[config.title] ?? [];
+      const matches = configsByInternalName[internalName] ?? [];
       const [existingConfig, ...duplicates] = matches;
       if (!existingConfig) {
         throw new Error(
-          `Failed to find workflow config with title: "${config.title}". ` +
+          `Failed to find workflow config with internal name: "${internalName}". ` +
             'Workflow configs must be created in the Admin Dashboard before they can be synced.',
         );
       }
       if (duplicates.length > 0) {
         throw new Error(
-          `Found "${matches.length}" workflow configs with title: "${config.title}". ` +
-            'Titles must be unique to sync workflow configs.',
+          `Found "${matches.length}" workflow configs with internal name: "${internalName}". ` +
+            'Internal names must be unique to sync workflow configs.',
         );
       }
 
@@ -109,7 +124,7 @@ export async function syncWorkflowConfigs(
         subjectId = subject.id;
       }
 
-      if (config['action-type'] && !actionByType[config['action-type']]) {
+      if (!actionByType[config['action-type']]) {
         throw new Error(`Failed to find action with type: ${config['action-type']}`);
       }
 
@@ -126,11 +141,11 @@ export async function syncWorkflowConfigs(
 
       const mutationInput: Record<string, unknown> = {
         workflowConfigId: existingConfig.id,
+        ...(config.title !== undefined ? { title: config.title } : {}),
         ...(config.subtitle !== undefined ? { subtitle: config.subtitle } : {}),
         ...(config.description !== undefined ? { description: config.description } : {}),
-        ...(config['internal-name'] !== undefined ? { internalName: config['internal-name'] } : {}),
         ...(config.visibility !== undefined ? { workflowConfigVisibility: config.visibility } : {}),
-        ...(config['action-type'] !== undefined ? { actionType: config['action-type'] } : {}),
+        actionType: config['action-type'],
         ...(config['collect-data-subject-regions'] !== undefined
           ? { collectDataSubjectRegions: config['collect-data-subject-regions'] }
           : {}),
@@ -145,11 +160,11 @@ export async function syncWorkflowConfigs(
         logger,
       });
 
-      logger?.info(`Successfully synced workflow config "${config.title}" (${existingConfig.id})!`);
+      logger?.info(`Successfully synced workflow config "${internalName}" (${existingConfig.id})!`);
     } catch (err) {
       encounteredError = true;
       logger?.error(
-        `Failed to sync workflow config "${config.title}"! - ${(err as Error).message}`,
+        `Failed to sync workflow config "${internalName}"! - ${(err as Error).message}`,
       );
     }
   });

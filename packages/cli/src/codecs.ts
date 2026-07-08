@@ -1915,25 +1915,25 @@ export const ConsentPurpose = t.intersection([
 export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
 
 /**
- * Input to define a DSR workflow config (update-only — create in Admin Dashboard)
+ * Input to define a workflow config (update-only — create in Admin Dashboard)
  */
 export const WorkflowConfigInput = t.intersection([
   t.type({
     /**
-     * Title of the workflow config. This is the unique, human-readable key used
-     * to match an existing workflow config on push.
+     * Internal name of the workflow config. This is the stable key used to match
+     * an existing workflow config on push.
      */
-    title: t.string,
+    'internal-name': t.string,
+    /** Request action type */
+    'action-type': valuesOf(RequestAction),
   }),
   t.partial({
+    /** User-facing title */
+    title: t.string,
     /** Subtitle */
     subtitle: t.string,
     /** Description */
     description: t.string,
-    /** Internal name */
-    'internal-name': t.string,
-    /** Request action type */
-    'action-type': t.string,
     /** Data subject type */
     'data-subject-type': t.string,
     /** Visibility tier */
@@ -1943,12 +1943,12 @@ export const WorkflowConfigInput = t.intersection([
     /** Whether to collect the data subject's region during intake */
     'collect-data-subject-regions': valuesOf(CollectDataSubjectRegions),
     /** Region allow list */
-    'region-list': t.array(t.string),
+    'region-list': t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
     /** Per-region request expiry times */
     'expiry-time': t.array(
       t.type({
         /** Region code (or 'default') */
-        region: t.string,
+        region: valuesOf({ default: 'default', ...IsoCountryCode, ...IsoCountrySubdivisionCode }),
         /** Expiry time in days */
         value: t.number,
       }),
