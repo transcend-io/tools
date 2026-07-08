@@ -153,9 +153,7 @@ export async function syncWorkflowConfigs(
         logger,
       });
 
-      logger?.info(
-        `Successfully synced workflow config "${config.title}" (${existingConfig.id})!`,
-      );
+      logger?.info(`Successfully synced workflow config "${config.title}" (${existingConfig.id})!`);
     } catch (err) {
       encounteredError = true;
       logger?.error(
