@@ -27,10 +27,22 @@ function setDocument(value: unknown): void {
 function stubDocument(): unknown[] {
   const appendedScripts: unknown[] = [];
   setDocument({
-    createElement: vi.fn(() => ({
-      dataset: {},
-      remove: vi.fn(),
-    })),
+    createElement: vi.fn(() => {
+      const attributes: Record<string, string> = {};
+      const listeners: Record<string, EventListener[]> = {};
+      return {
+        dataset: {} as Record<string, string>,
+        attributes,
+        listeners,
+        setAttribute(name: string, value: string): void {
+          attributes[name] = value;
+        },
+        addEventListener(type: string, handler: EventListener): void {
+          (listeners[type] ??= []).push(handler);
+        },
+        remove: vi.fn(),
+      };
+    }),
     head: {
       appendChild: vi.fn((script: unknown) => appendedScripts.push(script)),
     },
@@ -163,14 +175,49 @@ describe('TrackingScript', () => {
 
     await Promise.resolve();
     const [scriptElement] = appendedScripts as Array<{
-      /** Script element ID. */
-      id: string;
+      /** Recorded string attributes. */
+      attributes: Record<string, string>;
       /** Inline script body. */
       text: string;
     }>;
 
     expect(result).toBeNull();
-    expect(scriptElement?.id).toBe('analytics-init');
+    expect(scriptElement?.attributes.id).toBe('analytics-init');
     expect(scriptElement?.text).toBe('window.analytics = true;');
+  });
+
+  test('forwards passthrough attributes and fires onLoad', async () => {
+    const appendedScripts = stubDocument();
+    reactMocks.useEffect.mockImplementation((effect: () => void | (() => void)) => effect());
+    const onLoad = vi.fn();
+
+    TrackingScript({
+      dataset: { purpose: 'analytics' },
+      fetchPriority: 'high',
+      integrity: 'sha384-abc',
+      loadAfter: Promise.resolve(),
+      onLoad,
+      src: 'https://cdn.example.com/analytics.js',
+      type: 'text/javascript',
+    });
+
+    await Promise.resolve();
+    const [scriptElement] = appendedScripts as Array<{
+      /** Recorded string attributes. */
+      attributes: Record<string, string>;
+      /** Recorded `data-*` attributes. */
+      dataset: Record<string, string>;
+      /** Recorded event listeners keyed by event type. */
+      listeners: Record<string, EventListener[]>;
+    }>;
+
+    // Attributes outside the old hand-written allow-list flow through now.
+    expect(scriptElement?.attributes.fetchpriority).toBe('high');
+    expect(scriptElement?.attributes.type).toBe('text/javascript');
+    expect(scriptElement?.attributes.integrity).toBe('sha384-abc');
+    expect(scriptElement?.dataset.purpose).toBe('analytics');
+
+    scriptElement?.listeners.load?.forEach((handler) => handler(new Event('load')));
+    expect(onLoad).toHaveBeenCalledTimes(1);
   });
 });

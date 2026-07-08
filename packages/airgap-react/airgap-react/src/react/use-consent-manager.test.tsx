@@ -186,10 +186,20 @@ describe('ConsentProvider', () => {
     setSelf({});
     const appendedScripts: unknown[] = [];
     setDocument({
-      createElement: vi.fn(() => ({
-        dataset: {},
-        remove: vi.fn(),
-      })),
+      createElement: vi.fn(() => {
+        const attributes: Record<string, string> = {};
+        return {
+          dataset: {} as Record<string, string>,
+          attributes,
+          setAttribute(name: string, value: string): void {
+            attributes[name] = value;
+          },
+          addEventListener(): void {
+            // Not exercised by this test.
+          },
+          remove: vi.fn(),
+        };
+      }),
       documentElement: {
         appendChild: vi.fn((script: unknown) => appendedScripts.push(script)),
       },
@@ -205,16 +215,16 @@ describe('ConsentProvider', () => {
     const [scriptElement] = appendedScripts as Array<{
       /** Script async attribute. */
       async: boolean;
+      /** Recorded string attributes. */
+      attributes: Record<string, string>;
       /** Script defer attribute. */
       defer: boolean;
-      /** Script element ID. */
-      id: string;
       /** Script source URL. */
       src: string;
     }>;
 
     expect(scriptElement?.src).toBe('https://transcend-cdn.com/cm/example/airgap.js');
-    expect(scriptElement?.id).toBe('airgap');
+    expect(scriptElement?.attributes.id).toBe('airgap');
     expect(scriptElement?.async).toBe(true);
     expect(scriptElement?.defer).toBe(true);
   });

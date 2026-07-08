@@ -166,6 +166,29 @@ const loadAfter = Promise.all([airgapReady(), analyticsConsentPromise]);
 `}</TrackingScript>;
 ```
 
+Aside from `loadAfter`, `src`, and `children`, any prop is forwarded onto the
+injected `<script>` element (`type`, `integrity`, `crossOrigin`, `nonce`,
+`fetchPriority`, `data-*`, ...), so it accepts the standard
+[`<script>` attributes](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script#attributes).
+`async` and `defer` default to `true`.
+
+`onLoad` and `onError` receive the native DOM `Event`. `onLoad` is useful for
+scripts that require a post-load `init()`, like Amplitude:
+
+```tsx
+<TrackingScript
+  src="https://cdn.amplitude.com/script/AMPLITUDE_API_KEY.js"
+  loadAfter={airgapReady()}
+  onLoad={() => window.amplitude.init('AMPLITUDE_API_KEY', { autocapture: true })}
+  onError={() => console.error('Amplitude failed to load')}
+/>
+```
+
+> [!NOTE]
+> Unlike `@transcend-io/airgap-nextjs`, there is no `onReady` prop. `onReady` is
+> a `next/script`-specific callback with no DOM equivalent — in this package a
+> remount re-injects the script and re-fires `onLoad`.
+
 ### `airgapReady()` helper
 
 `airgapReady()` is a helper function that returns a `Promise<AirgapAPI>` that
