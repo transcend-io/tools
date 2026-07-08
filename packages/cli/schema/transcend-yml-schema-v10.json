@@ -323,6 +323,7 @@
                     "manageIntlMessages",
                     "viewIntlMessages",
                     "llmLogTransfer",
+                    "viewWorkflows",
                     "manageWorkflows",
                     "viewDataSubCategories",
                     "manageDataSubCategories",
