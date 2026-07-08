@@ -59970,6 +59970,59 @@
         ]
       }
     },
+    "workflow-configs": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "subtitle": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "internal-name": {
+                "type": "string"
+              },
+              "action-type": {
+                "type": "string"
+              },
+              "data-subject-type": {
+                "type": "string"
+              },
+              "visibility": {
+                "type": "string",
+                "enum": ["DRAFT", "INTERNAL", "PUBLISHED"]
+              },
+              "type": {
+                "type": "string",
+                "enum": ["DSR", "PREFERENCE_MANAGEMENT"]
+              },
+              "region-list": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
     "preference-options": {
       "type": "array",
       "items": {
