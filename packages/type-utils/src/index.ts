@@ -6,7 +6,6 @@ export * from './getEntries.js';
 export * from './getKeys.js';
 export * from './getValues.js';
 export * from './groupBy.js';
-export * from './indexBy.js';
 export * from './gql.js';
 export * from './invert.js';
 export * from './types.js';

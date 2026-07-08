@@ -5,10 +5,9 @@ import {
   RequestAction,
   WorkflowConfigVisibility,
 } from '@transcend-io/privacy-types';
-import { indexBy } from '@transcend-io/type-utils';
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
-import { groupBy } from 'lodash-es';
+import { groupBy, keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllActions, type Action } from './fetchAllActions.js';
@@ -87,9 +86,9 @@ export async function syncWorkflowConfigs(
   ]);
 
   const configsByTitle = groupBy(existingConfigs, (config) => config.title.defaultMessage);
-  const actionByType = indexBy(actions, (action) => action.type);
-  const dataSubjectByType = indexBy(dataSubjects, (subject) => subject.type);
-  const attributeKeyByName = indexBy(attributeKeys, (attributeKey) => attributeKey.name);
+  const actionByType = keyBy(actions, 'type');
+  const dataSubjectByType = keyBy(dataSubjects, 'type');
+  const attributeKeyByName = keyBy(attributeKeys, 'name');
 
   await mapSeries(inputs, async (config) => {
     try {
