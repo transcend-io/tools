@@ -15,3 +15,6 @@ export * from './lib/data-inventory/index.js';
 export * from './lib/manual-enrichment/index.js';
 export * from './lib/transcendConfigPush.js';
 export * from './lib/validateTranscendInputForPush.js';
+export { createCollectingLogger } from '@transcend-io/utils';
+export type { SyncError, SyncLogEntry, SyncResult } from '@transcend-io/utils';
+export * from './lib/getTranscendConfigurationSchema.js';

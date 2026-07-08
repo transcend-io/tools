@@ -37,7 +37,7 @@ import {
   syncVendors,
   type Identifier,
 } from '@transcend-io/sdk';
-import { map } from '@transcend-io/utils';
+import { map, type Logger, type SyncError, type SyncResult } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
@@ -56,7 +56,7 @@ const CONCURRENCY = 10;
  * @param input - The yml input
  * @param client - GraphQL client
  * @param pageSize - Page size
- * @returns True if an error was encountered
+ * @returns Structured sync result with per-resource errors
  */
 export async function syncConfigurationToTranscend(
   input: TranscendInput,
@@ -67,6 +67,8 @@ export async function syncConfigurationToTranscend(
     publishToPrivacyCenter = true,
     classifyService = false,
     deleteExtraAttributeValues = false,
+    logger: syncLogger,
+    warnings = [],
   }: {
     /** Page size */
     pageSize?: number;
@@ -76,11 +78,22 @@ export async function syncConfigurationToTranscend(
     deleteExtraAttributeValues?: boolean;
     /** classify data flow service if missing */
     classifyService?: boolean;
+    /** Optional logger (e.g. collecting logger for MCP debug responses) */
+    logger?: Logger;
+    /** Non-fatal warnings to include in the result */
+    warnings?: string[];
   },
-): Promise<boolean> {
+): Promise<SyncResult> {
+  const activeLogger = syncLogger ?? logger;
+  const errors: SyncError[] = [];
   let encounteredError = false;
 
-  logger.info(colors.magenta(`Fetching data with page size ${pageSize}...`));
+  const recordError = (resource: string, message: string, item?: string): void => {
+    errors.push({ resource, item, message });
+    encounteredError = true;
+  };
+
+  activeLogger.info(colors.magenta(`Fetching data with page size ${pageSize}...`));
 
   const {
     templates,
@@ -141,32 +154,38 @@ export async function syncConfigurationToTranscend(
 
   if (hasTranscendConfigSection(preferenceOptions)) {
     const preferenceOptionsSuccess = await syncPreferenceOptionValues(client, preferenceOptions!, {
-      logger,
+      logger: activeLogger,
     });
-    encounteredError = encounteredError || !preferenceOptionsSuccess;
+    if (!preferenceOptionsSuccess) {
+      recordError('preference-options', 'Failed to sync preference option values');
+    }
   }
 
   if (hasTranscendConfigSection(purposes)) {
-    const purposesSuccess = await syncPurposes(client, purposes!, { logger });
-    encounteredError = encounteredError || !purposesSuccess;
+    const purposesSuccess = await syncPurposes(client, purposes!, { logger: activeLogger });
+    if (!purposesSuccess) {
+      recordError('purposes', 'Failed to sync purposes');
+    }
   }
 
   if (hasTranscendConfigSection(consentWorkflowTriggers)) {
     const triggersSuccess = await syncConsentWorkflowTriggers(client, consentWorkflowTriggers!, {
-      logger,
+      logger: activeLogger,
     });
-    encounteredError = encounteredError || !triggersSuccess;
+    if (!triggersSuccess) {
+      recordError('consent-workflow-triggers', 'Failed to sync consent workflow triggers');
+    }
   }
 
   // Sync consent manager (after purposes — experiences reference purpose trackingTypes)
   if (hasTranscendConfigSection(consentManager)) {
-    logger.info(colors.magenta('Syncing consent manager...'));
+    activeLogger.info(colors.magenta('Syncing consent manager...'));
     try {
-      await syncConsentManager(client, consentManager!, { logger });
-      logger.info(colors.green('Successfully synced consent manager!'));
+      await syncConsentManager(client, consentManager!, { logger: activeLogger });
+      activeLogger.info(colors.green('Successfully synced consent manager!'));
     } catch (err) {
-      encounteredError = true;
-      logger.error(colors.red(`Failed to sync consent manager! - ${err.message}`));
+      recordError('consent-manager', (err as Error).message);
+      activeLogger.error(colors.red(`Failed to sync consent manager! - ${(err as Error).message}`));
     }
   }
 
@@ -519,6 +538,10 @@ export async function syncConfigurationToTranscend(
     // TODO: https://transcend.height.app/T-23779
   }
 
-  return encounteredError;
+  return {
+    success: !encounteredError,
+    errors,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  };
 }
 /* eslint-enable max-lines */
