@@ -30,6 +30,8 @@ import {
   syncPromptPartials,
   syncPrompts,
   syncPreferenceOptionValues,
+  syncPurposes,
+  syncPreferenceTopics,
   syncTeams,
   syncTemplate,
   syncVendors,
@@ -124,6 +126,7 @@ export async function syncConfigurationToTranscend(
   } = input;
 
   const preferenceOptions = input['preference-options'];
+  const purposes = input.purposes;
 
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
@@ -153,6 +156,36 @@ export async function syncConfigurationToTranscend(
     });
     if (!preferenceOptionsSuccess) {
       recordError('preference-options', 'Failed to sync preference option values');
+    }
+  }
+
+  // Sync consent purposes and their nested preference topics.
+  // Order matters: option values (above) exist first, then purposes, then topics
+  // (which link to their purpose by ID and to option values by slug).
+  if (purposes?.length) {
+    const { success: purposesSuccess, purposeIdByTrackingType } = await syncPurposes(
+      client,
+      purposes,
+      { logger: activeLogger },
+    );
+    if (!purposesSuccess) {
+      recordError('purposes', 'Failed to sync one or more purposes');
+    }
+
+    const topics = purposes.flatMap((purpose) =>
+      (purpose['preference-topics'] ?? []).map((topic) => ({
+        ...topic,
+        'tracking-type': purpose.trackingType,
+      })),
+    );
+    if (topics.length > 0) {
+      const topicsSuccess = await syncPreferenceTopics(client, topics, {
+        logger: activeLogger,
+        purposeIdByTrackingType,
+      });
+      if (!topicsSuccess) {
+        recordError('preference-topics', 'Failed to sync one or more preference topics');
+      }
     }
   }
 
