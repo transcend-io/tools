@@ -29,6 +29,9 @@ import {
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
+  syncPreferenceOptionValues,
+  syncPurposes,
+  syncPreferenceTopics,
   syncTeams,
   syncTemplate,
   syncVendors,
@@ -41,6 +44,7 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
+import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { syncDataSilos } from './syncDataSilos.js';
 
@@ -122,6 +126,21 @@ export async function syncConfigurationToTranscend(
     partitions,
   } = input;
 
+  const preferenceOptions = input['preference-options'];
+  const purposes = input.purposes;
+
+  const preferenceSlugErrors = validatePreferenceManagementSlugs(input);
+  if (preferenceSlugErrors.length > 0) {
+    for (const message of preferenceSlugErrors) {
+      recordError('preference-slugs', message);
+    }
+    return {
+      success: false,
+      errors,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    };
+  }
+
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
     enrichers || identifiers
@@ -143,6 +162,45 @@ export async function syncConfigurationToTranscend(
       ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
+
+  if (preferenceOptions?.length) {
+    const preferenceOptionsSuccess = await syncPreferenceOptionValues(client, preferenceOptions, {
+      logger: activeLogger,
+    });
+    if (!preferenceOptionsSuccess) {
+      recordError('preference-options', 'Failed to sync preference option values');
+    }
+  }
+
+  // Sync consent purposes and their nested preference topics.
+  // Order matters: option values (above) exist first, then purposes, then topics
+  // (which link to their purpose by ID and to option values by slug).
+  if (purposes?.length) {
+    const { success: purposesSuccess, purposeIdByTrackingType } = await syncPurposes(
+      client,
+      purposes,
+      { logger: activeLogger },
+    );
+    if (!purposesSuccess) {
+      recordError('purposes', 'Failed to sync one or more purposes');
+    }
+
+    const topics = purposes.flatMap((purpose) =>
+      (purpose['preference-topics'] ?? []).map((topic) => ({
+        ...topic,
+        'tracking-type': purpose.trackingType,
+      })),
+    );
+    if (topics.length > 0) {
+      const topicsSuccess = await syncPreferenceTopics(client, topics, {
+        logger: activeLogger,
+        purposeIdByTrackingType,
+      });
+      if (!topicsSuccess) {
+        recordError('preference-topics', 'Failed to sync one or more preference topics');
+      }
+    }
+  }
 
   // Sync consent manager
   if (consentManager) {

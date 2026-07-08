@@ -1857,8 +1857,12 @@ export const ConsentPreferenceTopic = t.intersection([
     title: t.string,
     /** The description of the preference topic */
     description: t.string,
+    /** API slug for the preference topic (PascalCase; alphabetical letters only) */
+    slug: t.string,
   }),
   t.partial({
+    /** Hex color for the preference topic (pull-only; not writable via CLI push today) */
+    color: t.string,
     /** Default value */
     'default-configuration': t.string,
     /** Whether the preference topic is shown in privacy center */
@@ -2069,6 +2073,10 @@ export const TranscendInput = t.partial({
    * The full list of silo discovery results
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
+  /**
+   * Preference management options for multi and single selects
+   */
+  'preference-options': t.array(ConsentPreferenceTopicOptionValue),
 });
 
 /** Type override */

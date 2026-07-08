@@ -113,7 +113,10 @@ purposes:
     display-order: 10
     auth-level: REQUIRED
     preference-topics:
-      - title: Frequency
+      # Writable: slug, title, type, description, default-configuration, show-in-privacy-center, options.
+      # Pull-only: color (returned on pull but not writable on push).
+      - slug: Frequency
+        title: Frequency
         type: SELECT
         description: How often would you like to hear from us?
         default-configuration: '{}'
@@ -125,13 +128,15 @@ purposes:
             slug: Monthly
           - title: Quarterly
             slug: Quarterly
-      - title: Go 100% Digital
+      - slug: GoPaperless
+        title: Go 100% Digital
         type: BOOLEAN
         description: I would like to go paperless
         default-configuration: '{}'
         show-in-privacy-center: true
         options: []
-      - title: Method
+      - slug: Method
+        title: Method
         type: MULTI_SELECT
         description: How would you like to be contacted?
         default-configuration: '{}'
@@ -155,7 +160,8 @@ purposes:
     display-order: 10
     auth-level: REQUIRED
     preference-topics:
-      - title: Topics
+      - slug: Topics
+        title: Topics
         type: MULTI_SELECT
         description: Newsletter topics to subscribe to
         default-configuration: '{}'
