@@ -7,7 +7,6 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllPreferenceOptionValues } from './fetchAllPreferenceOptionValues.js';
 import { fetchAllPreferenceTopics } from './fetchAllPreferenceTopics.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
-import { formatPreferenceSyncError } from './formatPreferenceSyncError.js';
 import { CREATE_OR_UPDATE_PREFERENCE_TOPIC } from './gqls/preferenceTopic.js';
 import {
   createOrUpdatePreferenceOptionValues,
@@ -150,12 +149,7 @@ export async function syncPreferenceTopics(
         optionIdBySlug[slug] = id;
       });
     } catch (err) {
-      logger?.error(
-        `Failed to sync inline preference option values! - ${formatPreferenceSyncError(
-          err,
-          'sync inline preference option values',
-        )}`,
-      );
+      logger?.error(`Failed to sync inline preference option values! - ${(err as Error).message}`);
       return false;
     }
   }
@@ -216,10 +210,7 @@ export async function syncPreferenceTopics(
     } catch (err) {
       success = false;
       logger?.error(
-        `Failed to sync preference topic "${topic.title}"! - ${formatPreferenceSyncError(
-          err,
-          `sync preference topic "${topic.slug}"`,
-        )}`,
+        `Failed to sync preference topic "${topic.title}"! - ${(err as Error).message}`,
       );
     }
   }
