@@ -1,0 +1,23 @@
+# Consent workflow triggers automate DSR actions when consent state matches.
+# Prerequisites in your org: ERASURE action, Customer data subject, and any referenced data silos/purposes.
+consent-workflow-triggers:
+  - name: MarketingOptOutErasure
+    trigger-condition: '{"operator":"AND","conditions":[{"field":"purpose","purpose":"Marketing","state":false}]}'
+    action-type: ERASURE
+    data-subject-type: Customer
+    is-silent: false
+    allow-unauthenticated: false
+    is-active: true
+    data-silo-titles:
+      - Salesforce CRM
+    purposes:
+      - tracking-type: Marketing
+        matching-state: false
+
+  - name: AnalyticsOptOutSilentAccess
+    trigger-condition: '{"operator":"AND","conditions":[{"field":"purpose","purpose":"Analytics","state":false}]}'
+    action-type: ACCESS
+    data-subject-type: Customer
+    is-silent: true
+    allow-unauthenticated: true
+    is-active: true

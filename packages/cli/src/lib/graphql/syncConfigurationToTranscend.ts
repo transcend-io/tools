@@ -29,6 +29,7 @@ import {
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
+  syncConsentWorkflowTriggers,
   syncTeams,
   syncTemplate,
   syncVendors,
@@ -120,6 +121,7 @@ export async function syncConfigurationToTranscend(
     messages,
     policies,
     partitions,
+    'consent-workflow-triggers': consentWorkflowTriggers,
   } = input;
 
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
@@ -143,6 +145,16 @@ export async function syncConfigurationToTranscend(
       ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
+
+  if (consentWorkflowTriggers?.length) {
+    const triggersSuccess = await syncConsentWorkflowTriggers(client, consentWorkflowTriggers, {
+      logger: activeLogger,
+      pageSize,
+    });
+    if (!triggersSuccess) {
+      recordError('consent-workflow-triggers', 'Failed to sync consent workflow triggers');
+    }
+  }
 
   // Sync consent manager
   if (consentManager) {

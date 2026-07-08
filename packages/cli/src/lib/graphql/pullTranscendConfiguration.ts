@@ -38,6 +38,7 @@ import {
   fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
+  fetchAllConsentWorkflowTriggers,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -91,6 +92,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  ConsentWorkflowTriggerInput,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
@@ -189,6 +191,7 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
+    consentWorkflowTriggers,
     siloDiscoveryResults,
   ] = await Promise.all([
     // Grab all data subjects in the organization
@@ -353,6 +356,9 @@ export async function pullTranscendConfiguration(
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
+      ? fetchAllConsentWorkflowTriggers(client, { logger })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -1420,6 +1426,25 @@ export async function pullTranscendConfiguration(
               : {}),
           }),
         ),
+      }),
+    );
+  }
+
+  if (
+    consentWorkflowTriggers.length > 0 &&
+    resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
+  ) {
+    result['consent-workflow-triggers'] = consentWorkflowTriggers.map(
+      (trigger): ConsentWorkflowTriggerInput => ({
+        name: trigger.name,
+        'trigger-condition': trigger.triggerCondition || undefined,
+        'action-type': trigger.action.type,
+        'data-subject-type': trigger.subject.type,
+        'is-silent': trigger.isSilent,
+        'allow-unauthenticated': trigger.allowUnauthenticated,
+        'is-active': trigger.isActive,
+        'data-silo-titles':
+          trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
       }),
     );
   }
