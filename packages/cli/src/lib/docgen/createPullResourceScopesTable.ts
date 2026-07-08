@@ -207,7 +207,7 @@ const RESOURCE_DOCUMENTATION: Record<
       'Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).',
     markdownLinks: [
       '[Preferences -> Preference Topics -> Options]\
-(https://app.transcend.io/preference-store/preference-topics)',
+(https://app.transcend.io/preference-store/preference-topics/preference-options)',
     ],
   },
   [TranscendPullResource.SystemDiscovery]: {

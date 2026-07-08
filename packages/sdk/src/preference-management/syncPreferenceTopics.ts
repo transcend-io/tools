@@ -1,4 +1,3 @@
-import type { PreferenceTopicType } from '@transcend-io/privacy-types';
 import { type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { keyBy, uniqBy } from 'lodash-es';
@@ -8,35 +7,12 @@ import { fetchAllPreferenceOptionValues } from './fetchAllPreferenceOptionValues
 import { fetchAllPreferenceTopics } from './fetchAllPreferenceTopics.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
 import { CREATE_OR_UPDATE_PREFERENCE_TOPIC } from './gqls/preferenceTopic.js';
-import {
-  createOrUpdatePreferenceOptionValues,
-  type PreferenceOptionValueInput,
-} from './syncPreferenceOptionValues.js';
-
-export interface PreferenceTopicSyncInput {
-  /** Purpose slug (trackingType) this topic belongs to */
-  'tracking-type': string;
-  /** The type of the preference topic */
-  type: PreferenceTopicType;
-  /** The title of the preference topic */
-  title: string;
-  /** The description of the preference topic */
-  description: string;
-  /** API slug for the preference topic */
-  slug?: string;
-  /** Default configuration value */
-  'default-configuration'?: string;
-  /** Whether the preference topic is shown in the privacy center */
-  'show-in-privacy-center'?: boolean;
-  /** The option values when the type is single or multi select */
-  options?: PreferenceOptionValueInput[];
-  // NOTE: `color` is not writable via createOrUpdatePreferenceTopic and is pull-only.
-}
+import { createOrUpdatePreferenceOptionValues } from './syncPreferenceOptionValues.js';
+import type { PreferenceTopicWithPurpose } from './transcendYmlCodecs.js';
 
 /**
- * Sync preference topics to Transcend, matching existing topics by (trackingType, slug)
- * with a fallback to (trackingType, title). Inline option values are upserted (by slug)
- * so their IDs can be linked to the topic.
+ * Sync preference topics to Transcend, matching existing topics by (trackingType, slug).
+ * Inline option values are upserted (by slug) so their IDs can be linked to the topic.
  *
  * @param client - GraphQL client
  * @param topics - Preference topic inputs, each tagged with its purpose trackingType
@@ -45,7 +21,7 @@ export interface PreferenceTopicSyncInput {
  */
 export async function syncPreferenceTopics(
   client: GraphQLClient,
-  topics: PreferenceTopicSyncInput[],
+  topics: PreferenceTopicWithPurpose[],
   options: {
     /** Logger instance */
     logger?: Logger;
@@ -91,10 +67,6 @@ export async function syncPreferenceTopics(
     existingTopics,
     ({ purpose, slug }) => `${purpose.trackingType}:${slug}`,
   );
-  const topicByTitleKey = keyBy(
-    existingTopics,
-    ({ purpose, title }) => `${purpose.trackingType}:${title.defaultMessage}`,
-  );
 
   let success = true;
   for (const topic of topics) {
@@ -108,9 +80,7 @@ export async function syncPreferenceTopics(
       continue;
     }
 
-    const existing =
-      (topic.slug ? topicBySlugKey[`${trackingType}:${topic.slug}`] : undefined) ??
-      topicByTitleKey[`${trackingType}:${topic.title}`];
+    const existing = topicBySlugKey[`${trackingType}:${topic.slug}`];
 
     const preferenceOptionValueIds = (topic.options ?? [])
       .map((optionValue) => optionIdBySlug[optionValue.slug])

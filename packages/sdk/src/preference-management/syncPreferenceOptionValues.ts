@@ -1,6 +1,6 @@
-import { type Logger } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
-import { keyBy } from 'lodash-es';
+import { chunk, keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import {
@@ -8,13 +8,9 @@ import {
   type PreferenceOptionValue,
 } from './fetchAllPreferenceOptionValues.js';
 import { CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES } from './gqls/preferenceOptionValues.js';
+import type { ConsentPreferenceTopicOptionValue } from './transcendYmlCodecs.js';
 
-export interface PreferenceOptionValueInput {
-  /** Title of option value */
-  title: string;
-  /** API slug */
-  slug: string;
-}
+const MAX_BATCH_SIZE = 50;
 
 /**
  * Create or update preference option values
@@ -26,31 +22,37 @@ export interface PreferenceOptionValueInput {
  */
 export async function createOrUpdatePreferenceOptionValues(
   client: GraphQLClient,
-  optionValues: [PreferenceOptionValueInput, string | undefined][],
+  optionValues: [ConsentPreferenceTopicOptionValue, string | undefined][],
   options: {
     /** Logger instance */
     logger?: Logger;
   } = {},
 ): Promise<PreferenceOptionValue[]> {
   const { logger } = options;
-  const result = await makeGraphQLRequest<{
-    /** createOrUpdatePreferenceOptionValues mutation */
-    createOrUpdatePreferenceOptionValues: {
-      /** Preference option values */
-      preferenceOptionValues: PreferenceOptionValue[];
-    };
-  }>(client, CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES, {
-    variables: {
-      input: {
-        preferenceOptionValues: optionValues.map(([optionValue, id]) => ({
-          ...optionValue,
-          id,
-        })),
+  const results: PreferenceOptionValue[] = [];
+
+  await mapSeries(chunk(optionValues, MAX_BATCH_SIZE), async (batch) => {
+    const result = await makeGraphQLRequest<{
+      /** createOrUpdatePreferenceOptionValues mutation */
+      createOrUpdatePreferenceOptionValues: {
+        /** Preference option values */
+        preferenceOptionValues: PreferenceOptionValue[];
+      };
+    }>(client, CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES, {
+      variables: {
+        input: {
+          preferenceOptionValues: batch.map(([optionValue, id]) => ({
+            ...optionValue,
+            id,
+          })),
+        },
       },
-    },
-    logger,
+      logger,
+    });
+    results.push(...result.createOrUpdatePreferenceOptionValues.preferenceOptionValues);
   });
-  return result.createOrUpdatePreferenceOptionValues.preferenceOptionValues;
+
+  return results;
 }
 
 /**
@@ -63,7 +65,7 @@ export async function createOrUpdatePreferenceOptionValues(
  */
 export async function syncPreferenceOptionValues(
   client: GraphQLClient,
-  optionValues: PreferenceOptionValueInput[],
+  optionValues: ConsentPreferenceTopicOptionValue[],
   options: {
     /** Logger instance */
     logger?: Logger;

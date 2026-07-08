@@ -54402,7 +54402,7 @@
                   "allOf": [
                     {
                       "type": "object",
-                      "required": ["type", "title", "description"],
+                      "required": ["type", "title", "description", "slug"],
                       "properties": {
                         "type": {
                           "type": "string",
@@ -54413,15 +54413,15 @@
                         },
                         "description": {
                           "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
                         }
                       }
                     },
                     {
                       "type": "object",
                       "properties": {
-                        "slug": {
-                          "type": "string"
-                        },
                         "color": {
                           "type": "string"
                         },
