@@ -5,7 +5,6 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
-import { uuidParser } from '../../../lib/cli/parsers.js';
 
 export const activateCommand = buildCommand({
   loader: async () => {
@@ -14,23 +13,17 @@ export const activateCommand = buildCommand({
   },
   parameters: {
     flags: {
+      'bundle-name': {
+        kind: 'parsed',
+        parse: String,
+        brief:
+          'Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally',
+      },
       version: {
         kind: 'parsed',
         parse: String,
         brief:
           'Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt',
-        optional: true,
-      },
-      'policy-bundle-id': {
-        kind: 'parsed',
-        parse: uuidParser,
-        brief: 'Parent policy bundle UUID',
-        optional: true,
-      },
-      'bundle-name': {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Parent bundle name (used when --policy-bundle-id is omitted)',
         optional: true,
       },
       auth: createAuthParameter({
@@ -53,8 +46,8 @@ export const activateCommand = buildCommand({
     brief: 'Activate an uploaded policy bundle version',
     fullDescription:
       'Calls the Policy Engine activate endpoint to make an uploaded version live. ' +
-      'Requires the parent bundle UUID or bundle name. When --version is omitted, ' +
-      'activates the latest uploaded version by createdAt. ' +
+      'Addressed by bundle name (resolved to the parent bundle UUID internally). ' +
+      'When --version is omitted, activates the latest uploaded version by createdAt. ' +
       'Requires a Transcend API key with Activate Policy scope.',
   },
 });

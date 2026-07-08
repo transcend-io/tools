@@ -6,6 +6,7 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
+import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
 import { logger } from '../../../logger.js';
 import type { ActivateCommandFlags } from '../activate/impl.js';
 import {
@@ -36,6 +37,8 @@ export interface PublishCommandFlags {
   description?: string;
   /** Print raw JSON response */
   json: boolean;
+  /** Skip the "create new bundle" confirmation */
+  yes: boolean;
 }
 
 /**
@@ -54,6 +57,7 @@ export async function publish(
     version,
     description,
     json,
+    yes,
   }: PublishCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
@@ -86,6 +90,29 @@ export async function publish(
         throw new Error(formatPolicyEngineRequestError(err), { cause: err });
       }
     } else {
+      if (!this.process.stdin.isTTY && !yes) {
+        logger.error(
+          colors.red(
+            'Cannot create a new bundle in a non-interactive environment; pass --yes to confirm.',
+          ),
+        );
+        this.process.exit(1);
+        return;
+      }
+
+      if (!yes) {
+        logger.warn(
+          colors.yellow(`No policy bundle named "${bundleName}" exists for this organization.`),
+        );
+        const shouldCreate = await inquirerConfirmBoolean({
+          message: `No policy bundle named "${bundleName}" exists. Create a new bundle and upload its first version?`,
+        });
+        if (!shouldCreate) {
+          logger.info(colors.yellow('Publish cancelled.'));
+          return;
+        }
+      }
+
       logger.info(colors.green(`Creating bundle "${bundleName}" and uploading first version...`));
       const createForm = buildPolicyBundleFormData({
         bundlePath,

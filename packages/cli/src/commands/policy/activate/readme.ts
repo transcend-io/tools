@@ -22,14 +22,6 @@ const examples = buildExamples<ActivateCommandFlags>(
       },
     },
     {
-      description: 'Activate using explicit parent bundle UUID',
-      flags: {
-        version: 'abc123',
-        'policy-bundle-id': '6a3218db-5703-44eb-8d01-e3ea57ab8e49',
-        auth: '$TRANSCEND_API_KEY',
-      },
-    },
-    {
       description: 'Validate activation without flipping the active version',
       flags: {
         version: 'abc123',

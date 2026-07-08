@@ -6,10 +6,10 @@ import {
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
 
-export const listCommand = buildCommand({
+export const bundlesCommand = buildCommand({
   loader: async () => {
-    const { list } = await import('./impl.js');
-    return list;
+    const { bundles } = await import('./impl.js');
+    return bundles;
   },
   parameters: {
     flags: {

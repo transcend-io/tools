@@ -58,7 +58,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
   - [`transcend policy eval`](#transcend-policy-eval)
   - [`transcend policy lint`](#transcend-policy-lint)
-  - [`transcend policy list`](#transcend-policy-list)
+  - [`transcend policy bundles`](#transcend-policy-bundles)
   - [`transcend policy publish`](#transcend-policy-publish)
   - [`transcend policy test`](#transcend-policy-test)
   - [`transcend policy versions`](#transcend-policy-versions)
@@ -3682,20 +3682,19 @@ transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --tr
 
 ```txt
 USAGE
-  transcend policy activate [--version value] [--policy-bundle-id value] [--bundle-name value] (--auth value) [--transcend-url value] [--dry-run] [--json]
+  transcend policy activate (--bundle-name value) [--version value] (--auth value) [--transcend-url value] [--dry-run] [--json]
   transcend policy activate --help
 
-Calls the Policy Engine activate endpoint to make an uploaded version live. Requires the parent bundle UUID or bundle name. When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
+Calls the Policy Engine activate endpoint to make an uploaded version live. Addressed by bundle name (resolved to the parent bundle UUID internally). When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-     [--version]           Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
-     [--policy-bundle-id]  Parent policy bundle UUID
-     [--bundle-name]       Parent bundle name (used when --policy-bundle-id is omitted)
-      --auth               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]     URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--dry-run]           Validate activation without flipping the active version                                                                                                                                            [default = false]
-     [--json]              Print the raw JSON API response                                                                                                                                                                    [default = false]
-  -h  --help               Print help information and exit
+      --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
+     [--version]        Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
+     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--dry-run]        Validate activation without flipping the active version                                                                                                                                            [default = false]
+     [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
+  -h  --help            Print help information and exit
 ```
 
 #### Examples
@@ -3710,15 +3709,6 @@ transcend policy activate --bundle-name=main --auth="$TRANSCEND_API_KEY"
 
 ```sh
 transcend policy activate --version=abc123 --bundle-name=main --auth="$TRANSCEND_API_KEY"
-```
-
-**Activate using explicit parent bundle UUID**
-
-```sh
-transcend policy activate \
-  --version=abc123 \
-  --policy-bundle-id=6a3218db-5703-44eb-8d01-e3ea57ab8e49 \
-  --auth="$TRANSCEND_API_KEY"
 ```
 
 **Validate activation without flipping the active version**
@@ -3745,7 +3735,7 @@ USAGE
 Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name     Logical policy bundle name (the same string used in publish/list); resolved to the parent bundle UUID internally
+      --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
       --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
@@ -3820,12 +3810,12 @@ FLAGS
 transcend policy lint --dir=./policies
 ```
 
-### `transcend policy list`
+### `transcend policy bundles`
 
 ```txt
 USAGE
-  transcend policy list (--auth value) [--transcend-url value] [--limit value] [--offset value] [--json]
-  transcend policy list --help
+  transcend policy bundles (--auth value) [--transcend-url value] [--limit value] [--offset value] [--json]
+  transcend policy bundles --help
 
 Lists policy bundles registered for the authenticated organization. Requires a Transcend API key with View Policy scope.
 
@@ -3843,19 +3833,19 @@ FLAGS
 **List policy bundles for the current organization**
 
 ```sh
-transcend policy list --auth="$TRANSCEND_API_KEY"
+transcend policy bundles --auth="$TRANSCEND_API_KEY"
 ```
 
 **Fetch the next page using offset pagination**
 
 ```sh
-transcend policy list --auth="$TRANSCEND_API_KEY" --offset=50
+transcend policy bundles --auth="$TRANSCEND_API_KEY" --offset=50
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy list
+transcend policy bundles
 ```
 
 Requires the **View Policy** scope on your API key.
@@ -3864,7 +3854,7 @@ Requires the **View Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy publish (--dir value) (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json]
+  transcend policy publish (--dir value) (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes]
   transcend policy publish --help
 
 Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
@@ -3877,6 +3867,7 @@ FLAGS
      [--version]        Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
      [--description]    Optional description for the uploaded version
      [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
+     [--yes]            Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                             [default = false]
   -h  --help            Print help information and exit
 ```
 
