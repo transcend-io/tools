@@ -34,8 +34,8 @@ export async function fetchAllAgentFunctions(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<AgentFunction[]> {
   const { logger } = options;
   const agentFunctions: AgentFunction[] = [];

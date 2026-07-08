@@ -44,13 +44,20 @@ const PAGE_SIZE = 100;
  */
 export async function fetchAllAttributeValues(
   client: GraphQLClient,
-  attributeKeyId: string,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
+    /** Filter options */
+    filterBy: {
+      /** Attribute key ID */
+      attributeKeyId: string;
+    };
   },
 ): Promise<AttributeValue[]> {
-  const { logger } = options;
+  const {
+    logger,
+    filterBy: { attributeKeyId },
+  } = options;
   const attributeValues: AttributeValue[] = [];
   let offset = 0;
 
@@ -89,8 +96,8 @@ export async function fetchAllAttributes(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<Attribute[]> {
   const { logger } = options;
   const attributes: Attribute[] = [];
@@ -116,7 +123,10 @@ export async function fetchAllAttributes(
         nodes.map(async (node) => ({
           ...node,
           values: SYNC_ATTRIBUTE_TYPES.includes(node.type)
-            ? await fetchAllAttributeValues(client, node.id, { logger })
+            ? await fetchAllAttributeValues(client, {
+                logger,
+                filterBy: { attributeKeyId: node.id },
+              })
             : [],
         })),
       )),

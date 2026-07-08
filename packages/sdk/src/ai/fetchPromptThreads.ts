@@ -32,7 +32,7 @@ export async function fetchAllPromptThreads(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter options */
     filterBy: {
       /** Thread IDs to filter on */

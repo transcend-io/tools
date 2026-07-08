@@ -1,0 +1,70 @@
+import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
+import {
+  UPDATE_DATA_FLOWS,
+  type TranscendUpdateDataFlowInputGql,
+  type TranscendCliUpdateDataFlowsResponse,
+} from '@transcend-io/sdk';
+
+import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
+
+export const UpdateDataFlowItemSchema = z.object({
+  id: z.string().describe('Data flow ID'),
+  trackingPurposes: z.array(z.string()).optional().describe('Tracking purpose slugs'),
+  description: z.string().optional().describe('Data flow description'),
+  service: z.string().optional().describe('Service/integration name'),
+  isJunk: z.boolean().optional().describe('Mark as junk'),
+  status: z
+    .nativeEnum(ConsentTrackerStatus)
+    .optional()
+    .describe('Set status to LIVE (approve) or NEEDS_REVIEW'),
+});
+export type UpdateDataFlowItemInput = z.infer<typeof UpdateDataFlowItemSchema>;
+
+export const UpdateDataFlowsSchema = z.object({
+  dataFlows: z.array(UpdateDataFlowItemSchema).min(1).describe('Data flows to update'),
+});
+export type UpdateDataFlowsInput = z.infer<typeof UpdateDataFlowsSchema>;
+
+export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
+  return defineTool({
+    name: 'consent_update_data_flows',
+    description:
+      'Update one or more data flows. Use to approve (status=LIVE), junk (isJunk=true), ' +
+      'assign tracking purposes, or set a service.',
+    category: 'Consent Management',
+    readOnly: false,
+    confirmationHint: 'Updates data flows in the consent manager',
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
+    zodSchema: UpdateDataFlowsSchema,
+    handler: async ({ dataFlows }) => {
+      const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
+      const dfInputs: TranscendUpdateDataFlowInputGql[] = dataFlows.map((df) => ({
+        id: df.id,
+        ...(df.trackingPurposes ? { purposeIds: df.trackingPurposes } : {}),
+        ...(df.description !== undefined ? { description: df.description } : {}),
+        ...(df.service !== undefined ? { service: df.service } : {}),
+        ...(df.isJunk !== undefined ? { isJunk: df.isJunk } : {}),
+        ...(df.status !== undefined ? { status: df.status } : {}),
+      }));
+      const data = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(
+        UPDATE_DATA_FLOWS,
+        {
+          airgapBundleId,
+          dataFlows: dfInputs,
+        },
+      );
+      return createToolResult(true, {
+        updated: data.updateDataFlows.dataFlows.length,
+        dataFlows: data.updateDataFlows.dataFlows.map((df) => ({
+          id: df.id,
+          value: df.value,
+          status: df.status,
+          isJunk: df.isJunk,
+          purposes: df.purposes.map((p) => p.name),
+          service: df.service?.title,
+        })),
+      });
+    },
+  });
+}

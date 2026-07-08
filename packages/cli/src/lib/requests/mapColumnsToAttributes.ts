@@ -1,8 +1,9 @@
 import { select } from '@inquirer/prompts';
 import type { PersistedState } from '@transcend-io/persisted-state';
+import type { AttributeKey } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 
-import { AttributeKey } from '../graphql/index.js';
+import { chooseColumnForAttribute } from '../promptMessages.js';
 import { CachedFileState } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
 
@@ -40,7 +41,7 @@ export async function mapColumnsToAttributes(
   for (const { name } of columnQuestions) {
     const matches = fuzzyMatchColumns(columnNames, name, false);
     attributeNameMap[name] = await select<string>({
-      message: `Choose the column that will be used to map in the attribute: ${name}`,
+      message: chooseColumnForAttribute(name),
       default: matches.find((m): m is string => typeof m === 'string'),
       choices: matches,
     });

@@ -1,5 +1,10 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequestIdentifiers,
+  validateSombraVersion,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -7,39 +12,10 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  fetchRequestsTotalCount,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { fetchAllRequests, fetchRequestsTotalCount } from '../graphql/index.js';
 import { initCsvFile, appendCsvRowsOrdered, parseFilePath } from '../helpers/index.js';
 import { formatRequestForCsv, ExportedPrivacyRequest } from './formatRequestForCsv.js';
-
-interface ChunkedDateRange {
-  /** Chunk start */
-  createdAtAfter: Date;
-  /** Chunk end */
-  createdAtBefore: Date;
-}
-
-/**
- * Split a date range into N evenly-spaced chunks.
- *
- * @param after - Start of the date range
- * @param before - End of the date range
- * @param chunks - Number of chunks to split into
- * @returns Array of date range bounds
- */
-function splitDateRange(after: Date, before: Date, chunks: number): ChunkedDateRange[] {
-  const startMs = after.getTime();
-  const endMs = before.getTime();
-  const chunkSize = (endMs - startMs) / chunks;
-  return Array.from({ length: chunks }, (_, i) => ({
-    createdAtAfter: new Date(startMs + chunkSize * i),
-    createdAtBefore: new Date(i === chunks - 1 ? endMs : startMs + chunkSize * (i + 1)),
-  }));
-}
+import { splitDateRange } from './splitDateRange.js';
 
 /**
  * Stream privacy requests directly to CSV files, one file per date-range chunk.
@@ -154,7 +130,7 @@ export async function streamPrivacyRequestsToCsv({
 
   // Validate Sombra version once before bulk-fetching identifiers
   if (!skipRequestIdentifiers) {
-    await validateSombraVersion(client);
+    await validateSombraVersion(client, { logger });
   }
 
   const totalExpected = await fetchRequestsTotalCount(client, filterBy);
@@ -212,8 +188,9 @@ export async function streamPrivacyRequestsToCsv({
                   async (n) => ({
                     ...n,
                     requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
-                      requestId: n.id,
+                      filterBy: { requestId: n.id },
                       skipSombraCheck: true,
+                      logger,
                     }),
                   }),
                   { concurrency: pageLimit },

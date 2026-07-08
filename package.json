@@ -9,6 +9,9 @@
     "quality": "turbo run quality",
     "quality:fix": "turbo run quality:fix",
     "changeset": "changeset",
+    "codegen": "graphql-codegen --config codegen.ts",
+    "codegen:watch": "graphql-codegen --config codegen.ts --watch",
+    "graphql:refresh-schema": "node scripts/refresh-graphql-schema.ts",
     "typecheck": "turbo run typecheck typecheck:root",
     "lint": "turbo run lint lint:root",
     "lint:fix": "turbo run lint:fix lint:fix:root",
@@ -22,29 +25,42 @@
     "changeset:version": "changeset version",
     "changeset:version:release": "changeset version && pnpm format:root",
     "release": "turbo run build && changeset publish",
-    "test:root": "vitest run scripts/check-changeset.test.ts scripts/package-conventions.test.ts",
+    "test:root": "vitest run scripts/check-changeset.test.ts scripts/package-conventions.test.ts scripts/check-mcp-descriptions.test.ts",
     "typecheck:root": "tsc -p scripts/tsconfig.json --noEmit",
-    "lint:root": "oxlint .",
-    "lint:fix:root": "oxlint --fix .",
-    "format:root": "oxfmt --write .",
-    "format:check:root": "oxfmt --check .",
-    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\"",
+    "lint:root": "oxlint",
+    "lint:fix:root": "oxlint --fix",
+    "format:root": "oxfmt",
+    "format:check:root": "oxfmt --check",
+    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\" --source \"packages/mcp/*/package.json\"",
     "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
+    "@graphql-codegen/cli": "catalog:",
+    "@graphql-codegen/client-preset": "catalog:",
+    "@transcend-io/mcp-server-admin": "workspace:*",
+    "@transcend-io/mcp-server-assessment": "workspace:*",
+    "@transcend-io/mcp-server-base": "workspace:*",
+    "@transcend-io/mcp-server-consent": "workspace:*",
+    "@transcend-io/mcp-server-discovery": "workspace:*",
+    "@transcend-io/mcp-server-dsr": "workspace:*",
+    "@transcend-io/mcp-server-inventory": "workspace:*",
+    "@transcend-io/mcp-server-preferences": "workspace:*",
+    "@transcend-io/mcp-server-workflows": "workspace:*",
     "@types/node": "catalog:",
+    "graphql": "catalog:",
     "husky": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "syncpack": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "zod": "catalog:"
   },
   "engines": {
     "node": ">=22.12.0",
-    "pnpm": ">=10.0.0"
+    "pnpm": ">=10.28.2"
   },
-  "packageManager": "pnpm@10.24.0"
+  "packageManager": "pnpm@10.28.2"
 }

@@ -61,8 +61,8 @@ export async function fetchAllCodePackages(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<CodePackage[]> {
   const { logger } = options;
   const codePackages: CodePackage[] = [];

@@ -98,6 +98,8 @@ export enum RequestOrigin {
   Api = 'API',
   /** Request made from Shopify Webhook */
   Shopify = 'SHOPIFY',
+  /** Request that was dropped and not processed */
+  Drop = 'DROP',
 }
 
 /**
@@ -184,3 +186,21 @@ export const RegionDetectionMethod = makeEnum({
 /** Type override */
 export type RegionDetectionMethod =
   (typeof RegionDetectionMethod)[keyof typeof RegionDetectionMethod];
+
+/**
+ * How request identifiers should be handled when restarting a request.
+ *
+ * @see https://linear.app/transcend/issue/WAL-7712
+ */
+export const RestartIdentifierStrategy = makeEnum({
+  /** Keep all identifiers; only input-sourced identifiers stay verified */
+  PreserveInitialVerificationsOnly: 'PRESERVE_INITIAL_VERIFICATIONS_ONLY',
+  /** Keep all identifiers; preserve JWT verification from prior enrichment */
+  PreserveAllVerifications: 'PRESERVE_ALL_VERIFICATIONS',
+  /** Delete enriched identifiers; keep only input-sourced identifiers */
+  RemoveEnrichedIdentifiers: 'REMOVE_ENRICHED_IDENTIFIERS',
+});
+
+/** Type override */
+export type RestartIdentifierStrategy =
+  (typeof RestartIdentifierStrategy)[keyof typeof RestartIdentifierStrategy];

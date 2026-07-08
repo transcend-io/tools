@@ -1,6 +1,7 @@
 import { search } from '@inquirer/prompts';
 import { apply } from '@transcend-io/type-utils';
 
+import { mapValueOf } from '../promptMessages.js';
 import { fuzzySearch } from './fuzzyMatchColumns.js';
 
 /**
@@ -24,7 +25,7 @@ export async function mapEnumValues<TValue extends string>(
   const result: { [k in string]: TValue } = {} as { [k in string]: TValue };
   for (const value of inputs) {
     result[value] = await search<TValue>({
-      message: `Map value of: ${value}`,
+      message: mapValueOf(value),
       source: (term) => {
         const items = !term
           ? expectedOutputs

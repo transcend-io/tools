@@ -1,33 +1,55 @@
 import { RequestAction } from '@transcend-io/privacy-types';
+import { withTransientRetry } from '@transcend-io/sdk';
 import { decodeCodec } from '@transcend-io/type-utils';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 
-export const CronIdentifier = t.type({
-  /** The identifier value */
-  identifier: t.string,
-  /** The type of identifier */
-  type: t.string,
-  /** The core identifier of the request */
-  coreIdentifier: t.string,
-  /** The ID of the underlying data silo */
-  dataSiloId: t.string,
-  /** The ID of the underlying request */
-  requestId: t.string,
-  /** The request nonce */
-  nonce: t.string,
-  /** The time the request was created */
-  requestCreatedAt: t.string,
-  /** The number of days until the request is overdue */
-  daysUntilOverdue: t.number,
-  /** Request attributes */
-  attributes: t.array(
-    t.type({
-      key: t.string,
-      values: t.array(t.string),
-    }),
-  ),
+import { logger } from '../../logger.js';
+
+/** Consent partition metadata when a DSR is scoped to a partition */
+export const CronPartition = t.type({
+  /** ID of the partition */
+  id: t.string,
+  /** The human readable name of the partition */
+  name: t.string,
+  /** The unique identifying partition value */
+  partition: t.string,
 });
+
+/** Type override */
+export type CronPartition = t.TypeOf<typeof CronPartition>;
+
+export const CronIdentifier = t.intersection([
+  t.type({
+    /** The identifier value */
+    identifier: t.string,
+    /** The type of identifier */
+    type: t.string,
+    /** The core identifier of the request */
+    coreIdentifier: t.string,
+    /** The ID of the underlying data silo */
+    dataSiloId: t.string,
+    /** The ID of the underlying request */
+    requestId: t.string,
+    /** The request nonce */
+    nonce: t.string,
+    /** The time the request was created */
+    requestCreatedAt: t.string,
+    /** The number of days until the request is overdue */
+    daysUntilOverdue: t.number,
+    /** Request attributes */
+    attributes: t.array(
+      t.type({
+        key: t.string,
+        values: t.array(t.string),
+      }),
+    ),
+  }),
+  t.partial({
+    /** The consent partition that scopes this request, when applicable */
+    partition: t.union([CronPartition, t.null]),
+  }),
+]);
 
 /** Type override */
 export type CronIdentifier = t.TypeOf<typeof CronIdentifier>;
@@ -59,15 +81,23 @@ export async function pullCronPageOfIdentifiers(
   },
 ): Promise<CronIdentifier[]> {
   try {
-    // Make the GraphQL request
-    const response = await sombra
-      .get(`v1/data-silo/${dataSiloId}/pending-requests/${requestType}`, {
-        searchParams: {
-          offset,
-          limit,
-        },
-      })
-      .json();
+    // `GET pending-requests` is a read and therefore safe to retry on transient
+    // gateway / network errors. Customers running `transcend cron
+    // pull-identifiers` against large silos would otherwise see the command
+    // abort on a single 502 from the Sombra reverse tunnel.
+    const response = await withTransientRetry(
+      'pullCronPageOfIdentifiers',
+      () =>
+        sombra
+          .get(`v1/data-silo/${dataSiloId}/pending-requests/${requestType}`, {
+            searchParams: {
+              offset,
+              limit,
+            },
+          })
+          .json(),
+      { logger, maxAttempts: 6, baseDelayMs: 500 },
+    );
 
     const { items } = decodeCodec(
       t.type({

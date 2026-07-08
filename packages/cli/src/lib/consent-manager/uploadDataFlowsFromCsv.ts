@@ -89,7 +89,8 @@ export async function uploadDataFlowsFromCsv({
   );
 
   // Upload the data flows into Transcend dashboard
-  const syncedDataFlows = await syncDataFlows(client, validatedDataFlowInputs, classifyService, {
+  const syncedDataFlows = await syncDataFlows(client, validatedDataFlowInputs, {
+    classifyService,
     logger,
   });
 

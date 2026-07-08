@@ -3,7 +3,7 @@ import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 import { AbsoluteUrlString, UIConfiguration } from './consentUiConfiguration.js';
-import { ThemeConfiguration } from './consentUiTheme.js';
+import { ThemeConfiguration, ThemeConfigurationMinimal } from './consentUiTheme.js';
 
 /**
  * Types representing the top-level consent UI configuration
@@ -90,16 +90,17 @@ export const LoadOptions = t.intersection([
     regimeAutoPromptMap: t.record(RegimeKey, t.boolean),
     variantConfigMap: t.record(VariantKey, UIConfiguration),
     variantThemeMap: t.record(VariantKey, ThemeKey),
-    themeConfigMap: t.record(ThemeKey, ThemeConfiguration),
+    themeConfigMap: t.record(ThemeKey, t.union([ThemeConfiguration, ThemeConfigurationMinimal])),
     autofocus: AutofocusValues,
     uiZIndex: IntegerString,
-    css: AbsoluteUrlString,
     // If messageMap is not defined, messages will be fetched from `${messageFolder}/${localeKey}.json`
     messageFolder: AbsoluteUrlString,
     regimePrecedence: SemicolonDelimitedRegimeKeyString, // e.g. 'GDPR;CPRA;nFADP'
     uiShadowRoot: valuesOf(ShadowRootOptions),
   }),
   t.partial({
+    // if css is defined and cssFolder is not, CSS will be fetched from the css load option
+    css: AbsoluteUrlString,
     // if message map is defined, it will be used to retrieve localized messages
     messageMap: t.record(valuesOf(LOCALE_KEY), AbsoluteUrlString),
     forceTheme: ThemeKey,

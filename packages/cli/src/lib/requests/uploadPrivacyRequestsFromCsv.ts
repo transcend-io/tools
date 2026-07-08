@@ -1,7 +1,11 @@
 import { join } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequestAttributeKeys,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 /* eslint-disable max-lines */
@@ -11,7 +15,6 @@ import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import { fetchAllRequestAttributeKeys } from '../graphql/index.js';
 import { CachedRequestState, CachedFileState } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { filterRows } from './filterRows.js';
@@ -102,13 +105,15 @@ export async function uploadPrivacyRequestsFromCsv({
     regionToCountry: {},
   });
 
-  // Create a new state file to store the requests from this run
+  // Create a new state file to store the requests from this run.
+  // `toISOString()` contains colons (e.g. 2026-07-06T04:33:12.345Z) which are
+  // illegal characters in Windows filenames, so strip them out to keep the
+  // auto-generated receipt filename cross-platform.
   const requestCacheFile = join(
     requestReceiptFolder,
-    `tr-request-upload-${new Date().toISOString()}-${file.split('/').pop()}`.replace(
-      '.csv',
-      '.json',
-    ),
+    `tr-request-upload-${new Date()
+      .toISOString()
+      .replace(/:/g, '-')}-${file.split('/').pop()}`.replace('.csv', '.json'),
   );
   const requestState = new PersistedState(requestCacheFile, CachedRequestState, {
     successfulRequests: [],
@@ -144,7 +149,7 @@ export async function uploadPrivacyRequestsFromCsv({
   // Build a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
   // Grab the request attributes
-  const requestAttributeKeys = await fetchAllRequestAttributeKeys(client);
+  const requestAttributeKeys = await fetchAllRequestAttributeKeys(client, { logger });
   // Determine the columns that should be mapped
   const columnNameMap = await mapCsvColumnsToApi(columnNames, state);
   const identifierNameMap = await mapColumnsToIdentifiers(client, columnNames, state);

@@ -2,20 +2,16 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { difference } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchConsentManagerId } from './fetchConsentManagerId.js';
-import { CONSENT_PARTITIONS, CREATE_CONSENT_PARTITION } from './gqls/consentManager.js';
+import {
+  CONSENT_PARTITIONS,
+  CREATE_CONSENT_PARTITION,
+  type TranscendConsentPartitionGql,
+  type TranscendCliConsentPartitionsResponse,
+} from './gqls/partitions.js';
 
 const PAGE_SIZE = 50;
-
-export interface TranscendPartition {
-  /** ID of the partition */
-  id: string;
-  /** Name of partition */
-  name: string;
-  /** Partition value */
-  partition: string;
-}
 
 export interface PartitionInput {
   /** Name of partition */
@@ -35,27 +31,25 @@ export async function fetchPartitions(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
-): Promise<TranscendPartition[]> {
-  const { logger } = options;
-  const partitions: TranscendPartition[] = [];
+    logger?: Logger;
+  } = {},
+): Promise<TranscendConsentPartitionGql[]> {
+  const { logger = NOOP_LOGGER } = options;
+  const partitions: TranscendConsentPartitionGql[] = [];
   let offset = 0;
 
   let shouldContinue = false;
   do {
     const {
       consentPartitions: { nodes },
-    } = await makeGraphQLRequest<{
-      /** Consent partitions */
-      consentPartitions: {
-        /** List */
-        nodes: TranscendPartition[];
-      };
-    }>(client, CONSENT_PARTITIONS, {
-      variables: { first: PAGE_SIZE, offset },
-      logger,
-    });
+    } = await makeGraphQLRequest<TranscendCliConsentPartitionsResponse>(
+      client,
+      CONSENT_PARTITIONS,
+      {
+        variables: { first: PAGE_SIZE, offset },
+        logger,
+      },
+    );
     partitions.push(...nodes);
     offset += PAGE_SIZE;
     shouldContinue = nodes.length === PAGE_SIZE;
@@ -77,10 +71,10 @@ export async function syncPartitions(
   partitionInputs: PartitionInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   const airgapBundleId = await fetchConsentManagerId(client, { logger });
   let encounteredError = false;
   const partitions = await fetchPartitions(client, { logger });

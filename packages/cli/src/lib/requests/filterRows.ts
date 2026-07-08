@@ -4,6 +4,7 @@ import colors from 'colors';
 import { uniq } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import { chooseFilterColumn, keepRowsMatchingValue } from '../promptMessages.js';
 import { NONE } from './constants.js';
 import { getUniqueValuesForColumn } from './getUniqueValuesForColumn.js';
 
@@ -26,8 +27,7 @@ export async function filterRows(rows: ObjByString[]): Promise<ObjByString[]> {
   while (keepFiltering) {
     // Prompt user for column to filter on
     const filterColumnName = await select({
-      // eslint-disable-next-line max-len
-      message: `If you need to filter the list of requests to import, choose the column to filter on. Currently ${filteredRows.length} rows.`,
+      message: chooseFilterColumn(filteredRows.length),
       default: columnNames[0],
       choices: [NONE, ...columnNames],
     });
@@ -38,7 +38,7 @@ export async function filterRows(rows: ObjByString[]): Promise<ObjByString[]> {
       const options = getUniqueValuesForColumn(filteredRows, filterColumnName);
 
       const valuesToKeep = await checkbox({
-        message: 'Keep rows matching this value',
+        message: keepRowsMatchingValue,
         choices: options.map((o) => ({ value: o, name: o })),
       });
 

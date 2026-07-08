@@ -185,6 +185,17 @@ export const LocalSyncOption = makeEnum({
 export type LocalSyncOption = (typeof LocalSyncOption)[keyof typeof LocalSyncOption];
 
 /**
+ * Sort direction for GraphQL order-by queries
+ */
+export const OrderDirection = makeEnum({
+  Asc: 'ASC',
+  Desc: 'DESC',
+});
+
+/** Override type */
+export type OrderDirection = (typeof OrderDirection)[keyof typeof OrderDirection];
+
+/**
  * The possible options for configuring default consent
  *
  * These options are simplified for the UI.
@@ -199,3 +210,158 @@ export const DefaultConsentOption = makeEnum({
 
 /** Override type */
 export type DefaultConsentOption = (typeof DefaultConsentOption)[keyof typeof DefaultConsentOption];
+
+/**
+ * Fields by which you can order cookies
+ */
+export const CookieOrderField = makeEnum({
+  /** The name of this cookie */
+  Name: 'name',
+  /** When the cookie was created */
+  CreatedAt: 'createdAt',
+  /** The time the cookie was updated */
+  UpdatedAt: 'updatedAt',
+});
+
+/** Type override */
+export type CookieOrderField = (typeof CookieOrderField)[keyof typeof CookieOrderField];
+
+/**
+ * Fields by which you can order data flows
+ */
+export const DataFlowOrderField = makeEnum({
+  /** The value of this data flow */
+  Value: 'value',
+  /** When the data flow was created */
+  CreatedAt: 'createdAt',
+  /** The time the data flow was updated */
+  UpdatedAt: 'updatedAt',
+  /** The number of occurrences of this data flow */
+  Occurrences: 'occurrences',
+  /** The SaaS tool associated with these data flows */
+  Service: 'service',
+});
+
+/** Type override */
+export type DataFlowOrderField = (typeof DataFlowOrderField)[keyof typeof DataFlowOrderField];
+
+/**
+ * Types of data flows
+ */
+export const DataFlowType = makeEnum({
+  /** URL-based data flow */
+  Url: 'URL',
+  /** Query parameter-based data flow */
+  QueryParam: 'QUERY_PARAM',
+  /** Regular expression-based data flow */
+  RegExp: 'REGEX',
+});
+
+/** Type override */
+export type DataFlowType = (typeof DataFlowType)[keyof typeof DataFlowType];
+
+/**
+ * Triage actions for consent bulk operations
+ */
+export const TriageAction = makeEnum({
+  /** Approve the tracker */
+  Approve: 'APPROVE',
+  /** Mark the tracker as junk */
+  Junk: 'JUNK',
+});
+
+/** Type override */
+export type TriageAction = (typeof TriageAction)[keyof typeof TriageAction];
+
+/**
+ * Discriminator for cookie vs data flow
+ */
+export const ConsentTrackerType = makeEnum({
+  /** Cookie tracker */
+  Cookie: 'cookie',
+  /** Data flow tracker */
+  DataFlow: 'data_flow',
+});
+
+/** Type override */
+export type ConsentTrackerType = (typeof ConsentTrackerType)[keyof typeof ConsentTrackerType];
+
+/**
+ * Metrics supported by airgap bundle aggregate/timeseries analytics
+ */
+export const AirgapBundleAnalyticsMetric = makeEnum({
+  /** User opt-in or opt-out for a consent purpose */
+  ConsentChanged: 'CONSENT_CHANGED',
+  /** Privacy signal detected (e.g. GPC, DNT) */
+  SignalDetected: 'SIGNAL_DETECTED',
+  /** Site session recorded */
+  SiteSessions: 'SITE_SESSIONS',
+  /** Page view recorded */
+  PageViews: 'PAGE_VIEWS',
+});
+
+/** Type override */
+export type AirgapBundleAnalyticsMetric =
+  (typeof AirgapBundleAnalyticsMetric)[keyof typeof AirgapBundleAnalyticsMetric];
+
+/**
+ * Dimensions available for aggregate consent analytics breakdowns
+ */
+export const AirgapBundleAnalyticsDimension = makeEnum({
+  /** Consent value after change (true = opted in, false = opted out) */
+  NewValue: 'NEW_VALUE',
+  /** Privacy regime active when the event was recorded */
+  Regime: 'REGIME',
+  /** Tracking purpose the event relates to */
+  Purpose: 'PURPOSE',
+});
+
+/** Type override */
+export type AirgapBundleAnalyticsDimension =
+  (typeof AirgapBundleAnalyticsDimension)[keyof typeof AirgapBundleAnalyticsDimension];
+
+/**
+ * Bin sizes for airgap bundle timeseries analytics
+ */
+export const AirgapBundleAnalyticsBinInterval = makeEnum({
+  /** One minute bins */
+  Minute: '1m',
+  /** One hour bins */
+  Hourly: '1h',
+  /** One day bins */
+  Daily: '1d',
+});
+
+/** Type override */
+export type AirgapBundleAnalyticsBinInterval =
+  (typeof AirgapBundleAnalyticsBinInterval)[keyof typeof AirgapBundleAnalyticsBinInterval];
+
+/**
+ * analyticsData sources for consent manager metrics
+ */
+export const ConsentManagerAnalyticsDataSource = makeEnum({
+  /** DNT/GPC and other privacy signal counts over time */
+  PrivacySignalTimeseries: 'PRIVACY_SIGNAL_TIMESERIES',
+  /** Explicit opt-in/opt-out events over time */
+  ConsentChangesTimeseries: 'CONSENT_CHANGES_TIMESERIES',
+  /** Session counts grouped by privacy regime */
+  ConsentSessionsByRegime: 'CONSENT_SESSIONS_BY_REGIME',
+});
+
+/** Type override */
+export type ConsentManagerAnalyticsDataSource =
+  (typeof ConsentManagerAnalyticsDataSource)[keyof typeof ConsentManagerAnalyticsDataSource];
+
+/**
+ * Allowed bin sizes for consent manager analyticsData queries
+ */
+export const ConsentManagerMetricBin = makeEnum({
+  /** One hour bins */
+  Hourly: '1h',
+  /** One day bins */
+  Daily: '1d',
+});
+
+/** Type override */
+export type ConsentManagerMetricBin =
+  (typeof ConsentManagerMetricBin)[keyof typeof ConsentManagerMetricBin];

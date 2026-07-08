@@ -2,7 +2,7 @@ import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPromptGroups } from './fetchPromptGroups.js';
 import { fetchAllPrompts } from './fetchPrompts.js';
 import { UPDATE_PROMPT_GROUPS, CREATE_PROMPT_GROUP } from './gqls/prompt.js';
@@ -35,13 +35,14 @@ export interface EditPromptGroupInput {
  */
 export async function createPromptGroup(
   client: GraphQLClient,
-  input: EditPromptGroupInput,
   options: {
+    /** Prompt group to create */
+    input: EditPromptGroupInput;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<string> {
-  const { logger } = options;
+  const { input, logger = NOOP_LOGGER } = options;
   const {
     createPromptGroup: { promptGroup },
   } = await makeGraphQLRequest<{
@@ -65,30 +66,30 @@ export async function createPromptGroup(
  * Update a set of existing prompt groups
  *
  * @param client - GraphQL client
- * @param input - Prompt input
  * @param options - Options
  */
 export async function updatePromptGroups(
   client: GraphQLClient,
-  input: [EditPromptGroupInput, string][],
   options: {
+    /** [EditPromptGroupInput, promptGroupId] list */
+    input: [EditPromptGroupInput, string][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: promptGroups, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPT_GROUPS, {
     variables: {
       input: {
-        promptGroups: input.map(([input, id]) => ({
-          ...input,
+        promptGroups: promptGroups.map(([promptGroup, id]) => ({
+          ...promptGroup,
           id,
         })),
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${input.length} prompt groups!`);
+  logger.info(`Successfully updated ${promptGroups.length} prompt groups!`);
 }
 
 /**
@@ -104,12 +105,12 @@ export async function syncPromptGroups(
   promptGroups: PromptGroupInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<boolean> {
-  const { logger, concurrency = 20 } = options;
+  const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
   logger.info(`Syncing "${promptGroups.length}" prompt groups...`);
 
@@ -134,9 +135,8 @@ export async function syncPromptGroups(
     await map(
       newPromptGroups,
       async (prompt) => {
-        await createPromptGroup(
-          client,
-          {
+        await createPromptGroup(client, {
+          input: {
             ...prompt,
             promptIds: prompt.prompts.map((title) => {
               const prompt = promptByTitle[title];
@@ -146,8 +146,8 @@ export async function syncPromptGroups(
               return prompt.id;
             }),
           },
-          { logger },
-        );
+          logger,
+        });
       },
       {
         concurrency,
@@ -165,9 +165,8 @@ export async function syncPromptGroups(
   );
   try {
     logger.info(`Updating "${existingPromptGroupsMapped.length}" prompt groups...`);
-    await updatePromptGroups(
-      client,
-      existingPromptGroupsMapped.map(([{ prompts, ...input }, id]) => [
+    await updatePromptGroups(client, {
+      input: existingPromptGroupsMapped.map(([{ prompts, ...input }, id]) => [
         {
           ...input,
           promptIds: prompts.map((title) => {
@@ -180,8 +179,8 @@ export async function syncPromptGroups(
         },
         id,
       ]),
-      { logger },
-    );
+      logger,
+    });
     logger.info(`Successfully updated "${existingPromptGroupsMapped.length}" prompt groups!`);
   } catch (err) {
     encounteredError = true;

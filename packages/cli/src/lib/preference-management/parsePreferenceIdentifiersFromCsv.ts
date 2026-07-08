@@ -4,6 +4,11 @@ import colors from 'colors';
 import { uniq, groupBy, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import {
+  chooseIdentifierColumn,
+  skipRowsMissingIdentifier,
+  takeLatestUpdate,
+} from '../promptMessages.js';
 
 /* eslint-disable no-param-reassign */
 
@@ -38,8 +43,7 @@ export async function parsePreferenceIdentifiersFromCsv(
   // Determine the identifier column to work off of
   if (!currentState.identifierColumn) {
     currentState.identifierColumn = await select({
-      message:
-        'Choose the column that will be used as the identifier to upload consent preferences by',
+      message: chooseIdentifierColumn,
       default:
         remainingColumnsForIdentifier.find((col) => col.toLowerCase().includes('email')) ||
         remainingColumnsForIdentifier[0],
@@ -61,7 +65,7 @@ export async function parsePreferenceIdentifiersFromCsv(
 
     // Ask user if they would like to skip rows missing an identifier
     const skip = await confirm({
-      message: 'Would you like to skip rows missing an identifier?',
+      message: skipRowsMissingIdentifier,
     });
     if (!skip) {
       throw new Error(msg);
@@ -95,7 +99,7 @@ export async function parsePreferenceIdentifiersFromCsv(
     // Ask user if they would like to take the most recent update
     // for each duplicate identifier
     const skip = await confirm({
-      message: 'Would you like to automatically take the latest update?',
+      message: takeLatestUpdate,
     });
     if (!skip) {
       throw new Error(msg);

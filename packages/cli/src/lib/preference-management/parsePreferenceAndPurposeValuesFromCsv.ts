@@ -6,6 +6,11 @@ import colors from 'colors';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import {
+  choosePreferenceValue,
+  choosePurposeForColumn,
+  choosePurposeValue,
+} from '../promptMessages.js';
 
 /* eslint-disable no-param-reassign */
 
@@ -67,7 +72,7 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
       );
     } else {
       const purposeName = await select({
-        message: `Choose the purpose that column ${col} is associated with`,
+        message: choosePurposeForColumn(col),
         default: purposeNames.find((x) => x.startsWith(purposeSlugs[0])),
         choices: purposeNames,
       });
@@ -92,7 +97,7 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
       // if preference is null, this column is just for the purpose
       if (purposeMapping.preference === null) {
         purposeMapping.valueMapping[value] = await confirm({
-          message: `Choose the purpose value for value "${value}" associated with purpose "${purposeMapping.purpose}"`,
+          message: choosePurposeValue(value, purposeMapping.purpose),
           default: value !== 'false',
         });
       }
@@ -108,8 +113,7 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
 
         if (preferenceTopic.type === PreferenceTopicType.Boolean) {
           purposeMapping.valueMapping[value] = await confirm({
-            // eslint-disable-next-line max-len
-            message: `Choose the preference value for "${preferenceTopic.slug}" value "${value}" associated with purpose "${purposeMapping.purpose}"`,
+            message: choosePreferenceValue(preferenceTopic.slug, value, purposeMapping.purpose),
             default: value !== 'false',
           });
           return;
@@ -117,8 +121,7 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
 
         if (preferenceTopic.type === PreferenceTopicType.Select) {
           purposeMapping.valueMapping[value] = await select({
-            // eslint-disable-next-line max-len
-            message: `Choose the preference value for "${preferenceTopic.slug}" value "${value}" associated with purpose "${purposeMapping.purpose}"`,
+            message: choosePreferenceValue(preferenceTopic.slug, value, purposeMapping.purpose),
             choices: preferenceOptions,
             default: preferenceOptions.find((x) => x === value),
           });
@@ -134,8 +137,11 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
               return;
             }
             purposeMapping.valueMapping[parsedValue] = await select({
-              // eslint-disable-next-line max-len
-              message: `Choose the preference value for "${preferenceTopic.slug}" value "${parsedValue}" associated with purpose "${purposeMapping.purpose}"`,
+              message: choosePreferenceValue(
+                preferenceTopic.slug,
+                parsedValue,
+                purposeMapping.purpose,
+              ),
               choices: preferenceOptions,
               default: preferenceOptions.find((x) => x === parsedValue),
             });

@@ -18,24 +18,27 @@ export interface CreatedApiKey {
  * Create an API key
  *
  * @param client - GraphQL client
- * @param input - Input
  * @param options - Options
  * @returns The API key
  */
 export async function createApiKey(
   client: GraphQLClient,
-  input: {
-    /** Title of API key */
-    title: string;
-    /** Scopes for API key */
-    scopes: ScopeName[];
-  },
   options: {
+    /** Input for creating an API key */
+    input: {
+      /** Title of API key */
+      title: string;
+      /** Scopes for API key */
+      scopes: ScopeName[];
+    };
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<CreatedApiKey> {
-  const { logger } = options;
+  const {
+    input: { title, scopes },
+    logger,
+  } = options;
   const {
     createApiKey: { apiKey },
   } = await makeGraphQLRequest<{
@@ -44,7 +47,7 @@ export async function createApiKey(
       /** API key */
       apiKey: CreatedApiKey;
     };
-  }>(client, CREATE_API_KEY, { variables: { input }, logger });
+  }>(client, CREATE_API_KEY, { variables: { input: { title, scopes } }, logger });
 
   return apiKey;
 }
@@ -53,17 +56,17 @@ export async function createApiKey(
  * Delete an API key
  *
  * @param client - GraphQL client
- * @param id - API key Id
  * @param options - Options
  */
 export async function deleteApiKey(
   client: GraphQLClient,
-  id: string,
   options: {
+    /** API key ID to delete */
+    id: string;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { id, logger } = options;
   await makeGraphQLRequest(client, DELETE_API_KEY, { variables: { id }, logger });
 }

@@ -42,8 +42,8 @@ export async function fetchAllRepositories(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<Repository[]> {
   const { logger } = options;
   const repositories: Repository[] = [];

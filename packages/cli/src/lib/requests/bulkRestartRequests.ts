@@ -1,8 +1,17 @@
 import { join, resolve } from 'node:path';
 
 import { PersistedState } from '@transcend-io/persisted-state';
-import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
+import {
+  RequestAction,
+  RequestStatus,
+  RestartIdentifierStrategy,
+} from '@transcend-io/privacy-types';
+import {
+  buildTranscendGraphQLClient,
+  createSombraGotInstance,
+  fetchAllRequestIdentifiers,
+  validateSombraVersion,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -11,11 +20,7 @@ import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestIdentifiers,
-  fetchAllRequests,
-  validateSombraVersion,
-} from '../graphql/index.js';
+import { fetchAllRequests } from '../graphql/index.js';
 import { SuccessfulRequest } from './constants.js';
 import { extractClientError } from './extractClientError.js';
 import { restartPrivacyRequest } from './restartPrivacyRequest.js';
@@ -59,6 +64,7 @@ export async function bulkRestartRequests({
   sendEmailReceipt = false,
   emailIsVerified = true,
   copyIdentifiers = false,
+  restartIdentifierStrategy,
   skipWaitingPeriod = false,
   concurrency = 20,
 }: {
@@ -86,6 +92,8 @@ export async function bulkRestartRequests({
   sendEmailReceipt?: boolean;
   /** Copy over all identifiers rather than restarting the request only with the core identifier */
   copyIdentifiers?: boolean;
+  /** How request identifiers should be handled when restarting */
+  restartIdentifierStrategy?: RestartIdentifierStrategy;
   /** Skip the waiting period when restarting requests */
   skipWaitingPeriod?: boolean;
   /** Filter for requests created before this date */
@@ -104,10 +112,13 @@ export async function bulkRestartRequests({
   // create a new progress bar instance and use shades_classic theme
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
-  // Create a new state file to store the requests from this run
+  // Create a new state file to store the requests from this run.
+  // `toISOString()` contains colons (e.g. 2026-07-06T04:33:12.345Z) which are
+  // illegal characters in Windows filenames, so strip them out to keep the
+  // auto-generated receipt filename cross-platform.
   const cacheFile = join(
     requestReceiptFolder,
-    `tr-request-restart-${new Date().toISOString()}.json`,
+    `tr-request-restart-${new Date().toISOString().replace(/:/g, '-')}.json`,
   );
   const state = new PersistedState(cacheFile, CachedRequestState, {
     restartedRequests: [],
@@ -138,6 +149,11 @@ export async function bulkRestartRequests({
   if (copyIdentifiers) {
     logger.info('copyIdentifiers detected - All Identifiers will be copied.');
   }
+  if (restartIdentifierStrategy) {
+    logger.info(
+      `restartIdentifierStrategy detected - Using "${restartIdentifierStrategy}" strategy.`,
+    );
+  }
   if (sendEmailReceipt) {
     logger.info('sendEmailReceipt detected - Email receipts will be sent.');
   }
@@ -160,7 +176,7 @@ export async function bulkRestartRequests({
   }
 
   if (copyIdentifiers) {
-    await validateSombraVersion(client);
+    await validateSombraVersion(client, { logger });
   }
 
   // Map over the requests
@@ -173,8 +189,9 @@ export async function bulkRestartRequests({
         // Pull the request identifiers
         const requestIdentifiers = copyIdentifiers
           ? await fetchAllRequestIdentifiers(client, sombra, {
-              requestId: request.id,
+              filterBy: { requestId: request.id },
               skipSombraCheck: true,
+              logger,
             })
           : [];
 
@@ -194,6 +211,7 @@ export async function bulkRestartRequests({
             skipWaitingPeriod,
             sendEmailReceipt,
             emailIsVerified,
+            restartIdentifierStrategy,
           },
         );
 

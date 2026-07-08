@@ -346,8 +346,8 @@ export async function fetchAllAssessments(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<Assessment[]> {
   const { logger } = options;
   const assessments: Assessment[] = [];

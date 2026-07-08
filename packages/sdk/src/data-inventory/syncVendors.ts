@@ -3,8 +3,8 @@ import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { fetchAllVendors, Vendor } from './fetchAllVendors.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { fetchAllVendors, type Vendor } from './fetchAllVendors.js';
 import { UPDATE_VENDORS, CREATE_VENDOR } from './gqls/vendor.js';
 
 export interface VendorInput {
@@ -50,13 +50,14 @@ export interface VendorInput {
  */
 export async function createVendor(
   client: GraphQLClient,
-  vendor: VendorInput,
   options: {
+    /** Vendor to create */
+    input: VendorInput;
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<Pick<Vendor, 'id' | 'title'>> {
-  const { logger } = options;
+  const { input: vendor, logger = NOOP_LOGGER } = options;
   const input = {
     title: vendor.title,
     description: vendor.description,
@@ -87,21 +88,22 @@ export async function createVendor(
  * Input to update vendors
  *
  * @param client - GraphQL client
- * @param vendorIdParis - [VendorInput, vendorId] list
+ * @param options - Options
  */
 export async function updateVendors(
   client: GraphQLClient,
-  vendorIdParis: [VendorInput, string][],
   options: {
+    /** [VendorInput, vendorId] list */
+    input: [VendorInput, string][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: vendors, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_VENDORS, {
     variables: {
       input: {
-        vendors: vendorIdParis.map(([vendor, id]) => ({
+        vendors: vendors.map(([vendor, id]) => ({
           id,
           title: vendor.title,
           description: vendor.description,
@@ -133,10 +135,10 @@ export async function syncVendors(
   inputs: VendorInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger = NOOP_LOGGER } = options;
   // Fetch existing
   logger.info(`Syncing "${inputs.length}" vendors...`);
 
@@ -157,7 +159,7 @@ export async function syncVendors(
   // Create new vendors
   await mapSeries(newVendors, async (vendor) => {
     try {
-      const newVendor = await createVendor(client, vendor, { logger });
+      const newVendor = await createVendor(client, { input: vendor, logger });
       vendorByTitle[newVendor.title] = newVendor;
       logger.info(`Successfully synced vendor "${vendor.title}"!`);
     } catch (err) {
@@ -169,11 +171,10 @@ export async function syncVendors(
   // Update all vendors
   try {
     logger.info(`Updating "${inputs.length}" vendors!`);
-    await updateVendors(
-      client,
-      inputs.map((input) => [input, vendorByTitle[input.title]!.id]),
-      { logger },
-    );
+    await updateVendors(client, {
+      input: inputs.map((input) => [input, vendorByTitle[input.title]!.id]),
+      logger,
+    });
     logger.info(`Successfully synced "${inputs.length}" vendors!`);
   } catch (err) {
     encounteredError = true;

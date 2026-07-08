@@ -15,6 +15,7 @@ export const AssessmentRuleWithOperands = t.type({
     t.literal(ComparisonOperator.IsOneOf),
     t.literal(ComparisonOperator.IsNotOneOf),
     t.literal(ComparisonOperator.Contains),
+    t.literal(ComparisonOperator.DoesNotContain),
   ]),
   comparisonOperands: t.array(t.string),
 });

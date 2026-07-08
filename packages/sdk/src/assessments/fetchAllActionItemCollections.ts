@@ -29,13 +29,13 @@ export async function fetchAllActionItemCollections(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Filter by */
     filterBy?: {
       /** Filter on location */
       location?: TranscendProduct;
     };
-  },
+  } = {},
 ): Promise<ActionItemCollection[]> {
   const { logger, filterBy = {} } = options;
   const {

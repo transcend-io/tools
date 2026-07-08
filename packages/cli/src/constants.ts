@@ -22,6 +22,14 @@ export const ADMIN_DASH_DATAPOINTS = `${ADMIN_DASH}/data-map/data-inventory/data
 export const DEFAULT_TRANSCEND_API = process.env.TRANSCEND_API_URL || 'https://api.transcend.io';
 
 /**
+ * Default the `--auth` flag to the `TRANSCEND_API_KEY` environment variable
+ * when it is set, so callers do not need to pass `--auth` on every invocation:
+ *   TRANSCEND_API_KEY=... transcend policy bundles
+ * When unset, `--auth` remains required.
+ */
+export const DEFAULT_TRANSCEND_API_KEY = process.env.TRANSCEND_API_KEY || undefined;
+
+/**
  * Override default transcend API url using
  * TRANSCEND_CONSENT_API_URL=https://consent.us.transcend.io transcend ...
  */
@@ -72,6 +80,7 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
     ScopeName.ManageConsentManager,
     ScopeName.ManagePreferenceStoreSettings,
   ],
+  [TranscendPullResource.PreferenceOptions]: [ScopeName.ManagePreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ManageDataMap],
 };
 
@@ -119,6 +128,7 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewConsentManager,
     ScopeName.ViewPreferenceStoreSettings,
   ],
+  [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
 };
 
@@ -155,6 +165,7 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.Assessments]: 'assessments',
   [TranscendPullResource.AssessmentTemplates]: 'assessment-templates',
   [TranscendPullResource.Purposes]: 'purposes',
+  [TranscendPullResource.PreferenceOptions]: 'preference-options',
   [TranscendPullResource.SystemDiscovery]: 'system-discovery',
 };
 

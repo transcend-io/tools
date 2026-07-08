@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
 /**
  * Function to create a consent manager token

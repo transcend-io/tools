@@ -2,8 +2,9 @@ import { decodeCodec } from '@transcend-io/type-utils';
 import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 
-import { ConsentPreferenceResponse, PreferencesQueryFilter, ChunkMode } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { withTransientRetry } from '../api/withTransientRetry.js';
+import { ConsentPreferenceResponse, type PreferencesQueryFilter, type ChunkMode } from './types.js';
 
 /**
  * Probe window: does it contain any records? Uses the given mode.
@@ -20,7 +21,7 @@ export async function consentWindowHasAny(
     baseFilter,
     afterISO,
     beforeISO,
-    logger,
+    logger = NOOP_LOGGER,
   }: {
     /** Partition */
     partition: string;
@@ -32,7 +33,7 @@ export async function consentWindowHasAny(
     afterISO: string;
     /** Before ISO date */
     beforeISO: string;
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<boolean> {
   const filter: PreferencesQueryFilter =
@@ -53,7 +54,7 @@ export async function consentWindowHasAny(
             updatedBefore: beforeISO,
           },
         };
-  const resp = await withPreferenceRetry(
+  const resp = await withTransientRetry(
     'Preference Query',
     () =>
       sombra

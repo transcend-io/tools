@@ -1,16 +1,17 @@
 import { RequestEnricherStatus, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllRequestEnrichers,
+  makeGraphQLRequest,
+  SKIP_REQUEST_ENRICHER,
+} from '@transcend-io/sdk';
 import { mapSeries, map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
-import {
-  fetchAllRequestEnrichers,
-  fetchAllRequests,
-  SKIP_REQUEST_ENRICHER,
-} from '../graphql/index.js';
+import { fetchAllRequests } from '../graphql/index.js';
 
 /**
  * Given an enricher ID, mark all open request enrichers as skipped
@@ -66,7 +67,8 @@ export async function skipPreflightJobs({
     async (request) => {
       // TODO dont pull all in
       const requestEnrichers = await fetchAllRequestEnrichers(client, {
-        requestId: request.id,
+        filterBy: { requestId: request.id },
+        logger,
       });
       const requestEnrichersFiltered = requestEnrichers.filter(
         (enricher) =>

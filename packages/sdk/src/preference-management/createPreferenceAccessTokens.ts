@@ -37,7 +37,7 @@ const MAX_BATCH_SIZE = 50;
 async function createPreferenceAccessTokensPage(
   client: GraphQLClient,
   records: PreferenceAccessTokenInput[],
-  logger: Logger,
+  logger?: Logger,
 ): Promise<string[]> {
   const {
     createPrivacyCenterAccessTokens: { nodes },
@@ -71,7 +71,7 @@ export async function createPreferenceAccessTokens(
     /** Records to create tokens for */
     records: PreferenceAccessTokenInputWithIndex[];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Optional progress emitter */
     emitProgress?: (progress: number) => void;
     /** Number of concurrent requests to make (default: 10) */

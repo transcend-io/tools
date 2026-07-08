@@ -6,13 +6,12 @@ import {
   IsoCountryCode,
   IsoCountrySubdivisionCode,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { makeGraphQLRequest, DATA_SUBJECTS, type DataSubject } from '@transcend-io/sdk';
 import { ObjByString } from '@transcend-io/type-utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { DataSubject, DATA_SUBJECTS } from '../graphql/index.js';
 import { CachedFileState, NONE, ColumnName } from './constants.js';
 import { getUniqueValuesForColumn } from './getUniqueValuesForColumn.js';
 import { ColumnNameMap } from './mapCsvColumnsToApi.js';

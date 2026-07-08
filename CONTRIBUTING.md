@@ -83,10 +83,10 @@ See [pnpm Filtering](https://pnpm.io/filtering) for more examples.
 
 ### Release Workflow
 
-Stable releases are driven by Changesets and the [Release workflow](.github/workflows/release.yml):
+Stable releases are driven by Changesets, the [Version workflow](.github/workflows/version.yml), and the [Publish workflow](.github/workflows/publish.yml):
 
 1. Developers merge feature PRs with changesets into `main`.
-2. The `Release` workflow automatically opens a release PR, titled "Version Packages".
+2. The `Version` workflow automatically opens a release PR, titled "Version Packages".
 
    _Or, if there's already an open release PR, then that PR will be updated instead._
 
@@ -95,12 +95,12 @@ Stable releases are driven by Changesets and the [Release workflow](.github/work
    - Package versions are bumped accordingly.
    - [Here's an example of a release PR](https://github.com/transcend-io/tools/pull/24).
 
-3. When the release PR is merged, the `Release` workflow publishes the packages to npm.
+3. When the release PR is merged, the `Publish` workflow publishes the packages to npm.
 
 Thus, after you merge a feature PR, you can either:
 
 1. Merge the subsequent release PR to publish to npm if you want it released immediately, or
-2. Wait a few feature PRs build up, before merging a release PR and publishing to npm (this also allows you to split up your changes into multiple PRs without releasing).
+2. Let a few feature PRs build up before merging a release PR and publishing to npm (this also allows you to split up your changes into multiple PRs without releasing).
 
 ### Changesets
 
@@ -131,16 +131,17 @@ Pull requests also get preview packages via `pkg.pr.new`, which you'll see as an
 
 ### Trusted Publishing
 
-This repo is set up for npm trusted publishing via GitHub OIDC. The workflow has `id-token: write`,
-and normal publishing should not require a long-lived `NPM_TOKEN`. Each published package still has
-to be configured in npm to trust this repository and workflow.
+This repo is set up for npm trusted publishing via GitHub OIDC. The publish workflow has
+`id-token: write`, and normal publishing should not require a long-lived `NPM_TOKEN`. Each
+published package still has to be configured in npm to trust this repository and the
+`publish.yml` workflow filename.
 
-If npm trusted publishing is not configured for a package, the release workflow will build and
+If npm trusted publishing is not configured for a package, the publish workflow will build and
 version correctly but fail at publish time.
 
 ### Manual Releases
 
-`release.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
+`publish.yml` also supports `workflow_dispatch`. Use that for reruns or recovery, not as the normal
 release path.
 
 ## Turborepo
@@ -225,3 +226,160 @@ Current package conventions:
 - `pnpm check:packages` enforces shared package metadata, required package files, and root `tsconfig.json` references
 - publishable packages include `homepage`, `repository`, and `author` metadata
 - released publishable packages keep a `CHANGELOG.md`
+
+## MCP Servers
+
+MCP (Model Context Protocol) server packages live under `packages/mcp/`. They let AI agents interact with the Transcend platform. See the root [`README.md`](./README.md) for a full list of packages and their purpose.
+
+### Layout
+
+```
+packages/mcp/
+  mcp-server-base/       # Shared infrastructure (GraphQL base, REST client, validation, types)
+  mcp-server-admin/      # Domain: org, users, API keys
+  mcp-server-assessment/
+  mcp-server-consent/
+  mcp-server-discovery/
+  mcp-server-dsr/
+  mcp-server-inventory/
+  mcp-server-preferences/
+  mcp-server-workflows/
+  mcp/                   # Unified server that re-exports all domain tools
+```
+
+Each domain package provides a standalone CLI and can be installed independently. The unified `mcp` package composes all domains via `ToolRegistry`.
+
+### Local credentials (`secret.env`)
+
+MCP servers read credentials from the environment. For local runs from this repository, use root **`secret.env`** (gitignored):
+
+```bash
+cp secret.env.example secret.env
+# Edit secret.env — set OAuth vars (recommended) or TRANSCEND_API_KEY
+```
+
+For stdio / MCP client development, prefer **OAuth** credentials:
+
+- `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, `TRANSCEND_OAUTH_REDIRECT_PORT`
+- Register redirect URI `http://127.0.0.1:{port}/callback` in the [OAuth clients admin page](https://app.transcend.com/admin/oauth-clients)
+
+See [packages/mcp/README.md](./packages/mcp/README.md#quick-start-stdio--oauth) for the full setup guide.
+
+Load variables into your shell before `pnpm` (from the repository root):
+
+```bash
+set -a && source ./secret.env && set +a
+```
+
+Or run a built CLI via [`scripts/mcp-run.sh`](./scripts/mcp-run.sh), which sources `secret.env` when the file exists:
+
+```bash
+./scripts/mcp-run.sh ./packages/mcp/mcp-server-consent/dist/cli.mjs
+```
+
+Use the path to the `dist/cli.mjs` for the server you built. See each package README under `packages/mcp/` for Turbo `build` filters.
+
+### Working on a Single MCP Package
+
+Use `pnpm --filter` the same way as any other package. For `build`, prefer a Turbo filter with a trailing `...` so `mcp-server-base` and other dependencies are built when needed:
+
+```bash
+pnpm exec turbo run build --filter="@transcend-io/mcp-server-consent..."
+pnpm -F @transcend-io/mcp-server-consent test
+pnpm -F @transcend-io/mcp-server-consent typecheck
+```
+
+### Environment Variables & Authentication
+
+MCP servers support three authentication modes:
+
+- **OAuth (stdio, recommended)** — set `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. Browser login runs on first tool call; tokens are session-only (in-memory). The issuer is auto-detected in production (`api.transcend.io`, `api.us.transcend.io`).
+- **API key** — set `TRANSCEND_API_KEY` for stdio (alternative to OAuth) or as HTTP default auth. When both API key and OAuth client ID are set, the API key takes precedence.
+- **Session cookie** — in HTTP mode, forward `Cookie` and `x-transcend-active-organization-id` headers for in-app dashboard auth
+
+The `AuthCredentials` discriminated union represents OAuth tokens, API keys, and session cookies internally. See `mcp-server-base/src/auth.ts` for the type definition and `resolveAuth()` for header resolution logic.
+
+OAuth stdio variables:
+
+- `TRANSCEND_OAUTH_CLIENT_ID` — enables OAuth mode when set (unless `TRANSCEND_API_KEY` is also set)
+- `TRANSCEND_OAUTH_CLIENT_SECRET` — client secret from the OAuth clients admin page
+- `TRANSCEND_OAUTH_REDIRECT_PORT` — localhost callback port; must match registered redirect URI
+- `TRANSCEND_OAUTH_REDIRECT_HOST` — loopback host (default `127.0.0.1`; use `::1` for IPv6)
+- `TRANSCEND_OAUTH_ISSUER` — optional test-only override; production auto-detects region
+
+Optional overrides:
+
+- `TRANSCEND_API_URL` — GraphQL backend API base URL (default: `https://api.transcend.io`). Matches the CLI and main monorepo convention.
+- `SOMBRA_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`). Matches the CLI / SDK convention.
+
+For local development, define these in **`secret.env`** (copy from `secret.env.example` at the repository root). Do not commit `secret.env`.
+
+HTTP transport variables (only used with `--transport http`):
+
+- `TRANSCEND_HTTP_PORT` — listen port (default: `3000`)
+- `TRANSCEND_HTTP_HOST` — listen host (default: `127.0.0.1`)
+- `TRANSCEND_MCP_CORS_ORIGINS` — comma-separated allowed CORS origins
+- `TRANSCEND_MCP_SESSION_TTL_MS` — idle session timeout in milliseconds (default: `1800000`)
+
+### Running in HTTP mode locally
+
+```bash
+TRANSCEND_API_KEY=your-key pnpm -F @transcend-io/mcp-server-consent dev -- --transport http --port 3001
+```
+
+The server listens at `http://127.0.0.1:3001/mcp` with a health check at `/health`. You can send JSON-RPC requests with `curl`:
+
+```bash
+# Initialize a session
+curl -X POST http://127.0.0.1:3001/mcp \
+  -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"test","version":"0.1"}},"id":1}'
+```
+
+For production deployment patterns (Docker, nginx, cloud), see [`packages/mcp/DEPLOYMENT.md`](./packages/mcp/DEPLOYMENT.md).
+
+### Adding a Tool
+
+1. Create a new file under the domain's `src/tools/` directory (e.g. `src/tools/consent_new_tool.ts`).
+2. Export a `create*Tool(clients: ToolClients): ToolDefinition` factory function following the existing pattern.
+3. Register it in the domain's `src/tools/index.ts` by importing and adding it to the returned array.
+4. If the tool needs new input validation, add a Zod schema to `src/schemas.ts`.
+5. If the tool calls a new API endpoint, extend the domain's GraphQL mixin (`src/graphql.ts`) or the shared REST client in `mcp-server-base`.
+6. Add or extend tests in the domain package's `tests/` directory.
+7. The unified `mcp` package picks up the new tool automatically through its `ToolRegistry`.
+
+### Tool Input Conventions
+
+These conventions are enforced by `scripts/check-mcp-descriptions.test.ts` and surface as CI failures:
+
+- **camelCase input fields**. Tool names themselves stay snake_case (they are addressable identifiers), but every Zod input field must be camelCase. Snake_case fields are blocked by review and break LLM client tooling that assumes camelCase.
+- **Every field needs a `.describe(...)` call**. Descriptions are the only signal an LLM has for what an argument means. `defineTool` recursively rejects any input field (at any nesting depth) with a missing or trivially short (< 8 chars) description, throwing at tool construction; the audit test enforces the same across every server in CI.
+- **Pagination**. Reuse `CursorPaginationSchema` or `OffsetPaginationSchema` from `@transcend-io/mcp-server-base` instead of redeclaring `limit`/`offset` per tool. The legacy `PaginationSchema` is deprecated.
+
+### GraphQL Operations and Codegen
+
+Every MCP server's GraphQL operations are validated against the committed schema at compile time:
+
+- Author operations with the generated `graphql()` tag in each domain's `src/graphql.ts`. The tag returns a `TypedDocumentNode<Result, Variables>`, which `TranscendGraphQLBase.makeRequest` consumes natively. Drift between an operation and the staging schema fails `tsc` rather than surfacing as a runtime error.
+- The schema lives at `schema.graphql` (committed). Do not edit it by hand. Refresh it with `pnpm graphql:refresh-schema` (or let the scheduled `Refresh GraphQL Schema` workflow do it daily) and let CI flag any tools that break against the new shape.
+- After editing operations, run `pnpm codegen` to regenerate `__generated__/` artifacts. The artifacts are gitignored — `pnpm build`/`pnpm typecheck`/`pnpm test` invoke the codegen task automatically through Turbo's dependency graph, so the only time you need to run codegen by hand is during local development.
+
+### Updating `schema.graphql`
+
+`schema.graphql` is a committed snapshot of the staging GraphQL schema (`api.staging.transcen.dental`). It is the offline source of truth so local and CI builds stay hermetic. Refresh it when:
+
+- Staging adds or removes a type/field that an MCP tool needs to consume.
+- A failing `pnpm codegen` traces back to a missing schema element.
+
+To refresh:
+
+1. Run `pnpm graphql:refresh-schema`. The script anonymously introspects staging, strips type/field descriptions (so internal prose never lands in this public repo), and writes `schema.graphql`. No API key or extra tooling is required.
+2. Run `pnpm codegen && pnpm typecheck` to confirm the new shape works for every operation, then commit `schema.graphql` alongside any operation/test updates.
+
+The scheduled `.github/workflows/refresh-graphql-schema.yml` workflow runs the same command weekly and opens a PR — let CI on that PR be your gate. Manual refreshes (e.g., when developing against a feature schema before it lands in staging) are fine; just make sure the resulting `pnpm typecheck` is green before pushing.
+
+> **Heads-up**: staging usually leads prod by days or weeks. If you author a tool that depends on a brand-new field, double-check the field has actually rolled out to `api.transcend.io` before publishing the package — typed operations against fields that don't yet exist in prod will fail at runtime for customers.
+
+### Changesets
+
+MCP packages are publishable. Run `pnpm changeset` when your change modifies package code under `packages/mcp/`, just like any other publishable package.

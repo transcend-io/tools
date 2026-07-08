@@ -1,10 +1,10 @@
 import { select } from '@inquirer/prompts';
 import type { PersistedState } from '@transcend-io/persisted-state';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import { INITIALIZER, type Initializer, makeGraphQLRequest } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
-import { INITIALIZER, Initializer } from '../graphql/index.js';
+import { chooseColumnForIdentifier } from '../promptMessages.js';
 import { CachedFileState, IDENTIFIER_BLOCK_LIST } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
 
@@ -46,7 +46,7 @@ export async function mapColumnsToIdentifiers(
   for (const { name } of columnQuestions) {
     const matches = fuzzyMatchColumns(columnNames, name, false);
     identifierNameMap[name] = await select<string>({
-      message: `Choose the column that will be used to map in the identifier: ${name}`,
+      message: chooseColumnForIdentifier(name),
       default: matches.find((m): m is string => typeof m === 'string'),
       choices: matches,
     });

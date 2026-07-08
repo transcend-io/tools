@@ -4,6 +4,7 @@ import colors from 'colors';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import { chooseTimestampColumn } from '../promptMessages.js';
 
 export const NONE_PREFERENCE_MAP = '[NONE]';
 
@@ -37,7 +38,7 @@ export async function parsePreferenceTimestampsFromCsv(
   // Determine the timestamp column to work off of
   if (!currentState.timestampColum) {
     currentState.timestampColum = await select({
-      message: 'Choose the column that will be used as the timestamp of last preference update',
+      message: chooseTimestampColumn,
       default:
         remainingColumnsForTimestamp.find((col) => col.toLowerCase().includes('date')) ||
         remainingColumnsForTimestamp.find((col) => col.toLowerCase().includes('time')) ||

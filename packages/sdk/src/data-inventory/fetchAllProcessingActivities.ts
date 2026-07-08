@@ -99,8 +99,8 @@ export async function fetchAllProcessingActivities(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<ProcessingActivity[]> {
   const { logger } = options;
   const processingActivities: ProcessingActivity[] = [];

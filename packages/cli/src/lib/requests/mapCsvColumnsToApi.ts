@@ -3,6 +3,7 @@ import type { PersistedState } from '@transcend-io/persisted-state';
 import { getValues, getEntries } from '@transcend-io/type-utils';
 import { startCase } from 'lodash-es';
 
+import { chooseColumnForField } from '../promptMessages.js';
 import { ColumnName, CachedFileState, IS_REQUIRED, CAN_APPLY_IN_BULK } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
 
@@ -40,7 +41,7 @@ export async function mapCsvColumnsToApi(
       !!CAN_APPLY_IN_BULK[name],
     );
     columnNameMap[name] = await select<string>({
-      message: `Choose the column that will be used to map in the field: ${field}`,
+      message: chooseColumnForField(field),
       default: matches.find((m): m is string => typeof m === 'string'),
       choices: matches,
     });

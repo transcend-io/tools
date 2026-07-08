@@ -30,6 +30,8 @@ export interface PreferenceTopic {
   type: PreferenceTopicType;
   /** Default configuration */
   defaultConfiguration: string;
+  /** Display color for the preference topic */
+  color?: string;
   /** Option values */
   preferenceOptionValues: {
     /** Slug of value */
@@ -62,8 +64,8 @@ export async function fetchAllPreferenceTopics(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<PreferenceTopic[]> {
   const { logger } = options;
   const preferenceTopics: PreferenceTopic[] = [];

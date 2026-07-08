@@ -1,5 +1,10 @@
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
-import { buildTranscendGraphQLClient, makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  buildTranscendGraphQLClient,
+  fetchAllTemplates,
+  makeGraphQLRequest,
+  type Template,
+} from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -10,8 +15,6 @@ import {
   UPDATE_PRIVACY_REQUEST,
   fetchAllRequests,
   CANCEL_PRIVACY_REQUEST,
-  fetchAllTemplates,
-  Template,
 } from '../graphql/index.js';
 
 /**
@@ -79,7 +82,10 @@ export async function cancelPrivacyRequests({
   // Grab the template with that title
   let cancelationTemplate: Template | undefined;
   if (cancellationTitle) {
-    const matchingTemplates = await fetchAllTemplates(client, cancellationTitle);
+    const matchingTemplates = await fetchAllTemplates(client, {
+      logger,
+      filterBy: { title: cancellationTitle },
+    });
     const exactTitleMatch = matchingTemplates.find(
       (template) => template.title === cancellationTitle,
     );

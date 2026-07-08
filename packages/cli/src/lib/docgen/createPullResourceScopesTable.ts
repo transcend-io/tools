@@ -22,7 +22,7 @@ const RESOURCE_DOCUMENTATION: Record<
       'API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, ' +
       'but you can map API key usage to Data Systems.',
     markdownLinks: [
-      '[Developer Tools -> API keys](https://app.transcend.io/infrastructure/api-keys)',
+      '[Developer Tools -> API Keys](https://app.transcend.io/infrastructure/api-keys)',
     ],
   },
   [TranscendPullResource.Attributes]: {
@@ -192,7 +192,7 @@ const RESOURCE_DOCUMENTATION: Record<
   [TranscendPullResource.AssessmentTemplates]: {
     description: 'Assessment template configurations.',
     markdownLinks: [
-      '[Assessment -> Templates](https://app.transcend.io/assessments/form-templates)',
+      '[Assessments -> Templates](https://app.transcend.io/assessments/form-templates)',
     ],
   },
   [TranscendPullResource.Purposes]: {
@@ -200,6 +200,14 @@ const RESOURCE_DOCUMENTATION: Record<
     markdownLinks: [
       '[Consent Management -> Regional Experiences -> Purposes]\
 (https://app.transcend.io/consent-manager/regional-experiences/purposes)',
+    ],
+  },
+  [TranscendPullResource.PreferenceOptions]: {
+    description:
+      'Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).',
+    markdownLinks: [
+      '[Preferences -> Preference Topics -> Options]\
+(https://app.transcend.io/preference-store/preference-topics/preference-options)',
     ],
   },
   [TranscendPullResource.SystemDiscovery]: {

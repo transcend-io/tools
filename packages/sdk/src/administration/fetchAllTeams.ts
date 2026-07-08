@@ -36,6 +36,13 @@ export interface Team {
     /** Title of scope */
     title: string;
   }[];
+  /** Linked parent organization team */
+  parentTeam?: {
+    /** ID of parent organization team */
+    id: string;
+    /** Name of parent organization team */
+    name: string;
+  };
 }
 
 const PAGE_SIZE = 20;
@@ -51,8 +58,8 @@ export async function fetchAllTeams(
   client: GraphQLClient,
   options: {
     /** Logger instance */
-    logger: Logger;
-  },
+    logger?: Logger;
+  } = {},
 ): Promise<Team[]> {
   const { logger } = options;
   const teams: Team[] = [];

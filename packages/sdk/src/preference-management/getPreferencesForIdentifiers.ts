@@ -4,8 +4,9 @@ import { map, type Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
+import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { withTransientRetry } from '../api/withTransientRetry.js';
 import { ConsentPreferenceResponse } from './types.js';
-import { withPreferenceRetry } from './withPreferenceRetry.js';
 
 /**
  * Grab the current consent preference values for a list of identifiers
@@ -21,7 +22,7 @@ export async function getPreferencesForIdentifiers(
     partitionKey,
     skipLogging = false,
     concurrency = 40,
-    logger,
+    logger = NOOP_LOGGER,
     onProgress,
   }: {
     /** The list of identifiers to look up */
@@ -36,7 +37,7 @@ export async function getPreferencesForIdentifiers(
     /** Concurrency for requests (default 40) */
     concurrency?: number;
     /** Logger */
-    logger: Logger;
+    logger?: Logger;
     /** Optional progress callback (completed count, total identifiers) */
     onProgress?: (completed: number, total: number) => void;
   },
@@ -50,7 +51,7 @@ export async function getPreferencesForIdentifiers(
   await map(
     groupedIdentifiers,
     async (group) => {
-      const rawResult = await withPreferenceRetry(
+      const rawResult = await withTransientRetry(
         'Preference Query',
         () =>
           sombra

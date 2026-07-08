@@ -2,7 +2,7 @@ import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
-import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPromptPartials } from './fetchPromptPartials.js';
 import { UPDATE_PROMPT_PARTIALS, CREATE_PROMPT_PARTIAL } from './gqls/prompt.js';
 
@@ -23,18 +23,19 @@ export interface PromptPartialInput {
  */
 export async function createPromptPartial(
   client: GraphQLClient,
-  input: {
-    /** Title of prompt partial */
-    title: string;
-    /** Prompt content */
-    content: string;
-  },
   options: {
+    /** Prompt partial to create */
+    input: {
+      /** Title of prompt partial */
+      title: string;
+      /** Prompt content */
+      content: string;
+    };
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<string> {
-  const { logger } = options;
+  const { input, logger = NOOP_LOGGER } = options;
   const {
     createPromptPartial: { promptPartial },
   } = await makeGraphQLRequest<{
@@ -58,30 +59,30 @@ export async function createPromptPartial(
  * Update a set of existing prompt partials
  *
  * @param client - GraphQL client
- * @param input - Prompt input
  * @param options - Options
  */
 export async function updatePromptPartials(
   client: GraphQLClient,
-  input: [PromptPartialInput, string][],
   options: {
+    /** [PromptPartialInput, promptPartialId] list */
+    input: [PromptPartialInput, string][];
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
   },
 ): Promise<void> {
-  const { logger } = options;
+  const { input: promptPartials, logger = NOOP_LOGGER } = options;
   await makeGraphQLRequest(client, UPDATE_PROMPT_PARTIALS, {
     variables: {
       input: {
-        promptPartials: input.map(([input, id]) => ({
-          ...input,
+        promptPartials: promptPartials.map(([promptPartial, id]) => ({
+          ...promptPartial,
           id,
         })),
       },
     },
     logger,
   });
-  logger.info(`Successfully updated ${input.length} prompt partials!`);
+  logger.info(`Successfully updated ${promptPartials.length} prompt partials!`);
 }
 
 /**
@@ -97,12 +98,12 @@ export async function syncPromptPartials(
   promptPartials: PromptPartialInput[],
   options: {
     /** Logger instance */
-    logger: Logger;
+    logger?: Logger;
     /** Concurrency */
     concurrency?: number;
-  },
+  } = {},
 ): Promise<boolean> {
-  const { logger, concurrency = 20 } = options;
+  const { logger = NOOP_LOGGER, concurrency = 20 } = options;
   let encounteredError = false;
   logger.info(`Syncing "${promptPartials.length}" prompt partials...`);
 
@@ -125,7 +126,7 @@ export async function syncPromptPartials(
     await map(
       newPromptPartials,
       async (prompt) => {
-        await createPromptPartial(client, prompt, { logger });
+        await createPromptPartial(client, { input: prompt, logger });
       },
       {
         concurrency,
@@ -143,7 +144,7 @@ export async function syncPromptPartials(
   );
   try {
     logger.info(`Updating "${existingPromptPartials.length}" prompt partials...`);
-    await updatePromptPartials(client, existingPromptPartials, { logger });
+    await updatePromptPartials(client, { input: existingPromptPartials, logger });
     logger.info(`Successfully updated "${existingPromptPartials.length}" prompt partials!`);
   } catch (err) {
     encounteredError = true;

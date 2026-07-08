@@ -1,0 +1,76 @@
+name: Version
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Build
+        run: pnpm build
+
+      - name: Check package quality
+        run: pnpm quality
+
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: release_app
+        with:
+          app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
+          private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Resolve merged PR reviewer
+        id: merged_pr
+        env:
+          GH_TOKEN: ${{ steps.release_app.outputs.token }}
+        run: |
+          set -euo pipefail
+          pr_number="$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" --jq '.[0].number // empty')"
+          if [ -z "$pr_number" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pr_json="$(gh pr view "$pr_number" --repo "${{ github.repository }}" --json headRefName,mergedBy)"
+          head_ref="$(echo "$pr_json" | jq -r '.headRefName')"
+          merged_by="$(echo "$pr_json" | jq -r '.mergedBy.login // empty')"
+          is_bot="$(echo "$pr_json" | jq -r '.mergedBy.is_bot // false')"
+          if [ "$head_ref" = "changeset-release/main" ] || [ -z "$merged_by" ] || [ "$is_bot" = "true" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "reviewer=$merged_by" >> "$GITHUB_OUTPUT"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update Version Packages PR
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset:version:release
+        env:
+          GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
+
+      - name: Request reviewer on Version Packages PR
+        if: >-
+          steps.merged_pr.outputs.skip == 'false' &&
+          steps.changesets.outputs.pullRequestNumber != ''
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ steps.release_app.outputs.token }}
+        run: |
+          gh pr edit "${{ steps.changesets.outputs.pullRequestNumber }}" \
+            --repo "${{ github.repository }}" \
+            --add-reviewer "${{ steps.merged_pr.outputs.reviewer }}"

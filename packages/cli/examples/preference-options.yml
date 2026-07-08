@@ -1,0 +1,22 @@
+# Standalone preference option values (Preferences -> Preference Topics -> Options tab).
+# Writable fields: title, slug (ConstantCase — alphabetical letters only).
+# Reference these from purposes[].preference-topics[].options by slug.
+preference-options:
+  - title: Daily
+    slug: Daily
+  - title: Monthly
+    slug: Monthly
+  - title: Quarterly
+    slug: Quarterly
+  - title: Email
+    slug: Email
+  - title: Push Notifications
+    slug: PushNotifications
+  - title: SMS
+    slug: Sms
+  - title: Marketing Emails
+    slug: MarketingEmails
+  - title: Product Insider
+    slug: ProductInsider
+  - title: Product Usage
+    slug: ProductUsage

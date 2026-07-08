@@ -2,7 +2,13 @@ import {
   type DataCategoryType,
   SubDataPointDataSubCategoryGuessStatus,
 } from '@transcend-io/privacy-types';
-import { makeGraphQLRequest } from '@transcend-io/sdk';
+import {
+  makeGraphQLRequest,
+  DATAPOINT_EXPORT,
+  DATA_SILO_EXPORT,
+  SUB_DATA_POINTS_COUNT,
+  type DataSiloAttributeValue,
+} from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -12,12 +18,6 @@ import { keyBy, uniq, chunk, sortBy } from 'lodash-es';
 
 import type { DataCategoryInput, ProcessingPurposeInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
-import {
-  DATAPOINT_EXPORT,
-  DATA_SILO_EXPORT,
-  type DataSiloAttributeValue,
-  SUB_DATA_POINTS_COUNT,
-} from '../graphql/index.js';
 
 export interface DataSiloCsvPreview {
   /** ID of dataSilo */

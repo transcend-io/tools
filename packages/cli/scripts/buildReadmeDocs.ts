@@ -56,4 +56,4 @@ execSync('doctoc README.md --title "\n## Table of Contents" --maxlevel 3', {
   cwd: packageRoot,
   stdio: 'inherit',
 });
-execSync('oxfmt --write README.md', { cwd: packageRoot, stdio: 'inherit' });
+execSync('oxfmt README.md', { cwd: packageRoot, stdio: 'inherit' });
