@@ -976,7 +976,7 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
   },
   [ScopeName.ViewWorkflows]: {
     title: 'View Workflows',
-    dependencies: [],
+    dependencies: [ScopeName.ViewDataSubjectRequestSettings, ScopeName.ViewGlobalAttributes],
     description: 'Ability to view Workflows and their settings',
     type: ScopeType.View,
     products: [TranscendProduct.DsrAutomation],
