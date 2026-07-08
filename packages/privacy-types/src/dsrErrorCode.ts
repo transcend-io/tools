@@ -5,10 +5,7 @@ import { makeEnum } from '@transcend-io/type-utils';
  * (`POST /v1/data-subject-request` and `POST /v1/data-subject-request-bulk`).
  *
  * Surfaced to clients as `extensions.code` on GraphQL errors so they can branch
- * on the failure type without parsing the error message, and mapped to a
- * distinct HTTP status code by Sombra's bulk ingress handler (and by the
- * backend REST bridge for the single endpoint via the thrown error's numeric
- * `code`).
+ * on the failure type without parsing the error message.
  */
 export const DsrErrorCode = makeEnum({
   /** A duplicate open request already exists for this data subject + type. */
@@ -31,21 +28,3 @@ export const DsrErrorCode = makeEnum({
 
 /** Type override */
 export type DsrErrorCode = (typeof DsrErrorCode)[keyof typeof DsrErrorCode];
-
-/**
- * Maps each {@link DsrErrorCode} to the HTTP status code Sombra's bulk ingress
- * returns for that failure. The single REST endpoint derives its status from
- * the thrown `TranscendError.code` directly; this map is the source of truth
- * that the backend throw helper and Sombra bulk handler both consult so the two
- * endpoints stay consistent.
- */
-export const DSR_ERROR_HTTP_STATUS: Record<DsrErrorCode, number> = {
-  [DsrErrorCode.DuplicateRequest]: 409,
-  [DsrErrorCode.OpenParentRequestExists]: 409,
-  [DsrErrorCode.RestartRequestNotFound]: 404,
-  [DsrErrorCode.RestartTimeLimitExceeded]: 409,
-  [DsrErrorCode.SubmissionLimitExceeded]: 400,
-  [DsrErrorCode.MixedCekContext]: 400,
-  [DsrErrorCode.DhContextRequired]: 400,
-  [DsrErrorCode.InvalidInput]: 400,
-};
