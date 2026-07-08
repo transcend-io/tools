@@ -10,7 +10,7 @@ import type { GraphQLClient } from 'graphql-request';
 import { groupBy, keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { fetchAllActions, type Action } from './fetchAllActions.js';
+import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllRequestAttributeKeys, type AttributeKey } from './fetchAllAttributeKeys.js';
 import { fetchAllWorkflowConfigs } from './fetchAllWorkflowConfigs.js';
 import { fetchAllDataSubjects, type DataSubject } from './fetchDataSubjects.js';
@@ -74,16 +74,23 @@ export async function syncWorkflowConfigs(
 
   let encounteredError = false;
 
-  const needsActions = true;
   const needsSubjects = inputs.some((config) => config['data-subject-type']);
   const needsAttributeKeys = inputs.some((config) => config['attribute-keys']?.length);
 
-  const [existingConfigs, actions, dataSubjects, attributeKeys] = await Promise.all([
+  const [existingConfigs, actions] = await Promise.all([
     fetchAllWorkflowConfigs(client, { logger }),
-    needsActions ? fetchAllActions(client, { logger }) : ([] as Action[]),
-    needsSubjects ? fetchAllDataSubjects(client, { logger }) : ([] as DataSubject[]),
-    needsAttributeKeys ? fetchAllRequestAttributeKeys(client, { logger }) : ([] as AttributeKey[]),
+    fetchAllActions(client, { logger }),
   ]);
+
+  let dataSubjects: DataSubject[] = [];
+  if (needsSubjects) {
+    dataSubjects = await fetchAllDataSubjects(client, { logger });
+  }
+
+  let attributeKeys: AttributeKey[] = [];
+  if (needsAttributeKeys) {
+    attributeKeys = await fetchAllRequestAttributeKeys(client, { logger });
+  }
 
   const configsByInternalName = groupBy(existingConfigs, (config) => config.internalName);
   const actionByType = keyBy(actions, 'type');

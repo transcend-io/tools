@@ -8,8 +8,6 @@ import { TranscendPullResource } from '../../enums.js';
 /** A markdown link */
 type MarkdownLink = `[${string}](https://${string})`;
 
-const WORKFLOW_CONFIGS_LINK = 'https://app.transcend.io/privacy-requests/workflows';
-
 const RESOURCE_DOCUMENTATION: Record<
   TranscendPullResource,
   {
@@ -214,7 +212,9 @@ const RESOURCE_DOCUMENTATION: Record<
   [TranscendPullResource.WorkflowConfigs]: {
     description:
       'Workflow config settings (update-only — workflow configs are created in the Admin Dashboard).',
-    markdownLinks: [`[Workflows -> DSR Workflows](${WORKFLOW_CONFIGS_LINK})`],
+    markdownLinks: [
+      '[Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)',
+    ],
   },
 };
 
