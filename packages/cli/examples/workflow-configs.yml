@@ -1,5 +1,8 @@
 # Workflow configs are update-only — create workflows in the Admin Dashboard first, then pull to edit them.
 # Configs are matched to an existing workflow by internal-name, so internal names must be unique.
+# Notes:
+#   - region-list entries must be real ISO country / subdivision codes (e.g. GB, DE, US-CA). "EU" is not valid.
+#   - expiry-time, when set, MUST include a `region: default` entry, and every value must be > 0 days.
 workflow-configs:
   - internal-name: customer-access-workflow
     action-type: ACCESS
@@ -13,6 +16,7 @@ workflow-configs:
       - US
       - CA
     expiry-time:
+      # A `region: default` entry is required whenever expiry-time is set
       - region: default
         value: 45
       - region: CA
@@ -26,4 +30,6 @@ workflow-configs:
     data-subject-type: Customer
     visibility: INTERNAL
     region-list:
-      - EU
+      - GB
+      - DE
+      - FR

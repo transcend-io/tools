@@ -3,6 +3,7 @@ import {
   IsoCountryCode,
   IsoCountrySubdivisionCode,
   RequestAction,
+  WorkflowConfigType,
   WorkflowConfigVisibility,
 } from '@transcend-io/privacy-types';
 import { mapSeries, type Logger } from '@transcend-io/utils';
@@ -113,6 +114,34 @@ export async function syncWorkflowConfigs(
           `Found "${matches.length}" workflow configs with internal name: "${internalName}". ` +
             'Internal names must be unique to sync workflow configs.',
         );
+      }
+      if (existingConfig.workflowConfigType !== WorkflowConfigType.DSR) {
+        throw new Error(
+          `Workflow config with internal name: "${internalName}" has type ` +
+            `"${existingConfig.workflowConfigType}". Only DSR workflow configs can be synced — ` +
+            'preference management workflows have purpose-based semantics and must be managed in the Admin Dashboard.',
+        );
+      }
+
+      const expiryTime = config['expiry-time'];
+      if (expiryTime && expiryTime.length > 0) {
+        // The backend validates expiryTime against RegionExpiryMap, which requires
+        // a `default` entry and all values > 0 — fail fast with a clearer error
+        if (!expiryTime.some(({ region }) => region === 'default')) {
+          throw new Error(
+            `Workflow config with internal name: "${internalName}" has an expiry-time list ` +
+              'without a "default" region entry. A `region: default` entry is required.',
+          );
+        }
+        const invalidEntries = expiryTime.filter(({ value }) => value <= 0);
+        if (invalidEntries.length > 0) {
+          throw new Error(
+            `Workflow config with internal name: "${internalName}" has expiry-time values that are ` +
+              `not positive: ${invalidEntries
+                .map(({ region, value }) => `${region}=${value}`)
+                .join(', ')}. All expiry times must be greater than 0 days.`,
+          );
+        }
       }
 
       let subjectId: string | undefined;

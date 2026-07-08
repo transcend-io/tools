@@ -5,6 +5,7 @@ import {
   ActionItemCode,
   RetentionType,
   PreferenceTopicType,
+  WorkflowConfigType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -362,8 +363,10 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
       : [],
+    // Only DSR workflows are supported — preference-management workflows have
+    // purpose-based semantics and are not synced through workflow-configs
     resources.includes(TranscendPullResource.WorkflowConfigs)
-      ? fetchAllWorkflowConfigs(client, { logger })
+      ? fetchAllWorkflowConfigs(client, { logger, workflowConfigType: WorkflowConfigType.DSR })
       : [],
     resources.includes(TranscendPullResource.PreferenceOptions)
       ? fetchAllPreferenceOptionValues(client, { logger })
