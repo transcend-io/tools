@@ -1,5 +1,11 @@
 # @transcend-io/cli
 
+## 10.17.1
+
+### Patch Changes
+
+- 6153e51: Update stale Admin Dashboard links and labels in CLI documentation. Correct assessment template and API keys labels in docgen sources, and point connected-services references to infrastructure/integrations.
+
 ## 10.17.0
 
 ### Minor Changes
