@@ -316,7 +316,7 @@ export const AttributeInput = t.intersection([
   t.type({
     /** Name of attribute */
     name: t.string,
-    /** Type of attribute */
+    /** Type of attribute (TEXT, EMAIL, TELEPHONE, URL, MULTI_SELECT, SINGLE_SELECT, ASSESSMENT — not DATE) */
     type: valuesOf(AttributeKeyType),
   }),
   t.partial({
@@ -1266,7 +1266,7 @@ export const ConsentManagerInput = t.partial({
   partition: t.string,
   /** Precedence of signals vs user input */
   consentPrecedence: valuesOf(ConsentPrecedenceOption),
-  /** The consent manager unknown request policy */
+  /** The consent manager unknown request policy (ALLOW, REQUIRE_FULL_CONSENT, or BLOCK — not require-full-consent) */
   unknownRequestPolicy: valuesOf(UnknownRequestPolicy),
   /** The consent manager unknown cookie policy */
   unknownCookiePolicy: valuesOf(UnknownRequestPolicy),
@@ -1899,7 +1899,7 @@ export const ConsentPurpose = t.intersection([
     'auth-level': valuesOf(PreferenceStoreAuthLevel),
     /** Opt out signals that should instantly opt out of this purpose */
     'opt-out-signals': t.array(valuesOf(UserPrivacySignalEnum)),
-    /** Default consent value */
+    /** Default consent value (off or Auto — not on) */
     'default-consent': valuesOf(DefaultConsentOption),
   }),
 ]);
