@@ -18,13 +18,24 @@ export const WORKFLOW_CONFIGS: DocumentNode = parse(gql`
         internalName
         workflowConfigVisibility
         workflowConfigType
+        collectDataSubjectRegions
         regionList
+        expiryTime {
+          region
+          value
+        }
         action {
           type
         }
         subject {
           id
           type
+        }
+        WorkflowConfigAttributeKeys {
+          attributeKey {
+            id
+            name
+          }
         }
       }
       totalCount

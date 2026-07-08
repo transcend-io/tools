@@ -60,6 +60,7 @@ import {
   DataProtectionImpactAssessmentStatus,
   WorkflowConfigVisibility,
   WorkflowConfigType,
+  CollectDataSubjectRegions,
   ConsentThemeInput,
   ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -1914,12 +1915,13 @@ export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
  */
 export const WorkflowConfigInput = t.intersection([
   t.type({
-    /** Workflow config ID */
-    id: t.string,
+    /**
+     * Title of the workflow config. This is the unique, human-readable key used
+     * to match an existing workflow config on push.
+     */
+    title: t.string,
   }),
   t.partial({
-    /** Title */
-    title: t.string,
     /** Subtitle */
     subtitle: t.string,
     /** Description */
@@ -1934,8 +1936,21 @@ export const WorkflowConfigInput = t.intersection([
     visibility: valuesOf(WorkflowConfigVisibility),
     /** Workflow config type (read-only on pull; included for reference) */
     type: valuesOf(WorkflowConfigType),
+    /** Whether to collect the data subject's region during intake */
+    'collect-data-subject-regions': valuesOf(CollectDataSubjectRegions),
     /** Region allow list */
     'region-list': t.array(t.string),
+    /** Per-region request expiry times */
+    'expiry-time': t.array(
+      t.type({
+        /** Region code (or 'default') */
+        region: t.string,
+        /** Expiry time in days */
+        value: t.number,
+      }),
+    ),
+    /** Attribute key (custom field) names to associate with the workflow */
+    'attribute-keys': t.array(t.string),
   }),
 ]);
 

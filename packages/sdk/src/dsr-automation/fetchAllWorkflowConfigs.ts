@@ -19,8 +19,17 @@ export interface WorkflowConfig {
   workflowConfigVisibility: string;
   /** Workflow type (DSR or PREFERENCE_MANAGEMENT) */
   workflowConfigType: string;
+  /** Whether the workflow collects the data subject's region */
+  collectDataSubjectRegions: string | null;
   /** Region allow list */
   regionList: string[];
+  /** Per-region request expiry times */
+  expiryTime: {
+    /** Region code (or 'default') */
+    region: string;
+    /** Expiry time in days */
+    value: number;
+  }[];
   /** Request action */
   action: {
     /** Action type */
@@ -33,6 +42,13 @@ export interface WorkflowConfig {
     /** Data subject type */
     type: string;
   } | null;
+  /** Attribute keys (custom fields) associated with the workflow */
+  attributeKeys: {
+    /** Attribute key ID */
+    id: string;
+    /** Attribute key name */
+    name: string;
+  }[];
 }
 
 const PAGE_SIZE = 50;
@@ -80,12 +96,35 @@ export async function fetchAllWorkflowConfigs(
           workflowConfigVisibility: string;
           /** Type */
           workflowConfigType: string;
+          /** Whether the workflow collects the data subject's region */
+          collectDataSubjectRegions: string | null;
           /** Regions */
           regionList: string[];
+          /** Per-region request expiry times */
+          expiryTime:
+            | {
+                /** Region code (or 'default') */
+                region: string;
+                /** Expiry time in days */
+                value: number;
+              }[]
+            | null;
           /** Action */
           action: { type: string };
           /** Subject */
           subject: { id: string; type: string } | null;
+          /** Attribute keys associated with the workflow */
+          WorkflowConfigAttributeKeys:
+            | {
+                /** Attribute key */
+                attributeKey: {
+                  /** Attribute key ID */
+                  id: string;
+                  /** Attribute key name */
+                  name: string;
+                };
+              }[]
+            | null;
         }[];
       };
     }>(client, WORKFLOW_CONFIGS, {
@@ -106,9 +145,14 @@ export async function fetchAllWorkflowConfigs(
         internalName: node.internalName,
         workflowConfigVisibility: node.workflowConfigVisibility,
         workflowConfigType: node.workflowConfigType,
+        collectDataSubjectRegions: node.collectDataSubjectRegions,
         regionList: node.regionList,
+        expiryTime: node.expiryTime ?? [],
         action: node.action,
         subject: node.subject,
+        attributeKeys: (node.WorkflowConfigAttributeKeys ?? []).map(
+          ({ attributeKey }) => attributeKey,
+        ),
       })),
     );
     offset += PAGE_SIZE;

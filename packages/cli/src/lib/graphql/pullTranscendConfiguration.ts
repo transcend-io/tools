@@ -1433,7 +1433,6 @@ export async function pullTranscendConfiguration(
   if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
     result['workflow-configs'] = workflowConfigs.map(
       (config): WorkflowConfigInput => ({
-        id: config.id,
         title: config.title,
         ...(config.subtitle ? { subtitle: config.subtitle } : {}),
         ...(config.description ? { description: config.description } : {}),
@@ -1442,7 +1441,17 @@ export async function pullTranscendConfiguration(
         ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
         visibility: config.workflowConfigVisibility as WorkflowConfigInput['visibility'],
         type: config.workflowConfigType as WorkflowConfigInput['type'],
+        ...(config.collectDataSubjectRegions
+          ? {
+              'collect-data-subject-regions':
+                config.collectDataSubjectRegions as WorkflowConfigInput['collect-data-subject-regions'],
+            }
+          : {}),
         ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
+        ...(config.expiryTime.length > 0 ? { 'expiry-time': config.expiryTime } : {}),
+        ...(config.attributeKeys.length > 0
+          ? { 'attribute-keys': config.attributeKeys.map(({ name }) => name) }
+          : {}),
       }),
     );
   }

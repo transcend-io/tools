@@ -1,20 +1,26 @@
-# DSR workflow configs are update-only — create workflows in Admin Dashboard first, then pull to get IDs.
-# Replace the id below with a workflow config ID from: tr inventory pull --resources workflowConfigs
+# DSR workflow configs are update-only — create workflows in the Admin Dashboard first, then pull to edit them.
+# Configs are matched to an existing workflow by their (unique) title, so titles must be unique.
 workflow-configs:
-  - id: REPLACE_WITH_WORKFLOW_CONFIG_ID
-    title: Customer Data Access Request
+  - title: Customer Data Access Request
     subtitle: Submit a request to access your personal data
     description: We will compile and deliver a copy of the personal data we hold about you.
     internal-name: customer-access-workflow
     action-type: ACCESS
     data-subject-type: Customer
     visibility: PUBLISHED
+    collect-data-subject-regions: COLLECT
     region-list:
       - US
       - CA
+    expiry-time:
+      - region: default
+        value: 45
+      - region: CA
+        value: 30
+    attribute-keys:
+      - Priority
 
-  - id: REPLACE_WITH_SECOND_WORKFLOW_CONFIG_ID
-    title: Customer Data Erasure Request
+  - title: Customer Data Erasure Request
     action-type: ERASURE
     data-subject-type: Customer
     visibility: INTERNAL

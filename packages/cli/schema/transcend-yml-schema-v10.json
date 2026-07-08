@@ -59916,9 +59916,9 @@
         "allOf": [
           {
             "type": "object",
-            "required": ["id"],
+            "required": ["title"],
             "properties": {
-              "id": {
+              "title": {
                 "type": "string"
               }
             }
@@ -59926,9 +59926,6 @@
           {
             "type": "object",
             "properties": {
-              "title": {
-                "type": "string"
-              },
               "subtitle": {
                 "type": "string"
               },
@@ -59952,7 +59949,32 @@
                 "type": "string",
                 "enum": ["DSR", "PREFERENCE_MANAGEMENT"]
               },
+              "collect-data-subject-regions": {
+                "type": "string",
+                "enum": ["DO_NOT_COLLECT", "COLLECT"]
+              },
               "region-list": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "expiry-time": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["region", "value"],
+                  "properties": {
+                    "region": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "attribute-keys": {
                 "type": "array",
                 "items": {
                   "type": "string"
