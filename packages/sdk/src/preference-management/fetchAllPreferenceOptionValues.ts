@@ -2,7 +2,7 @@ import type { Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { PREFERENCE_OPTION_VALUES } from './gqls/preferenceTopicMutations.js';
+import { PREFERENCE_OPTION_VALUES } from './gqls/preferenceOptionValues.js';
 
 export interface PreferenceOptionValue {
   /** ID of preference option value */

@@ -23,7 +23,6 @@ export const PREFERENCE_TOPICS: DocumentNode = parse(gql`
           defaultMessage
         }
         defaultConfiguration
-        color
         preferenceOptionValues {
           slug
           title {

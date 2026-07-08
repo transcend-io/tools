@@ -7,7 +7,7 @@ import {
   fetchAllPreferenceOptionValues,
   type PreferenceOptionValue,
 } from './fetchAllPreferenceOptionValues.js';
-import { CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES } from './gqls/preferenceTopicMutations.js';
+import { CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES } from './gqls/preferenceOptionValues.js';
 
 export interface PreferenceOptionValueInput {
   /** Title of option value */
