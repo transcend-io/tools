@@ -1857,7 +1857,7 @@ export const ConsentPreferenceTopic = t.intersection([
     title: t.string,
     /** The description of the preference topic */
     description: t.string,
-    /** API slug for the preference topic (ConstantCase recommended) */
+    /** API slug for the preference topic (PascalCase; alphabetical letters only) */
     slug: t.string,
   }),
   t.partial({

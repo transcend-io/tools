@@ -1,4 +1,4 @@
-import type { PreferenceTopicType } from '@transcend-io/privacy-types';
+import { PreferenceTopicType } from '@transcend-io/privacy-types';
 import { type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { keyBy, uniqBy } from 'lodash-es';
@@ -7,6 +7,7 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllPreferenceOptionValues } from './fetchAllPreferenceOptionValues.js';
 import { fetchAllPreferenceTopics } from './fetchAllPreferenceTopics.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
+import { formatPreferenceSyncError } from './formatPreferenceSyncError.js';
 import { CREATE_OR_UPDATE_PREFERENCE_TOPIC } from './gqls/preferenceTopic.js';
 import {
   createOrUpdatePreferenceOptionValues,
@@ -31,6 +32,69 @@ export interface PreferenceTopicSyncInput {
   /** The option values when the type is single or multi select */
   options?: PreferenceOptionValueInput[];
   // NOTE: `color` is not writable via createOrUpdatePreferenceTopic and is pull-only.
+}
+
+/**
+ * Build GraphQL input for creating a preference topic.
+ *
+ * @param topic - Topic input from YAML
+ * @param purposeId - Resolved purpose ID
+ * @param preferenceOptionValueIds - Linked option value IDs (omit for BOOLEAN)
+ * @returns Mutation input with only the fields allowed on create
+ */
+function buildCreatePreferenceTopicInput(
+  topic: PreferenceTopicSyncInput,
+  purposeId: string,
+  preferenceOptionValueIds: string[],
+): Record<string, unknown> {
+  const input: Record<string, unknown> = {
+    title: topic.title,
+    slug: topic.slug,
+    type: topic.type,
+    displayDescription: topic.description,
+    purposeId,
+  };
+  if (topic['show-in-privacy-center'] !== undefined) {
+    input.showInPrivacyCenter = topic['show-in-privacy-center'];
+  }
+  if (topic['default-configuration'] !== undefined) {
+    input.defaultConfiguration = topic['default-configuration'];
+  }
+  if (topic.type !== PreferenceTopicType.Boolean && preferenceOptionValueIds.length > 0) {
+    input.preferenceOptionValueIds = preferenceOptionValueIds;
+  }
+  return input;
+}
+
+/**
+ * Build GraphQL input for updating an existing preference topic.
+ * Slug, type, and purposeId must be omitted — the backend rejects them on update.
+ *
+ * @param existingId - ID of the existing topic
+ * @param topic - Topic input from YAML
+ * @param preferenceOptionValueIds - Linked option value IDs (omit for BOOLEAN)
+ * @returns Mutation input with only the fields allowed on update
+ */
+function buildUpdatePreferenceTopicInput(
+  existingId: string,
+  topic: PreferenceTopicSyncInput,
+  preferenceOptionValueIds: string[],
+): Record<string, unknown> {
+  const input: Record<string, unknown> = {
+    id: existingId,
+    title: topic.title,
+    displayDescription: topic.description,
+  };
+  if (topic['show-in-privacy-center'] !== undefined) {
+    input.showInPrivacyCenter = topic['show-in-privacy-center'];
+  }
+  if (topic['default-configuration'] !== undefined) {
+    input.defaultConfiguration = topic['default-configuration'];
+  }
+  if (topic.type !== PreferenceTopicType.Boolean && preferenceOptionValueIds.length > 0) {
+    input.preferenceOptionValueIds = preferenceOptionValueIds;
+  }
+  return input;
 }
 
 /**
@@ -70,18 +134,30 @@ export async function syncPreferenceTopics(
     existingOptionValues.map(({ slug, id }) => [slug, id]),
   );
   const inlineOptions = uniqBy(
-    topics.flatMap((topic) => topic.options ?? []),
+    topics
+      .filter((topic) => topic.type !== PreferenceTopicType.Boolean)
+      .flatMap((topic) => topic.options ?? []),
     'slug',
   );
   if (inlineOptions.length > 0) {
-    const upserted = await createOrUpdatePreferenceOptionValues(
-      client,
-      inlineOptions.map((optionValue) => [optionValue, optionIdBySlug[optionValue.slug]]),
-      { logger },
-    );
-    upserted.forEach(({ slug, id }) => {
-      optionIdBySlug[slug] = id;
-    });
+    try {
+      const upserted = await createOrUpdatePreferenceOptionValues(
+        client,
+        inlineOptions.map((optionValue) => [optionValue, optionIdBySlug[optionValue.slug]]),
+        { logger },
+      );
+      upserted.forEach(({ slug, id }) => {
+        optionIdBySlug[slug] = id;
+      });
+    } catch (err) {
+      logger?.error(
+        `Failed to sync inline preference option values! - ${formatPreferenceSyncError(
+          err,
+          'sync inline preference option values',
+        )}`,
+      );
+      return false;
+    }
   }
 
   // Existing topics for matching updates
@@ -103,34 +179,47 @@ export async function syncPreferenceTopics(
       continue;
     }
 
+    if (topic.type === PreferenceTopicType.Boolean && (topic.options ?? []).length > 0) {
+      success = false;
+      logger?.error(
+        `Failed to sync preference topic "${topic.title}"! - BOOLEAN preference topics cannot have options in YAML (the backend auto-creates True/False options)`,
+      );
+      continue;
+    }
+
     const existing = topicBySlugKey[`${trackingType}:${topic.slug}`];
 
-    const preferenceOptionValueIds = (topic.options ?? [])
-      .map((optionValue) => optionIdBySlug[optionValue.slug])
-      .filter((id): id is string => Boolean(id));
+    if (existing && existing.type !== topic.type) {
+      success = false;
+      logger?.error(
+        `Failed to sync preference topic "${topic.title}"! - Cannot change preference topic type from "${existing.type}" to "${topic.type}" for an existing topic`,
+      );
+      continue;
+    }
+
+    const preferenceOptionValueIds =
+      topic.type === PreferenceTopicType.Boolean
+        ? []
+        : (topic.options ?? [])
+            .map((optionValue) => optionIdBySlug[optionValue.slug])
+            .filter((id): id is string => Boolean(id));
 
     try {
+      const input = existing
+        ? buildUpdatePreferenceTopicInput(existing.id, topic, preferenceOptionValueIds)
+        : buildCreatePreferenceTopicInput(topic, purposeId, preferenceOptionValueIds);
+
       await makeGraphQLRequest(client, CREATE_OR_UPDATE_PREFERENCE_TOPIC, {
-        variables: {
-          input: {
-            id: existing?.id,
-            title: topic.title,
-            slug: topic.slug,
-            type: topic.type,
-            displayDescription: topic.description,
-            showInPrivacyCenter: topic['show-in-privacy-center'],
-            defaultConfiguration: topic['default-configuration'],
-            purposeId,
-            preferenceOptionValueIds:
-              preferenceOptionValueIds.length > 0 ? preferenceOptionValueIds : undefined,
-          },
-        },
+        variables: { input },
         logger,
       });
     } catch (err) {
       success = false;
       logger?.error(
-        `Failed to sync preference topic "${topic.title}"! - ${(err as Error).message}`,
+        `Failed to sync preference topic "${topic.title}"! - ${formatPreferenceSyncError(
+          err,
+          `sync preference topic "${topic.slug}"`,
+        )}`,
       );
     }
   }

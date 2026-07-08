@@ -2801,6 +2801,15 @@ Some things to note about this sync process:
 - a) Data silo owners: If you assign an email address to a data silo, you must first make sure that user is invited into your Transcend instance (https://app.transcend.io/admin/users).
 - b) API keys: This CLI will not create new API keys. You will need to first create the new API keys on the Admin Dashboard (https://app.transcend.io/infrastructure/api-keys). You can then list out the titles of the API keys that you generated in your transcend.yml file, after which the CLI is capable of updating that API key to be able to respond to different data silos in your Data Map
 
+#### Preference management push notes
+
+When pushing `purposes`, `preference-options`, or nested `preference-topics`:
+
+- **Slug format:** Preference topic and option value slugs must match `/^[A-Za-z]+$/` (alphabetical letters only — no digits, dashes, or underscores). The CLI validates this before any API calls. Topic slugs are normalized to PascalCase server-side, so YAML slugs should already be PascalCase or matching will break on subsequent pulls.
+- **BOOLEAN topics:** Do not define `options` for `BOOLEAN` preference topics — the backend auto-creates True/False options. The CLI rejects non-empty options before push.
+- **Immutable topic fields:** Slug, type, and parent purpose cannot be changed for an existing preference topic. Attempting to change `type` in YAML is rejected by the CLI.
+- **Known backend limitation (API-key auth):** Pushing preference topics (create **and** update) and **creating** new preference option values currently fails with API-key authentication because the monolith mutations require a logged-in user session. **Updating** existing preference option values by id works. The CLI surfaces this failure with an actionable error message. A monolith fix is pending.
+
 #### CI Integration
 
 Once you have a workflow for creating your transcend.yml file, you will want to integrate your `transcend inventory push` command on your CI.

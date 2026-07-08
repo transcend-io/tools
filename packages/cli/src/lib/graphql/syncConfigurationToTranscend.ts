@@ -44,6 +44,7 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
+import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { syncDataSilos } from './syncDataSilos.js';
 
@@ -127,6 +128,18 @@ export async function syncConfigurationToTranscend(
 
   const preferenceOptions = input['preference-options'];
   const purposes = input.purposes;
+
+  const preferenceSlugErrors = validatePreferenceManagementSlugs(input);
+  if (preferenceSlugErrors.length > 0) {
+    for (const message of preferenceSlugErrors) {
+      recordError('preference-slugs', message);
+    }
+    return {
+      success: false,
+      errors,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    };
+  }
 
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id

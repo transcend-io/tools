@@ -128,7 +128,7 @@ purposes:
             slug: Monthly
           - title: Quarterly
             slug: Quarterly
-      - slug: Go100PercentDigital
+      - slug: GoPaperless
         title: Go 100% Digital
         type: BOOLEAN
         description: I would like to go paperless

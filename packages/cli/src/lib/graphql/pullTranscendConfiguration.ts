@@ -4,6 +4,7 @@ import {
   ConsentTrackerStatus,
   ActionItemCode,
   RetentionType,
+  PreferenceTopicType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -1421,14 +1422,13 @@ export async function pullTranscendConfiguration(
             description: displayDescription.defaultMessage,
             'default-configuration': defaultConfiguration,
             'show-in-privacy-center': showInPrivacyCenter,
-            ...(preferenceOptionValues.length > 0
-              ? {
-                  options: preferenceOptionValues.map(({ title, slug }) => ({
+            options:
+              type === PreferenceTopicType.Boolean
+                ? []
+                : preferenceOptionValues.map(({ title, slug }) => ({
                     title: title.defaultMessage,
                     slug,
                   })),
-                }
-              : {}),
           }),
         ),
       }),
