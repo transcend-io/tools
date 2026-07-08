@@ -46,12 +46,12 @@ const DEFAULT_PURPOSE_TRACKING_TYPES: ReadonlySet<string> = new Set(
 );
 
 /**
- * Whether a purpose tracking type is a built-in default that cannot be updated via API.
+ * Whether a purpose tracking type is a built-in default purpose.
  *
  * @param trackingType - Purpose tracking type slug
  * @returns True when the purpose is a built-in default
  */
-function isUnwritableDefaultPurpose(trackingType: string): boolean {
+function isDefaultPurposeTrackingType(trackingType: string): boolean {
   return DEFAULT_PURPOSE_TRACKING_TYPES.has(trackingType);
 }
 
@@ -97,6 +97,78 @@ function purposeUpdateMatchesExisting(found: Purpose, input: PurposeInput): bool
 }
 
 /**
+ * Build updatePurpose input with only changed fields.
+ * Built-in default purposes cannot sync `configurable` or `showInConsentManager`.
+ *
+ * @param found - Existing purpose from the API
+ * @param input - Purpose input from YAML
+ * @param options - Options
+ * @returns Mutation input and any warnings for omitted default-purpose fields
+ */
+function buildUpdatePurposeInput(
+  found: Purpose,
+  input: PurposeInput,
+  options: {
+    /** Logger instance */
+    logger?: Logger;
+  } = {},
+): { input: Record<string, unknown>; isEmpty: boolean } {
+  const { logger } = options;
+  const isDefault = isDefaultPurposeTrackingType(input.trackingType);
+  const updateInput: Record<string, unknown> = { id: found.id };
+
+  if (input.name !== found.name) {
+    updateInput.name = input.name;
+  }
+  if (input.title !== found.title) {
+    updateInput.title = input.title;
+  }
+  if (input.description !== found.description) {
+    updateInput.description = input.description;
+  }
+  if (input['is-active'] !== found.isActive) {
+    updateInput.isActive = input['is-active'];
+  }
+  if (input['display-order'] !== found.displayOrder) {
+    updateInput.displayOrder = input['display-order'];
+  }
+  if (input['show-in-privacy-center'] !== found.showInPrivacyCenter) {
+    updateInput.showInPrivacyCenter = input['show-in-privacy-center'];
+  }
+  if (input['auth-level'] !== found.authLevel) {
+    updateInput.authLevel = input['auth-level'];
+  }
+  if (!optOutSignalsMatch(input['opt-out-signals'], found.optOutSignals)) {
+    updateInput.optOutSignals = input['opt-out-signals'];
+  }
+
+  if (isDefault) {
+    if (input.configurable !== found.configurable) {
+      logger?.warn(
+        `Cannot sync "configurable" for built-in purpose "${input.trackingType}" via API — ` +
+          'update this field in the Admin Dashboard instead.',
+      );
+    }
+    if (input['show-in-consent-manager'] !== found.showInConsentManager) {
+      logger?.warn(
+        `Cannot sync "show-in-consent-manager" for built-in purpose "${input.trackingType}" via API — ` +
+          'update this field in the Admin Dashboard instead.',
+      );
+    }
+  } else {
+    if (input.configurable !== found.configurable) {
+      updateInput.configurable = input.configurable;
+    }
+    if (input['show-in-consent-manager'] !== found.showInConsentManager) {
+      updateInput.showInConsentManager = input['show-in-consent-manager'];
+    }
+  }
+
+  const isEmpty = Object.keys(updateInput).length === 1;
+  return { input: updateInput, isEmpty };
+}
+
+/**
  * Sync tracking purposes to Transcend, matching existing purposes by trackingType.
  * Creates purposes that do not yet exist and updates the rest.
  *
@@ -127,34 +199,25 @@ export async function syncPurposes(
     const found = existingByTrackingType[purpose.trackingType];
     try {
       if (found) {
-        if (isUnwritableDefaultPurpose(purpose.trackingType)) {
-          logger?.info(
-            `Skipping update for default purpose "${purpose.trackingType}" (built-in purposes are not writable via API)`,
-          );
-          purposeIdByTrackingType[purpose.trackingType] = found.id;
-          continue;
-        }
         if (purposeUpdateMatchesExisting(found, purpose)) {
           logger?.info(`Skipping unchanged purpose "${purpose.trackingType}"`);
           purposeIdByTrackingType[purpose.trackingType] = found.id;
           continue;
         }
+
+        const { input: updateInput, isEmpty } = buildUpdatePurposeInput(found, purpose, {
+          logger,
+        });
+        if (isEmpty) {
+          logger?.info(
+            `Skipping purpose "${purpose.trackingType}" — only blocked fields differ for built-in purpose`,
+          );
+          purposeIdByTrackingType[purpose.trackingType] = found.id;
+          continue;
+        }
+
         await makeGraphQLRequest(client, UPDATE_PURPOSE, {
-          variables: {
-            input: {
-              id: found.id,
-              name: purpose.name,
-              title: purpose.title,
-              description: purpose.description,
-              isActive: purpose['is-active'],
-              configurable: purpose.configurable,
-              displayOrder: purpose['display-order'],
-              showInPrivacyCenter: purpose['show-in-privacy-center'],
-              showInConsentManager: purpose['show-in-consent-manager'],
-              authLevel: purpose['auth-level'],
-              optOutSignals: purpose['opt-out-signals'],
-            },
-          },
+          variables: { input: updateInput },
           logger,
         });
         purposeIdByTrackingType[purpose.trackingType] = found.id;
