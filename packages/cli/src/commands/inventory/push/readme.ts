@@ -163,7 +163,7 @@ Below is an example of how to set this up using a Github action:
 
 \`\`\`yaml
 name: Transcend Data Map Syncing
-# See https://app.transcend.io/privacy-requests/connected-services
+# See https://app.transcend.io/infrastructure/integrations
 
 on:
   push:
