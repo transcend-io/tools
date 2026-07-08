@@ -203,10 +203,19 @@ const RESOURCE_DOCUMENTATION: Record<
     ],
   },
   [TranscendPullResource.PreferenceOptions]: {
-    description: 'Preference option values for single and multi-select preference topics.',
+    description:
+      'Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).',
     markdownLinks: [
-      '[Consent Management -> Regional Experiences -> Purposes]\
-(https://app.transcend.io/consent-manager/regional-experiences/purposes)',
+      '[Preferences -> Preference Topics -> Options]\
+(https://app.transcend.io/preference-store/preference-topics)',
+    ],
+  },
+  [TranscendPullResource.PreferenceTopics]: {
+    description:
+      'Preference topics presented to users in Preference UIs (Preferences -> Preference Topics -> Topics tab).',
+    markdownLinks: [
+      '[Preferences -> Preference Topics -> Topics]\
+(https://app.transcend.io/preference-store/preference-topics)',
     ],
   },
   [TranscendPullResource.SystemDiscovery]: {

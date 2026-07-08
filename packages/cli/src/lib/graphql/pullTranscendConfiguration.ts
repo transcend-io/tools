@@ -39,6 +39,7 @@ import {
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
   fetchAllPreferenceOptionValues,
+  fetchAllPreferenceTopics,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -92,6 +93,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
@@ -192,6 +194,7 @@ export async function pullTranscendConfiguration(
     assessmentTemplates,
     purposes,
     preferenceOptionValues,
+    preferenceTopics,
     siloDiscoveryResults,
   ] = await Promise.all([
     // Grab all data subjects in the organization
@@ -359,6 +362,9 @@ export async function pullTranscendConfiguration(
       : [],
     resources.includes(TranscendPullResource.PreferenceOptions)
       ? fetchAllPreferenceOptionValues(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.PreferenceTopics)
+      ? fetchAllPreferenceTopics(client, { logger })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -1404,15 +1410,19 @@ export async function pullTranscendConfiguration(
         'auth-level': authLevel || undefined,
         'preference-topics': topics.map(
           ({
+            slug,
             title,
             type,
+            color,
             displayDescription,
             defaultConfiguration,
             showInPrivacyCenter,
             preferenceOptionValues,
-          }) => ({
+          }): ConsentPreferenceTopic => ({
+            slug,
             title: title.defaultMessage,
             type,
+            color,
             description: displayDescription.defaultMessage,
             'default-configuration': defaultConfiguration,
             'show-in-privacy-center': showInPrivacyCenter,
@@ -1438,6 +1448,39 @@ export async function pullTranscendConfiguration(
       ({ slug, title }): ConsentPreferenceTopicOptionValue => ({
         slug,
         title: title.defaultMessage,
+      }),
+    );
+  }
+
+  if (preferenceTopics.length > 0 && resources.includes(TranscendPullResource.PreferenceTopics)) {
+    result['preference-topics'] = preferenceTopics.map(
+      ({
+        slug,
+        title,
+        type,
+        color,
+        displayDescription,
+        defaultConfiguration,
+        showInPrivacyCenter,
+        preferenceOptionValues,
+        purpose,
+      }): ConsentPreferenceTopic => ({
+        slug,
+        'tracking-type': purpose.trackingType,
+        title: title.defaultMessage,
+        type,
+        color,
+        description: displayDescription.defaultMessage,
+        'default-configuration': defaultConfiguration,
+        'show-in-privacy-center': showInPrivacyCenter,
+        ...(preferenceOptionValues.length > 0
+          ? {
+              options: preferenceOptionValues.map(({ title, slug }) => ({
+                title: title.defaultMessage,
+                slug,
+              })),
+            }
+          : {}),
       }),
     );
   }

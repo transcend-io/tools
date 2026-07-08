@@ -23,3 +23,4 @@ export * from './fetchConsentPreferencesChunked.js';
 export * from './loadReferenceData.js';
 export * from './fetchAllPreferenceOptionValues.js';
 export * from './syncPreferenceOptionValues.js';
+export * from './syncPreferenceTopics.js';

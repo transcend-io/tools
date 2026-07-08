@@ -3,4 +3,4 @@
 '@transcend-io/sdk': minor
 ---
 
-Add preference-options pull and push support for standalone preference option values.
+Add preference-options and preference-topics pull and push support for the Preference Store.

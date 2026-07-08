@@ -81,6 +81,7 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
     ScopeName.ManagePreferenceStoreSettings,
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ManagePreferenceStoreSettings],
+  [TranscendPullResource.PreferenceTopics]: [ScopeName.ManagePreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ManageDataMap],
 };
 
@@ -129,6 +130,7 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewPreferenceStoreSettings,
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
+  [TranscendPullResource.PreferenceTopics]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
 };
 
@@ -166,6 +168,7 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.AssessmentTemplates]: 'assessment-templates',
   [TranscendPullResource.Purposes]: 'purposes',
   [TranscendPullResource.PreferenceOptions]: 'preference-options',
+  [TranscendPullResource.PreferenceTopics]: 'preference-topics',
   [TranscendPullResource.SystemDiscovery]: 'system-discovery',
 };
 

@@ -1859,6 +1859,12 @@ export const ConsentPreferenceTopic = t.intersection([
     description: t.string,
   }),
   t.partial({
+    /** API slug for the preference topic (ConstantCase recommended) */
+    slug: t.string,
+    /** Hex color for the preference topic (pull-only; not writable via CLI push today) */
+    color: t.string,
+    /** Purpose tracking type slug this topic belongs to (required for top-level preference-topics) */
+    'tracking-type': t.string,
     /** Default value */
     'default-configuration': t.string,
     /** Whether the preference topic is shown in privacy center */
@@ -2073,6 +2079,10 @@ export const TranscendInput = t.partial({
    * Preference management options for multi and single selects
    */
   'preference-options': t.array(ConsentPreferenceTopicOptionValue),
+  /**
+   * Standalone preference topics (see Preferences -> Preference Topics in Admin Dashboard)
+   */
+  'preference-topics': t.array(ConsentPreferenceTopic),
 });
 
 /** Type override */
