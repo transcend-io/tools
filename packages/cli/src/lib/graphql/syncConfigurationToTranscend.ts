@@ -32,6 +32,7 @@ import {
   syncPurposes,
   syncPreferenceOptionValues,
   syncConsentWorkflowTriggers,
+  syncWorkflowConfigs,
   syncTeams,
   syncTemplate,
   syncVendors,
@@ -126,6 +127,7 @@ export async function syncConfigurationToTranscend(
     partitions,
     purposes,
     'consent-workflow-triggers': consentWorkflowTriggers,
+    'workflow-configs': workflowConfigs,
   } = input;
 
   const preferenceOptions = input['preference-options'];
@@ -171,9 +173,19 @@ export async function syncConfigurationToTranscend(
   if (hasTranscendConfigSection(consentWorkflowTriggers)) {
     const triggersSuccess = await syncConsentWorkflowTriggers(client, consentWorkflowTriggers!, {
       logger: activeLogger,
+      pageSize,
     });
     if (!triggersSuccess) {
       recordError('consent-workflow-triggers', 'Failed to sync consent workflow triggers');
+    }
+  }
+
+  if (hasTranscendConfigSection(workflowConfigs)) {
+    const workflowConfigsSuccess = await syncWorkflowConfigs(client, workflowConfigs!, {
+      logger: activeLogger,
+    });
+    if (!workflowConfigsSuccess) {
+      recordError('workflow-configs', 'Failed to sync workflow configs');
     }
   }
 

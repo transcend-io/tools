@@ -107,3 +107,16 @@ export function derivePushScopesFromTranscendInput(
 
   return [...scopeSet];
 }
+
+/**
+ * Summarize which transcend.yml sections are included in a push
+ *
+ * @param input - Decoded transcend input
+ * @returns Human-readable summary of present sections
+ */
+export function summarizeTranscendConfigSections(input: TranscendInput): string {
+  return Object.entries(input)
+    .filter(([, value]) => hasTranscendConfigSection(value))
+    .map(([key, value]) => `${key}: (${Array.isArray(value) ? value.length : 1})`)
+    .join(', ');
+}

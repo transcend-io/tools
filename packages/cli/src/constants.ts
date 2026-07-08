@@ -65,10 +65,7 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
   [TranscendPullResource.Vendors]: [ScopeName.ManageDataInventory],
   [TranscendPullResource.DataCategories]: [ScopeName.ManageDataInventory],
   [TranscendPullResource.ProcessingPurposes]: [ScopeName.ManageDataInventory],
-  [TranscendPullResource.ActionItems]: [
-    ScopeName.ManageAllActionItems,
-    ScopeName.ViewGlobalAttributes,
-  ],
+  [TranscendPullResource.ActionItems]: [ScopeName.ManageAllActionItems],
   [TranscendPullResource.ActionItemCollections]: [ScopeName.ManageActionItemCollections],
   [TranscendPullResource.Teams]: [ScopeName.ManageAccessControl],
   [TranscendPullResource.Messages]: [ScopeName.ManageIntlMessages],
@@ -87,6 +84,7 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewDataSubjectRequestSettings,
     ScopeName.ViewConsentManager,
   ],
+  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ManageWorkflows],
 };
 
 /**
@@ -136,6 +134,7 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
   [TranscendPullResource.ConsentWorkflowTriggers]: [ScopeName.ViewConsentManager],
+  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ViewDataSubjectRequestSettings],
 };
 
 export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof TranscendInput> = {
@@ -174,6 +173,7 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.PreferenceOptions]: 'preference-options',
   [TranscendPullResource.SystemDiscovery]: 'system-discovery',
   [TranscendPullResource.ConsentWorkflowTriggers]: 'consent-workflow-triggers',
+  [TranscendPullResource.WorkflowConfigs]: 'workflow-configs',
 };
 
 export const SCOPES_BY_TITLE = keyBy(

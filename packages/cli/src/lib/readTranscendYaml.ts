@@ -4,6 +4,10 @@ import { decodeCodec, ObjByString } from '@transcend-io/type-utils';
 import yaml from 'js-yaml';
 
 import { TranscendInput } from '../codecs.js';
+import {
+  formatPushValidationErrors,
+  validateTranscendInputForPush,
+} from './validateTranscendInputForPush.js';
 
 export const VARIABLE_PARAMETERS_REGEXP = /<<parameters\.(.+?)>>/;
 export const VARIABLE_PARAMETERS_NAME = 'parameters';
@@ -47,9 +51,17 @@ ${extraErrorMessage}`,
  *
  * @param filePath - Path to yaml file
  * @param variables - Variables to fill in
+ * @param options - Read options
  * @returns The contents of the yaml file, type-checked
  */
-export function readTranscendYaml(filePath: string, variables: ObjByString = {}): TranscendInput {
+export function readTranscendYaml(
+  filePath: string,
+  variables: ObjByString = {},
+  options: {
+    /** When true, fail on unsupported or pull-only keys before decode */
+    validateForPush?: boolean;
+  } = {},
+): TranscendInput {
   // Read in contents
   const fileContents = readFileSync(filePath, 'utf-8');
 
@@ -60,8 +72,17 @@ export function readTranscendYaml(filePath: string, variables: ObjByString = {})
     `Also check that there are no extra variables defined in your yaml: ${filePath}`,
   );
 
+  const rawConfig = yaml.load(replacedVariables);
+
+  if (options.validateForPush) {
+    const validation = validateTranscendInputForPush(rawConfig);
+    if (!validation.valid) {
+      throw new Error(formatPushValidationErrors(validation));
+    }
+  }
+
   // Validate shape
-  return decodeCodec(TranscendInput, yaml.load(replacedVariables));
+  return decodeCodec(TranscendInput, rawConfig);
 }
 
 /**

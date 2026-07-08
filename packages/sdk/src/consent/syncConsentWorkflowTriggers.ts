@@ -3,6 +3,7 @@ import type { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { fetchAllDataSilos } from '../data-inventory/fetchAllDataSilos.js';
 import { fetchAllActions, type Action } from '../dsr-automation/fetchAllActions.js';
 import { fetchAllDataSubjects, type DataSubject } from '../dsr-automation/fetchDataSubjects.js';
 import { fetchAllPurposes, type Purpose } from '../preference-management/fetchAllPurposes.js';
@@ -51,9 +52,11 @@ export async function syncConsentWorkflowTriggers(
   options: {
     /** Logger instance */
     logger?: Logger;
+    /** Page size when fetching data silos */
+    pageSize?: number;
   } = {},
 ): Promise<boolean> {
-  const { logger } = options;
+  const { logger, pageSize = 50 } = options;
   logger?.info(`Syncing "${inputs.length}" consent workflow triggers...`);
 
   let encounteredError = false;
@@ -61,18 +64,24 @@ export async function syncConsentWorkflowTriggers(
   const needsActions = inputs.some((t) => t['action-type']);
   const needsSubjects = inputs.some((t) => t['data-subject-type']);
   const needsPurposes = inputs.some((t) => t.purposes?.length);
+  const needsDataSilos = inputs.some((t) => t['data-silo-titles']?.length);
 
-  const [existingTriggers, actions, dataSubjects, purposes] = await Promise.all([
+  const [existingTriggers, actions, dataSubjects, purposes, dataSilos] = await Promise.all([
     fetchAllConsentWorkflowTriggers(client, { logger }),
     needsActions ? fetchAllActions(client, { logger }) : ([] as Action[]),
     needsSubjects ? fetchAllDataSubjects(client, { logger }) : ([] as DataSubject[]),
     needsPurposes ? fetchAllPurposes(client, { logger }) : ([] as Purpose[]),
+    needsDataSilos ? fetchAllDataSilos(client, { pageSize, logger }) : [],
   ]);
 
   const triggerByName = keyBy(existingTriggers, 'name');
   const actionByType = keyBy(actions, 'type') as Record<string, Action>;
   const dataSubjectByType = keyBy(dataSubjects, 'type') as Record<string, DataSubject>;
   const purposeByTrackingType = keyBy(purposes, 'trackingType') as Record<string, Purpose>;
+  const dataSiloByTitle = keyBy(dataSilos, 'title') as Record<
+    string,
+    { id: string; title: string }
+  >;
 
   await mapSeries(inputs, async (trigger) => {
     try {
@@ -109,12 +118,24 @@ export async function syncConsentWorkflowTriggers(
         };
       });
 
+      let dataSiloIds: string[] | undefined;
+      if (trigger['data-silo-titles']?.length) {
+        dataSiloIds = trigger['data-silo-titles'].map((title) => {
+          const dataSilo = dataSiloByTitle[title];
+          if (!dataSilo) {
+            throw new Error(`Failed to find data silo with title: ${title}`);
+          }
+          return dataSilo.id;
+        });
+      }
+
       const mutationInput: Record<string, unknown> = {
         name: trigger.name,
         ...(existingTrigger ? { id: existingTrigger.id } : {}),
         triggerCondition: trigger['trigger-condition'] ?? '{}',
         ...(actionId ? { actionId } : {}),
         ...(dataSubjectId ? { dataSubjectId } : {}),
+        ...(dataSiloIds ? { dataSiloIds } : {}),
         ...(trigger['is-silent'] !== undefined ? { isSilent: trigger['is-silent'] } : {}),
         ...(trigger['allow-unauthenticated'] !== undefined
           ? { allowUnauthenticated: trigger['allow-unauthenticated'] }

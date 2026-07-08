@@ -14,6 +14,7 @@ import { syncConfigurationToTranscend } from '../../../lib/graphql/index.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 import { mergeTranscendInputs } from '../../../lib/mergeTranscendInputs.js';
 import { readTranscendYaml } from '../../../lib/readTranscendYaml.js';
+import { summarizeTranscendConfigSections } from '../../../lib/transcendConfigPush.js';
 import { logger } from '../../../logger.js';
 
 /**
@@ -132,7 +133,7 @@ export async function push(
 
     try {
       // Read in the yaml file and validate it's shape
-      const newContents = readTranscendYaml(filePath, vars);
+      const newContents = readTranscendYaml(filePath, vars, { validateForPush: true });
       logger.info(colors.green(`Successfully read in "${filePath}"`));
       return {
         content: newContents,
@@ -153,6 +154,8 @@ export async function push(
     // if passed multiple inputs, merge them together
     const [base, ...rest] = transcendInputs.map(({ content }) => content);
     const contents = mergeTranscendInputs(base, ...rest);
+
+    logger.info(colors.magenta(`Pushing sections: ${summarizeTranscendConfigSections(contents)}`));
 
     // sync the configuration
     const success = await syncConfiguration({
