@@ -1,5 +1,12 @@
 # @transcend-io/utils
 
+## 0.2.0
+
+### Minor Changes
+
+- 6143556: Return structured SyncResult from syncConfigurationToTranscend and add createCollectingLogger for MCP debug responses.
+- 6143556: Return structured SyncResult from syncConfigurationToTranscend with injectable logger support for MCP debug responses.
+
 ## 0.1.3
 
 ### Patch Changes
