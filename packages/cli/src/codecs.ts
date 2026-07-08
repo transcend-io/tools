@@ -1908,6 +1908,52 @@ export const ConsentPurpose = t.intersection([
 export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
 
 /**
+ * Input for a purpose associated with a consent workflow trigger
+ */
+export const ConsentWorkflowTriggerPurposeInput = t.type({
+  /** The tracking type slug of the purpose */
+  'tracking-type': t.string,
+  /** The matching consent state for the purpose */
+  'matching-state': t.boolean,
+});
+
+/** Type override */
+export type ConsentWorkflowTriggerPurposeInput = t.TypeOf<
+  typeof ConsentWorkflowTriggerPurposeInput
+>;
+
+/**
+ * Input to define a consent workflow trigger
+ */
+export const ConsentWorkflowTriggerInput = t.intersection([
+  t.type({
+    /** The name of the consent workflow trigger */
+    name: t.string,
+  }),
+  t.partial({
+    /** The trigger condition as a JSON string */
+    'trigger-condition': t.string,
+    /** The action type (e.g. ERASURE, ACCESS) */
+    'action-type': t.string,
+    /** The data subject type */
+    'data-subject-type': t.string,
+    /** Whether the trigger runs silently */
+    'is-silent': t.boolean,
+    /** Whether unauthenticated requests are allowed */
+    'allow-unauthenticated': t.boolean,
+    /** Whether the trigger is active */
+    'is-active': t.boolean,
+    /** Titles of data silos associated with this trigger */
+    'data-silo-titles': t.array(t.string),
+    /** Purposes and their matching consent states */
+    purposes: t.array(ConsentWorkflowTriggerPurposeInput),
+  }),
+]);
+
+/** Type override */
+export type ConsentWorkflowTriggerInput = t.TypeOf<typeof ConsentWorkflowTriggerInput>;
+
+/**
  * Input to define a silo discovery results
  *
  * @see https://docs.transcend.io/docs/silo-discovery
@@ -2069,6 +2115,14 @@ export const TranscendInput = t.partial({
    * The full list of silo discovery results
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
+  /**
+   * Consent workflow trigger definitions
+   */
+  'consent-workflow-triggers': t.array(ConsentWorkflowTriggerInput),
+  /**
+   * Preference management options for multi and single selects
+   */
+  'preference-options': t.array(ConsentPreferenceTopicOptionValue),
 });
 
 /** Type override */

@@ -22,4 +22,6 @@ export * from './syncDataFlows.js';
 export * from './syncPartitions.js';
 export * from './syncPolicies.js';
 export * from './syncPrivacyCenter.js';
+export * from './fetchAllConsentWorkflowTriggers.js';
+export * from './syncConsentWorkflowTriggers.js';
 export * from './syncProcessingPurposes.js';

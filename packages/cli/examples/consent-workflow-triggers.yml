@@ -1,0 +1,8 @@
+consent-workflow-triggers:
+  - name: ExampleConsentWorkflowTrigger
+    trigger-condition: '{}'
+    action-type: ERASURE
+    data-subject-type: Customer
+    is-silent: false
+    allow-unauthenticated: false
+    is-active: true

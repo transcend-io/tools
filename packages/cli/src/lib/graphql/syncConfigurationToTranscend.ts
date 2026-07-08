@@ -29,6 +29,9 @@ import {
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
+  syncPurposes,
+  syncPreferenceOptionValues,
+  syncConsentWorkflowTriggers,
   syncTeams,
   syncTemplate,
   syncVendors,
@@ -41,6 +44,7 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
+import { hasTranscendConfigSection } from '../transcendConfigPush.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { syncDataSilos } from './syncDataSilos.js';
 
@@ -107,7 +111,11 @@ export async function syncConfigurationToTranscend(
     messages,
     policies,
     partitions,
+    purposes,
+    'consent-workflow-triggers': consentWorkflowTriggers,
   } = input;
+
+  const preferenceOptions = input['preference-options'];
 
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
@@ -131,11 +139,30 @@ export async function syncConfigurationToTranscend(
       : {},
   ]);
 
-  // Sync consent manager
-  if (consentManager) {
+  if (hasTranscendConfigSection(preferenceOptions)) {
+    const preferenceOptionsSuccess = await syncPreferenceOptionValues(client, preferenceOptions!, {
+      logger,
+    });
+    encounteredError = encounteredError || !preferenceOptionsSuccess;
+  }
+
+  if (hasTranscendConfigSection(purposes)) {
+    const purposesSuccess = await syncPurposes(client, purposes!, { logger });
+    encounteredError = encounteredError || !purposesSuccess;
+  }
+
+  if (hasTranscendConfigSection(consentWorkflowTriggers)) {
+    const triggersSuccess = await syncConsentWorkflowTriggers(client, consentWorkflowTriggers!, {
+      logger,
+    });
+    encounteredError = encounteredError || !triggersSuccess;
+  }
+
+  // Sync consent manager (after purposes — experiences reference purpose trackingTypes)
+  if (hasTranscendConfigSection(consentManager)) {
     logger.info(colors.magenta('Syncing consent manager...'));
     try {
-      await syncConsentManager(client, consentManager, { logger });
+      await syncConsentManager(client, consentManager!, { logger });
       logger.info(colors.green('Successfully synced consent manager!'));
     } catch (err) {
       encounteredError = true;

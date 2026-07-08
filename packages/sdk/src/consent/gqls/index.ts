@@ -10,4 +10,4 @@ export * from './consentManagerMetrics.js';
 export * from './airgapBundleAnalytics.js';
 export * from './policy.js';
 export * from './privacyCenter.js';
-export * from './processingPurpose.js';
+export * from './consentWorkflowTrigger.js';
