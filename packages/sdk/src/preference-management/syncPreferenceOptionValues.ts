@@ -1,4 +1,4 @@
-import { map, type Logger } from '@transcend-io/utils';
+import { type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
