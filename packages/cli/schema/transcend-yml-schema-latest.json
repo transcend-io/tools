@@ -59916,22 +59916,8 @@
         "allOf": [
           {
             "type": "object",
-            "required": ["title"],
+            "required": ["internal-name", "action-type"],
             "properties": {
-              "title": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "properties": {
-              "subtitle": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              },
               "internal-name": {
                 "type": "string"
               },
@@ -59958,6 +59944,20 @@
                   "PLACE_ON_LEGAL_HOLD",
                   "REMOVE_FROM_LEGAL_HOLD"
                 ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "subtitle": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
               },
               "data-subject-type": {
                 "type": "string"

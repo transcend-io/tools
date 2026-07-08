@@ -4,7 +4,6 @@ import {
   ConsentTrackerStatus,
   ActionItemCode,
   RetentionType,
-  WorkflowConfigType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -359,7 +358,7 @@ export async function pullTranscendConfiguration(
       ? fetchAllPurposesAndPreferences(client, { logger })
       : [],
     resources.includes(TranscendPullResource.WorkflowConfigs)
-      ? fetchAllWorkflowConfigs(client, { logger, workflowConfigType: WorkflowConfigType.DSR })
+      ? fetchAllWorkflowConfigs(client, { logger })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -1432,34 +1431,46 @@ export async function pullTranscendConfiguration(
   }
 
   if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
-    result['workflow-configs'] = workflowConfigs.map(
-      (config): WorkflowConfigInput => ({
-        title: config.title.defaultMessage,
-        ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
-        ...(config.description ? { description: config.description.defaultMessage } : {}),
-        ...(config.internalName ? { 'internal-name': config.internalName } : {}),
-        'action-type': config.action.type,
-        ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
-        visibility: config.workflowConfigVisibility,
-        type: config.workflowConfigType,
-        ...(config.collectDataSubjectRegions
-          ? {
-              'collect-data-subject-regions': config.collectDataSubjectRegions,
-            }
-          : {}),
-        ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
-        ...(config.expiryTime && config.expiryTime.length > 0
-          ? { 'expiry-time': config.expiryTime }
-          : {}),
-        ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
-          ? {
-              'attribute-keys': config.WorkflowConfigAttributeKeys.map(
-                ({ attributeKey }) => attributeKey.name,
-              ),
-            }
-          : {}),
-      }),
-    );
+    const pulledWorkflowConfigs = workflowConfigs.flatMap((config): WorkflowConfigInput[] => {
+      if (!config.internalName) {
+        logger.warn(
+          `Skipping workflow config "${config.title.defaultMessage}" (${config.id}) — missing internal name. ` +
+            'Set an internal name in the Admin Dashboard to include it in workflow-configs pull output.',
+        );
+        return [];
+      }
+      return [
+        {
+          'internal-name': config.internalName,
+          'action-type': config.action.type,
+          ...(config.title ? { title: config.title.defaultMessage } : {}),
+          ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
+          ...(config.description ? { description: config.description.defaultMessage } : {}),
+          ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
+          visibility: config.workflowConfigVisibility,
+          type: config.workflowConfigType,
+          ...(config.collectDataSubjectRegions
+            ? {
+                'collect-data-subject-regions': config.collectDataSubjectRegions,
+              }
+            : {}),
+          ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
+          ...(config.expiryTime && config.expiryTime.length > 0
+            ? { 'expiry-time': config.expiryTime }
+            : {}),
+          ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
+            ? {
+                'attribute-keys': config.WorkflowConfigAttributeKeys.map(
+                  ({ attributeKey }) => attributeKey.name,
+                ),
+              }
+            : {}),
+        },
+      ];
+    });
+    if (pulledWorkflowConfigs.length > 0) {
+      result['workflow-configs'] = pulledWorkflowConfigs;
+    }
   }
 
   // save email templates

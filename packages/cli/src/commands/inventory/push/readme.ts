@@ -54,7 +54,7 @@ export default `#### Scopes
 
 The API key permissions for this command vary based on the resources declared as top-level keys in your [\`transcend.yml\`](#transcendyml) file:
 
-${createPullResourceScopesTable(TR_PUSH_RESOURCE_SCOPE_MAP, { mode: 'push' })}
+${createPullResourceScopesTable(TR_PUSH_RESOURCE_SCOPE_MAP)}
 
 #### Examples
 

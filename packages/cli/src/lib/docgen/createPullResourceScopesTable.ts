@@ -17,8 +17,6 @@ const RESOURCE_DOCUMENTATION: Record<
     description: string;
     /** The markdown links for the resource. */
     markdownLinks: MarkdownLink[];
-    /** Optional push-specific markdown links when they differ from pull. */
-    pushMarkdownLinks?: MarkdownLink[];
   }
 > = {
   [TranscendPullResource.ApiKeys]: {
@@ -215,9 +213,8 @@ const RESOURCE_DOCUMENTATION: Record<
   },
   [TranscendPullResource.WorkflowConfigs]: {
     description:
-      'DSR workflow config settings (update-only — workflow configs are created in the Admin Dashboard).',
-    markdownLinks: [`[Workflows -> DSR Automation](${WORKFLOW_CONFIGS_LINK})`],
-    pushMarkdownLinks: [`[Workflows -> DSR Workflows](${WORKFLOW_CONFIGS_LINK})`],
+      'Workflow config settings (update-only — workflow configs are created in the Admin Dashboard).',
+    markdownLinks: [`[Workflows -> DSR Workflows](${WORKFLOW_CONFIGS_LINK})`],
   },
 };
 
@@ -229,22 +226,17 @@ const RESOURCE_DOCUMENTATION: Record<
  */
 export function createPullResourceScopesTable(
   scopeMap: Record<TranscendPullResource, ScopeName[]>,
-  options: {
-    /** Whether to render pull or push scope table links */
-    mode?: 'pull' | 'push';
-  } = {},
 ): string {
-  const { mode = 'pull' } = options;
   return `| Resource | Key in \`transcend.yml\` | Description | Scopes | Link |
 | --- | --- | --- | --- | --- |\n${Object.entries(RESOURCE_DOCUMENTATION)
-    .map(([resource, { description, markdownLinks, pushMarkdownLinks }]) => {
-      const links = mode === 'push' && pushMarkdownLinks ? pushMarkdownLinks : markdownLinks;
-      return `| \`${resource}\` | \`${
-        TR_YML_RESOURCE_TO_FIELD_NAME[resource as TranscendPullResource]
-      }\` | ${description} | ${scopeMap[resource as TranscendPullResource]
-        .map((scopeName) => TRANSCEND_SCOPES[scopeName].title)
-        .join(', ')} | ${links.join('<br>')} |`;
-    })
+    .map(
+      ([resource, { description, markdownLinks }]) =>
+        `| \`${resource}\` | \`${
+          TR_YML_RESOURCE_TO_FIELD_NAME[resource as TranscendPullResource]
+        }\` | ${description} | ${scopeMap[resource as TranscendPullResource]
+          .map((scopeName) => TRANSCEND_SCOPES[scopeName].title)
+          .join(', ')} | ${markdownLinks.join('<br>')} |`,
+    )
     .join('\n')}`;
 }
 
