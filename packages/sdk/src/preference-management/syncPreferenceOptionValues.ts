@@ -8,7 +8,13 @@ import {
   type PreferenceOptionValue,
 } from './fetchAllPreferenceOptionValues.js';
 import { CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES } from './gqls/preferenceOptionValues.js';
-import type { ConsentPreferenceTopicOptionValue } from './transcendYmlCodecs.js';
+
+export interface PreferenceOptionValueInput {
+  /** Title of option value */
+  title: string;
+  /** API slug */
+  slug: string;
+}
 
 const MAX_BATCH_SIZE = 50;
 
@@ -22,7 +28,7 @@ const MAX_BATCH_SIZE = 50;
  */
 export async function createOrUpdatePreferenceOptionValues(
   client: GraphQLClient,
-  optionValues: [ConsentPreferenceTopicOptionValue, string | undefined][],
+  optionValues: [PreferenceOptionValueInput, string | undefined][],
   options: {
     /** Logger instance */
     logger?: Logger;
@@ -65,7 +71,7 @@ export async function createOrUpdatePreferenceOptionValues(
  */
 export async function syncPreferenceOptionValues(
   client: GraphQLClient,
-  optionValues: ConsentPreferenceTopicOptionValue[],
+  optionValues: PreferenceOptionValueInput[],
   options: {
     /** Logger instance */
     logger?: Logger;

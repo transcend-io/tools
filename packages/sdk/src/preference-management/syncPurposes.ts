@@ -1,3 +1,5 @@
+import type { UserPrivacySignalEnum } from '@transcend-io/airgap.js-types';
+import type { PreferenceStoreAuthLevel } from '@transcend-io/privacy-types';
 import { type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
@@ -5,7 +7,32 @@ import { keyBy } from 'lodash-es';
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
 import { CREATE_PURPOSE, UPDATE_PURPOSE } from './gqls/purpose.js';
-import type { ConsentPurpose } from './transcendYmlCodecs.js';
+
+export interface PurposeInput {
+  /** Purpose slug (immutable key used to match existing purposes) */
+  trackingType: string;
+  /** Display name of the purpose */
+  name: string;
+  /** Title shown in Consent Management and Privacy Center UIs */
+  title?: string;
+  /** Description of the purpose */
+  description?: string;
+  /** Whether the purpose is active */
+  'is-active'?: boolean;
+  /** Whether the purpose is configurable */
+  configurable?: boolean;
+  /** Display order of the purpose in the privacy center */
+  'display-order'?: number;
+  /** Whether the purpose is shown in the privacy center */
+  'show-in-privacy-center'?: boolean;
+  /** Whether the purpose is shown in the consent manager */
+  'show-in-consent-manager'?: boolean;
+  /** Authentication level required for the purpose */
+  'auth-level'?: PreferenceStoreAuthLevel;
+  /** Opt-out signals that instantly opt out of this purpose */
+  'opt-out-signals'?: UserPrivacySignalEnum[];
+  // NOTE: `default-consent` is not writable via createPurpose/updatePurpose and is pull-only.
+}
 
 export interface SyncPurposesResult {
   /** Whether every purpose synced without error */
@@ -25,7 +52,7 @@ export interface SyncPurposesResult {
  */
 export async function syncPurposes(
   client: GraphQLClient,
-  purposes: ConsentPurpose[],
+  purposes: PurposeInput[],
   options: {
     /** Logger instance */
     logger?: Logger;

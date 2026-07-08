@@ -1,3 +1,4 @@
+import type { PreferenceTopicType } from '@transcend-io/privacy-types';
 import { type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { keyBy, uniqBy } from 'lodash-es';
@@ -7,8 +8,30 @@ import { fetchAllPreferenceOptionValues } from './fetchAllPreferenceOptionValues
 import { fetchAllPreferenceTopics } from './fetchAllPreferenceTopics.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
 import { CREATE_OR_UPDATE_PREFERENCE_TOPIC } from './gqls/preferenceTopic.js';
-import { createOrUpdatePreferenceOptionValues } from './syncPreferenceOptionValues.js';
-import type { PreferenceTopicWithPurpose } from './transcendYmlCodecs.js';
+import {
+  createOrUpdatePreferenceOptionValues,
+  type PreferenceOptionValueInput,
+} from './syncPreferenceOptionValues.js';
+
+export interface PreferenceTopicSyncInput {
+  /** Purpose slug (trackingType) this topic belongs to */
+  'tracking-type': string;
+  /** The type of the preference topic */
+  type: PreferenceTopicType;
+  /** The title of the preference topic */
+  title: string;
+  /** The description of the preference topic */
+  description: string;
+  /** API slug for the preference topic */
+  slug: string;
+  /** Default configuration value */
+  'default-configuration'?: string;
+  /** Whether the preference topic is shown in the privacy center */
+  'show-in-privacy-center'?: boolean;
+  /** The option values when the type is single or multi select */
+  options?: PreferenceOptionValueInput[];
+  // NOTE: `color` is not writable via createOrUpdatePreferenceTopic and is pull-only.
+}
 
 /**
  * Sync preference topics to Transcend, matching existing topics by (trackingType, slug).
@@ -21,7 +44,7 @@ import type { PreferenceTopicWithPurpose } from './transcendYmlCodecs.js';
  */
 export async function syncPreferenceTopics(
   client: GraphQLClient,
-  topics: PreferenceTopicWithPurpose[],
+  topics: PreferenceTopicSyncInput[],
   options: {
     /** Logger instance */
     logger?: Logger;

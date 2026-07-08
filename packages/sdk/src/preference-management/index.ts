@@ -4,7 +4,6 @@ export * from './fetchAllPurposesAndPreferences.js';
 export * from './createPreferenceAccessTokens.js';
 export * from './types.js';
 export * from './codecs.js';
-export * from './transcendYmlCodecs.js';
 export * from './getPreferenceMetadataFromRow.js';
 export * from './getPreferenceIdentifiersFromRow.js';
 export * from './getUniquePreferenceIdentifierNamesFromRow.js';
