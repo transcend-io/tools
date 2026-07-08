@@ -50,13 +50,21 @@ async function syncConfiguration({
 
   // Sync to Transcend
   try {
-    const encounteredError = await syncConfigurationToTranscend(contents, client, {
+    const result = await syncConfigurationToTranscend(contents, client, {
       pageSize,
       publishToPrivacyCenter,
       classifyService,
       deleteExtraAttributeValues,
+      logger,
     });
-    return !encounteredError;
+    if (!result.success) {
+      result.errors.forEach(({ resource, item, message }) => {
+        logger.error(
+          colors.red(`Failed to sync ${resource}${item ? ` "${item}"` : ''}: ${message}`),
+        );
+      });
+    }
+    return result.success;
   } catch (err) {
     logger.error(colors.red(`An unexpected error occurred syncing the schema: ${err.message}`));
     return false;
