@@ -4,6 +4,7 @@ import {
   ConsentTrackerStatus,
   ActionItemCode,
   RetentionType,
+  PreferenceTopicType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -39,6 +40,7 @@ import {
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
   fetchAllConsentWorkflowTriggers,
+  fetchAllPreferenceOptionValues,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -93,6 +95,8 @@ import {
   RiskLogicInput,
   ConsentPurpose,
   ConsentWorkflowTriggerInput,
+  ConsentPreferenceTopic,
+  ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
@@ -192,6 +196,7 @@ export async function pullTranscendConfiguration(
     assessmentTemplates,
     purposes,
     consentWorkflowTriggers,
+    preferenceOptionValues,
     siloDiscoveryResults,
   ] = await Promise.all([
     // Grab all data subjects in the organization
@@ -359,6 +364,9 @@ export async function pullTranscendConfiguration(
       : [],
     resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
       ? fetchAllConsentWorkflowTriggers(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.PreferenceOptions)
+      ? fetchAllPreferenceOptionValues(client, { logger })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -1404,26 +1412,29 @@ export async function pullTranscendConfiguration(
         'auth-level': authLevel || undefined,
         'preference-topics': topics.map(
           ({
+            slug,
             title,
             type,
+            color,
             displayDescription,
             defaultConfiguration,
             showInPrivacyCenter,
             preferenceOptionValues,
-          }) => ({
+          }): ConsentPreferenceTopic => ({
+            slug,
             title: title.defaultMessage,
             type,
+            color,
             description: displayDescription.defaultMessage,
             'default-configuration': defaultConfiguration,
             'show-in-privacy-center': showInPrivacyCenter,
-            ...(preferenceOptionValues.length > 0
-              ? {
-                  options: preferenceOptionValues.map(({ title, slug }) => ({
+            options:
+              type === PreferenceTopicType.Boolean
+                ? []
+                : preferenceOptionValues.map(({ title, slug }) => ({
                     title: title.defaultMessage,
                     slug,
                   })),
-                }
-              : {}),
           }),
         ),
       }),
@@ -1445,6 +1456,18 @@ export async function pullTranscendConfiguration(
         'is-active': trigger.isActive,
         'data-silo-titles':
           trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
+      }),
+    );
+  }
+
+  if (
+    preferenceOptionValues.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceOptions)
+  ) {
+    result['preference-options'] = preferenceOptionValues.map(
+      ({ slug, title }): ConsentPreferenceTopicOptionValue => ({
+        slug,
+        title: title.defaultMessage,
       }),
     );
   }

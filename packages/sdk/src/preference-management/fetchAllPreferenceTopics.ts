@@ -30,6 +30,8 @@ export interface PreferenceTopic {
   type: PreferenceTopicType;
   /** Default configuration */
   defaultConfiguration: string;
+  /** Display color for the preference topic */
+  color?: string;
   /** Option values */
   preferenceOptionValues: {
     /** Slug of value */
