@@ -82,14 +82,9 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ManagePreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ManageDataMap],
-  // updateWorkflowConfig requires ManageWorkflows; syncWorkflowConfigs also reads
-  // actions + data subjects (ViewDataSubjectRequestSettings) and attribute keys
-  // (ViewGlobalAttributes) to resolve names to IDs
-  [TranscendPullResource.WorkflowConfigs]: [
-    ScopeName.ManageWorkflows,
-    ScopeName.ViewDataSubjectRequestSettings,
-    ScopeName.ViewGlobalAttributes,
-  ],
+  // ManageWorkflows inherits ViewDataSubjectRequestSettings and ViewGlobalAttributes
+  // (needed to resolve action/data-subject/attribute-key names to IDs on push)
+  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ManageWorkflows],
 };
 
 /**
@@ -138,8 +133,7 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
-  // The `workflows` GraphQL query is only granted by ManageWorkflows
-  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ManageWorkflows],
+  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ViewWorkflows],
 };
 
 export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof TranscendInput> = {
