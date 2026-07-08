@@ -54402,7 +54402,7 @@
                   "allOf": [
                     {
                       "type": "object",
-                      "required": ["type", "title", "description"],
+                      "required": ["type", "title", "description", "slug"],
                       "properties": {
                         "type": {
                           "type": "string",
@@ -54413,12 +54413,18 @@
                         },
                         "description": {
                           "type": "string"
+                        },
+                        "slug": {
+                          "type": "string"
                         }
                       }
                     },
                     {
                       "type": "object",
                       "properties": {
+                        "color": {
+                          "type": "string"
+                        },
                         "default-configuration": {
                           "type": "string"
                         },
@@ -59983,6 +59989,21 @@
             }
           }
         ]
+      }
+    },
+    "preference-options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "slug"],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
       }
     }
   }

@@ -29,3 +29,25 @@ export const PURPOSES: DocumentNode = parse(gql`
     }
   }
 `);
+
+export const CREATE_PURPOSE: DocumentNode = parse(gql`
+  mutation TranscendCliCreatePurpose($input: CreatePurposeInput!) {
+    createPurpose(input: $input) {
+      purpose {
+        id
+        trackingType
+      }
+    }
+  }
+`);
+
+export const UPDATE_PURPOSE: DocumentNode = parse(gql`
+  mutation TranscendCliUpdatePurpose($input: UpdatePurposeInput!) {
+    updatePurpose(input: $input) {
+      purpose {
+        id
+        trackingType
+      }
+    }
+  }
+`);
