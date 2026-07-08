@@ -1,11 +1,11 @@
-import type { UserPrivacySignalEnum } from '@transcend-io/airgap.js-types';
+import { KnownDefaultPurpose, type UserPrivacySignalEnum } from '@transcend-io/airgap.js-types';
 import type { PreferenceStoreAuthLevel } from '@transcend-io/privacy-types';
 import { type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { fetchAllPurposes } from './fetchAllPurposes.js';
+import { fetchAllPurposes, type Purpose } from './fetchAllPurposes.js';
 import { CREATE_PURPOSE, UPDATE_PURPOSE } from './gqls/purpose.js';
 
 export interface PurposeInput {
@@ -41,6 +41,61 @@ export interface SyncPurposesResult {
   purposeIdByTrackingType: Record<string, string>;
 }
 
+const DEFAULT_PURPOSE_TRACKING_TYPES: ReadonlySet<string> = new Set(
+  Object.values(KnownDefaultPurpose),
+);
+
+/**
+ * Whether a purpose tracking type is a built-in default that cannot be updated via API.
+ *
+ * @param trackingType - Purpose tracking type slug
+ * @returns True when the purpose is a built-in default
+ */
+function isUnwritableDefaultPurpose(trackingType: string): boolean {
+  return DEFAULT_PURPOSE_TRACKING_TYPES.has(trackingType);
+}
+
+/**
+ * Compare opt-out signal lists regardless of order.
+ *
+ * @param left - First signal list
+ * @param right - Second signal list
+ * @returns True when both lists contain the same signals
+ */
+function optOutSignalsMatch(
+  left: UserPrivacySignalEnum[] | undefined,
+  right: UserPrivacySignalEnum[],
+): boolean {
+  const normalizedLeft = [...(left ?? [])].sort();
+  const normalizedRight = [...right].sort();
+  return (
+    normalizedLeft.length === normalizedRight.length &&
+    normalizedLeft.every((signal, index) => signal === normalizedRight[index])
+  );
+}
+
+/**
+ * Whether a purpose update would be a no-op against the existing server record.
+ *
+ * @param found - Existing purpose from the API
+ * @param input - Purpose input from YAML
+ * @returns True when no writable fields differ
+ */
+function purposeUpdateMatchesExisting(found: Purpose, input: PurposeInput): boolean {
+  return (
+    input.name === found.name &&
+    input.title === found.title &&
+    input.description === found.description &&
+    input['is-active'] === found.isActive &&
+    input.configurable === found.configurable &&
+    input['display-order'] === found.displayOrder &&
+    input['show-in-privacy-center'] === found.showInPrivacyCenter &&
+    input['show-in-consent-manager'] === found.showInConsentManager &&
+    input['auth-level'] === found.authLevel &&
+    optOutSignalsMatch(input['opt-out-signals'], found.optOutSignals)
+  );
+}
+
 /**
  * Sync tracking purposes to Transcend, matching existing purposes by trackingType.
  * Creates purposes that do not yet exist and updates the rest.
@@ -72,6 +127,18 @@ export async function syncPurposes(
     const found = existingByTrackingType[purpose.trackingType];
     try {
       if (found) {
+        if (isUnwritableDefaultPurpose(purpose.trackingType)) {
+          logger?.info(
+            `Skipping update for default purpose "${purpose.trackingType}" (built-in purposes are not writable via API)`,
+          );
+          purposeIdByTrackingType[purpose.trackingType] = found.id;
+          continue;
+        }
+        if (purposeUpdateMatchesExisting(found, purpose)) {
+          logger?.info(`Skipping unchanged purpose "${purpose.trackingType}"`);
+          purposeIdByTrackingType[purpose.trackingType] = found.id;
+          continue;
+        }
         await makeGraphQLRequest(client, UPDATE_PURPOSE, {
           variables: {
             input: {

@@ -84,16 +84,28 @@ export async function syncPreferenceOptionValues(
   const existing = await fetchAllPreferenceOptionValues(client, { logger });
   const optionValueBySlug = keyBy(existing, 'slug');
 
+  const changedOptionValues = optionValues.filter((optionValueInput) => {
+    const found = optionValueBySlug[optionValueInput.slug];
+    return !found || found.title.defaultMessage !== optionValueInput.title;
+  });
+
+  if (changedOptionValues.length === 0) {
+    logger?.info(`Skipping "${optionValues.length}" unchanged preference option values`);
+    return true;
+  }
+
   try {
     await createOrUpdatePreferenceOptionValues(
       client,
-      optionValues.map((optionValueInput) => [
+      changedOptionValues.map((optionValueInput) => [
         optionValueInput,
         optionValueBySlug[optionValueInput.slug]?.id,
       ]),
       { logger },
     );
-    logger?.info(`Successfully synced "${optionValues.length}" preference option values!`);
+    logger?.info(
+      `Successfully synced "${changedOptionValues.length}" preference option values (${optionValues.length - changedOptionValues.length} unchanged skipped)!`,
+    );
     return true;
   } catch (err) {
     logger?.error(`Failed to sync preference option values! - ${(err as Error).message}`);

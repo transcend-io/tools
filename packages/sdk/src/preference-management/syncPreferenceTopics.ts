@@ -5,7 +5,7 @@ import { keyBy, uniqBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllPreferenceOptionValues } from './fetchAllPreferenceOptionValues.js';
-import { fetchAllPreferenceTopics } from './fetchAllPreferenceTopics.js';
+import { fetchAllPreferenceTopics, type PreferenceTopic } from './fetchAllPreferenceTopics.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
 import { CREATE_OR_UPDATE_PREFERENCE_TOPIC } from './gqls/preferenceTopic.js';
 import {
@@ -97,6 +97,35 @@ function buildUpdatePreferenceTopicInput(
 }
 
 /**
+ * Whether a topic update would be a no-op against the existing server record.
+ *
+ * @param existing - Existing topic from the API
+ * @param input - Topic input from YAML
+ * @returns True when no writable fields differ
+ */
+function topicUpdateMatchesExisting(
+  existing: PreferenceTopic,
+  input: PreferenceTopicSyncInput,
+): boolean {
+  const existingOptionSlugs = existing.preferenceOptionValues
+    .map(({ slug }) => slug)
+    .sort()
+    .join(',');
+  const inputOptionSlugs = (input.options ?? [])
+    .map(({ slug }) => slug)
+    .sort()
+    .join(',');
+
+  return (
+    existing.title.defaultMessage === input.title &&
+    existing.displayDescription.defaultMessage === input.description &&
+    existing.showInPrivacyCenter === input['show-in-privacy-center'] &&
+    existing.defaultConfiguration === input['default-configuration'] &&
+    (input.type === PreferenceTopicType.Boolean || existingOptionSlugs === inputOptionSlugs)
+  );
+}
+
+/**
  * Sync preference topics to Transcend, matching existing topics by (trackingType, slug).
  * Inline option values are upserted (by slug) so their IDs can be linked to the topic.
  *
@@ -137,7 +166,10 @@ export async function syncPreferenceTopics(
       .filter((topic) => topic.type !== PreferenceTopicType.Boolean)
       .flatMap((topic) => topic.options ?? []),
     'slug',
-  );
+  ).filter((optionValue) => {
+    const found = existingOptionValues.find(({ slug }) => slug === optionValue.slug);
+    return !found || found.title.defaultMessage !== optionValue.title;
+  });
   if (inlineOptions.length > 0) {
     try {
       const upserted = await createOrUpdatePreferenceOptionValues(
@@ -197,6 +229,11 @@ export async function syncPreferenceTopics(
         : (topic.options ?? [])
             .map((optionValue) => optionIdBySlug[optionValue.slug])
             .filter((id): id is string => Boolean(id));
+
+    if (existing && topicUpdateMatchesExisting(existing, topic)) {
+      logger?.info(`Skipping unchanged preference topic "${topic.title}"`);
+      continue;
+    }
 
     try {
       const input = existing
