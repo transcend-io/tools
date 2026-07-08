@@ -202,6 +202,13 @@ const RESOURCE_DOCUMENTATION: Record<
 (https://app.transcend.io/consent-manager/regional-experiences/purposes)',
     ],
   },
+  [TranscendPullResource.PreferenceOptions]: {
+    description: 'Preference option values for single and multi-select preference topics.',
+    markdownLinks: [
+      '[Consent Management -> Regional Experiences -> Purposes]\
+(https://app.transcend.io/consent-manager/regional-experiences/purposes)',
+    ],
+  },
   [TranscendPullResource.SystemDiscovery]: {
     description: 'System discovery results',
     markdownLinks: [

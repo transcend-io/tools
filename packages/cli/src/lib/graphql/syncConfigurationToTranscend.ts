@@ -29,6 +29,7 @@ import {
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
+  syncPreferenceOptionValues,
   syncTeams,
   syncTemplate,
   syncVendors,
@@ -122,6 +123,8 @@ export async function syncConfigurationToTranscend(
     partitions,
   } = input;
 
+  const preferenceOptions = input['preference-options'];
+
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
     enrichers || identifiers
@@ -143,6 +146,15 @@ export async function syncConfigurationToTranscend(
       ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
+
+  if (preferenceOptions?.length) {
+    const preferenceOptionsSuccess = await syncPreferenceOptionValues(client, preferenceOptions, {
+      logger: activeLogger,
+    });
+    if (!preferenceOptionsSuccess) {
+      recordError('preference-options', 'Failed to sync preference option values');
+    }
+  }
 
   // Sync consent manager
   if (consentManager) {

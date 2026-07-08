@@ -1,0 +1,9 @@
+# Standalone preference option values for multi/single-select preference topics.
+# These can be referenced from purposes[].preference-topics[].options by slug.
+preference-options:
+  - title: Email notifications
+    slug: email-notifications
+  - title: SMS alerts
+    slug: sms-alerts
+  - title: Push notifications
+    slug: push-notifications

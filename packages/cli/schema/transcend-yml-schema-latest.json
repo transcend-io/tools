@@ -59909,6 +59909,21 @@
           }
         ]
       }
+    },
+    "preference-options": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title", "slug"],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

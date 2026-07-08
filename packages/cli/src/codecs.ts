@@ -2069,6 +2069,10 @@ export const TranscendInput = t.partial({
    * The full list of silo discovery results
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
+  /**
+   * Preference management options for multi and single selects
+   */
+  'preference-options': t.array(ConsentPreferenceTopicOptionValue),
 });
 
 /** Type override */

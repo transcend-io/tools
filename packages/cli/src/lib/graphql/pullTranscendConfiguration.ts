@@ -38,6 +38,7 @@ import {
   fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
+  fetchAllPreferenceOptionValues,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -91,6 +92,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
@@ -189,6 +191,7 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
+    preferenceOptionValues,
     siloDiscoveryResults,
   ] = await Promise.all([
     // Grab all data subjects in the organization
@@ -353,6 +356,9 @@ export async function pullTranscendConfiguration(
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.PreferenceOptions)
+      ? fetchAllPreferenceOptionValues(client, { logger })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -1420,6 +1426,18 @@ export async function pullTranscendConfiguration(
               : {}),
           }),
         ),
+      }),
+    );
+  }
+
+  if (
+    preferenceOptionValues.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceOptions)
+  ) {
+    result['preference-options'] = preferenceOptionValues.map(
+      ({ slug, title }): ConsentPreferenceTopicOptionValue => ({
+        slug,
+        title: title.defaultMessage,
       }),
     );
   }

@@ -21,3 +21,5 @@ export * from './fetchConsentPreferences.js';
 export * from './getPreferencesForIdentifiers.js';
 export * from './fetchConsentPreferencesChunked.js';
 export * from './loadReferenceData.js';
+export * from './fetchAllPreferenceOptionValues.js';
+export * from './syncPreferenceOptionValues.js';
