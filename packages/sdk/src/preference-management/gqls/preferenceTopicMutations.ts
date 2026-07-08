@@ -28,14 +28,3 @@ export const CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES: DocumentNode = parse(gql
     }
   }
 `);
-
-export const CREATE_OR_UPDATE_PREFERENCE_TOPIC: DocumentNode = parse(gql`
-  mutation TranscendCliCreateOrUpdatePreferenceTopic($input: CreateOrUpdatePreferenceTopicInput!) {
-    createOrUpdatePreferenceTopic(input: $input) {
-      preferenceTopic {
-        id
-        slug
-      }
-    }
-  }
-`);

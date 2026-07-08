@@ -30,8 +30,6 @@ import {
   syncPromptPartials,
   syncPrompts,
   syncPreferenceOptionValues,
-  syncPreferenceTopics,
-  type ConsentPreferenceTopicSyncInput,
   syncTeams,
   syncTemplate,
   syncVendors,
@@ -126,7 +124,6 @@ export async function syncConfigurationToTranscend(
   } = input;
 
   const preferenceOptions = input['preference-options'];
-  const preferenceTopics = input['preference-topics'];
 
   const [identifierByName, dataSubjectsByName, apiKeyTitleMap] = await Promise.all([
     // Ensure all identifiers are created and create a map from name -> identifier.id
@@ -156,25 +153,6 @@ export async function syncConfigurationToTranscend(
     });
     if (!preferenceOptionsSuccess) {
       recordError('preference-options', 'Failed to sync preference option values');
-    }
-  }
-
-  if (preferenceTopics?.length) {
-    const topicsMissingPurpose = preferenceTopics.filter((topic) => !topic['tracking-type']);
-    if (topicsMissingPurpose.length > 0) {
-      recordError(
-        'preference-topics',
-        `tracking-type is required for top-level preference-topics (missing on: ${topicsMissingPurpose.map((t) => t.title).join(', ')})`,
-      );
-    } else {
-      const preferenceTopicsSuccess = await syncPreferenceTopics(
-        client,
-        preferenceTopics as Array<ConsentPreferenceTopicSyncInput & { 'tracking-type': string }>,
-        { logger: activeLogger },
-      );
-      if (!preferenceTopicsSuccess) {
-        recordError('preference-topics', 'Failed to sync preference topics');
-      }
     }
   }
 

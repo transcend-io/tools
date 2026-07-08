@@ -54425,9 +54425,6 @@
                         "color": {
                           "type": "string"
                         },
-                        "tracking-type": {
-                          "type": "string"
-                        },
                         "default-configuration": {
                           "type": "string"
                         },
@@ -59932,64 +59929,6 @@
             "type": "string"
           }
         }
-      }
-    },
-    "preference-topics": {
-      "type": "array",
-      "items": {
-        "allOf": [
-          {
-            "type": "object",
-            "required": ["type", "title", "description"],
-            "properties": {
-              "type": {
-                "type": "string",
-                "enum": ["SELECT", "MULTI_SELECT", "BOOLEAN"]
-              },
-              "title": {
-                "type": "string"
-              },
-              "description": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "properties": {
-              "slug": {
-                "type": "string"
-              },
-              "color": {
-                "type": "string"
-              },
-              "tracking-type": {
-                "type": "string"
-              },
-              "default-configuration": {
-                "type": "string"
-              },
-              "show-in-privacy-center": {
-                "type": "boolean"
-              },
-              "options": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": ["title", "slug"],
-                  "properties": {
-                    "title": {
-                      "type": "string"
-                    },
-                    "slug": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        ]
       }
     }
   }

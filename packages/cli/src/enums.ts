@@ -57,7 +57,6 @@ export enum TranscendPullResource {
   AssessmentTemplates = 'assessmentTemplates',
   Purposes = 'purposes',
   PreferenceOptions = 'preferenceOptions',
-  PreferenceTopics = 'preferenceTopics',
   SystemDiscovery = 'systemDiscovery',
 }
 

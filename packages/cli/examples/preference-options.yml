@@ -1,5 +1,5 @@
 # Standalone preference option values (Preferences -> Preference Topics -> Options tab).
-# Slugs use ConstantCase. Reference these from preference-topics[].options by slug.
+# Slugs use ConstantCase. Reference these from purposes[].preference-topics[].options by slug.
 preference-options:
   - title: Email notifications
     slug: EmailNotifications

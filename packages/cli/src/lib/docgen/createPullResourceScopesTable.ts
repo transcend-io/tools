@@ -210,14 +210,6 @@ const RESOURCE_DOCUMENTATION: Record<
 (https://app.transcend.io/preference-store/preference-topics)',
     ],
   },
-  [TranscendPullResource.PreferenceTopics]: {
-    description:
-      'Preference topics presented to users in Preference UIs (Preferences -> Preference Topics -> Topics tab).',
-    markdownLinks: [
-      '[Preferences -> Preference Topics -> Topics]\
-(https://app.transcend.io/preference-store/preference-topics)',
-    ],
-  },
   [TranscendPullResource.SystemDiscovery]: {
     description: 'System discovery results',
     markdownLinks: [
