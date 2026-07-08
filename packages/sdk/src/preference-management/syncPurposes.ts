@@ -51,28 +51,6 @@ function optOutSignalsMatch(
 }
 
 /**
- * Whether a purpose update would be a no-op against the existing server record.
- *
- * @param found - Existing purpose from the API
- * @param input - Purpose input from YAML
- * @returns True when no writable fields differ
- */
-function purposeUpdateMatchesExisting(found: Purpose, input: PurposeInput): boolean {
-  return (
-    input.name === found.name &&
-    input.title === found.title &&
-    input.description === found.description &&
-    input['is-active'] === found.isActive &&
-    input.configurable === found.configurable &&
-    input['display-order'] === found.displayOrder &&
-    input['show-in-privacy-center'] === found.showInPrivacyCenter &&
-    input['show-in-consent-manager'] === found.showInConsentManager &&
-    input['auth-level'] === found.authLevel &&
-    optOutSignalsMatch(input['opt-out-signals'], found.optOutSignals)
-  );
-}
-
-/**
  * Build updatePurpose input with only changed fields.
  * Built-in default purposes cannot sync `configurable` or `showInConsentManager`.
  *
@@ -175,12 +153,6 @@ export async function syncPurposes(
     const found = existingByTrackingType[purpose.trackingType];
     try {
       if (found) {
-        if (purposeUpdateMatchesExisting(found, purpose)) {
-          logger?.info(`Skipping unchanged purpose "${purpose.trackingType}"`);
-          purposeIdByTrackingType[purpose.trackingType] = found.id;
-          continue;
-        }
-
         const { input: updateInput, isEmpty } = buildUpdatePurposeInput(found, purpose, {
           logger,
         });
