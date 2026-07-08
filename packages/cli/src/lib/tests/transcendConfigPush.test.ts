@@ -6,6 +6,7 @@ import {
   derivePushScopesFromTranscendInput,
   hasTranscendConfigSection,
   stripEmptyTranscendConfigSections,
+  summarizeTranscendConfigSections,
 } from '../transcendConfigPush.js';
 
 describe('transcendConfigPush', () => {
@@ -37,5 +38,14 @@ describe('transcendConfigPush', () => {
 
     expect(scopes).toContain(ScopeName.ManageConsentManager);
     expect(scopes).not.toContain(ScopeName.ManageAllActionItems);
+  });
+
+  it('summarizeTranscendConfigSections lists present sections', () => {
+    expect(
+      summarizeTranscendConfigSections({
+        purposes: [{ title: 'Ads', name: 'Ads', trackingType: 'Ads' }],
+        templates: [{ title: 'A' }, { title: 'B' }],
+      } as TranscendInput),
+    ).toBe('purposes: (1), templates: (2)');
   });
 });

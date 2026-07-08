@@ -154,12 +154,12 @@ async function createPurposeRecord(
 ): Promise<string> {
   const { logger } = options;
   const {
-    createPurpose: { trackingPurpose },
+    createPurpose: { purpose },
   } = await makeGraphQLRequest<{
     /** createPurpose mutation */
     createPurpose: {
       /** Purpose */
-      trackingPurpose: {
+      purpose: {
         /** ID */
         id: string;
       };
@@ -171,9 +171,10 @@ async function createPurposeRecord(
         showInPrivacyCenter: input['show-in-privacy-center'],
         showInConsentManager: input['show-in-consent-manager'],
         optOutSignals: input['opt-out-signals'],
-        name: input.title,
+        name: input.name,
         isActive: input['is-active'],
-        description: input.description,
+        // CreatePurposeInput.description is a required non-null String
+        description: input.description ?? '',
         displayOrder: input['display-order'],
         configurable: input.configurable,
         authLevel: input['auth-level'],
@@ -186,14 +187,14 @@ async function createPurposeRecord(
   if (input['preference-topics'] && input['preference-topics'].length > 0) {
     await createOrUpdatePreferenceTopics(client, input['preference-topics'], {
       ...options,
-      purposeId: trackingPurpose.id,
+      purposeId: purpose.id,
       topicsByTitle: {},
     });
     logger?.info(
       `Successfully synced ${input['preference-topics'].length} preference topics for purpose "${input.title}"!`,
     );
   }
-  return trackingPurpose.id;
+  return purpose.id;
 }
 
 /**
@@ -218,7 +219,7 @@ async function updatePurposeRecord(
         showInConsentManager: input['show-in-consent-manager'],
         configurable: input.configurable,
         optOutSignals: input['opt-out-signals'],
-        name: input.title,
+        name: input.name,
         isActive: input['is-active'],
         displayOrder: input['display-order'],
         description: input.description,

@@ -42,12 +42,10 @@ export async function createOrUpdatePreferenceOptionValues(
   }>(client, CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES, {
     variables: {
       input: {
-        input: {
-          preferenceOptionValues: optionValues.map(([optionValue, id]) => ({
-            ...optionValue,
-            id,
-          })),
-        },
+        preferenceOptionValues: optionValues.map(([optionValue, id]) => ({
+          ...optionValue,
+          id,
+        })),
       },
     },
     logger,

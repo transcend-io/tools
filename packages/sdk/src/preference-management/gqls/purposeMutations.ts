@@ -2,9 +2,9 @@ import { parse, type DocumentNode } from 'graphql';
 import { gql } from 'graphql-request';
 
 export const CREATE_PURPOSE: DocumentNode = parse(gql`
-  mutation TranscendCliCreatePurpose($input: TrackingPurposeCreateInput!) {
+  mutation TranscendCliCreatePurpose($input: CreatePurposeInput!) {
     createPurpose(input: $input) {
-      trackingPurpose {
+      purpose {
         id
         name
         trackingType
@@ -14,9 +14,9 @@ export const CREATE_PURPOSE: DocumentNode = parse(gql`
 `);
 
 export const UPDATE_PURPOSE: DocumentNode = parse(gql`
-  mutation TranscendCliUpdatePurpose($input: TrackingPurposeUpdateInput!) {
+  mutation TranscendCliUpdatePurpose($input: UpdatePurposeInput!) {
     updatePurpose(input: $input) {
-      trackingPurpose {
+      purpose {
         id
         name
         trackingType
