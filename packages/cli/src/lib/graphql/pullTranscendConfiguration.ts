@@ -38,6 +38,7 @@ import {
   fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
+  fetchAllWorkflowConfigs,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -91,6 +92,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  WorkflowConfigInput,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
@@ -189,6 +191,7 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
+    workflowConfigs,
     siloDiscoveryResults,
   ] = await Promise.all([
     // Grab all data subjects in the organization
@@ -353,6 +356,9 @@ export async function pullTranscendConfiguration(
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.WorkflowConfigs)
+      ? fetchAllWorkflowConfigs(client, { logger, workflowConfigType: 'DSR' })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -1420,6 +1426,23 @@ export async function pullTranscendConfiguration(
               : {}),
           }),
         ),
+      }),
+    );
+  }
+
+  if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
+    result['workflow-configs'] = workflowConfigs.map(
+      (config): WorkflowConfigInput => ({
+        id: config.id,
+        title: config.title,
+        ...(config.subtitle ? { subtitle: config.subtitle } : {}),
+        ...(config.description ? { description: config.description } : {}),
+        ...(config.internalName ? { 'internal-name': config.internalName } : {}),
+        'action-type': config.action.type,
+        ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
+        visibility: config.workflowConfigVisibility as WorkflowConfigInput['visibility'],
+        type: config.workflowConfigType as WorkflowConfigInput['type'],
+        ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
       }),
     );
   }

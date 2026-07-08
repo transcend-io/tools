@@ -58,6 +58,8 @@ import {
   Controllership,
   RetentionType,
   DataProtectionImpactAssessmentStatus,
+  WorkflowConfigVisibility,
+  WorkflowConfigType,
   ConsentThemeInput,
   ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -1908,6 +1910,39 @@ export const ConsentPurpose = t.intersection([
 export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
 
 /**
+ * Input to define a DSR workflow config (update-only — create in Admin Dashboard)
+ */
+export const WorkflowConfigInput = t.intersection([
+  t.type({
+    /** Workflow config ID */
+    id: t.string,
+  }),
+  t.partial({
+    /** Title */
+    title: t.string,
+    /** Subtitle */
+    subtitle: t.string,
+    /** Description */
+    description: t.string,
+    /** Internal name */
+    'internal-name': t.string,
+    /** Request action type */
+    'action-type': t.string,
+    /** Data subject type */
+    'data-subject-type': t.string,
+    /** Visibility tier */
+    visibility: valuesOf(WorkflowConfigVisibility),
+    /** Workflow config type (read-only on pull; included for reference) */
+    type: valuesOf(WorkflowConfigType),
+    /** Region allow list */
+    'region-list': t.array(t.string),
+  }),
+]);
+
+/** Type override */
+export type WorkflowConfigInput = t.TypeOf<typeof WorkflowConfigInput>;
+
+/**
  * Input to define a silo discovery results
  *
  * @see https://docs.transcend.io/docs/silo-discovery
@@ -2069,6 +2104,10 @@ export const TranscendInput = t.partial({
    * The full list of silo discovery results
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
+  /**
+   * DSR workflow config settings (update-only)
+   */
+  'workflow-configs': t.array(WorkflowConfigInput),
 });
 
 /** Type override */
