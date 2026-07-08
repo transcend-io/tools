@@ -1929,7 +1929,7 @@ export const WorkflowConfigInput = t.intersection([
     /** Internal name */
     'internal-name': t.string,
     /** Request action type */
-    'action-type': t.string,
+    'action-type': valuesOf(RequestAction),
     /** Data subject type */
     'data-subject-type': t.string,
     /** Visibility tier */
@@ -1939,12 +1939,12 @@ export const WorkflowConfigInput = t.intersection([
     /** Whether to collect the data subject's region during intake */
     'collect-data-subject-regions': valuesOf(CollectDataSubjectRegions),
     /** Region allow list */
-    'region-list': t.array(t.string),
+    'region-list': t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
     /** Per-region request expiry times */
     'expiry-time': t.array(
       t.type({
         /** Region code (or 'default') */
-        region: t.string,
+        region: valuesOf({ default: 'default', ...IsoCountryCode, ...IsoCountrySubdivisionCode }),
         /** Expiry time in days */
         value: t.number,
       }),

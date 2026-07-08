@@ -4,6 +4,7 @@ import {
   ConsentTrackerStatus,
   ActionItemCode,
   RetentionType,
+  WorkflowConfigType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -358,7 +359,7 @@ export async function pullTranscendConfiguration(
       ? fetchAllPurposesAndPreferences(client, { logger })
       : [],
     resources.includes(TranscendPullResource.WorkflowConfigs)
-      ? fetchAllWorkflowConfigs(client, { logger, workflowConfigType: 'DSR' })
+      ? fetchAllWorkflowConfigs(client, { logger, workflowConfigType: WorkflowConfigType.DSR })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -1433,24 +1434,29 @@ export async function pullTranscendConfiguration(
   if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
     result['workflow-configs'] = workflowConfigs.map(
       (config): WorkflowConfigInput => ({
-        title: config.title,
-        ...(config.subtitle ? { subtitle: config.subtitle } : {}),
-        ...(config.description ? { description: config.description } : {}),
+        title: config.title.defaultMessage,
+        ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
+        ...(config.description ? { description: config.description.defaultMessage } : {}),
         ...(config.internalName ? { 'internal-name': config.internalName } : {}),
         'action-type': config.action.type,
         ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
-        visibility: config.workflowConfigVisibility as WorkflowConfigInput['visibility'],
-        type: config.workflowConfigType as WorkflowConfigInput['type'],
+        visibility: config.workflowConfigVisibility,
+        type: config.workflowConfigType,
         ...(config.collectDataSubjectRegions
           ? {
-              'collect-data-subject-regions':
-                config.collectDataSubjectRegions as WorkflowConfigInput['collect-data-subject-regions'],
+              'collect-data-subject-regions': config.collectDataSubjectRegions,
             }
           : {}),
         ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
-        ...(config.expiryTime.length > 0 ? { 'expiry-time': config.expiryTime } : {}),
-        ...(config.attributeKeys.length > 0
-          ? { 'attribute-keys': config.attributeKeys.map(({ name }) => name) }
+        ...(config.expiryTime && config.expiryTime.length > 0
+          ? { 'expiry-time': config.expiryTime }
+          : {}),
+        ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
+          ? {
+              'attribute-keys': config.WorkflowConfigAttributeKeys.map(
+                ({ attributeKey }) => attributeKey.name,
+              ),
+            }
           : {}),
       }),
     );

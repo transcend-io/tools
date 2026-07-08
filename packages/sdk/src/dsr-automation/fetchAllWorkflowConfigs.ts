@@ -1,39 +1,59 @@
+import {
+  CollectDataSubjectRegions,
+  IsoCountryCode,
+  IsoCountrySubdivisionCode,
+  RequestAction,
+  WorkflowConfigType,
+  WorkflowConfigVisibility,
+} from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { WORKFLOW_CONFIGS } from './gqls/workflowConfig.js';
 
-export interface WorkflowConfig {
+/** Raw workflow config node returned by GraphQL */
+export interface WorkflowConfigNode {
   /** Workflow config ID */
   id: string;
   /** Title */
-  title: string;
+  title: {
+    /** Default message */
+    defaultMessage: string;
+  };
   /** Subtitle */
-  subtitle: string | null;
+  subtitle: {
+    /** Default message */
+    defaultMessage: string;
+  } | null;
   /** Description */
-  description: string | null;
+  description: {
+    /** Default message */
+    defaultMessage: string;
+  } | null;
   /** Internal name */
   internalName: string | null;
   /** Visibility tier */
-  workflowConfigVisibility: string;
+  workflowConfigVisibility: WorkflowConfigVisibility;
   /** Workflow type (DSR or PREFERENCE_MANAGEMENT) */
-  workflowConfigType: string;
+  workflowConfigType: WorkflowConfigType;
   /** Whether the workflow collects the data subject's region */
-  collectDataSubjectRegions: string | null;
+  collectDataSubjectRegions: CollectDataSubjectRegions | null;
   /** Region allow list */
-  regionList: string[];
+  regionList: (IsoCountryCode | IsoCountrySubdivisionCode)[];
   /** Per-region request expiry times */
-  expiryTime: {
-    /** Region code (or 'default') */
-    region: string;
-    /** Expiry time in days */
-    value: number;
-  }[];
+  expiryTime:
+    | {
+        /** Region code (or 'default') */
+        region: 'default' | IsoCountryCode | IsoCountrySubdivisionCode;
+        /** Expiry time in days */
+        value: number;
+      }[]
+    | null;
   /** Request action */
   action: {
     /** Action type */
-    type: string;
+    type: RequestAction;
   };
   /** Data subject */
   subject: {
@@ -43,12 +63,17 @@ export interface WorkflowConfig {
     type: string;
   } | null;
   /** Attribute keys (custom fields) associated with the workflow */
-  attributeKeys: {
-    /** Attribute key ID */
-    id: string;
-    /** Attribute key name */
-    name: string;
-  }[];
+  WorkflowConfigAttributeKeys:
+    | {
+        /** Attribute key */
+        attributeKey: {
+          /** Attribute key ID */
+          id: string;
+          /** Attribute key name */
+          name: string;
+        };
+      }[]
+    | null;
 }
 
 const PAGE_SIZE = 50;
@@ -64,13 +89,13 @@ export async function fetchAllWorkflowConfigs(
   client: GraphQLClient,
   options: {
     /** Filter by workflow config type */
-    workflowConfigType?: string;
+    workflowConfigType?: WorkflowConfigType;
     /** Logger instance */
     logger?: Logger;
   } = {},
-): Promise<WorkflowConfig[]> {
+): Promise<WorkflowConfigNode[]> {
   const { logger, workflowConfigType } = options;
-  const configs: WorkflowConfig[] = [];
+  const configs: WorkflowConfigNode[] = [];
   let offset = 0;
 
   let shouldContinue = false;
@@ -81,51 +106,7 @@ export async function fetchAllWorkflowConfigs(
       /** Workflows */
       workflows: {
         /** List */
-        nodes: {
-          /** ID */
-          id: string;
-          /** Title */
-          title: { defaultMessage: string };
-          /** Subtitle */
-          subtitle: { defaultMessage: string } | null;
-          /** Description */
-          description: { defaultMessage: string } | null;
-          /** Internal name */
-          internalName: string | null;
-          /** Visibility */
-          workflowConfigVisibility: string;
-          /** Type */
-          workflowConfigType: string;
-          /** Whether the workflow collects the data subject's region */
-          collectDataSubjectRegions: string | null;
-          /** Regions */
-          regionList: string[];
-          /** Per-region request expiry times */
-          expiryTime:
-            | {
-                /** Region code (or 'default') */
-                region: string;
-                /** Expiry time in days */
-                value: number;
-              }[]
-            | null;
-          /** Action */
-          action: { type: string };
-          /** Subject */
-          subject: { id: string; type: string } | null;
-          /** Attribute keys associated with the workflow */
-          WorkflowConfigAttributeKeys:
-            | {
-                /** Attribute key */
-                attributeKey: {
-                  /** Attribute key ID */
-                  id: string;
-                  /** Attribute key name */
-                  name: string;
-                };
-              }[]
-            | null;
-        }[];
+        nodes: WorkflowConfigNode[];
       };
     }>(client, WORKFLOW_CONFIGS, {
       variables: {
@@ -136,28 +117,10 @@ export async function fetchAllWorkflowConfigs(
       logger,
     });
 
-    configs.push(
-      ...nodes.map((node) => ({
-        id: node.id,
-        title: node.title.defaultMessage,
-        subtitle: node.subtitle?.defaultMessage ?? null,
-        description: node.description?.defaultMessage ?? null,
-        internalName: node.internalName,
-        workflowConfigVisibility: node.workflowConfigVisibility,
-        workflowConfigType: node.workflowConfigType,
-        collectDataSubjectRegions: node.collectDataSubjectRegions,
-        regionList: node.regionList,
-        expiryTime: node.expiryTime ?? [],
-        action: node.action,
-        subject: node.subject,
-        attributeKeys: (node.WorkflowConfigAttributeKeys ?? []).map(
-          ({ attributeKey }) => attributeKey,
-        ),
-      })),
-    );
+    configs.push(...nodes);
     offset += PAGE_SIZE;
     shouldContinue = nodes.length === PAGE_SIZE;
   } while (shouldContinue);
 
-  return configs.sort((a, b) => a.title.localeCompare(b.title));
+  return configs.sort((a, b) => a.title.defaultMessage.localeCompare(b.title.defaultMessage));
 }

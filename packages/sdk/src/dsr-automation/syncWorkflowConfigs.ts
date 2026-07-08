@@ -1,6 +1,14 @@
+import {
+  CollectDataSubjectRegions,
+  IsoCountryCode,
+  IsoCountrySubdivisionCode,
+  RequestAction,
+  WorkflowConfigVisibility,
+} from '@transcend-io/privacy-types';
+import { indexBy } from '@transcend-io/type-utils';
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
-import { groupBy, keyBy } from 'lodash-es';
+import { groupBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllActions, type Action } from './fetchAllActions.js';
@@ -23,19 +31,19 @@ export interface WorkflowConfigSyncInput {
   /** Internal name */
   'internal-name'?: string;
   /** Request action type */
-  'action-type'?: string;
+  'action-type'?: RequestAction;
   /** Data subject type */
   'data-subject-type'?: string;
   /** Visibility tier (DRAFT, INTERNAL, PUBLISHED) */
-  visibility?: string;
+  visibility?: WorkflowConfigVisibility;
   /** Whether to collect the data subject's region (COLLECT, DO_NOT_COLLECT) */
-  'collect-data-subject-regions'?: string;
+  'collect-data-subject-regions'?: CollectDataSubjectRegions;
   /** Region allow list */
-  'region-list'?: string[];
+  'region-list'?: (IsoCountryCode | IsoCountrySubdivisionCode)[];
   /** Per-region request expiry times */
   'expiry-time'?: {
     /** Region code (or 'default') */
-    region: string;
+    region: 'default' | IsoCountryCode | IsoCountrySubdivisionCode;
     /** Expiry time in days */
     value: number;
   }[];
@@ -78,10 +86,10 @@ export async function syncWorkflowConfigs(
     needsAttributeKeys ? fetchAllRequestAttributeKeys(client, { logger }) : ([] as AttributeKey[]),
   ]);
 
-  const configsByTitle = groupBy(existingConfigs, 'title');
-  const actionByType = keyBy(actions, 'type') as Record<string, Action>;
-  const dataSubjectByType = keyBy(dataSubjects, 'type') as Record<string, DataSubject>;
-  const attributeKeyByName = keyBy(attributeKeys, 'name') as Record<string, AttributeKey>;
+  const configsByTitle = groupBy(existingConfigs, (config) => config.title.defaultMessage);
+  const actionByType = indexBy(actions, (action) => action.type);
+  const dataSubjectByType = indexBy(dataSubjects, (subject) => subject.type);
+  const attributeKeyByName = indexBy(attributeKeys, (attributeKey) => attributeKey.name);
 
   await mapSeries(inputs, async (config) => {
     try {
@@ -145,7 +153,9 @@ export async function syncWorkflowConfigs(
         logger,
       });
 
-      logger?.info(`Successfully synced workflow config "${config.title}" (${existingConfig.id})!`);
+      logger?.info(
+        `Successfully synced workflow config "${config.title}" (${existingConfig.id})!`,
+      );
     } catch (err) {
       encounteredError = true;
       logger?.error(
