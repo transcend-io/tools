@@ -31,6 +31,10 @@ export enum CustomizableComponent {
   TakeControlConfirmation = 'takeControlConfirmation',
   /** Modal styles */
   Modal = 'modal',
+  /** Footer */
+  Footer = 'footer',
+  /** Footer link */
+  FooterLink = 'footerLink',
 }
 
 /**

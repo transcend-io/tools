@@ -67,13 +67,13 @@ describe('DSR Tools', () => {
   });
 
   describe('dsr_get_details', () => {
-    it('zodSchema rejects when request_id is missing', () => {
+    it('zodSchema rejects when requestId is missing', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'dsr_get_details')!;
 
       const result = tool.zodSchema.safeParse({});
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['request_id']);
+      expect((result as any).error.issues[0].path).toEqual(['requestId']);
     });
 
     it('returns request details on success', async () => {
@@ -89,7 +89,7 @@ describe('DSR Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'dsr_get_details')!;
 
-      const result = await tool.handler({ request_id: 'req-1' });
+      const result = await tool.handler({ requestId: 'req-1' });
 
       expect(result).toMatchObject({ success: true, data: details });
       expect(mockGraphql.getRequest).toHaveBeenCalledWith('req-1');

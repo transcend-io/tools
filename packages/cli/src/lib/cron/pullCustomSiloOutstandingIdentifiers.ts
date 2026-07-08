@@ -133,8 +133,15 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
       );
 
       const csvFormattedIdentifiers = identifiersWithAction.map(
-        ({ attributes, ...identifier }) => ({
+        ({ attributes, partition, ...identifier }) => ({
           ...identifier,
+          ...(partition
+            ? {
+                partitionId: partition.id,
+                partitionName: partition.name,
+                partitionKey: partition.partition,
+              }
+            : {}),
           ...attributes.reduce(
             (acc, val) =>
               Object.assign(acc, {

@@ -3,21 +3,32 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   buildMcpServer,
-  DEFAULT_DASHBOARD_URL,
   DEFAULT_SOMBRA_URL,
-  DEFAULT_TRANSCEND_API_URL,
+  isOAuthModeEnabled,
   parseTransportArgs,
-  resolveAuth,
+  resolveStdioStartupAuthOptional,
+  configureOAuthScopes,
+  resolveMcpDashboardUrl,
+  resolveMcpGraphqlUrl,
   runMcpHttp,
   SimpleLogger,
   TranscendRestClient,
   type AuthCredentials,
 } from '@transcend-io/mcp-server-base';
 
+import packageJson from '../package.json' with { type: 'json' };
 import { TranscendGraphQLClient } from './graphql-client.js';
+import { UMBRELLA_OAUTH_SCOPES } from './oauth-scopes.js';
 import { ToolRegistry } from './registry.js';
+import { UMBRELLA_DOCS_SERVER_INSTRUCTIONS } from './server-instructions.js';
 
-const VERSION = '3.0.2';
+const VERSION = packageJson.version;
+
+const buildServerOptions = {
+  name: 'transcend-mcp',
+  version: VERSION,
+  instructions: UMBRELLA_DOCS_SERVER_INSTRUCTIONS,
+} as const;
 
 function createToolRegistry(
   auth: AuthCredentials | null,
@@ -36,8 +47,8 @@ async function main(): Promise<void> {
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
   const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
-  const graphqlUrl = process.env.TRANSCEND_API_URL || DEFAULT_TRANSCEND_API_URL;
-  const dashboardUrl = process.env.TRANSCEND_DASHBOARD_URL || DEFAULT_DASHBOARD_URL;
+  const dashboardUrl = resolveMcpDashboardUrl();
+  const graphqlUrl = await resolveMcpGraphqlUrl(logger);
 
   if (isHttpTransport) {
     await runMcpHttp(
@@ -53,8 +64,7 @@ async function main(): Promise<void> {
           });
           const registry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
           return buildMcpServer({
-            name: 'transcend-mcp',
-            version: VERSION,
+            ...buildServerOptions,
             tools: registry.getAllTools(),
           });
         },
@@ -65,8 +75,14 @@ async function main(): Promise<void> {
   }
 
   // stdio mode
-  const auth = resolveAuth();
-  logger.info('Initializing Transcend API clients...', { sombraUrl, graphqlUrl, dashboardUrl });
+  configureOAuthScopes(UMBRELLA_OAUTH_SCOPES);
+  const auth = resolveStdioStartupAuthOptional();
+  logger.info('Initializing Transcend API clients...', {
+    sombraUrl,
+    graphqlUrl,
+    dashboardUrl,
+    authType: auth?.type ?? (isOAuthModeEnabled() ? 'oauth-pending' : 'none'),
+  });
 
   const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
 
@@ -79,8 +95,7 @@ async function main(): Promise<void> {
   );
 
   const server = buildMcpServer({
-    name: 'transcend-mcp',
-    version: VERSION,
+    ...buildServerOptions,
     tools: toolRegistry.getAllTools(),
   });
 

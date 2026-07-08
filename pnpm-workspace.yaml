@@ -6,16 +6,20 @@ packages:
 catalog:
   '@arethetypeswrong/cli': ^0.18.2
   '@changesets/cli': ^2.30.0
+  '@graphql-codegen/cli': ^7.1.0
+  '@graphql-codegen/client-preset': ^6.0.1
+  '@graphql-typed-document-node/core': ^3.2.0
   '@modelcontextprotocol/sdk': ^1.29.0
-  '@transcend-io/internationalization': ^2.3.2
   '@types/json-schema': ^7.0.15
   '@types/node': ^22.19.15
   '@types/react': ^19.2.15
   '@types/react-dom': ^19.2.3
   '@types/semver': ^7.7.1
+  graphql: ^16.14.0
   husky: ^9.1.7
+  lru-cache: ^11.5.1
   next: ^16.2.6
-  oxfmt: ^0.38.0
+  oxfmt: ^0.54.0
   oxlint: ^1.53.0
   publint: ^0.3.18
   react: ^19.2.6

@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-discovery",
-  "version": "0.3.5",
+  "version": "0.4.2",
   "description": "Transcend MCP Server — Data Discovery tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-discovery",
   "license": "Apache-2.0",
@@ -37,8 +37,11 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
+    "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
     "@transcend-io/mcp-server-base": "workspace:*",
+    "@transcend-io/privacy-types": "workspace:*",
+    "graphql": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

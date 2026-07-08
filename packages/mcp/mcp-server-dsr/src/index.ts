@@ -1,4 +1,5 @@
 export { getDSRTools } from './tools/index.js';
+export { DSR_OAUTH_SCOPES } from './scopes.js';
 export { DSRMixin } from './graphql.js';
 
 export { submitDsrSchema, type SubmitDsrInput } from './tools/dsr_submit.js';

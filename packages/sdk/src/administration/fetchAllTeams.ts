@@ -36,6 +36,13 @@ export interface Team {
     /** Title of scope */
     title: string;
   }[];
+  /** Linked parent organization team */
+  parentTeam?: {
+    /** ID of parent organization team */
+    id: string;
+    /** Name of parent organization team */
+    name: string;
+  };
 }
 
 const PAGE_SIZE = 20;

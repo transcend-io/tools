@@ -1,3 +1,6 @@
+import type { TypedDocumentNode } from '@graphql-typed-document-node/core';
+import { type DocumentNode, print } from 'graphql';
+
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
@@ -5,7 +8,7 @@ import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
 import { MCP_CALLER_HEADER, TOOLCALL_ID_HEADER } from '../../http-header-names.js';
 import { getRequestMcpCaller } from '../../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../../tool-call-context.js';
-import type { RequestOptions } from '../../types/transcend.js';
+import type { PaginatedResponse, RequestOptions } from '../../types/transcend.js';
 import { TRANSCEND_MCP_USER_AGENT } from '../mcp-user-agent.js';
 
 /**
@@ -25,6 +28,18 @@ export interface Logger {
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+/** Join a log prefix with an Error message for human-readable output. */
+function formatErrorLogMessage(prefix: string, error: Error): string {
+  const trimmedPrefix = prefix.trimEnd();
+  if (!trimmedPrefix) {
+    return error.message;
+  }
+  if (trimmedPrefix.endsWith(':')) {
+    return `${trimmedPrefix} ${error.message}`;
+  }
+  return `${trimmedPrefix}: ${error.message}`;
+}
+
 export class SimpleLogger implements Logger {
   private static useStdoutForInfo = false;
 
@@ -40,10 +55,22 @@ export class SimpleLogger implements Logger {
   }
 
   private write(level: LogLevel, message: string, data?: unknown): void {
+    let logMessage = message;
+    let logData: unknown;
+
+    if (data instanceof Error) {
+      logMessage = formatErrorLogMessage(message, data);
+      if (process.env.LOG_LEVEL === 'debug' && data.stack) {
+        logData = { stack: data.stack };
+      }
+    } else if (data !== undefined) {
+      logData = data;
+    }
+
     const line = JSON.stringify({
       level,
-      message,
-      data,
+      message: logMessage,
+      ...(logData !== undefined ? { data: logData } : {}),
       timestamp: new Date().toISOString(),
     });
     const useStdout = SimpleLogger.useStdoutForInfo && (level === 'info' || level === 'debug');
@@ -63,6 +90,14 @@ export class SimpleLogger implements Logger {
   }
 
   error(message: string, data?: unknown): void {
+    // Stdio MCP mode: plain-text errors are easier to read in Cursor than JSON blobs.
+    if (!SimpleLogger.useStdoutForInfo && data instanceof Error) {
+      process.stderr.write(`${formatErrorLogMessage(message, data)}\n`);
+      if (process.env.LOG_LEVEL === 'debug' && data.stack) {
+        process.stderr.write(`${data.stack}\n`);
+      }
+      return;
+    }
     this.write('error', message, data);
   }
 }
@@ -83,6 +118,12 @@ export interface ListOptions {
   offset?: number;
   filterBy?: Record<string, unknown>;
   orderBy?: string;
+  /**
+   * Fetch every page instead of a single one. When set, `first`/`offset` are
+   * ignored and the full result set is returned via offset pagination (see
+   * {@link TranscendGraphQLBase.fetchAllPages}).
+   */
+  all?: boolean;
 }
 
 export class TranscendGraphQLBase {
@@ -115,12 +156,24 @@ export class TranscendGraphQLBase {
     this.lastRequestTime = Date.now();
   }
 
-  async makeRequest<T>(
-    query: string,
-    variables?: Record<string, unknown>,
+  /**
+   * Send a GraphQL request, accepting either a raw query string or a typed
+   * document produced by `graphql()` (the codegen client-preset tag).
+   *
+   * When given a `TypedDocumentNode`, the result and variables types are
+   * inferred from the document, so call sites no longer need to redeclare
+   * the response shape (which is what masked the original `createApiKey`
+   * regression -- a hand-written `{ token: string }` lying about the wire
+   * format the API actually returns).
+   */
+  async makeRequest<TResult, TVariables = Record<string, unknown>>(
+    query: string | TypedDocumentNode<TResult, TVariables>,
+    variables?: TVariables,
     options: RequestOptions = {},
-  ): Promise<T> {
+  ): Promise<TResult> {
     await this.rateLimitWait();
+
+    const queryString = typeof query === 'string' ? query : print(query as DocumentNode);
 
     const url = `${this.baseUrl}/graphql`;
     const { timeout = this.defaultTimeout, retries = this.defaultRetries } = options;
@@ -134,7 +187,7 @@ export class TranscendGraphQLBase {
       try {
         this.logger.debug('GraphQL request', {
           url,
-          operationType: query.includes('mutation') ? 'mutation' : 'query',
+          operationType: queryString.includes('mutation') ? 'mutation' : 'query',
           attempt,
         });
 
@@ -159,7 +212,7 @@ export class TranscendGraphQLBase {
             ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
             ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
           },
-          body: JSON.stringify({ query, variables: variables || {} }),
+          body: JSON.stringify({ query: queryString, variables: variables ?? {} }),
           signal: controller.signal,
         });
 
@@ -184,7 +237,8 @@ export class TranscendGraphQLBase {
           throw httpError;
         }
 
-        const result: GraphQLResponse<T> = (await response.json()) as GraphQLResponse<T>;
+        const result: GraphQLResponse<TResult> =
+          (await response.json()) as GraphQLResponse<TResult>;
 
         if (result.errors && result.errors.length > 0) {
           const errorMessages = result.errors.map((e) => e.message).join('; ');
@@ -225,6 +279,116 @@ export class TranscendGraphQLBase {
     }
 
     throw lastError || new Error('GraphQL request failed after all retries');
+  }
+
+  /**
+   * Fetch every page of an offset-paginated GraphQL connection through
+   * {@link makeRequest}, so paginated reads inherit the same per-request auth,
+   * proactive rate-limit throttle, timeout, retry, and `ToolError`
+   * classification as every other call.
+   *
+   * `query` MUST accept `$first`/`$offset` variables and select a single
+   * connection of shape `{ nodes, totalCount }` under `connectionKey`. Extra
+   * static variables (e.g. `filterBy`) can be supplied via `variables`.
+   *
+   * @param query - GraphQL query with `$first`/`$offset` variables
+   * @param connectionKey - Top-level field holding the `{ nodes, totalCount }` connection
+   * @param variables - Additional static variables merged into every page request
+   * @param pageSize - Records fetched per page
+   * @returns Every node across all pages
+   */
+  protected async fetchAllPages<TNode>(
+    query: string,
+    connectionKey: string,
+    variables: Record<string, unknown> = {},
+    pageSize = 100,
+  ): Promise<TNode[]> {
+    const all: TNode[] = [];
+    let offset = 0;
+
+    for (;;) {
+      const data = await this.makeRequest<Record<string, { nodes: TNode[]; totalCount: number }>>(
+        query,
+        { ...variables, first: pageSize, offset },
+      );
+
+      const connection = data[connectionKey];
+      const nodes = connection?.nodes ?? [];
+      all.push(...nodes);
+      offset += nodes.length;
+
+      // Stop on an empty/short page, or once we've consumed everything the
+      // server reports. The `offset >= totalCount` check also guards against a
+      // backend that ignores `offset`: offset keeps growing, so we never loop
+      // forever (the failure mode that broke cursor-style pagination before).
+      if (
+        nodes.length === 0 ||
+        nodes.length < pageSize ||
+        offset >= (connection?.totalCount ?? 0)
+      ) {
+        break;
+      }
+    }
+
+    return all;
+  }
+
+  /**
+   * Run an offset-paginated `list*` query and shape it into a
+   * {@link PaginatedResponse}. With `options.all` it returns every page (via
+   * {@link fetchAllPages}); otherwise it returns a single page with
+   * offset-derived `pageInfo`. This is the shared engine behind the inventory
+   * `list*` methods — they only supply the query, the connection key, and an
+   * optional node mapper.
+   *
+   * The `query` MUST accept `$first`/`$offset` and select a single connection
+   * `{ nodes, totalCount }` under `connectionKey`.
+   *
+   * @param query - GraphQL query with `$first`/`$offset` variables
+   * @param connectionKey - Top-level field holding the `{ nodes, totalCount }` connection
+   * @param options - Pagination options (`first`/`offset`, or `all` to fetch everything)
+   * @param config - Optional node mapper and extra static variables (e.g. `filterBy`)
+   * @returns A paginated response of (optionally mapped) nodes
+   */
+  protected async listConnection<TNode, TOut = TNode>(
+    query: string,
+    connectionKey: string,
+    options?: ListOptions,
+    config: {
+      /** Maps each raw node to the response shape (defaults to identity). */
+      mapNode?: (node: TNode) => TOut;
+      /** Static variables merged into the request (e.g. a fixed `filterBy`). */
+      variables?: Record<string, unknown>;
+    } = {},
+  ): Promise<PaginatedResponse<TOut>> {
+    const { mapNode = (node: TNode) => node as unknown as TOut, variables = {} } = config;
+
+    if (options?.all) {
+      const nodes = (await this.fetchAllPages<TNode>(query, connectionKey, variables)).map(mapNode);
+      return {
+        nodes,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+        totalCount: nodes.length,
+      };
+    }
+
+    const offset = options?.offset ?? 0;
+    const data = await this.makeRequest<Record<string, { nodes: TNode[]; totalCount: number }>>(
+      query,
+      { ...variables, first: Math.min(options?.first || 100, 100), offset },
+    );
+
+    const connection = data[connectionKey];
+    const rawNodes = connection?.nodes ?? [];
+    const totalCount = connection?.totalCount ?? 0;
+    return {
+      nodes: rawNodes.map(mapNode),
+      pageInfo: {
+        hasNextPage: offset + rawNodes.length < totalCount,
+        hasPreviousPage: offset > 0,
+      },
+      totalCount,
+    };
   }
 
   async testConnection(): Promise<boolean> {

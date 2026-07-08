@@ -146,6 +146,15 @@ Some things to note about this sync process:
 - a) Data silo owners: If you assign an email address to a data silo, you must first make sure that user is invited into your Transcend instance (https://app.transcend.io/admin/users).
 - b) API keys: This CLI will not create new API keys. You will need to first create the new API keys on the Admin Dashboard (https://app.transcend.io/infrastructure/api-keys). You can then list out the titles of the API keys that you generated in your transcend.yml file, after which the CLI is capable of updating that API key to be able to respond to different data silos in your Data Map
 
+#### Preference management push notes
+
+When pushing \`purposes\`, \`preference-options\`, or nested \`preference-topics\`:
+
+- **Slug format:** Preference topic and option value slugs must match \`/^[A-Za-z]+$/\` (alphabetical letters only — no digits, dashes, or underscores). The CLI validates this before any API calls. Topic slugs are normalized to PascalCase server-side, so YAML slugs should already be PascalCase or matching will break on subsequent pulls.
+- **Built-in purposes:** Default purposes (Advertising, Analytics, Essential, Functional, SaleOfInfo) can be updated via API key for most fields (\`description\`, \`title\`, \`display-order\`, \`show-in-privacy-center\`, \`auth-level\`, etc.). The CLI omits \`configurable\` and \`show-in-consent-manager\` from updates for built-in purposes and logs a warning if your YAML differs on those fields — change them in the [Admin Dashboard](https://app.transcend.io/consent-manager/regional-experiences/purposes) instead.
+- **BOOLEAN topics:** Do not define \`options\` for \`BOOLEAN\` preference topics — the backend auto-creates True/False options. The CLI rejects non-empty options before push.
+- **Immutable topic fields:** Slug, type, and parent purpose cannot be changed for an existing preference topic. Attempting to change \`type\` in YAML is rejected by the CLI.
+
 #### CI Integration
 
 Once you have a workflow for creating your transcend.yml file, you will want to integrate your \`transcend inventory push\` command on your CI.

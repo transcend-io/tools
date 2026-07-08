@@ -10,57 +10,153 @@ import {
   type User,
 } from '@transcend-io/mcp-server-base';
 
-export class AdminMixin extends TranscendGraphQLBase {
-  async getOrganization(): Promise<Organization> {
-    const query = `
-      query {
-        organization {
+import { graphql } from './__generated__/gql.js';
+import type { ScopeName } from './__generated__/graphql.js';
+
+const GetOrganizationDoc = graphql(/* GraphQL */ `
+  query AdminGetOrganization {
+    organization {
+      id
+      name
+      uri
+      createdAt
+    }
+  }
+`);
+
+const GetCurrentUserDoc = graphql(/* GraphQL */ `
+  query AdminGetCurrentUser {
+    user {
+      id
+      email
+      name
+      createdAt
+    }
+  }
+`);
+
+const ListUsersDoc = graphql(/* GraphQL */ `
+  query AdminListUsers($first: Int, $filterBy: UserFiltersInput) {
+    users(first: $first, filterBy: $filterBy) {
+      nodes {
+        id
+        email
+        name
+      }
+      totalCount
+    }
+  }
+`);
+
+const ListTeamsDoc = graphql(/* GraphQL */ `
+  query AdminListTeams($first: Int) {
+    teams(first: $first) {
+      nodes {
+        id
+        name
+      }
+      totalCount
+    }
+  }
+`);
+
+const ListApiKeysDoc = graphql(/* GraphQL */ `
+  query AdminListApiKeys($first: Int, $offset: Int) {
+    apiKeys(first: $first, offset: $offset) {
+      nodes {
+        id
+        title
+        scopes {
           id
           name
-          createdAt
         }
+        lastUsedAt
+        createdAt
       }
-    `;
-    const data = await this.makeRequest<{ organization: Organization }>(query);
-    return data.organization;
+      totalCount
+    }
+  }
+`);
+
+const CreateApiKeyDoc = graphql(/* GraphQL */ `
+  mutation AdminCreateApiKey($input: ApiKeyInput!) {
+    createApiKey(input: $input) {
+      apiKey {
+        id
+        title
+        apiKey
+        preview
+        scopes {
+          id
+          name
+        }
+        createdAt
+      }
+    }
+  }
+`);
+
+const GetPrivacyCenterDoc = graphql(/* GraphQL */ `
+  query AdminGetPrivacyCenter($lookup: PrivacyCenterLookupInput) {
+    privacyCenter(lookup: $lookup) {
+      id
+    }
+  }
+`);
+
+/**
+ * The plain-text token returned by `createApiKey`. Exposed once -- the
+ * server never returns this value again, so callers must persist it
+ * immediately.
+ */
+export interface CreatedApiKey extends ApiKey {
+  /**
+   * The plain-text bearer token. Only returned by `createApiKey`/`duplicateApiKey`;
+   * re-fetching the API key later returns the `preview` instead.
+   */
+  token: string;
+}
+
+export class AdminMixin extends TranscendGraphQLBase {
+  async getOrganization(): Promise<Organization> {
+    const data = await this.makeRequest(GetOrganizationDoc);
+    return {
+      id: data.organization.id,
+      name: data.organization.name,
+      uri: data.organization.uri,
+      createdAt: data.organization.createdAt,
+    };
   }
 
   async getCurrentUser(): Promise<User> {
-    const query = `
-      query {
-        user {
-          id
-          email
-          name
-          createdAt
-        }
-      }
-    `;
-    const data = await this.makeRequest<{ user: User }>(query);
-    return data.user;
+    const data = await this.makeRequest(GetCurrentUserDoc);
+    if (!data.user) {
+      throw new Error('No user is currently authenticated for this API key.');
+    }
+    return {
+      id: data.user.id,
+      email: data.user.email,
+      name: data.user.name,
+      isActive: true,
+      createdAt: new Date(0).toISOString(),
+    };
   }
 
   async listUsers(
     options?: ListOptions & { filterBy?: { text?: string } },
   ): Promise<PaginatedResponse<User>> {
-    const query = `
-      query ListUsers($first: Int, $filterBy: UserFiltersInput) {
-        users(first: $first, filterBy: $filterBy) {
-          nodes {
-            id
-            email
-            name
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{ users: { nodes: User[]; totalCount: number } }>(query, {
-      first: Math.min(options?.first || 50, 100),
-      ...(options?.filterBy ? { filterBy: options.filterBy } : {}),
+    const data = await this.makeRequest(ListUsersDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+      filterBy: options?.filterBy ?? null,
     });
     return {
-      nodes: data.users.nodes,
+      nodes: data.users.nodes.map((node) => ({
+        id: node.id,
+        email: node.email,
+        name: node.name,
+        isActive: true,
+        createdAt: new Date(0).toISOString(),
+      })),
       pageInfo: {
         hasNextPage: data.users.nodes.length < data.users.totalCount,
         hasPreviousPage: false,
@@ -70,22 +166,15 @@ export class AdminMixin extends TranscendGraphQLBase {
   }
 
   async listTeams(options?: ListOptions): Promise<PaginatedResponse<Team>> {
-    const query = `
-      query ListTeams($first: Int) {
-        teams(first: $first) {
-          nodes {
-            id
-            name
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{ teams: { nodes: Team[]; totalCount: number } }>(query, {
-      first: Math.min(options?.first || 50, 100),
+    const data = await this.makeRequest(ListTeamsDoc, {
+      first: Math.min(options?.first ?? 50, 100),
     });
     return {
-      nodes: data.teams.nodes,
+      nodes: data.teams.nodes.map((node) => ({
+        id: node.id,
+        name: node.name,
+        createdAt: new Date(0).toISOString(),
+      })),
       pageInfo: {
         hasNextPage: data.teams.nodes.length < data.teams.totalCount,
         hasPreviousPage: false,
@@ -95,32 +184,21 @@ export class AdminMixin extends TranscendGraphQLBase {
   }
 
   async listApiKeys(options?: ListOptions): Promise<PaginatedResponse<ApiKey>> {
-    const query = `
-      query ListApiKeys($first: Int, $offset: Int) {
-        apiKeys(first: $first, offset: $offset) {
-          nodes {
-            id
-            title
-            scopes {
-              id
-              name
-            }
-            lastUsedAt
-            createdAt
-          }
-          totalCount
-        }
-      }
-    `;
-    const data = await this.makeRequest<{ apiKeys: { nodes: ApiKey[]; totalCount: number } }>(
-      query,
-      {
-        first: Math.min(options?.first || 50, 100),
-        offset: options?.offset || 0,
-      },
-    );
+    const data = await this.makeRequest(ListApiKeysDoc, {
+      first: Math.min(options?.first ?? 50, 100),
+      offset: options?.offset ?? 0,
+    });
     return {
-      nodes: data.apiKeys.nodes,
+      nodes: data.apiKeys.nodes.map((node) => ({
+        id: node.id,
+        title: node.title,
+        scopes: node.scopes.map((scope) => ({
+          id: scope.id,
+          name: scope.name,
+        })),
+        lastUsedAt: node.lastUsedAt ?? undefined,
+        createdAt: node.createdAt,
+      })),
       pageInfo: {
         hasNextPage: data.apiKeys.nodes.length < data.apiKeys.totalCount,
         hasPreviousPage: false,
@@ -129,44 +207,47 @@ export class AdminMixin extends TranscendGraphQLBase {
     };
   }
 
-  async createApiKey(input: ApiKeyCreateInput): Promise<{ apiKey: ApiKey; token: string }> {
-    const mutation = `
-      mutation CreateApiKey($input: ApiKeyInput!) {
-        createApiKey(input: $input) {
-          apiKey {
-            id
-            title
-            scopes
-            createdAt
-          }
-          token
-        }
-      }
-    `;
-    const data = await this.makeRequest<{ createApiKey: { apiKey: ApiKey; token: string } }>(
-      mutation,
-      { input },
-    );
-    return data.createApiKey;
+  /**
+   * Create a new API key. The returned `token` is the plain-text bearer the
+   * caller must surface to the user immediately -- the API key endpoint never
+   * returns it again. The token is on `createApiKey.apiKey.apiKey` (a sibling
+   * of `id`/`title`/`scopes`), not a top-level `token` field.
+   */
+  async createApiKey(input: ApiKeyCreateInput): Promise<CreatedApiKey> {
+    const data = await this.makeRequest(CreateApiKeyDoc, {
+      input: {
+        title: input.title,
+        // The manual ApiKeyCreateInput type accepts string[] for backwards
+        // compatibility; the GraphQL schema expects the ScopeName enum, which
+        // codegen emits as a string-valued TS enum. Cast at the boundary --
+        // invalid scopes still surface as a server-side validation error.
+        scopes: input.scopes as ScopeName[],
+        dataSilos: input.dataSilos ?? null,
+      },
+    });
+    const created = data.createApiKey.apiKey;
+    return {
+      id: created.id,
+      title: created.title,
+      scopes: created.scopes.map((scope) => ({
+        id: scope.id,
+        name: scope.name,
+      })),
+      createdAt: created.createdAt,
+      token: created.apiKey,
+    };
   }
 
   async getPrivacyCenter(lookup?: { url?: string }): Promise<PrivacyCenter | null> {
-    const query = `
-      query GetPrivacyCenter($lookup: PrivacyCenterLookupInput) {
-        privacyCenter(lookup: $lookup) {
-          id
-        }
-      }
-    `;
     try {
-      const data = await this.makeRequest<{ privacyCenter: { id: string } | null }>(query, {
-        lookup: lookup || undefined,
+      const data = await this.makeRequest(GetPrivacyCenterDoc, {
+        lookup: lookup ?? null,
       });
       if (data.privacyCenter) {
         return {
           id: data.privacyCenter.id,
           name: 'Privacy Center',
-          url: lookup?.url || '',
+          url: lookup?.url ?? '',
           isActive: true,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),

@@ -13,6 +13,16 @@ class TestGraphQLClient extends TranscendGraphQLBase {
   async query<T>(query: string, variables?: Record<string, unknown>): Promise<T> {
     return this.makeRequest<T>(query, variables);
   }
+
+  /** Test hook exposing the protected pagination helper. */
+  exposeFetchAllPages<TNode>(
+    query: string,
+    connectionKey: string,
+    variables?: Record<string, unknown>,
+    pageSize?: number,
+  ): Promise<TNode[]> {
+    return this.fetchAllPages<TNode>(query, connectionKey, variables, pageSize);
+  }
 }
 
 function createMockFetchResponse<T>(
@@ -564,6 +574,55 @@ describe('TranscendGraphQLBase', () => {
 
       const calledHeaders = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].headers;
       expect(calledHeaders.Authorization).toBe(`Bearer ${API_KEY}`);
+    });
+  });
+
+  describe('fetchAllPages', () => {
+    const PAGE_QUERY = `
+      query($first: Int, $offset: Int) {
+        things(first: $first, offset: $offset) {
+          nodes { id }
+          totalCount
+        }
+      }
+    `;
+
+    it('accumulates nodes across pages and stops at totalCount', async () => {
+      const total = 5;
+      const mockFetch = vi.fn().mockImplementation(async (_url: string, init: { body: string }) => {
+        const { variables } = JSON.parse(init.body);
+        const { first, offset } = variables as { first: number; offset: number };
+        const count = Math.max(0, Math.min(first, total - offset));
+        const nodes = Array.from({ length: count }, (_, i) => ({ id: String(offset + i) }));
+        return { ok: true, json: async () => ({ data: { things: { nodes, totalCount: total } } }) };
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const nodes = await client.exposeFetchAllPages<{ id: string }>(PAGE_QUERY, 'things', {}, 2);
+
+      expect(nodes.map((n) => n.id)).toEqual(['0', '1', '2', '3', '4']);
+      // pages: [0,1], [2,3], [4]
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('terminates when the backend ignores offset (guards against infinite loop)', async () => {
+      const total = 10;
+      // Returns a full first page regardless of the requested offset.
+      const mockFetch = vi.fn().mockImplementation(async (_url: string, init: { body: string }) => {
+        const { variables } = JSON.parse(init.body);
+        const { first } = variables as { first: number };
+        const nodes = Array.from({ length: first }, (_, i) => ({ id: String(i) }));
+        return { ok: true, json: async () => ({ data: { things: { nodes, totalCount: total } } }) };
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new TestGraphQLClient(API_KEY_AUTH);
+      const nodes = await client.exposeFetchAllPages<{ id: string }>(PAGE_QUERY, 'things', {}, 5);
+
+      // offset climbs 0 -> 5 -> 10; `offset >= totalCount` halts after 2 pages.
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(nodes).toHaveLength(10);
     });
   });
 });

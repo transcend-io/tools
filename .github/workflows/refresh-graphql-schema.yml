@@ -1,0 +1,77 @@
+name: Refresh GraphQL Schema
+
+# Daily (and on-demand) refresh of the committed schema.graphql from the live
+# staging schema. When staging has drifted, it opens a chore PR with the
+# refreshed schema so CI can flag any MCP breakage — the proactive net for
+# drift that lands while nobody is editing MCP code.
+
+on:
+  schedule:
+    # Daily at 12:00 UTC schema refresh.
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh-graphql-schema
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Refresh schema
+        run: pnpm graphql:refresh-schema
+
+      - name: Regenerate __generated__ artifacts
+        # Run codegen so the resulting PR exposes any drift the new schema
+        # introduces (TS errors, missing fields, etc.) rather than failing
+        # silently downstream.
+        run: pnpm codegen
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet -- schema.graphql; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.diff.outputs.changed == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3
+        id: refresh_app
+        with:
+          app-id: ${{ vars.TRANSCEND_RELEASER_APP_ID }}
+          private-key: ${{ secrets.TRANSCEND_RELEASER_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - if: steps.diff.outputs.changed == 'true'
+        name: Open or update refresh PR
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7
+        with:
+          token: ${{ steps.refresh_app.outputs.token }}
+          branch: chore/refresh-mcp-graphql-schema
+          base: main
+          commit-message: 'chore(MCP): Refresh staging GraphQL schema'
+          title: 'chore(MCP): Refresh staging GraphQL schema'
+          body: |
+            Automated refresh of schema, plus a re-run of `pnpm codegen`.
+
+            * If CI passes, this PR is safe to merge as-is.
+            * If CI fails, the staging schema has drifted in a way that
+              breaks one of the MCP servers; investigate the failure
+              before merging.
+          labels: |
+            MCP
+            automation
+          add-paths: schema.graphql

@@ -256,7 +256,7 @@ describe('CLI Command Structure', () => {
           const isDirectory = fs.statSync(itemPath).isDirectory();
 
           if (!isDirectory) {
-            expect(item).toBe('routes.ts');
+            expect(['routes.ts', 'constants.ts', 'types.ts']).toContain(item);
           }
         }
       }

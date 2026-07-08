@@ -1,5 +1,123 @@
 # @transcend-io/mcp-server-inventory
 
+## 0.4.2
+
+### Patch Changes
+
+- 8fb4627: **@transcend-io/mcp-server-base:** Add per-tool `requireAuth` (call time) and `requireStartupAuth` on `createMCPServer` (boot). Add optional MCP initialize `instructions` on `buildMcpServer`, plus `resolveStdioStartupAuthOptional` for servers that include public tools.
+
+  **@transcend-io/mcp-server-docs:** Docs tools set `requireAuth: false` so they skip lazy OAuth. Standalone CLI uses `requireStartupAuth: false` (no API key or OAuth at startup). Remove unused docs OAuth scopes.
+
+  **@transcend-io/mcp:** Umbrella server uses optional startup auth, registers docs tools first, and ships initialize instructions guiding agents to `transcend_docs_list` / `transcend_docs_fetch` before org-specific API tools. Read CLI version from `package.json`.
+
+  **Domain MCP servers:** Read CLI version from `package.json` instead of a hardcoded value.
+
+- Updated dependencies [8fb4627]
+  - @transcend-io/mcp-server-base@0.6.0
+
+## 0.4.1
+
+### Patch Changes
+
+- Updated dependencies [b12d8c6]
+  - @transcend-io/privacy-types@5.4.0
+
+## 0.4.0
+
+### Minor Changes
+
+- 8240631: Updates docs to direct users in integrating mcp with oauth
+- 6a48672: Adopt typed `graphql()` operations across every MCP server, plus tool input
+  parameter cleanups that surfaced during the migration.
+
+  Schema-level changes:
+  - All hand-written GraphQL strings are replaced with `graphql()`-tagged
+    `TypedDocumentNode`s generated from the committed `schema.graphql`. Any
+    drift between the consumer operation and the staging schema now fails
+    `tsc` instead of slipping through to a runtime error.
+  - `admin_create_api_key` returns the same shape (`apiKey`, `token`,
+    `warning`, `message`), but the underlying mutation has been corrected to
+    match the schema's `CreatedApiKey` payload.
+  - `workflows_update_config` is split into a mutation followed by a
+    follow-up `workflowConfig` read because `UpdateWorkflowConfigPayload`
+    only exposes `success`/`clientMutationId`. The tool no longer accepts
+    `show_in_privacy_center`; the GraphQL API does not expose that field.
+  - `inventory_list_data_silos` no longer requests `DataSilo.updatedAt`
+    (not present on the type).
+
+  Tool input parameter renames (BREAKING — every tool input is now
+  camelCase). Tool _names_ are unchanged. The full list of renamed fields:
+  - `assessment_id` → `assessmentId`
+  - `assessment_section_ids` → `assessmentSectionIds`
+  - `assessment_question_id` → `assessmentQuestionId`
+  - `assessment_answer_ids` → `assessmentAnswerIds`
+  - `assessment_answer_values` → `assessmentAnswerValues`
+  - `assessment_group_id` → `assessmentGroupId`
+  - `assessment_name` → `assessmentName`
+  - `template_id` → `templateId`
+  - `reviewer_ids` → `reviewerIds`
+  - `due_date` → `dueDate`
+  - `assignee_ids` → `assigneeIds`
+  - `assignee_emails` → `assigneeEmails`
+  - `external_assignee_emails` → `externalAssigneeEmails`
+  - `submit_for_review` → `submitForReview`
+  - `tracking_purposes` → `trackingPurposes`
+  - `is_junk` → `isJunk`
+  - `data_flows` → `dataFlows`
+  - `show_zero_activity` → `showZeroActivity`
+  - `order_field` → `orderField`
+  - `order_direction` → `orderDirection`
+  - `data_silo_id` → `dataSiloId`
+  - `data_point_id` → `dataPointId`
+  - `scan_id` → `scanId`
+  - `entity_types` → `entityTypes`
+  - `request_id` → `requestId`
+  - `profile_ids` → `profileIds`
+  - `data_silos` → `dataSilos` (admin_create_api_key)
+  - `workflow_config_id` → `workflowConfigId`
+  - `user_id` → `userId`
+  - `show_in_privacy_center` (removed; not in schema)
+
+  Removed tools:
+  - `discovery_start_scan` and `discovery_get_scan` are removed. They called
+    `startClassificationScan` / `classificationScan(id:)`, which do not exist
+    in Transcend's GraphQL schema, so they could only ever fail at runtime.
+
+  `defineTool` now recursively rejects any input field (at any nesting depth)
+  that is missing a meaningful Zod description, and a repo-wide
+  `scripts/check-mcp-descriptions.test.ts` audit enforces the same in CI.
+
+### Patch Changes
+
+- d00a847: Integrates mcp packages with oauth flow
+- Updated dependencies [f04564e]
+- Updated dependencies [b4b7c81]
+- Updated dependencies [20e0336]
+- Updated dependencies [b1d1f0b]
+- Updated dependencies [8240631]
+- Updated dependencies [d00a847]
+- Updated dependencies [6a48672]
+  - @transcend-io/mcp-server-base@0.5.0
+
+## 0.3.7
+
+### Patch Changes
+
+- ec9f959: Clarify pagination wording in the `inventory_list_data_silos` tool description.
+
+## 0.3.6
+
+### Patch Changes
+
+- 85f24d0: Fix hardcoded pagination limits in `inventory_analyze`. The tool previously fetched only the first 100 data silos, vendors, identifiers, and categories and reported those capped array lengths as the totals, silently undercounting larger inventories. It now fully paginates all of these entities. This also fixes latent gaps where `liveDataSilos`, the outer-type breakdown, and identifier `isRequired` were always empty because those fields were never selected.
+
+  Pagination is centralized in a new `TranscendGraphQLBase.fetchAllPages()` helper that walks an offset-paginated `{ nodes, totalCount }` connection through the existing `makeRequest`. Every page therefore inherits the same behaviour as all other MCP GraphQL calls — per-request auth (stdio static API key / HTTP per-request session cookie), the proactive rate-limit throttle, request timeout, retry with backoff, and `ToolError`/`ErrorCode` classification — and the loop terminates on `offset >= totalCount`, which also guards against a backend that ignores `offset`. `ListOptions` gains an `all?: boolean` flag: `list*({ all: true })` returns the full result set via `fetchAllPages`, and `inventory_analyze` uses it instead of bespoke fetch-all queries. The `inventory_list_data_silos` and `inventory_list_identifiers` payloads now also include `isLive`/`outerType` and `isRequiredInForm` respectively.
+
+  Also fix broken pagination in the `inventory_list_*` tools (`data_silos`, `vendors`, `identifiers`, `data_points`, `categories`). They previously accepted a `cursor` that was silently ignored by the underlying queries, so every page returned the same first 100 results. They now use numeric `offset` pagination (matching `inventory_list_sub_data_points` and the consent list tools), with `hasNextPage` derived from `offset + page length < totalCount`.
+
+- Updated dependencies [85f24d0]
+  - @transcend-io/mcp-server-base@0.4.5
+
 ## 0.3.5
 
 ### Patch Changes

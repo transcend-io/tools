@@ -4,7 +4,9 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
+import { getRequestAuth, requestAuthContext } from '../auth-context.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
+import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
 import type { ToolDefinition } from '../tools/types.js';
@@ -16,6 +18,8 @@ export interface BuildMcpServerOptions {
   version: string;
   /** Pre-constructed tool definitions */
   tools: ToolDefinition[];
+  /** Optional MCP initialize instructions injected into the client system prompt. */
+  instructions?: string;
 }
 
 /**
@@ -44,7 +48,10 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   const server = new Server(
     { name: options.name, version: options.version },
-    { capabilities: { tools: {} } },
+    {
+      capabilities: { tools: {} },
+      ...(options.instructions ? { instructions: options.instructions } : {}),
+    },
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
@@ -84,9 +91,22 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         };
       }
 
+      const toolRequiresAuth = tool.requireAuth !== false;
+      let oauthCredentials: ReturnType<typeof getLazyOAuthCredentials> = null;
+      if (toolRequiresAuth) {
+        await ensureLazyOAuthAuth(logger);
+        oauthCredentials = getLazyOAuthCredentials();
+      }
+
       const result = await toolCallContext.run(
         { toolName: name, correlationId: randomUUID() },
-        () => tool.handler(parseResult.data),
+        () => {
+          const execute = () => tool.handler(parseResult.data);
+          if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {
+            return requestAuthContext.run(oauthCredentials, execute);
+          }
+          return execute();
+        },
       );
       logger.debug(`Tool ${name} completed successfully`);
 

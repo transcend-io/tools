@@ -1,5 +1,144 @@
 # @transcend-io/sdk
 
+## 1.3.0
+
+### Minor Changes
+
+- 9ebf2c3: Add full pull and push support for consent purposes, preference option values, and preference topics. Purposes and their nested preference-topics can now be pushed (create/update), preference-options are a top-level catalog, and nested topic pull includes slug and color.
+
+  Fix push-path bugs: option-value updates now send only `{ id, title }` (not both id and slug), topic updates omit immutable fields (slug, type, purposeId), BOOLEAN topics reject non-empty options and never send `preferenceOptionValueIds`, and CLI-side slug validation enforces `/^[A-Za-z]+$/`.
+
+  Built-in purpose updates omit `configurable` and `show-in-consent-manager` (backend restriction). Unchanged resources are skipped on idempotent push.
+
+### Patch Changes
+
+- Updated dependencies [6143556]
+- Updated dependencies [6143556]
+  - @transcend-io/utils@0.2.0
+
+## 1.2.11
+
+### Patch Changes
+
+- Updated dependencies [b12d8c6]
+  - @transcend-io/privacy-types@5.4.0
+  - @transcend-io/airgap.js-types@14.2.13
+
+## 1.2.10
+
+### Patch Changes
+
+- 6a48672: Move the `graphql` dependency to the workspace catalog so every package in
+  the monorepo (including the new MCP codegen consumers) resolves it to a
+  single, hermetic version. No runtime behavior change.
+
+## 1.2.9
+
+### Patch Changes
+
+- Updated dependencies [0da7015]
+  - @transcend-io/privacy-types@5.3.2
+  - @transcend-io/airgap.js-types@14.2.12
+
+## 1.2.8
+
+### Patch Changes
+
+- Updated dependencies [0ae4785]
+  - @transcend-io/privacy-types@5.3.1
+  - @transcend-io/airgap.js-types@14.2.11
+
+## 1.2.7
+
+### Patch Changes
+
+- Updated dependencies [6d56588]
+  - @transcend-io/privacy-types@5.3.0
+  - @transcend-io/airgap.js-types@14.2.10
+
+## 1.2.6
+
+### Patch Changes
+
+- 4ba5bfb: add consent variants and themes to inventory push/pull
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+  - @transcend-io/airgap.js-types@14.2.9
+
+## 1.2.5
+
+### Patch Changes
+
+- Updated dependencies [0e20155]
+  - @transcend-io/privacy-types@5.2.4
+  - @transcend-io/airgap.js-types@14.2.8
+
+## 1.2.4
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+  - @transcend-io/airgap.js-types@14.2.7
+  - @transcend-io/privacy-types@5.2.3
+
+## 1.2.3
+
+### Patch Changes
+
+- c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
+- Updated dependencies [c14ba60]
+  - @transcend-io/privacy-types@5.2.2
+  - @transcend-io/airgap.js-types@14.2.6
+
+## 1.2.2
+
+### Patch Changes
+
+- Updated dependencies [3741ca3]
+  - @transcend-io/privacy-types@5.2.1
+  - @transcend-io/airgap.js-types@14.2.5
+
+## 1.2.1
+
+### Patch Changes
+
+- Updated dependencies [bf944ab]
+- Updated dependencies [5538d24]
+  - @transcend-io/privacy-types@5.2.0
+  - @transcend-io/airgap.js-types@14.2.4
+
+## 1.2.0
+
+### Minor Changes
+
+- 14459f8: Add optional `parent-team-name` to team config. During sync, resolve the name to a parent organization team ID via `parentOrganizationTeams` and pass it to `createTeam`/`updateTeam`. During pull, emit `parent-team-name` from each team's linked `parentTeam`.
+
+## 1.1.11
+
+### Patch Changes
+
+- Updated dependencies [b90b468]
+  - @transcend-io/privacy-types@5.1.8
+  - @transcend-io/airgap.js-types@14.2.3
+
+## 1.1.10
+
+### Patch Changes
+
+- 9d180f4: Update `got` dependency from v11 to v15.
+
+  Note: per [got v15 release notes](https://github.com/sindresorhus/got/releases/tag/v15.0.0),
+  `responseType: 'buffer'` (and `.buffer()`) now resolve to `Uint8Array` instead
+  of `Buffer`. The `onFileDownloaded` callback in `streamPrivacyRequestFiles`
+  has been retyped accordingly. `Buffer` is still a `Uint8Array` subclass, so
+  existing usages that just write the value to disk continue to work without
+  changes.
+
+- Updated dependencies [b18f2e8]
+  - @transcend-io/privacy-types@5.1.7
+  - @transcend-io/airgap.js-types@14.2.2
+
 ## 1.1.9
 
 ### Patch Changes

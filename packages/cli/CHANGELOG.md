@@ -1,5 +1,321 @@
 # @transcend-io/cli
 
+## 10.17.0
+
+### Minor Changes
+
+- 9ebf2c3: Add full pull and push support for consent purposes, preference option values, and preference topics. Purposes and their nested preference-topics can now be pushed (create/update), preference-options are a top-level catalog, and nested topic pull includes slug and color.
+
+  Fix push-path bugs: option-value updates now send only `{ id, title }` (not both id and slug), topic updates omit immutable fields (slug, type, purposeId), BOOLEAN topics reject non-empty options and never send `preferenceOptionValueIds`, and CLI-side slug validation enforces `/^[A-Za-z]+$/`.
+
+  Built-in purpose updates omit `configurable` and `show-in-consent-manager` (backend restriction). Unchanged resources are skipped on idempotent push.
+
+- 6143556: Return structured SyncResult from syncConfigurationToTranscend and add createCollectingLogger for MCP debug responses.
+- 6143556: Return structured SyncResult from syncConfigurationToTranscend with injectable logger support for MCP debug responses.
+
+### Patch Changes
+
+- Updated dependencies [9ebf2c3]
+- Updated dependencies [6143556]
+- Updated dependencies [6143556]
+  - @transcend-io/sdk@1.3.0
+  - @transcend-io/utils@0.2.0
+
+## 10.16.0
+
+### Minor Changes
+
+- 321c04a: Add `transcend policy deactivate` subcommand
+
+  `transcend policy deactivate --bundle-name <name>` takes a policy bundle's
+  currently active version offline, completing the publish/activate/list/versions/deactivate
+  lifecycle tooling.
+
+  Use kebab-case flags for `transcend policy *` commands
+
+  Policy CLI flags are now kebab-case (e.g. `--bundle-name`, `--transcend-url`,
+  `--policy-bundle-id`, `--dry-run`) instead of camelCase. Single-word flags
+  (`--auth`, `--json`, `--version`, `--dir`, `--limit`, `--offset`, `--after`,
+  `--description`) are unchanged.
+
+## 10.15.0
+
+### Minor Changes
+
+- 9dcc811: Add `--restartIdentifierStrategy` flag to `transcend request restart` for controlling how request identifiers are handled when restarting DSRs (WAL-10201).
+
+### Patch Changes
+
+- 96ee80f: Sanitize colons out of auto-generated request receipt filenames so the bulk request `restart` and `upload` commands work on native Windows. `new Date().toISOString()` embeds colons (e.g. `04:33:12`), which are illegal characters in Windows filenames and caused the first receipt `writeFileSync` to fail with `ENOENT`.
+
+## 10.14.0
+
+### Minor Changes
+
+- 89d9e12: Default `--auth` to the `TRANSCEND_API_KEY` environment variable
+
+  All API-authenticated CLI commands (including every `transcend policy *`
+  command that calls the Transcend API) now fall back to the
+  `TRANSCEND_API_KEY` environment variable when `--auth` is not passed. Export
+  it once in your shell and omit `--auth` on every subsequent invocation:
+
+  ```sh
+  export TRANSCEND_API_KEY=...
+  transcend policy list
+  transcend policy publish --dir=./policies --bundleName=main
+  ```
+
+  When `TRANSCEND_API_KEY` is unset, `--auth` remains required, preserving
+  existing behavior. This mirrors the existing `TRANSCEND_API_URL` convention
+  already used for `--transcendUrl`.
+
+  Use version labels for `transcend policy activate`
+
+  `transcend policy activate` now accepts an optional `--version` flag with the
+  caller-supplied version label instead of a version UUID. When `--version` is
+  omitted, the command activates the latest uploaded version by `createdAt`.
+  After `transcend policy publish`, the printed activation hint uses the version
+  label rather than an internal ID.
+
+## 10.13.0
+
+### Minor Changes
+
+- 46c939b: Validate policy bundles compile with `opa build` before `transcend policy publish`
+
+  `transcend policy publish` now runs `opa build` against the policy directory
+  before packaging the upload tarball, so compile failures (syntax errors,
+  missing imports, undefined references, etc.) surface client-side with a clear
+  non-zero exit instead of after upload.
+
+  The upload payload is unchanged: the CLI still packages `manifest.json` plus
+  publishable `.rego` files (excluding `*_test.rego`) into the gzip tarball the
+  Policy Engine API expects. The `opa build` output is discarded — it is a
+  pre-publish compilation gate only, run in addition to the existing
+  `opa check --strict --v0-compatible` lint.
+
+## 10.12.3
+
+### Patch Changes
+
+- Updated dependencies [b12d8c6]
+  - @transcend-io/privacy-types@5.4.0
+  - @transcend-io/airgap.js-types@14.2.13
+  - @transcend-io/sdk@1.2.11
+
+## 10.12.2
+
+### Patch Changes
+
+- 07f1081: Fix `transcend policy publish` to upload a Policy Engine-compatible tarball (`manifest.json` plus `.rego` files) instead of `opa build` output, validate Rego with `opa check --v0-compatible`, and surface API error messages on upload failure.
+
+## 10.12.1
+
+### Patch Changes
+
+- 89a23df: Fix `transcend policy lint` formatting detection and add an interactive prompt to format unformatted Rego files in place.
+- 6a48672: Move the `graphql` dependency to the workspace catalog so every package in
+  the monorepo (including the new MCP codegen consumers) resolves it to a
+  single, hermetic version. No runtime behavior change.
+- Updated dependencies [6a48672]
+  - @transcend-io/sdk@1.2.10
+
+## 10.12.0
+
+### Minor Changes
+
+- c2ed85f: Add `transcend policy versions` subcommand for listing uploaded policy bundle versions.
+
+## 10.11.0
+
+### Minor Changes
+
+- 40b201e: Add `transcend policy list` subcommand for listing policy bundles.
+
+## 10.10.0
+
+### Minor Changes
+
+- 1bc461f: Add `transcend policy activate` subcommand for activating uploaded policy bundle versions.
+
+## 10.9.0
+
+### Minor Changes
+
+- 47219d3: Add `transcend policy publish` subcommand for uploading OPA policy bundles.
+
+## 10.8.0
+
+### Minor Changes
+
+- 34eb0a1: Add `transcend policy eval` subcommand for local OPA policy debugging.
+
+## 10.7.0
+
+### Minor Changes
+
+- ad0a15c: Add `transcend policy test` subcommand for local OPA policy testing.
+
+## 10.6.0
+
+### Minor Changes
+
+- fa2fc88: Add `transcend policy lint` subcommand for local OPA policy validation.
+
+## 10.5.11
+
+### Patch Changes
+
+- 45f7c5a: Add shared Policy Engine CLI helpers for OPA checks, REST client setup, bundle upload utilities, and table rendering.
+
+## 10.5.10
+
+### Patch Changes
+
+- Updated dependencies [0da7015]
+  - @transcend-io/privacy-types@5.3.2
+  - @transcend-io/airgap.js-types@14.2.12
+  - @transcend-io/sdk@1.2.9
+
+## 10.5.9
+
+### Patch Changes
+
+- Updated dependencies [0ae4785]
+  - @transcend-io/privacy-types@5.3.1
+  - @transcend-io/airgap.js-types@14.2.11
+  - @transcend-io/sdk@1.2.8
+
+## 10.5.8
+
+### Patch Changes
+
+- Updated dependencies [6d56588]
+  - @transcend-io/privacy-types@5.3.0
+  - @transcend-io/airgap.js-types@14.2.10
+  - @transcend-io/sdk@1.2.7
+
+## 10.5.7
+
+### Patch Changes
+
+- 4ba5bfb: add consent variants and themes to inventory push/pull
+- Updated dependencies [4ba5bfb]
+  - @transcend-io/privacy-types@5.2.5
+  - @transcend-io/sdk@1.2.6
+  - @transcend-io/airgap.js-types@14.2.9
+
+## 10.5.5
+
+### Patch Changes
+
+- 32affea: Update undici
+
+## 10.5.4
+
+### Patch Changes
+
+- Updated dependencies [0e20155]
+  - @transcend-io/privacy-types@5.2.4
+  - @transcend-io/airgap.js-types@14.2.8
+  - @transcend-io/sdk@1.2.5
+
+## 10.5.3
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+  - @transcend-io/airgap.js-types@14.2.7
+  - @transcend-io/privacy-types@5.2.3
+  - @transcend-io/sdk@1.2.4
+
+## 10.5.2
+
+### Patch Changes
+
+- c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
+- Updated dependencies [c14ba60]
+  - @transcend-io/privacy-types@5.2.2
+  - @transcend-io/sdk@1.2.3
+  - @transcend-io/airgap.js-types@14.2.6
+
+## 10.5.1
+
+### Patch Changes
+
+- 93fd511: Extract the shared `splitDateRange` helper used by the request export and pull commands into a single module, removing the duplicated copies.
+- 3741ca3: Add `Footer` (`footer`) and `FooterLink` (`footerLink`) to the `CustomizableComponent` enum for Privacy Center footer CSS overrides. Regenerate the CLI `transcend.yml` JSON schema so the new components are reflected.
+- Updated dependencies [3741ca3]
+  - @transcend-io/privacy-types@5.2.1
+  - @transcend-io/airgap.js-types@14.2.5
+  - @transcend-io/sdk@1.2.2
+
+## 10.5.0
+
+### Minor Changes
+
+- 5538d24: Add Policy Engine (Seneca) control-plane scopes to the AD scope catalog: `ViewPolicyEngineBundles`, `ManagePolicyEngineBundles`, and `ActivatePolicyEngineBundles` (wire values `viewPolicyEngineBundles` / `managePolicyEngineBundles` / `activatePolicyEngineBundles`), titled "View Policy" / "Manage Policy" / "Activate Policy". These authorize the new `/api/v1/policy-engine/*` REST endpoints on the monolith. Also adds a new `TranscendProduct.PolicyEngine` enum value.
+
+  To disambiguate from the new Policy Engine scopes, the two existing Privacy Center scopes are retitled: `ViewPolicies` "View Policies" → "View Privacy Center Policies", and `ManagePolicies` "Manage Policies" → "Manage Privacy Center Policies". Their enum names and wire values (`viewPolicies` / `managePolicies`) are unchanged, so stored API-key scopes and authorization are unaffected.
+
+  Note: the `transcend admin generate-api-keys --scopes` CLI flag accepts scope **titles**, so the accepted values for the two retitled scopes change accordingly ("View Policies" → "View Privacy Center Policies", "Manage Policies" → "Manage Privacy Center Policies"). Automation passing the old titles must be updated.
+
+### Patch Changes
+
+- Updated dependencies [bf944ab]
+- Updated dependencies [5538d24]
+  - @transcend-io/privacy-types@5.2.0
+  - @transcend-io/airgap.js-types@14.2.4
+  - @transcend-io/sdk@1.2.1
+
+## 10.4.0
+
+### Minor Changes
+
+- 14459f8: Add optional `parent-team-name` to team config. During sync, resolve the name to a parent organization team ID via `parentOrganizationTeams` and pass it to `createTeam`/`updateTeam`. During pull, emit `parent-team-name` from each team's linked `parentTeam`.
+- ad6655d: Document the optional `partition` object on cron pending-requests responses and include `partitionId`, `partitionName`, and `partitionKey` columns in `transcend request cron pull-identifiers` CSV output when a DSR is scoped to a consent partition.
+
+### Patch Changes
+
+- Updated dependencies [14459f8]
+  - @transcend-io/sdk@1.2.0
+
+## 10.3.8
+
+### Patch Changes
+
+- 47bf9a4: Fixed jwt import syntax
+
+## 10.3.7
+
+### Patch Changes
+
+- b90b468: Add `RulesAutomationRuleTerminalFailure` and `RulesAutomationRuleTerminalFailureAssigned` values to the `ActionItemCode` enum so that Rules Automation rule owners can be notified when a rule hits a terminal execution failure. Regenerate the CLI `transcend.yml` JSON schema so the new codes are reflected.
+- Updated dependencies [b90b468]
+  - @transcend-io/privacy-types@5.1.8
+  - @transcend-io/airgap.js-types@14.2.3
+  - @transcend-io/sdk@1.1.11
+
+## 10.3.6
+
+### Patch Changes
+
+- 9d180f4: Update `got` dependency from v11 to v15.
+
+  Note: per [got v15 release notes](https://github.com/sindresorhus/got/releases/tag/v15.0.0),
+  `responseType: 'buffer'` (and `.buffer()`) now resolve to `Uint8Array` instead
+  of `Buffer`. The `onFileDownloaded` callback in `streamPrivacyRequestFiles`
+  has been retyped accordingly. `Buffer` is still a `Uint8Array` subclass, so
+  existing usages that just write the value to disk continue to work without
+  changes.
+
+- Updated dependencies [b18f2e8]
+- Updated dependencies [9d180f4]
+  - @transcend-io/privacy-types@5.1.7
+  - @transcend-io/sdk@1.1.10
+  - @transcend-io/airgap.js-types@14.2.2
+
 ## 10.3.5
 
 ### Patch Changes

@@ -1,5 +1,86 @@
 # @transcend-io/privacy-types
 
+## 5.4.0
+
+### Minor Changes
+
+- b12d8c6: Add `WorkflowConfigType` and `WorkflowConfigVisibility` enums for DSR and preference management workflows, with draft/internal/published visibility tiers.
+
+## 5.3.2
+
+### Patch Changes
+
+- 0da7015: Updates ContentFlows to be camelCased
+
+## 5.3.1
+
+### Patch Changes
+
+- 0ae4785: Make `ActivatePolicyEngineBundles` depend on `ManagePolicyEngineBundles` so the Activate scope includes all Manage and View policy permissions (LINK-7130).
+
+## 5.3.0
+
+### Minor Changes
+
+- 6d56588: Add `RestartIdentifierStrategy` enum for DSR restart identifier handling (WAL-7712).
+
+## 5.2.5
+
+### Patch Changes
+
+- 4ba5bfb: add consent variants and themes to inventory push/pull
+
+## 5.2.4
+
+### Patch Changes
+
+- 0e20155: Added themeConfigMap to UI v2 loadOptions; Add minimal verion of themeConfigMap types for bundling
+
+## 5.2.3
+
+### Patch Changes
+
+- Updated dependencies [9b1c5f3]
+  - @transcend-io/internationalization@4.1.1
+
+## 5.2.2
+
+### Patch Changes
+
+- c14ba60: Add consent analytics MCP tools (`consent_get_aggregate_analytics`, `consent_get_timeseries_analytics`, `consent_get_analytics_data`) backed by new SDK airgap bundle analytics fetchers and consent analytics enums in privacy-types. Rename `consent_get_triage_stats` to `consent_get_inventory_stats` to clarify it returns inventory counts, not site analytics.
+
+## 5.2.1
+
+### Patch Changes
+
+- 3741ca3: Add `Footer` (`footer`) and `FooterLink` (`footerLink`) to the `CustomizableComponent` enum for Privacy Center footer CSS overrides. Regenerate the CLI `transcend.yml` JSON schema so the new components are reflected.
+
+## 5.2.0
+
+### Minor Changes
+
+- 5538d24: Add Policy Engine (Seneca) control-plane scopes to the AD scope catalog: `ViewPolicyEngineBundles`, `ManagePolicyEngineBundles`, and `ActivatePolicyEngineBundles` (wire values `viewPolicyEngineBundles` / `managePolicyEngineBundles` / `activatePolicyEngineBundles`), titled "View Policy" / "Manage Policy" / "Activate Policy". These authorize the new `/api/v1/policy-engine/*` REST endpoints on the monolith. Also adds a new `TranscendProduct.PolicyEngine` enum value.
+
+  To disambiguate from the new Policy Engine scopes, the two existing Privacy Center scopes are retitled: `ViewPolicies` "View Policies" → "View Privacy Center Policies", and `ManagePolicies` "Manage Policies" → "Manage Privacy Center Policies". Their enum names and wire values (`viewPolicies` / `managePolicies`) are unchanged, so stored API-key scopes and authorization are unaffected.
+
+  Note: the `transcend admin generate-api-keys --scopes` CLI flag accepts scope **titles**, so the accepted values for the two retitled scopes change accordingly ("View Policies" → "View Privacy Center Policies", "Manage Policies" → "Manage Privacy Center Policies"). Automation passing the old titles must be updated.
+
+### Patch Changes
+
+- bf944ab: Deprecate themeConfigMap from LoadOptions
+
+## 5.1.8
+
+### Patch Changes
+
+- b90b468: Add `RulesAutomationRuleTerminalFailure` and `RulesAutomationRuleTerminalFailureAssigned` values to the `ActionItemCode` enum so that Rules Automation rule owners can be notified when a rule hits a terminal execution failure. Regenerate the CLI `transcend.yml` JSON schema so the new codes are reflected.
+
+## 5.1.7
+
+### Patch Changes
+
+- b18f2e8: Added new database driver Trino
+
 ## 5.1.6
 
 ### Patch Changes

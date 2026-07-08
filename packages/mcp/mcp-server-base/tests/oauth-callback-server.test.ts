@@ -1,0 +1,175 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+
+import { startCallbackServer } from '../src/oauth/callback-server.js';
+import { generateOAuthState } from '../src/oauth/pkce.js';
+
+describe('startCallbackServer', () => {
+  const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+  const originalRedirectHost = process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+  let nextPort = 19000;
+
+  beforeEach(() => {
+    process.env.TRANSCEND_OAUTH_REDIRECT_PORT = String(nextPort++);
+    delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+  });
+
+  afterEach(() => {
+    if (originalRedirectPort === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
+    else process.env.TRANSCEND_OAUTH_REDIRECT_PORT = originalRedirectPort;
+
+    if (originalRedirectHost === undefined) delete process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+    else process.env.TRANSCEND_OAUTH_REDIRECT_HOST = originalRedirectHost;
+  });
+  it('accepts a valid callback and returns the authorization code', async () => {
+    const state = generateOAuthState();
+    const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
+
+    try {
+      const response = await fetch(
+        `${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`,
+      );
+      expect(response.status).toBe(200);
+      expect(await response.text()).toContain('successfully authenticated');
+
+      const result = await handle.waitForCallback();
+      expect(result.code).toBe('auth-code-123');
+      expect(result.state).toBe(state);
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it('auto-closes after a successful callback', async () => {
+    const state = generateOAuthState();
+    const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
+
+    try {
+      await fetch(`${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`);
+      await handle.waitForCallback();
+      await handle.close();
+
+      await expect(
+        fetch(`${handle.redirectUri}?code=ignored&state=${encodeURIComponent(state)}`),
+      ).rejects.toThrow();
+    } finally {
+      await handle.close().catch(() => undefined);
+    }
+  });
+
+  it('serves success HTML for duplicate callbacks after settlement', async () => {
+    const state = generateOAuthState();
+    const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
+    const callbackUrl = `${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`;
+
+    try {
+      const [first, duplicate] = await Promise.all([fetch(callbackUrl), fetch(callbackUrl)]);
+      expect(first.status).toBe(200);
+      expect(duplicate.status).toBe(200);
+      expect(await duplicate.text()).toContain('successfully authenticated');
+
+      const result = await handle.waitForCallback();
+      expect(result.code).toBe('auth-code-123');
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it('rejects callbacks with a state mismatch', async () => {
+    const handle = await startCallbackServer({
+      expectedState: 'expected-state',
+      timeoutMs: 5000,
+    });
+
+    try {
+      const assertion = expect(handle.waitForCallback()).rejects.toThrow(/state mismatch/i);
+      const response = await fetch(`${handle.redirectUri}?code=auth-code-123&state=wrong-state`);
+      expect(response.status).toBe(400);
+      await assertion;
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it('rejects OAuth error query parameters from the authorization server', async () => {
+    const state = generateOAuthState();
+    const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
+
+    try {
+      const assertion = expect(handle.waitForCallback()).rejects.toThrow(/access_denied/i);
+      const response = await fetch(
+        `${handle.redirectUri}?error=access_denied&error_description=User%20denied&state=${encodeURIComponent(state)}`,
+      );
+      expect(response.status).toBe(400);
+      await assertion;
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it('rejects callbacks missing an authorization code', async () => {
+    const state = generateOAuthState();
+    const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
+
+    try {
+      const assertion = expect(handle.waitForCallback()).rejects.toThrow(
+        /missing authorization code/i,
+      );
+      const response = await fetch(`${handle.redirectUri}?state=${encodeURIComponent(state)}`);
+      expect(response.status).toBe(400);
+      await assertion;
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it('returns 405 for non-GET requests', async () => {
+    const handle = await startCallbackServer({
+      expectedState: 'expected-state',
+      timeoutMs: 5000,
+    });
+
+    try {
+      const response = await fetch(handle.redirectUri, { method: 'POST' });
+      expect(response.status).toBe(405);
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it('accepts callbacks on the configured IPv6 loopback host', async () => {
+    process.env.TRANSCEND_OAUTH_REDIRECT_HOST = '::1';
+    const state = generateOAuthState();
+    const handle = await startCallbackServer({ expectedState: state, timeoutMs: 5000 });
+
+    try {
+      expect(handle.redirectUri).toMatch(/^http:\/\/\[::1\]:\d+\/callback$/);
+
+      const response = await fetch(
+        `${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`,
+      );
+      expect(response.status).toBe(200);
+
+      const result = await handle.waitForCallback();
+      expect(result.code).toBe('auth-code-123');
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it.each(['/other', '/callback-evil', '/callback/'])(
+    'returns 404 for non-callback path %s',
+    async (path) => {
+      const handle = await startCallbackServer({
+        expectedState: 'expected-state',
+        timeoutMs: 5000,
+      });
+
+      try {
+        const response = await fetch(new URL(path, handle.redirectUri));
+        expect(response.status).toBe(404);
+      } finally {
+        await handle.close();
+      }
+    },
+  );
+});

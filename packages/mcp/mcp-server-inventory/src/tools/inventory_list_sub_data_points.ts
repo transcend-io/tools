@@ -3,7 +3,7 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { InventoryMixin } from '../graphql.js';
 
 export const ListSubDataPointsSchema = z.object({
-  data_point_id: z.string().describe('ID of the parent data point'),
+  dataPointId: z.string().describe('ID of the parent data point'),
   limit: z.coerce
     .number()
     .min(1)
@@ -30,8 +30,8 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListSubDataPointsSchema,
-    handler: async ({ data_point_id, limit, offset }) => {
-      const result = await graphql.listSubDataPoints(data_point_id, {
+    handler: async ({ dataPointId, limit, offset }) => {
+      const result = await graphql.listSubDataPoints(dataPointId, {
         first: limit,
         offset,
       });

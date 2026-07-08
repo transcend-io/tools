@@ -12,13 +12,14 @@ This package is **not** a standalone MCP CLI: it has no `bin`. Domain servers an
 
 For development, use a checkout of this repository (see **Development** below).
 
-API keys for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers). Use keys created with **MCP** enabled in the Transcend dashboard (a toggle when you create the key); other keys will not authenticate to the MCP servers.
+OAuth credentials for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers). Create the OAuth client at [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients) and set `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. The redirect URI must exactly match `http://127.0.0.1:{port}/callback` — see the domain package READMEs and [MCP root README](../README.md#oauth-client-setup) for setup details.
 
 ## What's inside
 
-- **`AuthCredentials`** — Discriminated union type representing API key or session cookie authentication. The `authHeaders()` helper converts credentials into the correct outbound HTTP headers.
-- **`resolveAuth` / `tryResolveAuth`** — Resolves `AuthCredentials` from inbound HTTP headers (session cookie, API key) or `TRANSCEND_API_KEY` env var. `resolveAuth` throws when no auth is found; `tryResolveAuth` returns `null` (used during auth-free MCP initialization).
+- **`AuthCredentials`** — Discriminated union type representing OAuth token, API key, or session cookie authentication. The `authHeaders()` helper converts credentials into the correct outbound HTTP headers.
+- **`resolveAuth` / `tryResolveAuth`** — Resolves `AuthCredentials` from inbound HTTP headers (session cookie, API key) or environment. `resolveAuth` throws when no auth is found; `tryResolveAuth` returns `null` (used during auth-free MCP initialization).
 - **`requestAuthContext` / `getRequestAuth`** — `AsyncLocalStorage`-based per-request auth context. In HTTP transport, each inbound request's credentials are stored here so that downstream clients use the correct auth without shared mutable state. Concurrent requests with different users' credentials are fully isolated.
+- **`ensureOAuthStartupReady` / `ensureLazyOAuthAuth`** — Validates OAuth env vars at startup and performs browser-based OAuth login on first tool call in stdio mode. Tokens are kept in process memory only.
 - **`TranscendGraphQLBase`** — Base GraphQL client with query execution, pagination, and logging. Accepts `AuthCredentials | null` for initial/default auth and reads per-request overrides from `requestAuthContext`. Domain packages extend this via mixin classes.
 - **`TranscendRestClient`** — REST client for the Sombra API. Same auth model as `TranscendGraphQLBase`.
 - **`createMCPServer`** — Bootstraps an MCP server (stdio or HTTP) from a list of tool definitions and client factories.
@@ -53,7 +54,7 @@ pnpm -F @transcend-io/mcp-server-base build
 pnpm -F @transcend-io/mcp-server-base test
 ```
 
-To run a composed server against the real API, configure root **`secret.env`** and follow **Run from the monorepo** in [`mcp`](../mcp/README.md) or any domain package README.
+To run a composed server against the real API, configure root **`secret.env`** with OAuth credentials and follow **Run from the monorepo** in [`mcp`](../mcp/README.md) or any domain package README.
 
 See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for working across MCP packages and adding tools.
 

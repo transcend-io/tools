@@ -9,7 +9,7 @@ export type UpdateIdentifiersItemInput = z.infer<typeof UpdateIdentifiersItemSch
 
 export const UpdateIdentifiersSchema = z.object({
   partition: z.string().describe('Partition/organization context'),
-  user_id: z.string().describe('User ID to update identifiers for'),
+  userId: z.string().describe('User ID to update identifiers for'),
   identifiers: z
     .array(UpdateIdentifiersItemSchema)
     .describe('Array of identifier update objects with old and new values'),
@@ -26,10 +26,10 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     confirmationHint: 'Updates identifiers for the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateIdentifiersSchema,
-    handler: async ({ partition, user_id, identifiers }) => {
+    handler: async ({ partition, userId, identifiers }) => {
       const result = await rest.updateIdentifiers(
         partition,
-        user_id,
+        userId,
         identifiers.map((id) => ({
           oldValue: id.oldValue,
           newValue: id.newValue,

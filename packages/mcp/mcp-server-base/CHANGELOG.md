@@ -1,5 +1,64 @@
 # @transcend-io/mcp-server-base
 
+## 0.6.0
+
+### Minor Changes
+
+- 8fb4627: **@transcend-io/mcp-server-base:** Add per-tool `requireAuth` (call time) and `requireStartupAuth` on `createMCPServer` (boot). Add optional MCP initialize `instructions` on `buildMcpServer`, plus `resolveStdioStartupAuthOptional` for servers that include public tools.
+
+  **@transcend-io/mcp-server-docs:** Docs tools set `requireAuth: false` so they skip lazy OAuth. Standalone CLI uses `requireStartupAuth: false` (no API key or OAuth at startup). Remove unused docs OAuth scopes.
+
+  **@transcend-io/mcp:** Umbrella server uses optional startup auth, registers docs tools first, and ships initialize instructions guiding agents to `transcend_docs_list` / `transcend_docs_fetch` before org-specific API tools. Read CLI version from `package.json`.
+
+  **Domain MCP servers:** Read CLI version from `package.json` instead of a hardcoded value.
+
+## 0.5.0
+
+### Minor Changes
+
+- 8240631: Updates docs to direct users in integrating mcp with oauth
+- 6a48672: Add GraphQL Code Generator foundation and supporting utilities.
+  - `TranscendGraphQLBase.makeRequest` now accepts a `TypedDocumentNode` in
+    addition to a string query. When passed a typed document, the result is
+    inferred from the node's variable/result types so callers get end-to-end
+    type safety against the staging schema.
+  - New `CursorPaginationSchema` and `OffsetPaginationSchema` are exported
+    for tools that mirror the two pagination styles Transcend's GraphQL API
+    uses. The legacy combined `PaginationSchema` is now deprecated; prefer
+    the cursor/offset variants.
+  - `defineTool` now recursively validates that every input field (at any
+    nesting depth) carries a non-empty Zod description, throwing at tool
+    construction otherwise. The reusable `collectMissingDescriptions` helper
+    backs both this check and the repo-wide audit test.
+
+### Patch Changes
+
+- f04564e: Adds plumping for oauth token exchange to the transcend platform
+- b4b7c81: Adds structure for lazy oauth handling on tool calls
+- 20e0336: Adds foundations for oauth infrastructure
+- b1d1f0b: Adds oauth flow to browser and callback html
+- d00a847: Integrates mcp packages with oauth flow
+
+## Unreleased
+
+### Patch Changes
+
+- OAuth callback timeouts are now non-retryable and return an agent-facing message instructing the agent to report the timeout and wait for a new user message.
+- OAuth stdio tokens are **session-only**: access and refresh tokens are kept in process memory and are not written to disk. Restarting the MCP client (or MCP server process) requires signing in again. Expired access tokens are still refreshed silently within the same process when a refresh token is available.
+- Added stdio OAuth login (browser consent on first tool use). OAuth mode is opt-in: it activates only when `TRANSCEND_OAUTH_CLIENT_ID` is set and `TRANSCEND_API_KEY` is not. Existing API key auth is unchanged.
+- When OAuth mode is enabled, startup requires `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. Credentials are verified via `POST {issuer}/oauth/client-verify` (`{ client_id, client_secret, redirect_uri }` → `{ isValid: boolean }`). Register redirect URI `http://127.0.0.1:{port}/callback` on the OAuth client to match `TRANSCEND_OAUTH_REDIRECT_PORT`. Added `verifyOAuthClientCredentials` export.
+- Added `TRANSCEND_OAUTH_REDIRECT_HOST` for OAuth stdio callback loopback address (`127.0.0.1` default, or `::1` for `http://[::1]:{port}/callback`). Startup verification, authorize, token exchange, and the callback server all use the configured host.
+
+## 0.4.5
+
+### Patch Changes
+
+- 85f24d0: Fix hardcoded pagination limits in `inventory_analyze`. The tool previously fetched only the first 100 data silos, vendors, identifiers, and categories and reported those capped array lengths as the totals, silently undercounting larger inventories. It now fully paginates all of these entities. This also fixes latent gaps where `liveDataSilos`, the outer-type breakdown, and identifier `isRequired` were always empty because those fields were never selected.
+
+  Pagination is centralized in a new `TranscendGraphQLBase.fetchAllPages()` helper that walks an offset-paginated `{ nodes, totalCount }` connection through the existing `makeRequest`. Every page therefore inherits the same behaviour as all other MCP GraphQL calls — per-request auth (stdio static API key / HTTP per-request session cookie), the proactive rate-limit throttle, request timeout, retry with backoff, and `ToolError`/`ErrorCode` classification — and the loop terminates on `offset >= totalCount`, which also guards against a backend that ignores `offset`. `ListOptions` gains an `all?: boolean` flag: `list*({ all: true })` returns the full result set via `fetchAllPages`, and `inventory_analyze` uses it instead of bespoke fetch-all queries. The `inventory_list_data_silos` and `inventory_list_identifiers` payloads now also include `isLive`/`outerType` and `isRequiredInForm` respectively.
+
+  Also fix broken pagination in the `inventory_list_*` tools (`data_silos`, `vendors`, `identifiers`, `data_points`, `categories`). They previously accepted a `cursor` that was silently ignored by the underlying queries, so every page returned the same first 100 results. They now use numeric `offset` pagination (matching `inventory_list_sub_data_points` and the consent list tools), with `hasNextPage` derived from `offset + page length < totalCount`.
+
 ## 0.4.4
 
 ### Patch Changes

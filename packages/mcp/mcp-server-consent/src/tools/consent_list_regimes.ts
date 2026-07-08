@@ -2,8 +2,19 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 import { EXPERIENCES, type TranscendCliExperiencesResponse } from '@transcend-io/sdk';
 
 export const ListRegimesSchema = z.object({
-  limit: z.coerce.number().min(1).max(100).optional().default(50),
-  offset: z.coerce.number().min(0).optional().default(0),
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(100)
+    .optional()
+    .default(50)
+    .describe('Maximum number of regimes to return per page (1-100, default 50).'),
+  offset: z.coerce
+    .number()
+    .min(0)
+    .optional()
+    .default(0)
+    .describe('Number of results to skip for pagination (default 0).'),
 });
 export type ListRegimesInput = z.infer<typeof ListRegimesSchema>;
 

@@ -1,8 +1,12 @@
+import { UserPrivacySignalEnum } from '@transcend-io/airgap.js-types';
 import {
   PreferenceQueryResponseItem,
+  PreferenceStoreAuthLevel,
   PreferenceStoreIdentifier,
+  PreferenceTopicType,
   PreferenceUpdateItem,
 } from '@transcend-io/privacy-types';
+import { valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 export const PurposeRowMapping = t.type({
@@ -357,3 +361,74 @@ export const DeletePreferenceRecordCliCsvRow = t.type({
 
 /** Override type */
 export type DeletePreferenceRecordCliCsvRow = t.TypeOf<typeof DeletePreferenceRecordCliCsvRow>;
+
+/** Preference option value input for sync */
+export const PreferenceOptionValueInput = t.type({
+  /** Title of option value */
+  title: t.string,
+  /** API slug */
+  slug: t.string,
+});
+
+/** Override type */
+export type PreferenceOptionValueInput = t.TypeOf<typeof PreferenceOptionValueInput>;
+
+/** Preference topic input for sync */
+export const PreferenceTopicSyncInput = t.intersection([
+  t.type({
+    /** Purpose slug (trackingType) this topic belongs to */
+    'tracking-type': t.string,
+    /** The type of the preference topic */
+    type: valuesOf(PreferenceTopicType),
+    /** The title of the preference topic */
+    title: t.string,
+    /** The description of the preference topic */
+    description: t.string,
+    /** API slug for the preference topic */
+    slug: t.string,
+  }),
+  t.partial({
+    /** Default configuration value */
+    'default-configuration': t.string,
+    /** Whether the preference topic is shown in the privacy center */
+    'show-in-privacy-center': t.boolean,
+    /** The option values when the type is single or multi select */
+    options: t.array(PreferenceOptionValueInput),
+  }),
+]);
+
+/** Override type */
+export type PreferenceTopicSyncInput = t.TypeOf<typeof PreferenceTopicSyncInput>;
+
+/** Consent purpose input for sync */
+export const PurposeInput = t.intersection([
+  t.type({
+    /** Purpose slug (immutable key used to match existing purposes) */
+    trackingType: t.string,
+    /** Display name of the purpose */
+    name: t.string,
+  }),
+  t.partial({
+    /** Title shown in Consent Management and Privacy Center UIs */
+    title: t.string,
+    /** Description of the purpose */
+    description: t.string,
+    /** Whether the purpose is active */
+    'is-active': t.boolean,
+    /** Whether the purpose is configurable */
+    configurable: t.boolean,
+    /** Display order of the purpose in the privacy center */
+    'display-order': t.number,
+    /** Whether the purpose is shown in the privacy center */
+    'show-in-privacy-center': t.boolean,
+    /** Whether the purpose is shown in the consent manager */
+    'show-in-consent-manager': t.boolean,
+    /** Authentication level required for the purpose */
+    'auth-level': valuesOf(PreferenceStoreAuthLevel),
+    /** Opt-out signals that instantly opt out of this purpose */
+    'opt-out-signals': t.array(valuesOf(UserPrivacySignalEnum)),
+  }),
+]);
+
+/** Override type */
+export type PurposeInput = t.TypeOf<typeof PurposeInput>;

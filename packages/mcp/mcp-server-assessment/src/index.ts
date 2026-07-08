@@ -1,4 +1,5 @@
 export { getAssessmentTools } from './tools/index.js';
+export { ASSESSMENT_OAUTH_SCOPES } from './scopes.js';
 export { AssessmentsMixin } from './graphql.js';
 export {
   buildAssessmentLinks,

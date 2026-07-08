@@ -9,6 +9,8 @@ import {
   TelemetryPartitionStrategy,
   SignedIabAgreementOption,
   BrowserTimeZone,
+  type ConsentThemeInput,
+  type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
 import { map, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
@@ -16,7 +18,8 @@ import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllPurposes } from '../preference-management/fetchAllPurposes.js';
-import { fetchConsentManagerId, fetchConsentManagerExperiences } from './fetchConsentManagerId.js';
+import { fetchConsentManagerExperiences } from './fetchConsentManagerExperiences.js';
+import { fetchConsentManagerId } from './fetchConsentManagerId.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import {
   UPDATE_CONSENT_MANAGER_DOMAINS,
@@ -31,6 +34,11 @@ import {
   UPDATE_CONSENT_MANAGER_THEME,
 } from './gqls/consentManager.js';
 import { UPDATE_CONSENT_EXPERIENCE, CREATE_CONSENT_EXPERIENCE } from './gqls/experiences.js';
+import {
+  syncConsentUiThemes,
+  syncConsentUiVariants,
+  type SyncedConsentUiVariant,
+} from './syncConsentUi.js';
 import { fetchPartitions } from './syncPartitions.js';
 
 const PURPOSES_LINK = 'https://app.transcend.io/consent-manager/regional-experiences/purposes';
@@ -71,6 +79,8 @@ export interface ConsentManageExperienceInput {
   browserLanguages?: BrowserLanguage[];
   /** Browser time zones that define this regional experience */
   browserTimeZones?: BrowserTimeZone[];
+  /** Slug of the consent UI variant assigned to this experience */
+  consentUiVariantSlug?: string;
 }
 
 export interface ConsentManagerInput {
@@ -109,6 +119,10 @@ export interface ConsentManagerInput {
   };
   /** The Shared XDI host sync groups config (JSON) */
   syncGroups?: string;
+  /** Consent UI variant configurations */
+  consentVariants?: ConsentVariantInput[];
+  /** Consent UI theme configurations */
+  consentThemes?: ConsentThemeInput[];
 }
 
 /**
@@ -116,11 +130,13 @@ export interface ConsentManagerInput {
  *
  * @param client - GraphQL client
  * @param experiences - The experience inputs
+ * @param syncedVariants - Variants synced by syncConsentUiVariants, used to resolve consentUiVariantSlug
  * @param options - Options
  */
 export async function syncConsentManagerExperiences(
   client: GraphQLClient,
   experiences: ConsentManageExperienceInput[],
+  syncedVariants: SyncedConsentUiVariant[],
   options: {
     /** Logger instance */
     logger?: Logger;
@@ -135,6 +151,8 @@ export async function syncConsentManagerExperiences(
 
   const purposes = await fetchAllPurposes(client, { logger });
   const purposeLookup = keyBy(purposes, 'trackingType');
+
+  const syncedVariantBySlug = keyBy(syncedVariants, 'slug');
 
   await map(
     experiences,
@@ -160,6 +178,9 @@ export async function syncConsentManagerExperiences(
         return existingPurpose.id;
       });
 
+      const remoteConsentUiVariantId = exp.consentUiVariantSlug
+        ? syncedVariantBySlug[exp.consentUiVariantSlug]?.id
+        : undefined;
       const existingExperience = experienceLookup[exp.name];
       if (existingExperience) {
         await makeGraphQLRequest(client, UPDATE_CONSENT_EXPERIENCE, {
@@ -180,6 +201,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds,
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
+              ...(remoteConsentUiVariantId ? { consentUiVariantId: remoteConsentUiVariantId } : {}),
             },
           },
           logger,
@@ -201,6 +223,7 @@ export async function syncConsentManagerExperiences(
               optedOutPurposes: optedOutPurposeIds || [],
               browserLanguages: exp.browserLanguages,
               browserTimeZones: exp.browserTimeZones,
+              ...(remoteConsentUiVariantId ? { consentUiVariantId: remoteConsentUiVariantId } : {}),
             },
           },
           logger,
@@ -353,10 +376,32 @@ export async function syncConsentManager(
     });
   }
 
-  if (consentManager.experiences) {
-    await syncConsentManagerExperiences(client, consentManager.experiences, {
-      logger,
-    });
+  if (
+    consentManager.consentThemes ||
+    consentManager.consentVariants ||
+    consentManager.experiences
+  ) {
+    const syncedThemes = consentManager.consentThemes
+      ? await syncConsentUiThemes(client, airgapBundleId, consentManager.consentThemes, {
+          logger,
+        })
+      : [];
+
+    const syncedVariants = consentManager.consentVariants
+      ? await syncConsentUiVariants(
+          client,
+          airgapBundleId,
+          consentManager.consentVariants,
+          syncedThemes,
+          { logger },
+        )
+      : [];
+
+    if (consentManager.experiences) {
+      await syncConsentManagerExperiences(client, consentManager.experiences, syncedVariants, {
+        logger,
+      });
+    }
   }
 
   if (consentManager.theme) {

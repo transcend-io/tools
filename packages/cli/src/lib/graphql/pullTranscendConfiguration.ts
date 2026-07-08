@@ -4,6 +4,9 @@ import {
   ConsentTrackerStatus,
   ActionItemCode,
   RetentionType,
+  PreferenceTopicType,
+  type ConsentThemeInput,
+  type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
 import {
   fetchAllActionItemCollections,
@@ -25,6 +28,8 @@ import {
   fetchAllTemplates,
   fetchConsentManager,
   fetchConsentManagerExperiences,
+  fetchConsentVariants,
+  fetchConsentThemes,
   fetchConsentManagerTheme,
   fetchAllEnrichers,
   fetchAllIdentifiers,
@@ -34,6 +39,7 @@ import {
   fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
+  fetchAllPreferenceOptionValues,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -87,6 +93,8 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  ConsentPreferenceTopic,
+  ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
@@ -164,6 +172,8 @@ export async function pullTranscendConfiguration(
     processingActivities,
     consentManager,
     consentManagerExperiences,
+    consentVariants,
+    consentThemes,
     prompts,
     promptPartials,
     promptGroups,
@@ -183,6 +193,7 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
+    preferenceOptionValues,
     siloDiscoveryResults,
   ] = await Promise.all([
     // Grab all data subjects in the organization
@@ -275,6 +286,14 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.ConsentManager)
       ? fetchConsentManagerExperiences(client, { logger })
       : [],
+    // Fetch consent manager consent variants
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentVariants(client, { logger })
+      : [],
+    // Fetch consent manager consent themes
+    resources.includes(TranscendPullResource.ConsentManager)
+      ? fetchConsentThemes(client, { logger })
+      : [],
     // Fetch prompts
     resources.includes(TranscendPullResource.Prompts) ? fetchAllPrompts(client, { logger }) : [],
     // Fetch promptPartials
@@ -339,6 +358,9 @@ export async function pullTranscendConfiguration(
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.PreferenceOptions)
+      ? fetchAllPreferenceOptionValues(client, { logger })
       : [],
     // Fetch silo discovery results
     resources.includes(TranscendPullResource.SystemDiscovery)
@@ -422,7 +444,29 @@ export async function pullTranscendConfiguration(
         })),
         browserLanguages: experience.browserLanguages,
         browserTimeZones: experience.browserTimeZones,
+        consentUiVariantSlug: experience.consentUiVariant?.slug,
       })),
+      consentVariants: consentVariants.map(
+        (variant): ConsentVariantInput => ({
+          id: variant.id,
+          name: variant.name,
+          slug: variant.slug,
+          description: variant.description,
+          configuration: JSON.stringify(variant.configuration),
+          locales: variant.locales as LocaleValue[],
+          status: variant.status,
+          userFlow: variant.userFlow,
+          themeSlug: variant.theme?.slug,
+        }),
+      ),
+      consentThemes: consentThemes.map(
+        (theme): ConsentThemeInput => ({
+          id: theme.id,
+          name: theme.name,
+          slug: theme.slug,
+          configuration: JSON.stringify(theme.configuration),
+        }),
+      ),
     };
   }
 
@@ -813,12 +857,22 @@ export async function pullTranscendConfiguration(
   // Save teams
   if (teams.length > 0 && resources.includes(TranscendPullResource.Teams)) {
     result.teams = teams.map(
-      ({ name, description, ssoDepartment, ssoGroup, ssoTitle, users, scopes }): TeamInput => ({
+      ({
+        name,
+        description,
+        ssoDepartment,
+        ssoGroup,
+        ssoTitle,
+        users,
+        scopes,
+        parentTeam,
+      }): TeamInput => ({
         name,
         description,
         'sso-department': ssoDepartment || undefined,
         'sso-group': ssoGroup || undefined,
         'sso-title': ssoTitle || undefined,
+        'parent-team-name': parentTeam?.name,
         users: users.map(({ email }) => email),
         scopes: scopes.map(({ name }) => name),
       }),
@@ -1352,28 +1406,43 @@ export async function pullTranscendConfiguration(
         'auth-level': authLevel || undefined,
         'preference-topics': topics.map(
           ({
+            slug,
             title,
             type,
+            color,
             displayDescription,
             defaultConfiguration,
             showInPrivacyCenter,
             preferenceOptionValues,
-          }) => ({
+          }): ConsentPreferenceTopic => ({
+            slug,
             title: title.defaultMessage,
             type,
+            color,
             description: displayDescription.defaultMessage,
             'default-configuration': defaultConfiguration,
             'show-in-privacy-center': showInPrivacyCenter,
-            ...(preferenceOptionValues.length > 0
-              ? {
-                  options: preferenceOptionValues.map(({ title, slug }) => ({
+            options:
+              type === PreferenceTopicType.Boolean
+                ? []
+                : preferenceOptionValues.map(({ title, slug }) => ({
                     title: title.defaultMessage,
                     slug,
                   })),
-                }
-              : {}),
           }),
         ),
+      }),
+    );
+  }
+
+  if (
+    preferenceOptionValues.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceOptions)
+  ) {
+    result['preference-options'] = preferenceOptionValues.map(
+      ({ slug, title }): ConsentPreferenceTopicOptionValue => ({
+        slug,
+        title: title.defaultMessage,
       }),
     );
   }

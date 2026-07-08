@@ -1,0 +1,24 @@
+name: Bootstrap
+
+description: Install tools and dependencies
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6
+      name: Install pnpm
+      with:
+        cache: true
+
+    - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      with:
+        cache: 'pnpm'
+        node-version-file: '.node-version'
+
+    - name: Ensure npm supports OIDC trusted publishing
+      shell: bash
+      run: npm install -g npm@^11.5.1
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install

@@ -1,4 +1,5 @@
 export { getAdminTools } from './tools/index.js';
+export { ADMIN_OAUTH_SCOPES } from './scopes.js';
 export { AdminMixin } from './graphql.js';
 export { CreateApiKeySchema, type CreateApiKeyInput } from './tools/admin_create_api_key.js';
 export { ListApiKeysSchema, type ListApiKeysInput } from './tools/admin_list_api_keys.js';
