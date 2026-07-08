@@ -3,19 +3,12 @@ import type { GraphQLClient } from 'graphql-request';
 import { chunk, keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { type PreferenceOptionValueInput } from './codecs.js';
 import {
   fetchAllPreferenceOptionValues,
   type PreferenceOptionValue,
 } from './fetchAllPreferenceOptionValues.js';
-import { formatPreferenceSyncError } from './formatPreferenceSyncError.js';
 import { CREATE_OR_UPDATE_PREFERENCE_OPTION_VALUES } from './gqls/preferenceOptionValues.js';
-
-export interface PreferenceOptionValueInput {
-  /** Title of option value */
-  title: string;
-  /** API slug */
-  slug: string;
-}
 
 const MAX_BATCH_SIZE = 50;
 
@@ -109,12 +102,7 @@ export async function syncPreferenceOptionValues(
     );
     return true;
   } catch (err) {
-    logger?.error(
-      `Failed to sync preference option values! - ${formatPreferenceSyncError(
-        err,
-        'sync preference option values',
-      )}`,
-    );
+    logger?.error(`Failed to sync preference option values! - ${(err as Error).message}`);
     return false;
   }
 }

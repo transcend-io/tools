@@ -114,7 +114,7 @@ purposes:
     auth-level: REQUIRED
     preference-topics:
       # Writable: slug, title, type, description, default-configuration, show-in-privacy-center, options.
-      # `color` is returned on pull but not writable on push.
+      # Pull-only: color (returned on pull but not writable on push).
       - slug: Frequency
         title: Frequency
         type: SELECT

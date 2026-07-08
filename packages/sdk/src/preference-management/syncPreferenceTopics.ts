@@ -4,35 +4,14 @@ import type { GraphQLClient } from 'graphql-request';
 import { keyBy, uniqBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
+import { type PreferenceTopicSyncInput } from './codecs.js';
 import { fetchAllPreferenceOptionValues } from './fetchAllPreferenceOptionValues.js';
 import { fetchAllPreferenceTopics, type PreferenceTopic } from './fetchAllPreferenceTopics.js';
 import { fetchAllPurposes } from './fetchAllPurposes.js';
-import { formatPreferenceSyncError } from './formatPreferenceSyncError.js';
 import { CREATE_OR_UPDATE_PREFERENCE_TOPIC } from './gqls/preferenceTopic.js';
-import {
-  createOrUpdatePreferenceOptionValues,
-  type PreferenceOptionValueInput,
-} from './syncPreferenceOptionValues.js';
+import { createOrUpdatePreferenceOptionValues } from './syncPreferenceOptionValues.js';
 
-export interface PreferenceTopicSyncInput {
-  /** Purpose slug (trackingType) this topic belongs to */
-  'tracking-type': string;
-  /** The type of the preference topic */
-  type: PreferenceTopicType;
-  /** The title of the preference topic */
-  title: string;
-  /** The description of the preference topic */
-  description: string;
-  /** API slug for the preference topic */
-  slug: string;
-  /** Default configuration value */
-  'default-configuration'?: string;
-  /** Whether the preference topic is shown in the privacy center */
-  'show-in-privacy-center'?: boolean;
-  /** The option values when the type is single or multi select */
-  options?: PreferenceOptionValueInput[];
-  // NOTE: `color` is not writable via createOrUpdatePreferenceTopic and is pull-only.
-}
+export type { PreferenceTopicSyncInput } from './codecs.js';
 
 /**
  * Build GraphQL input for creating a preference topic.
@@ -182,12 +161,7 @@ export async function syncPreferenceTopics(
         optionIdBySlug[slug] = id;
       });
     } catch (err) {
-      logger?.error(
-        `Failed to sync inline preference option values! - ${formatPreferenceSyncError(
-          err,
-          'sync inline preference option values',
-        )}`,
-      );
+      logger?.error(`Failed to sync inline preference option values! - ${(err as Error).message}`);
       return false;
     }
   }
@@ -253,10 +227,7 @@ export async function syncPreferenceTopics(
     } catch (err) {
       success = false;
       logger?.error(
-        `Failed to sync preference topic "${topic.title}"! - ${formatPreferenceSyncError(
-          err,
-          `sync preference topic "${topic.slug}"`,
-        )}`,
+        `Failed to sync preference topic "${topic.title}"! - ${(err as Error).message}`,
       );
     }
   }

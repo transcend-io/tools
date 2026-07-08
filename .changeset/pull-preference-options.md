@@ -7,4 +7,4 @@ Add full pull and push support for consent purposes, preference option values, a
 
 Fix push-path bugs: option-value updates now send only `{ id, title }` (not both id and slug), topic updates omit immutable fields (slug, type, purposeId), BOOLEAN topics reject non-empty options and never send `preferenceOptionValueIds`, and CLI-side slug validation enforces `/^[A-Za-z]+$/`.
 
-Built-in purpose updates omit `configurable` and `show-in-consent-manager` (backend restriction). Unchanged resources are skipped on idempotent push. Pre-deploy auth errors for topic/option creates surface a clear message pending monolith API-key auth fixes.
+Built-in purpose updates omit `configurable` and `show-in-consent-manager` (backend restriction). Unchanged resources are skipped on idempotent push.

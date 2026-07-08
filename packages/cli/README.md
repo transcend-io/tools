@@ -2809,7 +2809,6 @@ When pushing `purposes`, `preference-options`, or nested `preference-topics`:
 - **Built-in purposes:** Default purposes (Advertising, Analytics, Essential, Functional, SaleOfInfo) can be updated via API key for most fields (`description`, `title`, `display-order`, `show-in-privacy-center`, `auth-level`, etc.). The CLI omits `configurable` and `show-in-consent-manager` from updates for built-in purposes and logs a warning if your YAML differs on those fields — change them in the [Admin Dashboard](https://app.transcend.io/consent-manager/regional-experiences/purposes) instead.
 - **BOOLEAN topics:** Do not define `options` for `BOOLEAN` preference topics — the backend auto-creates True/False options. The CLI rejects non-empty options before push.
 - **Immutable topic fields:** Slug, type, and parent purpose cannot be changed for an existing preference topic. Attempting to change `type` in YAML is rejected by the CLI.
-- **API-key auth (pre-deploy):** Creating preference topics and creating new preference option values currently require a logged-in user session on the backend. The CLI surfaces a clear error when this blocks a push. Monolith fixes to allow API-key auth for these mutations are pending deployment; after deploy, full create/update round-trips work with scoped API keys.
 
 #### CI Integration
 
