@@ -59923,9 +59923,9 @@
         "allOf": [
           {
             "type": "object",
-            "required": ["internal-name", "action-type"],
+            "required": ["title", "action-type"],
             "properties": {
-              "internal-name": {
+              "title": {
                 "type": "string"
               },
               "action-type": {
@@ -59957,7 +59957,7 @@
           {
             "type": "object",
             "properties": {
-              "title": {
+              "internal-name": {
                 "type": "string"
               },
               "subtitle": {

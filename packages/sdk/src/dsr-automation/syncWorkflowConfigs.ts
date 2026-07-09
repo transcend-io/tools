@@ -116,6 +116,7 @@ export async function syncWorkflowConfigs(
   await mapSeries(inputs, async (config) => {
     const label = workflowConfigInputLabel(config);
     try {
+      // TODO: https://linear.app/transcend/issue/WAL-10313 - support preference-management workflow sync
       if (config.type && config.type !== WorkflowConfigType.DSR) {
         throw new Error(
           `Workflow config "${label}" has type ` +

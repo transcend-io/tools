@@ -1475,6 +1475,7 @@ export async function pullTranscendConfiguration(
           : {}),
       }),
     );
+    // TODO: https://linear.app/transcend/issue/WAL-10312 - remove once internalName is unique in DB
     const configsByMatchKey = groupBy(workflowConfigs, workflowConfigMatchKey);
     for (const configs of Object.values(configsByMatchKey)) {
       if (configs.length > 1) {
