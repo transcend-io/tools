@@ -12,6 +12,7 @@ export * from './consentUiTheme.js';
 export * from './consentUiConfiguration.js';
 export * from './database.js';
 export * from './datapoint.js';
+export * from './dsrErrorCode.js';
 export * from './enricher.js';
 export * from './getRegistryLink.js';
 export * from './identifier.js';

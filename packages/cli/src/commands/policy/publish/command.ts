@@ -44,6 +44,11 @@ export const publishCommand = buildCommand({
         brief: 'Print the raw JSON API response',
         default: false,
       },
+      yes: {
+        kind: 'boolean',
+        brief: 'Skip the "create new bundle" confirmation (for CI/non-interactive use)',
+        default: false,
+      },
     },
   },
   docs: {

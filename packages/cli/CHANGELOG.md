@@ -1,5 +1,50 @@
 # @transcend-io/cli
 
+## 10.18.0
+
+### Minor Changes
+
+- 4fc9b4b: Rename `transcend policy list` to `transcend policy bundles`
+
+  Aligns bundle listing with `transcend policy versions` naming.
+
+  Confirm before creating a new bundle on `transcend policy publish`
+
+  When `--bundle-name` does not match an existing bundle, the CLI prompts before
+  creating one. Pass `--yes` to skip the prompt in CI/non-interactive runs.
+
+  Simplify `transcend policy activate` to bundle name only
+
+  Activation accepts only `--bundle-name` and optional `--version`; the
+  `--policy-bundle-id` flag has been removed.
+
+## 10.17.1
+
+### Patch Changes
+
+- 6153e51: Update stale Admin Dashboard links and labels in CLI documentation. Correct assessment template and API keys labels in docgen sources, and point connected-services references to infrastructure/integrations.
+
+## 10.17.0
+
+### Minor Changes
+
+- 9ebf2c3: Add full pull and push support for consent purposes, preference option values, and preference topics. Purposes and their nested preference-topics can now be pushed (create/update), preference-options are a top-level catalog, and nested topic pull includes slug and color.
+
+  Fix push-path bugs: option-value updates now send only `{ id, title }` (not both id and slug), topic updates omit immutable fields (slug, type, purposeId), BOOLEAN topics reject non-empty options and never send `preferenceOptionValueIds`, and CLI-side slug validation enforces `/^[A-Za-z]+$/`.
+
+  Built-in purpose updates omit `configurable` and `show-in-consent-manager` (backend restriction). Unchanged resources are skipped on idempotent push.
+
+- 6143556: Return structured SyncResult from syncConfigurationToTranscend and add createCollectingLogger for MCP debug responses.
+- 6143556: Return structured SyncResult from syncConfigurationToTranscend with injectable logger support for MCP debug responses.
+
+### Patch Changes
+
+- Updated dependencies [9ebf2c3]
+- Updated dependencies [6143556]
+- Updated dependencies [6143556]
+  - @transcend-io/sdk@1.3.0
+  - @transcend-io/utils@0.2.0
+
 ## 10.16.0
 
 ### Minor Changes

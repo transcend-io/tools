@@ -7,8 +7,8 @@ import { EMPTY_CELL } from '../constants.js';
 import { buildPolicyEngineClient, printResult, renderTable } from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
 
-/** CLI flags for `transcend policy list`. */
-export interface ListCommandFlags {
+/** CLI flags for `transcend policy bundles`. */
+export interface BundlesCommandFlags {
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
@@ -27,9 +27,9 @@ export interface ListCommandFlags {
  * @param this - CLI context
  * @param flags - Command flags
  */
-export async function list(
+export async function bundles(
   this: LocalContext,
-  { auth, 'transcend-url': transcendUrl, limit, offset, json }: ListCommandFlags,
+  { auth, 'transcend-url': transcendUrl, limit, offset, json }: BundlesCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
 
