@@ -219,9 +219,9 @@ const RESOURCE_DOCUMENTATION: Record<
   },
   [TranscendPullResource.ConsentWorkflowTriggers]: {
     description:
-      'Consent workflow trigger definitions (Preferences → Consent Workflows). Purposes drive trigger conditions.',
+      'Consent workflow trigger definitions (Workflows → Preference Workflows). Purposes drive trigger conditions.',
     markdownLinks: [
-      '[Preferences -> Consent Workflows]\
+      '[Workflows -> Preference Workflows]\
 (https://app.transcend.io/preference-store/consent-workflows)',
     ],
   },

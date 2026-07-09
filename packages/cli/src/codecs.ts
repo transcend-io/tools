@@ -1929,7 +1929,7 @@ export type ConsentWorkflowTriggerPurposeInput = t.TypeOf<
 /**
  * Input to define a consent workflow trigger.
  * Purposes are the source of truth; triggerCondition is derived on push
- * (same as Preferences → Consent Workflows in the admin dashboard).
+ * (same as Workflows → Preference Workflows in the admin dashboard).
  */
 export const ConsentWorkflowTriggerInput = t.intersection([
   t.type({
