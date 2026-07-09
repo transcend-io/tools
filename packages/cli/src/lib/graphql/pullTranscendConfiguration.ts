@@ -53,6 +53,7 @@ import {
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
+  workflowConfigMatchKey,
   type AssessmentRule,
 } from '@transcend-io/sdk';
 import colors from 'colors';
@@ -1446,52 +1447,43 @@ export async function pullTranscendConfiguration(
   }
 
   if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
-    const pulledWorkflowConfigs = workflowConfigs.flatMap((config): WorkflowConfigInput[] => {
-      if (!config.internalName) {
-        logger.warn(
-          `Skipping workflow config "${config.title.defaultMessage}" (${config.id}) — missing internal name. ` +
-            'Set an internal name in the Admin Dashboard to include it in workflow-configs pull output.',
-        );
-        return [];
-      }
-      return [
-        {
-          'internal-name': config.internalName,
-          'action-type': config.action.type,
-          ...(config.title ? { title: config.title.defaultMessage } : {}),
-          ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
-          ...(config.description ? { description: config.description.defaultMessage } : {}),
-          ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
-          visibility: config.workflowConfigVisibility,
-          type: config.workflowConfigType,
-          ...(config.collectDataSubjectRegions
-            ? {
-                'collect-data-subject-regions': config.collectDataSubjectRegions,
-              }
-            : {}),
-          ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
-          ...(config.expiryTime && config.expiryTime.length > 0
-            ? { 'expiry-time': config.expiryTime }
-            : {}),
-          ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
-            ? {
-                'attribute-keys': config.WorkflowConfigAttributeKeys.map(
-                  ({ attributeKey }) => attributeKey.name,
-                ),
-              }
-            : {}),
-        },
-      ];
-    });
-    const configsByInternalName = groupBy(
-      pulledWorkflowConfigs,
-      (config) => config['internal-name'],
+    const pulledWorkflowConfigs = workflowConfigs.map(
+      (config): WorkflowConfigInput => ({
+        title: config.title.defaultMessage,
+        'action-type': config.action.type,
+        ...(config.internalName ? { 'internal-name': config.internalName } : {}),
+        ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
+        ...(config.description ? { description: config.description.defaultMessage } : {}),
+        ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
+        visibility: config.workflowConfigVisibility,
+        type: config.workflowConfigType,
+        ...(config.collectDataSubjectRegions
+          ? {
+              'collect-data-subject-regions': config.collectDataSubjectRegions,
+            }
+          : {}),
+        ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
+        ...(config.expiryTime && config.expiryTime.length > 0
+          ? { 'expiry-time': config.expiryTime }
+          : {}),
+        ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
+          ? {
+              'attribute-keys': config.WorkflowConfigAttributeKeys.map(
+                ({ attributeKey }) => attributeKey.name,
+              ),
+            }
+          : {}),
+      }),
     );
-    for (const [internalName, configs] of Object.entries(configsByInternalName)) {
+    const configsByMatchKey = groupBy(workflowConfigs, workflowConfigMatchKey);
+    for (const configs of Object.values(configsByMatchKey)) {
       if (configs.length > 1) {
+        const sample = configs[0];
         logger.warn(
-          `Found "${configs.length}" workflow configs with internal name: "${internalName}". ` +
-            'Internal names must be unique to sync workflow configs.',
+          `Found "${configs.length}" workflow configs with the same title, action-type, ` +
+            `data-subject-type, and region-list for "${sample.title.defaultMessage}" ` +
+            `(${sample.action.type}). Push will fail until they are disambiguated ` +
+            '(for example with unique internal names).',
         );
       }
     }

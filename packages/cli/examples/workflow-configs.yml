@@ -1,5 +1,6 @@
-# Workflow configs are matched by internal-name. Missing names are created (DSR only);
-# existing names are updated. Internal names must be unique.
+# Workflow configs are matched using a cascading key:
+# internal-name → title → action-type → data-subject-type → region-list.
+# Missing matches are created (DSR only); existing matches are updated.
 # Notes:
 #   - New workflows start as Draft with default associations; set visibility explicitly to publish.
 #   - region-list entries must be ISO country / subdivision codes (e.g. GB, DE, US-CA, EU).

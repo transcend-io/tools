@@ -2805,10 +2805,16 @@ Some things to note about this sync process:
 
 #### Workflow configs push notes
 
-`workflow-configs` are matched by `internal-name`:
+`workflow-configs` are matched using a cascading key:
 
-- **Create:** If no workflow exists with that internal name, the CLI creates a DSR workflow via `createWorkflow` (starts as Draft with default associations), then applies the remaining YAML fields via `updateWorkflowConfig`.
-- **Update:** If a match exists, fields from YAML are updated in place.
+1. `internal-name` (when provided; zero matches create a new workflow instead of falling through)
+2. `title`
+3. `action-type`
+4. `data-subject-type` (when provided in YAML)
+5. `region-list` (order-independent set match)
+
+- **Create:** If no workflow matches after the cascade, the CLI creates a DSR workflow via `createWorkflow` (starts as Draft with default associations), then applies the remaining YAML fields via `updateWorkflowConfig`.
+- **Update:** If a unique match exists, fields from YAML are updated in place. When `internal-name` is provided on update, it is written back via `updateWorkflowConfig`.
 - Preference-management workflows are not supported — manage those in the [Admin Dashboard](https://app.transcend.io/privacy-requests/workflows).
 - Publishing (`visibility: PUBLISHED`) requires a `data-subject-type`.
 

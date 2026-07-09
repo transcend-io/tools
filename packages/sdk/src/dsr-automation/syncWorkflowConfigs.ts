@@ -8,25 +8,30 @@ import {
 } from '@transcend-io/privacy-types';
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
-import { groupBy, keyBy } from 'lodash-es';
+import { keyBy } from 'lodash-es';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllRequestAttributeKeys, type AttributeKey } from './fetchAllAttributeKeys.js';
-import { fetchAllWorkflowConfigs } from './fetchAllWorkflowConfigs.js';
+import { fetchAllWorkflowConfigs, type WorkflowConfigNode } from './fetchAllWorkflowConfigs.js';
 import { fetchAllDataSubjects, type DataSubject } from './fetchDataSubjects.js';
 import { CREATE_WORKFLOW, UPDATE_WORKFLOW_CONFIG } from './gqls/workflowConfig.js';
+import {
+  resolveWorkflowConfigMatch,
+  workflowConfigInputLabel,
+} from './resolveWorkflowConfigMatch.js';
 
 export interface WorkflowConfigSyncInput {
-  /**
-   * Internal name of the workflow config. This is the stable key used to match
-   * an existing workflow config on push (or to set on create when missing).
-   */
-  'internal-name': string;
+  /** User-facing title */
+  title: string;
   /** Request action type */
   'action-type': RequestAction;
-  /** User-facing title (required for create; falls back to internal-name when omitted) */
-  title?: string;
+  /**
+   * Internal name of the workflow config. When provided, used as the first match
+   * key; when omitted, matching falls back through title, action, subject, and
+   * regions.
+   */
+  'internal-name'?: string;
   /** Subtitle */
   subtitle?: string;
   /** Description */
@@ -58,8 +63,9 @@ export interface WorkflowConfigSyncInput {
 /**
  * Sync workflow configs to Transcend.
  *
- * Matches each input to an existing config by `internal-name`. Missing configs
- * are created via `createWorkflow` (DSR only; starts as Draft with default
+ * Matches each input using a cascading key: internal-name → title → action-type
+ * → data-subject-type (when provided) → region-list. Missing configs are
+ * created via `createWorkflow` (DSR only; starts as Draft with default
  * associations), then updated with the remaining YAML fields.
  *
  * @param client - GraphQL client
@@ -83,13 +89,15 @@ export async function syncWorkflowConfigs(
   const needsSubjects = inputs.some((config) => config['data-subject-type']);
   const needsAttributeKeys = inputs.some((config) => config['attribute-keys']?.length);
 
-  const [existingConfigs, actions] = await Promise.all([
+  const [fetchedConfigs, actions] = await Promise.all([
     fetchAllWorkflowConfigs(client, {
       logger,
       workflowConfigType: WorkflowConfigType.DSR,
     }),
     fetchAllActions(client, { logger }),
   ]);
+
+  const existingConfigs: WorkflowConfigNode[] = [...fetchedConfigs];
 
   let dataSubjects: DataSubject[] = [];
   if (needsSubjects) {
@@ -101,36 +109,35 @@ export async function syncWorkflowConfigs(
     attributeKeys = await fetchAllRequestAttributeKeys(client, { logger });
   }
 
-  const configsByInternalName = groupBy(existingConfigs, (config) => config.internalName);
   const actionByType = keyBy(actions, 'type');
   const dataSubjectByType = keyBy(dataSubjects, 'type');
   const attributeKeyByName = keyBy(attributeKeys, 'name');
 
   await mapSeries(inputs, async (config) => {
-    const internalName = config['internal-name'];
+    const label = workflowConfigInputLabel(config);
     try {
       if (config.type && config.type !== WorkflowConfigType.DSR) {
         throw new Error(
-          `Workflow config with internal name: "${internalName}" has type ` +
+          `Workflow config "${label}" has type ` +
             `"${config.type}". Only DSR workflow configs can be synced — ` +
             'preference management workflows have purpose-based semantics and must be managed in the Admin Dashboard.',
         );
       }
 
-      const matches = configsByInternalName[internalName] ?? [];
-      const [existingConfig, ...duplicates] = matches;
-
-      // TODO: https://linear.app/transcend/issue/WAL-10312/enforce-unique-workflowconfiginternalname-in-the-database
-      // Once DB uniqueness is enforced, this runtime duplicate check can be removed.
-      if (duplicates.length > 0) {
+      const resolution = resolveWorkflowConfigMatch(config, existingConfigs);
+      if (resolution.kind === 'ambiguous') {
         throw new Error(
-          `Found "${matches.length}" workflow configs with internal name: "${internalName}". ` +
-            'Internal names must be unique to sync workflow configs.',
+          `Found "${resolution.candidates.length}" workflow configs matching ` +
+            `"${label}" after applying title, action-type, data-subject-type, and region-list. ` +
+            'Add a unique internal-name or disambiguating region-list to sync this workflow.',
         );
       }
+
+      const existingConfig = resolution.kind === 'match' ? resolution.config : undefined;
+
       if (existingConfig && existingConfig.workflowConfigType !== WorkflowConfigType.DSR) {
         throw new Error(
-          `Workflow config with internal name: "${internalName}" has type ` +
+          `Workflow config "${label}" has type ` +
             `"${existingConfig.workflowConfigType}". Only DSR workflow configs can be synced — ` +
             'preference management workflows have purpose-based semantics and must be managed in the Admin Dashboard.',
         );
@@ -142,14 +149,14 @@ export async function syncWorkflowConfigs(
         // a `default` entry and all values > 0 — fail fast with a clearer error
         if (!expiryTime.some(({ region }) => region === 'default')) {
           throw new Error(
-            `Workflow config with internal name: "${internalName}" has an expiry-time list ` +
+            `Workflow config "${label}" has an expiry-time list ` +
               'without a "default" region entry. A `region: default` entry is required.',
           );
         }
         const invalidEntries = expiryTime.filter(({ value }) => value <= 0);
         if (invalidEntries.length > 0) {
           throw new Error(
-            `Workflow config with internal name: "${internalName}" has expiry-time values that are ` +
+            `Workflow config "${label}" has expiry-time values that are ` +
               `not positive: ${invalidEntries
                 .map(({ region, value }) => `${region}=${value}`)
                 .join(', ')}. All expiry times must be greater than 0 days.`,
@@ -186,7 +193,7 @@ export async function syncWorkflowConfigs(
         // createWorkflow only accepts title/actionType/internalName (+ type).
         // Remaining fields are applied via updateWorkflowConfig below.
         // New workflows start as Draft with default associations (data silos, receipt email).
-        const title = config.title ?? internalName;
+        const internalName = config['internal-name'];
         const {
           createWorkflow: { workflowConfig: created },
         } = await makeGraphQLRequest<{
@@ -203,35 +210,35 @@ export async function syncWorkflowConfigs(
         }>(client, CREATE_WORKFLOW, {
           variables: {
             input: {
-              title,
+              title: config.title,
               actionType: config['action-type'],
-              internalName,
+              ...(internalName ? { internalName } : {}),
               workflowConfigType: WorkflowConfigType.DSR,
             },
           },
           logger,
         });
         workflowConfigId = created.id;
-        // Track the new config so a later YAML entry with the same internal-name
+        // Track the new config so a later YAML entry with the same match key
         // updates instead of attempting a second create in this sync run.
-        configsByInternalName[internalName] = [
-          {
-            id: created.id,
-            title: { defaultMessage: title },
-            subtitle: null,
-            description: null,
-            internalName: created.internalName ?? internalName,
-            workflowConfigVisibility: WorkflowConfigVisibility.Draft,
-            workflowConfigType: WorkflowConfigType.DSR,
-            collectDataSubjectRegions: null,
-            regionList: [],
-            expiryTime: null,
-            action: { type: config['action-type'] },
-            subject: null,
-            WorkflowConfigAttributeKeys: null,
-          },
-        ];
-        logger?.info(`Successfully created workflow config "${internalName}" (${created.id})!`);
+        existingConfigs.push({
+          id: created.id,
+          title: { defaultMessage: config.title },
+          subtitle: null,
+          description: null,
+          internalName: created.internalName ?? internalName ?? null,
+          workflowConfigVisibility: WorkflowConfigVisibility.Draft,
+          workflowConfigType: WorkflowConfigType.DSR,
+          collectDataSubjectRegions: null,
+          regionList: config['region-list'] ?? [],
+          expiryTime: null,
+          action: { type: config['action-type'] },
+          subject: subjectId
+            ? { id: subjectId, type: config['data-subject-type'] as string }
+            : null,
+          WorkflowConfigAttributeKeys: null,
+        });
+        logger?.info(`Successfully created workflow config "${label}" (${created.id})!`);
       } else {
         workflowConfigId = existingConfig.id;
       }
@@ -242,6 +249,7 @@ export async function syncWorkflowConfigs(
         ...(config.subtitle !== undefined ? { subtitle: config.subtitle } : {}),
         ...(config.description !== undefined ? { description: config.description } : {}),
         ...(config.visibility !== undefined ? { workflowConfigVisibility: config.visibility } : {}),
+        ...(config['internal-name'] !== undefined ? { internalName: config['internal-name'] } : {}),
         actionType: config['action-type'],
         ...(config['collect-data-subject-regions'] !== undefined
           ? { collectDataSubjectRegions: config['collect-data-subject-regions'] }
@@ -257,12 +265,10 @@ export async function syncWorkflowConfigs(
         logger,
       });
 
-      logger?.info(`Successfully synced workflow config "${internalName}" (${workflowConfigId})!`);
+      logger?.info(`Successfully synced workflow config "${label}" (${workflowConfigId})!`);
     } catch (err) {
       encounteredError = true;
-      logger?.error(
-        `Failed to sync workflow config "${internalName}"! - ${(err as Error).message}`,
-      );
+      logger?.error(`Failed to sync workflow config "${label}"! - ${(err as Error).message}`);
     }
   });
 

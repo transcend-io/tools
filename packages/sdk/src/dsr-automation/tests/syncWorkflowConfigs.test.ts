@@ -38,10 +38,33 @@ const silentLogger = { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.f
 /** Unused GraphQL client — requests go through the mocked helper. */
 const unusedClient = {} as GraphQLClient;
 
+/** Base workflow config node for sync tests */
+function existingWorkflow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'wf-existing',
+    internalName: 'existing-access',
+    workflowConfigType: WorkflowConfigType.DSR,
+    title: { defaultMessage: 'Existing' },
+    subtitle: null,
+    description: null,
+    workflowConfigVisibility: 'DRAFT',
+    collectDataSubjectRegions: null,
+    regionList: [],
+    expiryTime: null,
+    action: { type: RequestAction.Access },
+    subject: null,
+    WorkflowConfigAttributeKeys: null,
+    ...overrides,
+  };
+}
+
 describe('syncWorkflowConfigs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    fetchAllActions.mockResolvedValue([{ type: RequestAction.Access, id: 'action-1' }]);
+    fetchAllActions.mockResolvedValue([
+      { type: RequestAction.Access, id: 'action-1' },
+      { type: RequestAction.Erasure, id: 'action-2' },
+    ]);
     fetchAllDataSubjects.mockResolvedValue([]);
     fetchAllRequestAttributeKeys.mockResolvedValue([]);
   });
@@ -100,30 +123,61 @@ describe('syncWorkflowConfigs', () => {
           workflowConfigId: 'wf-new',
           title: 'New Access Workflow',
           subtitle: 'Created via CLI',
+          internalName: 'new-access',
           actionType: RequestAction.Access,
         },
       },
     });
   });
 
-  it('updates an existing workflow without creating', async () => {
+  it('creates when internal-name is unknown without falling through to title', async () => {
     fetchAllWorkflowConfigs.mockResolvedValue([
-      {
-        id: 'wf-existing',
-        internalName: 'existing-access',
-        workflowConfigType: WorkflowConfigType.DSR,
-        title: { defaultMessage: 'Existing' },
-        subtitle: null,
-        description: null,
-        workflowConfigVisibility: 'DRAFT',
-        collectDataSubjectRegions: null,
-        regionList: [],
-        expiryTime: null,
-        action: { type: RequestAction.Access },
-        subject: null,
-        WorkflowConfigAttributeKeys: null,
-      },
+      existingWorkflow({
+        id: 'wf-other',
+        internalName: 'other',
+        title: { defaultMessage: 'Shared Title' },
+      }),
     ]);
+    makeGraphQLRequest.mockImplementation(async (_client, document) => {
+      if (document === CREATE_WORKFLOW) {
+        return {
+          createWorkflow: {
+            workflowConfig: { id: 'wf-created', internalName: 'new-internal' },
+          },
+        };
+      }
+      if (document === UPDATE_WORKFLOW_CONFIG) {
+        return { updateWorkflowConfig: { success: true } };
+      }
+      throw new Error('unexpected GraphQL document');
+    });
+
+    const ok = await syncWorkflowConfigs(
+      unusedClient,
+      [
+        {
+          'internal-name': 'new-internal',
+          title: 'Shared Title',
+          'action-type': RequestAction.Access,
+        },
+      ],
+      { logger: silentLogger as any },
+    );
+
+    expect(ok).toBe(true);
+    expect(makeGraphQLRequest).toHaveBeenCalledTimes(2);
+    expect(makeGraphQLRequest.mock.calls[0]?.[1]).toBe(CREATE_WORKFLOW);
+    expect(makeGraphQLRequest.mock.calls[1]?.[2]).toMatchObject({
+      variables: {
+        input: {
+          workflowConfigId: 'wf-created',
+        },
+      },
+    });
+  });
+
+  it('updates an existing workflow by internal-name without creating', async () => {
+    fetchAllWorkflowConfigs.mockResolvedValue([existingWorkflow()]);
     makeGraphQLRequest.mockResolvedValue({ updateWorkflowConfig: { success: true } });
 
     const ok = await syncWorkflowConfigs(
@@ -147,10 +201,131 @@ describe('syncWorkflowConfigs', () => {
         input: {
           workflowConfigId: 'wf-existing',
           title: 'Updated title',
+          internalName: 'existing-access',
           actionType: RequestAction.Access,
         },
       },
     });
+  });
+
+  it('updates by title when internal-name is omitted', async () => {
+    fetchAllWorkflowConfigs.mockResolvedValue([
+      existingWorkflow({
+        internalName: null,
+        title: { defaultMessage: 'Title Only Match' },
+      }),
+    ]);
+    makeGraphQLRequest.mockResolvedValue({ updateWorkflowConfig: { success: true } });
+
+    const ok = await syncWorkflowConfigs(
+      unusedClient,
+      [
+        {
+          title: 'Title Only Match',
+          'action-type': RequestAction.Access,
+          subtitle: 'Updated via title match',
+        },
+      ],
+      { logger: silentLogger as any },
+    );
+
+    expect(ok).toBe(true);
+    expect(makeGraphQLRequest).toHaveBeenCalledTimes(1);
+    expect(makeGraphQLRequest.mock.calls[0]?.[2]).toMatchObject({
+      variables: {
+        input: {
+          workflowConfigId: 'wf-existing',
+          subtitle: 'Updated via title match',
+        },
+      },
+    });
+  });
+
+  it('updates dogfooding workflows by region list', async () => {
+    fetchAllWorkflowConfigs.mockResolvedValue([
+      existingWorkflow({
+        id: 'wf-empty-regions',
+        internalName: null,
+        title: { defaultMessage: 'dogfooding workflows' },
+        subject: { id: 'sub-1', type: 'Customer' },
+        regionList: [],
+      }),
+      existingWorkflow({
+        id: 'wf-eu-regions',
+        internalName: null,
+        title: { defaultMessage: 'dogfooding workflows' },
+        subject: { id: 'sub-1', type: 'Customer' },
+        regionList: ['EU', 'AF'],
+      }),
+    ]);
+    fetchAllDataSubjects.mockResolvedValue([{ id: 'sub-1', type: 'Customer' }]);
+    makeGraphQLRequest.mockResolvedValue({ updateWorkflowConfig: { success: true } });
+
+    const ok = await syncWorkflowConfigs(
+      unusedClient,
+      [
+        {
+          title: 'dogfooding workflows',
+          'action-type': RequestAction.Access,
+          'data-subject-type': 'Customer',
+          'region-list': ['AF', 'EU'],
+          subtitle: 'EU workflow',
+        },
+      ],
+      { logger: silentLogger as any },
+    );
+
+    expect(ok).toBe(true);
+    expect(makeGraphQLRequest).toHaveBeenCalledTimes(1);
+    expect(makeGraphQLRequest.mock.calls[0]?.[2]).toMatchObject({
+      variables: {
+        input: {
+          workflowConfigId: 'wf-eu-regions',
+          subtitle: 'EU workflow',
+        },
+      },
+    });
+  });
+
+  it('fails when the cascade is still ambiguous', async () => {
+    fetchAllWorkflowConfigs.mockResolvedValue([
+      existingWorkflow({
+        id: 'wf-a',
+        internalName: null,
+        title: { defaultMessage: 'Ambiguous' },
+        subject: { id: 'sub-1', type: 'Customer' },
+        regionList: ['US'],
+      }),
+      existingWorkflow({
+        id: 'wf-b',
+        internalName: null,
+        title: { defaultMessage: 'Ambiguous' },
+        subject: { id: 'sub-1', type: 'Customer' },
+        regionList: ['US'],
+      }),
+    ]);
+    fetchAllDataSubjects.mockResolvedValue([{ id: 'sub-1', type: 'Customer' }]);
+
+    const ok = await syncWorkflowConfigs(
+      unusedClient,
+      [
+        {
+          title: 'Ambiguous',
+          'action-type': RequestAction.Access,
+          'data-subject-type': 'Customer',
+          'region-list': ['US'],
+        },
+      ],
+      { logger: silentLogger as any },
+    );
+
+    expect(ok).toBe(false);
+    expect(makeGraphQLRequest).not.toHaveBeenCalled();
+    expect(silentLogger.error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'after applying title, action-type, data-subject-type, and region-list',
+      ),
+    );
   });
 
   it('rejects preference-management workflow types on create', async () => {
@@ -160,6 +335,7 @@ describe('syncWorkflowConfigs', () => {
       unusedClient,
       [
         {
+          title: 'Preference Workflow',
           'internal-name': 'pref-workflow',
           'action-type': RequestAction.Access,
           type: WorkflowConfigType.PreferenceManagement,

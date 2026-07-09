@@ -1915,22 +1915,23 @@ export const ConsentPurpose = t.intersection([
 export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
 
 /**
- * Input to define a workflow config. Push matches by `internal-name` and creates
- * the workflow when no match exists (DSR only).
+ * Input to define a workflow config. Push matches using a cascading key
+ * (internal-name → title → action-type → data-subject-type → region-list) and
+ * creates the workflow when no match exists (DSR only).
  */
 export const WorkflowConfigInput = t.intersection([
   t.type({
-    /**
-     * Internal name of the workflow config. Stable key used to match an existing
-     * workflow on push, or set when creating a new one.
-     */
-    'internal-name': t.string,
+    /** User-facing title */
+    title: t.string,
     /** Request action type */
     'action-type': valuesOf(RequestAction),
   }),
   t.partial({
-    /** User-facing title */
-    title: t.string,
+    /**
+     * Internal name of the workflow config. When provided, used as the first
+     * match key on push.
+     */
+    'internal-name': t.string,
     /** Subtitle */
     subtitle: t.string,
     /** Description */
@@ -2125,7 +2126,7 @@ export const TranscendInput = t.partial({
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
   /**
-   * DSR workflow config settings (create or update by internal-name)
+   * DSR workflow config settings (create or update via cascading match key)
    */
   'workflow-configs': t.array(WorkflowConfigInput),
   /**
