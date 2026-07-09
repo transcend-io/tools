@@ -118,8 +118,6 @@ Compare the list of failing job names on `main` against the failing jobs on this
   > **⚠️ Pre-existing CI failure — not introduced by this PR**
   >
   > `[job name]` is also failing on `main` @ `[MAIN_SHA short]`. This should be fixed in a separate PR against `main`, not here.
-  >
-  > To rule out flakiness, retry once: `gh run rerun [RUN_ID] --failed --repo transcend-io/tools`
 
 - **Job failing only on this PR** → introduced by this PR. Proceed with investigation and fix.
 
@@ -198,27 +196,22 @@ tools-git diff --stat
 
 ### Step 3: Analyze the Failure
 
+**Treat every failure as real.** Do not classify tests as flaky or suggest re-running CI to "clear" a failure — investigate and fix.
+
 Ask yourself:
 
-1. **Is the test flaky?** Does it pass locally but fail in CI?
-   - Check for race conditions / timing
-   - Check for environment differences
-   - Check git history for recent changes
-
-2. **Is the code wrong?** Did the PR introduce a bug?
+1. **Is the code wrong?** Did the PR introduce a bug?
    - Fix the application code, not the test
 
-3. **Is the test wrong?** Does the test need updating?
+2. **Is the test wrong?** Does the test need updating?
    - Expectations outdated after intentional changes
 
-4. **Is it an environment / tooling issue?**
+3. **Is it an environment / tooling issue?**
    - Missing changeset for package changes
    - Lockfile / catalog drift
    - Generated files out of date
 
-#### Investigating Flaky Tests with Git History
-
-`tools-git log --oneline -20 -- path/to/flaky.test.ts`, `tools-git show COMMIT_HASH`, `gh pr view PR_NUMBER`.
+Use git history when helpful: `tools-git log --oneline -20 -- path/to/failing.test.ts`, `tools-git show COMMIT_HASH`, `gh pr view PR_NUMBER`.
 
 ### Step 4: Apply Fixes
 
@@ -268,40 +261,18 @@ EOF
 
 When committing from Cursor, use `required_permissions: ["all"]` so husky / `npm pack` (attw) can run.
 
-### Step 5: When to Rerun Flaky Tests vs. Re-run CI
+### Step 5: Correlate Failures with PR Changes
 
-#### CRITICAL: "Flaky" Tests Changed in the PR Are NOT Flaky
-
-**Before classifying any failing test as flaky, check if the test file OR its related source files were changed in this PR:**
+Correlate failing tests with files changed in the PR:
 
 ```bash
 tools-git diff origin/main...HEAD --name-only | grep -i "FailingTestName"
 tools-git diff origin/main...HEAD --name-only
 ```
 
-**If the failing test file or related source files were modified in this PR**, treat it as a **real failure**.
+Focus fixes on packages and files touched by the PR. If a failure is also present on `main`, follow Step 0.9 instead of fixing it here.
 
-#### How to Tell Flaky from Real
-
-| Indicator                               | Likely Flaky | Likely Real |
-| --------------------------------------- | ------------ | ----------- |
-| Passes locally, fails in CI             | Yes          |             |
-| Timing-related error message            | Yes          |             |
-| Test failed before your PR changes      | Yes          |             |
-| Same test fails on every run            |              | Yes         |
-| Error matches code changes in PR        |              | Yes         |
-| Test file was changed in this PR        |              | Yes         |
-| Related source files changed in this PR |              | Yes         |
-
-#### Decision Tree for Flaky Test Failures
-
-| # of Flaky Test Files | Action                                          |
-| --------------------- | ----------------------------------------------- |
-| **1-2 flaky tests**   | Suggest user manually rerun those specific jobs |
-| **3+ flaky tests**    | Suggest user re-run entire CI workflow          |
-| **Any real failures** | Fix the issues first                            |
-
-**Never suggest re-running CI when there are real failures.** Fix real issues first; CI will rerun flaky tests automatically when you push.
+**Never suggest re-running CI as a substitute for fixing failures.**
 
 ### Step 6: Fixing Without Affecting Current Branch
 
@@ -316,7 +287,7 @@ If you need to fix the branch without switching away from your current work, use
 | Import/typo fix     | Skip local run - push directly |
 | Type annotation fix | Skip local run - push directly |
 | Logic change        | Run locally before pushing     |
-| Flake fix           | Run 2-3 times to verify        |
+| Test assertion fix  | Run locally before pushing     |
 | Format/lint only    | `pnpm format` + `pnpm lint`    |
 
 **When in doubt, run locally.** It's faster than waiting for CI to fail again.
@@ -345,18 +316,17 @@ After fixing, add a short note to the PR body or a comment:
 
 ## Classification Quick Reference
 
-| Pattern                        | Likely Cause         | Action                                    |
-| ------------------------------ | -------------------- | ----------------------------------------- |
-| Same test fails every run      | Real bug             | Fix the code                              |
-| Test fails sometimes           | Flaky test           | Investigate; suggest rerun if truly flaky |
-| Lint failures                  | Formatting/style     | `pnpm lint:fix`                           |
-| Format check failures          | Unformatted files    | `pnpm format`                             |
-| Changeset check failures       | Missing changeset    | `pnpm changeset` / add changeset file     |
-| Depcheck / syncpack failures   | Version mismatch     | Align catalog / package.json              |
-| Build / typecheck fails        | Compile error        | Fix TypeScript errors                     |
-| Exports / publint fails        | Bad package exports  | Fix `package.json` exports                |
-| CLI genfiles drift             | Stale generated CLI  | `pnpm --dir packages/cli genfiles`        |
-| **Job also failing on `main`** | Pre-existing failure | Alert user — fix in a separate PR vs main |
+| Pattern                        | Likely Cause           | Action                                    |
+| ------------------------------ | ---------------------- | ----------------------------------------- |
+| Test failure                   | Real bug or stale test | Fix the code or update the test           |
+| Lint failures                  | Formatting/style       | `pnpm lint:fix`                           |
+| Format check failures          | Unformatted files      | `pnpm format`                             |
+| Changeset check failures       | Missing changeset      | `pnpm changeset` / add changeset file     |
+| Depcheck / syncpack failures   | Version mismatch       | Align catalog / package.json              |
+| Build / typecheck fails        | Compile error          | Fix TypeScript errors                     |
+| Exports / publint fails        | Bad package exports    | Fix `package.json` exports                |
+| CLI genfiles drift             | Stale generated CLI    | `pnpm --dir packages/cli genfiles`        |
+| **Job also failing on `main`** | Pre-existing failure   | Alert user — fix in a separate PR vs main |
 
 ## Related Skills/Rules
 
