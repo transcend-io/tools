@@ -92,6 +92,7 @@ export async function syncDataSilos(
             title: input.title,
             country: input.country,
             countrySubDivision: input.countrySubDivision,
+            sombraId: input['sombra-id'],
           })),
         },
         logger,
@@ -147,6 +148,7 @@ export async function syncDataSilos(
               : undefined,
             attributes: input.attributes,
             businessEntityTitles: input.businessEntityTitles,
+            sombraId: input['sombra-id'],
             // AVC settings
             notifyEmailAddress: input['email-settings']?.['notify-email-address'],
             promptAVendorEmailSendFrequency: input['email-settings']?.['send-frequency'],

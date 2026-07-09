@@ -109,6 +109,21 @@ export const DATA_SILOS_ENRICHED = gql`
   }
 `;
 
+/**
+ * Singular data silo fetch — `sombra` is available on `DataSilo` but not on
+ * the `DataSiloBulkPreview` nodes returned by the paginated `dataSilos` query.
+ */
+export const DATA_SILO_SOMBRA = gql`
+  query TranscendCliDataSiloSombra($id: String!) {
+    dataSilo(id: $id) {
+      id
+      sombra {
+        id
+      }
+    }
+  }
+`;
+
 export const UPDATE_DATA_SILOS = gql`
   mutation TranscendCliUpdateDataSilo($input: UpdateDataSilosInput!) {
     updateDataSilos(input: $input) {

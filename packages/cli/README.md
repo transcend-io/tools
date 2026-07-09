@@ -4197,3 +4197,5 @@ If you are trying to use the CLI inside a corporate firewall and need to send tr
 By default, if a CLI command has to call a Sombra endpoint, the primary Sombra gateway on the account will be used. If the primary Sombra is self hosted, you will need to provide the --sombraAuth variable.
 
 If you want to use a non-primary Sombra, you can specify the environment variable `SOMBRA_URL` e.g. `SOMBRA_URL="https://multi-tenant.sombra.us.transcend.io"` and that Sombra will be used instead.
+
+To associate a data silo with a specific configured Sombra instance in `transcend.yml`, set optional `sombra-id` on the data silo (the configured Sombra UUID). `transcend inventory pull --resources=dataSilos` writes this field when present; `transcend inventory push` updates it when set. Omitting `sombra-id` on push leaves the existing association unchanged.
