@@ -1,5 +1,18 @@
 # @transcend-io/sdk
 
+## 1.6.0
+
+### Minor Changes
+
+- 941113c: Add preference-workflow-configs pull/push (Workflows → Preference Workflows), including Workflows V2 via workflow-title and legacy action-type / data-silo-titles mode.
+
+### Patch Changes
+
+- b1750a6: Set PolicyType on policy create in updatePolicies (infer from title or use optional yml type). Pull/push round-trips type on policies.
+- Updated dependencies [b1750a6]
+  - @transcend-io/privacy-types@5.8.0
+  - @transcend-io/airgap.js-types@14.2.17
+
 ## 1.5.0
 
 ### Minor Changes
