@@ -40824,9 +40824,6 @@
         "showPrivacyRequestButton": {
           "type": "boolean"
         },
-        "showDataPractices": {
-          "type": "boolean"
-        },
         "showPolicies": {
           "type": "boolean"
         },

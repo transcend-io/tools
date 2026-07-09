@@ -1308,8 +1308,6 @@ export const PrivacyCenterInput = t.partial({
   isDisabled: t.boolean,
   /** Whether or not to show the privacy requests button */
   showPrivacyRequestButton: t.boolean,
-  /** Whether or not to show the data practices page */
-  showDataPractices: t.boolean,
   /** Whether or not to show the policies page */
   showPolicies: t.boolean,
   /** Whether or not to show the tracking technologies page */
