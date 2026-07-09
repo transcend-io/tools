@@ -1602,6 +1602,7 @@ export async function pullTranscendConfiguration(
           attributeValues,
           discoveredBy,
           businessEntities,
+          sombra,
         },
         dataPoints,
       ]): DataSiloInput => ({
@@ -1611,6 +1612,7 @@ export async function pullTranscendConfiguration(
         'outer-type': outerType || undefined,
         url: url || undefined,
         'api-key-title': apiKeys[0]?.title,
+        'sombra-id': sombra?.id || undefined,
         'identity-keys': identifiers
           .filter(({ isConnected }) => isConnected)
           .map(({ name }) => name),

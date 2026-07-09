@@ -56,6 +56,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
   - [`transcend policy activate`](#transcend-policy-activate)
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
+  - [`transcend policy download`](#transcend-policy-download)
   - [`transcend policy eval`](#transcend-policy-eval)
   - [`transcend policy lint`](#transcend-policy-lint)
   - [`transcend policy bundles`](#transcend-policy-bundles)
@@ -3781,6 +3782,65 @@ transcend policy deactivate --bundle-name=main
 
 Requires the **Activate Policy** scope on your API key.
 
+### `transcend policy download`
+
+```txt
+USAGE
+  transcend policy download (--bundle-name value) [--version value] [--output value] (--auth value) [--transcend-url value] [--json]
+  transcend policy download --help
+
+Resolves a bundle name and optional version label, fetches a short-lived presigned URL from the Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. When --version is omitted, downloads the currently active version (errors if none is active). With --json, prints metadata and the presigned URL without writing a file. Requires a Transcend API key with View Policy scope.
+
+FLAGS
+      --bundle-name     Tenant-unique policy bundle name
+     [--version]        Caller-supplied version label to download; defaults to the bundle's currently active version
+     [--output]         Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
+     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]           Print version metadata and the presigned download URL as JSON without writing a file                                                                                                               [default = false]
+  -h  --help            Print help information and exit
+```
+
+#### Examples
+
+**Download the currently active version of a policy bundle**
+
+```sh
+transcend policy download --bundle-name=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Download a specific compiled policy bundle version to the default path**
+
+```sh
+transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY"
+```
+
+**Download to an explicit output path**
+
+```sh
+transcend policy download \
+  --bundle-name=main \
+  --version=2026-06-25 \
+  --auth="$TRANSCEND_API_KEY" \
+  --output=./bundles/main-2026-06-25.tar.gz
+```
+
+**Print version metadata and the presigned URL as JSON without writing a file**
+
+```sh
+transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY" --json
+```
+
+**Omit --auth by exporting TRANSCEND_API_KEY in the environment**
+
+```sh
+transcend policy download --bundle-name=main
+```
+
+Requires the **View Policy** scope on your API key.
+
+The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zip`.
+
 ### `transcend policy eval`
 
 ```txt
@@ -4137,3 +4197,5 @@ If you are trying to use the CLI inside a corporate firewall and need to send tr
 By default, if a CLI command has to call a Sombra endpoint, the primary Sombra gateway on the account will be used. If the primary Sombra is self hosted, you will need to provide the --sombraAuth variable.
 
 If you want to use a non-primary Sombra, you can specify the environment variable `SOMBRA_URL` e.g. `SOMBRA_URL="https://multi-tenant.sombra.us.transcend.io"` and that Sombra will be used instead.
+
+To associate a data silo with a specific configured Sombra instance in `transcend.yml`, set optional `sombra-id` on the data silo (the configured Sombra UUID). `transcend inventory pull --resources=dataSilos` writes this field when present; `transcend inventory push` updates it when set. Omitting `sombra-id` on push leaves the existing association unchanged.

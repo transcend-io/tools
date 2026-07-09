@@ -97,3 +97,31 @@ export interface DeactivatePolicyBundleResponse {
   /** Previously-active version, now stamped with `deactivatedAt` */
   version: PolicyBundleVersion;
 }
+
+/**
+ * Response from fetching a policy bundle version with a short-lived download URL.
+ *
+ * `GET /v1/policy-engine/policy-bundles/:policyBundleId/versions/:versionId`
+ */
+export interface GetPolicyBundleVersionResponse {
+  /** Version UUID */
+  versionId: string;
+  /** Caller-supplied version label */
+  version: string;
+  /** Parent bundle name */
+  bundleName: string;
+  /** When the version was uploaded */
+  uploadedAt: string;
+  /** When the version was activated, if ever */
+  activatedAt: string | null;
+  /** When the version was deactivated, if ever */
+  deactivatedAt: string | null;
+  /** Human-readable description */
+  description: string | null;
+  /** SHA-256 hex digest of the compiled bundle bytes */
+  sha256: string;
+  /** Size of the compiled bundle in bytes */
+  sizeBytes: number;
+  /** Short-lived (5 minute) presigned S3 GET URL for the bundle bytes */
+  downloadUrl: string;
+}
