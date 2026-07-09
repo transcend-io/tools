@@ -287,7 +287,97 @@ describe('syncWorkflowConfigs', () => {
     });
   });
 
-  it('fails when the cascade is still ambiguous', async () => {
+  it('fails when duplicate internal-names remain ambiguous after the cascade', async () => {
+    fetchAllWorkflowConfigs.mockResolvedValue([
+      existingWorkflow({
+        id: 'wf-a',
+        internalName: 'dup-name',
+        title: { defaultMessage: 'Ambiguous' },
+        subject: { id: 'sub-1', type: 'Customer' },
+        regionList: ['US'],
+      }),
+      existingWorkflow({
+        id: 'wf-b',
+        internalName: 'dup-name',
+        title: { defaultMessage: 'Ambiguous' },
+        subject: { id: 'sub-1', type: 'Customer' },
+        regionList: ['US'],
+      }),
+    ]);
+    fetchAllDataSubjects.mockResolvedValue([{ id: 'sub-1', type: 'Customer' }]);
+
+    const ok = await syncWorkflowConfigs(
+      unusedClient,
+      [
+        {
+          'internal-name': 'dup-name',
+          title: 'Ambiguous',
+          'action-type': RequestAction.Access,
+          'data-subject-type': 'Customer',
+          'region-list': ['US'],
+        },
+      ],
+      { logger: silentLogger as any },
+    );
+
+    expect(ok).toBe(false);
+    expect(makeGraphQLRequest).not.toHaveBeenCalled();
+    expect(silentLogger.error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'after applying title, action-type, data-subject-type, and region-list',
+      ),
+    );
+  });
+
+  it('syncs a named sibling then claims it so the unnamed pull row can match', async () => {
+    fetchAllWorkflowConfigs.mockResolvedValue([
+      existingWorkflow({
+        id: 'wf-named',
+        internalName: '(copy) test',
+        title: { defaultMessage: 'test' },
+        action: { type: RequestAction.Erasure },
+        subject: { id: 'sub-1', type: 'employee' },
+      }),
+      existingWorkflow({
+        id: 'wf-unnamed',
+        internalName: null,
+        title: { defaultMessage: 'test' },
+        action: { type: RequestAction.Erasure },
+        subject: { id: 'sub-1', type: 'employee' },
+      }),
+    ]);
+    fetchAllDataSubjects.mockResolvedValue([{ id: 'sub-1', type: 'employee' }]);
+    makeGraphQLRequest.mockResolvedValue({ updateWorkflowConfig: { success: true } });
+
+    const ok = await syncWorkflowConfigs(
+      unusedClient,
+      [
+        {
+          'internal-name': '(copy) test',
+          title: 'test',
+          'action-type': RequestAction.Erasure,
+          'data-subject-type': 'employee',
+        },
+        {
+          title: 'test',
+          'action-type': RequestAction.Erasure,
+          'data-subject-type': 'employee',
+        },
+      ],
+      { logger: silentLogger as any },
+    );
+
+    expect(ok).toBe(true);
+    expect(makeGraphQLRequest).toHaveBeenCalledTimes(2);
+    expect(makeGraphQLRequest.mock.calls[0]?.[2]).toMatchObject({
+      variables: { input: { workflowConfigId: 'wf-named' } },
+    });
+    expect(makeGraphQLRequest.mock.calls[1]?.[2]).toMatchObject({
+      variables: { input: { workflowConfigId: 'wf-unnamed' } },
+    });
+  });
+
+  it('claims matched configs so identical unnamed rows map one-to-one in order', async () => {
     fetchAllWorkflowConfigs.mockResolvedValue([
       existingWorkflow({
         id: 'wf-a',
@@ -305,6 +395,7 @@ describe('syncWorkflowConfigs', () => {
       }),
     ]);
     fetchAllDataSubjects.mockResolvedValue([{ id: 'sub-1', type: 'Customer' }]);
+    makeGraphQLRequest.mockResolvedValue({ updateWorkflowConfig: { success: true } });
 
     const ok = await syncWorkflowConfigs(
       unusedClient,
@@ -314,18 +405,27 @@ describe('syncWorkflowConfigs', () => {
           'action-type': RequestAction.Access,
           'data-subject-type': 'Customer',
           'region-list': ['US'],
+          subtitle: 'first',
+        },
+        {
+          title: 'Ambiguous',
+          'action-type': RequestAction.Access,
+          'data-subject-type': 'Customer',
+          'region-list': ['US'],
+          subtitle: 'second',
         },
       ],
       { logger: silentLogger as any },
     );
 
-    expect(ok).toBe(false);
-    expect(makeGraphQLRequest).not.toHaveBeenCalled();
-    expect(silentLogger.error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'after applying title, action-type, data-subject-type, and region-list',
-      ),
-    );
+    expect(ok).toBe(true);
+    expect(makeGraphQLRequest).toHaveBeenCalledTimes(2);
+    expect(makeGraphQLRequest.mock.calls[0]?.[2]).toMatchObject({
+      variables: { input: { workflowConfigId: 'wf-a', subtitle: 'first' } },
+    });
+    expect(makeGraphQLRequest.mock.calls[1]?.[2]).toMatchObject({
+      variables: { input: { workflowConfigId: 'wf-b', subtitle: 'second' } },
+    });
   });
 
   it('rejects preference-management workflow types on create', async () => {

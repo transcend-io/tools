@@ -66,7 +66,9 @@ export interface WorkflowConfigSyncInput {
  * Matches each input using a cascading key: internal-name → title → action-type
  * → data-subject-type (when provided) → region-list. Missing configs are
  * created via `createWorkflow` (DSR only; starts as Draft with default
- * associations), then updated with the remaining YAML fields.
+ * associations), then updated with the remaining YAML fields. Successfully
+ * matched configs are claimed (removed from the match pool) so later YAML
+ * entries can resolve remaining duplicates.
  *
  * @param client - GraphQL client
  * @param inputs - Workflow config inputs from YAML
@@ -265,6 +267,16 @@ export async function syncWorkflowConfigs(
         variables: { input: mutationInput },
         logger,
       });
+
+      // Claim the matched config so a later YAML entry can resolve remaining
+      // duplicates (e.g. named sibling synced first, then unnamed pull row).
+      // TODO: https://linear.app/transcend/issue/WAL-10312 - remove once internalName is unique in DB
+      if (existingConfig) {
+        const claimedIndex = existingConfigs.findIndex((config) => config.id === existingConfig.id);
+        if (claimedIndex >= 0) {
+          existingConfigs.splice(claimedIndex, 1);
+        }
+      }
 
       logger?.info(`Successfully synced workflow config "${label}" (${workflowConfigId})!`);
     } catch (err) {

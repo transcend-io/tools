@@ -164,7 +164,7 @@ describe('resolveWorkflowConfigMatch', () => {
     expect(euRegions).toEqual({ kind: 'match', config: existing[5] });
   });
 
-  it('returns ambiguous when the full cascade still matches multiple configs', () => {
+  it('picks the first unnamed candidate when multiple share the full cascade key', () => {
     const resolution = resolveWorkflowConfigMatch(
       {
         title: 'Ambiguous',
@@ -175,10 +175,37 @@ describe('resolveWorkflowConfigMatch', () => {
       existing,
     );
 
-    expect(resolution.kind).toBe('ambiguous');
-    if (resolution.kind === 'ambiguous') {
-      expect(resolution.candidates.map((config) => config.id)).toEqual(['wf-7', 'wf-8']);
-    }
+    expect(resolution).toEqual({ kind: 'match', config: existing[6] });
+  });
+
+  it('prefers a null internal-name candidate when YAML omits internal-name', () => {
+    const namedAndUnnamed: WorkflowConfigNode[] = [
+      workflowNode({
+        id: 'named',
+        internalName: '(copy) test',
+        title: { defaultMessage: 'test' },
+        action: { type: RequestAction.Erasure },
+        subject: { id: 'sub-1', type: 'employee' },
+      }),
+      workflowNode({
+        id: 'unnamed',
+        internalName: null,
+        title: { defaultMessage: 'test' },
+        action: { type: RequestAction.Erasure },
+        subject: { id: 'sub-1', type: 'employee' },
+      }),
+    ];
+
+    const resolution = resolveWorkflowConfigMatch(
+      {
+        title: 'test',
+        'action-type': RequestAction.Erasure,
+        'data-subject-type': 'employee',
+      },
+      namedAndUnnamed,
+    );
+
+    expect(resolution).toEqual({ kind: 'match', config: namedAndUnnamed[1] });
   });
 
   it('continues cascade when internal-name matches multiple configs', () => {

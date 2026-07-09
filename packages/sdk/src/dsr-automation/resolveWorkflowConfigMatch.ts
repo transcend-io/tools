@@ -119,6 +119,21 @@ function filterByRegions(
   if (matches.length === 0) {
     return { kind: 'create' };
   }
+
+  // When YAML omits internal-name, prefer unnamed candidates so a named
+  // sibling with the same title/action/subject/regions is not treated as
+  // ambiguous (common after pull when only some workflows have internal names).
+  // If multiple unnamed remain, pick the first in stable fetch order — sync
+  // claims matched ids so later identical YAML rows map to the rest.
+  // TODO: https://linear.app/transcend/issue/WAL-10312 - remove once internalName is unique in DB
+  if (!input['internal-name']) {
+    const unnamed = matches.filter((config) => config.internalName == null);
+    const [firstUnnamed] = unnamed;
+    if (firstUnnamed !== undefined) {
+      return { kind: 'match', config: firstUnnamed };
+    }
+  }
+
   return { kind: 'ambiguous', candidates: matches };
 }
 
@@ -127,7 +142,9 @@ function filterByRegions(
  *
  * Cascade order: internal-name → title → action-type → data-subject-type (when
  * provided) → region-list. A provided internal-name with zero matches creates a
- * new workflow instead of falling through to title.
+ * new workflow instead of falling through to title. When internal-name is
+ * omitted and the cascade still matches multiple configs, prefer the candidate
+ * with a null internal name.
  *
  * @param input - Workflow config sync input
  * @param existingConfigs - Existing workflow configs in the org
