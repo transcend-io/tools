@@ -513,6 +513,8 @@ export async function syncConfigurationToTranscend(
       const {
         'workflows-custom-fields-required': workflowsCustomFieldsRequired,
         'displayed-child-organization-uris': displayedChildOrganizationUris,
+        'footer-layout': footerLayout,
+        'footer-links': footerLinks,
         ...privacyCenterRest
       } = privacyCenter;
       const privacyCenterSuccess = await syncPrivacyCenter(
@@ -521,6 +523,8 @@ export async function syncConfigurationToTranscend(
           ...privacyCenterRest,
           workflowsCustomFieldsRequired,
           displayedChildOrganizationUris,
+          footerLayout,
+          footerLinks,
         },
         {
           logger,

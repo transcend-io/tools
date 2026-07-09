@@ -41278,6 +41278,37 @@
             "type": "string"
           }
         },
+        "footer-layout": {
+          "type": "string",
+          "enum": ["DEFAULT", "GRID"]
+        },
+        "footer-links": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "type": "object",
+                "required": ["title", "url"],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "url": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                }
+              }
+            ]
+          }
+        },
         "theme": {
           "type": "object",
           "properties": {

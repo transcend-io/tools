@@ -1,6 +1,7 @@
 ---
 '@transcend-io/cli': minor
 '@transcend-io/sdk': minor
+'@transcend-io/privacy-types': minor
 ---
 
-Add privacy-center sync/pull for displayed-child-organization-uris and workflows-custom-fields-required, and honor publishToPrivacyCenter via skipPublish on updatePrivacyCenter. Regenerate transcend.yml JSON schema.
+Add privacy-center sync/pull for displayed-child-organization-uris, workflows-custom-fields-required, footer-layout, and footer-links. Honor publishToPrivacyCenter via skipPublish on updatePrivacyCenter. Regenerate transcend.yml JSON schema.

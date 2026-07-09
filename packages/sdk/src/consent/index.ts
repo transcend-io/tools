@@ -23,4 +23,5 @@ export * from './syncDataFlows.js';
 export * from './syncPartitions.js';
 export * from './syncPolicies.js';
 export * from './syncPrivacyCenter.js';
+export * from './syncPrivacyCenterFooterLinks.js';
 export * from './syncProcessingPurposes.js';

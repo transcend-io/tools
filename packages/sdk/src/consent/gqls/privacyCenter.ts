@@ -39,11 +39,22 @@ export const PRIVACY_CENTER = gql`
       useCustomEmailDomain
       transformAccessReportJsonToCsv
       workflowsCustomFieldsRequired
+      footerLayout
       themeStr
       childOrganizations {
         id
         uri
         name
+      }
+      footerLinks {
+        id
+        displayOrder
+        title {
+          defaultMessage
+        }
+        url {
+          defaultMessage
+        }
       }
     }
   }
@@ -53,6 +64,27 @@ export const UPDATE_PRIVACY_CENTER = gql`
   mutation TranscendCliUpdatePrivacyCenter($input: UpdatePrivacyCenterInput!) {
     updatePrivacyCenter(input: $input) {
       clientMutationId
+    }
+  }
+`;
+
+export const UPDATE_PRIVACY_CENTER_FOOTER_LINKS = gql`
+  mutation TranscendCliUpdatePrivacyCenterFooterLinks(
+    $input: UpdatePrivacyCenterFooterLinksInput!
+  ) {
+    updatePrivacyCenterFooterLinks(input: $input) {
+      clientMutationId
+    }
+  }
+`;
+
+export const DELETE_PRIVACY_CENTER_FOOTER_LINKS = gql`
+  mutation TranscendCliDeletePrivacyCenterFooterLinks(
+    $input: DeletePrivacyCenterFooterLinksInput!
+  ) {
+    deletePrivacyCenterFooterLinks(input: $input) {
+      clientMutationId
+      success
     }
   }
 `;

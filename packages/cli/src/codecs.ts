@@ -50,6 +50,7 @@ import {
   PrivacyCenterTextStyles,
   PreferenceStoreAuthLevel,
   ConfigurableColorPaletteColor,
+  PrivacyCenterFooterLayout,
   AssessmentFormTemplateStatus,
   AssessmentFormStatus,
   AssessmentFormTemplateSource,
@@ -1349,6 +1350,26 @@ export const PrivacyCenterInput = t.partial({
    * privacy center. Resolved to organization IDs on push.
    */
   'displayed-child-organization-uris': t.array(t.string),
+  /** Footer layout for privacy center footer links */
+  'footer-layout': valuesOf(PrivacyCenterFooterLayout),
+  /**
+   * Footer links displayed on the privacy center. Matched by title on push;
+   * links omitted from this list are deleted.
+   */
+  'footer-links': t.array(
+    t.intersection([
+      t.type({
+        /** Link title (default locale) */
+        title: t.string,
+        /** Link URL (default locale) */
+        url: t.string,
+      }),
+      t.partial({
+        /** Existing footer link ID (optional; resolved by title when omitted) */
+        id: t.string,
+      }),
+    ]),
+  ),
   /** The theme object of colors to display on the privacy center */
   theme: t.partial({
     /** The theme colors */

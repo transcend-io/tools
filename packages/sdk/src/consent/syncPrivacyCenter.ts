@@ -1,4 +1,5 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
+import type { PrivacyCenterFooterLayout } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
@@ -7,6 +8,10 @@ import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_PRIVACY_CENTER } from './gqls/privacyCenter.js';
 import { resolveDisplayedChildOrganizationIds } from './resolveDisplayedChildOrganizationIds.js';
+import {
+  syncPrivacyCenterFooterLinks,
+  type PrivacyCenterFooterLinkInput,
+} from './syncPrivacyCenterFooterLinks.js';
 
 export interface PrivacyCenterInput {
   /** Whether or not the entire privacy center is enabled or disabled */
@@ -52,6 +57,10 @@ export interface PrivacyCenterInput {
    * privacy center
    */
   displayedChildOrganizationUris?: string[];
+  /** Footer layout for privacy center footer links */
+  footerLayout?: PrivacyCenterFooterLayout;
+  /** Footer links displayed on the privacy center */
+  footerLinks?: PrivacyCenterFooterLinkInput[];
   /** The theme object of colors to display on the privacy center */
   theme?: {
     /** The theme colors */
@@ -87,9 +96,12 @@ export async function syncPrivacyCenter(
 
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
+  const needsExisting =
+    !!privacyCenter.displayedChildOrganizationUris || privacyCenter.footerLinks !== undefined;
+  const [existing] = needsExisting ? await fetchAllPrivacyCenters(client, { logger }) : [];
+
   let displayedChildOrganizationIds: string[] | undefined;
   if (privacyCenter.displayedChildOrganizationUris) {
-    const [existing] = await fetchAllPrivacyCenters(client, { logger });
     displayedChildOrganizationIds = resolveDisplayedChildOrganizationIds(
       existing?.childOrganizations ?? [],
       privacyCenter.displayedChildOrganizationUris,
@@ -119,6 +131,7 @@ export async function syncPrivacyCenter(
           showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
           isDisabled: privacyCenter.isDisabled,
           workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+          footerLayout: privacyCenter.footerLayout,
           ...(displayedChildOrganizationIds ? { displayedChildOrganizationIds } : {}),
           ...(skipPublish !== undefined ? { skipPublish } : {}),
           ...(privacyCenter.theme
@@ -132,6 +145,17 @@ export async function syncPrivacyCenter(
       },
       logger,
     });
+
+    if (privacyCenter.footerLinks !== undefined) {
+      await syncPrivacyCenterFooterLinks(
+        client,
+        privacyCenterId,
+        privacyCenter.footerLinks,
+        existing?.footerLinks ?? [],
+        { logger },
+      );
+    }
+
     logger.info('Successfully synced privacy center!');
   } catch (err) {
     encounteredError = true;

@@ -941,11 +941,22 @@ export async function pullTranscendConfiguration(
       useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
       transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
       'workflows-custom-fields-required': privacyCenter.workflowsCustomFieldsRequired,
+      'footer-layout': privacyCenter.footerLayout,
       ...(privacyCenter.childOrganizations.length > 0
         ? {
             'displayed-child-organization-uris': privacyCenter.childOrganizations.map(
               (child) => child.uri,
             ),
+          }
+        : {}),
+      ...(privacyCenter.footerLinks.length > 0
+        ? {
+            'footer-links': [...privacyCenter.footerLinks]
+              .sort((a, b) => a.displayOrder - b.displayOrder)
+              .map((link) => ({
+                title: link.title.defaultMessage,
+                url: link.url.defaultMessage,
+              })),
           }
         : {}),
       theme: privacyCenter.theme,

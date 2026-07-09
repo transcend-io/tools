@@ -1,5 +1,8 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
-import { PrivacyCenterThemePartial } from '@transcend-io/privacy-types';
+import type {
+  PrivacyCenterFooterLayout,
+  PrivacyCenterThemePartial,
+} from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
@@ -14,6 +17,23 @@ export interface PrivacyCenterChildOrganization {
   uri: string;
   /** Organization name */
   name: string;
+}
+
+export interface PrivacyCenterFooterLink {
+  /** Footer link ID */
+  id: string;
+  /** Display order */
+  displayOrder: number;
+  /** Link title */
+  title: {
+    /** Default locale message */
+    defaultMessage: string;
+  };
+  /** Link URL */
+  url: {
+    /** Default locale message */
+    defaultMessage: string;
+  };
 }
 
 export interface PrivacyCenter {
@@ -57,8 +77,12 @@ export interface PrivacyCenter {
   transformAccessReportJsonToCsv: boolean;
   /** Whether custom fields are required on privacy center workflows */
   workflowsCustomFieldsRequired: boolean;
+  /** Footer layout */
+  footerLayout: PrivacyCenterFooterLayout;
   /** Child organizations displayed on this privacy center */
   childOrganizations: PrivacyCenterChildOrganization[];
+  /** Footer links displayed on this privacy center */
+  footerLinks: PrivacyCenterFooterLink[];
   /** The theme object of colors to display on the privacy center */
   theme: PrivacyCenterThemePartial;
 }
