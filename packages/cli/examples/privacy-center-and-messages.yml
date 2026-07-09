@@ -218,6 +218,85 @@ policies:
       us:</p><ul><li><p>By visiting this page on our website:
       https://privacy.eshopit.com</p></li></ul>
     disabledLocales: []
+privacy-center:
+  isDisabled: false
+  showPrivacyRequestButton: true
+  showPolicies: true
+  showTrackingTechnologies: true
+  showCookies: true
+  showDataFlows: true
+  showConsentManager: true
+  showManageYourPrivacy: true
+  showMarketingPreferences: true
+  locales:
+    - en
+  defaultLocale: en
+  preferBrowserDefaultLocale: true
+  supportEmail: support@example.com
+  replyToEmail: support@example.com
+  useNoReplyEmailAddress: false
+  useCustomEmailDomain: false
+  transformAccessReportJsonToCsv: false
+  home: https://www.example.com
+  expandSideMenuByDefault: true
+  workflowsCustomFieldsRequired: false
+  displayedChildOrganizationUris:
+    - org-brand-a
+  footerLayout: GRID
+  footerLinks:
+    - title: Privacy Policy
+      url: https://www.example.com/privacy
+    - title: Terms of Service
+      url: https://www.example.com/terms
+    - title: Instagram
+      url: https://www.instagram.com/example
+      iconOnly: true
+  theme:
+    colors:
+      primary: '#0a6cff'
+      secondary: '#1b2430'
+      sidebarNavBg: '#0a6cff'
+      heroBg: '#0a6cff'
+      widgetBg: '#ffffff'
+      textOnBg: '#1b2430'
+      textLightOnBg: '#5b6573'
+      textOnPrimary: '#ffffff'
+      textOnSidebar: '#ffffff'
+      accentOnSidebar: '#cfe2ff'
+      textOnHero: '#ffffff'
+      textOnAboutTranscend: '#1b2430'
+      highlight: '#ffd166'
+      tableOutline: '#d7dde5'
+      bgAccent: '#f5f7fa'
+      error: '#d64545'
+      white: '#ffffff'
+      black: '#000000'
+      gray1: '#f5f7fa'
+      gray4: '#8b95a5'
+    componentStyles:
+      h1: 'font-weight: 700;'
+      h2: 'font-weight: 600;'
+      h3: 'font-weight: 600;'
+      body: 'line-height: 1.5;'
+      sideMenuText: 'font-size: 14px;'
+      primaryButton: 'border-radius: 8px;'
+      secondaryButton: 'border-radius: 8px;'
+      emailButton: 'border-radius: 8px;'
+      emailContainer: 'padding: 16px;'
+      hero: 'min-height: 240px;'
+      heroBackground: 'background-size: cover;'
+      takeControlConfirmation: 'padding: 24px;'
+      modal: 'border-radius: 12px;'
+      footer: 'padding: 24px 0;'
+      footerLink: 'text-decoration: none;'
+    textStyles:
+      fontFamilyHeader:
+        name: Inter
+        url: https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap
+      fontFamilyBody:
+        name: Inter
+        url: https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap
+
 messages:
   - id: a88f89e6-4f93-446b-80f0-31684a68cd8c
     defaultMessage: >-

@@ -40828,9 +40828,6 @@
         "showPrivacyRequestButton": {
           "type": "boolean"
         },
-        "showDataPractices": {
-          "type": "boolean"
-        },
         "showPolicies": {
           "type": "boolean"
         },
@@ -41272,6 +41269,52 @@
         },
         "transformAccessReportJsonToCsv": {
           "type": "boolean"
+        },
+        "home": {
+          "type": "string"
+        },
+        "expandSideMenuByDefault": {
+          "type": "boolean"
+        },
+        "workflowsCustomFieldsRequired": {
+          "type": "boolean"
+        },
+        "displayedChildOrganizationUris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "footerLayout": {
+          "type": "string",
+          "enum": ["DEFAULT", "GRID"]
+        },
+        "footerLinks": {
+          "type": "array",
+          "items": {
+            "allOf": [
+              {
+                "type": "object",
+                "required": ["title"],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "iconOnly": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            ]
+          }
         },
         "theme": {
           "type": "object",

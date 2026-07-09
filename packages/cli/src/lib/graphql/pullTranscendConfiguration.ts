@@ -951,6 +951,28 @@ export async function pullTranscendConfiguration(
       useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
       useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
       transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
+      home: privacyCenter.home || undefined,
+      expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
+      workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+      footerLayout: privacyCenter.footerLayout,
+      ...(privacyCenter.childOrganizations.length > 0
+        ? {
+            displayedChildOrganizationUris: privacyCenter.childOrganizations.map(
+              (child) => child.uri,
+            ),
+          }
+        : {}),
+      ...(privacyCenter.footerLinks.length > 0
+        ? {
+            footerLinks: [...privacyCenter.footerLinks]
+              .sort((a, b) => a.displayOrder - b.displayOrder)
+              .map((link) => ({
+                title: link.title.defaultMessage,
+                ...(link.url ? { url: link.url } : {}),
+                ...(link.iconOnly ? { iconOnly: link.iconOnly } : {}),
+              })),
+          }
+        : {}),
       theme: privacyCenter.theme,
     };
   }

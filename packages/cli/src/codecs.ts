@@ -50,6 +50,7 @@ import {
   PrivacyCenterTextStyles,
   PreferenceStoreAuthLevel,
   ConfigurableColorPaletteColor,
+  PrivacyCenterFooterLayout,
   AssessmentFormTemplateStatus,
   AssessmentFormStatus,
   AssessmentFormTemplateSource,
@@ -1310,8 +1311,6 @@ export const PrivacyCenterInput = t.partial({
   isDisabled: t.boolean,
   /** Whether or not to show the privacy requests button */
   showPrivacyRequestButton: t.boolean,
-  /** Whether or not to show the data practices page */
-  showDataPractices: t.boolean,
   /** Whether or not to show the policies page */
   showPolicies: t.boolean,
   /** Whether or not to show the tracking technologies page */
@@ -1342,6 +1341,47 @@ export const PrivacyCenterInput = t.partial({
   useCustomEmailDomain: t.boolean,
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: t.boolean,
+  /**
+   * Privacy Center "home" / back-to-site link URL shown in the privacy center
+   * header
+   */
+  home: t.string,
+  /** Whether the side menu is expanded by default on the privacy center */
+  expandSideMenuByDefault: t.boolean,
+  /**
+   * Whether custom fields are required when submitting privacy requests from
+   * the privacy center workflows UI
+   */
+  workflowsCustomFieldsRequired: t.boolean,
+  /**
+   * Child organization URIs (or IDs) to display on a unified multi-brand
+   * privacy center. Resolved to organization IDs on push.
+   */
+  displayedChildOrganizationUris: t.array(t.string),
+  /** Footer layout for privacy center footer links */
+  footerLayout: valuesOf(PrivacyCenterFooterLayout),
+  /**
+   * Footer links displayed on the privacy center. Matched by title on push;
+   * links omitted from this list are deleted.
+   */
+  footerLinks: t.array(
+    t.intersection([
+      t.type({
+        /** Link title (default locale) */
+        title: t.string,
+      }),
+      t.partial({
+        /** Link URL (default locale); optional for icon-only links */
+        url: t.string,
+        /**
+         * When true with an icon set, render as icon-only (title is used for
+         * accessibility). When false with an icon set, render icon beside the
+         * visible label.
+         */
+        iconOnly: t.boolean,
+      }),
+    ]),
+  ),
   /** The theme object of colors to display on the privacy center */
   theme: t.partial({
     /** The theme colors */

@@ -2,6 +2,20 @@ import { applyEnum, makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
 /**
+ * Layout used for privacy center footer links
+ */
+export const PrivacyCenterFooterLayout = makeEnum({
+  /** Default footer layout */
+  Default: 'DEFAULT',
+  /** Grid footer layout */
+  Grid: 'GRID',
+});
+
+/** Type override */
+export type PrivacyCenterFooterLayout =
+  (typeof PrivacyCenterFooterLayout)[keyof typeof PrivacyCenterFooterLayout];
+
+/**
  * The names of the components that can be provided css overrides
  */
 export enum CustomizableComponent {

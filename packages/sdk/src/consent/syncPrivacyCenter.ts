@@ -1,18 +1,23 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
+import type { PrivacyCenterFooterLayout } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_PRIVACY_CENTER } from './gqls/privacyCenter.js';
+import { resolveDisplayedChildOrganizationIds } from './resolveDisplayedChildOrganizationIds.js';
+import {
+  syncPrivacyCenterFooterLinks,
+  type PrivacyCenterFooterLinkInput,
+} from './syncPrivacyCenterFooterLinks.js';
 
 export interface PrivacyCenterInput {
   /** Whether or not the entire privacy center is enabled or disabled */
   isDisabled?: boolean;
   /** Whether or not to show the privacy requests button */
   showPrivacyRequestButton?: boolean;
-  /** Whether or not to show the data practices page */
-  showDataPractices?: boolean;
   /** Whether or not to show the policies page */
   showPolicies?: boolean;
   /** Whether or not to show the tracking technologies page */
@@ -43,6 +48,24 @@ export interface PrivacyCenterInput {
   useCustomEmailDomain?: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv?: boolean;
+  /**
+   * Privacy Center "home" / back-to-site link URL shown in the privacy center
+   * header
+   */
+  home?: string;
+  /** Whether the side menu is expanded by default on the privacy center */
+  expandSideMenuByDefault?: boolean;
+  /** Whether custom fields are required on privacy center workflows */
+  workflowsCustomFieldsRequired?: boolean;
+  /**
+   * Child organization URIs and/or IDs to display on a unified multi-brand
+   * privacy center
+   */
+  displayedChildOrganizationUris?: string[];
+  /** Footer layout for privacy center footer links */
+  footerLayout?: PrivacyCenterFooterLayout;
+  /** Footer links displayed on the privacy center */
+  footerLinks?: PrivacyCenterFooterLinkInput[];
   /** The theme object of colors to display on the privacy center */
   theme?: {
     /** The theme colors */
@@ -68,13 +91,27 @@ export async function syncPrivacyCenter(
   options: {
     /** Logger instance */
     logger?: Logger;
+    /** When true, skip publishing the privacy center after update */
+    skipPublish?: boolean;
   } = {},
 ): Promise<boolean> {
-  const { logger = NOOP_LOGGER } = options;
+  const { logger = NOOP_LOGGER, skipPublish } = options;
   let encounteredError = false;
   logger.info('Syncing privacy center...');
 
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
+
+  const { displayedChildOrganizationUris, footerLinks } = privacyCenter;
+  const needsExisting = !!displayedChildOrganizationUris || footerLinks !== undefined;
+  const [existing] = needsExisting ? await fetchAllPrivacyCenters(client, { logger }) : [];
+
+  let displayedChildOrganizationIds: string[] | undefined;
+  if (displayedChildOrganizationUris) {
+    displayedChildOrganizationIds = resolveDisplayedChildOrganizationIds(
+      existing?.childOrganizations ?? [],
+      displayedChildOrganizationUris,
+    );
+  }
 
   try {
     await makeGraphQLRequest(client, UPDATE_PRIVACY_CENTER, {
@@ -98,6 +135,12 @@ export async function syncPrivacyCenter(
           showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
           showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
           isDisabled: privacyCenter.isDisabled,
+          home: privacyCenter.home,
+          expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
+          workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+          footerLayout: privacyCenter.footerLayout,
+          ...(displayedChildOrganizationIds ? { displayedChildOrganizationIds } : {}),
+          ...(skipPublish !== undefined ? { skipPublish } : {}),
           ...(privacyCenter.theme
             ? {
                 colorPalette: privacyCenter.theme.colors,
@@ -109,10 +152,21 @@ export async function syncPrivacyCenter(
       },
       logger,
     });
+
+    if (footerLinks !== undefined) {
+      await syncPrivacyCenterFooterLinks(
+        client,
+        privacyCenterId,
+        footerLinks,
+        existing?.footerLinks ?? [],
+        { logger },
+      );
+    }
+
     logger.info('Successfully synced privacy center!');
   } catch (err) {
     encounteredError = true;
-    logger.error(`Failed to create privacy center! - ${(err as Error).message}`);
+    logger.error(`Failed to sync privacy center! - ${(err as Error).message}`);
   }
 
   return !encounteredError;
