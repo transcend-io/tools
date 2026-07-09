@@ -200,13 +200,13 @@ data-silos:
 
 ```txt
 USAGE
-  transcend request approve [--auth value] (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--origins PRIVACY_CENTER|ADMIN_DASHBOARD|API|SHOPIFY|DROP] [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--transcendUrl value] [--concurrency value]
+  transcend request approve (--auth value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--origins PRIVACY_CENTER|ADMIN_DASHBOARD|API|SHOPIFY|DROP] [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--transcendUrl value] [--concurrency value]
   transcend request approve --help
 
 Bulk approve a set of privacy requests from the DSR Automation -> Incoming Requests tab.
 
 FLAGS
-     [--auth]              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Request Approval and Communication", "View Incoming Requests", "Manage Request Compilation" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Request Approval and Communication", "View Incoming Requests", "Manage Request Compilation"
       --actions            The request actions to approve                                                                                                                                                                                                                    [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--origins]           The request origins to approve                                                                                                                                                                                                                    [PRIVACY_CENTER|ADMIN_DASHBOARD|API|SHOPIFY|DROP, separator = ,]
      [--silentModeBefore]  Any requests made before this date should be marked as silent mode
@@ -268,7 +268,7 @@ transcend request approve \
 
 ```txt
 USAGE
-  transcend request upload [--auth value] [--file value] [--transcendUrl value] [--cacheFilepath value] [--requestReceiptFolder value] [--sombraAuth value] [--concurrency value] [--attributes value] [--isTest] [--isSilent] [--skipSendingReceipt] [--emailIsVerified] [--skipFilterStep] [--dryRun] [--debug] [--defaultPhoneCountryCode value]
+  transcend request upload (--auth value) [--file value] [--transcendUrl value] [--cacheFilepath value] [--requestReceiptFolder value] [--sombraAuth value] [--concurrency value] [--attributes value] [--isTest] [--isSilent] [--skipSendingReceipt] [--emailIsVerified] [--skipFilterStep] [--dryRun] [--debug] [--defaultPhoneCountryCode value]
   transcend request upload --help
 
 Upload a set of requests from a CSV.
@@ -278,7 +278,7 @@ This command prompts you to map the shape of the CSV to the shape of the Transce
 The script will also produce a JSON cache file that allows for the mappings to be preserved between runs.
 
 FLAGS
-     [--auth]                                 The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Submit New Data Subject Request", "View Identity Verification Settings", "View Global Attributes" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Submit New Data Subject Request", "View Identity Verification Settings", "View Global Attributes"
      [--file]                                 Path to the CSV file of requests to upload                                                                                                                                                                                                              [default = ./requests.csv]
      [--transcendUrl]                         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                      [default = https://api.transcend.io]
      [--cacheFilepath]                        The path to the JSON file encoding the metadata used to map the CSV shape to Transcend API                                                                                                                                                              [default = ./transcend-privacy-requests-cache.json]
@@ -402,13 +402,13 @@ transcend request upload \
 
 ```txt
 USAGE
-  transcend request download-files [--auth value] [--sombraAuth value] [--concurrency value] [--requestIds value]... [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--folderPath value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--approveAfterDownload] [--transcendUrl value]
+  transcend request download-files (--auth value) [--sombraAuth value] [--concurrency value] [--requestIds value]... [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--folderPath value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--approveAfterDownload] [--transcendUrl value]
   transcend request download-files --help
 
 Download the files associated with a Data Subject Access Request (DSAR) from DSR Automation -> Incoming Requests tab.
 
 FLAGS
-     [--auth]                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View the Request Compilation", "View Incoming Requests", "Request Approval and Communication" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                   The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View the Request Compilation", "View Incoming Requests", "Request Approval and Communication"
      [--sombraAuth]            The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--concurrency]           The concurrency to use when downloading requests in parallel                                                                                                                                                                                        [default = 10]
      [--requestIds]...         Specify the specific request IDs to download                                                                                                                                                                                                        [separator = ,]
@@ -486,13 +486,13 @@ transcend request download-files \
 
 ```txt
 USAGE
-  transcend request cancel [--auth value] (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--requestIds value]... [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--cancellationTitle value] [--transcendUrl value] [--concurrency value]
+  transcend request cancel (--auth value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--requestIds value]... [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--cancellationTitle value] [--transcendUrl value] [--concurrency value]
   transcend request cancel --help
 
 Bulk cancel a set of privacy requests from the DSR Automation -> Incoming Requests tab.
 
 FLAGS
-     [--auth]               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "Request Approval and Communication" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "Request Approval and Communication"
       --actions             The request actions to cancel                                                                                                                                                                                       [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--statuses]           The request statuses to cancel. Comma-separated list.                                                                                                                                                               [REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED, separator = ,]
      [--requestIds]...      Specify the specific request IDs to cancel                                                                                                                                                                          [separator = ,]
@@ -572,13 +572,13 @@ transcend request cancel \
 
 ```txt
 USAGE
-  transcend request restart [--auth value] (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--transcendUrl value] [--requestReceiptFolder value] [--sombraAuth value] [--concurrency value] [--requestIds value]... [--emailIsVerified] [--createdAt value] [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--sendEmailReceipt] [--copyIdentifiers] [--restartIdentifierStrategy PRESERVE_INITIAL_VERIFICATIONS_ONLY|PRESERVE_ALL_VERIFICATIONS|REMOVE_ENRICHED_IDENTIFIERS] [--skipWaitingPeriod]
+  transcend request restart (--auth value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--transcendUrl value] [--requestReceiptFolder value] [--sombraAuth value] [--concurrency value] [--requestIds value]... [--emailIsVerified] [--createdAt value] [--silentModeBefore value] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--sendEmailReceipt] [--copyIdentifiers] [--restartIdentifierStrategy PRESERVE_INITIAL_VERIFICATIONS_ONLY|PRESERVE_ALL_VERIFICATIONS|REMOVE_ENRICHED_IDENTIFIERS] [--skipWaitingPeriod]
   transcend request restart --help
 
 Bulk update a set of privacy requests based on a set of request filters.
 
 FLAGS
-     [--auth]                                 The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Submit New Data Subject Request", "View the Request Compilation" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Submit New Data Subject Request", "View the Request Compilation"
       --actions                               The request actions to restart                                                                                                                                                                                         [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
       --statuses                              The request statuses to restart                                                                                                                                                                                        [REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED, separator = ,]
      [--transcendUrl]                         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                     [default = https://api.transcend.io]
@@ -734,13 +734,13 @@ transcend request restart \
 
 ```txt
 USAGE
-  transcend request notify-additional-time [--auth value] (--createdAtBefore value) [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--daysLeft value] [--days value] [--requestIds value]... [--emailTemplate value] [--transcendUrl value] [--concurrency value]
+  transcend request notify-additional-time (--auth value) (--createdAtBefore value) [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--daysLeft value] [--days value] [--requestIds value]... [--emailTemplate value] [--transcendUrl value] [--concurrency value]
   transcend request notify-additional-time --help
 
 Bulk notify a set of privacy requests from the DSR Automation -> Incoming Requests tab that more time is needed to complete the request. Note any request in silent mode will not be emailed.
 
 FLAGS
-     [--auth]             The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "Request Approval and Communication" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "Request Approval and Communication"
       --createdAtBefore   Notify requests that are open but submitted before this time
      [--createdAtAfter]   Notify requests that are open but submitted after this time
      [--updatedAtBefore]  Notify requests that were last updated before this time
@@ -839,13 +839,13 @@ transcend request notify-additional-time \
 
 ```txt
 USAGE
-  transcend request mark-silent [--auth value] (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--requestIds value]... [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--transcendUrl value] [--concurrency value]
+  transcend request mark-silent (--auth value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--requestIds value]... [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--transcendUrl value] [--concurrency value]
   transcend request mark-silent --help
 
 Bulk update a set of privacy requests from the DSR Automation -> Incoming Requests tab to be in silent mode.
 
 FLAGS
-     [--auth]             The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"                  [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"
       --actions           The request actions to mark silent                                                                                                                                                                 [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--statuses]         The request statuses to mark silent. Comma-separated list. Defaults to REQUEST_MADE,WAITING,ENRICHING,COMPILING,DELAYED,APPROVING,SECONDARY,SECONDARY_APPROVING.                                   [REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED, separator = ,]
      [--requestIds]...    Specify the specific request IDs to mark silent                                                                                                                                                    [separator = ,]
@@ -911,7 +911,7 @@ transcend request mark-silent --auth="$TRANSCEND_API_KEY" --actions=ERASURE --co
 
 ```txt
 USAGE
-  transcend request enricher-restart [--auth value] (--enricherId value) [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--requestEnricherStatuses QUEUED|WAITING|SKIPPED|ERROR|RESOLVED|ACTION_REQUIRED|REMOTE_PROCESSING|WAITING_ON_DEPENDENCIES|POLLING] [--transcendUrl value] [--concurrency value] [--requestIds value]... [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value]
+  transcend request enricher-restart (--auth value) (--enricherId value) [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--requestEnricherStatuses QUEUED|WAITING|SKIPPED|ERROR|RESOLVED|ACTION_REQUIRED|REMOTE_PROCESSING|WAITING_ON_DEPENDENCIES|POLLING] [--transcendUrl value] [--concurrency value] [--requestIds value]... [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value]
   transcend request enricher-restart --help
 
 Bulk restart a particular enricher across a series of DSRs.
@@ -920,7 +920,7 @@ The API key needs the following scopes:
 - Manage Request Compilation
 
 FLAGS
-     [--auth]                     The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"                  [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                      The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"
       --enricherId                The ID of the enricher to restart
      [--actions]                  The request action to restart                                                                                                                                                                      [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--requestEnricherStatuses]  The request enricher statuses to restart                                                                                                                                                           [QUEUED|WAITING|SKIPPED|ERROR|RESOLVED|ACTION_REQUIRED|REMOTE_PROCESSING|WAITING_ON_DEPENDENCIES|POLLING, separator = ,]
@@ -992,13 +992,13 @@ transcend request enricher-restart \
 
 ```txt
 USAGE
-  transcend request reject-unverified-identifiers [--auth value] (--identifierNames value)... [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--transcendUrl value]
+  transcend request reject-unverified-identifiers (--auth value) (--identifierNames value)... [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--transcendUrl value]
   transcend request reject-unverified-identifiers --help
 
 Bulk clear out any request identifiers that are unverified.
 
 FLAGS
-     [--auth]               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"                  [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"
       --identifierNames...  The names of identifiers to clear out                                                                                                                                                              [separator = ,]
      [--actions]            The request action to restart                                                                                                                                                                      [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--transcendUrl]       URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
@@ -1035,13 +1035,13 @@ transcend request reject-unverified-identifiers \
 
 ```txt
 USAGE
-  transcend request export [--auth value] [--sombraAuth value] [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--transcendUrl value] [--file value] [--concurrency value] [--skipRequestIdentifiers] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--showTests] [--pageLimit value]
+  transcend request export (--auth value) [--sombraAuth value] [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED] [--transcendUrl value] [--file value] [--concurrency value] [--skipRequestIdentifiers] [--createdAtBefore value] [--createdAtAfter value] [--updatedAtBefore value] [--updatedAtAfter value] [--showTests] [--pageLimit value]
   transcend request export --help
 
 Export privacy requests and request identifiers to a CSV file.
 
 FLAGS
-     [--auth]                                               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "View the Request Compilation" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                                                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "View the Request Compilation"
      [--sombraAuth]                                         The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--actions]                                            The request actions to export                                                                                                                                                                                 [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--statuses]                                           The request statuses to export                                                                                                                                                                                [REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED, separator = ,]
@@ -1137,13 +1137,13 @@ When `--concurrency=1` (the default), the entire export is written to a single f
 
 ```txt
 USAGE
-  transcend request skip-preflight-jobs [--auth value] (--enricherIds value)... [--transcendUrl value]
+  transcend request skip-preflight-jobs (--auth value) (--enricherIds value)... [--transcendUrl value]
   transcend request skip-preflight-jobs --help
 
 This command allows for bulk skipping preflight checks.
 
 FLAGS
-     [--auth]           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"                  [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"
       --enricherIds...  The ID of the enrichers to skip privacy request jobs for                                                                                                                                           [separator = ,]
      [--transcendUrl]   URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
   -h  --help            Print help information and exit
@@ -1170,14 +1170,14 @@ transcend request skip-preflight-jobs \
 
 ```txt
 USAGE
-  transcend request system mark-request-data-silos-completed [--auth value] (--dataSiloId value) [--file value] [--transcendUrl value]
+  transcend request system mark-request-data-silos-completed (--auth value) (--dataSiloId value) [--file value] [--transcendUrl value]
   transcend request system mark-request-data-silos-completed --help
 
 This command takes in a CSV of Request IDs as well as a Data Silo ID and marks all associated privacy request jobs as completed.
 This command is useful with the "Bulk Response" UI. The CSV is expected to have 1 column named "Request Id".
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"                  [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"
       --dataSiloId     The ID of the data silo to pull in
      [--file]          Path to the CSV file where identifiers will be written to. The CSV is expected to have 1 column named "Request Id".                                                                                [default = ./request-identifiers.csv]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
@@ -1216,13 +1216,13 @@ transcend request system mark-request-data-silos-completed \
 
 ```txt
 USAGE
-  transcend request system retry-request-data-silos [--auth value] (--dataSiloId value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--transcendUrl value]
+  transcend request system retry-request-data-silos (--auth value) (--dataSiloId value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--transcendUrl value]
   transcend request system retry-request-data-silos --help
 
 This command allows for bulk restarting a set of data silos jobs for open privacy requests. This is equivalent to clicking the "Wipe and Retry" button for a particular data silo across a set of privacy requests.
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"                  [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"
       --dataSiloId     The ID of the data silo to pull in
       --actions        The request actions to restart                                                                                                                                                                     [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
@@ -1254,13 +1254,13 @@ transcend request system retry-request-data-silos \
 
 ```txt
 USAGE
-  transcend request system skip-request-data-silos [--auth value] (--dataSiloId value) [--transcendUrl value] (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--status SKIPPED|RESOLVED] [--actionTypes AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD]
+  transcend request system skip-request-data-silos (--auth value) (--dataSiloId value) [--transcendUrl value] (--statuses REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED) [--status SKIPPED|RESOLVED] [--actionTypes AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD]
   transcend request system skip-request-data-silos --help
 
 This command allows for bulk skipping all open privacy request jobs for a particular data silo. This command is useful if you want to disable a data silo and then clear out any active privacy requests that are still queued up for that data silo. Use --actionTypes to target specific data actions (e.g. only ERASURE jobs).
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"                  [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Compilation"
       --dataSiloId     The ID of the data silo to skip privacy request jobs for
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
       --statuses       The request statuses to skip                                                                                                                                                                       [REQUEST_MADE|FAILED_VERIFICATION|ENRICHING|ON_HOLD|WAITING|COMPILING|APPROVING|DELAYED|COMPLETED|DOWNLOADABLE|VIEW_CATEGORIES|CANCELED|SECONDARY|SECONDARY_COMPLETED|SECONDARY_APPROVING|REVOKED, separator = ,]
@@ -1323,7 +1323,7 @@ transcend request system skip-request-data-silos \
 
 ```txt
 USAGE
-  transcend request preflight pull-identifiers [--auth value] [--sombraAuth value] [--transcendUrl value] [--file value] [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--concurrency value]
+  transcend request preflight pull-identifiers (--auth value) [--sombraAuth value] [--transcendUrl value] [--file value] [--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD] [--concurrency value]
   transcend request preflight pull-identifiers --help
 
 This command pulls down the set of privacy requests that are currently pending manual enrichment.
@@ -1341,7 +1341,7 @@ This is useful for the following workflow:
    transcend request preflight push-identifiers --file=./enrichment-requests.csv
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "View the Request Compilation" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Incoming Requests", "View the Request Compilation"
      [--sombraAuth]    The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.            [default = https://api.transcend.io]
      [--file]          Path to the CSV file where requests will be written to                                                                                                                                                        [default = ./manual-enrichment-identifiers.csv]
@@ -1392,7 +1392,7 @@ transcend request preflight pull-identifiers --auth="$TRANSCEND_API_KEY" --concu
 
 ```txt
 USAGE
-  transcend request preflight push-identifiers [--auth value] (--enricherId value) [--sombraAuth value] [--transcendUrl value] [--file value] [--markSilent] [--concurrency value]
+  transcend request preflight push-identifiers (--auth value) (--enricherId value) [--sombraAuth value] [--transcendUrl value] [--file value] [--markSilent] [--concurrency value]
   transcend request preflight push-identifiers --help
 
 This command push up a set of identifiers for a set of requests pending manual enrichment.
@@ -1410,7 +1410,7 @@ This is useful for the following workflow:
    transcend request preflight push-identifiers --file=./enrichment-requests.csv
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Identity Verification", "Manage Request Compilation" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Request Identity Verification", "Manage Request Compilation"
       --enricherId     The ID of the Request Enricher to upload to
      [--sombraAuth]    The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                        [default = https://api.transcend.io]
@@ -1479,7 +1479,7 @@ transcend request preflight push-identifiers \
 
 ```txt
 USAGE
-  transcend request cron pull-identifiers [--auth value] (--dataSiloId value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--file value] [--transcendUrl value] [--sombraAuth value] [--pageLimit value] [--skipRequestCount] [--chunkSize value]
+  transcend request cron pull-identifiers (--auth value) (--dataSiloId value) (--actions AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD) [--file value] [--transcendUrl value] [--sombraAuth value] [--pageLimit value] [--skipRequestCount] [--chunkSize value]
   transcend request cron pull-identifiers --help
 
 If you are using the cron job integration, you can run this command to pull the outstanding identifiers for the data silo to a CSV.
@@ -1489,7 +1489,7 @@ For large datasets, the output will be automatically split into multiple CSV fil
 Read more at https://docs.transcend.io/docs/integrations/cron-job-integration.
 
 FLAGS
-     [--auth]              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. This key must be associated with the data silo(s) being operated on. No scopes are required for this command.                                                                       [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. This key must be associated with the data silo(s) being operated on. No scopes are required for this command.
       --dataSiloId         The ID of the data silo to pull in
       --actions            The request actions to restart                                                                                                                                                                                                                                                                                          [AUTOMATED_DECISION_MAKING_OPT_OUT|USE_OF_SENSITIVE_INFORMATION_OPT_OUT|CONTACT_OPT_OUT|SALE_OPT_OUT|TRACKING_OPT_OUT|CUSTOM_OPT_OUT|AUTOMATED_DECISION_MAKING_OPT_IN|USE_OF_SENSITIVE_INFORMATION_OPT_IN|SALE_OPT_IN|TRACKING_OPT_IN|CONTACT_OPT_IN|CUSTOM_OPT_IN|ACCESS|ERASURE|RECTIFICATION|RESTRICTION|BUSINESS_PURPOSE|PLACE_ON_LEGAL_HOLD|REMOVE_FROM_LEGAL_HOLD, separator = ,]
      [--file]              Path to the CSV file where identifiers will be written to                                                                                                                                                                                                                                                               [default = ./cron-identifiers.csv]
@@ -1567,7 +1567,7 @@ transcend request cron pull-identifiers \
 
 ```txt
 USAGE
-  transcend request cron mark-identifiers-completed [--auth value] (--dataSiloId value) [--file value] [--transcendUrl value] [--sombraAuth value]
+  transcend request cron mark-identifiers-completed (--auth value) (--dataSiloId value) [--file value] [--transcendUrl value] [--sombraAuth value]
   transcend request cron mark-identifiers-completed --help
 
 This command takes the output of "transcend request cron pull-identifiers" and notifies Transcend that all of the requests in the CSV have been processed.
@@ -1593,7 +1593,7 @@ This is used in the workflow like:
 Read more at https://docs.transcend.io/docs/integrations/cron-job-integration.
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. This key must be associated with the data silo(s) being operated on. No scopes are required for this command. [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. This key must be associated with the data silo(s) being operated on. No scopes are required for this command.
       --dataSiloId     The ID of the data silo to pull in
      [--file]          Path to the CSV file where identifiers will be written to                                                                                                                                                                                         [default = ./cron-identifiers.csv]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                [default = https://api.transcend.io]
@@ -1642,13 +1642,13 @@ transcend request cron mark-identifiers-completed \
 
 ```txt
 USAGE
-  transcend consent build-xdi-sync-endpoint [--auth value] (--xdiLocation value) [--file value] [--removeIpAddresses] [--domainBlockList value] [--xdiAllowedCommands value] [--transcendUrl value]
+  transcend consent build-xdi-sync-endpoint (--auth value) (--xdiLocation value) [--file value] [--removeIpAddresses] [--domainBlockList value] [--xdiAllowedCommands value] [--transcendUrl value]
   transcend consent build-xdi-sync-endpoint --help
 
 This command allows for building of the XDI Sync Endpoint across a set of Transcend accounts.
 
 FLAGS
-     [--auth]                                     The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Consent Manager"                        [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                                      The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Consent Manager"
       --xdiLocation                               The location of the XDI that will be loaded by the generated sync endpoint
      [--file]                                     The HTML file path where the sync endpoint should be written                                                                                                                                       [default = ./sync-endpoint.html]
      [--removeIpAddresses/--noRemoveIpAddresses]  When true, remove IP addresses from the domain list                                                                                                                                                [default = true]
@@ -1735,13 +1735,13 @@ transcend consent build-xdi-sync-endpoint \
 
 ```txt
 USAGE
-  transcend consent generate-access-tokens [--auth value] (--file value) (--subjectType value) [--emailColumnName value] [--coreIdentifierColumnName value] [--duration value] [--transcendUrl value]
+  transcend consent generate-access-tokens (--auth value) (--file value) (--subjectType value) [--emailColumnName value] [--coreIdentifierColumnName value] [--duration value] [--transcendUrl value]
   transcend consent generate-access-tokens --help
 
 This command allows for the generation of access tokens for users specified in a CSV file.
 
 FLAGS
-     [--auth]                      The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Generate Preference Access Tokens"                                                   [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Generate Preference Access Tokens"
       --file                       Path to the CSV file containing user identifiers to generate access tokens for
       --subjectType                Slug for the data subject that the user will be logged in as on the Privacy Center. e.g. "customer" or "employee"
      [--emailColumnName]           Name of the column in the CSV that contains user email addresses                                                                                                                                                                           [default = email]
@@ -1798,7 +1798,7 @@ transcend consent generate-access-tokens \
 
 ```txt
 USAGE
-  transcend consent pull-consent-metrics [--auth value] (--start value) [--end value] [--folder value] [--bin value] [--transcendUrl value]
+  transcend consent pull-consent-metrics (--auth value) (--start value) [--end value] [--folder value] [--bin value] [--transcendUrl value]
   transcend consent pull-consent-metrics --help
 
 This command allows for pulling consent manager metrics for a Transcend account, or a set of Transcend accounts.
@@ -1812,7 +1812,7 @@ By default, the consent metrics will be written to a folder named `consent-metri
 - `PRIVACY_SIGNAL_TIMESERIES_GPC.csv` -> the number of GPC signals detected.
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Consent Manager"                        [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Consent Manager"
       --start          The start date to pull metrics from
      [--end]           The end date to pull metrics until
      [--folder]        The folder to save metrics to                                                                                                                                                                      [default = ./consent-metrics/]
@@ -1867,13 +1867,13 @@ transcend consent pull-consent-metrics --auth="$TRANSCEND_API_KEY" --start=2025-
 
 ```txt
 USAGE
-  transcend consent pull-consent-preferences [--auth value] (--partition value) [--sombraAuth value] [--file value] [--transcendUrl value] [--timestampBefore value] [--timestampAfter value] [--updatedBefore value] [--updatedAfter value] [--identifiers value]... [--concurrency value] [--shouldChunk] [--exportIdentifiersWithDelimiter value] [--windowConcurrency value] [--maxChunks value] [--maxLookbackDays value]
+  transcend consent pull-consent-preferences (--auth value) (--partition value) [--sombraAuth value] [--file value] [--transcendUrl value] [--timestampBefore value] [--timestampAfter value] [--updatedBefore value] [--updatedAfter value] [--identifiers value]... [--concurrency value] [--shouldChunk] [--exportIdentifiersWithDelimiter value] [--windowConcurrency value] [--maxChunks value] [--maxLookbackDays value]
   transcend consent pull-consent-preferences --help
 
 Uses POST /v1/preferences/{partition}/query with cursor-based pagination. Supports filtering by identifiers, collection timestamps, and system.updatedAt.
 
 FLAGS
-     [--auth]                            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Managed Consent Database Admin API", "View Identity Verification Settings", "View Preference Store Settings" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                             The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Managed Consent Database Admin API", "View Identity Verification Settings", "View Preference Store Settings"
       --partition                        Partition ID to query in the Preference Store
      [--sombraAuth]                      The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--file]                            Path to CSV output file                                                                                                                                                                                                                                                 [default = ./preferences.csv]
@@ -2015,13 +2015,13 @@ transcend admin chunk-csv --directory=./working/files --outputDir=./working/chun
 
 ```txt
 USAGE
-  transcend consent update-consent-manager [--auth value] (--bundleTypes PRODUCTION|TEST) [--deploy] [--transcendUrl value]
+  transcend consent update-consent-manager (--auth value) (--bundleTypes PRODUCTION|TEST) [--deploy] [--transcendUrl value]
   transcend consent update-consent-manager --help
 
 This command allows for updating Consent Manager to latest version. The Consent Manager bundle can also be deployed using this command.
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"   [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Consent Manager Developer Settings"
       --bundleTypes    The bundle types to deploy. Defaults to PRODUCTION,TEST.                                                                                                                                           [PRODUCTION|TEST, separator = ,]
      [--deploy]        When true, deploy the Consent Manager after updating the version                                                                                                                                   [default = false]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
@@ -2126,7 +2126,7 @@ transcend consent upload-consent-preferences \
 
 ```txt
 USAGE
-  transcend consent upload-cookies-from-csv [--auth value] (--trackerStatus LIVE|NEEDS_REVIEW) [--file value] [--transcendUrl value]
+  transcend consent upload-cookies-from-csv (--auth value) (--trackerStatus LIVE|NEEDS_REVIEW) [--file value] [--transcendUrl value]
   transcend consent upload-cookies-from-csv --help
 
 Upload cookies from CSV. This command allows for uploading of cookies from CSV.
@@ -2138,7 +2138,7 @@ Step 2) You can edit the contents of the CSV file as needed. You may adjust the 
 Step 3) Upload the modified CSV file back into the dashboard with this command.
 
 FLAGS
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Flows"                           [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Flows"
       --trackerStatus  The status of the cookies you will upload.                                                                                                                                                         [LIVE|NEEDS_REVIEW]
      [--file]          Path to the CSV file to upload                                                                                                                                                                     [default = ./cookies.csv]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
@@ -2181,7 +2181,7 @@ transcend consent upload-cookies-from-csv \
 
 ```txt
 USAGE
-  transcend consent upload-data-flows-from-csv [--auth value] (--trackerStatus LIVE|NEEDS_REVIEW) [--file value] [--classifyService] [--transcendUrl value]
+  transcend consent upload-data-flows-from-csv (--auth value) (--trackerStatus LIVE|NEEDS_REVIEW) [--file value] [--classifyService] [--transcendUrl value]
   transcend consent upload-data-flows-from-csv --help
 
 Upload data flows from CSV. This command allows for uploading of data flows from CSV.
@@ -2193,7 +2193,7 @@ Step 2) You can edit the contents of the CSV file as needed. You may adjust the 
 Step 3) Upload the modified CSV file back into the dashboard with this command.
 
 FLAGS
-     [--auth]             The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Flows"                           [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Flows"
       --trackerStatus     The status of the data flows you will upload.                                                                                                                                                      [LIVE|NEEDS_REVIEW]
      [--file]             Path to the CSV file to upload                                                                                                                                                                     [default = ./data-flows.csv]
      [--classifyService]  When true, automatically assign the service for a data flow based on the domain that is specified                                                                                                  [default = false]
@@ -2247,7 +2247,7 @@ transcend consent upload-data-flows-from-csv \
 
 ```txt
 USAGE
-  transcend consent upload-preferences [--auth value] (--partition value) [--sombraAuth value] [--transcendUrl value] [--file value] [--directory value] [--dryRun] [--skipExistingRecordCheck] [--receiptFileDir value] [--skipWorkflowTriggers] [--forceTriggerWorkflows] [--skipConflictUpdates] [--isSilent] [--attributes value] [--receiptFilepath value] [--concurrency value]
+  transcend consent upload-preferences (--auth value) (--partition value) [--sombraAuth value] [--transcendUrl value] [--file value] [--directory value] [--dryRun] [--skipExistingRecordCheck] [--receiptFileDir value] [--skipWorkflowTriggers] [--forceTriggerWorkflows] [--skipConflictUpdates] [--isSilent] [--attributes value] [--receiptFilepath value] [--concurrency value]
   transcend consent upload-preferences --help
 
 Upload preference management data to your Preference Store.
@@ -2257,7 +2257,7 @@ This command prompts you to map the shape of the CSV to the shape of the Transce
 The script will also produce a JSON cache file that allows for the mappings to be preserved between runs.
 
 FLAGS
-     [--auth]                     The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Modify User Stored Preferences", "View Managed Consent Database Admin API", "View Preference Store Settings" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                      The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Modify User Stored Preferences", "View Managed Consent Database Admin API", "View Preference Store Settings"
       --partition                 The partition key to download consent preferences to
      [--sombraAuth]               The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--transcendUrl]             URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                                 [default = https://api.transcend.io]
@@ -2318,13 +2318,13 @@ transcend consent upload-preferences \
 
 ```txt
 USAGE
-  transcend consent delete-preference-records [--auth value] [--sombraAuth value] (--partition value) (--timestamp value) [--file value] [--directory value] [--transcendUrl value] [--maxItemsInChunk value] [--maxConcurrency value] [--fileConcurrency value] [--receiptDirectory value]
+  transcend consent delete-preference-records (--auth value) [--sombraAuth value] (--partition value) (--timestamp value) [--file value] [--directory value] [--transcendUrl value] [--maxItemsInChunk value] [--maxConcurrency value] [--fileConcurrency value] [--receiptDirectory value]
   transcend consent delete-preference-records --help
 
 Uses POST /v1/preferences/{partition}/delete route on sombra to delete consent preference records in bulk from Preference Store based on a CSV file input. Refer to examples/cli-upload-preferences-example.csv for the expected format of the CSV file. The CSV expects the following headers: "name" and "value". The "name" field corresponds to the identifier name as defined on https://app.transcend.io/privacy-requests/identifiers The "value" refers to the actual identifier value for the user whose preference record is being deleted. For Large scale deletions, consider chunking the input CSV into smaller files and using the --directory option to process them concurrently.
 
 FLAGS
-     [--auth]              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Modify User Stored Preferences"              [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Modify User Stored Preferences"
      [--sombraAuth]        The Sombra internal key, use for additional authentication when self-hosting Sombra
       --partition          Partition ID to used to delete preference records from
       --timestamp          The timestamp when the deletion operation is made. Used for logging purposes.
@@ -2431,7 +2431,7 @@ transcend consent delete-preference-records \
 
 ```txt
 USAGE
-  transcend inventory pull [--auth value] [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|consentWorkflowTriggers] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
+  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|consentWorkflowTriggers] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
   transcend inventory pull --help
 
 Generates a transcend.yml by pulling the configuration from your Transcend instance.
@@ -2444,7 +2444,7 @@ This command can be helpful if you are looking to:
 - Generate a transcend.yml file as a starting point to maintain parts of your data inventory in code.
 
 FLAGS
-     [--auth]                      The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work. [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
      [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|consentWorkflowTriggers, separator = ,]
      [--file]                      Path to the YAML file to pull into                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
@@ -2656,13 +2656,13 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push [--auth value] [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues]
   transcend inventory push --help
 
 Given a transcend.yml file, sync the contents up to your Transcend instance.
 
 FLAGS
-     [--auth]                        The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work. [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                         The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
      [--file]                        Path to the YAML file to push from                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]                URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--pageSize]                    The page size to use when paginating over the API                                                                                                                                                                                                           [default = 50]
@@ -2901,7 +2901,7 @@ data-silos:
 
 ```txt
 USAGE
-  transcend inventory scan-packages [--auth value] [--scanPath value] [--ignoreDirs value]... [--repositoryName value] [--transcendUrl value]
+  transcend inventory scan-packages (--auth value) [--scanPath value] [--ignoreDirs value]... [--repositoryName value] [--transcendUrl value]
   transcend inventory scan-packages --help
 
 Transcend scans packages and dependencies for the following frameworks:
@@ -2923,7 +2923,7 @@ This command will scan the folder you point at to look for any of these files. O
 - package descriptions
 
 FLAGS
-     [--auth]            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Code Scanning"                        [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth             The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Code Scanning"
      [--scanPath]        File path in the project to scan                                                                                                                                                                   [default = ./]
      [--ignoreDirs]...   List of directories to ignore in scan                                                                                                                                                              [separator = ,]
      [--repositoryName]  Name of the git repository that the package should be tied to
@@ -2961,7 +2961,7 @@ transcend inventory scan-packages --auth="$TRANSCEND_API_KEY" --repositoryName=t
 
 ```txt
 USAGE
-  transcend inventory discover-silos (--scanPath value) (--dataSiloId value) [--auth value] [--fileGlobs value] [--ignoreDirs value] [--transcendUrl value]
+  transcend inventory discover-silos (--scanPath value) (--dataSiloId value) (--auth value) [--fileGlobs value] [--ignoreDirs value] [--transcendUrl value]
   transcend inventory discover-silos --help
 
 We support scanning for new data silos in JavaScript, Python, Gradle, and CocoaPods projects.
@@ -2971,7 +2971,7 @@ To get started, add a data silo for the corresponding project type with the "sil
 FLAGS
       --scanPath       File path in the project to scan
       --dataSiloId     The UUID of the corresponding data silo
-     [--auth]          The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. This key must be associated with the data silo(s) being operated on. Requires scopes: "Manage Assigned Data Inventory" [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. This key must be associated with the data silo(s) being operated on. Requires scopes: "Manage Assigned Data Inventory"
      [--fileGlobs]     You can pass a glob syntax pattern(s) to specify additional file paths to scan. Comma-separated list of globs.                                                                                                                                             [default = ""]
      [--ignoreDirs]    Comma-separated list of directories to ignore.                                                                                                                                                                                                             [default = ""]
      [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                         [default = https://api.transcend.io]
@@ -3006,13 +3006,13 @@ Here are some examples of a [Podfile](./examples/code-scanning/test-cocoa-pods/P
 
 ```txt
 USAGE
-  transcend inventory pull-datapoints [--auth value] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--includeAttributes] [--includeGuessedCategories] [--parentCategories FINANCIAL|HEALTH|CONTACT|LOCATION|DEMOGRAPHIC|ID|ONLINE_ACTIVITY|USER_PROFILE|SOCIAL_MEDIA|CONNECTION|TRACKING|DEVICE|SURVEY|OTHER|UNSPECIFIED|NOT_PERSONAL_DATA|INTEGRATION_IDENTIFIER] [--subCategories value]...
+  transcend inventory pull-datapoints (--auth value) [--file value] [--transcendUrl value] [--dataSiloIds value]... [--includeAttributes] [--includeGuessedCategories] [--parentCategories FINANCIAL|HEALTH|CONTACT|LOCATION|DEMOGRAPHIC|ID|ONLINE_ACTIVITY|USER_PROFILE|SOCIAL_MEDIA|CONNECTION|TRACKING|DEVICE|SURVEY|OTHER|UNSPECIFIED|NOT_PERSONAL_DATA|INTEGRATION_IDENTIFIER] [--subCategories value]...
   transcend inventory pull-datapoints --help
 
 Export the datapoints from your Data Inventory into a CSV.
 
 FLAGS
-     [--auth]                      The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Inventory"                         [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Inventory"
      [--file]                      The file to save datapoints to                                                                                                                                                                     [default = ./datapoints.csv]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--dataSiloIds]...            List of data silo IDs to filter by                                                                                                                                                                 [separator = ,]
@@ -3089,13 +3089,13 @@ transcend inventory pull-datapoints \
 
 ```txt
 USAGE
-  transcend inventory pull-unstructured-discovery-files [--auth value] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--subCategories value]... [--status MANUALLY_ADDED|CORRECTED|VALIDATED|CLASSIFIED|REJECTED] [--includeEncryptedSnippets]
+  transcend inventory pull-unstructured-discovery-files (--auth value) [--file value] [--transcendUrl value] [--dataSiloIds value]... [--subCategories value]... [--status MANUALLY_ADDED|CORRECTED|VALIDATED|CLASSIFIED|REJECTED] [--includeEncryptedSnippets]
   transcend inventory pull-unstructured-discovery-files --help
 
 This command allows for pulling Unstructured Discovery into a CSV.
 
 FLAGS
-     [--auth]                      The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Inventory"                         [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Inventory"
      [--file]                      The file to save datapoints to                                                                                                                                                                     [default = ./unstructured-discovery-files.csv]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--dataSiloIds]...            List of data silo IDs to filter by                                                                                                                                                                 [separator = ,]
@@ -3162,13 +3162,13 @@ transcend inventory pull-unstructured-discovery-files --auth="$TRANSCEND_API_KEY
 
 ```txt
 USAGE
-  transcend inventory derive-data-silos-from-data-flows [--auth value] (--dataFlowsYmlFolder value) (--dataSilosYmlFolder value) [--ignoreYmls value]... [--transcendUrl value]
+  transcend inventory derive-data-silos-from-data-flows (--auth value) (--dataFlowsYmlFolder value) (--dataSilosYmlFolder value) [--ignoreYmls value]... [--transcendUrl value]
   transcend inventory derive-data-silos-from-data-flows --help
 
 Given a folder of data flow transcend.yml configurations, convert those configurations to set of data silo transcend.yml configurations.
 
 FLAGS
-     [--auth]               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. No scopes are required for this command.                       [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. No scopes are required for this command.
       --dataFlowsYmlFolder  The folder that contains data flow yml files
       --dataSilosYmlFolder  The folder that contains data silo yml files
      [--ignoreYmls]...      The set of yml files that should be skipped when uploading                                                                                                                                         [separator = ,]
@@ -3211,13 +3211,13 @@ transcend inventory derive-data-silos-from-data-flows \
 
 ```txt
 USAGE
-  transcend inventory derive-data-silos-from-data-flows-cross-instance [--auth value] (--dataFlowsYmlFolder value) [--output value] [--ignoreYmls value]... [--transcendUrl value]
+  transcend inventory derive-data-silos-from-data-flows-cross-instance (--auth value) (--dataFlowsYmlFolder value) [--output value] [--ignoreYmls value]... [--transcendUrl value]
   transcend inventory derive-data-silos-from-data-flows-cross-instance --help
 
 Given a folder of data flow transcend.yml configurations, convert those configurations to a single transcend.yml configurations of all related data silos.
 
 FLAGS
-     [--auth]               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. No scopes are required for this command.                       [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth                The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. No scopes are required for this command.
       --dataFlowsYmlFolder  The folder that contains data flow yml files
      [--output]             The output transcend.yml file containing the data silo configurations                                                                                                                              [default = ./transcend.yml]
      [--ignoreYmls]...      The set of yml files that should be skipped when uploading                                                                                                                                         [separator = ,]
@@ -3643,7 +3643,7 @@ FLAGS
      [--hostname]       The domain of the OneTrust environment from which to pull the resource
      [--oneTrustAuth]   The OAuth access token with the scopes necessary to access the OneTrust Public APIs
      [--source]         Whether to read the assessments from OneTrust or from a file                                                                                                                                       [oneTrust|file, default = oneTrust]
-     [--transcendAuth]  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Assessments"                          [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+     [--transcendAuth]  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Assessments"
      [--transcendUrl]   URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--file]           Path to the file to pull the resource into. Must be a json file!
      [--resource]       The resource to pull from OneTrust. For now, only assessments is supported                                                                                                                         [assessments, default = assessments]
@@ -3694,7 +3694,7 @@ transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --tr
 
 ```txt
 USAGE
-  transcend policy activate (--bundle-name value) [--version value] [--auth value] [--transcend-url value] [--dry-run] [--json]
+  transcend policy activate (--bundle-name value) [--version value] (--auth value) [--transcend-url value] [--dry-run] [--json]
   transcend policy activate --help
 
 Calls the Policy Engine activate endpoint to make an uploaded version live. Addressed by bundle name (resolved to the parent bundle UUID internally). When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
@@ -3702,7 +3702,7 @@ Calls the Policy Engine activate endpoint to make an uploaded version live. Addr
 FLAGS
       --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
      [--version]        Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
-     [--auth]           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"                             [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--dry-run]        Validate activation without flipping the active version                                                                                                                                            [default = false]
      [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
@@ -3741,14 +3741,14 @@ Requires the **Activate Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy deactivate (--bundle-name value) [--auth value] [--transcend-url value] [--json]
+  transcend policy deactivate (--bundle-name value) (--auth value) [--transcend-url value] [--json]
   transcend policy deactivate --help
 
 Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
       --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
-     [--auth]           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"                             [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
   -h  --help            Print help information and exit
@@ -3826,13 +3826,13 @@ transcend policy lint --dir=./policies
 
 ```txt
 USAGE
-  transcend policy bundles [--auth value] [--transcend-url value] [--limit value] [--offset value] [--json]
+  transcend policy bundles (--auth value) [--transcend-url value] [--limit value] [--offset value] [--json]
   transcend policy bundles --help
 
 Lists policy bundles registered for the authenticated organization. Requires a Transcend API key with View Policy scope.
 
 FLAGS
-     [--auth]           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"                                 [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--limit]          Maximum number of bundles to return                                                                                                                                                                [default = 50]
      [--offset]         Number of records to skip before returning results                                                                                                                                                 [default = 0]
@@ -3866,7 +3866,7 @@ Requires the **View Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy publish (--dir value) (--bundle-name value) [--auth value] [--transcend-url value] [--version value] [--description value] [--json] [--yes]
+  transcend policy publish (--dir value) (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes]
   transcend policy publish --help
 
 Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
@@ -3874,7 +3874,7 @@ Packages manifest.json and .rego policy files from a local directory into a tarb
 FLAGS
       --dir             Directory containing manifest.json and Rego policy files
       --bundle-name     Tenant-unique policy bundle name
-     [--auth]           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"                               [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--version]        Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
      [--description]    Optional description for the uploaded version
@@ -3946,14 +3946,14 @@ transcend policy test --dir=./policies
 
 ```txt
 USAGE
-  transcend policy versions (--bundle-name value) [--auth value] [--transcend-url value] [--limit value] [--after value] [--json]
+  transcend policy versions (--bundle-name value) (--auth value) [--transcend-url value] [--limit value] [--after value] [--json]
   transcend policy versions --help
 
 Resolves a bundle name to its UUID and lists uploaded versions. Requires a Transcend API key with View Policy scope.
 
 FLAGS
       --bundle-name     Tenant-unique policy bundle name
-     [--auth]           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"                                 [default = cba4e064c51a8fffe080074650b07c977d11f9b7f7e101e63e3b7143d784d7b6]
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--limit]          Maximum number of versions to return                                                                                                                                                               [default = 50]
      [--after]          Opaque cursor from a previous response pageInfo.endCursor
