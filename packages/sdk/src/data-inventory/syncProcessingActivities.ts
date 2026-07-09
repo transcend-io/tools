@@ -28,31 +28,31 @@ export interface ProcessingActivityInput {
   /** Description of the processing activity */
   description?: string;
   /** Security measure details */
-  'security-measure-details'?: string;
+  securityMeasureDetails?: string;
   /** Controllerships */
   controllerships?: Controllership[];
   /** Storage regions */
-  'storage-regions'?: {
+  storageRegions?: {
     /** The country */
     country?: IsoCountryCode;
     /** The country subdivision */
     countrySubDivision?: IsoCountrySubdivisionCode;
   }[];
   /** Transfer regions */
-  'transfer-regions'?: {
+  transferRegions?: {
     /** The country */
     country?: IsoCountryCode;
     /** The country subdivision */
     countrySubDivision?: IsoCountrySubdivisionCode;
   }[];
   /** Retention type */
-  'retention-type'?: RetentionType;
+  retentionType?: RetentionType;
   /** Retention period in days */
-  'retention-period'?: number;
+  retentionPeriod?: number;
   /** Data protection impact assessment link */
-  'data-protection-impact-assessment-link'?: string;
+  dataProtectionImpactAssessmentLink?: string;
   /** Data protection impact assessment status */
-  'data-protection-impact-assessment-status'?: DataProtectionImpactAssessmentStatus;
+  dataProtectionImpactAssessmentStatus?: DataProtectionImpactAssessmentStatus;
   /** Attribute value and its corresponding attribute key */
   attributes?: {
     /** Attribute key */
@@ -61,35 +61,35 @@ export interface ProcessingActivityInput {
     values: string[];
   }[];
   /** Data silo titles */
-  'data-silo-titles'?: string[];
+  dataSiloTitles?: string[];
   /** Data subject types */
-  'data-subject-types'?: string[];
+  dataSubjectTypes?: string[];
   /** Team names */
-  'team-names'?: string[];
+  teamNames?: string[];
   /** Owner emails */
-  'owner-emails'?: string[];
+  ownerEmails?: string[];
   /** Processing sub purposes */
-  'processing-sub-purposes'?: {
+  processingSubPurposes?: {
     /** The parent purpose */
     purpose: ProcessingPurpose;
     /** User-defined name for this processing purpose sub category */
     name?: string;
   }[];
   /** Data sub categories */
-  'data-sub-categories'?: {
+  dataSubCategories?: {
     /** The parent category */
     category: DataCategoryType;
     /** User-defined name for this sub category */
     name?: string;
   }[];
   /** SaaS category titles */
-  'saas-categories'?: string[];
+  saaSCategories?: string[];
 }
 
 /**
  * Map a transcend.yml processing-activity entry to the GraphQL update shape.
  *
- * @param processingActivity - YAML input (kebab-case keys)
+ * @param processingActivity - YAML input
  * @param id - Existing processing activity ID
  * @returns GraphQL UpdateProcessingActivity input fields
  */
@@ -103,64 +103,61 @@ export function toProcessingActivityUpdateInput(
     ...(processingActivity.description !== undefined
       ? { description: processingActivity.description }
       : {}),
-    ...(processingActivity['security-measure-details'] !== undefined
-      ? { securityMeasureDetails: processingActivity['security-measure-details'] }
+    ...(processingActivity.securityMeasureDetails !== undefined
+      ? { securityMeasureDetails: processingActivity.securityMeasureDetails }
       : {}),
     ...(processingActivity.controllerships !== undefined
       ? { controllerships: processingActivity.controllerships }
       : {}),
-    ...(processingActivity['storage-regions'] !== undefined
-      ? { storageRegions: processingActivity['storage-regions'] }
+    ...(processingActivity.storageRegions !== undefined
+      ? { storageRegions: processingActivity.storageRegions }
       : {}),
-    ...(processingActivity['transfer-regions'] !== undefined
-      ? { transferRegions: processingActivity['transfer-regions'] }
+    ...(processingActivity.transferRegions !== undefined
+      ? { transferRegions: processingActivity.transferRegions }
       : {}),
-    ...(processingActivity['retention-type'] !== undefined
-      ? { retentionType: processingActivity['retention-type'] }
+    ...(processingActivity.retentionType !== undefined
+      ? { retentionType: processingActivity.retentionType }
       : {}),
-    ...(processingActivity['retention-period'] !== undefined
-      ? { retentionPeriod: processingActivity['retention-period'] }
+    ...(processingActivity.retentionPeriod !== undefined
+      ? { retentionPeriod: processingActivity.retentionPeriod }
       : {}),
-    ...(processingActivity['data-protection-impact-assessment-link'] !== undefined
+    ...(processingActivity.dataProtectionImpactAssessmentLink !== undefined
       ? {
-          dataProtectionImpactAssessmentLink:
-            processingActivity['data-protection-impact-assessment-link'],
+          dataProtectionImpactAssessmentLink: processingActivity.dataProtectionImpactAssessmentLink,
         }
       : {}),
-    ...(processingActivity['data-protection-impact-assessment-status'] !== undefined
+    ...(processingActivity.dataProtectionImpactAssessmentStatus !== undefined
       ? {
           dataProtectionImpactAssessmentStatus:
-            processingActivity['data-protection-impact-assessment-status'],
+            processingActivity.dataProtectionImpactAssessmentStatus,
         }
       : {}),
     ...(processingActivity.attributes !== undefined
       ? { attributes: processingActivity.attributes }
       : {}),
-    ...(processingActivity['data-silo-titles'] !== undefined
-      ? { dataSiloTitles: processingActivity['data-silo-titles'] }
+    ...(processingActivity.dataSiloTitles !== undefined
+      ? { dataSiloTitles: processingActivity.dataSiloTitles }
       : {}),
-    ...(processingActivity['data-subject-types'] !== undefined
-      ? { dataSubjectTypes: processingActivity['data-subject-types'] }
+    ...(processingActivity.dataSubjectTypes !== undefined
+      ? { dataSubjectTypes: processingActivity.dataSubjectTypes }
       : {}),
-    ...(processingActivity['team-names'] !== undefined
-      ? { teamNames: processingActivity['team-names'] }
+    ...(processingActivity.teamNames !== undefined
+      ? { teamNames: processingActivity.teamNames }
       : {}),
-    ...(processingActivity['owner-emails'] !== undefined
-      ? { ownerEmails: processingActivity['owner-emails'] }
+    ...(processingActivity.ownerEmails !== undefined
+      ? { ownerEmails: processingActivity.ownerEmails }
       : {}),
-    ...(processingActivity['data-sub-categories'] !== undefined
+    ...(processingActivity.dataSubCategories !== undefined
       ? {
-          dataSubCategoryInputs: processingActivity['data-sub-categories'].map(
-            ({ category, name }) => ({
-              category,
-              name: name ?? '',
-            }),
-          ),
+          dataSubCategoryInputs: processingActivity.dataSubCategories.map(({ category, name }) => ({
+            category,
+            name: name ?? '',
+          })),
         }
       : {}),
-    ...(processingActivity['processing-sub-purposes'] !== undefined
+    ...(processingActivity.processingSubPurposes !== undefined
       ? {
-          processingPurposeSubCategoryInputs: processingActivity['processing-sub-purposes'].map(
+          processingPurposeSubCategoryInputs: processingActivity.processingSubPurposes.map(
             ({ purpose, name }) => ({
               purpose,
               name: name ?? 'Other',
@@ -168,8 +165,8 @@ export function toProcessingActivityUpdateInput(
           ),
         }
       : {}),
-    ...(processingActivity['saas-categories'] !== undefined
-      ? { saaSCategoryTitles: processingActivity['saas-categories'] }
+    ...(processingActivity.saaSCategories !== undefined
+      ? { saaSCategoryTitles: processingActivity.saaSCategories }
       : {}),
   };
 }
@@ -250,13 +247,13 @@ async function updateProcessingActivities(
 }
 
 /**
- * Soft-warn on team-names that do not exist in the organization.
+ * Soft-warn on teamNames that do not exist in the organization.
  * Unresolved names are dropped from the update payload so GraphQL does not hard-fail.
  *
  * @param inputs - Processing activity YAML inputs
  * @param existingTeamNames - Team names already present in the org
  * @param logger - Logger
- * @returns Inputs with unresolved team-names filtered out
+ * @returns Inputs with unresolved teamNames filtered out
  */
 export function filterUnresolvedTeamNames(
   inputs: ProcessingActivityInput[],
@@ -264,7 +261,7 @@ export function filterUnresolvedTeamNames(
   logger: Logger,
 ): ProcessingActivityInput[] {
   return inputs.map((input) => {
-    const teamNames = input['team-names'];
+    const teamNames = input.teamNames;
     if (!teamNames || teamNames.length === 0) {
       return input;
     }
@@ -281,7 +278,7 @@ export function filterUnresolvedTeamNames(
 
     if (unresolved.length > 0) {
       logger.warn(
-        `Processing activity "${input.title}": unresolved team-names skipped: "${unresolved.join(
+        `Processing activity "${input.title}": unresolved teamNames skipped: "${unresolved.join(
           '", "',
         )}". Create these teams first or remove them from transcend.yml.`,
       );
@@ -289,7 +286,7 @@ export function filterUnresolvedTeamNames(
 
     return {
       ...input,
-      'team-names': resolved.length > 0 ? resolved : undefined,
+      teamNames: resolved.length > 0 ? resolved : undefined,
     };
   });
 }
@@ -323,7 +320,7 @@ export async function syncProcessingActivities(
   logger.info(`Syncing "${inputs.length}" processing activities...`);
   const [existingProcessingActivities, existingTeams] = await Promise.all([
     fetchAllProcessingActivities(client, { logger }),
-    inputs.some((input) => (input['team-names']?.length ?? 0) > 0)
+    inputs.some((input) => (input.teamNames?.length ?? 0) > 0)
       ? fetchAllTeams(client, { logger })
       : Promise.resolve([]),
   ]);

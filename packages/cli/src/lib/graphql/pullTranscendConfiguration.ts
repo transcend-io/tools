@@ -1000,39 +1000,38 @@ export async function pullTranscendConfiguration(
       }): ProcessingActivityInput => ({
         title,
         description,
-        'security-measure-details': securityMeasureDetails ?? undefined,
+        securityMeasureDetails: securityMeasureDetails ?? undefined,
         controllerships: controllerships.length > 0 ? controllerships : undefined,
-        'storage-regions': storageRegions.length > 0 ? formatRegions(storageRegions) : undefined,
-        'transfer-regions': transferRegions.length > 0 ? formatRegions(transferRegions) : undefined,
-        'retention-type': retentionType,
-        'retention-period':
-          retentionType === RetentionType.StatedPeriod ? retentionPeriod : undefined,
-        'data-protection-impact-assessment-link': dataProtectionImpactAssessmentLink ?? undefined,
-        'data-protection-impact-assessment-status': dataProtectionImpactAssessmentStatus,
+        storageRegions: storageRegions.length > 0 ? formatRegions(storageRegions) : undefined,
+        transferRegions: transferRegions.length > 0 ? formatRegions(transferRegions) : undefined,
+        retentionType,
+        retentionPeriod: retentionType === RetentionType.StatedPeriod ? retentionPeriod : undefined,
+        dataProtectionImpactAssessmentLink: dataProtectionImpactAssessmentLink ?? undefined,
+        dataProtectionImpactAssessmentStatus,
         attributes:
           attributeValues !== undefined && attributeValues.length > 0
             ? formatAttributeValues(attributeValues)
             : undefined,
-        'data-silo-titles': dataSilos.length > 0 ? dataSilos.map(({ title }) => title) : undefined,
-        'data-subject-types':
+        dataSiloTitles: dataSilos.length > 0 ? dataSilos.map(({ title }) => title) : undefined,
+        dataSubjectTypes:
           dataSubjects.length > 0 ? dataSubjects.map(({ type }) => type) : undefined,
-        'team-names': teams.length > 0 ? teams.map(({ name }) => name) : undefined,
-        'owner-emails': owners.length > 0 ? owners.map(({ email }) => email) : undefined,
-        'processing-sub-purposes':
+        teamNames: teams.length > 0 ? teams.map(({ name }) => name) : undefined,
+        ownerEmails: owners.length > 0 ? owners.map(({ email }) => email) : undefined,
+        processingSubPurposes:
           processingPurposeSubCategories.length > 0
             ? processingPurposeSubCategories.map(({ name, purpose }) => ({
                 purpose,
                 ...(name ? { name } : {}),
               }))
             : undefined,
-        'data-sub-categories':
+        dataSubCategories:
           dataSubCategories.length > 0
             ? dataSubCategories.map(({ name, category }) => ({
                 category,
                 ...(name ? { name } : {}),
               }))
             : undefined,
-        'saas-categories':
+        saaSCategories:
           saaSCategories.length > 0 ? saaSCategories.map(({ title }) => title) : undefined,
       }),
     );

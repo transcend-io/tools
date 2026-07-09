@@ -15,25 +15,25 @@ import {
 } from '../syncProcessingActivities.js';
 
 describe('toProcessingActivityUpdateInput', () => {
-  it('maps TWDC CCTV RoPA kebab-case YAML fields to GraphQL camelCase', () => {
+  it('maps TWDC CCTV RoPA fields to GraphQL update input', () => {
     const input: ProcessingActivityInput = {
       title: 'CCTV — Disney Italia Theme Park Entrances',
       description: 'On-premise CCTV surveillance…',
       controllerships: [Controllership.Controller],
-      'retention-type': RetentionType.Limited,
-      'data-protection-impact-assessment-status': DataProtectionImpactAssessmentStatus.Missing,
-      'data-subject-types': ['customer', 'employee'],
-      'team-names': ['Security Operations'],
-      'processing-sub-purposes': [
+      retentionType: RetentionType.Limited,
+      dataProtectionImpactAssessmentStatus: DataProtectionImpactAssessmentStatus.Missing,
+      dataSubjectTypes: ['customer', 'employee'],
+      teamNames: ['Security Operations'],
+      processingSubPurposes: [
         { purpose: ProcessingPurpose.OperationSecurity },
         { purpose: ProcessingPurpose.Essential },
       ],
-      'data-sub-categories': [
+      dataSubCategories: [
         { category: DataCategoryType.Other, name: 'Security-Physical' },
         { category: DataCategoryType.Contact, name: 'Image' },
       ],
-      'storage-regions': [{ country: IsoCountryCode.IT }],
-      'transfer-regions': [{ country: IsoCountryCode.EU }],
+      storageRegions: [{ country: IsoCountryCode.IT }],
+      transferRegions: [{ country: IsoCountryCode.EU }],
     };
 
     expect(toProcessingActivityUpdateInput(input, 'pa-id-1')).toEqual({
@@ -61,15 +61,15 @@ describe('toProcessingActivityUpdateInput', () => {
   it('maps optional fields and defaults sub-purpose name to Other', () => {
     const input: ProcessingActivityInput = {
       title: 'Recruiting',
-      'security-measure-details': 'Encrypted at rest',
-      'retention-type': RetentionType.StatedPeriod,
-      'retention-period': 90,
-      'data-protection-impact-assessment-link': 'https://example.com',
-      'data-silo-titles': ['Adobe'],
-      'owner-emails': ['delilah@acme.com'],
-      'saas-categories': ['Artificial Intelligence'],
-      'processing-sub-purposes': [{ purpose: ProcessingPurpose.HR, name: 'Recruiting' }],
-      'data-sub-categories': [{ category: DataCategoryType.Contact }],
+      securityMeasureDetails: 'Encrypted at rest',
+      retentionType: RetentionType.StatedPeriod,
+      retentionPeriod: 90,
+      dataProtectionImpactAssessmentLink: 'https://example.com',
+      dataSiloTitles: ['Adobe'],
+      ownerEmails: ['delilah@acme.com'],
+      saaSCategories: ['Artificial Intelligence'],
+      processingSubPurposes: [{ purpose: ProcessingPurpose.HR, name: 'Recruiting' }],
+      dataSubCategories: [{ category: DataCategoryType.Contact }],
       attributes: [{ key: 'Source of Data', values: ['Online Tracking Technologies'] }],
     };
 
@@ -91,34 +91,34 @@ describe('toProcessingActivityUpdateInput', () => {
 });
 
 describe('filterUnresolvedTeamNames', () => {
-  it('soft-warns and drops unresolved team-names', () => {
+  it('soft-warns and drops unresolved teamNames', () => {
     const warn = vi.fn();
     const result = filterUnresolvedTeamNames(
       [
         {
           title: 'CCTV',
-          'team-names': ['Security Operations', 'Missing Team'],
+          teamNames: ['Security Operations', 'Missing Team'],
         },
       ],
       new Set(['Security Operations']),
       { warn, info: vi.fn(), error: vi.fn(), debug: vi.fn() },
     );
 
-    expect(result[0]?.['team-names']).toEqual(['Security Operations']);
+    expect(result[0]?.teamNames).toEqual(['Security Operations']);
     expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining('unresolved team-names skipped: "Missing Team"'),
+      expect.stringContaining('unresolved teamNames skipped: "Missing Team"'),
     );
   });
 
-  it('clears team-names when none resolve', () => {
+  it('clears teamNames when none resolve', () => {
     const warn = vi.fn();
     const result = filterUnresolvedTeamNames(
-      [{ title: 'CCTV', 'team-names': ['Ghost Team'] }],
+      [{ title: 'CCTV', teamNames: ['Ghost Team'] }],
       new Set(),
       { warn, info: vi.fn(), error: vi.fn(), debug: vi.fn() },
     );
 
-    expect(result[0]?.['team-names']).toBeUndefined();
+    expect(result[0]?.teamNames).toBeUndefined();
     expect(warn).toHaveBeenCalled();
   });
 });

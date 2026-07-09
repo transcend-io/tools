@@ -43395,7 +43395,7 @@
               "description": {
                 "type": "string"
               },
-              "security-measure-details": {
+              "securityMeasureDetails": {
                 "type": "string"
               },
               "controllerships": {
@@ -43405,7 +43405,7 @@
                   "enum": ["CONTROLLER", "PROCESSOR", "JOINT_CONTROLLER"]
                 }
               },
-              "storage-regions": {
+              "storageRegions": {
                 "type": "array",
                 "items": {
                   "type": "object",
@@ -48806,7 +48806,7 @@
                   }
                 }
               },
-              "transfer-regions": {
+              "transferRegions": {
                 "type": "array",
                 "items": {
                   "type": "object",
@@ -54207,17 +54207,17 @@
                   }
                 }
               },
-              "retention-type": {
+              "retentionType": {
                 "type": "string",
                 "enum": ["STATED_PERIOD", "LIMITED", "INDEFINITE", "OTHER", "UNSPECIFIED"]
               },
-              "retention-period": {
+              "retentionPeriod": {
                 "type": "number"
               },
-              "data-protection-impact-assessment-link": {
+              "dataProtectionImpactAssessmentLink": {
                 "type": "string"
               },
-              "data-protection-impact-assessment-status": {
+              "dataProtectionImpactAssessmentStatus": {
                 "type": "string",
                 "enum": ["LINK", "NOT_REQUIRED", "MISSING"]
               },
@@ -54239,31 +54239,31 @@
                   }
                 }
               },
-              "data-silo-titles": {
+              "dataSiloTitles": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               },
-              "data-subject-types": {
+              "dataSubjectTypes": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               },
-              "team-names": {
+              "teamNames": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               },
-              "owner-emails": {
+              "ownerEmails": {
                 "type": "array",
                 "items": {
                   "type": "string"
                 }
               },
-              "processing-sub-purposes": {
+              "processingSubPurposes": {
                 "type": "array",
                 "items": {
                   "allOf": [
@@ -54302,7 +54302,7 @@
                   ]
                 }
               },
-              "data-sub-categories": {
+              "dataSubCategories": {
                 "type": "array",
                 "items": {
                   "allOf": [
@@ -54345,7 +54345,7 @@
                   ]
                 }
               },
-              "saas-categories": {
+              "saaSCategories": {
                 "type": "array",
                 "items": {
                   "type": "string"

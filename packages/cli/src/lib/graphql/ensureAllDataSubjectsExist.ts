@@ -26,7 +26,7 @@ export async function ensureAllDataSubjectsExist(
 ): Promise<{ [type in string]: DataSubject }> {
   const expectedDataSubjects = uniq([
     ...flatten(dataSilos.map((silo) => silo['data-subjects'] || []) || []),
-    ...flatten(processingActivities.map((activity) => activity['data-subject-types'] ?? []) ?? []),
+    ...flatten(processingActivities.map(({ dataSubjectTypes }) => dataSubjectTypes ?? []) ?? []),
     ...flatten(enrichers.map((enricher) => enricher['data-subjects'] || []) || []),
     ...dataSubjects.map((subject) => subject.type),
   ]);
