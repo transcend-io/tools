@@ -902,6 +902,88 @@ export const ProcessingActivityInput = t.intersection([
 export type ProcessingActivityInput = t.TypeOf<typeof ProcessingActivityInput>;
 
 /**
+ * Filter for processing activities included in a compliance report.
+ * Prefer `text` for portable YAML; ID-based filters are organization-specific.
+ *
+ * @see CreateComplianceReportInput.processingActivitiesFilter
+ */
+export const ComplianceReportProcessingActivitiesFilterInput = t.partial({
+  /** Free-text filter over processing activity title/description */
+  text: t.string,
+  /** Processing activity IDs */
+  ids: t.array(t.string),
+  /** Attribute value IDs */
+  attributeValueIds: t.array(t.string),
+  /** Business entity IDs */
+  businessEntityIds: t.array(t.string),
+  /** Data silo IDs */
+  dataSiloIds: t.array(t.string),
+  /** Data subject IDs */
+  dataSubjectIds: t.array(t.string),
+  /** Team IDs */
+  teamIds: t.array(t.string),
+  /** Owner user IDs */
+  ownerIds: t.array(t.string),
+  /** Processing purposes */
+  purposes: t.array(t.string),
+  /** Processing purpose sub-category IDs */
+  processingPurposeSubCategoryIds: t.array(t.string),
+  /** Data category types */
+  dataCategories: t.array(t.string),
+  /** Data sub-category IDs */
+  dataSubCategoryIds: t.array(t.string),
+  /** SaaS category IDs */
+  saaSCategoryIds: t.array(t.string),
+  /** Vendor IDs */
+  vendorIds: t.array(t.string),
+  /** Controllership values */
+  controllerships: t.array(t.string),
+});
+
+/** Type override */
+export type ComplianceReportProcessingActivitiesFilterInput = t.TypeOf<
+  typeof ComplianceReportProcessingActivitiesFilterInput
+>;
+
+/**
+ * Input to define a compliance report (Data Map → Compliance Reports / RoPA).
+ *
+ * Note: `locale` is NOT part of CreateComplianceReportInput — Italian (or other)
+ * export language follows the Admin user's locale. Do not put `locale` in YAML.
+ *
+ * Demo seeds may use singular `compliance-report`; the codec key is plural
+ * `compliance-reports` (see validateTranscendInputForPush for the alias).
+ *
+ * @see https://app.transcend.io/data-map/compliance-reports
+ */
+export const ComplianceReportInput = t.intersection([
+  t.type({
+    /** The title of the compliance report (idempotency key on push) */
+    title: t.string,
+  }),
+  t.partial({
+    /** Description of the compliance report */
+    description: t.string,
+    /**
+     * Filter for which processing activities to include.
+     * Prefer `text` for portable configs.
+     */
+    'processing-activities-filter': ComplianceReportProcessingActivitiesFilterInput,
+    /**
+     * Columns of the report in order.
+     * Each entry is a ProcessingActivitiesColumnName value or an attribute-key UUID.
+     * Empty / omitted → sensible Article 30 defaults on push.
+     */
+    columns: t.array(t.string),
+    /** Email of the data protection officer */
+    'data-protection-officer-email': t.string,
+  }),
+]);
+
+/** Type override */
+export type ComplianceReportInput = t.TypeOf<typeof ComplianceReportInput>;
+
+/**
  * Software development kit inputs
  *
  * @see https://app.transcend.io/code-scanning/sdks
@@ -2065,6 +2147,12 @@ export const TranscendInput = t.partial({
    * Processing activity definitions
    */
   'processing-activities': t.array(ProcessingActivityInput),
+  /**
+   * Compliance report (RoPA) definitions
+   *
+   * @see https://app.transcend.io/data-map/compliance-reports
+   */
+  'compliance-reports': t.array(ComplianceReportInput),
   /**
    * Consent and preference management purposes
    */

@@ -69,6 +69,12 @@ const RESOURCE_DOCUMENTATION: Record<
       '[Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)',
     ],
   },
+  [TranscendPullResource.ComplianceReports]: {
+    description: 'Compliance reports (RoPA / Article 30) in the Data Map.',
+    markdownLinks: [
+      '[Data Map -> Compliance Reports](https://app.transcend.io/data-map/compliance-reports)',
+    ],
+  },
   [TranscendPullResource.Actions]: {
     description: 'The privacy request action settings.',
     markdownLinks: [

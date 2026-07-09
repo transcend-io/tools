@@ -37,6 +37,7 @@ import {
   fetchAllPromptGroups,
   fetchAllPromptPartials,
   fetchAllProcessingActivities,
+  fetchAllComplianceReports,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
   fetchAllPreferenceOptionValues,
@@ -77,6 +78,7 @@ import {
   FieldInput,
   ProcessingPurposeInput,
   ProcessingActivityInput,
+  ComplianceReportInput,
   DataCategoryInput,
   VendorInput,
   AgentFileInput,
@@ -170,6 +172,7 @@ export async function pullTranscendConfiguration(
     actions,
     businessEntities,
     processingActivities,
+    complianceReports,
     consentManager,
     consentManagerExperiences,
     consentVariants,
@@ -277,6 +280,10 @@ export async function pullTranscendConfiguration(
     // Fetch processing activities
     resources.includes(TranscendPullResource.ProcessingActivities)
       ? fetchAllProcessingActivities(client, { logger })
+      : [],
+    // Fetch compliance reports
+    resources.includes(TranscendPullResource.ComplianceReports)
+      ? fetchAllComplianceReports(client, { logger })
       : [],
     // Fetch consent manager
     resources.includes(TranscendPullResource.ConsentManager)
@@ -1033,6 +1040,28 @@ export async function pullTranscendConfiguration(
             : undefined,
         saaSCategories:
           saaSCategories.length > 0 ? saaSCategories.map(({ title }) => title) : undefined,
+      }),
+    );
+  }
+
+  // Save compliance reports
+  if (complianceReports.length > 0 && resources.includes(TranscendPullResource.ComplianceReports)) {
+    result['compliance-reports'] = complianceReports.map(
+      ({
+        title,
+        description,
+        processingActivitiesFilter,
+        columns,
+        dataProtectionOfficer,
+      }): ComplianceReportInput => ({
+        title,
+        description: description ?? undefined,
+        'processing-activities-filter':
+          Object.keys(processingActivitiesFilter).length > 0
+            ? processingActivitiesFilter
+            : undefined,
+        columns: columns.length > 0 ? columns : undefined,
+        'data-protection-officer-email': dataProtectionOfficer?.email,
       }),
     );
   }

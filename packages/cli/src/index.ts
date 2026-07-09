@@ -13,3 +13,5 @@ export * from './lib/api-keys/index.js';
 export * from './lib/ai/index.js';
 export * from './lib/data-inventory/index.js';
 export * from './lib/manual-enrichment/index.js';
+export * from './lib/transcendConfigPush.js';
+export * from './lib/validateTranscendInputForPush.js';

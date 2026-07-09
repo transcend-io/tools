@@ -25,6 +25,7 @@ import {
   syncPolicies,
   syncPrivacyCenter,
   syncProcessingActivities,
+  syncComplianceReports,
   syncProcessingPurposes,
   syncPromptGroups,
   syncPromptPartials,
@@ -116,6 +117,7 @@ export async function syncConfigurationToTranscend(
     vendors,
     'data-categories': dataCategories,
     'processing-activities': processingActivities,
+    'compliance-reports': complianceReports,
     'processing-purposes': processingPurposes,
     'action-items': actionItems,
     'action-item-collections': actionItemCollections,
@@ -557,6 +559,14 @@ export async function syncConfigurationToTranscend(
       logger,
     });
     encounteredError = encounteredError || !processingActivitySuccess;
+  }
+
+  // Sync compliance reports after processing activities (reports filter on them)
+  if (complianceReports) {
+    const complianceReportSuccess = await syncComplianceReports(client, complianceReports, {
+      logger,
+    });
+    encounteredError = encounteredError || !complianceReportSuccess;
   }
 
   if (publishToPrivacyCenter) {

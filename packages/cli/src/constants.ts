@@ -48,6 +48,8 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
   [TranscendPullResource.Enrichers]: [ScopeName.ManageRequestIdentities],
   [TranscendPullResource.BusinessEntities]: [ScopeName.ManageDataInventory],
   [TranscendPullResource.ProcessingActivities]: [ScopeName.ManageDataMap],
+  // createComplianceReport / update / reprocess / delete live under ManageDataMap
+  [TranscendPullResource.ComplianceReports]: [ScopeName.ManageDataMap],
   [TranscendPullResource.Identifiers]: [ScopeName.ManageRequestIdentities],
   [TranscendPullResource.Attributes]: [ScopeName.ManageGlobalAttributes],
   [TranscendPullResource.DataFlows]: [ScopeName.ManageDataFlow],
@@ -99,6 +101,8 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
   [TranscendPullResource.Enrichers]: [ScopeName.ViewRequestIdentitySettings],
   [TranscendPullResource.BusinessEntities]: [ScopeName.ViewDataInventory],
   [TranscendPullResource.ProcessingActivities]: [ScopeName.ViewDataInventory],
+  // complianceReports query is on ViewDataMap (not ViewDataInventory)
+  [TranscendPullResource.ComplianceReports]: [ScopeName.ViewDataMap],
   [TranscendPullResource.Identifiers]: [ScopeName.ViewRequestIdentitySettings],
   [TranscendPullResource.Attributes]: [ScopeName.ViewGlobalAttributes],
   [TranscendPullResource.DataFlows]: [ScopeName.ViewDataFlow],
@@ -143,6 +147,7 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.DataSubjects]: 'data-subjects',
   [TranscendPullResource.BusinessEntities]: 'business-entities',
   [TranscendPullResource.ProcessingActivities]: 'processing-activities',
+  [TranscendPullResource.ComplianceReports]: 'compliance-reports',
   [TranscendPullResource.Identifiers]: 'identifiers',
   [TranscendPullResource.Enrichers]: 'enrichers',
   [TranscendPullResource.DataSilos]: 'data-silos',
