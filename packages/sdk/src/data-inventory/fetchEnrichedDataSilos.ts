@@ -111,6 +111,10 @@ export interface DataSiloEnriched {
     /** Title of business entity */
     title: string;
   }[];
+  /**
+   * Configured Sombra instance ID that processes this data silo
+   */
+  sombraId?: string | null;
 }
 
 /**

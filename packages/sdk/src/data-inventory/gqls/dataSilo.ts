@@ -104,6 +104,7 @@ export const DATA_SILOS_ENRICHED = gql`
         businessEntities {
           title
         }
+        sombraId
       }
     }
   }

@@ -28059,6 +28059,9 @@
               "api-key-title": {
                 "type": "string"
               },
+              "sombra-id": {
+                "type": "string"
+              },
               "headers": {
                 "type": "array",
                 "items": {

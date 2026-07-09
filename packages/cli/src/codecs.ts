@@ -1426,6 +1426,11 @@ export const DataSiloInput = t.intersection([
     url: t.string,
     /** The title of the API key that will be used to respond to privacy requests */
     'api-key-title': t.string,
+    /**
+     * The ID of the configured Sombra instance that processes privacy requests for this data silo.
+     * Useful for multi-Sombra organizations. Pull/push via `transcend inventory pull` / `push`.
+     */
+    'sombra-id': t.string,
     /** Custom headers to include in outbound webhook */
     headers: t.array(WebhookHeader),
     /**
