@@ -218,6 +218,25 @@ policies:
       us:</p><ul><li><p>By visiting this page on our website:
       https://privacy.eshopit.com</p></li></ul>
     disabledLocales: []
+privacy-center:
+  # Back-to-site / "home" link shown in the privacy center header
+  home: https://www.example.com
+  # Expand the side navigation by default
+  expandSideMenuByDefault: true
+  # Whether custom fields are required on privacy center workflows
+  workflows-custom-fields-required: false
+  # Footer layout for privacy center footer links
+  footer-layout: GRID
+  # Footer links displayed on the privacy center (matched by title on push)
+  footer-links:
+    - title: Privacy Policy
+      url: https://www.example.com/privacy
+    - title: Terms of Service
+      url: https://www.example.com/terms
+    - title: Instagram
+      url: https://www.instagram.com/example
+      icon-only: true
+
 messages:
   - id: a88f89e6-4f93-446b-80f0-31684a68cd8c
     defaultMessage: >-

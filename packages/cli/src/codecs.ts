@@ -1370,8 +1370,6 @@ export const PrivacyCenterInput = t.partial({
         title: t.string,
       }),
       t.partial({
-        /** Existing footer link ID (optional; resolved by title when omitted) */
-        id: t.string,
         /** Link URL (default locale); optional for icon-only links */
         url: t.string,
         /**

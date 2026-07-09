@@ -1,6 +1,0 @@
-# Privacy Center home link and side-menu defaults
-privacy-center:
-  # Back-to-site / "home" link shown in the privacy center header
-  home: https://www.example.com
-  # Expand the side navigation by default
-  expandSideMenuByDefault: true

@@ -93,14 +93,13 @@ describe('syncPrivacyCenterFooterLinks', () => {
     );
   });
 
-  it('matches by explicit id when provided', async () => {
+  it('matches by title when updating an existing link', async () => {
     await syncPrivacyCenterFooterLinks(
       client,
       privacyCenterId,
       [
         {
-          id: 'link-2',
-          title: 'Terms of Use',
+          title: 'Terms',
           url: 'https://example.com/terms-updated',
         },
       ],
@@ -130,7 +129,7 @@ describe('syncPrivacyCenterFooterLinks', () => {
             footerLinks: [
               {
                 id: 'link-2',
-                title: 'Terms of Use',
+                title: 'Terms',
                 url: 'https://example.com/terms-updated',
               },
             ],

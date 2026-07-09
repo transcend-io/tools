@@ -19,6 +19,19 @@ export interface PrivacyCenterChildOrganization {
   name: string;
 }
 
+export interface PrivacyCenterFooterLinkIcon {
+  /** Asset file ID */
+  id: string;
+  /** Public URL where the asset can be downloaded */
+  src: string;
+  /** Storage key for the asset */
+  key: string;
+  /** File size in bytes */
+  size: number;
+  /** MIME type of the asset */
+  mimetype: string;
+}
+
 export interface PrivacyCenterFooterLink {
   /** Footer link ID */
   id: string;
@@ -29,8 +42,10 @@ export interface PrivacyCenterFooterLink {
     /** Default locale message */
     defaultMessage: string;
   };
-  /** Link URL */
+  /** Link URL (default locale) */
   url: string;
+  /** Optional icon image for the footer link */
+  icon?: PrivacyCenterFooterLinkIcon;
   /**
    * When true with an icon set, render as icon-only (title is used for
    * accessibility). When false with an icon set, render icon beside the
@@ -136,6 +151,8 @@ export async function fetchAllPrivacyCenters(
           /** Default locale message */
           defaultMessage: string;
         };
+        /** Optional icon image for the footer link */
+        icon: PrivacyCenterFooterLinkIcon | null;
         /** Whether the link renders as icon-only */
         iconOnly: boolean;
       }[];
@@ -153,6 +170,7 @@ export async function fetchAllPrivacyCenters(
         displayOrder: link.displayOrder,
         title: link.title,
         url: link.url.defaultMessage,
+        ...(link.icon ? { icon: link.icon } : {}),
         iconOnly: link.iconOnly,
       })),
       theme: JSON.parse(themeStr),

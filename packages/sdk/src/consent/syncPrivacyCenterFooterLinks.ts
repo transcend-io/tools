@@ -10,8 +10,6 @@ import {
 } from './gqls/privacyCenter.js';
 
 export interface PrivacyCenterFooterLinkInput {
-  /** Existing footer link ID (optional; resolved by title when omitted) */
-  id?: string;
   /** Link title (default locale) */
   title: string;
   /** Link URL (default locale); optional for icon-only links */
@@ -25,9 +23,8 @@ export interface PrivacyCenterFooterLinkInput {
 }
 
 /**
- * Sync privacy center footer links. Matches existing links by title (or explicit
- * id), upserts the provided list, and deletes any existing links omitted from
- * the YAML.
+ * Sync privacy center footer links. Matches existing links by title, upserts
+ * the provided list, and deletes any existing links omitted from the YAML.
  *
  * @param client - GraphQL client
  * @param privacyCenterId - Privacy center ID
@@ -58,14 +55,12 @@ export async function syncPrivacyCenterFooterLinks(
     );
   }
 
-  const existingById = keyBy(existingFooterLinks, ({ id }) => id);
   const existingByTitle = keyBy(existingFooterLinks, ({ title }) => title.defaultMessage);
 
   const resolved = footerLinks.map((link) => {
-    const byId = link.id ? existingById[link.id] : undefined;
     const byTitle = existingByTitle[link.title];
     return {
-      id: byId?.id ?? byTitle?.id,
+      id: byTitle?.id,
       title: link.title,
       ...(link.url !== undefined ? { url: link.url } : {}),
       ...(link['icon-only'] !== undefined ? { iconOnly: link['icon-only'] } : {}),
