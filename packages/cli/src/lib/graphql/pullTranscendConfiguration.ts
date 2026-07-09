@@ -5,6 +5,7 @@ import {
   ActionItemCode,
   RetentionType,
   PreferenceTopicType,
+  WorkflowConfigType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -56,7 +57,7 @@ import {
 } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
-import { flatten, keyBy, mapValues } from 'lodash-es';
+import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
 
 /* eslint-disable max-lines */
 import {
@@ -363,7 +364,10 @@ export async function pullTranscendConfiguration(
       ? fetchAllPurposesAndPreferences(client, { logger })
       : [],
     resources.includes(TranscendPullResource.WorkflowConfigs)
-      ? fetchAllWorkflowConfigs(client, { logger })
+      ? fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
       : [],
     resources.includes(TranscendPullResource.PreferenceOptions)
       ? fetchAllPreferenceOptionValues(client, { logger })
@@ -1479,6 +1483,18 @@ export async function pullTranscendConfiguration(
         },
       ];
     });
+    const configsByInternalName = groupBy(
+      pulledWorkflowConfigs,
+      (config) => config['internal-name'],
+    );
+    for (const [internalName, configs] of Object.entries(configsByInternalName)) {
+      if (configs.length > 1) {
+        logger.warn(
+          `Found "${configs.length}" workflow configs with internal name: "${internalName}". ` +
+            'Internal names must be unique to sync workflow configs.',
+        );
+      }
+    }
     if (pulledWorkflowConfigs.length > 0) {
       result['workflow-configs'] = pulledWorkflowConfigs;
     }

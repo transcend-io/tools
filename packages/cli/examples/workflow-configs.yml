@@ -2,7 +2,7 @@
 # existing names are updated. Internal names must be unique.
 # Notes:
 #   - New workflows start as Draft with default associations; set visibility explicitly to publish.
-#   - region-list entries must be real ISO country / subdivision codes (e.g. GB, DE, US-CA). "EU" is not valid.
+#   - region-list entries must be ISO country / subdivision codes (e.g. GB, DE, US-CA, EU).
 #   - expiry-time, when set, MUST include a `region: default` entry, and every value must be > 0 days.
 workflow-configs:
   - internal-name: customer-access-workflow

@@ -84,7 +84,10 @@ export async function syncWorkflowConfigs(
   const needsAttributeKeys = inputs.some((config) => config['attribute-keys']?.length);
 
   const [existingConfigs, actions] = await Promise.all([
-    fetchAllWorkflowConfigs(client, { logger }),
+    fetchAllWorkflowConfigs(client, {
+      logger,
+      workflowConfigType: WorkflowConfigType.DSR,
+    }),
     fetchAllActions(client, { logger }),
   ]);
 

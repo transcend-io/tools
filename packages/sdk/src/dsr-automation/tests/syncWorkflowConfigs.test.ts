@@ -76,6 +76,10 @@ describe('syncWorkflowConfigs', () => {
     );
 
     expect(ok).toBe(true);
+    expect(fetchAllWorkflowConfigs).toHaveBeenCalledWith(unusedClient, {
+      logger: silentLogger,
+      workflowConfigType: WorkflowConfigType.DSR,
+    });
     expect(makeGraphQLRequest).toHaveBeenCalledTimes(2);
     const [createCall, updateCall] = makeGraphQLRequest.mock.calls;
     expect(createCall?.[1]).toBe(CREATE_WORKFLOW);
