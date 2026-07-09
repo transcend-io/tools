@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 0.6.1
+
+### Patch Changes
+
+- cbe9d3a: Update links in the readmes
+
 ## 0.6.0
 
 ### Minor Changes

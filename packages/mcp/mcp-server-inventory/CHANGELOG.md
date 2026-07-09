@@ -1,5 +1,15 @@
 # @transcend-io/mcp-server-inventory
 
+## 0.4.3
+
+### Patch Changes
+
+- cbe9d3a: Update links in the readmes
+- Updated dependencies [cbe9d3a]
+- Updated dependencies [b0c9656]
+  - @transcend-io/mcp-server-base@0.6.1
+  - @transcend-io/privacy-types@5.5.0
+
 ## 0.4.2
 
 ### Patch Changes

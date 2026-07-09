@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.5.0
+
+### Minor Changes
+
+- b0c9656: Add `DsrErrorCode` for DSR submission API error handling.
+
 ## 5.4.0
 
 ### Minor Changes
