@@ -50,6 +50,13 @@ export interface PrivacyCenterInput {
   useCustomEmailDomain?: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv?: boolean;
+  /**
+   * Privacy Center "home" / back-to-site link URL shown in the privacy center
+   * header
+   */
+  home?: string;
+  /** Whether the side menu is expanded by default on the privacy center */
+  expandSideMenuByDefault?: boolean;
   /** Whether custom fields are required on privacy center workflows */
   'workflows-custom-fields-required'?: boolean;
   /**
@@ -131,6 +138,8 @@ export async function syncPrivacyCenter(
           showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
           showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
           isDisabled: privacyCenter.isDisabled,
+          home: privacyCenter.home,
+          expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
           workflowsCustomFieldsRequired: privacyCenter['workflows-custom-fields-required'],
           footerLayout: privacyCenter['footer-layout'],
           ...(displayedChildOrganizationIds ? { displayedChildOrganizationIds } : {}),

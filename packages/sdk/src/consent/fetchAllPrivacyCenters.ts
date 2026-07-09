@@ -78,6 +78,13 @@ export interface PrivacyCenter {
   useCustomEmailDomain: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: boolean;
+  /**
+   * Privacy Center "home" / back-to-site link URL shown in the privacy center
+   * header
+   */
+  home: string;
+  /** Whether the side menu is expanded by default on the privacy center */
+  expandSideMenuByDefault: boolean;
   /** Whether custom fields are required on privacy center workflows */
   workflowsCustomFieldsRequired: boolean;
   /** Footer layout */

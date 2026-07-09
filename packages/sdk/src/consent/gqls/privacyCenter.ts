@@ -38,6 +38,8 @@ export const PRIVACY_CENTER = gql`
       useNoReplyEmailAddress
       useCustomEmailDomain
       transformAccessReportJsonToCsv
+      home
+      expandSideMenuByDefault
       workflowsCustomFieldsRequired
       footerLayout
       themeStr

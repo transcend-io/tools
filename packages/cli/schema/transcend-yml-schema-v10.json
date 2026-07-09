@@ -41269,6 +41269,12 @@
         "transformAccessReportJsonToCsv": {
           "type": "boolean"
         },
+        "home": {
+          "type": "string"
+        },
+        "expandSideMenuByDefault": {
+          "type": "boolean"
+        },
         "workflows-custom-fields-required": {
           "type": "boolean"
         },

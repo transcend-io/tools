@@ -940,6 +940,8 @@ export async function pullTranscendConfiguration(
       useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
       useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
       transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
+      home: privacyCenter.home || undefined,
+      expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
       'workflows-custom-fields-required': privacyCenter.workflowsCustomFieldsRequired,
       'footer-layout': privacyCenter.footerLayout,
       ...(privacyCenter.childOrganizations.length > 0

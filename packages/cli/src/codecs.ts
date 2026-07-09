@@ -1341,6 +1341,13 @@ export const PrivacyCenterInput = t.partial({
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: t.boolean,
   /**
+   * Privacy Center "home" / back-to-site link URL shown in the privacy center
+   * header
+   */
+  home: t.string,
+  /** Whether the side menu is expanded by default on the privacy center */
+  expandSideMenuByDefault: t.boolean,
+  /**
    * Whether custom fields are required when submitting privacy requests from
    * the privacy center workflows UI
    */
