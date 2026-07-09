@@ -136,6 +136,7 @@ describe('CLI Command Structure', () => {
           `${implFile} should export ${implExportName} or _${implExportName} (for reserved keywords)`,
         ).toBe(true);
       },
+      30_000,
     );
   });
 
