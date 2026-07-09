@@ -129,12 +129,17 @@ export async function fetchAllPrivacyCenters(
   const { logger } = options;
   const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client, { logger });
   const {
-    privacyCenter: { themeStr, footerLinks, ...rest },
+    privacyCenter: { themeStr, footerLinks, home, ...rest },
   } = await makeGraphQLRequest<{
     /** Privacy centers */
-    privacyCenter: Omit<PrivacyCenter, 'theme' | 'footerLinks'> & {
+    privacyCenter: Omit<PrivacyCenter, 'theme' | 'footerLinks' | 'home'> & {
       /** Theme string */
       themeStr: string;
+      /** Home / back-to-site link as returned by GraphQL */
+      home: {
+        /** Default locale message */
+        defaultMessage: string;
+      };
       /** Footer links as returned by GraphQL */
       footerLinks: {
         /** Footer link ID */
@@ -165,6 +170,7 @@ export async function fetchAllPrivacyCenters(
   return [
     {
       ...rest,
+      home: home.defaultMessage,
       footerLinks: footerLinks.map((link) => ({
         id: link.id,
         displayOrder: link.displayOrder,
