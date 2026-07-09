@@ -940,6 +940,14 @@ export async function pullTranscendConfiguration(
       useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
       useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
       transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
+      'workflows-custom-fields-required': privacyCenter.workflowsCustomFieldsRequired,
+      ...(privacyCenter.childOrganizations.length > 0
+        ? {
+            'displayed-child-organization-uris': privacyCenter.childOrganizations.map(
+              (child) => child.uri,
+            ),
+          }
+        : {}),
       theme: privacyCenter.theme,
     };
   }

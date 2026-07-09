@@ -1339,6 +1339,16 @@ export const PrivacyCenterInput = t.partial({
   useCustomEmailDomain: t.boolean,
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: t.boolean,
+  /**
+   * Whether custom fields are required when submitting privacy requests from
+   * the privacy center workflows UI
+   */
+  'workflows-custom-fields-required': t.boolean,
+  /**
+   * Child organization URIs (or IDs) to display on a unified multi-brand
+   * privacy center. Resolved to organization IDs on push.
+   */
+  'displayed-child-organization-uris': t.array(t.string),
   /** The theme object of colors to display on the privacy center */
   theme: t.partial({
     /** The theme colors */

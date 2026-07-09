@@ -38,7 +38,13 @@ export const PRIVACY_CENTER = gql`
       useNoReplyEmailAddress
       useCustomEmailDomain
       transformAccessReportJsonToCsv
+      workflowsCustomFieldsRequired
       themeStr
+      childOrganizations {
+        id
+        uri
+        name
+      }
     }
   }
 `;

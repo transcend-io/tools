@@ -41269,6 +41269,15 @@
         "transformAccessReportJsonToCsv": {
           "type": "boolean"
         },
+        "workflows-custom-fields-required": {
+          "type": "boolean"
+        },
+        "displayed-child-organization-uris": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "theme": {
           "type": "object",
           "properties": {

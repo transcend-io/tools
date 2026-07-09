@@ -15,6 +15,7 @@ export * from './fetchConsentVariants.js';
 export * from './fetchAirgapBundleAnalytics.js';
 export * from './fetchPrivacyCenterId.js';
 export * from './gqls/index.js';
+export * from './resolveDisplayedChildOrganizationIds.js';
 export * from './syncConsentManager.js';
 export * from './syncConsentUi.js';
 export * from './syncCookies.js';

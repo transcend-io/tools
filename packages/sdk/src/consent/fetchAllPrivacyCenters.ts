@@ -7,6 +7,15 @@ import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
 import { PRIVACY_CENTER } from './gqls/privacyCenter.js';
 
+export interface PrivacyCenterChildOrganization {
+  /** Organization ID */
+  id: string;
+  /** Organization URI */
+  uri: string;
+  /** Organization name */
+  name: string;
+}
+
 export interface PrivacyCenter {
   /** ID of the privacy center */
   id: string;
@@ -46,6 +55,10 @@ export interface PrivacyCenter {
   useCustomEmailDomain: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: boolean;
+  /** Whether custom fields are required on privacy center workflows */
+  workflowsCustomFieldsRequired: boolean;
+  /** Child organizations displayed on this privacy center */
+  childOrganizations: PrivacyCenterChildOrganization[];
   /** The theme object of colors to display on the privacy center */
   theme: PrivacyCenterThemePartial;
 }

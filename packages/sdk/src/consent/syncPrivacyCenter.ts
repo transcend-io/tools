@@ -3,8 +3,10 @@ import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { fetchAllPrivacyCenters } from './fetchAllPrivacyCenters.js';
 import { fetchPrivacyCenterId } from './fetchPrivacyCenterId.js';
 import { UPDATE_PRIVACY_CENTER } from './gqls/privacyCenter.js';
+import { resolveDisplayedChildOrganizationIds } from './resolveDisplayedChildOrganizationIds.js';
 
 export interface PrivacyCenterInput {
   /** Whether or not the entire privacy center is enabled or disabled */
@@ -43,6 +45,13 @@ export interface PrivacyCenterInput {
   useCustomEmailDomain?: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv?: boolean;
+  /** Whether custom fields are required on privacy center workflows */
+  workflowsCustomFieldsRequired?: boolean;
+  /**
+   * Child organization URIs and/or IDs to display on a unified multi-brand
+   * privacy center
+   */
+  displayedChildOrganizationUris?: string[];
   /** The theme object of colors to display on the privacy center */
   theme?: {
     /** The theme colors */
@@ -68,13 +77,24 @@ export async function syncPrivacyCenter(
   options: {
     /** Logger instance */
     logger?: Logger;
+    /** When true, skip publishing the privacy center after update */
+    skipPublish?: boolean;
   } = {},
 ): Promise<boolean> {
-  const { logger = NOOP_LOGGER } = options;
+  const { logger = NOOP_LOGGER, skipPublish } = options;
   let encounteredError = false;
   logger.info('Syncing privacy center...');
 
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
+
+  let displayedChildOrganizationIds: string[] | undefined;
+  if (privacyCenter.displayedChildOrganizationUris) {
+    const [existing] = await fetchAllPrivacyCenters(client, { logger });
+    displayedChildOrganizationIds = resolveDisplayedChildOrganizationIds(
+      existing?.childOrganizations ?? [],
+      privacyCenter.displayedChildOrganizationUris,
+    );
+  }
 
   try {
     await makeGraphQLRequest(client, UPDATE_PRIVACY_CENTER, {
@@ -98,6 +118,9 @@ export async function syncPrivacyCenter(
           showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
           showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
           isDisabled: privacyCenter.isDisabled,
+          workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+          ...(displayedChildOrganizationIds ? { displayedChildOrganizationIds } : {}),
+          ...(skipPublish !== undefined ? { skipPublish } : {}),
           ...(privacyCenter.theme
             ? {
                 colorPalette: privacyCenter.theme.colors,
@@ -112,7 +135,7 @@ export async function syncPrivacyCenter(
     logger.info('Successfully synced privacy center!');
   } catch (err) {
     encounteredError = true;
-    logger.error(`Failed to create privacy center! - ${(err as Error).message}`);
+    logger.error(`Failed to sync privacy center! - ${(err as Error).message}`);
   }
 
   return !encounteredError;
