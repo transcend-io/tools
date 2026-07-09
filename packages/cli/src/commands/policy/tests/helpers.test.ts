@@ -6,6 +6,7 @@ import {
   defaultPolicyVersionLabel,
   printResult,
   renderTable,
+  resolveBundleByName,
   resolveBundleIdByName,
 } from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
@@ -51,7 +52,7 @@ describe('policy helpers', () => {
     );
   });
 
-  it('resolveBundleIdByName paginates with offset until a bundle name matches', async () => {
+  it('resolveBundleByName paginates with offset until a bundle name matches', async () => {
     const get = vi
       .fn()
       .mockReturnValueOnce({
@@ -77,8 +78,8 @@ describe('policy helpers', () => {
               id: 'main-id',
               bundleName: 'main',
               description: null,
-              activeVersionId: null,
-              lastActivatedAt: null,
+              activeVersionId: 'active-version-id',
+              lastActivatedAt: '2026-01-02',
               createdAt: '2026-01-02',
               updatedAt: '2026-01-02',
             },
@@ -90,13 +91,41 @@ describe('policy helpers', () => {
     gotExtendMock.mockReturnValue({ get });
     const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key');
 
-    await expect(resolveBundleIdByName(client, 'main')).resolves.toBe('main-id');
+    await expect(resolveBundleByName(client, 'main')).resolves.toMatchObject({
+      id: 'main-id',
+      bundleName: 'main',
+      activeVersionId: 'active-version-id',
+    });
     expect(get).toHaveBeenNthCalledWith(1, 'v1/policy-engine/policy-bundles', {
       searchParams: { limit: 100, offset: 0 },
     });
     expect(get).toHaveBeenNthCalledWith(2, 'v1/policy-engine/policy-bundles', {
       searchParams: { limit: 100, offset: 1 },
     });
+  });
+
+  it('resolveBundleIdByName returns the matching bundle UUID', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue({
+        nodes: [
+          {
+            id: 'main-id',
+            bundleName: 'main',
+            description: null,
+            activeVersionId: null,
+            lastActivatedAt: null,
+            createdAt: '2026-01-02',
+            updatedAt: '2026-01-02',
+          },
+        ],
+        totalCount: 1,
+      } satisfies PolicyBundleListResponse),
+    });
+
+    gotExtendMock.mockReturnValue({ get });
+    const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key');
+
+    await expect(resolveBundleIdByName(client, 'main')).resolves.toBe('main-id');
   });
 
   it('renderTable formats aligned columns', () => {

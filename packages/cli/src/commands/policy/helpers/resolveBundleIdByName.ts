@@ -1,18 +1,18 @@
 import type { Got } from 'got';
 
-import type { PolicyBundleListResponse } from '../types.js';
+import type { PolicyBundle, PolicyBundleListResponse } from '../types.js';
 
 /**
- * Resolves a bundle name to its UUID by scanning offset-paginated bundle listings.
+ * Resolves a bundle name to its parent record by scanning offset-paginated listings.
  *
  * @param client - Policy Engine REST client
  * @param bundleName - Bundle name to resolve
- * @returns Bundle UUID when found
+ * @returns Matching bundle when found
  */
-export async function resolveBundleIdByName(
+export async function resolveBundleByName(
   client: Got,
   bundleName: string,
-): Promise<string | undefined> {
+): Promise<PolicyBundle | undefined> {
   const limit = 100;
   let offset = 0;
 
@@ -25,7 +25,7 @@ export async function resolveBundleIdByName(
 
     const match = body.nodes.find((bundle) => bundle.bundleName === bundleName);
     if (match) {
-      return match.id;
+      return match;
     }
 
     offset += body.nodes.length;
@@ -33,4 +33,19 @@ export async function resolveBundleIdByName(
       return undefined;
     }
   }
+}
+
+/**
+ * Resolves a bundle name to its UUID by scanning offset-paginated bundle listings.
+ *
+ * @param client - Policy Engine REST client
+ * @param bundleName - Bundle name to resolve
+ * @returns Bundle UUID when found
+ */
+export async function resolveBundleIdByName(
+  client: Got,
+  bundleName: string,
+): Promise<string | undefined> {
+  const bundle = await resolveBundleByName(client, bundleName);
+  return bundle?.id;
 }
