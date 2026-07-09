@@ -217,9 +217,9 @@ const RESOURCE_DOCUMENTATION: Record<
 (https://app.transcend.io/data-map/data-inventory/silo-discovery)',
     ],
   },
-  [TranscendPullResource.ConsentWorkflowTriggers]: {
+  [TranscendPullResource.PreferenceWorkflowConfigs]: {
     description:
-      'Consent workflow trigger definitions (Workflows → Preference Workflows). ' +
+      'Preference workflow config definitions (Workflows → Preference Workflows). ' +
       'Legacy: action-type + data-silo-titles. V2: workflow-title (DSR workflow). Purposes drive trigger conditions.',
     markdownLinks: [
       '[Workflows -> Preference Workflows]\

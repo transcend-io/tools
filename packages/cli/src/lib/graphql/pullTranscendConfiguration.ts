@@ -99,7 +99,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
-  ConsentWorkflowTriggerInput,
+  PreferenceWorkflowConfigInput,
   WorkflowConfigInput,
   ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
@@ -201,7 +201,7 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
-    consentWorkflowTriggers,
+    preferenceWorkflowConfigs,
     workflowConfigs,
     preferenceOptionValues,
     siloDiscoveryResults,
@@ -369,7 +369,7 @@ export async function pullTranscendConfiguration(
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
       : [],
-    resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
+    resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
       ? fetchAllConsentWorkflowTriggers(client, { logger })
       : [],
     resources.includes(TranscendPullResource.WorkflowConfigs)
@@ -1524,10 +1524,12 @@ export async function pullTranscendConfiguration(
   }
 
   if (
-    consentWorkflowTriggers.length > 0 &&
-    resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
+    preferenceWorkflowConfigs.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
   ) {
-    const needsWorkflowTitles = consentWorkflowTriggers.some((trigger) => trigger.workflowConfigId);
+    const needsWorkflowTitles = preferenceWorkflowConfigs.some(
+      (trigger) => trigger.workflowConfigId,
+    );
     const dsrWorkflows = needsWorkflowTitles
       ? await fetchAllWorkflowConfigs(client, {
           logger,
@@ -1535,8 +1537,8 @@ export async function pullTranscendConfiguration(
         })
       : [];
 
-    result['consent-workflow-triggers'] = consentWorkflowTriggers.map(
-      (trigger): ConsentWorkflowTriggerInput => {
+    result['preference-workflow-configs'] = preferenceWorkflowConfigs.map(
+      (trigger): PreferenceWorkflowConfigInput => {
         const purposes = parsePurposesFromTriggerCondition(trigger.triggerCondition);
         const shared = {
           name: trigger.name,

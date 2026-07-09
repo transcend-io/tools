@@ -1,12 +1,12 @@
-# Consent workflow triggers automate DSR actions when consent state matches.
+# Preference workflow configs automate DSR actions when consent state matches.
 # Admin UI: https://app.transcend.io/preference-store/consent-workflows
 # Purposes are the source of truth — triggerCondition is derived on push as:
 #   { And: [{ [tracking-type]: matching-state }, ...] }
 #
-# Exactly one mode per trigger:
+# Exactly one mode per config:
 # - Legacy: action-type (+ optional data-silo-titles), no workflow-title
 # - V2: workflow-title (DSR workflow internalName or external title), no action-type / data-silo-titles
-consent-workflow-triggers:
+preference-workflow-configs:
   # Legacy mode — action + optional data silos
   - name: MarketingContactOptOut
     action-type: CONTACT_OPT_OUT

@@ -3,4 +3,4 @@
 '@transcend-io/sdk': minor
 ---
 
-Support Workflows V2 on consent-workflow-triggers via workflow-title (DSR workflowConfigId), while keeping legacy action-type / data-silo-titles mode.
+Add preference-workflow-configs pull/push (Workflows → Preference Workflows), including Workflows V2 via workflow-title and legacy action-type / data-silo-titles mode.

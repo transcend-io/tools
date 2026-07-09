@@ -59963,7 +59963,7 @@
         ]
       }
     },
-    "consent-workflow-triggers": {
+    "preference-workflow-configs": {
       "type": "array",
       "items": {
         "allOf": [
