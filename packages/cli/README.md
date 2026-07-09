@@ -3786,14 +3786,14 @@ Requires the **Activate Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy download (--bundle-name value) (--version value) [--output value] (--auth value) [--transcend-url value] [--json]
+  transcend policy download (--bundle-name value) [--version value] [--output value] (--auth value) [--transcend-url value] [--json]
   transcend policy download --help
 
-Resolves a bundle name and version label, fetches a short-lived presigned URL from the Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. With --json, prints metadata and the presigned URL without writing a file. Requires a Transcend API key with View Policy scope.
+Resolves a bundle name and optional version label, fetches a short-lived presigned URL from the Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. When --version is omitted, downloads the currently active version (errors if none is active). With --json, prints metadata and the presigned URL without writing a file. Requires a Transcend API key with View Policy scope.
 
 FLAGS
       --bundle-name     Tenant-unique policy bundle name
-      --version         Caller-supplied version label to download
+     [--version]        Caller-supplied version label to download; defaults to the bundle's currently active version
      [--output]         Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
       --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
@@ -3803,7 +3803,13 @@ FLAGS
 
 #### Examples
 
-**Download a compiled policy bundle version to the default path**
+**Download the currently active version of a policy bundle**
+
+```sh
+transcend policy download --bundle-name=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Download a specific compiled policy bundle version to the default path**
 
 ```sh
 transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY"
@@ -3828,7 +3834,7 @@ transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANS
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy download --bundle-name=main --version=2026-06-25
+transcend policy download --bundle-name=main
 ```
 
 Requires the **View Policy** scope on your API key.

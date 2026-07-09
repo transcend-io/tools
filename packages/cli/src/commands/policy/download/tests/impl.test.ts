@@ -9,7 +9,7 @@ import { logger } from '../../../../logger.js';
 import { defaultPolicyDownloadOutputPath, download } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
-const resolveBundleIdByNameMock = vi.hoisted(() => vi.fn());
+const resolveBundleByNameMock = vi.hoisted(() => vi.fn());
 const resolvePolicyBundleVersionMock = vi.hoisted(() => vi.fn());
 const gotMock = vi.hoisted(() => vi.fn());
 
@@ -18,7 +18,7 @@ vi.mock('../../helpers/index.js', async (importOriginal) => {
   return {
     ...actual,
     buildPolicyEngineClient: buildPolicyEngineClientMock,
-    resolveBundleIdByName: resolveBundleIdByNameMock,
+    resolveBundleByName: resolveBundleByNameMock,
     resolvePolicyBundleVersion: resolvePolicyBundleVersionMock,
   };
 });
@@ -28,6 +28,16 @@ vi.mock('got', () => ({
     extend: vi.fn(),
   }),
 }));
+
+const sampleBundle = {
+  id: 'resolved-bundle-id',
+  bundleName: 'main',
+  description: null,
+  activeVersionId: 'active-version-id',
+  lastActivatedAt: '2026-06-25T00:00:00.000Z',
+  createdAt: '2026-06-24T00:00:00.000Z',
+  updatedAt: '2026-06-25T00:00:00.000Z',
+};
 
 const sampleVersion = {
   id: 'version-id',
@@ -55,6 +65,12 @@ const sampleDownloadResponse = {
   downloadUrl: 'https://s3.example.com/presigned-bundle.tar.gz',
 };
 
+const activeDownloadResponse = {
+  ...sampleDownloadResponse,
+  versionId: 'active-version-id',
+  version: 'active-label',
+};
+
 describe('download', () => {
   const exit = vi.fn();
   const stdout = { write: vi.fn() };
@@ -80,7 +96,7 @@ describe('download', () => {
       json: vi.fn().mockResolvedValue(sampleDownloadResponse),
     });
     buildPolicyEngineClientMock.mockReturnValue({ get });
-    resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
+    resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
     gotMock.mockReturnValue({
       buffer: vi.fn().mockResolvedValue(Buffer.from('bundle-bytes')),
@@ -97,7 +113,7 @@ describe('download', () => {
       json: false,
     });
 
-    expect(resolveBundleIdByNameMock).toHaveBeenCalledWith(expect.anything(), 'main');
+    expect(resolveBundleByNameMock).toHaveBeenCalledWith(expect.anything(), 'main');
     expect(resolvePolicyBundleVersionMock).toHaveBeenCalledWith(
       expect.anything(),
       'resolved-bundle-id',
@@ -116,12 +132,61 @@ describe('download', () => {
     );
   });
 
+  it('downloads the active version when --version is omitted', async () => {
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockResolvedValue(activeDownloadResponse),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ get });
+    resolveBundleByNameMock.mockResolvedValue(sampleBundle);
+    gotMock.mockReturnValue({
+      buffer: vi.fn().mockResolvedValue(Buffer.from('active-bytes')),
+    });
+
+    const outputPath = path.join(tempDir, 'main-active-label.tar.gz');
+
+    await download.call(context, {
+      'bundle-name': 'main',
+      output: outputPath,
+      auth: 'test-key',
+      'transcend-url': 'https://api.transcend.io',
+      json: false,
+    });
+
+    expect(resolvePolicyBundleVersionMock).not.toHaveBeenCalled();
+    expect(get).toHaveBeenCalledWith(
+      'v1/policy-engine/policy-bundles/resolved-bundle-id/versions/active-version-id',
+    );
+    expect(Buffer.from(fs.readFileSync(outputPath))).toEqual(Buffer.from('active-bytes'));
+    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('version     active-label'));
+  });
+
+  it('throws when --version is omitted and the bundle has no active version', async () => {
+    const get = vi.fn();
+    buildPolicyEngineClientMock.mockReturnValue({ get });
+    resolveBundleByNameMock.mockResolvedValue({
+      ...sampleBundle,
+      activeVersionId: null,
+    });
+
+    await expect(
+      download.call(context, {
+        'bundle-name': 'main',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        json: false,
+      }),
+    ).rejects.toThrow('Policy bundle "main" has no active version.');
+
+    expect(get).not.toHaveBeenCalled();
+    expect(resolvePolicyBundleVersionMock).not.toHaveBeenCalled();
+  });
+
   it('prints raw JSON and skips the file write when --json is set', async () => {
     const get = vi.fn().mockReturnValue({
       json: vi.fn().mockResolvedValue(sampleDownloadResponse),
     });
     buildPolicyEngineClientMock.mockReturnValue({ get });
-    resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
+    resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await download.call(context, {
@@ -141,7 +206,7 @@ describe('download', () => {
   it('throws a CLI-side error when the bundle name is unknown (before calling the monolith)', async () => {
     const get = vi.fn();
     buildPolicyEngineClientMock.mockReturnValue({ get });
-    resolveBundleIdByNameMock.mockResolvedValue(undefined);
+    resolveBundleByNameMock.mockResolvedValue(undefined);
 
     await expect(
       download.call(context, {
@@ -160,7 +225,7 @@ describe('download', () => {
   it('surfaces version resolution errors before fetching the download URL', async () => {
     const get = vi.fn();
     buildPolicyEngineClientMock.mockReturnValue({ get });
-    resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
+    resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockRejectedValue(
       new Error('Version "missing" was not found for this policy bundle.'),
     );
@@ -183,7 +248,7 @@ describe('download', () => {
       json: vi.fn().mockResolvedValue(sampleDownloadResponse),
     });
     buildPolicyEngineClientMock.mockReturnValue({ get });
-    resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
+    resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
     gotMock.mockReturnValue({
       buffer: vi.fn().mockRejectedValue(new Error('Request timed out')),
@@ -212,7 +277,7 @@ describe('download', () => {
       json: vi.fn().mockRejectedValue(httpError),
     });
     buildPolicyEngineClientMock.mockReturnValue({ get });
-    resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
+    resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await expect(

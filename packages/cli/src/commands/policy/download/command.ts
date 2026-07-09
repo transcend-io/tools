@@ -21,7 +21,9 @@ export const downloadCommand = buildCommand({
       version: {
         kind: 'parsed',
         parse: String,
-        brief: 'Caller-supplied version label to download',
+        brief:
+          "Caller-supplied version label to download; defaults to the bundle's currently active version",
+        optional: true,
       },
       output: {
         kind: 'parsed',
@@ -45,8 +47,9 @@ export const downloadCommand = buildCommand({
   docs: {
     brief: 'Download a compiled policy bundle version',
     fullDescription:
-      'Resolves a bundle name and version label, fetches a short-lived presigned URL from the ' +
+      'Resolves a bundle name and optional version label, fetches a short-lived presigned URL from the ' +
       'Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. ' +
+      'When --version is omitted, downloads the currently active version (errors if none is active). ' +
       'With --json, prints metadata and the presigned URL without writing a file. ' +
       'Requires a Transcend API key with View Policy scope.',
   },

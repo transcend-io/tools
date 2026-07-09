@@ -12,7 +12,7 @@ import {
   buildPolicyEngineClient,
   formatPolicyEngineRequestError,
   printResult,
-  resolveBundleIdByName,
+  resolveBundleByName,
   resolvePolicyBundleVersion,
 } from '../helpers/index.js';
 import type { GetPolicyBundleVersionResponse } from '../types.js';
@@ -21,8 +21,11 @@ import type { GetPolicyBundleVersionResponse } from '../types.js';
 export interface DownloadCommandFlags {
   /** Tenant-unique bundle name */
   'bundle-name': string;
-  /** Caller-supplied version label */
-  version: string;
+  /**
+   * Caller-supplied version label to download.
+   * When omitted, downloads the bundle's currently active version.
+   */
+  version?: string;
   /** Destination file path; defaults to `{bundleName}-{version}.tar.gz` */
   output?: string;
   /** Transcend API key */
@@ -66,9 +69,12 @@ function formatDownloadSummary(body: GetPolicyBundleVersionResponse, outputPath:
 /**
  * Download a compiled policy bundle version to disk.
  *
- * Resolves `--bundle-name` and `--version` to IDs, fetches a short-lived
- * presigned S3 URL from the monolith, then downloads the `.tar.gz` bytes
- * directly from S3 (the monolith does not proxy the artifact).
+ * Resolves `--bundle-name` and an optional `--version` to IDs, fetches a
+ * short-lived presigned S3 URL from the monolith, then downloads the `.tar.gz`
+ * bytes directly from S3 (the monolith does not proxy the artifact).
+ *
+ * When `--version` is omitted, downloads the bundle's currently active version.
+ * If the bundle has no active version, exits with an error.
  *
  * @param this - CLI context
  * @param flags - Command flags
@@ -88,22 +94,34 @@ export async function download(
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
-  const resolvedBundleId = await resolveBundleIdByName(client, bundleName);
-  if (!resolvedBundleId) {
+  const bundle = await resolveBundleByName(client, bundleName);
+  if (!bundle) {
     throw new Error(`Policy bundle "${bundleName}" was not found for this organization.`);
   }
 
-  const resolvedVersion = await resolvePolicyBundleVersion(client, resolvedBundleId, { version });
-  const outputPath = path.resolve(output ?? defaultPolicyDownloadOutputPath(bundleName, version));
+  let versionId: string;
+  if (version) {
+    const resolvedVersion = await resolvePolicyBundleVersion(client, bundle.id, { version });
+    versionId = resolvedVersion.id;
+  } else {
+    if (!bundle.activeVersionId) {
+      throw new Error(`Policy bundle "${bundleName}" has no active version.`);
+    }
+    versionId = bundle.activeVersionId;
+  }
 
   logger.info(
-    colors.green(`Fetching download URL for bundle "${bundleName}" version "${version}"...`),
+    colors.green(
+      version
+        ? `Fetching download URL for bundle "${bundleName}" version "${version}"...`
+        : `Fetching download URL for active version of bundle "${bundleName}"...`,
+    ),
   );
 
   let body: GetPolicyBundleVersionResponse;
   try {
     body = await client
-      .get(`v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}`)
+      .get(`v1/policy-engine/policy-bundles/${bundle.id}/versions/${versionId}`)
       .json<GetPolicyBundleVersionResponse>();
   } catch (err) {
     throw new Error(formatPolicyEngineRequestError(err), { cause: err });
@@ -116,6 +134,10 @@ export async function download(
     });
     return;
   }
+
+  const outputPath = path.resolve(
+    output ?? defaultPolicyDownloadOutputPath(bundleName, body.version),
+  );
 
   logger.info(colors.green(`Downloading policy bundle to ${outputPath}...`));
 

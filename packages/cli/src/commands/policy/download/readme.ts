@@ -7,7 +7,14 @@ const examples = buildExamples<DownloadCommandFlags>(
   ['policy', 'download'],
   [
     {
-      description: 'Download a compiled policy bundle version to the default path',
+      description: 'Download the currently active version of a policy bundle',
+      flags: {
+        'bundle-name': 'main',
+        auth: '$TRANSCEND_API_KEY',
+      },
+    },
+    {
+      description: 'Download a specific compiled policy bundle version to the default path',
       flags: {
         'bundle-name': 'main',
         version: '2026-06-25',
@@ -36,7 +43,6 @@ const examples = buildExamples<DownloadCommandFlags>(
       description: 'Omit --auth by exporting TRANSCEND_API_KEY in the environment',
       flags: {
         'bundle-name': 'main',
-        version: '2026-06-25',
       },
     },
   ],
