@@ -109,6 +109,8 @@ export async function syncWorkflowConfigs(
             'Workflow configs must be created in the Admin Dashboard before they can be synced.',
         );
       }
+      // TODO: https://linear.app/transcend/issue/WAL-10312/enforce-unique-workflowconfiginternalname-in-the-database
+      // Once DB uniqueness is enforced, this runtime duplicate check can be removed.
       if (duplicates.length > 0) {
         throw new Error(
           `Found "${matches.length}" workflow configs with internal name: "${internalName}". ` +

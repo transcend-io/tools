@@ -14,12 +14,12 @@ workflow-configs:
     collect-data-subject-regions: COLLECT
     region-list:
       - US
-      - CA
+      - US-CA
     expiry-time:
       # A `region: default` entry is required whenever expiry-time is set
       - region: default
         value: 45
-      - region: CA
+      - region: US-CA
         value: 30
     attribute-keys:
       - Priority

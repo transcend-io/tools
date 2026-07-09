@@ -218,8 +218,7 @@ const RESOURCE_DOCUMENTATION: Record<
     ],
   },
   [TranscendPullResource.WorkflowConfigs]: {
-    description:
-      'Workflow config settings (update-only — workflow configs are created in the Admin Dashboard).',
+    description: 'DSR workflow config settings.',
     markdownLinks: [
       '[Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)',
     ],
