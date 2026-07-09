@@ -1,5 +1,17 @@
 # @transcend-io/sdk
 
+## 1.4.0
+
+### Minor Changes
+
+- 89f4fe5: Add workflow-configs pull and push support for DSR workflow settings. Sync matches by required, unique `internal-name` and creates missing DSR workflows (then updates remaining fields). `action-type` is required; note that changing a workflow's action type creates a new workflow version server-side. Supports title, subtitle, description, data subject, visibility, region collection, region list, per-region expiry times (requires a `default` entry with all values > 0), and attribute keys. Pull is filtered to DSR workflows (preference-management workflows are excluded).
+
+### Patch Changes
+
+- Updated dependencies [89f4fe5]
+  - @transcend-io/privacy-types@5.6.0
+  - @transcend-io/airgap.js-types@14.2.15
+
 ## 1.3.1
 
 ### Patch Changes
