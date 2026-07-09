@@ -219,23 +219,42 @@ policies:
       https://privacy.eshopit.com</p></li></ul>
     disabledLocales: []
 privacy-center:
-  # Back-to-site / "home" link shown in the privacy center header
+  isDisabled: false
+  showPrivacyRequestButton: true
+  showDataPractices: true
+  showPolicies: true
+  showTrackingTechnologies: true
+  showCookies: true
+  showDataFlows: true
+  showConsentManager: true
+  showManageYourPrivacy: true
+  showMarketingPreferences: true
+  locales:
+    - en
+  defaultLocale: en
+  preferBrowserDefaultLocale: true
+  supportEmail: support@example.com
+  replyToEmail: support@example.com
+  useNoReplyEmailAddress: false
+  useCustomEmailDomain: false
+  transformAccessReportJsonToCsv: false
   home: https://www.example.com
-  # Expand the side navigation by default
   expandSideMenuByDefault: true
-  # Whether custom fields are required on privacy center workflows
-  workflows-custom-fields-required: false
-  # Footer layout for privacy center footer links
-  footer-layout: GRID
-  # Footer links displayed on the privacy center (matched by title on push)
-  footer-links:
+  workflowsCustomFieldsRequired: false
+  displayedChildOrganizationUris:
+    - org-brand-a
+  footerLayout: GRID
+  footerLinks:
     - title: Privacy Policy
       url: https://www.example.com/privacy
     - title: Terms of Service
       url: https://www.example.com/terms
     - title: Instagram
       url: https://www.instagram.com/example
-      icon-only: true
+      iconOnly: true
+  theme:
+    colors:
+      primary: '#0a6cff'
 
 messages:
   - id: a88f89e6-4f93-446b-80f0-31684a68cd8c

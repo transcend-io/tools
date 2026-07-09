@@ -19,7 +19,7 @@ export interface PrivacyCenterFooterLinkInput {
    * accessibility). When false with an icon set, render icon beside the
    * visible label.
    */
-  'icon-only'?: boolean;
+  iconOnly?: boolean;
 }
 
 /**
@@ -63,7 +63,7 @@ export async function syncPrivacyCenterFooterLinks(
       id: byTitle?.id,
       title: link.title,
       ...(link.url !== undefined ? { url: link.url } : {}),
-      ...(link['icon-only'] !== undefined ? { iconOnly: link['icon-only'] } : {}),
+      ...(link.iconOnly !== undefined ? { iconOnly: link.iconOnly } : {}),
     };
   });
 

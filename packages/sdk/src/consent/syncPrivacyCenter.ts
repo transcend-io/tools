@@ -58,16 +58,16 @@ export interface PrivacyCenterInput {
   /** Whether the side menu is expanded by default on the privacy center */
   expandSideMenuByDefault?: boolean;
   /** Whether custom fields are required on privacy center workflows */
-  'workflows-custom-fields-required'?: boolean;
+  workflowsCustomFieldsRequired?: boolean;
   /**
    * Child organization URIs and/or IDs to display on a unified multi-brand
    * privacy center
    */
-  'displayed-child-organization-uris'?: string[];
+  displayedChildOrganizationUris?: string[];
   /** Footer layout for privacy center footer links */
-  'footer-layout'?: PrivacyCenterFooterLayout;
+  footerLayout?: PrivacyCenterFooterLayout;
   /** Footer links displayed on the privacy center */
-  'footer-links'?: PrivacyCenterFooterLinkInput[];
+  footerLinks?: PrivacyCenterFooterLinkInput[];
   /** The theme object of colors to display on the privacy center */
   theme?: {
     /** The theme colors */
@@ -103,8 +103,7 @@ export async function syncPrivacyCenter(
 
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
-  const displayedChildOrganizationUris = privacyCenter['displayed-child-organization-uris'];
-  const footerLinks = privacyCenter['footer-links'];
+  const { displayedChildOrganizationUris, footerLinks } = privacyCenter;
   const needsExisting = !!displayedChildOrganizationUris || footerLinks !== undefined;
   const [existing] = needsExisting ? await fetchAllPrivacyCenters(client, { logger }) : [];
 
@@ -140,8 +139,8 @@ export async function syncPrivacyCenter(
           isDisabled: privacyCenter.isDisabled,
           home: privacyCenter.home,
           expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
-          workflowsCustomFieldsRequired: privacyCenter['workflows-custom-fields-required'],
-          footerLayout: privacyCenter['footer-layout'],
+          workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+          footerLayout: privacyCenter.footerLayout,
           ...(displayedChildOrganizationIds ? { displayedChildOrganizationIds } : {}),
           ...(skipPublish !== undefined ? { skipPublish } : {}),
           ...(privacyCenter.theme

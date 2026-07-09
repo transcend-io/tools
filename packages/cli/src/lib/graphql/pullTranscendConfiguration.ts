@@ -942,23 +942,23 @@ export async function pullTranscendConfiguration(
       transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
       home: privacyCenter.home || undefined,
       expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
-      'workflows-custom-fields-required': privacyCenter.workflowsCustomFieldsRequired,
-      'footer-layout': privacyCenter.footerLayout,
+      workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+      footerLayout: privacyCenter.footerLayout,
       ...(privacyCenter.childOrganizations.length > 0
         ? {
-            'displayed-child-organization-uris': privacyCenter.childOrganizations.map(
+            displayedChildOrganizationUris: privacyCenter.childOrganizations.map(
               (child) => child.uri,
             ),
           }
         : {}),
       ...(privacyCenter.footerLinks.length > 0
         ? {
-            'footer-links': [...privacyCenter.footerLinks]
+            footerLinks: [...privacyCenter.footerLinks]
               .sort((a, b) => a.displayOrder - b.displayOrder)
               .map((link) => ({
                 title: link.title.defaultMessage,
                 ...(link.url ? { url: link.url } : {}),
-                ...(link.iconOnly ? { 'icon-only': link.iconOnly } : {}),
+                ...(link.iconOnly ? { iconOnly: link.iconOnly } : {}),
               })),
           }
         : {}),

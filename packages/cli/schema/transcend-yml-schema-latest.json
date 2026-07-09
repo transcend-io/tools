@@ -41275,20 +41275,20 @@
         "expandSideMenuByDefault": {
           "type": "boolean"
         },
-        "workflows-custom-fields-required": {
+        "workflowsCustomFieldsRequired": {
           "type": "boolean"
         },
-        "displayed-child-organization-uris": {
+        "displayedChildOrganizationUris": {
           "type": "array",
           "items": {
             "type": "string"
           }
         },
-        "footer-layout": {
+        "footerLayout": {
           "type": "string",
           "enum": ["DEFAULT", "GRID"]
         },
-        "footer-links": {
+        "footerLinks": {
           "type": "array",
           "items": {
             "allOf": [
@@ -41307,7 +41307,7 @@
                   "url": {
                     "type": "string"
                   },
-                  "icon-only": {
+                  "iconOnly": {
                     "type": "boolean"
                   }
                 }

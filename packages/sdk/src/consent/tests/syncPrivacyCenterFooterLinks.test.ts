@@ -139,14 +139,14 @@ describe('syncPrivacyCenterFooterLinks', () => {
     );
   });
 
-  it('supports optional url and icon-only', async () => {
+  it('supports optional url and iconOnly', async () => {
     await syncPrivacyCenterFooterLinks(
       client,
       privacyCenterId,
       [
         {
           title: 'Instagram',
-          'icon-only': true,
+          iconOnly: true,
         },
       ],
       existingFooterLinks,
