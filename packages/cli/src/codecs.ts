@@ -1930,6 +1930,10 @@ export type ConsentWorkflowTriggerPurposeInput = t.TypeOf<
  * Input to define a consent workflow trigger.
  * Purposes are the source of truth; triggerCondition is derived on push
  * (same as Workflows → Preference Workflows in the admin dashboard).
+ *
+ * Exactly one mode per trigger:
+ * - Legacy: action-type (+ optional data-silo-titles), no workflow-title
+ * - V2: workflow-title (DSR workflow display title), no action-type / data-silo-titles
  */
 export const ConsentWorkflowTriggerInput = t.intersection([
   t.type({
@@ -1942,9 +1946,14 @@ export const ConsentWorkflowTriggerInput = t.intersection([
     purposes: t.array(ConsentWorkflowTriggerPurposeInput),
   }),
   t.partial({
-    /** The action type (e.g. ERASURE, ACCESS). Required when creating a new trigger. */
+    /**
+     * DSR workflow display title (internalName when set, else external title).
+     * Workflows V2 mode — mutually exclusive with action-type / data-silo-titles.
+     */
+    'workflow-title': t.string,
+    /** The action type (e.g. ERASURE, ACCESS). Legacy mode; required when creating without workflow-title. */
     'action-type': valuesOf(RequestAction),
-    /** The data subject type. Required when creating a new trigger. */
+    /** The data subject type slug (e.g. customer) */
     'data-subject-type': t.string,
     /** Whether the trigger runs silently */
     'is-silent': t.boolean,
@@ -1952,7 +1961,7 @@ export const ConsentWorkflowTriggerInput = t.intersection([
     'allow-unauthenticated': t.boolean,
     /** Whether the trigger is active */
     'is-active': t.boolean,
-    /** Titles of data silos associated with this trigger */
+    /** Titles of data silos associated with this trigger (legacy mode only) */
     'data-silo-titles': t.array(t.string),
   }),
 ]);

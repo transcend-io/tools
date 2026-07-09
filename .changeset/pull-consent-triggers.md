@@ -3,4 +3,4 @@
 '@transcend-io/sdk': minor
 ---
 
-Add consent-workflow-triggers pull and push support for Preferences → Consent Workflows. Purposes drive triggerCondition; scopes use View/Manage Preference Store Settings.
+Support Workflows V2 on consent-workflow-triggers via workflow-title (DSR workflowConfigId), while keeping legacy action-type / data-silo-titles mode.

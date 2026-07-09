@@ -5,6 +5,7 @@ import {
   ActionItemCode,
   RetentionType,
   PreferenceTopicType,
+  WorkflowConfigType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -41,6 +42,7 @@ import {
   fetchAllPurposesAndPreferences,
   fetchAllConsentWorkflowTriggers,
   fetchAllPreferenceOptionValues,
+  fetchAllWorkflowConfigs,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -50,6 +52,7 @@ import {
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
   parsePurposesFromTriggerCondition,
+  resolveWorkflowTitleFromId,
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
@@ -1446,19 +1449,44 @@ export async function pullTranscendConfiguration(
     consentWorkflowTriggers.length > 0 &&
     resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
   ) {
+    const needsWorkflowTitles = consentWorkflowTriggers.some((trigger) => trigger.workflowConfigId);
+    const dsrWorkflows = needsWorkflowTitles
+      ? await fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
+      : [];
+
     result['consent-workflow-triggers'] = consentWorkflowTriggers.map(
-      (trigger): ConsentWorkflowTriggerInput => ({
-        name: trigger.name,
-        'action-type': trigger.action.type,
-        'data-subject-type': trigger.subject.type,
-        'is-silent': trigger.isSilent,
-        'allow-unauthenticated': trigger.allowUnauthenticated,
-        'is-active': trigger.isActive,
-        'data-silo-titles':
-          trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
-        // Derive purposes from triggerCondition (admin UI source of truth shape)
-        purposes: parsePurposesFromTriggerCondition(trigger.triggerCondition),
-      }),
+      (trigger): ConsentWorkflowTriggerInput => {
+        const purposes = parsePurposesFromTriggerCondition(trigger.triggerCondition);
+        const shared = {
+          name: trigger.name,
+          'data-subject-type': trigger.subject.type,
+          'is-silent': trigger.isSilent,
+          'allow-unauthenticated': trigger.allowUnauthenticated,
+          'is-active': trigger.isActive,
+          purposes,
+        };
+
+        if (trigger.workflowConfigId) {
+          const workflowTitle = resolveWorkflowTitleFromId(dsrWorkflows, trigger.workflowConfigId);
+          if (workflowTitle) {
+            return {
+              ...shared,
+              'workflow-title': workflowTitle,
+            };
+          }
+          // Workflow deleted or unreadable — fall back to legacy fields so YAML stays usable
+        }
+
+        return {
+          ...shared,
+          'action-type': trigger.action.type,
+          'data-silo-titles':
+            trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
+        };
+      },
     );
   }
 

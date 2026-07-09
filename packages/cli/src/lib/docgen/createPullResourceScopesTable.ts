@@ -219,7 +219,8 @@ const RESOURCE_DOCUMENTATION: Record<
   },
   [TranscendPullResource.ConsentWorkflowTriggers]: {
     description:
-      'Consent workflow trigger definitions (Workflows → Preference Workflows). Purposes drive trigger conditions.',
+      'Consent workflow trigger definitions (Workflows → Preference Workflows). ' +
+      'Legacy: action-type + data-silo-titles. V2: workflow-title (DSR workflow). Purposes drive trigger conditions.',
     markdownLinks: [
       '[Workflows -> Preference Workflows]\
 (https://app.transcend.io/preference-store/consent-workflows)',

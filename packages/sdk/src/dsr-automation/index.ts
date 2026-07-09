@@ -17,6 +17,7 @@ export * from './fetchActiveSiloDiscoPlugin.js';
 export * from './fetchAllActions.js';
 export * from './fetchAllAttributeKeys.js';
 export * from './fetchAllSiloDiscoveryResults.js';
+export * from './fetchAllWorkflowConfigs.js';
 export * from './fetchCatalogs.js';
 export * from './fetchRequestDataSilo.js';
 export * from './fetchRequestFilesForRequest.js';

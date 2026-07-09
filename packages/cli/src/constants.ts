@@ -84,14 +84,16 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ManageDataMap],
   // Primary: ManagePreferenceStoreSettings (createOrUpdateConsentWorkflowTrigger).
   // Related fetches used during sync:
-  // - ViewDataSubjectRequestSettings — resolve action-type / data-subject-type
+  // - ViewDataSubjectRequestSettings — resolve action-type / data-subject-type (legacy)
   // - ViewConsentManager — resolve purposes[].tracking-type → purposeId
-  // - ViewDataMap — resolve data-silo-titles (only when present)
+  // - ViewDataMap — resolve data-silo-titles (legacy, only when present)
+  // - ManageWorkflows — list DSR workflows when workflow-title is set (V2)
   [TranscendPullResource.ConsentWorkflowTriggers]: [
     ScopeName.ManagePreferenceStoreSettings,
     ScopeName.ViewDataSubjectRequestSettings,
     ScopeName.ViewConsentManager,
     ScopeName.ViewDataMap,
+    ScopeName.ManageWorkflows,
   ],
 };
 
@@ -141,7 +143,12 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
-  [TranscendPullResource.ConsentWorkflowTriggers]: [ScopeName.ViewPreferenceStoreSettings],
+  // ViewPreferenceStoreSettings — consentWorkflowTriggers query
+  // ManageWorkflows — resolve workflowConfigId → workflow-title for V2 triggers
+  [TranscendPullResource.ConsentWorkflowTriggers]: [
+    ScopeName.ViewPreferenceStoreSettings,
+    ScopeName.ManageWorkflows,
+  ],
 };
 
 export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof TranscendInput> = {

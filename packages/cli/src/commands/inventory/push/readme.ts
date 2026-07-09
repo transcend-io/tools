@@ -155,6 +155,16 @@ When pushing \`purposes\`, \`preference-options\`, or nested \`preference-topics
 - **BOOLEAN topics:** Do not define \`options\` for \`BOOLEAN\` preference topics — the backend auto-creates True/False options. The CLI rejects non-empty options before push.
 - **Immutable topic fields:** Slug, type, and parent purpose cannot be changed for an existing preference topic. Attempting to change \`type\` in YAML is rejected by the CLI.
 
+#### Consent workflow triggers push notes
+
+When pushing \`consent-workflow-triggers\`:
+
+- **Purposes required:** Each trigger needs a non-empty \`purposes\` list. The CLI derives \`triggerCondition\` from purposes on push (same shape as the Admin Dashboard).
+- **Exactly one mode:** Use either legacy fields (\`action-type\`, optional \`data-silo-titles\`) **or** Workflows V2 (\`workflow-title\`). Do not mix them on the same trigger.
+- **Legacy:** \`action-type\` and \`data-subject-type\` are required when creating a new trigger. \`data-silo-titles\` must match existing data silo titles exactly.
+- **Workflows V2:** \`workflow-title\` must match a DSR workflow's \`internalName\` (when set) or external title. On create, \`actionId\` / \`dataSubjectId\` are taken from that workflow. Requires the Manage Workflows scope to list workflows.
+- **Example:** See [consent-workflow-triggers.yml](../../../../examples/consent-workflow-triggers.yml).
+
 #### CI Integration
 
 Once you have a workflow for creating your transcend.yml file, you will want to integrate your \`transcend inventory push\` command on your CI.

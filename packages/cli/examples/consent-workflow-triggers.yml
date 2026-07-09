@@ -1,12 +1,16 @@
 # Consent workflow triggers automate DSR actions when consent state matches.
 # Admin UI: https://app.transcend.io/preference-store/consent-workflows
-# Prerequisites in your org: CONTACT_OPT_OUT/CONTACT_OPT_IN actions, Customer data subject, and any referenced data silos/purposes.
 # Purposes are the source of truth — triggerCondition is derived on push as:
 #   { And: [{ [tracking-type]: matching-state }, ...] }
+#
+# Exactly one mode per trigger:
+# - Legacy: action-type (+ optional data-silo-titles), no workflow-title
+# - V2: workflow-title (DSR workflow internalName or external title), no action-type / data-silo-titles
 consent-workflow-triggers:
+  # Legacy mode — action + optional data silos
   - name: MarketingContactOptOut
     action-type: CONTACT_OPT_OUT
-    data-subject-type: Customer
+    data-subject-type: customer
     is-silent: false
     allow-unauthenticated: false
     is-active: true
@@ -16,11 +20,12 @@ consent-workflow-triggers:
       - tracking-type: Marketing
         matching-state: false
 
-  - name: AnalyticsContactOptIn
-    action-type: CONTACT_OPT_IN
-    data-subject-type: Customer
+  # Workflows V2 — link a DSR workflow by display title (internalName preferred)
+  - name: AnalyticsErasureViaWorkflow
+    workflow-title: Customer Erasure
+    data-subject-type: customer
     is-silent: true
-    allow-unauthenticated: true
+    allow-unauthenticated: false
     is-active: true
     purposes:
       - tracking-type: Analytics

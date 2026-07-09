@@ -59947,6 +59947,9 @@
           {
             "type": "object",
             "properties": {
+              "workflow-title": {
+                "type": "string"
+              },
               "action-type": {
                 "type": "string",
                 "enum": [
