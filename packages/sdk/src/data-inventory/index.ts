@@ -1,4 +1,6 @@
+export * from './complianceReportDefaults.js';
 export * from './fetchAllBusinessEntities.js';
+export * from './fetchAllComplianceReports.js';
 export * from './fetchAllDataCategories.js';
 export * from './fetchAllDataPoints.js';
 export * from './fetchAllDataSilos.js';
@@ -9,6 +11,7 @@ export * from './fetchEnrichedDataSilos.js';
 export * from './gqls/dataPoint.js';
 export * from './gqls/dataSilo.js';
 export * from './syncBusinessEntities.js';
+export * from './syncComplianceReports.js';
 export * from './syncDataCategories.js';
 export * from './syncDataSiloDependencies.js';
 export * from './syncProcessingActivities.js';

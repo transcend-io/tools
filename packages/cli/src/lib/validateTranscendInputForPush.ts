@@ -16,17 +16,18 @@ export const TRANSCEND_CONFIG_KEY_HINTS: Record<string, string> = {
   'consent-workflows':
     'Use consent-workflow-triggers for consent automation triggers. Use workflow-configs for DSR workflow settings.',
   'regional-experiences': 'Configure regional experiences under consent-manager.experiences.',
+  'compliance-report':
+    'Use plural compliance-reports (demo seeds historically used singular compliance-report).',
 };
 
 const TRANSCEND_YML_KEYS = new Set<string>(
   Object.values(TR_YML_RESOURCE_TO_FIELD_NAME) as string[],
 );
 
-/**
- * Singular → plural (or legacy → canonical) aliases accepted on push.
- * Resource-specific PRs can extend this map.
- */
-const TOP_LEVEL_KEY_ALIASES: Record<string, keyof TranscendInput> = {};
+/** Singular → plural aliases accepted on push (migrated before decode) */
+const TOP_LEVEL_KEY_ALIASES: Record<string, keyof TranscendInput> = {
+  'compliance-report': 'compliance-reports',
+};
 
 export interface PushValidationResult {
   /** Whether the config is valid for push */
@@ -39,7 +40,7 @@ export interface PushValidationResult {
   noopKeys: string[];
   /** Non-fatal warnings (e.g. unsupported fields that were stripped) */
   warnings: string[];
-  /** Config after alias migration / field stripping, ready for decodeCodec */
+  /** Config after alias migration / locale stripping, ready for decodeCodec */
   normalizedConfig?: Record<string, unknown>;
 }
 
@@ -51,10 +52,11 @@ const YML_KEY_TO_RESOURCE = Object.fromEntries(
 ) as Record<string, TranscendPullResource>;
 
 /**
- * Migrate known singular/legacy top-level keys before decode.
+ * Migrate known singular/legacy top-level keys and strip unsupported fields.
  *
- * Resource-specific normalizations (aliases, unsupported field stripping) can
- * extend {@link TOP_LEVEL_KEY_ALIASES} or add post-processing here in follow-up PRs.
+ * - `compliance-report` → `compliance-reports`
+ * - `locale` on compliance report entries is stripped with a warning
+ *   (CreateComplianceReportInput has no locale; export language = Admin user locale)
  *
  * @param config - Raw YAML object
  * @returns Normalized config and warnings
@@ -86,6 +88,25 @@ export function normalizeTranscendInputForPush(config: unknown): {
       }
       delete raw[alias];
     }
+  }
+
+  const reports = raw['compliance-reports'];
+  if (Array.isArray(reports)) {
+    raw['compliance-reports'] = reports.map((report, index) => {
+      if (!report || typeof report !== 'object' || Array.isArray(report)) {
+        return report;
+      }
+      const entry = { ...(report as Record<string, unknown>) };
+      if ('locale' in entry) {
+        warnings.push(
+          `compliance-reports[${index}].locale is not supported on CreateComplianceReportInput ` +
+            `and was ignored. Italian (or other) export language follows the Admin user's locale, ` +
+            `not transcend.yml.`,
+        );
+        delete entry.locale;
+      }
+      return entry;
+    });
   }
 
   return { config: raw, warnings };

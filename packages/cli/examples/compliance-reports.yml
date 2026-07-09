@@ -1,0 +1,41 @@
+# Compliance reports (Data Map → Compliance Reports / RoPA)
+#
+# Idempotent by `title` on push. Prefer `processing-activities-filter.text` for
+# portable YAML; ID-based filters are organization-specific.
+#
+# `columns: []` (or omitted) uses sensible Article 30 defaults on push.
+# Explicit columns are ProcessingActivitiesColumnName values or attribute-key UUIDs.
+#
+# Note: `locale` is NOT supported on CreateComplianceReportInput — Italian (or
+# other) export language follows the Admin user's locale, not transcend.yml.
+#
+# Demo seeds may use singular `compliance-report`; migrate to plural
+# `compliance-reports` (the CLI accepts the singular as an alias on push).
+
+compliance-reports:
+  - title: Article 30 CCTV RoPA — Italian Export
+    description: >-
+      GDPR Article 30 register filtered to CCTV processing activities for Disney
+      Italia theme park entrances.
+    processing-activities-filter:
+      text: CCTV — Disney Italia Theme Park Entrances
+    columns: []
+  - title: Full Article 30 Register
+    description: Organization-wide RoPA with default Article 30 columns
+    processing-activities-filter:
+      text: ''
+    columns:
+      - title
+      - description
+      - dataSubjects
+      - processingPurposeSubCategories
+      - dataSubCategories
+      - controllerships
+      - retentionType
+      - storageRegions
+      - transferRegions
+      - securityMeasureDetails
+      - dataSilos
+      - owners
+      - teams
+    data-protection-officer-email: dpo@acme.com

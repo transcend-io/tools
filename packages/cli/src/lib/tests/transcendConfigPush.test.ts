@@ -48,4 +48,12 @@ describe('transcendConfigPush', () => {
       } as TranscendInput),
     ).toBe('purposes: (1), templates: (2)');
   });
+
+  it('derivePushScopesFromTranscendInput requires ManageDataMap for compliance-reports', () => {
+    const scopes = derivePushScopesFromTranscendInput({
+      'compliance-reports': [{ title: 'Article 30', columns: [] }],
+    } as TranscendInput);
+
+    expect(scopes).toContain(ScopeName.ManageDataMap);
+  });
 });

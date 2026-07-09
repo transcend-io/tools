@@ -61,7 +61,7 @@ export function readTranscendYaml(filePath: string, variables: ObjByString = {})
     `Also check that there are no extra variables defined in your yaml: ${filePath}`,
   );
 
-  // Normalize aliases / strip unsupported fields, then validate shape
+  // Migrate singular aliases (e.g. compliance-report → compliance-reports) then validate
   const { config } = normalizeTranscendInputForPush(yaml.load(replacedVariables));
   return decodeCodec(TranscendInput, config);
 }

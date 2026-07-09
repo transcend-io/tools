@@ -107,6 +107,14 @@ const examples = buildExamples<PullCommandFlags>(
       },
     },
     {
+      description:
+        'Pull compliance reports only (see [this example](./examples/compliance-reports.yml))',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        resources: [TranscendPullResource.ComplianceReports],
+      },
+    },
+    {
       description: 'Pull enrichers and identifiers (see [this example](./examples/enrichers.yml))',
       flags: {
         auth: '$TRANSCEND_API_KEY',
