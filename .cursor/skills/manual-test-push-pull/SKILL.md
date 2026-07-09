@@ -10,219 +10,95 @@ Last Edited: July 9, 2026
 
 ## Overview
 
-This skill drives an interactive, human-in-the-loop QA session for the CLI's config sync commands (`transcend inventory pull` and `transcend inventory push`). The agent runs commands and opens artifacts; the **user visually verifies** each step in the Admin Dashboard and signs off before proceeding.
-
-High-level flow:
-
-1. Collect a test API key and scope (which resources to test)
-2. Baseline pull to YAML; open the YAML and the matching Admin UI page side-by-side
-3. User visually compares and signs off on the baseline
-4. Field-by-field mutation loop: for every field a resource supports, apply an update (or create a new resource), push it, verify in the UI and via re-pull, and get user sign-off on each
-5. Summarize results and clean up
+Drives an interactive, human-in-the-loop QA session for `transcend inventory pull` and `transcend inventory push`. The agent runs commands and opens artifacts; the **user visually verifies** each step in the Admin Dashboard and signs off before proceeding.
 
 ## Trigger
 
 - User types `/manual-test-push-pull`
 - User says "manually test pull/push", "QA the inventory sync", "test push for business entities", etc.
 
+## Source of Truth (read these, don't hardcode)
+
+| What                                 | Where                                                              |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| Resource enum (`--resources` values) | `TranscendPullResource` in `packages/cli/src/enums.ts`             |
+| Resource → YAML key mapping          | `TR_YML_RESOURCE_TO_FIELD_NAME` in `packages/cli/src/constants.ts` |
+| Resource → Admin UI URL + scopes     | `packages/cli/src/lib/docgen/createPullResourceScopesTable.ts`     |
+| YAML schema / writable fields        | Codecs in `packages/cli/src/codecs.ts`                             |
+| Example values per resource          | `packages/cli/examples/*.yml`                                      |
+| Pull/push flags and sync semantics   | `packages/cli/src/commands/inventory/{pull,push}/readme.ts`        |
+
 ## Safety Rules
 
-| Rule                                                              | Why                                         |
-| ----------------------------------------------------------------- | ------------------------------------------- |
-| **Never commit, log, or echo the API key**                        | Secret. Keep it in an env var only          |
-| **Only run against a test/sandbox organization**                  | Push overwrites Admin Dashboard values      |
-| **Write test YAML to a scratch dir (e.g. `/tmp/tr-manual-test`)** | Never leave `transcend.yml` in the repo     |
-| **Keep an untouched baseline copy of the first pull**             | Needed to diff and to restore field values  |
-| **Never push `--resources=all` pulls blindly**                    | Limits blast radius to resources under test |
-
-Remember: push **creates and updates** resources but never deletes them. Any resources created during testing must be deleted manually in the Admin Dashboard during cleanup.
-
-## Prerequisites
-
-Build the CLI (dependency order matters):
-
-```bash
-pnpm run --dir packages/utils build && \
-  pnpm run --dir packages/sdk build && \
-  pnpm run --dir packages/cli build
-```
-
-Run the local build via `pnpm -F cli start ...` (equivalent to the published `transcend` binary).
+- **Never commit, log, or echo the API key** — env var only.
+- **Test/sandbox org only** — push overwrites Admin Dashboard values.
+- **Work in a scratch dir** (e.g. `/tmp/tr-manual-test`), never a `transcend.yml` in the repo. Keep an untouched `baseline.yml` copy of the first pull for diffs/restores.
+- **Push only trimmed YAML** containing the resource(s) under test — never a full `--resources=all` pull.
+- Push creates/updates but **never deletes** — test resources must be deleted manually in the UI during cleanup.
 
 ## Workflow
 
-### Step 1: Collect Test Inputs
+### Step 1: Collect Inputs
 
 Ask the user for:
 
-1. **Test API key** — instruct them to paste it or export it themselves. Store it only as an env var for the session:
+1. **Test API key** (create at the API keys page in the Admin Dashboard if needed, with scopes per the docgen table). Export as `TRANSCEND_API_KEY` without echoing.
+2. **Backend URL** if non-default (`--transcendUrl`, see `packages/cli/src/constants.ts`).
+3. **Resources to test** — values from `TranscendPullResource`. Default to one small, low-risk resource.
 
-```bash
-# User pastes key; agent sets it without echoing
-export TRANSCEND_API_KEY='<pasted-key>'
-```
-
-If the key needs to be created first, point the user at https://app.transcend.io/infrastructure/api-keys (it needs scopes for the resources under test — see the scopes table in `packages/cli/README.md`).
-
-2. **Backend URL** — default `https://api.transcend.io`; US hosting is `https://api.us.transcend.io` (pass via `--transcendUrl`).
-3. **Resources to test** — one or a few values from `TranscendPullResource` (`packages/cli/src/enums.ts`). Default to a small, low-risk set if the user has no preference (e.g. `businessEntities` or `customFields`). Testing one resource at a time keeps sign-offs manageable.
-
-### Step 2: Baseline Pull
+### Step 2: Baseline Pull + Visual Sign-Off
 
 ```bash
 mkdir -p /tmp/tr-manual-test
-pnpm -F cli start inventory pull \
-  --auth="$TRANSCEND_API_KEY" \
-  --resources={resources} \
-  --file=/tmp/tr-manual-test/transcend.yml
-
-# Preserve an untouched baseline for later diffs/restores
+pnpm -F cli start inventory pull --auth="$TRANSCEND_API_KEY" \
+  --resources={resources} --file=/tmp/tr-manual-test/transcend.yml
 cp /tmp/tr-manual-test/transcend.yml /tmp/tr-manual-test/baseline.yml
 ```
 
-Verify the command exited 0 and the YAML contains the expected top-level keys (see the resource → YAML key table below).
+(Build the CLI first if needed — see build order in `.cursor/rules/commit-and-push.mdc`.)
 
-### Step 3: Open YAML and Admin UI for Visual Comparison
+Open the YAML in the editor and the resource's Admin UI page (URL from the docgen table) in the browser. Instruct the user to compare them and reply "signed off" or report discrepancies. **Do not proceed without sign-off.**
 
-1. Open the pulled YAML in the editor (use the `open_resource` tool from `cursor-app-control`, or `open /tmp/tr-manual-test/transcend.yml`).
-2. Open the Admin Dashboard page for each resource under test in the browser (use `browser_navigate` or `open {url}`). URL mapping:
+### Step 3: Build the Test Plan
 
-| `--resources` value    | YAML key                | Admin UI URL                                                                   |
-| ---------------------- | ----------------------- | ------------------------------------------------------------------------------ |
-| `apiKeys`              | `api-keys`              | https://app.transcend.io/infrastructure/api-keys                               |
-| `customFields`         | `attributes`            | https://app.transcend.io/infrastructure/attributes                             |
-| `templates`            | `templates`             | https://app.transcend.io/privacy-requests/email-settings/templates             |
-| `dataSilos`            | `data-silos`            | https://app.transcend.io/data-map/data-inventory/data-silos                    |
-| `enrichers`            | `enrichers`             | https://app.transcend.io/privacy-requests/identifiers                          |
-| `dataFlows`            | `data-flows`            | https://app.transcend.io/consent-manager/data-flows/approved                   |
-| `cookies`              | `cookies`               | https://app.transcend.io/consent-manager/cookies/approved                      |
-| `consentManager`       | `consent-manager`       | https://app.transcend.io/consent-manager/developer-settings                    |
-| `partitions`           | `partitions`            | https://app.transcend.io/consent-manager/developer-settings/advanced-settings  |
-| `businessEntities`     | `business-entities`     | https://app.transcend.io/data-map/data-inventory/business-entities             |
-| `processingActivities` | `processing-activities` | https://app.transcend.io/data-map/data-inventory/processing-activities         |
-| `vendors`              | `vendors`               | https://app.transcend.io/data-map/data-inventory/vendors                       |
-| `dataCategories`       | `data-categories`       | https://app.transcend.io/data-map/data-inventory/data-categories               |
-| `processingPurposes`   | `processing-purposes`   | https://app.transcend.io/data-map/data-inventory/purposes                      |
-| `actions`              | `actions`               | https://app.transcend.io/privacy-requests/settings/data-actions                |
-| `dataSubjects`         | `data-subjects`         | https://app.transcend.io/privacy-requests/settings/data-subjects               |
-| `identifiers`          | `identifiers`           | https://app.transcend.io/privacy-requests/identifiers                          |
-| `prompts`              | `prompts`               | https://app.transcend.io/prompts/browse                                        |
-| `promptPartials`       | `prompt-partials`       | https://app.transcend.io/prompts/partials                                      |
-| `promptGroups`         | `prompt-groups`         | https://app.transcend.io/prompts/groups                                        |
-| `agents`               | `agents`                | https://app.transcend.io/pathfinder/agents                                     |
-| `actionItems`          | `action-items`          | https://app.transcend.io/action-items/all                                      |
-| `teams`                | `teams`                 | https://app.transcend.io/admin/teams                                           |
-| `privacyCenters`       | `privacy-center`        | https://app.transcend.io/privacy-center/general-settings                       |
-| `policies`             | `policies`              | https://app.transcend.io/privacy-center/policies                               |
-| `messages`             | `messages`              | https://app.transcend.io/privacy-center/messages-internationalization          |
-| `assessments`          | `assessments`           | https://app.transcend.io/assessments/groups                                    |
-| `assessmentTemplates`  | `assessment-templates`  | https://app.transcend.io/assessments/form-templates                            |
-| `purposes`             | `purposes`              | https://app.transcend.io/consent-manager/regional-experiences/purposes         |
-| `preferenceOptions`    | `preference-options`    | https://app.transcend.io/preference-store/preference-topics/preference-options |
-| `systemDiscovery`      | `system-discovery`      | https://app.transcend.io/data-map/data-inventory/silo-discovery                |
-| `workflowConfigs`      | `workflow-configs`      | https://app.transcend.io/privacy-requests/workflows                            |
+From the resource's codec in `codecs.ts` and its example YAML, enumerate writable fields and propose a test plan table:
 
-The full canonical mapping lives in `packages/cli/src/lib/docgen/createPullResourceScopesTable.ts` and `TR_YML_RESOURCE_TO_FIELD_NAME` in `packages/cli/src/constants.ts`.
+- One **create** case — new resource named `[CLI-QA] Test <date>` so it's easy to find and delete.
+- One **update** case per field, mutating the created test resource (not pre-existing org data), so failures are attributable to a single field. Batch fields only if the user asks.
 
-### Step 4: Baseline Sign-Off
+Show the plan and get user approval before starting.
 
-Instruct the user:
+### Step 4: Mutation Loop (one sign-off per case)
 
-> Compare the YAML against the Admin UI. Check that every resource in the UI appears in the YAML, and that names, descriptions, and field values match. Reply "signed off" (or report discrepancies).
+For each case:
 
-**Do not proceed until the user signs off.** If they report a discrepancy, record it as a pull bug in the results table and ask whether to continue.
+1. Edit the scratch YAML with the single change (trimmed to the resources under test).
+2. Push: `pnpm -F cli start inventory push --auth="$TRANSCEND_API_KEY" --file=/tmp/tr-manual-test/transcend.yml`
+3. Re-pull to `verify.yml` and diff — the change should round-trip; nothing else should churn.
+4. Refresh the Admin UI page and tell the user exactly what changed (`field: old → new`). Get sign-off or a failure description.
+5. Record pass/fail + notes; only then move on.
 
-### Step 5: Enumerate Fields to Test
+### Step 5: Cleanup
 
-Read the codec for the resource under test in `packages/cli/src/codecs.ts` (e.g. `BusinessEntityInput`, `AttributeInput`) and list every writable field. Also consult `packages/cli/examples/*.yml` for realistic example values. Build a test plan table and show it to the user before starting, e.g.:
+- Restore modified pre-existing resources by pushing the relevant sections of `baseline.yml`.
+- Remind the user to manually delete `[CLI-QA]` resources in the UI.
+- `rm -rf /tmp/tr-manual-test && unset TRANSCEND_API_KEY`
 
-| #   | Test case                   | Field(s)     | Type   |
-| --- | --------------------------- | ------------ | ------ |
-| 1   | Create new `Test QA Entity` | all required | create |
-| 2   | Update `title`              | title        | update |
-| 3   | Update `description`        | description  | update |
-| 4   | Set optional field X        | X            | update |
-| 5   | Clear optional field X      | X            | update |
+### Step 6: Report
 
-Include both **create** cases (a brand-new resource with a clearly-marked name like `[CLI-QA] Test Entity <date>`) and **update** cases (one field at a time on that test resource, so failures are attributable to a single field). Prefer mutating the created test resource over pre-existing org data.
-
-### Step 6: Mutation Loop (one sign-off per case)
-
-For each test case:
-
-1. **Edit** `/tmp/tr-manual-test/transcend.yml` with the single change. Trim the YAML down to only the resource(s) under test so push touches nothing else.
-2. **Push**:
-
-```bash
-pnpm -F cli start inventory push \
-  --auth="$TRANSCEND_API_KEY" \
-  --file=/tmp/tr-manual-test/transcend.yml
-```
-
-3. **Verify round-trip** — re-pull to a separate file and diff:
-
-```bash
-pnpm -F cli start inventory pull \
-  --auth="$TRANSCEND_API_KEY" \
-  --resources={resources} \
-  --file=/tmp/tr-manual-test/verify.yml
-diff /tmp/tr-manual-test/transcend.yml /tmp/tr-manual-test/verify.yml
-```
-
-The pushed change should appear in the re-pulled YAML; unrelated fields should be unchanged.
-
-4. **Open/refresh the Admin UI page** and instruct the user:
-
-> Case {N}: I changed `{field}` from `{old}` to `{new}` and pushed. Please confirm the Admin UI shows the new value and nothing else changed. Sign off or describe what's wrong.
-
-5. **Record the result** (pass/fail + notes) and move to the next case only after sign-off.
-
-Batch small related fields into one case if the user asks to speed up, but default to one field per case.
-
-### Step 7: Cleanup
-
-1. Restore any modified pre-existing resources by pushing the relevant sections of `baseline.yml`.
-2. Remind the user to **manually delete** any `[CLI-QA]` test resources in the Admin UI (the CLI cannot delete).
-3. Remove scratch files and unset the key:
-
-```bash
-rm -rf /tmp/tr-manual-test
-unset TRANSCEND_API_KEY
-```
-
-### Step 8: Report Results
-
-Summarize the session in chat:
-
-| #   | Test case     | Field | Result | Notes                               |
-| --- | ------------- | ----- | ------ | ----------------------------------- |
-| 1   | Create entity | —     | pass   | —                                   |
-| 2   | Update title  | title | fail   | UI showed stale value until refresh |
-
-For any failures, capture: exact YAML diff, push command output, UI observation, and re-pull diff — enough to file a bug. Offer to file follow-up issues or fix the CLI bug (via [Background Task](.cursor/skills/background-task/SKILL.md) if on another branch).
-
-## Command Quick Reference
-
-| Action              | Command                                                                                   |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| Pull (scoped)       | `pnpm -F cli start inventory pull --auth="$TRANSCEND_API_KEY" --resources={r} --file={f}` |
-| Pull everything     | `pnpm -F cli start inventory pull --auth="$TRANSCEND_API_KEY" --resources=all --file={f}` |
-| Push                | `pnpm -F cli start inventory push --auth="$TRANSCEND_API_KEY" --file={f}`                 |
-| Non-default backend | add `--transcendUrl=https://api.us.transcend.io`                                          |
-| Debug errors        | add `--debug` (pull)                                                                      |
+Summarize results in a pass/fail table. For failures, capture the YAML diff, push output, UI observation, and re-pull diff — enough to file a bug. Offer to fix CLI bugs via [Background Task](.cursor/skills/background-task/SKILL.md).
 
 ## Error Handling
 
-| Symptom                            | Likely cause / fix                                                                 |
-| ---------------------------------- | ---------------------------------------------------------------------------------- |
-| 401/403 on pull or push            | API key missing a scope — check the scopes table in `packages/cli/README.md`       |
-| Push succeeds but UI unchanged     | Wrong org (key vs UI login), wrong backend URL, or stale UI — hard-refresh first   |
-| Re-pull diff shows unrelated churn | Server normalizes values (ordering, defaults) — note it, judge if it's a real bug  |
-| Push error on a specific field     | Check push semantics in `packages/cli/src/commands/inventory/push/readme.ts`       |
-| YAML fails validation before push  | Compare against codec in `packages/cli/src/codecs.ts` and `packages/cli/examples/` |
+| Symptom                            | Likely cause / fix                                            |
+| ---------------------------------- | ------------------------------------------------------------- |
+| 401/403                            | Key missing a scope — check the docgen scopes table           |
+| Push succeeds but UI unchanged     | Wrong org or backend URL, or stale UI — hard-refresh first    |
+| Re-pull diff shows unrelated churn | Server-side normalization — note it, judge if it's a real bug |
+| Field-specific push error          | Check sync semantics in `push/readme.ts`                      |
+| YAML validation failure            | Compare against the codec and `packages/cli/examples/`        |
 
 ## Related Skills/Rules
 
-- [Background Task](.cursor/skills/background-task/SKILL.md) - For fixing any CLI bugs found, on a branch, without touching the working directory
-- [Fix CI](.cursor/skills/fix-ci/SKILL.md) - If fixes are pushed and CI fails
-- [Commit and Push](.cursor/rules/commit-and-push.mdc) - Safe git wrappers
+- [Background Task](.cursor/skills/background-task/SKILL.md) - Fix discovered CLI bugs on a branch
+- [Commit and Push](.cursor/rules/commit-and-push.mdc) - Safe git wrappers and build order
