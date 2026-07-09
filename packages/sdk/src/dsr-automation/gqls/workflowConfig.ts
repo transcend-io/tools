@@ -43,6 +43,17 @@ export const WORKFLOW_CONFIGS: DocumentNode = parse(gql`
   }
 `);
 
+export const CREATE_WORKFLOW: DocumentNode = parse(gql`
+  mutation TranscendCliCreateWorkflow($input: CreateWorkflowInput!) {
+    createWorkflow(input: $input) {
+      workflowConfig {
+        id
+        internalName
+      }
+    }
+  }
+`);
+
 export const UPDATE_WORKFLOW_CONFIG: DocumentNode = parse(gql`
   mutation TranscendCliUpdateWorkflowConfig($input: UpdateWorkflowConfigInput!) {
     updateWorkflowConfig(input: $input) {

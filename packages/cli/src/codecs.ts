@@ -1915,13 +1915,14 @@ export const ConsentPurpose = t.intersection([
 export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
 
 /**
- * Input to define a workflow config (update-only — create in Admin Dashboard)
+ * Input to define a workflow config. Push matches by `internal-name` and creates
+ * the workflow when no match exists (DSR only).
  */
 export const WorkflowConfigInput = t.intersection([
   t.type({
     /**
-     * Internal name of the workflow config. This is the stable key used to match
-     * an existing workflow config on push.
+     * Internal name of the workflow config. Stable key used to match an existing
+     * workflow on push, or set when creating a new one.
      */
     'internal-name': t.string,
     /** Request action type */
@@ -2124,7 +2125,7 @@ export const TranscendInput = t.partial({
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
   /**
-   * DSR workflow config settings (update-only)
+   * DSR workflow config settings (create or update by internal-name)
    */
   'workflow-configs': t.array(WorkflowConfigInput),
   /**

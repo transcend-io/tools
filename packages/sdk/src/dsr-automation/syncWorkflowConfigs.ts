@@ -15,18 +15,17 @@ import { fetchAllActions } from './fetchAllActions.js';
 import { fetchAllRequestAttributeKeys, type AttributeKey } from './fetchAllAttributeKeys.js';
 import { fetchAllWorkflowConfigs } from './fetchAllWorkflowConfigs.js';
 import { fetchAllDataSubjects, type DataSubject } from './fetchDataSubjects.js';
-import { UPDATE_WORKFLOW_CONFIG } from './gqls/workflowConfig.js';
+import { CREATE_WORKFLOW, UPDATE_WORKFLOW_CONFIG } from './gqls/workflowConfig.js';
 
 export interface WorkflowConfigSyncInput {
   /**
    * Internal name of the workflow config. This is the stable key used to match
-   * an existing workflow config (configs are created in the Admin Dashboard,
-   * so this sync is update-only).
+   * an existing workflow config on push (or to set on create when missing).
    */
   'internal-name': string;
   /** Request action type */
   'action-type': RequestAction;
-  /** User-facing title */
+  /** User-facing title (required for create; falls back to internal-name when omitted) */
   title?: string;
   /** Subtitle */
   subtitle?: string;
@@ -36,6 +35,11 @@ export interface WorkflowConfigSyncInput {
   'data-subject-type'?: string;
   /** Visibility tier (DRAFT, INTERNAL, PUBLISHED) */
   visibility?: WorkflowConfigVisibility;
+  /**
+   * Workflow config type. Only DSR is supported for sync; preference-management
+   * workflows must be managed in the Admin Dashboard.
+   */
+  type?: WorkflowConfigType;
   /** Whether to collect the data subject's region (COLLECT, DO_NOT_COLLECT) */
   'collect-data-subject-regions'?: CollectDataSubjectRegions;
   /** Region allow list */
@@ -54,8 +58,9 @@ export interface WorkflowConfigSyncInput {
 /**
  * Sync workflow configs to Transcend.
  *
- * Workflow configs are created in the Admin Dashboard, so this is update-only:
- * each input is matched to an existing config by its internal name.
+ * Matches each input to an existing config by `internal-name`. Missing configs
+ * are created via `createWorkflow` (DSR only; starts as Draft with default
+ * associations), then updated with the remaining YAML fields.
  *
  * @param client - GraphQL client
  * @param inputs - Workflow config inputs from YAML
@@ -101,14 +106,17 @@ export async function syncWorkflowConfigs(
   await mapSeries(inputs, async (config) => {
     const internalName = config['internal-name'];
     try {
-      const matches = configsByInternalName[internalName] ?? [];
-      const [existingConfig, ...duplicates] = matches;
-      if (!existingConfig) {
+      if (config.type && config.type !== WorkflowConfigType.DSR) {
         throw new Error(
-          `Failed to find workflow config with internal name: "${internalName}". ` +
-            'Workflow configs must be created in the Admin Dashboard before they can be synced.',
+          `Workflow config with internal name: "${internalName}" has type ` +
+            `"${config.type}". Only DSR workflow configs can be synced — ` +
+            'preference management workflows have purpose-based semantics and must be managed in the Admin Dashboard.',
         );
       }
+
+      const matches = configsByInternalName[internalName] ?? [];
+      const [existingConfig, ...duplicates] = matches;
+
       // TODO: https://linear.app/transcend/issue/WAL-10312/enforce-unique-workflowconfiginternalname-in-the-database
       // Once DB uniqueness is enforced, this runtime duplicate check can be removed.
       if (duplicates.length > 0) {
@@ -117,7 +125,7 @@ export async function syncWorkflowConfigs(
             'Internal names must be unique to sync workflow configs.',
         );
       }
-      if (existingConfig.workflowConfigType !== WorkflowConfigType.DSR) {
+      if (existingConfig && existingConfig.workflowConfigType !== WorkflowConfigType.DSR) {
         throw new Error(
           `Workflow config with internal name: "${internalName}" has type ` +
             `"${existingConfig.workflowConfigType}". Only DSR workflow configs can be synced — ` +
@@ -170,8 +178,63 @@ export async function syncWorkflowConfigs(
         });
       }
 
+      let workflowConfigId: string;
+      if (!existingConfig) {
+        // createWorkflow only accepts title/actionType/internalName (+ type).
+        // Remaining fields are applied via updateWorkflowConfig below.
+        // New workflows start as Draft with default associations (data silos, receipt email).
+        const title = config.title ?? internalName;
+        const {
+          createWorkflow: { workflowConfig: created },
+        } = await makeGraphQLRequest<{
+          /** createWorkflow mutation */
+          createWorkflow: {
+            /** Created workflow config */
+            workflowConfig: {
+              /** ID */
+              id: string;
+              /** Internal name */
+              internalName: string | null;
+            };
+          };
+        }>(client, CREATE_WORKFLOW, {
+          variables: {
+            input: {
+              title,
+              actionType: config['action-type'],
+              internalName,
+              workflowConfigType: WorkflowConfigType.DSR,
+            },
+          },
+          logger,
+        });
+        workflowConfigId = created.id;
+        // Track the new config so a later YAML entry with the same internal-name
+        // updates instead of attempting a second create in this sync run.
+        configsByInternalName[internalName] = [
+          {
+            id: created.id,
+            title: { defaultMessage: title },
+            subtitle: null,
+            description: null,
+            internalName: created.internalName ?? internalName,
+            workflowConfigVisibility: WorkflowConfigVisibility.Draft,
+            workflowConfigType: WorkflowConfigType.DSR,
+            collectDataSubjectRegions: null,
+            regionList: [],
+            expiryTime: null,
+            action: { type: config['action-type'] },
+            subject: null,
+            WorkflowConfigAttributeKeys: null,
+          },
+        ];
+        logger?.info(`Successfully created workflow config "${internalName}" (${created.id})!`);
+      } else {
+        workflowConfigId = existingConfig.id;
+      }
+
       const mutationInput: Record<string, unknown> = {
-        workflowConfigId: existingConfig.id,
+        workflowConfigId,
         ...(config.title !== undefined ? { title: config.title } : {}),
         ...(config.subtitle !== undefined ? { subtitle: config.subtitle } : {}),
         ...(config.description !== undefined ? { description: config.description } : {}),
@@ -191,7 +254,7 @@ export async function syncWorkflowConfigs(
         logger,
       });
 
-      logger?.info(`Successfully synced workflow config "${internalName}" (${existingConfig.id})!`);
+      logger?.info(`Successfully synced workflow config "${internalName}" (${workflowConfigId})!`);
     } catch (err) {
       encounteredError = true;
       logger?.error(

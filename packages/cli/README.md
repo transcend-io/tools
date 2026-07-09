@@ -2805,7 +2805,12 @@ Some things to note about this sync process:
 
 #### Workflow configs push notes
 
-`workflow-configs` are **update-only**. Create workflows in the [Admin Dashboard](https://app.transcend.io/privacy-requests/workflows) first, then pull and edit them. Push matches existing configs by `internal-name` and will fail if the name is unknown.
+`workflow-configs` are matched by `internal-name`:
+
+- **Create:** If no workflow exists with that internal name, the CLI creates a DSR workflow via `createWorkflow` (starts as Draft with default associations), then applies the remaining YAML fields via `updateWorkflowConfig`.
+- **Update:** If a match exists, fields from YAML are updated in place.
+- Preference-management workflows are not supported — manage those in the [Admin Dashboard](https://app.transcend.io/privacy-requests/workflows).
+- Publishing (`visibility: PUBLISHED`) requires a `data-subject-type`.
 
 #### Preference management push notes
 
