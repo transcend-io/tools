@@ -30,10 +30,13 @@ export interface PrivacyCenterFooterLink {
     defaultMessage: string;
   };
   /** Link URL */
-  url: {
-    /** Default locale message */
-    defaultMessage: string;
-  };
+  url: string;
+  /**
+   * When true with an icon set, render as icon-only (title is used for
+   * accessibility). When false with an icon set, render icon beside the
+   * visible label.
+   */
+  iconOnly: boolean;
 }
 
 export interface PrivacyCenter {
@@ -104,12 +107,31 @@ export async function fetchAllPrivacyCenters(
   const { logger } = options;
   const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client, { logger });
   const {
-    privacyCenter: { themeStr, ...rest },
+    privacyCenter: { themeStr, footerLinks, ...rest },
   } = await makeGraphQLRequest<{
     /** Privacy centers */
-    privacyCenter: Omit<PrivacyCenter, 'theme'> & {
+    privacyCenter: Omit<PrivacyCenter, 'theme' | 'footerLinks'> & {
       /** Theme string */
       themeStr: string;
+      /** Footer links as returned by GraphQL */
+      footerLinks: {
+        /** Footer link ID */
+        id: string;
+        /** Display order */
+        displayOrder: number;
+        /** Link title */
+        title: {
+          /** Default locale message */
+          defaultMessage: string;
+        };
+        /** Link URL */
+        url: {
+          /** Default locale message */
+          defaultMessage: string;
+        };
+        /** Whether the link renders as icon-only */
+        iconOnly: boolean;
+      }[];
     };
   }>(client, PRIVACY_CENTER, {
     variables: { url: deployedPrivacyCenterUrl },
@@ -119,6 +141,13 @@ export async function fetchAllPrivacyCenters(
   return [
     {
       ...rest,
+      footerLinks: footerLinks.map((link) => ({
+        id: link.id,
+        displayOrder: link.displayOrder,
+        title: link.title,
+        url: link.url.defaultMessage,
+        iconOnly: link.iconOnly,
+      })),
       theme: JSON.parse(themeStr),
     },
   ];

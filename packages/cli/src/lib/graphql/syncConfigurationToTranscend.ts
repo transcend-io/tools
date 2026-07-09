@@ -510,27 +510,10 @@ export async function syncConfigurationToTranscend(
   // Sync privacy center
   if (privacyCenter) {
     try {
-      const {
-        'workflows-custom-fields-required': workflowsCustomFieldsRequired,
-        'displayed-child-organization-uris': displayedChildOrganizationUris,
-        'footer-layout': footerLayout,
-        'footer-links': footerLinks,
-        ...privacyCenterRest
-      } = privacyCenter;
-      const privacyCenterSuccess = await syncPrivacyCenter(
-        client,
-        {
-          ...privacyCenterRest,
-          workflowsCustomFieldsRequired,
-          displayedChildOrganizationUris,
-          footerLayout,
-          footerLinks,
-        },
-        {
-          logger,
-          skipPublish: !publishToPrivacyCenter,
-        },
-      );
+      const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter, {
+        logger,
+        skipPublish: !publishToPrivacyCenter,
+      });
       if (!privacyCenterSuccess) {
         recordError('privacy-center', 'Failed to sync privacy center');
       }

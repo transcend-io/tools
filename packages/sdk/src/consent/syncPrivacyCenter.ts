@@ -51,16 +51,16 @@ export interface PrivacyCenterInput {
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv?: boolean;
   /** Whether custom fields are required on privacy center workflows */
-  workflowsCustomFieldsRequired?: boolean;
+  'workflows-custom-fields-required'?: boolean;
   /**
    * Child organization URIs and/or IDs to display on a unified multi-brand
    * privacy center
    */
-  displayedChildOrganizationUris?: string[];
+  'displayed-child-organization-uris'?: string[];
   /** Footer layout for privacy center footer links */
-  footerLayout?: PrivacyCenterFooterLayout;
+  'footer-layout'?: PrivacyCenterFooterLayout;
   /** Footer links displayed on the privacy center */
-  footerLinks?: PrivacyCenterFooterLinkInput[];
+  'footer-links'?: PrivacyCenterFooterLinkInput[];
   /** The theme object of colors to display on the privacy center */
   theme?: {
     /** The theme colors */
@@ -96,15 +96,16 @@ export async function syncPrivacyCenter(
 
   const privacyCenterId = await fetchPrivacyCenterId(client, { logger });
 
-  const needsExisting =
-    !!privacyCenter.displayedChildOrganizationUris || privacyCenter.footerLinks !== undefined;
+  const displayedChildOrganizationUris = privacyCenter['displayed-child-organization-uris'];
+  const footerLinks = privacyCenter['footer-links'];
+  const needsExisting = !!displayedChildOrganizationUris || footerLinks !== undefined;
   const [existing] = needsExisting ? await fetchAllPrivacyCenters(client, { logger }) : [];
 
   let displayedChildOrganizationIds: string[] | undefined;
-  if (privacyCenter.displayedChildOrganizationUris) {
+  if (displayedChildOrganizationUris) {
     displayedChildOrganizationIds = resolveDisplayedChildOrganizationIds(
       existing?.childOrganizations ?? [],
-      privacyCenter.displayedChildOrganizationUris,
+      displayedChildOrganizationUris,
     );
   }
 
@@ -130,8 +131,8 @@ export async function syncPrivacyCenter(
           showTrackingTechnologies: privacyCenter.showTrackingTechnologies,
           showPrivacyRequestButton: privacyCenter.showPrivacyRequestButton,
           isDisabled: privacyCenter.isDisabled,
-          workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
-          footerLayout: privacyCenter.footerLayout,
+          workflowsCustomFieldsRequired: privacyCenter['workflows-custom-fields-required'],
+          footerLayout: privacyCenter['footer-layout'],
           ...(displayedChildOrganizationIds ? { displayedChildOrganizationIds } : {}),
           ...(skipPublish !== undefined ? { skipPublish } : {}),
           ...(privacyCenter.theme
@@ -146,11 +147,11 @@ export async function syncPrivacyCenter(
       logger,
     });
 
-    if (privacyCenter.footerLinks !== undefined) {
+    if (footerLinks !== undefined) {
       await syncPrivacyCenterFooterLinks(
         client,
         privacyCenterId,
-        privacyCenter.footerLinks,
+        footerLinks,
         existing?.footerLinks ?? [],
         { logger },
       );

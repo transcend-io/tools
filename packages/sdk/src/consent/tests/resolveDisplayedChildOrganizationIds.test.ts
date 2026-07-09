@@ -4,16 +4,16 @@ import { resolveDisplayedChildOrganizationIds } from '../resolveDisplayedChildOr
 
 const childOrganizations = [
   {
-    id: 'org-disneyplus',
-    uri: 'disneyplus-demo-thewaltdisneycompany-com',
+    id: 'org-brand-a',
+    uri: 'brand-a-demo-example-com',
   },
   {
-    id: 'org-espn',
-    uri: 'espn-demo-thewaltdisneycompany-com',
+    id: 'org-brand-b',
+    uri: 'brand-b-demo-example-com',
   },
   {
-    id: 'org-hulu',
-    uri: 'hulu-demo-thewaltdisneycompany-com',
+    id: 'org-brand-c',
+    uri: 'brand-c-demo-example-com',
   },
 ];
 
@@ -21,38 +21,38 @@ describe('resolveDisplayedChildOrganizationIds', () => {
   it('resolves organization URIs to IDs', () => {
     expect(
       resolveDisplayedChildOrganizationIds(childOrganizations, [
-        'disneyplus-demo-thewaltdisneycompany-com',
-        'espn-demo-thewaltdisneycompany-com',
+        'brand-a-demo-example-com',
+        'brand-b-demo-example-com',
       ]),
-    ).toEqual(['org-disneyplus', 'org-espn']);
+    ).toEqual(['org-brand-a', 'org-brand-b']);
   });
 
   it('accepts organization IDs directly', () => {
     expect(
-      resolveDisplayedChildOrganizationIds(childOrganizations, ['org-hulu', 'org-espn']),
-    ).toEqual(['org-hulu', 'org-espn']);
+      resolveDisplayedChildOrganizationIds(childOrganizations, ['org-brand-c', 'org-brand-b']),
+    ).toEqual(['org-brand-c', 'org-brand-b']);
   });
 
   it('accepts a mix of URIs and IDs', () => {
     expect(
       resolveDisplayedChildOrganizationIds(childOrganizations, [
-        'org-disneyplus',
-        'hulu-demo-thewaltdisneycompany-com',
+        'org-brand-a',
+        'brand-c-demo-example-com',
       ]),
-    ).toEqual(['org-disneyplus', 'org-hulu']);
+    ).toEqual(['org-brand-a', 'org-brand-c']);
   });
 
   it('throws a descriptive error when a URI or ID cannot be resolved', () => {
     expect(() =>
       resolveDisplayedChildOrganizationIds(childOrganizations, [
-        'disneyplus-demo-thewaltdisneycompany-com',
+        'brand-a-demo-example-com',
         'missing-brand-uri',
       ]),
     ).toThrow(/Failed to resolve displayed child organization URI or ID: "missing-brand-uri"/);
   });
 
   it('throws when there are no child organizations available', () => {
-    expect(() => resolveDisplayedChildOrganizationIds([], ['org-disneyplus'])).toThrow(
+    expect(() => resolveDisplayedChildOrganizationIds([], ['org-brand-a'])).toThrow(
       /Available: \(none\)/,
     );
   });

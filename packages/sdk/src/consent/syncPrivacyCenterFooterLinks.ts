@@ -14,8 +14,14 @@ export interface PrivacyCenterFooterLinkInput {
   id?: string;
   /** Link title (default locale) */
   title: string;
-  /** Link URL (default locale) */
-  url: string;
+  /** Link URL (default locale); optional for icon-only links */
+  url?: string;
+  /**
+   * When true with an icon set, render as icon-only (title is used for
+   * accessibility). When false with an icon set, render icon beside the
+   * visible label.
+   */
+  'icon-only'?: boolean;
 }
 
 /**
@@ -61,7 +67,8 @@ export async function syncPrivacyCenterFooterLinks(
     return {
       id: byId?.id ?? byTitle?.id,
       title: link.title,
-      url: link.url,
+      ...(link.url !== undefined ? { url: link.url } : {}),
+      ...(link['icon-only'] !== undefined ? { iconOnly: link['icon-only'] } : {}),
     };
   });
 

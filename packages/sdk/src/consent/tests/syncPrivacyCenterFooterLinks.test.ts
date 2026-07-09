@@ -21,13 +21,15 @@ const existingFooterLinks = [
     id: 'link-1',
     displayOrder: 0,
     title: { defaultMessage: 'Privacy Policy' },
-    url: { defaultMessage: 'https://example.com/privacy' },
+    url: 'https://example.com/privacy',
+    iconOnly: false,
   },
   {
     id: 'link-2',
     displayOrder: 1,
     title: { defaultMessage: 'Terms' },
-    url: { defaultMessage: 'https://example.com/terms' },
+    url: 'https://example.com/terms',
+    iconOnly: false,
   },
 ];
 
@@ -130,6 +132,39 @@ describe('syncPrivacyCenterFooterLinks', () => {
                 id: 'link-2',
                 title: 'Terms of Use',
                 url: 'https://example.com/terms-updated',
+              },
+            ],
+          },
+        },
+      }),
+    );
+  });
+
+  it('supports optional url and icon-only', async () => {
+    await syncPrivacyCenterFooterLinks(
+      client,
+      privacyCenterId,
+      [
+        {
+          title: 'Instagram',
+          'icon-only': true,
+        },
+      ],
+      existingFooterLinks,
+    );
+
+    expect(makeGraphQLRequest).toHaveBeenCalledWith(
+      client,
+      UPDATE_PRIVACY_CENTER_FOOTER_LINKS,
+      expect.objectContaining({
+        variables: {
+          input: {
+            privacyCenterId,
+            footerLinks: [
+              {
+                id: undefined,
+                title: 'Instagram',
+                iconOnly: true,
               },
             ],
           },

@@ -955,7 +955,8 @@ export async function pullTranscendConfiguration(
               .sort((a, b) => a.displayOrder - b.displayOrder)
               .map((link) => ({
                 title: link.title.defaultMessage,
-                url: link.url.defaultMessage,
+                ...(link.url ? { url: link.url } : {}),
+                ...(link.iconOnly ? { 'icon-only': link.iconOnly } : {}),
               })),
           }
         : {}),

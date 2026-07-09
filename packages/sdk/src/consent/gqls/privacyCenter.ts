@@ -55,6 +55,7 @@ export const PRIVACY_CENTER = gql`
         url {
           defaultMessage
         }
+        iconOnly
       }
     }
   }
