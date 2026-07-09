@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-docs
 
+## 0.3.2
+
+### Patch Changes
+
+- 212568a: Fix punctuation in README usage section.
+
 ## 0.3.1
 
 ### Patch Changes
