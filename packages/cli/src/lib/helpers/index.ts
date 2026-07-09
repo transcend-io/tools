@@ -7,3 +7,4 @@ export * from './collectParquetFilesOrExit.js';
 export * from './collectCsvFilesOrExit.js';
 export * from './parquetToCsvOneFile.js';
 export * from './writeCsv.js';
+export * from './hasTranscendConfigSection.js';

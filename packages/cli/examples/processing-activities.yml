@@ -1,4 +1,32 @@
+# Processing activities (RoPA) for Data Inventory.
+# Admin UI: https://app.transcend.io/data-map/data-inventory/processing-activities
+#
+# Pull:
+#   transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=processingActivities
+# Push:
+#   transcend inventory push --auth="$TRANSCEND_API_KEY" --resources=processingActivities
 processing-activities:
+  # TWDC CCTV RoPA acceptance fixture — round-trips via pull/push
+  - title: CCTV — Disney Italia Theme Park Entrances
+    description: On-premise CCTV surveillance…
+    controllerships: [CONTROLLER]
+    retentionType: LIMITED
+    dataProtectionImpactAssessmentStatus: MISSING
+    dataSubjectTypes: [customer, employee]
+    teamNames: [Security Operations]
+    processingSubPurposes:
+      - purpose: OPERATION_SECURITY
+      - purpose: ESSENTIAL
+    dataSubCategories:
+      - category: OTHER
+        name: Security-Physical
+      - category: CONTACT
+        name: Image
+    storageRegions:
+      - country: IT
+    transferRegions:
+      - country: EU
+
   - title: Chatbot AI
     description: >-
       A product that allows employees to chat with an informational AI Chatbot
@@ -26,6 +54,7 @@ processing-activities:
         name: Interaction Events
     saaSCategories:
       - Artificial Intelligence
+
   - title: Marketing Analytics
     description: Data around how our website is used
     controllerships:
@@ -47,6 +76,7 @@ processing-activities:
     processingSubPurposes:
       - purpose: ANALYTICS
       - purpose: MARKETING
+
   - title: Onboarding
     description: >-
       The process of onboarding new hires through a number of interactive
@@ -61,6 +91,7 @@ processing-activities:
       - charlie@acme.com
     processingSubPurposes:
       - purpose: HR
+
   - title: Recruiting
     description: >-
       Our recruitment pipeline includes the use of several different tools and
