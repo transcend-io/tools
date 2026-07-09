@@ -1,5 +1,20 @@
 # @transcend-io/cli
 
+## 10.21.0
+
+### Minor Changes
+
+- 97db927: Add optional `sombra-id` on data silos in `transcend.yml` so inventory pull/push can sync the GraphQL `DataSilo.sombraId` association for multi-Sombra organizations.
+- 2355c9e: Add privacy-center sync/pull for displayed-child-organization-uris, workflows-custom-fields-required, footer-layout, footer-links, home, and expandSideMenuByDefault. Honor publishToPrivacyCenter via skipPublish on updatePrivacyCenter. Regenerate transcend.yml JSON schema.
+
+### Patch Changes
+
+- Updated dependencies [97db927]
+- Updated dependencies [2355c9e]
+  - @transcend-io/sdk@1.5.0
+  - @transcend-io/privacy-types@5.7.0
+  - @transcend-io/airgap.js-types@14.2.16
+
 ## 10.20.0
 
 ### Minor Changes
