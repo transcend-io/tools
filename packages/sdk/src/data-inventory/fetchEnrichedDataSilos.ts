@@ -7,10 +7,10 @@ import {
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
-import { NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
+import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { fetchAllDataPoints, type DataPointWithSubDataPoint } from './fetchAllDataPoints.js';
 import { fetchAllDataSilos, type DataSiloAttributeValue } from './fetchAllDataSilos.js';
-import { DATA_SILOS_ENRICHED } from './gqls/dataSilo.js';
+import { DATA_SILO_SOMBRA, DATA_SILOS_ENRICHED } from './gqls/dataSilo.js';
 
 export interface DataSiloEnriched {
   /** ID of dataSilo */
@@ -112,9 +112,12 @@ export interface DataSiloEnriched {
     title: string;
   }[];
   /**
-   * Configured Sombra instance ID that processes this data silo
+   * Configured Sombra instance that processes this data silo
    */
-  sombraId?: string | null;
+  sombra?: {
+    /** Sombra instance ID */
+    id: string;
+  } | null;
 }
 
 /**
@@ -170,6 +173,28 @@ export async function fetchEnrichedDataSilos(
     logger,
   });
 
+  // `sombra` is only on singular `DataSilo`, not `DataSiloBulkPreview`.
+  await mapSeries(silos, async (silo) => {
+    const {
+      dataSilo: { sombra },
+    } = await makeGraphQLRequest<{
+      /** Singular data silo */
+      dataSilo: {
+        /** Data silo ID */
+        id: string;
+        /** Configured Sombra instance */
+        sombra?: {
+          /** Sombra instance ID */
+          id: string;
+        } | null;
+      };
+    }>(client, DATA_SILO_SOMBRA, {
+      variables: { id: silo.id },
+      logger,
+    });
+    silo.sombra = sombra;
+  });
+
   if (!skipDatapoints) {
     await mapSeries(silos, async (silo, index) => {
       logger.info(`[${index + 1}/${silos.length}] Fetching data silo - ${silo.title}`);
@@ -190,6 +215,10 @@ export async function fetchEnrichedDataSilos(
       }
 
       dataSilos.push([silo, dataPoints]);
+    });
+  } else {
+    silos.forEach((silo) => {
+      dataSilos.push([silo, []]);
     });
   }
 
