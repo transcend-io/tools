@@ -49,6 +49,7 @@ import {
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
+  parsePurposesFromTriggerCondition,
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
@@ -1448,7 +1449,6 @@ export async function pullTranscendConfiguration(
     result['consent-workflow-triggers'] = consentWorkflowTriggers.map(
       (trigger): ConsentWorkflowTriggerInput => ({
         name: trigger.name,
-        'trigger-condition': trigger.triggerCondition || undefined,
         'action-type': trigger.action.type,
         'data-subject-type': trigger.subject.type,
         'is-silent': trigger.isSilent,
@@ -1456,6 +1456,8 @@ export async function pullTranscendConfiguration(
         'is-active': trigger.isActive,
         'data-silo-titles':
           trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
+        // Derive purposes from triggerCondition (admin UI source of truth shape)
+        purposes: parsePurposesFromTriggerCondition(trigger.triggerCondition),
       }),
     );
   }

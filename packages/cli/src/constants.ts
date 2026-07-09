@@ -82,10 +82,16 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ManagePreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ManageDataMap],
+  // Primary: ManagePreferenceStoreSettings (createOrUpdateConsentWorkflowTrigger).
+  // Related fetches used during sync:
+  // - ViewDataSubjectRequestSettings — resolve action-type / data-subject-type
+  // - ViewConsentManager — resolve purposes[].tracking-type → purposeId
+  // - ViewDataMap — resolve data-silo-titles (only when present)
   [TranscendPullResource.ConsentWorkflowTriggers]: [
-    ScopeName.ManageConsentManager,
+    ScopeName.ManagePreferenceStoreSettings,
     ScopeName.ViewDataSubjectRequestSettings,
     ScopeName.ViewConsentManager,
+    ScopeName.ViewDataMap,
   ],
 };
 
@@ -135,7 +141,7 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
-  [TranscendPullResource.ConsentWorkflowTriggers]: [ScopeName.ViewConsentManager],
+  [TranscendPullResource.ConsentWorkflowTriggers]: [ScopeName.ViewPreferenceStoreSettings],
 };
 
 export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof TranscendInput> = {

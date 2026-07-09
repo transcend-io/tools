@@ -20,11 +20,9 @@ export interface ConsentWorkflowTriggerPurposeInput {
 export interface ConsentWorkflowTriggerSyncInput {
   /** The name of the consent workflow trigger */
   name: string;
-  /** The trigger condition as a JSON string */
-  'trigger-condition'?: string;
-  /** The action type (e.g. ERASURE, ACCESS) */
+  /** The action type (e.g. ERASURE, ACCESS). Required when creating a new trigger. */
   'action-type'?: string;
-  /** The data subject type */
+  /** The data subject type. Required when creating a new trigger. */
   'data-subject-type'?: string;
   /** Whether the trigger runs silently */
   'is-silent'?: boolean;
@@ -34,8 +32,75 @@ export interface ConsentWorkflowTriggerSyncInput {
   'is-active'?: boolean;
   /** Titles of data silos associated with this trigger */
   'data-silo-titles'?: string[];
-  /** Purposes and their matching consent states */
-  purposes?: ConsentWorkflowTriggerPurposeInput[];
+  /**
+   * Purposes and their matching consent states.
+   * Required (non-empty). Used to derive triggerCondition.
+   */
+  purposes: ConsentWorkflowTriggerPurposeInput[];
+}
+
+/**
+ * Build the GraphQL triggerCondition JSON string from purposes,
+ * matching the admin dashboard Preferences → Consent Workflows UI.
+ *
+ * @param purposes - Purpose tracking types and matching states
+ * @returns JSON string of `{ And: [{ [trackingType]: matchingState }, ...] }`
+ */
+export function buildTriggerConditionFromPurposes(
+  purposes: ConsentWorkflowTriggerPurposeInput[],
+): string {
+  return JSON.stringify({
+    And: purposes.map((purpose) => ({
+      [purpose['tracking-type']]: purpose['matching-state'],
+    })),
+  });
+}
+
+/**
+ * Parse GraphQL triggerCondition JSON into purposes for transcend.yml.
+ * Expects ConditionalExpression shape: `{ And: [{ [trackingType]: boolean }, ...] }`.
+ *
+ * @param triggerCondition - JSON string from GraphQL (or null)
+ * @returns Purpose entries for YAML, or empty if unparseable
+ */
+export function parsePurposesFromTriggerCondition(
+  triggerCondition: string | null | undefined,
+): ConsentWorkflowTriggerPurposeInput[] {
+  if (!triggerCondition) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(triggerCondition);
+    if (!parsed || typeof parsed !== 'object') {
+      return [];
+    }
+
+    const andEntries = (parsed as { And?: unknown }).And;
+    if (!Array.isArray(andEntries)) {
+      return [];
+    }
+
+    const purposes: ConsentWorkflowTriggerPurposeInput[] = [];
+    for (const entry of andEntries) {
+      if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+        continue;
+      }
+      for (const [trackingType, matchingState] of Object.entries(
+        entry as Record<string, unknown>,
+      )) {
+        if (typeof matchingState === 'boolean') {
+          purposes.push({
+            'tracking-type': trackingType,
+            'matching-state': matchingState,
+          });
+        }
+      }
+    }
+    return purposes;
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -63,14 +128,14 @@ export async function syncConsentWorkflowTriggers(
 
   const needsActions = inputs.some((t) => t['action-type']);
   const needsSubjects = inputs.some((t) => t['data-subject-type']);
-  const needsPurposes = inputs.some((t) => t.purposes?.length);
   const needsDataSilos = inputs.some((t) => t['data-silo-titles']?.length);
 
   const [existingTriggers, actions, dataSubjects, purposes, dataSilos] = await Promise.all([
     fetchAllConsentWorkflowTriggers(client, { logger }),
     needsActions ? fetchAllActions(client, { logger }) : ([] as Action[]),
     needsSubjects ? fetchAllDataSubjects(client, { logger }) : ([] as DataSubject[]),
-    needsPurposes ? fetchAllPurposes(client, { logger }) : ([] as Purpose[]),
+    // Purposes are always required to resolve purposeId for the mutation
+    fetchAllPurposes(client, { logger }),
     needsDataSilos ? fetchAllDataSilos(client, { pageSize, logger }) : [],
   ]);
 
@@ -85,7 +150,28 @@ export async function syncConsentWorkflowTriggers(
 
   await mapSeries(inputs, async (trigger) => {
     try {
+      if (!trigger.purposes?.length) {
+        throw new Error(
+          `Consent workflow trigger "${trigger.name}" requires a non-empty "purposes" list ` +
+            `(each entry needs tracking-type and matching-state). ` +
+            `See Preferences → Consent Workflows.`,
+        );
+      }
+
       const existingTrigger = triggerByName[trigger.name];
+
+      if (!existingTrigger) {
+        if (!trigger['action-type']) {
+          throw new Error(
+            `Consent workflow trigger "${trigger.name}" requires "action-type" when creating a new trigger.`,
+          );
+        }
+        if (!trigger['data-subject-type']) {
+          throw new Error(
+            `Consent workflow trigger "${trigger.name}" requires "data-subject-type" when creating a new trigger.`,
+          );
+        }
+      }
 
       let actionId: string | undefined;
       if (trigger['action-type']) {
@@ -105,7 +191,7 @@ export async function syncConsentWorkflowTriggers(
         dataSubjectId = subject.id;
       }
 
-      const consentWorkflowTriggerPurposes = trigger.purposes?.map((purposeInput) => {
+      const consentWorkflowTriggerPurposes = trigger.purposes.map((purposeInput) => {
         const purpose = purposeByTrackingType[purposeInput['tracking-type']];
         if (!purpose) {
           throw new Error(
@@ -132,7 +218,8 @@ export async function syncConsentWorkflowTriggers(
       const mutationInput: Record<string, unknown> = {
         name: trigger.name,
         ...(existingTrigger ? { id: existingTrigger.id } : {}),
-        triggerCondition: trigger['trigger-condition'] ?? '{}',
+        triggerCondition: buildTriggerConditionFromPurposes(trigger.purposes),
+        consentWorkflowTriggerPurposes,
         ...(actionId ? { actionId } : {}),
         ...(dataSubjectId ? { dataSubjectId } : {}),
         ...(dataSiloIds ? { dataSiloIds } : {}),
@@ -141,16 +228,9 @@ export async function syncConsentWorkflowTriggers(
           ? { allowUnauthenticated: trigger['allow-unauthenticated'] }
           : {}),
         ...(trigger['is-active'] !== undefined ? { isActive: trigger['is-active'] } : {}),
-        ...(existingTrigger && consentWorkflowTriggerPurposes
-          ? { consentWorkflowTriggerPurposes }
-          : {}),
       };
 
-      const {
-        createOrUpdateConsentWorkflowTrigger: {
-          consentWorkflowTrigger: { id: triggerId },
-        },
-      } = await makeGraphQLRequest<{
+      await makeGraphQLRequest<{
         /** Mutation result */
         createOrUpdateConsentWorkflowTrigger: {
           /** Created or updated trigger */
@@ -163,18 +243,6 @@ export async function syncConsentWorkflowTriggers(
         variables: { input: mutationInput },
         logger,
       });
-
-      if (!existingTrigger && consentWorkflowTriggerPurposes?.length) {
-        await makeGraphQLRequest(client, CREATE_OR_UPDATE_CONSENT_WORKFLOW_TRIGGER, {
-          variables: {
-            input: {
-              id: triggerId,
-              consentWorkflowTriggerPurposes,
-            },
-          },
-          logger,
-        });
-      }
 
       logger?.info(`Successfully synced consent workflow trigger "${trigger.name}"!`);
     } catch (err) {

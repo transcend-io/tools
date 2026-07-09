@@ -1,8 +1,10 @@
 # Consent workflow triggers automate DSR actions when consent state matches.
-# Prerequisites in your org: ERASURE action, Customer data subject, and any referenced data silos/purposes.
+# Admin UI: https://app.transcend.io/preference-store/consent-workflows
+# Prerequisites in your org: ERASURE/ACCESS actions, Customer data subject, and any referenced data silos/purposes.
+# Purposes are the source of truth — triggerCondition is derived on push as:
+#   { And: [{ [tracking-type]: matching-state }, ...] }
 consent-workflow-triggers:
   - name: MarketingOptOutErasure
-    trigger-condition: '{"operator":"AND","conditions":[{"field":"purpose","purpose":"Marketing","state":false}]}'
     action-type: ERASURE
     data-subject-type: Customer
     is-silent: false
@@ -15,9 +17,11 @@ consent-workflow-triggers:
         matching-state: false
 
   - name: AnalyticsOptOutSilentAccess
-    trigger-condition: '{"operator":"AND","conditions":[{"field":"purpose","purpose":"Analytics","state":false}]}'
     action-type: ACCESS
     data-subject-type: Customer
     is-silent: true
     allow-unauthenticated: true
     is-active: true
+    purposes:
+      - tracking-type: Analytics
+        matching-state: false

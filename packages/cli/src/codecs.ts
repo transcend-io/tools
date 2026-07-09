@@ -1927,19 +1927,24 @@ export type ConsentWorkflowTriggerPurposeInput = t.TypeOf<
 >;
 
 /**
- * Input to define a consent workflow trigger
+ * Input to define a consent workflow trigger.
+ * Purposes are the source of truth; triggerCondition is derived on push
+ * (same as Preferences → Consent Workflows in the admin dashboard).
  */
 export const ConsentWorkflowTriggerInput = t.intersection([
   t.type({
     /** The name of the consent workflow trigger */
     name: t.string,
+    /**
+     * Purposes and their matching consent states.
+     * Used to derive triggerCondition as `{ And: [{ [tracking-type]: matching-state }, ...] }`.
+     */
+    purposes: t.array(ConsentWorkflowTriggerPurposeInput),
   }),
   t.partial({
-    /** The trigger condition as a JSON string */
-    'trigger-condition': t.string,
-    /** The action type (e.g. ERASURE, ACCESS) */
+    /** The action type (e.g. ERASURE, ACCESS). Required when creating a new trigger. */
     'action-type': t.string,
-    /** The data subject type */
+    /** The data subject type. Required when creating a new trigger. */
     'data-subject-type': t.string,
     /** Whether the trigger runs silently */
     'is-silent': t.boolean,
@@ -1949,8 +1954,6 @@ export const ConsentWorkflowTriggerInput = t.intersection([
     'is-active': t.boolean,
     /** Titles of data silos associated with this trigger */
     'data-silo-titles': t.array(t.string),
-    /** Purposes and their matching consent states */
-    purposes: t.array(ConsentWorkflowTriggerPurposeInput),
   }),
 ]);
 

@@ -59922,19 +59922,31 @@
         "allOf": [
           {
             "type": "object",
-            "required": ["name"],
+            "required": ["name", "purposes"],
             "properties": {
               "name": {
                 "type": "string"
+              },
+              "purposes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["tracking-type", "matching-state"],
+                  "properties": {
+                    "tracking-type": {
+                      "type": "string"
+                    },
+                    "matching-state": {
+                      "type": "boolean"
+                    }
+                  }
+                }
               }
             }
           },
           {
             "type": "object",
             "properties": {
-              "trigger-condition": {
-                "type": "string"
-              },
               "action-type": {
                 "type": "string"
               },
@@ -59954,21 +59966,6 @@
                 "type": "array",
                 "items": {
                   "type": "string"
-                }
-              },
-              "purposes": {
-                "type": "array",
-                "items": {
-                  "type": "object",
-                  "required": ["tracking-type", "matching-state"],
-                  "properties": {
-                    "tracking-type": {
-                      "type": "string"
-                    },
-                    "matching-state": {
-                      "type": "boolean"
-                    }
-                  }
                 }
               }
             }
