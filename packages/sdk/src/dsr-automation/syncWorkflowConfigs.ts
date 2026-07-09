@@ -235,7 +235,8 @@ export async function syncWorkflowConfigs(
           collectDataSubjectRegions: null,
           regionList: config['region-list'] ?? [],
           expiryTime: null,
-          action: { type: config['action-type'] },
+          // action.id is unused for match-key resolution within this sync run
+          action: { id: '', type: config['action-type'] },
           subject: subjectId
             ? { id: subjectId, type: config['data-subject-type'] as string }
             : null,

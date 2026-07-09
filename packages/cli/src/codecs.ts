@@ -1960,6 +1960,64 @@ export const ConsentPurpose = t.intersection([
 export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
 
 /**
+ * Input for a purpose associated with a preference workflow config
+ */
+export const PreferenceWorkflowConfigPurposeInput = t.type({
+  /** The tracking type slug of the purpose */
+  'tracking-type': t.string,
+  /** The matching consent state for the purpose */
+  'matching-state': t.boolean,
+});
+
+/** Type override */
+export type PreferenceWorkflowConfigPurposeInput = t.TypeOf<
+  typeof PreferenceWorkflowConfigPurposeInput
+>;
+
+/**
+ * Input to define a preference workflow config.
+ * Purposes are the source of truth; triggerCondition is derived on push
+ * (same as Workflows → Preference Workflows in the admin dashboard).
+ *
+ * Exactly one mode per config:
+ * - Legacy: action-type (+ optional data-silo-titles), no workflow-title
+ * - V2: workflow-title (DSR workflow display title), no action-type / data-silo-titles
+ */
+export const PreferenceWorkflowConfigInput = t.intersection([
+  t.type({
+    /** The name of the preference workflow config */
+    name: t.string,
+    /**
+     * Purposes and their matching consent states.
+     * Used to derive triggerCondition as `{ And: [{ [tracking-type]: matching-state }, ...] }`.
+     */
+    purposes: t.array(PreferenceWorkflowConfigPurposeInput),
+  }),
+  t.partial({
+    /**
+     * DSR workflow display title (internalName when set, else external title).
+     * Workflows V2 mode — mutually exclusive with action-type / data-silo-titles.
+     */
+    'workflow-title': t.string,
+    /** The action type (e.g. ERASURE, ACCESS). Legacy mode; required when creating without workflow-title. */
+    'action-type': valuesOf(RequestAction),
+    /** The data subject type slug (e.g. customer) */
+    'data-subject-type': t.string,
+    /** Whether the config runs silently */
+    'is-silent': t.boolean,
+    /** Whether unauthenticated requests are allowed */
+    'allow-unauthenticated': t.boolean,
+    /** Whether the config is active */
+    'is-active': t.boolean,
+    /** Titles of data silos associated with this config (legacy mode only) */
+    'data-silo-titles': t.array(t.string),
+  }),
+]);
+
+/** Type override */
+export type PreferenceWorkflowConfigInput = t.TypeOf<typeof PreferenceWorkflowConfigInput>;
+
+/**
  * Input to define a workflow config. Push matches using a cascading key
  * (internal-name → title → action-type → data-subject-type → region-list) and
  * creates the workflow when no match exists (DSR only).
@@ -2170,6 +2228,10 @@ export const TranscendInput = t.partial({
    * The full list of silo discovery results
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
+  /**
+   * Preference workflow config definitions (Workflows → Preference Workflows)
+   */
+  'preference-workflow-configs': t.array(PreferenceWorkflowConfigInput),
   /**
    * DSR workflow config settings (create or update via cascading match key)
    */

@@ -58,6 +58,7 @@ export enum TranscendPullResource {
   Purposes = 'purposes',
   PreferenceOptions = 'preferenceOptions',
   SystemDiscovery = 'systemDiscovery',
+  PreferenceWorkflowConfigs = 'preferenceWorkflowConfigs',
   WorkflowConfigs = 'workflowConfigs',
 }
 

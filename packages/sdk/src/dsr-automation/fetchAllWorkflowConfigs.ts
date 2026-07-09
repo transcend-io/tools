@@ -52,6 +52,8 @@ export interface WorkflowConfigNode {
     | null;
   /** Request action */
   action: {
+    /** Action ID */
+    id: string;
     /** Action type */
     type: RequestAction;
   };
@@ -76,7 +78,21 @@ export interface WorkflowConfigNode {
     | null;
 }
 
+/** Alias used by consent-workflow-trigger helpers */
+export type WorkflowConfigSummary = WorkflowConfigNode;
+
 const PAGE_SIZE = 50;
+
+/**
+ * Display title for a workflow config, matching the admin UI:
+ * `internalName` when set, otherwise the external title.
+ *
+ * @param workflow - Workflow config
+ * @returns Display title used in Preference Workflows dropdown
+ */
+export function getWorkflowConfigDisplayTitle(workflow: WorkflowConfigNode): string {
+  return workflow.internalName || workflow.title.defaultMessage;
+}
 
 /**
  * Fetch all workflow configs in the organization
@@ -122,5 +138,41 @@ export async function fetchAllWorkflowConfigs(
     shouldContinue = nodes.length === PAGE_SIZE;
   } while (shouldContinue);
 
-  return configs.sort((a, b) => a.title.defaultMessage.localeCompare(b.title.defaultMessage));
+  return configs.sort((a, b) =>
+    getWorkflowConfigDisplayTitle(a).localeCompare(getWorkflowConfigDisplayTitle(b)),
+  );
+}
+
+/**
+ * Resolve a YAML `workflow-title` to a DSR workflow config.
+ * Matches against display title (`internalName` or external title).
+ *
+ * @param workflows - Candidate workflow configs
+ * @param workflowTitle - Title from transcend.yml
+ * @returns Matching workflow
+ */
+export function resolveWorkflowConfigByTitle(
+  workflows: WorkflowConfigNode[],
+  workflowTitle: string,
+): WorkflowConfigNode {
+  const matches = workflows.filter(
+    (workflow) => getWorkflowConfigDisplayTitle(workflow) === workflowTitle,
+  );
+  if (matches.length === 0) {
+    throw new Error(
+      `Failed to find DSR workflow with title: ${workflowTitle}. ` +
+        `Use the workflow internal name when set, otherwise the external title.`,
+    );
+  }
+  if (matches.length > 1) {
+    throw new Error(
+      `Found multiple DSR workflows with title: ${workflowTitle}. ` +
+        `Set a unique internalName on the workflow in the Admin Dashboard.`,
+    );
+  }
+  const [match] = matches;
+  if (!match) {
+    throw new Error(`Failed to find DSR workflow with title: ${workflowTitle}.`);
+  }
+  return match;
 }

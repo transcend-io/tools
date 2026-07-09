@@ -25,6 +25,7 @@ export const WORKFLOW_CONFIGS: DocumentNode = parse(gql`
           value
         }
         action {
+          id
           type
         }
         subject {

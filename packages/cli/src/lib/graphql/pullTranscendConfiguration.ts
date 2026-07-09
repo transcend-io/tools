@@ -40,8 +40,9 @@ import {
   fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
-  fetchAllWorkflowConfigs,
+  fetchAllConsentWorkflowTriggers,
   fetchAllPreferenceOptionValues,
+  fetchAllWorkflowConfigs,
   fetchPartitions,
   fetchAllTeams,
   fetchAllVendors,
@@ -50,6 +51,8 @@ import {
   formatRegions,
   parseAssessmentDisplayLogic,
   parseAssessmentRiskLogic,
+  parsePurposesFromTriggerCondition,
+  resolveWorkflowTitleFromId,
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
@@ -96,6 +99,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  PreferenceWorkflowConfigInput,
   WorkflowConfigInput,
   ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
@@ -197,6 +201,7 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
+    preferenceWorkflowConfigs,
     workflowConfigs,
     preferenceOptionValues,
     siloDiscoveryResults,
@@ -363,6 +368,9 @@ export async function pullTranscendConfiguration(
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
+      ? fetchAllConsentWorkflowTriggers(client, { logger })
       : [],
     resources.includes(TranscendPullResource.WorkflowConfigs)
       ? fetchAllWorkflowConfigs(client, {
@@ -1513,6 +1521,53 @@ export async function pullTranscendConfiguration(
     if (pulledWorkflowConfigs.length > 0) {
       result['workflow-configs'] = pulledWorkflowConfigs;
     }
+  }
+
+  if (
+    preferenceWorkflowConfigs.length > 0 &&
+    resources.includes(TranscendPullResource.PreferenceWorkflowConfigs)
+  ) {
+    const needsWorkflowTitles = preferenceWorkflowConfigs.some(
+      (trigger) => trigger.workflowConfigId,
+    );
+    const dsrWorkflows = needsWorkflowTitles
+      ? await fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
+      : [];
+
+    result['preference-workflow-configs'] = preferenceWorkflowConfigs.map(
+      (trigger): PreferenceWorkflowConfigInput => {
+        const purposes = parsePurposesFromTriggerCondition(trigger.triggerCondition);
+        const shared = {
+          name: trigger.name,
+          'data-subject-type': trigger.subject.type,
+          'is-silent': trigger.isSilent,
+          'allow-unauthenticated': trigger.allowUnauthenticated,
+          'is-active': trigger.isActive,
+          purposes,
+        };
+
+        if (trigger.workflowConfigId) {
+          const workflowTitle = resolveWorkflowTitleFromId(dsrWorkflows, trigger.workflowConfigId);
+          if (workflowTitle) {
+            return {
+              ...shared,
+              'workflow-title': workflowTitle,
+            };
+          }
+          // Workflow deleted or unreadable — fall back to legacy fields so YAML stays usable
+        }
+
+        return {
+          ...shared,
+          'action-type': trigger.action.type,
+          'data-silo-titles':
+            trigger.dataSilos.length > 0 ? trigger.dataSilos.map((ds) => ds.title) : undefined,
+        };
+      },
+    );
   }
 
   if (

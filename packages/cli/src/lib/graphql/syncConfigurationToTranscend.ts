@@ -29,6 +29,7 @@ import {
   syncPromptGroups,
   syncPromptPartials,
   syncPrompts,
+  syncConsentWorkflowTriggers,
   syncWorkflowConfigs,
   syncPreferenceOptionValues,
   syncPurposes,
@@ -125,6 +126,7 @@ export async function syncConfigurationToTranscend(
     messages,
     policies,
     partitions,
+    'preference-workflow-configs': preferenceWorkflowConfigs,
     'workflow-configs': workflowConfigs,
   } = input;
 
@@ -164,6 +166,20 @@ export async function syncConfigurationToTranscend(
       ? fetchApiKeys(client, { apiKeyInputs: input, logger })
       : {},
   ]);
+
+  if (preferenceWorkflowConfigs?.length) {
+    const preferenceWorkflowConfigsSuccess = await syncConsentWorkflowTriggers(
+      client,
+      preferenceWorkflowConfigs,
+      {
+        logger: activeLogger,
+        pageSize,
+      },
+    );
+    if (!preferenceWorkflowConfigsSuccess) {
+      recordError('preference-workflow-configs', 'Failed to sync preference workflow configs');
+    }
+  }
 
   if (workflowConfigs?.length) {
     const workflowConfigsSuccess = await syncWorkflowConfigs(client, workflowConfigs, {

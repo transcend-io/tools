@@ -6,8 +6,18 @@ import { resolveWorkflowConfigMatch } from '../resolveWorkflowConfigMatch.js';
 
 /** Minimal workflow config node for match tests */
 function workflowNode(
-  overrides: Partial<WorkflowConfigNode> & Pick<WorkflowConfigNode, 'id' | 'title' | 'action'>,
+  overrides: Omit<Partial<WorkflowConfigNode>, 'action'> &
+    Pick<WorkflowConfigNode, 'id' | 'title'> & {
+      /** Request action (id optional in tests) */
+      action: {
+        /** Action ID */
+        id?: string;
+        /** Action type */
+        type: WorkflowConfigNode['action']['type'];
+      };
+    },
 ): WorkflowConfigNode {
+  const { action, ...rest } = overrides;
   return {
     subtitle: null,
     description: null,
@@ -19,7 +29,11 @@ function workflowNode(
     expiryTime: null,
     subject: null,
     WorkflowConfigAttributeKeys: null,
-    ...overrides,
+    ...rest,
+    action: {
+      id: action.id ?? `action-${overrides.id}`,
+      type: action.type,
+    },
   };
 }
 

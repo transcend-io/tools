@@ -82,6 +82,19 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ManagePreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ManageDataMap],
+  // Primary: ManagePreferenceStoreSettings (createOrUpdateConsentWorkflowTrigger).
+  // Related fetches used during sync:
+  // - ViewDataSubjectRequestSettings — resolve action-type / data-subject-type (legacy)
+  // - ViewConsentManager — resolve purposes[].tracking-type → purposeId
+  // - ViewDataMap — resolve data-silo-titles (legacy, only when present)
+  // - ManageWorkflows — list DSR workflows when workflow-title is set (V2)
+  [TranscendPullResource.PreferenceWorkflowConfigs]: [
+    ScopeName.ManagePreferenceStoreSettings,
+    ScopeName.ViewDataSubjectRequestSettings,
+    ScopeName.ViewConsentManager,
+    ScopeName.ViewDataMap,
+    ScopeName.ManageWorkflows,
+  ],
   // ManageWorkflows inherits ViewDataSubjectRequestSettings and ViewGlobalAttributes
   // (needed to resolve action/data-subject/attribute-key names to IDs on push)
   [TranscendPullResource.WorkflowConfigs]: [ScopeName.ManageWorkflows],
@@ -133,6 +146,12 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
   ],
   [TranscendPullResource.PreferenceOptions]: [ScopeName.ViewPreferenceStoreSettings],
   [TranscendPullResource.SystemDiscovery]: [ScopeName.ViewDataMap],
+  // ViewPreferenceStoreSettings — consentWorkflowTriggers GraphQL query
+  // ManageWorkflows — resolve workflowConfigId → workflow-title for V2 configs
+  [TranscendPullResource.PreferenceWorkflowConfigs]: [
+    ScopeName.ViewPreferenceStoreSettings,
+    ScopeName.ManageWorkflows,
+  ],
   [TranscendPullResource.WorkflowConfigs]: [ScopeName.ViewWorkflows],
 };
 
@@ -171,6 +190,7 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.Purposes]: 'purposes',
   [TranscendPullResource.PreferenceOptions]: 'preference-options',
   [TranscendPullResource.SystemDiscovery]: 'system-discovery',
+  [TranscendPullResource.PreferenceWorkflowConfigs]: 'preference-workflow-configs',
   [TranscendPullResource.WorkflowConfigs]: 'workflow-configs',
 };
 
