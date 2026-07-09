@@ -5,6 +5,7 @@ import {
   ActionItemCode,
   RetentionType,
   PreferenceTopicType,
+  WorkflowConfigType,
   type ConsentThemeInput,
   type ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -39,6 +40,7 @@ import {
   fetchAllProcessingActivities,
   fetchAllPrompts,
   fetchAllPurposesAndPreferences,
+  fetchAllWorkflowConfigs,
   fetchAllPreferenceOptionValues,
   fetchPartitions,
   fetchAllTeams,
@@ -51,11 +53,12 @@ import {
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
+  workflowConfigMatchKey,
   type AssessmentRule,
 } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
-import { flatten, keyBy, mapValues } from 'lodash-es';
+import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
 
 /* eslint-disable max-lines */
 import {
@@ -93,6 +96,7 @@ import {
   AssessmentSectionQuestionInput,
   RiskLogicInput,
   ConsentPurpose,
+  WorkflowConfigInput,
   ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
@@ -193,6 +197,7 @@ export async function pullTranscendConfiguration(
     assessments,
     assessmentTemplates,
     purposes,
+    workflowConfigs,
     preferenceOptionValues,
     siloDiscoveryResults,
   ] = await Promise.all([
@@ -358,6 +363,12 @@ export async function pullTranscendConfiguration(
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)
       ? fetchAllPurposesAndPreferences(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.WorkflowConfigs)
+      ? fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
       : [],
     resources.includes(TranscendPullResource.PreferenceOptions)
       ? fetchAllPreferenceOptionValues(client, { logger })
@@ -1433,6 +1444,53 @@ export async function pullTranscendConfiguration(
         ),
       }),
     );
+  }
+
+  if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
+    const pulledWorkflowConfigs = workflowConfigs.map(
+      (config): WorkflowConfigInput => ({
+        title: config.title.defaultMessage,
+        'action-type': config.action.type,
+        ...(config.internalName ? { 'internal-name': config.internalName } : {}),
+        ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
+        ...(config.description ? { description: config.description.defaultMessage } : {}),
+        ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
+        visibility: config.workflowConfigVisibility,
+        type: config.workflowConfigType,
+        ...(config.collectDataSubjectRegions
+          ? {
+              'collect-data-subject-regions': config.collectDataSubjectRegions,
+            }
+          : {}),
+        ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
+        ...(config.expiryTime && config.expiryTime.length > 0
+          ? { 'expiry-time': config.expiryTime }
+          : {}),
+        ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
+          ? {
+              'attribute-keys': config.WorkflowConfigAttributeKeys.map(
+                ({ attributeKey }) => attributeKey.name,
+              ),
+            }
+          : {}),
+      }),
+    );
+    // TODO: https://linear.app/transcend/issue/WAL-10312 - remove once internalName is unique in DB
+    const configsByMatchKey = groupBy(workflowConfigs, workflowConfigMatchKey);
+    for (const configs of Object.values(configsByMatchKey)) {
+      if (configs.length > 1) {
+        const sample = configs[0];
+        logger.warn(
+          `Found "${configs.length}" workflow configs with the same title, action-type, ` +
+            `data-subject-type, and region-list for "${sample.title.defaultMessage}" ` +
+            `(${sample.action.type}). Push will fail until they are disambiguated ` +
+            '(for example with unique internal names).',
+        );
+      }
+    }
+    if (pulledWorkflowConfigs.length > 0) {
+      result['workflow-configs'] = pulledWorkflowConfigs;
+    }
   }
 
   if (

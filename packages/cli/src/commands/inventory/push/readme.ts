@@ -146,6 +146,21 @@ Some things to note about this sync process:
 - a) Data silo owners: If you assign an email address to a data silo, you must first make sure that user is invited into your Transcend instance (https://app.transcend.io/admin/users).
 - b) API keys: This CLI will not create new API keys. You will need to first create the new API keys on the Admin Dashboard (https://app.transcend.io/infrastructure/api-keys). You can then list out the titles of the API keys that you generated in your transcend.yml file, after which the CLI is capable of updating that API key to be able to respond to different data silos in your Data Map
 
+#### Workflow configs push notes
+
+\`workflow-configs\` are matched using a cascading key:
+
+1. \`internal-name\` (when provided; zero matches create a new workflow instead of falling through)
+2. \`title\`
+3. \`action-type\`
+4. \`data-subject-type\` (when provided in YAML)
+5. \`region-list\` (order-independent set match)
+
+- **Create:** If no workflow matches after the cascade, the CLI creates a DSR workflow via \`createWorkflow\` (starts as Draft with default associations), then applies the remaining YAML fields via \`updateWorkflowConfig\`.
+- **Update:** If a unique match exists, fields from YAML are updated in place. When \`internal-name\` is provided on update, it is written back via \`updateWorkflowConfig\`.
+- Preference-management workflows are not supported — manage those in the [Admin Dashboard](https://app.transcend.io/privacy-requests/workflows).
+- Publishing (\`visibility: PUBLISHED\`) requires a \`data-subject-type\`.
+
 #### Preference management push notes
 
 When pushing \`purposes\`, \`preference-options\`, or nested \`preference-topics\`:

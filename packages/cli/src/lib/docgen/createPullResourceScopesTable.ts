@@ -217,6 +217,12 @@ const RESOURCE_DOCUMENTATION: Record<
 (https://app.transcend.io/data-map/data-inventory/silo-discovery)',
     ],
   },
+  [TranscendPullResource.WorkflowConfigs]: {
+    description: 'DSR workflow config settings.',
+    markdownLinks: [
+      '[Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)',
+    ],
+  },
 };
 
 /**

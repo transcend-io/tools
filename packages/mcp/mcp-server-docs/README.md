@@ -24,7 +24,7 @@ Or run from a checkout of this repository (see **Run from the monorepo** below).
 transcend-mcp-docs
 ```
 
-The process speaks MCP over **stdio** and is meant to be launched by an MCP client (for example Cursor or Claude Desktop), not used as an interactive shell.
+The process speaks MCP over **stdio** and is meant to be launched by an MCP client (for example, Cursor or Claude Desktop), not used as an interactive shell.
 
 ### MCP client configuration
 
