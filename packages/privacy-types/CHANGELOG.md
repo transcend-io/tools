@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.7.0
+
+### Minor Changes
+
+- 2355c9e: Add privacy-center sync/pull for displayed-child-organization-uris, workflows-custom-fields-required, footer-layout, footer-links, home, and expandSideMenuByDefault. Honor publishToPrivacyCenter via skipPublish on updatePrivacyCenter. Regenerate transcend.yml JSON schema.
+
 ## 5.6.0
 
 ### Minor Changes
