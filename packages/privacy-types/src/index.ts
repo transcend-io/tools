@@ -24,6 +24,7 @@ export * from './macroregion.js';
 export * from './objects.js';
 export * from './oneTrust/index.js';
 export * from './preferences.js';
+export * from './policy.js';
 export * from './processingActivity.js';
 export * from './prompt.js';
 export * from './promptAVendor.js';

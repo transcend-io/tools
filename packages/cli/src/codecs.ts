@@ -64,6 +64,7 @@ import {
   CollectDataSubjectRegions,
   ConsentThemeInput,
   ConsentVariantInput,
+  PolicyType,
 } from '@transcend-io/privacy-types';
 import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // eslint-disable-next-line eslint-comments/disable-enable-pair
@@ -1405,6 +1406,11 @@ export const PolicyInput = t.intersection([
     title: t.string,
   }),
   t.partial({
+    /**
+     * Policy type. On create, defaults from title
+     * (Privacy Policy / Cookie Policy / CUSTOM).
+     */
+    type: valuesOf(PolicyType),
     /** Effective date of policy */
     effectiveOn: t.string,
     /** Whether or not to disable the effective date */

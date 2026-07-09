@@ -41531,6 +41531,10 @@
           {
             "type": "object",
             "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["PRIVACY_POLICY", "COOKIE_POLICY", "CUSTOM"]
+              },
               "effectiveOn": {
                 "type": "string"
               },
