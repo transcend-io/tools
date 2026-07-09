@@ -261,7 +261,7 @@ cp secret.env.example secret.env
 For stdio / MCP client development, prefer **OAuth** credentials:
 
 - `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, `TRANSCEND_OAUTH_REDIRECT_PORT`
-- Register redirect URI `http://127.0.0.1:{port}/callback` in the [OAuth clients admin page](https://app.transcend.com/admin/oauth-clients)
+- Choose an available localhost port number and register redirect URI `http://127.0.0.1:{port}/callback` in the [OAuth clients admin page](https://app.transcend.io/admin/oauth-clients) (`{port}` is the number you chose)
 
 See [packages/mcp/README.md](./packages/mcp/README.md#quick-start-stdio--oauth) for the full setup guide.
 

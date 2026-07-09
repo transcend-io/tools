@@ -12,7 +12,7 @@ This package is **not** a standalone MCP CLI: it has no `bin`. Domain servers an
 
 For development, use a checkout of this repository (see **Development** below).
 
-OAuth credentials for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers). Create the OAuth client at [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients) and set `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. The redirect URI must exactly match `http://127.0.0.1:{port}/callback` — see the domain package READMEs and [MCP root README](../README.md#oauth-client-setup) for setup details.
+OAuth credentials for running a domain or unified MCP server locally belong in the repository root **`secret.env`** (copy from [`secret.env.example`](../../../secret.env.example)); see [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers). Create the OAuth client at [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients) and set `TRANSCEND_OAUTH_CLIENT_ID`, `TRANSCEND_OAUTH_CLIENT_SECRET`, and `TRANSCEND_OAUTH_REDIRECT_PORT`. The redirect URI must exactly match `http://127.0.0.1:{port}/callback`, where `{port}` is an available port number you choose on your machine — see the domain package READMEs and [MCP root README](../README.md#oauth-client-setup) for setup details.
 
 ## What's inside
 
