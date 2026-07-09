@@ -1,0 +1,37 @@
+# Workflow configs are matched using a cascading key:
+# internal-name → title → action-type → data-subject-type → region-list.
+# Missing matches are created (DSR only); existing matches are updated.
+# Notes:
+#   - New workflows start as Draft with default associations; set visibility explicitly to publish.
+#   - region-list entries must be ISO country / subdivision codes (e.g. GB, DE, US-CA, EU).
+#   - expiry-time, when set, MUST include a `region: default` entry, and every value must be > 0 days.
+workflow-configs:
+  - internal-name: customer-access-workflow
+    action-type: ACCESS
+    title: Customer Data Access Request
+    subtitle: Submit a request to access your personal data
+    description: We will compile and deliver a copy of the personal data we hold about you.
+    data-subject-type: Customer
+    visibility: PUBLISHED
+    collect-data-subject-regions: COLLECT
+    region-list:
+      - US
+      - US-CA
+    expiry-time:
+      # A `region: default` entry is required whenever expiry-time is set
+      - region: default
+        value: 45
+      - region: US-CA
+        value: 30
+    attribute-keys:
+      - Priority
+
+  - internal-name: customer-erasure-workflow
+    action-type: ERASURE
+    title: Customer Data Erasure Request
+    data-subject-type: Customer
+    visibility: INTERNAL
+    region-list:
+      - GB
+      - DE
+      - FR

@@ -59,6 +59,9 @@ import {
   Controllership,
   RetentionType,
   DataProtectionImpactAssessmentStatus,
+  WorkflowConfigVisibility,
+  WorkflowConfigType,
+  CollectDataSubjectRegions,
   ConsentThemeInput,
   ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -1952,6 +1955,55 @@ export const ConsentPurpose = t.intersection([
 export type ConsentPurpose = t.TypeOf<typeof ConsentPurpose>;
 
 /**
+ * Input to define a workflow config. Push matches using a cascading key
+ * (internal-name → title → action-type → data-subject-type → region-list) and
+ * creates the workflow when no match exists (DSR only).
+ */
+export const WorkflowConfigInput = t.intersection([
+  t.type({
+    /** User-facing title */
+    title: t.string,
+    /** Request action type */
+    'action-type': valuesOf(RequestAction),
+  }),
+  t.partial({
+    /**
+     * Internal name of the workflow config. When provided, used as the first
+     * match key on push.
+     */
+    'internal-name': t.string,
+    /** Subtitle */
+    subtitle: t.string,
+    /** Description */
+    description: t.string,
+    /** Data subject type */
+    'data-subject-type': t.string,
+    /** Visibility tier */
+    visibility: valuesOf(WorkflowConfigVisibility),
+    /** Workflow config type (read-only on pull; included for reference) */
+    type: valuesOf(WorkflowConfigType),
+    /** Whether to collect the data subject's region during intake */
+    'collect-data-subject-regions': valuesOf(CollectDataSubjectRegions),
+    /** Region allow list */
+    'region-list': t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
+    /** Per-region request expiry times */
+    'expiry-time': t.array(
+      t.type({
+        /** Region code (or 'default') */
+        region: valuesOf({ default: 'default', ...IsoCountryCode, ...IsoCountrySubdivisionCode }),
+        /** Expiry time in days */
+        value: t.number,
+      }),
+    ),
+    /** Attribute key (custom field) names to associate with the workflow */
+    'attribute-keys': t.array(t.string),
+  }),
+]);
+
+/** Type override */
+export type WorkflowConfigInput = t.TypeOf<typeof WorkflowConfigInput>;
+
+/**
  * Input to define a silo discovery results
  *
  * @see https://docs.transcend.io/docs/silo-discovery
@@ -2113,6 +2165,10 @@ export const TranscendInput = t.partial({
    * The full list of silo discovery results
    */
   'system-discovery': t.array(SiloDiscoveryResultInput),
+  /**
+   * DSR workflow config settings (create or update via cascading match key)
+   */
+  'workflow-configs': t.array(WorkflowConfigInput),
   /**
    * Preference management options for multi and single selects
    */
