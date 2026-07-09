@@ -1,37 +1,85 @@
-import { RequestAction, WorkflowConfigType } from '@transcend-io/privacy-types';
+import {
+  CollectDataSubjectRegions,
+  IsoCountryCode,
+  IsoCountrySubdivisionCode,
+  RequestAction,
+  WorkflowConfigType,
+  WorkflowConfigVisibility,
+} from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
-import { WORKFLOWS } from './gqls/workflow.js';
+import { WORKFLOW_CONFIGS } from './gqls/workflowConfig.js';
 
-export interface WorkflowConfigSummary {
+/** Raw workflow config node returned by GraphQL */
+export interface WorkflowConfigNode {
   /** Workflow config ID */
   id: string;
-  /** Internal name (preferred display when set) */
-  internalName: string | null;
-  /** External localized title */
+  /** Title */
   title: {
-    /** Default message for the title */
+    /** Default message */
     defaultMessage: string;
   };
-  /** Action associated with this workflow */
+  /** Subtitle */
+  subtitle: {
+    /** Default message */
+    defaultMessage: string;
+  } | null;
+  /** Description */
+  description: {
+    /** Default message */
+    defaultMessage: string;
+  } | null;
+  /** Internal name */
+  internalName: string | null;
+  /** Visibility tier */
+  workflowConfigVisibility: WorkflowConfigVisibility;
+  /** Workflow type (DSR or PREFERENCE_MANAGEMENT) */
+  workflowConfigType: WorkflowConfigType;
+  /** Whether the workflow collects the data subject's region */
+  collectDataSubjectRegions: CollectDataSubjectRegions | null;
+  /** Region allow list */
+  regionList: (IsoCountryCode | IsoCountrySubdivisionCode)[];
+  /** Per-region request expiry times */
+  expiryTime:
+    | {
+        /** Region code (or 'default') */
+        region: 'default' | IsoCountryCode | IsoCountrySubdivisionCode;
+        /** Expiry time in days */
+        value: number;
+      }[]
+    | null;
+  /** Request action */
   action: {
     /** Action ID */
     id: string;
     /** Action type */
     type: RequestAction;
   };
-  /** Data subject associated with this workflow */
+  /** Data subject */
   subject: {
     /** Data subject ID */
     id: string;
-    /** Data subject type slug */
+    /** Data subject type */
     type: string;
   } | null;
-  /** Workflow config type */
-  workflowConfigType: WorkflowConfigType;
+  /** Attribute keys (custom fields) associated with the workflow */
+  WorkflowConfigAttributeKeys:
+    | {
+        /** Attribute key */
+        attributeKey: {
+          /** Attribute key ID */
+          id: string;
+          /** Attribute key name */
+          name: string;
+        };
+      }[]
+    | null;
 }
+
+/** Alias used by consent-workflow-trigger helpers */
+export type WorkflowConfigSummary = WorkflowConfigNode;
 
 const PAGE_SIZE = 50;
 
@@ -39,31 +87,31 @@ const PAGE_SIZE = 50;
  * Display title for a workflow config, matching the admin UI:
  * `internalName` when set, otherwise the external title.
  *
- * @param workflow - Workflow config summary
+ * @param workflow - Workflow config
  * @returns Display title used in Preference Workflows dropdown
  */
-export function getWorkflowConfigDisplayTitle(workflow: WorkflowConfigSummary): string {
+export function getWorkflowConfigDisplayTitle(workflow: WorkflowConfigNode): string {
   return workflow.internalName || workflow.title.defaultMessage;
 }
 
 /**
- * Fetch all workflow configs in the organization, optionally filtered by type.
+ * Fetch all workflow configs in the organization
  *
  * @param client - GraphQL client
  * @param options - Options
- * @returns Workflow configs
+ * @returns All workflow configs
  */
 export async function fetchAllWorkflowConfigs(
   client: GraphQLClient,
   options: {
+    /** Filter by workflow config type */
+    workflowConfigType?: WorkflowConfigType;
     /** Logger instance */
     logger?: Logger;
-    /** Filter to a specific workflow config type (e.g. DSR) */
-    workflowConfigType?: WorkflowConfigType;
   } = {},
-): Promise<WorkflowConfigSummary[]> {
+): Promise<WorkflowConfigNode[]> {
   const { logger, workflowConfigType } = options;
-  const workflows: WorkflowConfigSummary[] = [];
+  const configs: WorkflowConfigNode[] = [];
   let offset = 0;
 
   let shouldContinue = false;
@@ -71,12 +119,12 @@ export async function fetchAllWorkflowConfigs(
     const {
       workflows: { nodes },
     } = await makeGraphQLRequest<{
-      /** Workflows list */
+      /** Workflows */
       workflows: {
-        /** Page of workflow configs */
-        nodes: WorkflowConfigSummary[];
+        /** List */
+        nodes: WorkflowConfigNode[];
       };
-    }>(client, WORKFLOWS, {
+    }>(client, WORKFLOW_CONFIGS, {
       variables: {
         first: PAGE_SIZE,
         offset,
@@ -84,12 +132,13 @@ export async function fetchAllWorkflowConfigs(
       },
       logger,
     });
-    workflows.push(...nodes);
+
+    configs.push(...nodes);
     offset += PAGE_SIZE;
     shouldContinue = nodes.length === PAGE_SIZE;
   } while (shouldContinue);
 
-  return workflows.sort((a, b) =>
+  return configs.sort((a, b) =>
     getWorkflowConfigDisplayTitle(a).localeCompare(getWorkflowConfigDisplayTitle(b)),
   );
 }
@@ -103,9 +152,9 @@ export async function fetchAllWorkflowConfigs(
  * @returns Matching workflow
  */
 export function resolveWorkflowConfigByTitle(
-  workflows: WorkflowConfigSummary[],
+  workflows: WorkflowConfigNode[],
   workflowTitle: string,
-): WorkflowConfigSummary {
+): WorkflowConfigNode {
   const matches = workflows.filter(
     (workflow) => getWorkflowConfigDisplayTitle(workflow) === workflowTitle,
   );

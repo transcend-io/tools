@@ -1,11 +1,58 @@
 import type { LocaleValue } from '@transcend-io/internationalization';
-import { PrivacyCenterThemePartial } from '@transcend-io/privacy-types';
+import type {
+  PrivacyCenterFooterLayout,
+  PrivacyCenterThemePartial,
+} from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest } from '../api/makeGraphQLRequest.js';
 import { fetchPrivacyCenterUrl } from './fetchPrivacyCenterId.js';
 import { PRIVACY_CENTER } from './gqls/privacyCenter.js';
+
+export interface PrivacyCenterChildOrganization {
+  /** Organization ID */
+  id: string;
+  /** Organization URI */
+  uri: string;
+  /** Organization name */
+  name: string;
+}
+
+export interface PrivacyCenterFooterLinkIcon {
+  /** Asset file ID */
+  id: string;
+  /** Public URL where the asset can be downloaded */
+  src: string;
+  /** Storage key for the asset */
+  key: string;
+  /** File size in bytes */
+  size: number;
+  /** MIME type of the asset */
+  mimetype: string;
+}
+
+export interface PrivacyCenterFooterLink {
+  /** Footer link ID */
+  id: string;
+  /** Display order */
+  displayOrder: number;
+  /** Link title */
+  title: {
+    /** Default locale message */
+    defaultMessage: string;
+  };
+  /** Link URL (default locale) */
+  url: string;
+  /** Optional icon image for the footer link */
+  icon?: PrivacyCenterFooterLinkIcon;
+  /**
+   * When true with an icon set, render as icon-only (title is used for
+   * accessibility). When false with an icon set, render icon beside the
+   * visible label.
+   */
+  iconOnly: boolean;
+}
 
 export interface PrivacyCenter {
   /** ID of the privacy center */
@@ -46,6 +93,21 @@ export interface PrivacyCenter {
   useCustomEmailDomain: boolean;
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: boolean;
+  /**
+   * Privacy Center "home" / back-to-site link URL shown in the privacy center
+   * header
+   */
+  home: string;
+  /** Whether the side menu is expanded by default on the privacy center */
+  expandSideMenuByDefault: boolean;
+  /** Whether custom fields are required on privacy center workflows */
+  workflowsCustomFieldsRequired: boolean;
+  /** Footer layout */
+  footerLayout: PrivacyCenterFooterLayout;
+  /** Child organizations displayed on this privacy center */
+  childOrganizations: PrivacyCenterChildOrganization[];
+  /** Footer links displayed on this privacy center */
+  footerLinks: PrivacyCenterFooterLink[];
   /** The theme object of colors to display on the privacy center */
   theme: PrivacyCenterThemePartial;
 }
@@ -67,12 +129,38 @@ export async function fetchAllPrivacyCenters(
   const { logger } = options;
   const deployedPrivacyCenterUrl = await fetchPrivacyCenterUrl(client, { logger });
   const {
-    privacyCenter: { themeStr, ...rest },
+    privacyCenter: { themeStr, footerLinks, home, ...rest },
   } = await makeGraphQLRequest<{
     /** Privacy centers */
-    privacyCenter: Omit<PrivacyCenter, 'theme'> & {
+    privacyCenter: Omit<PrivacyCenter, 'theme' | 'footerLinks' | 'home'> & {
       /** Theme string */
       themeStr: string;
+      /** Home / back-to-site link as returned by GraphQL */
+      home: {
+        /** Default locale message */
+        defaultMessage: string;
+      };
+      /** Footer links as returned by GraphQL */
+      footerLinks: {
+        /** Footer link ID */
+        id: string;
+        /** Display order */
+        displayOrder: number;
+        /** Link title */
+        title: {
+          /** Default locale message */
+          defaultMessage: string;
+        };
+        /** Link URL */
+        url: {
+          /** Default locale message */
+          defaultMessage: string;
+        };
+        /** Optional icon image for the footer link */
+        icon: PrivacyCenterFooterLinkIcon | null;
+        /** Whether the link renders as icon-only */
+        iconOnly: boolean;
+      }[];
     };
   }>(client, PRIVACY_CENTER, {
     variables: { url: deployedPrivacyCenterUrl },
@@ -82,6 +170,15 @@ export async function fetchAllPrivacyCenters(
   return [
     {
       ...rest,
+      home: home.defaultMessage,
+      footerLinks: footerLinks.map((link) => ({
+        id: link.id,
+        displayOrder: link.displayOrder,
+        title: link.title,
+        url: link.url.defaultMessage,
+        ...(link.icon ? { icon: link.icon } : {}),
+        iconOnly: link.iconOnly,
+      })),
       theme: JSON.parse(themeStr),
     },
   ];

@@ -30,6 +30,7 @@ import {
   syncPromptPartials,
   syncPrompts,
   syncConsentWorkflowTriggers,
+  syncWorkflowConfigs,
   syncPreferenceOptionValues,
   syncPurposes,
   syncPreferenceTopics,
@@ -126,6 +127,7 @@ export async function syncConfigurationToTranscend(
     policies,
     partitions,
     'consent-workflow-triggers': consentWorkflowTriggers,
+    'workflow-configs': workflowConfigs,
   } = input;
 
   const preferenceOptions = input['preference-options'];
@@ -172,6 +174,15 @@ export async function syncConfigurationToTranscend(
     });
     if (!triggersSuccess) {
       recordError('consent-workflow-triggers', 'Failed to sync consent workflow triggers');
+    }
+  }
+
+  if (workflowConfigs?.length) {
+    const workflowConfigsSuccess = await syncWorkflowConfigs(client, workflowConfigs, {
+      logger: activeLogger,
+    });
+    if (!workflowConfigsSuccess) {
+      recordError('workflow-configs', 'Failed to sync workflow configs');
     }
   }
 
@@ -521,8 +532,17 @@ export async function syncConfigurationToTranscend(
 
   // Sync privacy center
   if (privacyCenter) {
-    const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter, { logger });
-    encounteredError = encounteredError || !privacyCenterSuccess;
+    try {
+      const privacyCenterSuccess = await syncPrivacyCenter(client, privacyCenter, {
+        logger,
+        skipPublish: !publishToPrivacyCenter,
+      });
+      if (!privacyCenterSuccess) {
+        recordError('privacy-center', 'Failed to sync privacy center');
+      }
+    } catch (err) {
+      recordError('privacy-center', (err as Error).message);
+    }
   }
 
   // Sync messages

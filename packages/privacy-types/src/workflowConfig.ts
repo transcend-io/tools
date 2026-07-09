@@ -24,3 +24,15 @@ export const WorkflowConfigVisibility = makeEnum({
 /** Override type */
 export type WorkflowConfigVisibility =
   (typeof WorkflowConfigVisibility)[keyof typeof WorkflowConfigVisibility];
+
+/** Whether a workflow collects the data subject's region during intake */
+export const CollectDataSubjectRegions = makeEnum({
+  /** Do not collect the data subject's region */
+  DoNotCollect: 'DO_NOT_COLLECT',
+  /** Collect the data subject's region */
+  Collect: 'COLLECT',
+});
+
+/** Override type */
+export type CollectDataSubjectRegions =
+  (typeof CollectDataSubjectRegions)[keyof typeof CollectDataSubjectRegions];

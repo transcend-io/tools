@@ -4,17 +4,24 @@ import { describe, expect, it } from 'vitest';
 import {
   getWorkflowConfigDisplayTitle,
   resolveWorkflowConfigByTitle,
-  type WorkflowConfigSummary,
+  type WorkflowConfigNode,
 } from '../fetchAllWorkflowConfigs.js';
 
 const baseWorkflow = (
-  overrides: Partial<WorkflowConfigSummary> & Pick<WorkflowConfigSummary, 'id'>,
-): WorkflowConfigSummary => ({
+  overrides: Partial<WorkflowConfigNode> & Pick<WorkflowConfigNode, 'id'>,
+): WorkflowConfigNode => ({
+  subtitle: null,
+  description: null,
   internalName: null,
   title: { defaultMessage: 'Default Title' },
+  workflowConfigVisibility: 'DRAFT' as WorkflowConfigNode['workflowConfigVisibility'],
+  workflowConfigType: WorkflowConfigType.DSR,
+  collectDataSubjectRegions: null,
+  regionList: [],
+  expiryTime: null,
   action: { id: 'a1', type: RequestAction.Erasure },
   subject: { id: 's1', type: 'customer' },
-  workflowConfigType: WorkflowConfigType.DSR,
+  WorkflowConfigAttributeKeys: null,
   ...overrides,
 });
 

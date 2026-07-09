@@ -56,6 +56,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend migration sync-ot`](#transcend-migration-sync-ot)
   - [`transcend policy activate`](#transcend-policy-activate)
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
+  - [`transcend policy download`](#transcend-policy-download)
   - [`transcend policy eval`](#transcend-policy-eval)
   - [`transcend policy lint`](#transcend-policy-lint)
   - [`transcend policy bundles`](#transcend-policy-bundles)
@@ -2431,7 +2432,7 @@ transcend consent delete-preference-records \
 
 ```txt
 USAGE
-  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|consentWorkflowTriggers] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
+  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|consentWorkflowTriggers|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
   transcend inventory pull --help
 
 Generates a transcend.yml by pulling the configuration from your Transcend instance.
@@ -2445,7 +2446,7 @@ This command can be helpful if you are looking to:
 
 FLAGS
       --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
-     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|consentWorkflowTriggers, separator = ,]
+     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|consentWorkflowTriggers|workflowConfigs, separator = ,]
      [--file]                      Path to the YAML file to pull into                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--dataSiloIds]...            The UUIDs of the data silos that should be pulled into the YAML file                                                                                                                                                                                        [separator = ,]
@@ -2500,6 +2501,7 @@ The API key permissions for this command vary based on the `resources` argument:
 | `preferenceOptions`       | `preference-options`        | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                                              | View Preference Store Settings                       | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
 | `systemDiscovery`         | `system-discovery`          | System discovery results                                                                                                                                                               | View Data Map                                        | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
 | `consentWorkflowTriggers` | `consent-workflow-triggers` | Consent workflow trigger definitions (Workflows → Preference Workflows). Legacy: action-type + data-silo-titles. V2: workflow-title (DSR workflow). Purposes drive trigger conditions. | View Preference Store Settings, Manage Workflows     | [Workflows -> Preference Workflows](https://app.transcend.io/preference-store/consent-workflows)                                                                                                                                                       |
+| `workflowConfigs`         | `workflow-configs`          | DSR workflow config settings.                                                                                                                                                          | View Workflows                                       | [Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)                                                                                                                                                                      |
 
 #### Examples
 
@@ -2714,6 +2716,7 @@ The API key permissions for this command vary based on the resources declared as
 | `preferenceOptions`       | `preference-options`        | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                                              | Manage Preference Store Settings                                                                                            | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
 | `systemDiscovery`         | `system-discovery`          | System discovery results                                                                                                                                                               | Manage Data Map                                                                                                             | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
 | `consentWorkflowTriggers` | `consent-workflow-triggers` | Consent workflow trigger definitions (Workflows → Preference Workflows). Legacy: action-type + data-silo-titles. V2: workflow-title (DSR workflow). Purposes drive trigger conditions. | Manage Preference Store Settings, View Data Subject Request Settings, View Consent Manager, View Data Map, Manage Workflows | [Workflows -> Preference Workflows](https://app.transcend.io/preference-store/consent-workflows)                                                                                                                                                       |
+| `workflowConfigs`         | `workflow-configs`          | DSR workflow config settings.                                                                                                                                                          | Manage Workflows                                                                                                            | [Workflows -> DSR Workflows](https://app.transcend.io/privacy-requests/workflows)                                                                                                                                                                      |
 
 #### Examples
 
@@ -2802,6 +2805,21 @@ Some things to note about this sync process:
 
 - a) Data silo owners: If you assign an email address to a data silo, you must first make sure that user is invited into your Transcend instance (https://app.transcend.io/admin/users).
 - b) API keys: This CLI will not create new API keys. You will need to first create the new API keys on the Admin Dashboard (https://app.transcend.io/infrastructure/api-keys). You can then list out the titles of the API keys that you generated in your transcend.yml file, after which the CLI is capable of updating that API key to be able to respond to different data silos in your Data Map
+
+#### Workflow configs push notes
+
+`workflow-configs` are matched using a cascading key:
+
+1. `internal-name` (when provided; zero matches create a new workflow instead of falling through)
+2. `title`
+3. `action-type`
+4. `data-subject-type` (when provided in YAML)
+5. `region-list` (order-independent set match)
+
+- **Create:** If no workflow matches after the cascade, the CLI creates a DSR workflow via `createWorkflow` (starts as Draft with default associations), then applies the remaining YAML fields via `updateWorkflowConfig`.
+- **Update:** If a unique match exists, fields from YAML are updated in place. When `internal-name` is provided on update, it is written back via `updateWorkflowConfig`.
+- Preference-management workflows are not supported — manage those in the [Admin Dashboard](https://app.transcend.io/privacy-requests/workflows).
+- Publishing (`visibility: PUBLISHED`) requires a `data-subject-type`.
 
 #### Preference management push notes
 
@@ -3337,7 +3355,7 @@ transcend inventory consent-managers-to-business-entities \
 
 ```txt
 USAGE
-  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
+  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
   transcend admin generate-api-keys --help
 
 This command allows for creating API keys across multiple Transcend instances. This is useful for customers that are managing many Transcend instances and need to regularly create, cycle or delete API keys across all of their instances.
@@ -3351,7 +3369,7 @@ FLAGS
       --password                                        The password for your account login
       --apiKeyTitle                                     The title of the API key being generated or destroyed
       --file                                            The file where API keys should be written to
-      --scopes                                          The list of scopes that should be given to the API key                                                                                                                                             [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules, separator = ,]
+      --scopes                                          The list of scopes that should be given to the API key                                                                                                                                             [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules, separator = ,]
      [--deleteExistingApiKey/--noDeleteExistingApiKey]  When true, if an API key exists with the specified apiKeyTitle, the existing API key is deleted                                                                                                    [default = true]
      [--createNewApiKey/--noCreateNewApiKey]            When true, new API keys will be created. Set to false if you simply want to delete all API keys with a title                                                                                       [default = true]
      [--parentOrganizationId]                           Filter for only a specific organization by ID, returning all child accounts associated with that organization
@@ -3776,6 +3794,65 @@ transcend policy deactivate --bundle-name=main
 
 Requires the **Activate Policy** scope on your API key.
 
+### `transcend policy download`
+
+```txt
+USAGE
+  transcend policy download (--bundle-name value) [--version value] [--output value] (--auth value) [--transcend-url value] [--json]
+  transcend policy download --help
+
+Resolves a bundle name and optional version label, fetches a short-lived presigned URL from the Policy Engine API, and downloads the compiled OPA bundle tarball (.tar.gz) to disk. When --version is omitted, downloads the currently active version (errors if none is active). With --json, prints metadata and the presigned URL without writing a file. Requires a Transcend API key with View Policy scope.
+
+FLAGS
+      --bundle-name     Tenant-unique policy bundle name
+     [--version]        Caller-supplied version label to download; defaults to the bundle's currently active version
+     [--output]         Destination file path for the compiled .tar.gz bundle (defaults to {bundleName}-{version}.tar.gz)
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
+     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--json]           Print version metadata and the presigned download URL as JSON without writing a file                                                                                                               [default = false]
+  -h  --help            Print help information and exit
+```
+
+#### Examples
+
+**Download the currently active version of a policy bundle**
+
+```sh
+transcend policy download --bundle-name=main --auth="$TRANSCEND_API_KEY"
+```
+
+**Download a specific compiled policy bundle version to the default path**
+
+```sh
+transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY"
+```
+
+**Download to an explicit output path**
+
+```sh
+transcend policy download \
+  --bundle-name=main \
+  --version=2026-06-25 \
+  --auth="$TRANSCEND_API_KEY" \
+  --output=./bundles/main-2026-06-25.tar.gz
+```
+
+**Print version metadata and the presigned URL as JSON without writing a file**
+
+```sh
+transcend policy download --bundle-name=main --version=2026-06-25 --auth="$TRANSCEND_API_KEY" --json
+```
+
+**Omit --auth by exporting TRANSCEND_API_KEY in the environment**
+
+```sh
+transcend policy download --bundle-name=main
+```
+
+Requires the **View Policy** scope on your API key.
+
+The downloaded artifact is a compiled OPA bundle tarball (`.tar.gz`), not a `.zip`.
+
 ### `transcend policy eval`
 
 ```txt
@@ -4132,3 +4209,5 @@ If you are trying to use the CLI inside a corporate firewall and need to send tr
 By default, if a CLI command has to call a Sombra endpoint, the primary Sombra gateway on the account will be used. If the primary Sombra is self hosted, you will need to provide the --sombraAuth variable.
 
 If you want to use a non-primary Sombra, you can specify the environment variable `SOMBRA_URL` e.g. `SOMBRA_URL="https://multi-tenant.sombra.us.transcend.io"` and that Sombra will be used instead.
+
+To associate a data silo with a specific configured Sombra instance in `transcend.yml`, set optional `sombra-id` on the data silo (the configured Sombra UUID). `transcend inventory pull --resources=dataSilos` writes this field when present; `transcend inventory push` updates it when set. Omitting `sombra-id` on push leaves the existing association unchanged.

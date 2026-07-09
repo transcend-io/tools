@@ -95,6 +95,9 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewDataMap,
     ScopeName.ManageWorkflows,
   ],
+  // ManageWorkflows inherits ViewDataSubjectRequestSettings and ViewGlobalAttributes
+  // (needed to resolve action/data-subject/attribute-key names to IDs on push)
+  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ManageWorkflows],
 };
 
 /**
@@ -149,6 +152,7 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewPreferenceStoreSettings,
     ScopeName.ManageWorkflows,
   ],
+  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ViewWorkflows],
 };
 
 export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof TranscendInput> = {
@@ -187,6 +191,7 @@ export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof 
   [TranscendPullResource.PreferenceOptions]: 'preference-options',
   [TranscendPullResource.SystemDiscovery]: 'system-discovery',
   [TranscendPullResource.ConsentWorkflowTriggers]: 'consent-workflow-triggers',
+  [TranscendPullResource.WorkflowConfigs]: 'workflow-configs',
 };
 
 export const SCOPES_BY_TITLE = keyBy(

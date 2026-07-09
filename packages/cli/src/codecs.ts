@@ -50,6 +50,7 @@ import {
   PrivacyCenterTextStyles,
   PreferenceStoreAuthLevel,
   ConfigurableColorPaletteColor,
+  PrivacyCenterFooterLayout,
   AssessmentFormTemplateStatus,
   AssessmentFormStatus,
   AssessmentFormTemplateSource,
@@ -58,6 +59,9 @@ import {
   Controllership,
   RetentionType,
   DataProtectionImpactAssessmentStatus,
+  WorkflowConfigVisibility,
+  WorkflowConfigType,
+  CollectDataSubjectRegions,
   ConsentThemeInput,
   ConsentVariantInput,
 } from '@transcend-io/privacy-types';
@@ -1307,8 +1311,6 @@ export const PrivacyCenterInput = t.partial({
   isDisabled: t.boolean,
   /** Whether or not to show the privacy requests button */
   showPrivacyRequestButton: t.boolean,
-  /** Whether or not to show the data practices page */
-  showDataPractices: t.boolean,
   /** Whether or not to show the policies page */
   showPolicies: t.boolean,
   /** Whether or not to show the tracking technologies page */
@@ -1339,6 +1341,47 @@ export const PrivacyCenterInput = t.partial({
   useCustomEmailDomain: t.boolean,
   /** Whether or not to transcend access requests from JSON to CSV */
   transformAccessReportJsonToCsv: t.boolean,
+  /**
+   * Privacy Center "home" / back-to-site link URL shown in the privacy center
+   * header
+   */
+  home: t.string,
+  /** Whether the side menu is expanded by default on the privacy center */
+  expandSideMenuByDefault: t.boolean,
+  /**
+   * Whether custom fields are required when submitting privacy requests from
+   * the privacy center workflows UI
+   */
+  workflowsCustomFieldsRequired: t.boolean,
+  /**
+   * Child organization URIs (or IDs) to display on a unified multi-brand
+   * privacy center. Resolved to organization IDs on push.
+   */
+  displayedChildOrganizationUris: t.array(t.string),
+  /** Footer layout for privacy center footer links */
+  footerLayout: valuesOf(PrivacyCenterFooterLayout),
+  /**
+   * Footer links displayed on the privacy center. Matched by title on push;
+   * links omitted from this list are deleted.
+   */
+  footerLinks: t.array(
+    t.intersection([
+      t.type({
+        /** Link title (default locale) */
+        title: t.string,
+      }),
+      t.partial({
+        /** Link URL (default locale); optional for icon-only links */
+        url: t.string,
+        /**
+         * When true with an icon set, render as icon-only (title is used for
+         * accessibility). When false with an icon set, render icon beside the
+         * visible label.
+         */
+        iconOnly: t.boolean,
+      }),
+    ]),
+  ),
   /** The theme object of colors to display on the privacy center */
   theme: t.partial({
     /** The theme colors */
@@ -1426,6 +1469,11 @@ export const DataSiloInput = t.intersection([
     url: t.string,
     /** The title of the API key that will be used to respond to privacy requests */
     'api-key-title': t.string,
+    /**
+     * The ID of the configured Sombra instance that processes privacy requests for this data silo.
+     * Useful for multi-Sombra organizations. Pull/push via `transcend inventory pull` / `push`.
+     */
+    'sombra-id': t.string,
     /** Custom headers to include in outbound webhook */
     headers: t.array(WebhookHeader),
     /**
@@ -1970,6 +2018,55 @@ export const ConsentWorkflowTriggerInput = t.intersection([
 export type ConsentWorkflowTriggerInput = t.TypeOf<typeof ConsentWorkflowTriggerInput>;
 
 /**
+ * Input to define a workflow config. Push matches using a cascading key
+ * (internal-name → title → action-type → data-subject-type → region-list) and
+ * creates the workflow when no match exists (DSR only).
+ */
+export const WorkflowConfigInput = t.intersection([
+  t.type({
+    /** User-facing title */
+    title: t.string,
+    /** Request action type */
+    'action-type': valuesOf(RequestAction),
+  }),
+  t.partial({
+    /**
+     * Internal name of the workflow config. When provided, used as the first
+     * match key on push.
+     */
+    'internal-name': t.string,
+    /** Subtitle */
+    subtitle: t.string,
+    /** Description */
+    description: t.string,
+    /** Data subject type */
+    'data-subject-type': t.string,
+    /** Visibility tier */
+    visibility: valuesOf(WorkflowConfigVisibility),
+    /** Workflow config type (read-only on pull; included for reference) */
+    type: valuesOf(WorkflowConfigType),
+    /** Whether to collect the data subject's region during intake */
+    'collect-data-subject-regions': valuesOf(CollectDataSubjectRegions),
+    /** Region allow list */
+    'region-list': t.array(valuesOf({ ...IsoCountryCode, ...IsoCountrySubdivisionCode })),
+    /** Per-region request expiry times */
+    'expiry-time': t.array(
+      t.type({
+        /** Region code (or 'default') */
+        region: valuesOf({ default: 'default', ...IsoCountryCode, ...IsoCountrySubdivisionCode }),
+        /** Expiry time in days */
+        value: t.number,
+      }),
+    ),
+    /** Attribute key (custom field) names to associate with the workflow */
+    'attribute-keys': t.array(t.string),
+  }),
+]);
+
+/** Type override */
+export type WorkflowConfigInput = t.TypeOf<typeof WorkflowConfigInput>;
+
+/**
  * Input to define a silo discovery results
  *
  * @see https://docs.transcend.io/docs/silo-discovery
@@ -2135,6 +2232,10 @@ export const TranscendInput = t.partial({
    * Consent workflow trigger definitions
    */
   'consent-workflow-triggers': t.array(ConsentWorkflowTriggerInput),
+  /**
+   * DSR workflow config settings (create or update via cascading match key)
+   */
+  'workflow-configs': t.array(WorkflowConfigInput),
   /**
    * Preference management options for multi and single selects
    */

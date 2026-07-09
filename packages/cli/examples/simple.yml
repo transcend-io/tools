@@ -68,6 +68,8 @@ data-silos:
         value: dummy
         isSecret: false
     integrationName: server
+    # Optional: configured Sombra instance UUID for multi-Sombra orgs
+    # sombra-id: 00000000-0000-0000-0000-000000000000
     # The title of the API key that will be used to respond to privacy requests
     api-key-title: Webhook Key
     # Specify which data subjects may have personally-identifiable-information (PII) within this system

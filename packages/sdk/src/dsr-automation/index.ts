@@ -26,4 +26,6 @@ export * from './gqls/requestDataSilo.js';
 export * from './gqls/requestFile.js';
 export * from './syncAction.js';
 export * from './syncTemplates.js';
+export * from './resolveWorkflowConfigMatch.js';
+export * from './syncWorkflowConfigs.js';
 export * from './uploadSiloDiscoveryResults.js';

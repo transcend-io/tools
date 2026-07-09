@@ -146,8 +146,19 @@ describe('validateConsentWorkflowTriggerMode', () => {
 });
 
 describe('workflow title resolution', () => {
+  const baseFields = {
+    subtitle: null,
+    description: null,
+    workflowConfigVisibility: 'DRAFT' as WorkflowConfigSummary['workflowConfigVisibility'],
+    collectDataSubjectRegions: null,
+    regionList: [] as WorkflowConfigSummary['regionList'],
+    expiryTime: null,
+    WorkflowConfigAttributeKeys: null,
+  };
+
   const workflows: WorkflowConfigSummary[] = [
     {
+      ...baseFields,
       id: 'wf-1',
       internalName: 'Customer Erasure',
       title: { defaultMessage: 'Erase Customer Data' },
@@ -156,6 +167,7 @@ describe('workflow title resolution', () => {
       workflowConfigType: 'DSR' as WorkflowConfigSummary['workflowConfigType'],
     },
     {
+      ...baseFields,
       id: 'wf-2',
       internalName: null,
       title: { defaultMessage: 'Access Request' },

@@ -56,11 +56,12 @@ import {
   convertToDataSubjectAllowlist,
   fetchAllDataSubjects,
   fetchEnrichedDataSilos,
+  workflowConfigMatchKey,
   type AssessmentRule,
 } from '@transcend-io/sdk';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
-import { flatten, keyBy, mapValues } from 'lodash-es';
+import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
 
 /* eslint-disable max-lines */
 import {
@@ -99,6 +100,7 @@ import {
   RiskLogicInput,
   ConsentPurpose,
   ConsentWorkflowTriggerInput,
+  WorkflowConfigInput,
   ConsentPreferenceTopic,
   ConsentPreferenceTopicOptionValue,
   type SiloDiscoveryResultInput,
@@ -200,6 +202,7 @@ export async function pullTranscendConfiguration(
     assessmentTemplates,
     purposes,
     consentWorkflowTriggers,
+    workflowConfigs,
     preferenceOptionValues,
     siloDiscoveryResults,
   ] = await Promise.all([
@@ -368,6 +371,12 @@ export async function pullTranscendConfiguration(
       : [],
     resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
       ? fetchAllConsentWorkflowTriggers(client, { logger })
+      : [],
+    resources.includes(TranscendPullResource.WorkflowConfigs)
+      ? fetchAllWorkflowConfigs(client, {
+          logger,
+          workflowConfigType: WorkflowConfigType.DSR,
+        })
       : [],
     resources.includes(TranscendPullResource.PreferenceOptions)
       ? fetchAllPreferenceOptionValues(client, { logger })
@@ -950,6 +959,28 @@ export async function pullTranscendConfiguration(
       useNoReplyEmailAddress: privacyCenter.useNoReplyEmailAddress,
       useCustomEmailDomain: privacyCenter.useCustomEmailDomain,
       transformAccessReportJsonToCsv: privacyCenter.transformAccessReportJsonToCsv,
+      home: privacyCenter.home || undefined,
+      expandSideMenuByDefault: privacyCenter.expandSideMenuByDefault,
+      workflowsCustomFieldsRequired: privacyCenter.workflowsCustomFieldsRequired,
+      footerLayout: privacyCenter.footerLayout,
+      ...(privacyCenter.childOrganizations.length > 0
+        ? {
+            displayedChildOrganizationUris: privacyCenter.childOrganizations.map(
+              (child) => child.uri,
+            ),
+          }
+        : {}),
+      ...(privacyCenter.footerLinks.length > 0
+        ? {
+            footerLinks: [...privacyCenter.footerLinks]
+              .sort((a, b) => a.displayOrder - b.displayOrder)
+              .map((link) => ({
+                title: link.title.defaultMessage,
+                ...(link.url ? { url: link.url } : {}),
+                ...(link.iconOnly ? { iconOnly: link.iconOnly } : {}),
+              })),
+          }
+        : {}),
       theme: privacyCenter.theme,
     };
   }
@@ -1445,6 +1476,53 @@ export async function pullTranscendConfiguration(
     );
   }
 
+  if (workflowConfigs.length > 0 && resources.includes(TranscendPullResource.WorkflowConfigs)) {
+    const pulledWorkflowConfigs = workflowConfigs.map(
+      (config): WorkflowConfigInput => ({
+        title: config.title.defaultMessage,
+        'action-type': config.action.type,
+        ...(config.internalName ? { 'internal-name': config.internalName } : {}),
+        ...(config.subtitle ? { subtitle: config.subtitle.defaultMessage } : {}),
+        ...(config.description ? { description: config.description.defaultMessage } : {}),
+        ...(config.subject ? { 'data-subject-type': config.subject.type } : {}),
+        visibility: config.workflowConfigVisibility,
+        type: config.workflowConfigType,
+        ...(config.collectDataSubjectRegions
+          ? {
+              'collect-data-subject-regions': config.collectDataSubjectRegions,
+            }
+          : {}),
+        ...(config.regionList.length > 0 ? { 'region-list': config.regionList } : {}),
+        ...(config.expiryTime && config.expiryTime.length > 0
+          ? { 'expiry-time': config.expiryTime }
+          : {}),
+        ...(config.WorkflowConfigAttributeKeys && config.WorkflowConfigAttributeKeys.length > 0
+          ? {
+              'attribute-keys': config.WorkflowConfigAttributeKeys.map(
+                ({ attributeKey }) => attributeKey.name,
+              ),
+            }
+          : {}),
+      }),
+    );
+    // TODO: https://linear.app/transcend/issue/WAL-10312 - remove once internalName is unique in DB
+    const configsByMatchKey = groupBy(workflowConfigs, workflowConfigMatchKey);
+    for (const configs of Object.values(configsByMatchKey)) {
+      if (configs.length > 1) {
+        const sample = configs[0];
+        logger.warn(
+          `Found "${configs.length}" workflow configs with the same title, action-type, ` +
+            `data-subject-type, and region-list for "${sample.title.defaultMessage}" ` +
+            `(${sample.action.type}). Push will fail until they are disambiguated ` +
+            '(for example with unique internal names).',
+        );
+      }
+    }
+    if (pulledWorkflowConfigs.length > 0) {
+      result['workflow-configs'] = pulledWorkflowConfigs;
+    }
+  }
+
   if (
     consentWorkflowTriggers.length > 0 &&
     resources.includes(TranscendPullResource.ConsentWorkflowTriggers)
@@ -1577,6 +1655,7 @@ export async function pullTranscendConfiguration(
           attributeValues,
           discoveredBy,
           businessEntities,
+          sombra,
         },
         dataPoints,
       ]): DataSiloInput => ({
@@ -1586,6 +1665,7 @@ export async function pullTranscendConfiguration(
         'outer-type': outerType || undefined,
         url: url || undefined,
         'api-key-title': apiKeys[0]?.title,
+        'sombra-id': sombra?.id || undefined,
         'identity-keys': identifiers
           .filter(({ isConnected }) => isConnected)
           .map(({ name }) => name),
