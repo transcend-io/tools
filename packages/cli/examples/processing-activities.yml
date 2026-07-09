@@ -1,84 +1,115 @@
+# Processing activities (RoPA) for Data Inventory.
+# Admin UI: https://app.transcend.io/data-map/data-inventory/processing-activities
+#
+# Pull:
+#   transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=processingActivities
+# Push:
+#   transcend inventory push --auth="$TRANSCEND_API_KEY" --resources=processingActivities
 processing-activities:
+  # TWDC CCTV RoPA acceptance fixture — round-trips via pull/push
+  - title: CCTV — Disney Italia Theme Park Entrances
+    description: On-premise CCTV surveillance…
+    controllerships: [CONTROLLER]
+    retention-type: LIMITED
+    data-protection-impact-assessment-status: MISSING
+    data-subject-types: [customer, employee]
+    team-names: [Security Operations]
+    processing-sub-purposes:
+      - purpose: OPERATION_SECURITY
+      - purpose: ESSENTIAL
+    data-sub-categories:
+      - category: OTHER
+        name: Security-Physical
+      - category: CONTACT
+        name: Image
+    storage-regions:
+      - country: IT
+    transfer-regions:
+      - country: EU
+
   - title: Chatbot AI
     description: >-
       A product that allows employees to chat with an informational AI Chatbot
       that provides information
-    securityMeasureDetails: Data is transmitted with end-to-end encryption
+    security-measure-details: Data is transmitted with end-to-end encryption
     controllerships:
       - CONTROLLER
-    retentionType: UNSPECIFIED
-    dataProtectionImpactAssessmentStatus: MISSING
-    dataSiloTitles:
+    retention-type: UNSPECIFIED
+    data-protection-impact-assessment-status: MISSING
+    data-silo-titles:
       - Algolia
       - Aircall
-    dataSubjectTypes:
+    data-subject-types:
       - employee
-    teamNames:
+    team-names:
       - Product
-    ownerEmails:
+    owner-emails:
       - alice@acme.com
-    processingSubPurposes:
+    processing-sub-purposes:
       - purpose: ESSENTIAL
-    dataSubCategories:
+    data-sub-categories:
       - category: CONTACT
         name: Email
       - category: ONLINE_ACTIVITY
         name: Interaction Events
-    saaSCategories:
+    saas-categories:
       - Artificial Intelligence
+
   - title: Marketing Analytics
     description: Data around how our website is used
     controllerships:
       - PROCESSOR
-    retentionType: UNSPECIFIED
-    dataProtectionImpactAssessmentStatus: MISSING
+    retention-type: UNSPECIFIED
+    data-protection-impact-assessment-status: MISSING
     attributes:
       - key: Source of Data
         values:
           - Online Tracking Technologies
           - Social Media Integrations
-    dataSiloTitles:
+    data-silo-titles:
       - Adobe Experience Platform
       - AdRoll
-    teamNames:
+    team-names:
       - Marketing
-    ownerEmails:
+    owner-emails:
       - bill@acme.com
-    processingSubPurposes:
+    processing-sub-purposes:
       - purpose: ANALYTICS
       - purpose: MARKETING
+
   - title: Onboarding
     description: >-
       The process of onboarding new hires through a number of interactive
       lessons, both sync and async
-    retentionType: UNSPECIFIED
-    dataProtectionImpactAssessmentLink: https://example.com
-    dataProtectionImpactAssessmentStatus: LINK
-    dataSiloTitles:
+    retention-type: UNSPECIFIED
+    data-protection-impact-assessment-link: https://example.com
+    data-protection-impact-assessment-status: LINK
+    data-silo-titles:
       - Adobe Analytics
       - ADP
-    ownerEmails:
+    owner-emails:
       - charlie@acme.com
-    processingSubPurposes:
+    processing-sub-purposes:
       - purpose: HR
+
   - title: Recruiting
     description: >-
       Our recruitment pipeline includes the use of several different tools and
       processes to find, vet, and hire candidates
-    storageRegions:
+    storage-regions:
       - country: US
-    transferRegions:
+    transfer-regions:
       - country: US
         countrySubDivision: US-NJ
-    retentionType: STATED_PERIOD
-    retentionPeriod: 90
-    dataProtectionImpactAssessmentStatus: MISSING
-    dataSiloTitles:
+    retention-type: STATED_PERIOD
+    retention-period: 90
+    data-protection-impact-assessment-status: MISSING
+    data-silo-titles:
       - Adobe
-    ownerEmails:
+    owner-emails:
       - delilah@acme.com
       - eric@acme.com
-    processingSubPurposes:
+    processing-sub-purposes:
       - purpose: HR
         name: Recruiting
       - purpose: HR

@@ -842,7 +842,7 @@ export const ProcessingActivityInput = t.intersection([
     /** Description of the processing activity */
     description: t.string,
     /** Security measure details */
-    securityMeasureDetails: t.string,
+    'security-measure-details': t.string,
     /**
      * Controllerships
      *
@@ -850,51 +850,51 @@ export const ProcessingActivityInput = t.intersection([
      */
     controllerships: t.array(valuesOf(Controllership)),
     /** Storage regions */
-    storageRegions: t.array(RegionInput),
+    'storage-regions': t.array(RegionInput),
     /** Transfer regions */
-    transferRegions: t.array(RegionInput),
+    'transfer-regions': t.array(RegionInput),
     /**
      * Retention type
      *
      * @see https://github.com/transcend-io/privacy-types/blob/main/src/datapoint.ts
      */
-    retentionType: valuesOf(RetentionType),
+    'retention-type': valuesOf(RetentionType),
     /** Retention period in days */
-    retentionPeriod: t.number,
+    'retention-period': t.number,
     /** Data protection impact assessment link */
-    dataProtectionImpactAssessmentLink: t.string,
+    'data-protection-impact-assessment-link': t.string,
     /**
      * Data protection impact assessment status
      *
      * @see https://github.com/transcend-io/privacy-types/blob/main/src/processingActivity.ts.ts
      */
-    dataProtectionImpactAssessmentStatus: valuesOf(DataProtectionImpactAssessmentStatus),
+    'data-protection-impact-assessment-status': valuesOf(DataProtectionImpactAssessmentStatus),
     /**
      * Attribute value and its corresponding attribute key
      */
     attributes: t.array(AttributePreview),
     /** Data silo titles */
-    dataSiloTitles: t.array(t.string),
+    'data-silo-titles': t.array(t.string),
     /** Data subject types */
-    dataSubjectTypes: t.array(t.string),
+    'data-subject-types': t.array(t.string),
     /** Team names */
-    teamNames: t.array(t.string),
+    'team-names': t.array(t.string),
     /** Owner emails */
-    ownerEmails: t.array(t.string),
+    'owner-emails': t.array(t.string),
     /**
      * The purposes of processing for this processing activity
      *
      * @see https://github.com/transcend-io/privacy-types/blob/main/src/objects.ts
      */
-    processingSubPurposes: t.array(ProcessingPurposePreviewInput),
+    'processing-sub-purposes': t.array(ProcessingPurposePreviewInput),
     /**
      * The categories of personal data for this processing activity
      *
      * @see https://github.com/transcend-io/privacy-types/blob/main/src/objects.ts
      */
-    dataSubCategories: t.array(DataCategoryPreviewInput),
+    'data-sub-categories': t.array(DataCategoryPreviewInput),
     /** SaaS category titles */
-    saaSCategories: t.array(t.string),
+    'saas-categories': t.array(t.string),
   }),
 ]);
 

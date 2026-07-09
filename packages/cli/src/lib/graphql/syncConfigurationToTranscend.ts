@@ -44,6 +44,7 @@ import { GraphQLClient } from 'graphql-request';
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
+import { hasTranscendConfigSection } from '../helpers/hasTranscendConfigSection.js';
 import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { syncDataSilos } from './syncDataSilos.js';
@@ -151,7 +152,7 @@ export async function syncConfigurationToTranscend(
         })
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
-    dataSilos || dataSubjects || enrichers || processingActivities
+    dataSilos || dataSubjects || enrichers || hasTranscendConfigSection(processingActivities)
       ? ensureAllDataSubjectsExist(input, client)
       : {},
     // Grab API keys
@@ -551,11 +552,15 @@ export async function syncConfigurationToTranscend(
     await syncDataSiloDependencies(client, { input: dependencyUpdates, logger });
   }
 
-  // Update processing activities
-  if (processingActivities) {
-    const processingActivitySuccess = await syncProcessingActivities(client, processingActivities, {
-      logger,
-    });
+  // Update processing activities (skip empty `processing-activities: []`)
+  if (hasTranscendConfigSection(processingActivities)) {
+    const processingActivitySuccess = await syncProcessingActivities(
+      client,
+      processingActivities!,
+      {
+        logger,
+      },
+    );
     encounteredError = encounteredError || !processingActivitySuccess;
   }
 

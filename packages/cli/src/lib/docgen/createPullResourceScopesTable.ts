@@ -64,7 +64,8 @@ const RESOURCE_DOCUMENTATION: Record<
     ],
   },
   [TranscendPullResource.ProcessingActivities]: {
-    description: 'The processing activities in the Data Inventory.',
+    description:
+      'The processing activities in the Data Inventory (RoPA). Empty `processing-activities: []` does not request Manage Data Map scopes.',
     markdownLinks: [
       '[Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)',
     ],

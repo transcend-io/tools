@@ -1000,38 +1000,39 @@ export async function pullTranscendConfiguration(
       }): ProcessingActivityInput => ({
         title,
         description,
-        securityMeasureDetails: securityMeasureDetails ?? undefined,
+        'security-measure-details': securityMeasureDetails ?? undefined,
         controllerships: controllerships.length > 0 ? controllerships : undefined,
-        storageRegions: storageRegions.length > 0 ? formatRegions(storageRegions) : undefined,
-        transferRegions: transferRegions.length > 0 ? formatRegions(transferRegions) : undefined,
-        retentionType,
-        retentionPeriod: retentionType === RetentionType.StatedPeriod ? retentionPeriod : undefined,
-        dataProtectionImpactAssessmentLink: dataProtectionImpactAssessmentLink ?? undefined,
-        dataProtectionImpactAssessmentStatus,
+        'storage-regions': storageRegions.length > 0 ? formatRegions(storageRegions) : undefined,
+        'transfer-regions': transferRegions.length > 0 ? formatRegions(transferRegions) : undefined,
+        'retention-type': retentionType,
+        'retention-period':
+          retentionType === RetentionType.StatedPeriod ? retentionPeriod : undefined,
+        'data-protection-impact-assessment-link': dataProtectionImpactAssessmentLink ?? undefined,
+        'data-protection-impact-assessment-status': dataProtectionImpactAssessmentStatus,
         attributes:
           attributeValues !== undefined && attributeValues.length > 0
             ? formatAttributeValues(attributeValues)
             : undefined,
-        dataSiloTitles: dataSilos.length > 0 ? dataSilos.map(({ title }) => title) : undefined,
-        dataSubjectTypes:
+        'data-silo-titles': dataSilos.length > 0 ? dataSilos.map(({ title }) => title) : undefined,
+        'data-subject-types':
           dataSubjects.length > 0 ? dataSubjects.map(({ type }) => type) : undefined,
-        teamNames: teams.length > 0 ? teams.map(({ name }) => name) : undefined,
-        ownerEmails: owners.length > 0 ? owners.map(({ email }) => email) : undefined,
-        processingSubPurposes:
+        'team-names': teams.length > 0 ? teams.map(({ name }) => name) : undefined,
+        'owner-emails': owners.length > 0 ? owners.map(({ email }) => email) : undefined,
+        'processing-sub-purposes':
           processingPurposeSubCategories.length > 0
             ? processingPurposeSubCategories.map(({ name, purpose }) => ({
                 purpose,
                 ...(name ? { name } : {}),
               }))
             : undefined,
-        dataSubCategories:
+        'data-sub-categories':
           dataSubCategories.length > 0
             ? dataSubCategories.map(({ name, category }) => ({
                 category,
                 ...(name ? { name } : {}),
               }))
             : undefined,
-        saaSCategories:
+        'saas-categories':
           saaSCategories.length > 0 ? saaSCategories.map(({ title }) => title) : undefined,
       }),
     );

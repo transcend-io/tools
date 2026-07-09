@@ -52,7 +52,8 @@ const examples = buildExamples<PushCommandFlags>(
 
 export default `#### Scopes
 
-The API key permissions for this command vary based on the resources declared as top-level keys in your [\`transcend.yml\`](#transcendyml) file:
+The API key permissions for this command vary based on the resources declared as top-level keys in your [\`transcend.yml\`](#transcendyml) file.
+Empty arrays (e.g. \`processing-activities: []\`) do **not** request scopes for that resource.
 
 ${createPullResourceScopesTable(TR_PUSH_RESOURCE_SCOPE_MAP)}
 
