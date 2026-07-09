@@ -42,11 +42,11 @@ This starts a Streamable HTTP server at `http://127.0.0.1:3000/mcp` with a healt
 
 ### OAuth client setup
 
-OAuth stdio is the recommended path for MCP clients. Requires **org admin** access to create OAuth clients at [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients).
+OAuth stdio is the recommended path for MCP clients. Requires **org admin** access to create OAuth clients at [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients).
 
 1. Create an OAuth client and copy the **client ID** and **client secret**.
-2. Register `http://127.0.0.1:{port}/callback` — use **`127.0.0.1`, not `localhost`**, and ensure the path is `/callback`.
-3. Set `TRANSCEND_OAUTH_REDIRECT_PORT` to the matching port.
+2. Choose an available localhost port number, then register `http://127.0.0.1:{port}/callback` on the OAuth client (`{port}` is the number you chose). Use **`127.0.0.1`, not `localhost`**, and ensure the path is `/callback`.
+3. Set `TRANSCEND_OAUTH_REDIRECT_PORT` to the same port number.
 
 At startup the server verifies client ID, secret, and redirect URI against Transcend's API. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
@@ -60,9 +60,9 @@ Full setup, troubleshooting, and multi-server guidance: [MCP root README](../REA
 
 | Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                                                                       |
 | ------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients)                                             |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients)                                               |
 | `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                                                                    |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Localhost port for the OAuth callback server; **must match the port in your registered redirect URI**                                             |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
 | `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
 | `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
 | `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                        |

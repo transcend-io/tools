@@ -34,9 +34,9 @@ The process speaks MCP over **stdio** and is meant to be launched by an MCP clie
 
 OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Requires **org admin** access to create OAuth clients.
 
-1. Navigate to [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients) and create an OAuth client.
+1. Navigate to [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients) and create an OAuth client.
 2. Copy the **client ID** and **client secret**.
-3. Register `http://127.0.0.1:{port}/callback` — use **`127.0.0.1`, not `localhost`**, and ensure the path is `/callback`. Set `TRANSCEND_OAUTH_REDIRECT_PORT` to the matching port.
+3. Choose an available localhost port number, then register `http://127.0.0.1:{port}/callback` on the OAuth client (`{port}` is the number you chose). Use **`127.0.0.1`, not `localhost`**, and ensure the path is `/callback`. Set `TRANSCEND_OAUTH_REDIRECT_PORT` to the same port number.
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
@@ -87,16 +87,16 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                           |
-| ------------------------------- | ---------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.com/admin/oauth-clients](https://app.transcend.com/admin/oauth-clients) |
-| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                        |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Localhost port for the OAuth callback server; **must match the port in your registered redirect URI** |
-| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)        |
-| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                  |
-| `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth). Disables OAuth when set alongside client ID                 |
-| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                      |
-| `SOMBRA_URL`                    | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                    |
+| Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                                                                       |
+| ------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients)                                               |
+| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                                                                    |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
+| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
+| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
+| `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth). Disables OAuth when set alongside client ID                                                             |
+| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                                                                  |
+| `SOMBRA_URL`                    | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 
