@@ -1943,7 +1943,7 @@ export const ConsentWorkflowTriggerInput = t.intersection([
   }),
   t.partial({
     /** The action type (e.g. ERASURE, ACCESS). Required when creating a new trigger. */
-    'action-type': t.string,
+    'action-type': valuesOf(RequestAction),
     /** The data subject type. Required when creating a new trigger. */
     'data-subject-type': t.string,
     /** Whether the trigger runs silently */

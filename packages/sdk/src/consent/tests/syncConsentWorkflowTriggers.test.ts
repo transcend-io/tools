@@ -40,5 +40,15 @@ describe('parsePurposesFromTriggerCondition', () => {
     expect(parsePurposesFromTriggerCondition('not-json')).toEqual([]);
     expect(parsePurposesFromTriggerCondition(JSON.stringify({ Or: [{ X: true }] }))).toEqual([]);
     expect(parsePurposesFromTriggerCondition(JSON.stringify({ And: 'nope' }))).toEqual([]);
+    expect(parsePurposesFromTriggerCondition(JSON.stringify({ And: null }))).toEqual([]);
+    expect(parsePurposesFromTriggerCondition(JSON.stringify({ And: [null, 'x', []] }))).toEqual([]);
+  });
+
+  it('skips non-boolean matching states', () => {
+    expect(
+      parsePurposesFromTriggerCondition(
+        JSON.stringify({ And: [{ Marketing: 'false' }, { Analytics: true }] }),
+      ),
+    ).toEqual([{ 'tracking-type': 'Analytics', 'matching-state': true }]);
   });
 });

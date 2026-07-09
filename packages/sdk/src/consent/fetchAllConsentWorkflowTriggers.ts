@@ -1,3 +1,4 @@
+import type { RequestAction } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 
@@ -22,7 +23,7 @@ export interface ConsentWorkflowTrigger {
   /** The request action associated with the trigger */
   action: {
     /** Action type (e.g. ERASURE, ACCESS) */
-    type: string;
+    type: RequestAction;
   };
   /** The data subject associated with the trigger */
   subject: {

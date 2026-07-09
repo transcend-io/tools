@@ -1,3 +1,4 @@
+import { RequestAction } from '@transcend-io/privacy-types';
 import { mapSeries, type Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 import { keyBy } from 'lodash-es';
@@ -21,7 +22,7 @@ export interface ConsentWorkflowTriggerSyncInput {
   /** The name of the consent workflow trigger */
   name: string;
   /** The action type (e.g. ERASURE, ACCESS). Required when creating a new trigger. */
-  'action-type'?: string;
+  'action-type'?: RequestAction;
   /** The data subject type. Required when creating a new trigger. */
   'data-subject-type'?: string;
   /** Whether the trigger runs silently */

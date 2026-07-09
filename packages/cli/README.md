@@ -148,7 +148,7 @@ enrichers:
     privacy-actions:
       - ERASURE
 
-# Manage at: https://app.transcend.io/privacy-requests/connected-services
+# Manage at: https://app.transcend.io/infrastructure/integrations
 # See https://docs.transcend.io/docs/the-data-map#data-silos
 # Define the data silos in your data map. A data silo can be a database,
 # or a web service that may use a collection of different data stores under the hood.
