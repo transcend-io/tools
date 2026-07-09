@@ -8,6 +8,5 @@ export * from './formatPolicyEngineRequestError.js';
 export * from './printResult.js';
 export * from './renderTable.js';
 export * from './resolveBundleIdByName.js';
-export * from './resolvePolicyBundleId.js';
 export * from './resolvePolicyBundleVersion.js';
 export * from './runOpa.js';

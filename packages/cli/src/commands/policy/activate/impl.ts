@@ -2,25 +2,22 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { uuidParser } from '../../../lib/cli/parsers.js';
 import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
   printResult,
-  resolvePolicyBundleId,
+  resolveBundleIdByName,
   resolvePolicyBundleVersion,
 } from '../helpers/index.js';
 import type { ActivatePolicyBundleVersionResponse } from '../types.js';
 
 /** CLI flags for `transcend policy activate`. */
 export interface ActivateCommandFlags {
+  /** Logical bundle name to activate */
+  'bundle-name': string;
   /** Caller-supplied version label to activate */
   version?: string;
-  /** Parent bundle UUID */
-  'policy-bundle-id'?: string;
-  /** Parent bundle name (resolved when --policy-bundle-id is omitted) */
-  'bundle-name'?: string;
   /** Transcend API key */
   auth: string;
   /** Transcend API URL */
@@ -34,15 +31,18 @@ export interface ActivateCommandFlags {
 /**
  * Activate an uploaded policy bundle version.
  *
+ * Resolves `--bundle-name` to the parent bundle UUID internally, then calls the
+ * Policy Engine activate endpoint. The bundle is addressed by name only -- the
+ * UUID is never exposed to the operator.
+ *
  * @param this - CLI context
  * @param flags - Command flags
  */
 export async function activate(
   this: LocalContext,
   {
-    version,
-    'policy-bundle-id': policyBundleId,
     'bundle-name': bundleName,
+    version,
     auth,
     'transcend-url': transcendUrl,
     'dry-run': dryRun,
@@ -52,10 +52,10 @@ export async function activate(
   doneInputValidation(this.process.exit);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
-  const resolvedBundleId = await resolvePolicyBundleId(client, {
-    policyBundleId: policyBundleId ? uuidParser(policyBundleId) : undefined,
-    bundleName,
-  });
+  const resolvedBundleId = await resolveBundleIdByName(client, bundleName);
+  if (!resolvedBundleId) {
+    throw new Error(`Policy bundle "${bundleName}" was not found for this organization.`);
+  }
   const resolvedVersion = await resolvePolicyBundleVersion(client, resolvedBundleId, { version });
 
   logger.info(

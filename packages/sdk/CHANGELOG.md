@@ -1,5 +1,21 @@
 # @transcend-io/sdk
 
+## 1.3.0
+
+### Minor Changes
+
+- 9ebf2c3: Add full pull and push support for consent purposes, preference option values, and preference topics. Purposes and their nested preference-topics can now be pushed (create/update), preference-options are a top-level catalog, and nested topic pull includes slug and color.
+
+  Fix push-path bugs: option-value updates now send only `{ id, title }` (not both id and slug), topic updates omit immutable fields (slug, type, purposeId), BOOLEAN topics reject non-empty options and never send `preferenceOptionValueIds`, and CLI-side slug validation enforces `/^[A-Za-z]+$/`.
+
+  Built-in purpose updates omit `configurable` and `show-in-consent-manager` (backend restriction). Unchanged resources are skipped on idempotent push.
+
+### Patch Changes
+
+- Updated dependencies [6143556]
+- Updated dependencies [6143556]
+  - @transcend-io/utils@0.2.0
+
 ## 1.2.11
 
 ### Patch Changes

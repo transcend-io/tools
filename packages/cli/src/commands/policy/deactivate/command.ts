@@ -17,7 +17,7 @@ export const deactivateCommand = buildCommand({
         kind: 'parsed',
         parse: String,
         brief:
-          'Logical policy bundle name (the same string used in publish/list); resolved to the parent bundle UUID internally',
+          'Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally',
       },
       auth: createAuthParameter({
         scopes: [ScopeName.ActivatePolicyEngineBundles],

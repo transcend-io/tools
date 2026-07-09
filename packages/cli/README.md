@@ -58,7 +58,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
   - [`transcend policy eval`](#transcend-policy-eval)
   - [`transcend policy lint`](#transcend-policy-lint)
-  - [`transcend policy list`](#transcend-policy-list)
+  - [`transcend policy bundles`](#transcend-policy-bundles)
   - [`transcend policy publish`](#transcend-policy-publish)
   - [`transcend policy test`](#transcend-policy-test)
   - [`transcend policy versions`](#transcend-policy-versions)
@@ -2465,7 +2465,7 @@ The API key permissions for this command vary based on the `resources` argument:
 
 | Resource                  | Key in `transcend.yml`      | Description                                                                                                                                                      | Scopes                                               | Link                                                                                                                                                                                                                                                   |
 | ------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `apiKeys`                 | `api-keys`                  | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems. | View API Keys                                        | [Developer Tools -> API keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
+| `apiKeys`                 | `api-keys`                  | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems. | View API Keys                                        | [Developer Tools -> API Keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
 | `customFields`            | `attributes`                | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                       | View Global Attributes                               | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
 | `templates`               | `templates`                 | Email templates. Only template titles can be created and mapped to other resources.                                                                              | View Email Templates                                 | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
 | `dataSilos`               | `data-silos`                | The Data System (formerly "Data Silo") definitions.                                                                                                              | View Data Map, View Data Subject Request Settings    | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
@@ -2495,7 +2495,7 @@ The API key permissions for this command vary based on the `resources` argument:
 | `policies`                | `policies`                  | The Privacy Center policies.                                                                                                                                     | View Privacy Center Policies                         | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
 | `messages`                | `messages`                  | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                | View Internationalization Messages                   | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
 | `assessments`             | `assessments`               | Assessment responses.                                                                                                                                            | View Assessments                                     | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
-| `assessmentTemplates`     | `assessment-templates`      | Assessment template configurations.                                                                                                                              | View Assessments                                     | [Assessment -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                         |
+| `assessmentTemplates`     | `assessment-templates`      | Assessment template configurations.                                                                                                                              | View Assessments                                     | [Assessments -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                        |
 | `purposes`                | `purposes`                  | Consent purposes and related preference management topics.                                                                                                       | View Consent Manager, View Preference Store Settings | [Consent Management -> Regional Experiences -> Purposes](https://app.transcend.io/consent-manager/regional-experiences/purposes)                                                                                                                       |
 | `preferenceOptions`       | `preference-options`        | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                        | View Preference Store Settings                       | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
 | `systemDiscovery`         | `system-discovery`          | System discovery results                                                                                                                                         | View Data Map                                        | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
@@ -2679,7 +2679,7 @@ The API key permissions for this command vary based on the resources declared as
 
 | Resource                  | Key in `transcend.yml`      | Description                                                                                                                                                      | Scopes                                                                           | Link                                                                                                                                                                                                                                                   |
 | ------------------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `apiKeys`                 | `api-keys`                  | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems. | View API Keys                                                                    | [Developer Tools -> API keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
+| `apiKeys`                 | `api-keys`                  | API Key definitions assigned to Data Systems (formerly "Data Silos"). API keys cannot be created through the CLI, but you can map API key usage to Data Systems. | View API Keys                                                                    | [Developer Tools -> API Keys](https://app.transcend.io/infrastructure/api-keys)                                                                                                                                                                        |
 | `customFields`            | `attributes`                | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                       | Manage Global Attributes                                                         | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
 | `templates`               | `templates`                 | Email templates. Only template titles can be created and mapped to other resources.                                                                              | Manage Email Templates                                                           | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
 | `dataSilos`               | `data-silos`                | The Data System (formerly "Data Silo") definitions.                                                                                                              | Manage Data Map, Connect Data Silos                                              | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
@@ -2709,7 +2709,7 @@ The API key permissions for this command vary based on the resources declared as
 | `policies`                | `policies`                  | The Privacy Center policies.                                                                                                                                     | Manage Privacy Center Policies                                                   | [Privacy Center -> Policies](https://app.transcend.io/privacy-center/policies)                                                                                                                                                                         |
 | `messages`                | `messages`                  | Message definitions used across Consent Management, the Privacy Center, email templates and more.                                                                | Manage Internationalization Messages                                             | [Privacy Center -> Messages & Internationalization](https://app.transcend.io/privacy-center/messages-internationalization)<br>[Consent Management -> Display Settings -> Messages](https://app.transcend.io/consent-manager/display-settings/messages) |
 | `assessments`             | `assessments`               | Assessment responses.                                                                                                                                            | Manage Assessments                                                               | [Assessments -> Assessments](https://app.transcend.io/assessments/groups)                                                                                                                                                                              |
-| `assessmentTemplates`     | `assessment-templates`      | Assessment template configurations.                                                                                                                              | Manage Assessments                                                               | [Assessment -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                         |
+| `assessmentTemplates`     | `assessment-templates`      | Assessment template configurations.                                                                                                                              | Manage Assessments                                                               | [Assessments -> Templates](https://app.transcend.io/assessments/form-templates)                                                                                                                                                                        |
 | `purposes`                | `purposes`                  | Consent purposes and related preference management topics.                                                                                                       | Manage Consent Manager, Manage Preference Store Settings                         | [Consent Management -> Regional Experiences -> Purposes](https://app.transcend.io/consent-manager/regional-experiences/purposes)                                                                                                                       |
 | `preferenceOptions`       | `preference-options`        | Preference option values for single and multi-select preference topics (Preferences -> Preference Topics -> Options tab).                                        | Manage Preference Store Settings                                                 | [Preferences -> Preference Topics -> Options](https://app.transcend.io/preference-store/preference-topics/preference-options)                                                                                                                          |
 | `systemDiscovery`         | `system-discovery`          | System discovery results                                                                                                                                         | Manage Data Map                                                                  | [System Discovery](https://app.transcend.io/data-map/data-inventory/silo-discovery)                                                                                                                                                                    |
@@ -2820,7 +2820,7 @@ Below is an example of how to set this up using a Github action:
 
 ```yaml
 name: Transcend Data Map Syncing
-# See https://app.transcend.io/privacy-requests/connected-services
+# See https://app.transcend.io/infrastructure/integrations
 
 on:
   push:
@@ -3684,20 +3684,19 @@ transcend migration sync-ot --source=file --file=./oneTrustAssessments.json --tr
 
 ```txt
 USAGE
-  transcend policy activate [--version value] [--policy-bundle-id value] [--bundle-name value] (--auth value) [--transcend-url value] [--dry-run] [--json]
+  transcend policy activate (--bundle-name value) [--version value] (--auth value) [--transcend-url value] [--dry-run] [--json]
   transcend policy activate --help
 
-Calls the Policy Engine activate endpoint to make an uploaded version live. Requires the parent bundle UUID or bundle name. When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
+Calls the Policy Engine activate endpoint to make an uploaded version live. Addressed by bundle name (resolved to the parent bundle UUID internally). When --version is omitted, activates the latest uploaded version by createdAt. Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-     [--version]           Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
-     [--policy-bundle-id]  Parent policy bundle UUID
-     [--bundle-name]       Parent bundle name (used when --policy-bundle-id is omitted)
-      --auth               The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
-     [--transcend-url]     URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--dry-run]           Validate activation without flipping the active version                                                                                                                                            [default = false]
-     [--json]              Print the raw JSON API response                                                                                                                                                                    [default = false]
-  -h  --help               Print help information and exit
+      --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
+     [--version]        Caller-supplied version label to activate; defaults to the latest uploaded version by createdAt
+      --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
+     [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--dry-run]        Validate activation without flipping the active version                                                                                                                                            [default = false]
+     [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
+  -h  --help            Print help information and exit
 ```
 
 #### Examples
@@ -3712,15 +3711,6 @@ transcend policy activate --bundle-name=main --auth="$TRANSCEND_API_KEY"
 
 ```sh
 transcend policy activate --version=abc123 --bundle-name=main --auth="$TRANSCEND_API_KEY"
-```
-
-**Activate using explicit parent bundle UUID**
-
-```sh
-transcend policy activate \
-  --version=abc123 \
-  --policy-bundle-id=6a3218db-5703-44eb-8d01-e3ea57ab8e49 \
-  --auth="$TRANSCEND_API_KEY"
 ```
 
 **Validate activation without flipping the active version**
@@ -3747,7 +3737,7 @@ USAGE
 Calls the Policy Engine deactivate endpoint to take the currently active version of a bundle offline, clearing its active version pointer. Addressed by bundle name (resolved to the parent bundle UUID internally). Requires a Transcend API key with Activate Policy scope.
 
 FLAGS
-      --bundle-name     Logical policy bundle name (the same string used in publish/list); resolved to the parent bundle UUID internally
+      --bundle-name     Logical policy bundle name (the same string used in publish/bundles); resolved to the parent bundle UUID internally
       --auth            The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Activate Policy"
      [--transcend-url]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
@@ -3822,12 +3812,12 @@ FLAGS
 transcend policy lint --dir=./policies
 ```
 
-### `transcend policy list`
+### `transcend policy bundles`
 
 ```txt
 USAGE
-  transcend policy list (--auth value) [--transcend-url value] [--limit value] [--offset value] [--json]
-  transcend policy list --help
+  transcend policy bundles (--auth value) [--transcend-url value] [--limit value] [--offset value] [--json]
+  transcend policy bundles --help
 
 Lists policy bundles registered for the authenticated organization. Requires a Transcend API key with View Policy scope.
 
@@ -3845,19 +3835,19 @@ FLAGS
 **List policy bundles for the current organization**
 
 ```sh
-transcend policy list --auth="$TRANSCEND_API_KEY"
+transcend policy bundles --auth="$TRANSCEND_API_KEY"
 ```
 
 **Fetch the next page using offset pagination**
 
 ```sh
-transcend policy list --auth="$TRANSCEND_API_KEY" --offset=50
+transcend policy bundles --auth="$TRANSCEND_API_KEY" --offset=50
 ```
 
 **Omit --auth by exporting TRANSCEND_API_KEY in the environment**
 
 ```sh
-transcend policy list
+transcend policy bundles
 ```
 
 Requires the **View Policy** scope on your API key.
@@ -3866,7 +3856,7 @@ Requires the **View Policy** scope on your API key.
 
 ```txt
 USAGE
-  transcend policy publish (--dir value) (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json]
+  transcend policy publish (--dir value) (--bundle-name value) (--auth value) [--transcend-url value] [--version value] [--description value] [--json] [--yes]
   transcend policy publish --help
 
 Packages manifest.json and .rego policy files from a local directory into a tarball and uploads it to Transcend. Creates the bundle on first upload, then appends immutable versions. Requires the `opa` CLI on PATH (for `opa check` and `opa build` validation) and a Transcend API key with Manage Policy scope.
@@ -3879,6 +3869,7 @@ FLAGS
      [--version]        Version label (defaults to {bundleName}-yyyy-mm-dd-hh-mm-ss)
      [--description]    Optional description for the uploaded version
      [--json]           Print the raw JSON API response                                                                                                                                                                    [default = false]
+     [--yes]            Skip the "create new bundle" confirmation (for CI/non-interactive use)                                                                                                                             [default = false]
   -h  --help            Print help information and exit
 ```
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import type { LocalContext } from '../../../../context.js';
-import { list } from '../impl.js';
+import { bundles } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 
@@ -13,7 +13,7 @@ vi.mock('../../helpers/index.js', async (importOriginal) => {
   };
 });
 
-describe('list', () => {
+describe('bundles', () => {
   const exit = vi.fn();
   const stdout = { write: vi.fn() };
   const context = {
@@ -44,7 +44,7 @@ describe('list', () => {
     });
     buildPolicyEngineClientMock.mockReturnValue({ get });
 
-    await list.call(context, {
+    await bundles.call(context, {
       auth: 'test-key',
       'transcend-url': 'https://api.transcend.io',
       limit: 50,
