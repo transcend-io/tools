@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.8.0
+
+### Minor Changes
+
+- b1750a6: Set PolicyType on policy create in updatePolicies (infer from title or use optional yml type). Pull/push round-trips type on policies.
+
 ## 5.7.0
 
 ### Minor Changes
