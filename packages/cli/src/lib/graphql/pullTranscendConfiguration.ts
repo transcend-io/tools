@@ -914,8 +914,9 @@ export async function pullTranscendConfiguration(
   // Save privacy policies
   if (policies.length > 0) {
     result.policies = policies.map(
-      ({ title, versions, disabledLocales }): PolicyInput => ({
+      ({ title, type, versions, disabledLocales }): PolicyInput => ({
         title: title?.defaultMessage,
+        type,
         content: versions?.[0]?.content?.defaultMessage,
         disabledLocales,
       }),

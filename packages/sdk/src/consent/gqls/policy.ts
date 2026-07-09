@@ -7,6 +7,7 @@ export const POLICIES = gql`
       title {
         defaultMessage
       }
+      type
       disableEffectiveOn
       disabledLocales
       versions {
