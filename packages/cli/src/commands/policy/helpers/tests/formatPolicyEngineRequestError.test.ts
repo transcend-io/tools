@@ -54,18 +54,26 @@ describe('formatPolicyEngineRequestError', () => {
     expect(message).not.toContain('got');
   });
 
-  it('returns an actionable permission message for 403 responses', () => {
+  it('prefers the API message for 403 responses', () => {
     const error = {
       response: {
         statusCode: 403,
-        body: JSON.stringify({ message: 'Forbidden' }),
+        body: JSON.stringify({ message: 'Client error: Access denied.' }),
       },
     };
 
-    const message = formatPolicyEngineRequestError(error);
+    expect(formatPolicyEngineRequestError(error)).toBe('Client error: Access denied.');
+  });
 
-    expect(message).toContain('Permission denied (403 Forbidden).');
-    expect(message).toContain('Policy Engine scopes');
+  it('returns a generic fallback for 403 when the API body has no message', () => {
+    const error = {
+      response: {
+        statusCode: 403,
+        body: JSON.stringify({}),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toContain('Access was denied (403 Forbidden).');
   });
 
   it('returns an actionable not-found message for 404 responses', () => {
@@ -102,6 +110,76 @@ describe('formatPolicyEngineRequestError', () => {
     };
 
     expect(formatPolicyEngineRequestError(error)).toContain('conflicted with the current policy');
+  });
+
+  it('returns upload-limit guidance for 413 responses without an API message', () => {
+    const error = {
+      response: {
+        statusCode: 413,
+        body: JSON.stringify({}),
+      },
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toContain('Policy bundle upload is too large (413 Payload Too Large).');
+    expect(message).toContain('5 KiB compressed');
+    expect(message).toContain('50 KiB decompressed');
+  });
+
+  it('prefers the API message for 413 responses', () => {
+    const error = {
+      response: {
+        statusCode: 413,
+        body: JSON.stringify({ message: 'Client error: Bundle exceeds upload cap.' }),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toBe('Client error: Bundle exceeds upload cap.');
+  });
+
+  it('returns a fallback message for 422 when the API body has no message', () => {
+    const error = {
+      response: {
+        statusCode: 422,
+        body: JSON.stringify({}),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toContain('could not be processed');
+  });
+
+  it('surfaces the plain-text 429 body from the API', () => {
+    const error = {
+      response: {
+        statusCode: 429,
+        body: 'Too Many Requests',
+        headers: {
+          'retry-after': '30',
+        },
+      },
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toBe('Too Many Requests');
+  });
+
+  it('returns rate-limit guidance when 429 has no API message', () => {
+    const error = {
+      response: {
+        statusCode: 429,
+        body: '',
+        headers: {
+          'retry-after': '30',
+        },
+      },
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toContain('Rate limit exceeded (429 Too Many Requests).');
+    expect(message).toContain('Retry after 30 second(s)');
   });
 
   it('returns a network message for connectivity failures', () => {

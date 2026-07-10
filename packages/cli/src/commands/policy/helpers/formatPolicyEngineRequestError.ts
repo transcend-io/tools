@@ -4,15 +4,20 @@ interface PolicyEngineErrorBody {
   message?: string;
 }
 
+/** HTTP response metadata on a got HTTPError. */
+interface PolicyEngineHttpResponse {
+  /** HTTP status code */
+  statusCode?: number;
+  /** Response body (JSON or raw text) */
+  body?: unknown;
+  /** Response headers */
+  headers?: Record<string, string | string[] | undefined>;
+}
+
 /** Shape of a got HTTPError with response metadata. */
 interface PolicyEngineHttpError {
   /** HTTP response metadata */
-  response?: {
-    /** HTTP status code */
-    statusCode?: number;
-    /** Response body (JSON or raw text) */
-    body?: unknown;
-  };
+  response?: PolicyEngineHttpResponse;
 }
 
 const AUTH_ERROR_MESSAGE = `Authentication failed (401 Unauthorized).
@@ -25,14 +30,6 @@ Fix:
 - Ensure the key has the required Policy Engine scopes (e.g. View/Manage/Activate Policy)
 - Confirm you are pointing at the correct environment (--transcend-url)`;
 
-const PERMISSION_DENIED_MESSAGE = `Permission denied (403 Forbidden).
-
-Your API key is authenticated but does not have the scope required for this command.
-
-Fix:
-- Ensure the key has the required Policy Engine scopes (e.g. View/Manage/Activate Policy)
-- Contact your Transcend admin to grant the missing scope`;
-
 const NOT_FOUND_MESSAGE = `Resource not found (404 Not Found).
 
 The requested policy bundle or version does not exist.
@@ -41,6 +38,14 @@ Fix:
 - Check the --bundle-name value
 - Run \`transcend policy bundles\` to see available bundles
 - Run \`transcend policy versions --bundle-name=<name>\` to see available versions`;
+
+const PAYLOAD_TOO_LARGE_MESSAGE = `Policy bundle upload is too large (413 Payload Too Large).
+
+Uploaded bundles must be at most 5 KiB compressed and 50 KiB decompressed gzip tarballs containing only manifest.json and .rego files.
+
+Fix:
+- Remove unnecessary files from the bundle directory before publishing
+- Ensure the compiled .tar.gz stays within the upload limits`;
 
 const NETWORK_ERROR_MESSAGE = `Connection to Transcend failed.
 
@@ -78,26 +83,93 @@ function extractApiMessage(body: unknown): string | undefined {
 }
 
 /**
+ * Reads a single response header value.
+ *
+ * @param headers - Response headers
+ * @param name - Header name
+ * @returns Header value when present
+ */
+function readResponseHeader(
+  headers: Record<string, string | string[] | undefined> | undefined,
+  name: string,
+): string | undefined {
+  if (!headers) {
+    return undefined;
+  }
+
+  const value = headers[name] ?? headers[name.toLowerCase()];
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
+
+/**
+ * Builds a rate-limit error message using response headers when available.
+ *
+ * @param apiMessage - Message from the response body, when present
+ * @param headers - Response headers
+ * @returns User-readable rate-limit text
+ */
+function formatRateLimitMessage(
+  apiMessage: string | undefined,
+  headers: Record<string, string | string[] | undefined> | undefined,
+): string {
+  if (apiMessage) {
+    return apiMessage;
+  }
+
+  const retryAfter = readResponseHeader(headers, 'retry-after');
+  const resetAt = readResponseHeader(headers, 'x-ratelimit-reset');
+
+  let message = `Rate limit exceeded (429 Too Many Requests).
+
+Fix:
+- Wait and retry the command`;
+
+  if (retryAfter) {
+    message += `\n- Retry after ${retryAfter} second(s)`;
+  } else if (resetAt) {
+    message += `\n- Retry after ${resetAt}`;
+  }
+
+  return message;
+}
+
+/**
  * Maps common HTTP status codes to actionable CLI messages.
  *
  * @param statusCode - HTTP status code
  * @param apiMessage - Message from the API response body, when present
+ * @param headers - Response headers
  * @returns User-readable error text
  */
-function formatHttpStatusError(statusCode: number, apiMessage?: string): string {
+function formatHttpStatusError(
+  statusCode: number,
+  apiMessage?: string,
+  headers?: Record<string, string | string[] | undefined>,
+): string {
   switch (statusCode) {
     case 401:
       return AUTH_ERROR_MESSAGE;
     case 403:
-      return PERMISSION_DENIED_MESSAGE;
+      return (
+        apiMessage ??
+        'Access was denied (403 Forbidden). If this persists, contact your Transcend admin.'
+      );
     case 404:
       return NOT_FOUND_MESSAGE;
     case 400:
       return apiMessage ?? 'The request was invalid. Check your command flags and try again.';
     case 409:
       return apiMessage ?? 'The request conflicted with the current policy bundle state.';
+    case 413:
+      return apiMessage ?? PAYLOAD_TOO_LARGE_MESSAGE;
     case 422:
       return apiMessage ?? 'The request could not be processed. Check your inputs and try again.';
+    case 429:
+      return formatRateLimitMessage(apiMessage, headers);
     default:
       if (statusCode >= 500) {
         return `Transcend server error (${statusCode}). Try again in a few moments. If the problem persists, contact Transcend support.`;
@@ -154,7 +226,7 @@ export function formatPolicyEngineRequestError(error: unknown): string {
     const apiMessage = extractApiMessage(response?.body);
 
     if (statusCode) {
-      return formatHttpStatusError(statusCode, apiMessage);
+      return formatHttpStatusError(statusCode, apiMessage, response?.headers);
     }
 
     if (apiMessage) {
