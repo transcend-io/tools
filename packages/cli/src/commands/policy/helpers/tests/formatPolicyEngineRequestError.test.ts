@@ -7,19 +7,19 @@ import {
 } from '../formatPolicyEngineRequestError.js';
 
 describe('formatPolicyEngineRequestError', () => {
-  it('extracts the message from a JSON error body string', () => {
+  it('extracts the message from a JSON error body string (400 validation)', () => {
     const error = {
       response: {
-        statusCode: 422,
+        statusCode: 400,
         body: JSON.stringify({
           message:
-            'Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
+            'Client error: Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
         }),
       },
     };
 
     expect(formatPolicyEngineRequestError(error)).toBe(
-      'Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
+      'Client error: Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
     );
   });
 
@@ -138,15 +138,15 @@ describe('formatPolicyEngineRequestError', () => {
     expect(formatPolicyEngineRequestError(error)).toBe('Client error: Bundle exceeds upload cap.');
   });
 
-  it('returns a fallback message for 422 when the API body has no message', () => {
+  it('returns a fallback message for 400 when the API body has no message', () => {
     const error = {
       response: {
-        statusCode: 422,
+        statusCode: 400,
         body: JSON.stringify({}),
       },
     };
 
-    expect(formatPolicyEngineRequestError(error)).toContain('could not be processed');
+    expect(formatPolicyEngineRequestError(error)).toContain('The request was invalid');
   });
 
   it('surfaces the plain-text 429 body from the API', () => {

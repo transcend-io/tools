@@ -166,8 +166,6 @@ function formatHttpStatusError(
       return apiMessage ?? 'The request conflicted with the current policy bundle state.';
     case 413:
       return apiMessage ?? PAYLOAD_TOO_LARGE_MESSAGE;
-    case 422:
-      return apiMessage ?? 'The request could not be processed. Check your inputs and try again.';
     case 429:
       return formatRateLimitMessage(apiMessage, headers);
     default:
