@@ -1,5 +1,20 @@
 # @transcend-io/cli
 
+## 10.23.0
+
+### Minor Changes
+
+- 55358da: Support `supportsAuthorizedAgent` on `data-subjects` in transcend.yml — the field can now be pushed via `updateSubject` and pulled from `internalSubjects`. Pushing `supportsAuthorizedAgent` requires the Authorized Agents feature to be enabled for the organization; the sync error message now calls this out explicitly.
+
+### Patch Changes
+
+- 259151f: Allow null consent UI variant description/userFlow/themeSlug on inventory pull so unset backend fields no longer fail the transcend.yml codec.
+- Updated dependencies [259151f]
+- Updated dependencies [55358da]
+  - @transcend-io/privacy-types@5.8.2
+  - @transcend-io/sdk@1.7.0
+  - @transcend-io/airgap.js-types@14.2.19
+
 ## 10.22.1
 
 ### Patch Changes
