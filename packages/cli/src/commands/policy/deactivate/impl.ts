@@ -6,9 +6,9 @@ import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
-  formatPolicyEngineRequestError,
   printResult,
   resolveBundleIdByName,
+  throwPolicyEngineRequestError,
 } from '../helpers/index.js';
 import type { DeactivatePolicyBundleResponse } from '../types.js';
 
@@ -61,7 +61,7 @@ export async function deactivate(
     if (statusCode === 409) {
       throw new Error(`Policy bundle "${bundleName}" has no active version.`, { cause: err });
     }
-    throw new Error(formatPolicyEngineRequestError(err), { cause: err });
+    throwPolicyEngineRequestError(err);
   }
 
   printResult(this.process.stdout, {

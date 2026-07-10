@@ -4,7 +4,12 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
-import { buildPolicyEngineClient, printResult, renderTable } from '../helpers/index.js';
+import {
+  buildPolicyEngineClient,
+  policyEngineRequest,
+  printResult,
+  renderTable,
+} from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
 
 /** CLI flags for `transcend policy bundles`. */
@@ -37,11 +42,13 @@ export async function bundles(
 
   logger.info(colors.green('Listing policy bundles...'));
 
-  const body = await client
-    .get('v1/policy-engine/policy-bundles', {
-      searchParams: { limit, offset },
-    })
-    .json<PolicyBundleListResponse>();
+  const body = await policyEngineRequest(
+    client
+      .get('v1/policy-engine/policy-bundles', {
+        searchParams: { limit, offset },
+      })
+      .json<PolicyBundleListResponse>(),
+  );
 
   printResult(this.process.stdout, {
     json,

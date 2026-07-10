@@ -6,6 +6,7 @@ import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
   buildPolicyEngineClient,
+  policyEngineRequest,
   printResult,
   renderTable,
   resolveBundleIdByName,
@@ -61,11 +62,13 @@ export async function versions(
     searchParams.after = after;
   }
 
-  const body = await client
-    .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
-      searchParams,
-    })
-    .json<PolicyBundleVersionListResponse>();
+  const body = await policyEngineRequest(
+    client
+      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
+        searchParams,
+      })
+      .json<PolicyBundleVersionListResponse>(),
+  );
 
   printResult(this.process.stdout, {
     json,

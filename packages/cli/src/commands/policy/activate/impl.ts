@@ -6,6 +6,7 @@ import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
+  policyEngineRequest,
   printResult,
   resolveBundleIdByName,
   resolvePolicyBundleVersion,
@@ -66,14 +67,16 @@ export async function activate(
     ),
   );
 
-  const body = await client
-    .post(
-      `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
-      {
-        json: dryRun ? { dryRun: true } : {},
-      },
-    )
-    .json<ActivatePolicyBundleVersionResponse>();
+  const body = await policyEngineRequest(
+    client
+      .post(
+        `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
+        {
+          json: dryRun ? { dryRun: true } : {},
+        },
+      )
+      .json<ActivatePolicyBundleVersionResponse>(),
+  );
 
   printResult(this.process.stdout, {
     json,

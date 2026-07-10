@@ -10,7 +10,7 @@ import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
   buildPolicyEngineClient,
-  formatPolicyEngineRequestError,
+  policyEngineRequest,
   printResult,
   resolveBundleByName,
   resolvePolicyBundleVersion,
@@ -118,14 +118,11 @@ export async function download(
     ),
   );
 
-  let body: GetPolicyBundleVersionResponse;
-  try {
-    body = await client
+  const body = await policyEngineRequest(
+    client
       .get(`v1/policy-engine/policy-bundles/${bundle.id}/versions/${versionId}`)
-      .json<GetPolicyBundleVersionResponse>();
-  } catch (err) {
-    throw new Error(formatPolicyEngineRequestError(err), { cause: err });
-  }
+      .json<GetPolicyBundleVersionResponse>(),
+  );
 
   if (json) {
     printResult(this.process.stdout, {

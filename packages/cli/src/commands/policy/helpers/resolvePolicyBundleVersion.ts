@@ -1,6 +1,7 @@
 import type { Got } from 'got';
 
 import type { PolicyBundleVersion, PolicyBundleVersionListResponse } from '../types.js';
+import { policyEngineRequest } from './formatPolicyEngineRequestError.js';
 
 /** Options for resolving a policy bundle version. */
 export interface ResolvePolicyBundleVersionOptions {
@@ -29,11 +30,13 @@ async function listAllPolicyBundleVersions(
       searchParams.after = after;
     }
 
-    const body = await client
-      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
-        searchParams,
-      })
-      .json<PolicyBundleVersionListResponse>();
+    const body = await policyEngineRequest(
+      client
+        .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
+          searchParams,
+        })
+        .json<PolicyBundleVersionListResponse>(),
+    );
 
     versions.push(...body.nodes);
 

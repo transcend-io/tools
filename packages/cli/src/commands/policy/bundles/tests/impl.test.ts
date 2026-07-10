@@ -57,4 +57,27 @@ describe('bundles', () => {
     });
     expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('bundle-id'));
   });
+
+  it('surfaces auth failures with a user-readable message', async () => {
+    const httpError = {
+      response: {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      },
+    };
+    const get = vi.fn().mockReturnValue({
+      json: vi.fn().mockRejectedValue(httpError),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ get });
+
+    await expect(
+      bundles.call(context, {
+        auth: 'invalid-key',
+        'transcend-url': 'https://api.transcend.io',
+        limit: 50,
+        offset: 0,
+        json: false,
+      }),
+    ).rejects.toThrow(/Authentication failed \(401 Unauthorized\)/);
+  });
 });

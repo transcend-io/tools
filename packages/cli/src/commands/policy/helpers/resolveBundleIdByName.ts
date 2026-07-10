@@ -1,6 +1,7 @@
 import type { Got } from 'got';
 
 import type { PolicyBundle, PolicyBundleListResponse } from '../types.js';
+import { policyEngineRequest } from './formatPolicyEngineRequestError.js';
 
 /**
  * Resolves a bundle name to its parent record by scanning offset-paginated listings.
@@ -17,11 +18,13 @@ export async function resolveBundleByName(
   let offset = 0;
 
   while (true) {
-    const body = await client
-      .get('v1/policy-engine/policy-bundles', {
-        searchParams: { limit, offset },
-      })
-      .json<PolicyBundleListResponse>();
+    const body = await policyEngineRequest(
+      client
+        .get('v1/policy-engine/policy-bundles', {
+          searchParams: { limit, offset },
+        })
+        .json<PolicyBundleListResponse>(),
+    );
 
     const match = body.nodes.find((bundle) => bundle.bundleName === bundleName);
     if (match) {

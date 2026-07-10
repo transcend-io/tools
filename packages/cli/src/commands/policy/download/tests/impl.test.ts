@@ -288,7 +288,7 @@ describe('download', () => {
         'transcend-url': 'https://api.transcend.io',
         json: false,
       }),
-    ).rejects.toThrow('Missing required scope.');
+    ).rejects.toThrow(/Authentication failed \(401 Unauthorized\)/);
   });
 
   it('builds the default output filename from bundle name and version', () => {

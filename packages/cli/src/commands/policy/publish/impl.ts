@@ -15,7 +15,7 @@ import {
   buildOpaBundleTarball,
   defaultPolicyVersionLabel,
   formatPolicyBundleVersionSummary,
-  formatPolicyEngineRequestError,
+  policyEngineRequest,
   printResult,
   resolveBundleIdByName,
 } from '../helpers/index.js';
@@ -82,13 +82,11 @@ export async function publish(
         version: versionLabel,
         description,
       });
-      try {
-        responseBody = await client
+      responseBody = await policyEngineRequest(
+        client
           .post(`v1/policy-engine/policy-bundles/${existingBundleId}/versions`, { body: form })
-          .json<CreatePolicyBundleVersionResponse>();
-      } catch (err) {
-        throw new Error(formatPolicyEngineRequestError(err), { cause: err });
-      }
+          .json<CreatePolicyBundleVersionResponse>(),
+      );
     } else {
       if (!this.process.stdin.isTTY && !yes) {
         logger.error(
@@ -120,15 +118,13 @@ export async function publish(
         description,
         bundleName,
       });
-      try {
-        responseBody = await client
+      responseBody = await policyEngineRequest(
+        client
           .post('v1/policy-engine/policy-bundles', {
             body: createForm,
           })
-          .json<CreatePolicyBundleResponse>();
-      } catch (err) {
-        throw new Error(formatPolicyEngineRequestError(err), { cause: err });
-      }
+          .json<CreatePolicyBundleResponse>(),
+      );
     }
 
     printResult(this.process.stdout, {
