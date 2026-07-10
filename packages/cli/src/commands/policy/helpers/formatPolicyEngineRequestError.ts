@@ -1,3 +1,5 @@
+import { PolicyEngineCliError } from './policyEngineCliError.js';
+
 /** Parsed JSON error body from a Policy Engine API response. */
 interface PolicyEngineErrorBody {
   /** Human-readable error message */
@@ -241,7 +243,7 @@ export function formatPolicyEngineRequestError(error: unknown): string {
  * @param error - The thrown error, typically a got `HTTPError`
  */
 export function throwPolicyEngineRequestError(error: unknown): never {
-  throw new Error(formatPolicyEngineRequestError(error), { cause: error });
+  throw new PolicyEngineCliError(formatPolicyEngineRequestError(error), { cause: error });
 }
 
 /**

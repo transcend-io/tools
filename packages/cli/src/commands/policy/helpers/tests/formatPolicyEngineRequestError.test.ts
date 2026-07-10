@@ -5,6 +5,7 @@ import {
   policyEngineRequest,
   throwPolicyEngineRequestError,
 } from '../formatPolicyEngineRequestError.js';
+import { PolicyEngineCliError } from '../policyEngineCliError.js';
 
 describe('formatPolicyEngineRequestError', () => {
   it('extracts the message from a JSON error body string (400 validation)', () => {
@@ -215,8 +216,8 @@ describe('throwPolicyEngineRequestError', () => {
     try {
       throwPolicyEngineRequestError(httpError);
     } catch (error) {
-      expect(error).toBeInstanceOf(Error);
-      expect((error as Error).name).toBe('Error');
+      expect(error).toBeInstanceOf(PolicyEngineCliError);
+      expect((error as Error).name).toBe('PolicyEngineCliError');
       expect((error as Error).cause).toBe(httpError);
     }
   });

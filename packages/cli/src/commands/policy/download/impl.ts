@@ -14,6 +14,7 @@ import {
   printResult,
   resolveBundleByName,
   resolvePolicyBundleVersion,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { GetPolicyBundleVersionResponse } from '../types.js';
 
@@ -34,6 +35,8 @@ export interface DownloadCommandFlags {
   'transcend-url': string;
   /** Print metadata + presigned URL as JSON without writing a file */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -88,9 +91,11 @@ export async function download(
     auth,
     'transcend-url': transcendUrl,
     json,
+    debug = false,
   }: DownloadCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
 

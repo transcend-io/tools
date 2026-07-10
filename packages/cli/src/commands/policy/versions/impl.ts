@@ -10,6 +10,7 @@ import {
   printResult,
   renderTable,
   resolveBundleIdByName,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { PolicyBundleVersionListResponse } from '../types.js';
 
@@ -27,6 +28,8 @@ export interface VersionsCommandFlags {
   after?: string;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -44,9 +47,11 @@ export async function versions(
     limit,
     after,
     json,
+    debug = false,
   }: VersionsCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
   const bundleId = await resolveBundleIdByName(client, bundleName);

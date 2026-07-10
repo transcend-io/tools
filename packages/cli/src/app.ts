@@ -1,13 +1,33 @@
 import { buildInstallCommand, buildUninstallCommand } from '@stricli/auto-complete';
-import { buildApplication, buildRouteMap } from '@stricli/core';
+import { buildApplication, buildRouteMap, text_en } from '@stricli/core';
 
 import { adminRoutes } from './commands/admin/routes.js';
 import { consentRoutes } from './commands/consent/routes.js';
 import { inventoryRoutes } from './commands/inventory/routes.js';
 import { migrationRoutes } from './commands/migration/routes.js';
+import { formatPolicyEngineCliException } from './commands/policy/helpers/policyEngineCliError.js';
 import { policyRoutes } from './commands/policy/routes.js';
 import { requestRoutes } from './commands/request/routes.js';
 import { description, name, version } from './constants.js';
+
+/**
+ * Formats unexpected command failures for terminal output.
+ *
+ * @param exc - Thrown value from a command
+ * @returns Terminal-safe error text
+ */
+function formatException(exc: unknown): string {
+  const policyMessage = formatPolicyEngineCliException(exc);
+  if (policyMessage) {
+    return policyMessage;
+  }
+
+  if (exc instanceof Error) {
+    return exc.stack ?? String(exc);
+  }
+
+  return String(exc);
+}
 
 const routes = buildRouteMap({
   routes: {
@@ -35,5 +55,17 @@ export const app = buildApplication(routes, {
   name,
   versionInfo: {
     currentVersion: version,
+  },
+  localization: {
+    loadText: (locale) => {
+      if (!locale.startsWith('en')) {
+        return undefined;
+      }
+
+      return {
+        ...text_en,
+        formatException,
+      };
+    },
   },
 });

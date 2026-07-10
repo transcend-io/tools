@@ -18,6 +18,7 @@ import {
   policyEngineRequest,
   printResult,
   resolveBundleIdByName,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { CreatePolicyBundleResponse, CreatePolicyBundleVersionResponse } from '../types.js';
 
@@ -39,6 +40,8 @@ export interface PublishCommandFlags {
   json: boolean;
   /** Skip the "create new bundle" confirmation */
   yes: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -58,9 +61,11 @@ export async function publish(
     description,
     json,
     yes,
+    debug = false,
   }: PublishCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const resolvedDir = path.resolve(dir);
   const versionLabel = version ?? defaultPolicyVersionLabel(bundleName);

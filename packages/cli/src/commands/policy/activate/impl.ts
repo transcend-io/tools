@@ -10,6 +10,7 @@ import {
   printResult,
   resolveBundleIdByName,
   resolvePolicyBundleVersion,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { ActivatePolicyBundleVersionResponse } from '../types.js';
 
@@ -27,6 +28,8 @@ export interface ActivateCommandFlags {
   'dry-run': boolean;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -48,9 +51,11 @@ export async function activate(
     'transcend-url': transcendUrl,
     'dry-run': dryRun,
     json,
+    debug = false,
   }: ActivateCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
   const resolvedBundleId = await resolveBundleIdByName(client, bundleName);

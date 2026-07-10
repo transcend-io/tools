@@ -5,6 +5,7 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
 
 export const publishCommand = buildCommand({
   loader: async () => {
@@ -49,6 +50,7 @@ export const publishCommand = buildCommand({
         brief: 'Skip the "create new bundle" confirmation (for CI/non-interactive use)',
         default: false,
       },
+      debug: createPolicyDebugParameter(),
     },
   },
   docs: {

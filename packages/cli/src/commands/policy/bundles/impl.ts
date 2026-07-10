@@ -9,6 +9,7 @@ import {
   policyEngineRequest,
   printResult,
   renderTable,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
 
@@ -24,6 +25,8 @@ export interface BundlesCommandFlags {
   offset: number;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -34,9 +37,10 @@ export interface BundlesCommandFlags {
  */
 export async function bundles(
   this: LocalContext,
-  { auth, 'transcend-url': transcendUrl, limit, offset, json }: BundlesCommandFlags,
+  { auth, 'transcend-url': transcendUrl, limit, offset, json, debug = false }: BundlesCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
