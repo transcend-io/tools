@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.8.1
+
+### Patch Changes
+
+- ccb3c45: Add the Adobe Campaign recipient identifier type.
+
 ## 5.8.0
 
 ### Minor Changes
