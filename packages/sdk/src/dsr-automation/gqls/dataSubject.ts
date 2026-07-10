@@ -11,6 +11,7 @@ export const DATA_SUBJECTS: DocumentNode = parse(gql`
       active
       type
       adminDashboardDefaultSilentMode
+      supportsAuthorizedAgent
       actions {
         type
       }

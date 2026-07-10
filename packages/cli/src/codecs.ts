@@ -1029,6 +1029,11 @@ export const DataSubjectInput = t.intersection([
     title: t.string,
     /** Whether or not to default new requests made in the admin dashboard to silent mode */
     adminDashboardDefaultSilentMode: t.boolean,
+    /**
+     * Whether requests can be submitted on behalf of this data subject by an authorized agent.
+     * Requires the Authorized Agents feature to be enabled for the organization.
+     */
+    supportsAuthorizedAgent: t.boolean,
     /** Enabled request actions for the data subject */
     actions: t.array(valuesOf(RequestAction)),
   }),
