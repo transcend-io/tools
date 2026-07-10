@@ -40596,14 +40596,35 @@
                 "type": "object",
                 "properties": {
                   "description": {
-                    "type": "string"
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "userFlow": {
-                    "type": "string",
-                    "enum": ["BANNER", "MODAL", "BANNER_AND_MODAL"]
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": ["BANNER", "MODAL", "BANNER_AND_MODAL"]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "themeSlug": {
-                    "type": "string"
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 }
               }

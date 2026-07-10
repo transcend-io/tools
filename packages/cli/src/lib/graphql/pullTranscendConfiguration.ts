@@ -470,12 +470,13 @@ export async function pullTranscendConfiguration(
           id: variant.id,
           name: variant.name,
           slug: variant.slug,
-          description: variant.description,
+          // Backend returns null when unset; omit from yaml rather than writing null
+          description: variant.description || undefined,
           configuration: JSON.stringify(variant.configuration),
           locales: variant.locales as LocaleValue[],
           status: variant.status,
-          userFlow: variant.userFlow,
-          themeSlug: variant.theme?.slug,
+          userFlow: variant.userFlow || undefined,
+          themeSlug: variant.theme?.slug || undefined,
         }),
       ),
       consentThemes: consentThemes.map(

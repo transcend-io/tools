@@ -45,12 +45,21 @@ export const ConsentVariantInput = t.intersection([
     configuration: t.string,
   }),
   t.partial({
-    /** Description of variant */
-    description: t.string,
-    /** User flow of variant */
-    userFlow: valuesOf(ConsentUiUserFlow),
-    /** Slug of the consent UI theme associated with this variant */
-    themeSlug: t.string,
+    /**
+     * Description of variant.
+     * Backend returns null when unset; omit from yaml rather than writing null.
+     */
+    description: t.union([t.string, t.null]),
+    /**
+     * User flow of variant.
+     * Backend may return null when unset.
+     */
+    userFlow: t.union([valuesOf(ConsentUiUserFlow), t.null]),
+    /**
+     * Slug of the consent UI theme associated with this variant.
+     * Absent when the variant has no theme; backend may also return null.
+     */
+    themeSlug: t.union([t.string, t.null]),
   }),
 ]);
 
