@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.8.2
+
+### Patch Changes
+
+- 259151f: Allow null consent UI variant description/userFlow/themeSlug on inventory pull so unset backend fields no longer fail the transcend.yml codec.
+
 ## 5.8.1
 
 ### Patch Changes
