@@ -2,4 +2,4 @@
 "@transcend-io/privacy-types": patch
 ---
 
-Add the Adobe Campaign Classic recipient identifier type.
+Add the Adobe Campaign recipient identifier type.
