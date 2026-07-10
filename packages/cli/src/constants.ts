@@ -95,9 +95,15 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewDataMap,
     ScopeName.ManageWorkflows,
   ],
-  // ManageWorkflows inherits ViewDataSubjectRequestSettings and ViewGlobalAttributes
-  // (needed to resolve action/data-subject/attribute-key names to IDs on push)
-  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ManageWorkflows],
+  // Related fetches used during sync (not expanded from ManageWorkflows when deriving
+  // push RPC API key scopes):
+  // - ViewDataSubjectRequestSettings — actions query (always) and data subjects (when set)
+  // - ViewGlobalAttributes — attributeKeys query (when attribute-keys are set)
+  [TranscendPullResource.WorkflowConfigs]: [
+    ScopeName.ManageWorkflows,
+    ScopeName.ViewDataSubjectRequestSettings,
+    ScopeName.ViewGlobalAttributes,
+  ],
 };
 
 /**
@@ -152,7 +158,8 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
     ScopeName.ViewPreferenceStoreSettings,
     ScopeName.ManageWorkflows,
   ],
-  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ViewWorkflows],
+  // ViewWorkflows is not grantable on API keys; ManageWorkflows is used for workflowConfigs
+  [TranscendPullResource.WorkflowConfigs]: [ScopeName.ManageWorkflows],
 };
 
 export const TR_YML_RESOURCE_TO_FIELD_NAME: Record<TranscendPullResource, keyof TranscendInput> = {
