@@ -516,8 +516,17 @@ export async function syncConfigurationToTranscend(
           logger.info(colors.green(`Successfully synced data subject "${dataSubject.type}"!`));
         } catch (err) {
           encounteredError = true;
+          // supportsAuthorizedAgent is gated on the Authorized Agents feature being
+          // enabled for the organization; surface a clearer hint than the raw API error
+          const hint =
+            dataSubject.supportsAuthorizedAgent !== undefined &&
+            /authorized.agent/i.test(err.message)
+              ? ' (enable the Authorized Agents feature for this organization before setting "supportsAuthorizedAgent")'
+              : '';
           logger.info(
-            colors.red(`Failed to sync data subject "${dataSubject.type}"! - ${err.message}`),
+            colors.red(
+              `Failed to sync data subject "${dataSubject.type}"! - ${err.message}${hint}`,
+            ),
           );
         }
       },

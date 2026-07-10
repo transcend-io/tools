@@ -19,6 +19,8 @@ export interface DataSubject {
   };
   /** Whether silent mode is enabled by default */
   adminDashboardDefaultSilentMode: boolean;
+  /** Whether requests can be submitted on behalf of this data subject by an authorized agent */
+  supportsAuthorizedAgent: boolean;
   /** Enabled actions */
   actions: {
     /** Type of action */

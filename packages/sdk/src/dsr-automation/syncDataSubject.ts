@@ -14,6 +14,8 @@ export interface DataSubjectInput {
   title?: string;
   /** Whether or not to default new requests made in the admin dashboard to silent mode */
   adminDashboardDefaultSilentMode?: boolean;
+  /** Whether requests can be submitted on behalf of this data subject by an authorized agent */
+  supportsAuthorizedAgent?: boolean;
   /** Enabled request actions for the data subject */
   actions?: RequestAction[];
 }
@@ -44,6 +46,7 @@ export async function syncDataSubject(
         id: dataSubjectId,
         title: dataSubject.title,
         adminDashboardDefaultSilentMode: dataSubject.adminDashboardDefaultSilentMode,
+        supportsAuthorizedAgent: dataSubject.supportsAuthorizedAgent,
         actions: dataSubject.actions,
         skipPublish: skipPublish && typeof dataSubject.active === 'undefined',
       },

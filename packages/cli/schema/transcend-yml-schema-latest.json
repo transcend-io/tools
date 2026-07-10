@@ -17073,6 +17073,9 @@
               "adminDashboardDefaultSilentMode": {
                 "type": "boolean"
               },
+              "supportsAuthorizedAgent": {
+                "type": "boolean"
+              },
               "actions": {
                 "type": "array",
                 "items": {

@@ -3,6 +3,8 @@ data-subjects:
     title: Customer
     active: true
     adminDashboardDefaultSilentMode: true
+    # Requires the Authorized Agents feature to be enabled for the organization
+    supportsAuthorizedAgent: true
     actions:
       - ERASURE
       - SALE_OPT_OUT

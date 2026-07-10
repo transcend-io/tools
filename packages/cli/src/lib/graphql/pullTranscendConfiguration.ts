@@ -902,11 +902,19 @@ export async function pullTranscendConfiguration(
   // Save Data Subjects
   if (dataSubjects.length > 0 && resources.includes(TranscendPullResource.DataSubjects)) {
     result['data-subjects'] = dataSubjects.map(
-      ({ type, title, active, adminDashboardDefaultSilentMode, actions }): DataSubjectInput => ({
+      ({
+        type,
+        title,
+        active,
+        adminDashboardDefaultSilentMode,
+        supportsAuthorizedAgent,
+        actions,
+      }): DataSubjectInput => ({
         type,
         title: title?.defaultMessage,
         active,
         adminDashboardDefaultSilentMode,
+        supportsAuthorizedAgent,
         actions: actions.map(({ type }) => type),
       }),
     );
