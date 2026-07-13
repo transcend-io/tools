@@ -1,0 +1,5 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "$description": "Dark mode overrides — add tokens here as dark values are designed. Only tokens that differ from light mode need to be listed.",
+  "$type": "color"
+}

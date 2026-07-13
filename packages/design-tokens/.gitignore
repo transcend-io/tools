@@ -1,0 +1,4 @@
+# Terrazzo-generated TypeScript (rebuilt via prebuild)
+src/primitive/
+src/semantic/
+src/_bootstrap-variables.scss

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/resolver.json",
+  "name": "Transcend Design Tokens",
+  "version": "2025.10",
+  "sets": {
+    "primitives": {
+      "description": "Raw color scales matching Figma variables",
+      "sources": [{ "$ref": "./primitive/palette.tokens.json" }]
+    },
+    "colors": {
+      "description": "Semantic color tokens for UI roles",
+      "sources": [{ "$ref": "./semantic/color.tokens.json" }]
+    }
+  },
+  "modifiers": {
+    "theme": {
+      "description": "Color mode",
+      "contexts": {
+        "light": [],
+        "dark": [{ "$ref": "./semantic/color-dark.tokens.json" }]
+      },
+      "default": "light"
+    }
+  },
+  "resolutionOrder": [
+    { "$ref": "#/sets/primitives" },
+    { "$ref": "#/sets/colors" },
+    { "$ref": "#/modifiers/theme" }
+  ]
+}

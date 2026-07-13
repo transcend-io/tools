@@ -1,0 +1,510 @@
+{
+  "$schema": "https://www.designtokens.org/schemas/2025.10/format.json",
+  "$type": "color",
+  "text": {
+    "default": {
+      "$value": "{palette.gray.900}",
+      "$description": "Default body and UI text"
+    },
+    "subtle": {
+      "$value": "{palette.gray.700}",
+      "$description": "Secondary labels and captions"
+    },
+    "subtlest": {
+      "$value": "{palette.gray.500}",
+      "$description": "Tertiary or placeholder text"
+    },
+    "disabled": {
+      "$value": "{palette.gray.600}",
+      "$description": "Disabled state text"
+    },
+    "inverse": {
+      "$value": "{palette.white}",
+      "$description": "Text on bold/dark backgrounds"
+    },
+    "brand": {
+      "subtle": {
+        "$value": "{palette.indigo.600}",
+        "$description": "Brand-colored text on subtle background"
+      },
+      "bold": {
+        "$value": "{palette.indigo.900}",
+        "$description": "Brand-colored text on default background"
+      }
+    },
+    "success": {
+      "subtle": {
+        "$value": "{palette.green.600}",
+        "$description": "Success messages on subtle background"
+      },
+      "bold": {
+        "$value": "{palette.green.900}",
+        "$description": "Success messages on default background"
+      }
+    },
+    "warning": {
+      "subtle": {
+        "$value": "{palette.gold.600}",
+        "$description": "Warning messages on subtle background"
+      },
+      "bold": {
+        "$value": "{palette.gold.900}",
+        "$description": "Warning messages on default background"
+      }
+    },
+    "danger": {
+      "subtle": {
+        "$value": "{palette.red.600}",
+        "$description": "Danger messages on subtle background"
+      },
+      "bold": {
+        "$value": "{palette.red.900}",
+        "$description": "Danger messages on default background"
+      }
+    },
+    "accent": {
+      "orange": {
+        "bold": {
+          "$value": "{palette.orange.900}",
+          "$description": "Orange text on subtle background"
+        }
+      },
+      "yellow": {
+        "bold": {
+          "$value": "{palette.yellow.900}",
+          "$description": "Yellow text on subtle background"
+        }
+      },
+      "lime": {
+        "bold": {
+          "$value": "{palette.lime.900}",
+          "$description": "Lime text on subtle background"
+        }
+      },
+      "teal": {
+        "bold": {
+          "$value": "{palette.teal.900}",
+          "$description": "Teal text on subtle background"
+        }
+      },
+      "blue": {
+        "bold": {
+          "$value": "{palette.blue.900}",
+          "$description": "Blue text on subtle background"
+        }
+      },
+      "purple": {
+        "bold": {
+          "$value": "{palette.purple.900}",
+          "$description": "Purple text on subtle background"
+        }
+      },
+      "pink": {
+        "bold": {
+          "$value": "{palette.pink.900}",
+          "$description": "Pink text on subtle background"
+        }
+      }
+    }
+  },
+  "link": {
+    "default": {
+      "$value": "{palette.indigo.500}",
+      "$description": "Hyperlink, rest state"
+    },
+    "pressed": {
+      "$value": "{palette.indigo.600}",
+      "$description": "Hyperlink, pressed or selected state"
+    },
+    "visited": {
+      "default": {
+        "$value": "{palette.gray.700}",
+        "$description": "Visited hyperlink, rest state"
+      },
+      "pressed": {
+        "$value": "{palette.gray.800}",
+        "$description": "Visited hyperlink, pressed or selected state"
+      }
+    }
+  },
+  "icon": {
+    "default": {
+      "$value": "{palette.gray.700}",
+      "$description": "Default icon color"
+    },
+    "subtle": {
+      "$value": "{palette.gray.600}",
+      "$description": "Secondary or decorative icons"
+    },
+    "subtlest": {
+      "$value": "{palette.gray.500}",
+      "$description": "Tertiary or ghost icons"
+    },
+    "disabled": {
+      "$value": "{palette.gray.300}",
+      "$description": "Disabled state icons"
+    },
+    "brand": {
+      "$value": "{palette.indigo.500}",
+      "$description": "Brand-colored icons"
+    },
+    "success": {
+      "$value": "{palette.green.500}",
+      "$description": "Success state icons"
+    },
+    "warning": {
+      "$value": "{palette.gold.500}",
+      "$description": "Warning state icons"
+    },
+    "danger": {
+      "$value": "{palette.red.500}",
+      "$description": "Danger state icons"
+    },
+    "inverse": {
+      "$value": "{palette.white}",
+      "$description": "Icon on bold/dark backgrounds"
+    }
+  },
+  "border": {
+    "default": {
+      "$value": "{palette.gray.300}",
+      "$description": "Default input and card border"
+    },
+    "subtle": {
+      "$value": "{palette.gray.200}",
+      "$description": "Less emphasized input and card border"
+    },
+    "bold": {
+      "$value": "{palette.gray.500}",
+      "$description": "Strong divider, emphasized border"
+    },
+    "focused": {
+      "$value": "{palette.indigo.700}",
+      "$description": "Focus ring on inputs"
+    },
+    "disabled": {
+      "$value": "{palette.gray.200}",
+      "$description": "Disabled element border"
+    },
+    "success": {
+      "$value": "{palette.green.300}",
+      "$description": "Success-state input border"
+    },
+    "warning": {
+      "$value": "{palette.gold.400}",
+      "$description": "Warning-state input border"
+    },
+    "danger": {
+      "$value": "{palette.red.400}",
+      "$description": "Danger-state input border"
+    },
+    "brand": {
+      "$value": "{palette.indigo.500}",
+      "$description": "Brand button, active border"
+    },
+    "accent": {
+      "orange": {
+        "$value": "{palette.orange.300}",
+        "$description": "Orange label or badge border"
+      },
+      "yellow": {
+        "$value": "{palette.yellow.300}",
+        "$description": "Yellow label or badge border"
+      },
+      "lime": {
+        "$value": "{palette.lime.300}",
+        "$description": "Lime label or badge border"
+      },
+      "teal": {
+        "$value": "{palette.teal.300}",
+        "$description": "Teal label or badge border"
+      },
+      "blue": {
+        "$value": "{palette.blue.300}",
+        "$description": "Blue label or badge border"
+      },
+      "purple": {
+        "$value": "{palette.purple.300}",
+        "$description": "Purple label or badge border"
+      },
+      "pink": {
+        "$value": "{palette.pink.300}",
+        "$description": "Pink label or badge border"
+      }
+    }
+  },
+  "background": {
+    "default": {
+      "default": {
+        "$value": "{palette.white}",
+        "$description": "Interactive surface, rest state"
+      },
+      "hover": {
+        "$value": "{palette.gray.100}",
+        "$description": "Interactive surface, hovered state"
+      },
+      "pressed": {
+        "$value": "{palette.gray.200}",
+        "$description": "Interactive surface, pressed or selected state — selected rows, active list items"
+      }
+    },
+    "neutral": {
+      "default": {
+        "$value": "{palette.gray.100}",
+        "$description": "Neutral surface, rest state — form elements, nav bars, inputs, secondary buttons, code blocks, skeleton loaders"
+      },
+      "hovered": {
+        "$value": "{palette.gray.200}",
+        "$description": "Neutral surface, hovered state"
+      },
+      "pressed": {
+        "$value": "{palette.gray.300}",
+        "$description": "Neutral surface, pressed or selected state"
+      }
+    },
+    "disabled": {
+      "$value": "{palette.gray.200}",
+      "$description": "Disabled element background"
+    },
+    "brand": {
+      "subtlest": {
+        "$value": "{palette.indigo.50}",
+        "$description": "Lightest brand tint — subtle label or badge background"
+      },
+      "bold": {
+        "default": {
+          "$value": "{palette.indigo.500}",
+          "$description": "Brand surface — primary buttons, CTAs"
+        },
+        "hovered": {
+          "$value": "{palette.indigo.600}",
+          "$description": "Brand surface, hovered state"
+        },
+        "pressed": {
+          "$value": "{palette.indigo.700}",
+          "$description": "Brand surface, pressed or selected state"
+        }
+      },
+      "subtle": {
+        "$value": "{palette.indigo.100}",
+        "$description": "Light brand tint — label or badge background with slightly more emphasis"
+      }
+    },
+    "success": {
+      "subtle": {
+        "$value": "{palette.green.100}",
+        "$description": "Light success tint — success label or badge background with slightly more emphasis"
+      },
+      "bold": {
+        "default": {
+          "$value": "{palette.green.500}",
+          "$description": "Success surface — banners, toasts, filled badges"
+        },
+        "hovered": {
+          "$value": "{palette.green.600}",
+          "$description": "Success surface, hovered state"
+        },
+        "pressed": {
+          "$value": "{palette.green.700}",
+          "$description": "Success surface, pressed or selected state"
+        }
+      },
+      "subtlest": {
+        "$value": "{palette.green.50}",
+        "$description": "Lightest success tint — subtle success label or badge background"
+      }
+    },
+    "warning": {
+      "bold": {
+        "default": {
+          "$value": "{palette.gold.500}",
+          "$description": "Warning surface — banners, toasts, filled badges"
+        },
+        "hovered": {
+          "$value": "{palette.gold.600}",
+          "$description": "Warning surface, hovered state"
+        },
+        "pressed": {
+          "$value": "{palette.gold.700}",
+          "$description": "Warning surface, pressed or selected state"
+        }
+      },
+      "subtlest": {
+        "$value": "{palette.gold.50}",
+        "$description": "Lightest warning tint — subtle warning label or badge background"
+      },
+      "subtle": {
+        "$value": "{palette.gold.100}",
+        "$description": "Light warning tint — warning label or badge background with slightly more emphasis"
+      }
+    },
+    "danger": {
+      "subtlest": {
+        "$value": "{palette.red.50}",
+        "$description": "Lightest danger tint — subtle danger label or badge background"
+      },
+      "bold": {
+        "default": {
+          "$value": "{palette.red.500}",
+          "$description": "Danger surface — banners, toasts, filled badges, destructive buttons"
+        },
+        "hovered": {
+          "$value": "{palette.red.600}",
+          "$description": "Danger surface, hovered state"
+        },
+        "pressed": {
+          "$value": "{palette.red.700}",
+          "$description": "Danger surface, pressed or selected state"
+        }
+      },
+      "subtle": {
+        "$value": "{palette.red.100}",
+        "$description": "Light danger tint — danger label or badge background with slightly more emphasis"
+      }
+    },
+    "overlay": {
+      "subtle": {
+        "$value": "{palette.opacity.sm}",
+        "$description": "Light scrim — drawers, side panels, non-blocking overlays"
+      },
+      "default": {
+        "$value": "{palette.opacity.md}",
+        "$description": "Standard scrim — modal and dialog backdrops"
+      },
+      "bold": {
+        "$value": "{palette.opacity.lg}",
+        "$description": "Heavy scrim — full-screen takeovers, critical dialogs, lightboxes"
+      }
+    },
+    "accent": {
+      "orange": {
+        "subtlest": {
+          "$value": "{palette.orange.50}",
+          "$description": "Lightest Orange tint — subtle orange label or badge background"
+        },
+        "subtle": {
+          "$value": "{palette.orange.100}",
+          "$description": "Light Orange tint — orange label or badge background with slightly more emphasis"
+        },
+        "bold": {
+          "$value": "{palette.orange.500}",
+          "$description": "Orange accent surface — filled badges, banners, toasts"
+        }
+      },
+      "yellow": {
+        "subtlest": {
+          "$value": "{palette.yellow.50}",
+          "$description": "Lightest Yellow tint — subtle yellow label or badge background"
+        },
+        "subtle": {
+          "$value": "{palette.yellow.100}",
+          "$description": "Light Yellow tint — yellow label or badge background with slightly more emphasis"
+        },
+        "bold": {
+          "$value": "{palette.yellow.500}",
+          "$description": "Yellow accent surface — filled badges, banners, toasts"
+        }
+      },
+      "lime": {
+        "subtlest": {
+          "$value": "{palette.lime.50}",
+          "$description": "Lightest Lime tint — subtle lime label or badge background"
+        },
+        "subtle": {
+          "$value": "{palette.lime.100}",
+          "$description": "Light Lime tint — lime label or badge background with slightly more emphasis"
+        },
+        "bold": {
+          "$value": "{palette.lime.500}",
+          "$description": "Lime accent surface — filled badges, banners, toasts"
+        }
+      },
+      "teal": {
+        "subtlest": {
+          "$value": "{palette.teal.50}",
+          "$description": "Lightest Teal tint — subtle teal label or badge background"
+        },
+        "subtle": {
+          "$value": "{palette.teal.100}",
+          "$description": "Light Teal tint — teal label or badge background with slightly more emphasis"
+        },
+        "bold": {
+          "$value": "{palette.teal.500}",
+          "$description": "Teal accent surface — filled badges, banners, toasts"
+        }
+      },
+      "blue": {
+        "subtlest": {
+          "$value": "{palette.blue.50}",
+          "$description": "Lightest Blue tint — subtle blue label or badge background"
+        },
+        "subtle": {
+          "$value": "{palette.blue.100}",
+          "$description": "Light Blue tint — blue label or badge background with slightly more emphasis"
+        },
+        "bold": {
+          "$value": "{palette.blue.500}",
+          "$description": "Blue accent surface — filled badges, banners, toasts"
+        }
+      },
+      "purple": {
+        "subtlest": {
+          "$value": "{palette.purple.50}",
+          "$description": "Lightest Purple tint — subtle purple label or badge background"
+        },
+        "subtle": {
+          "$value": "{palette.purple.100}",
+          "$description": "Light Purple tint — purple label or badge background with slightly more emphasis"
+        },
+        "bold": {
+          "$value": "{palette.purple.500}",
+          "$description": "Purple accent surface — filled badges, banners, toasts"
+        }
+      },
+      "pink": {
+        "subtlest": {
+          "$value": "{palette.pink.50}",
+          "$description": "Lightest Pink tint — subtle pink label or badge background"
+        },
+        "subtle": {
+          "$value": "{palette.pink.100}",
+          "$description": "Light Pink tint — pink label or badge background with slightly more emphasis"
+        },
+        "bold": {
+          "$value": "{palette.pink.500}",
+          "$description": "Pink accent surface — filled badges, banners, toasts"
+        }
+      }
+    }
+  },
+  "chart": {
+    "orange": {
+      "$value": "{palette.orange.400}",
+      "$description": "Orange data series — charts, graphs, visualizations"
+    },
+    "yellow": {
+      "$value": "{palette.yellow.400}",
+      "$description": "Yellow data series — charts, graphs, visualizations"
+    },
+    "lime": {
+      "$value": "{palette.lime.400}",
+      "$description": "Lime data series — charts, graphs, visualizations"
+    },
+    "teal": {
+      "$value": "{palette.teal.400}",
+      "$description": "Teal data series — charts, graphs, visualizations"
+    },
+    "blue": {
+      "$value": "{palette.blue.400}",
+      "$description": "Blue data series — charts, graphs, visualizations"
+    },
+    "purple": {
+      "$value": "{palette.purple.400}",
+      "$description": "Purple data series — charts, graphs, visualizations"
+    },
+    "pink": {
+      "$value": "{palette.pink.400}",
+      "$description": "Pink data series — charts, graphs, visualizations"
+    }
+  }
+}

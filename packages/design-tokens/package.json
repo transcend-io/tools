@@ -1,0 +1,54 @@
+{
+  "name": "@transcend-io/design-tokens",
+  "version": "0.0.0",
+  "description": "Centralized design token primitives and semantics for Transcend frontends.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/design-tokens",
+  "license": "Apache-2.0",
+  "author": "Transcend Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transcend-io/tools.git",
+    "directory": "packages/design-tokens"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prebuild": "tz check && tz build && oxfmt --no-error-on-unmatched-pattern src",
+    "build": "tsdown",
+    "check:tokens": "tz check",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@terrazzo/cli": "catalog:",
+    "@types/lodash": "catalog:",
+    "@types/node": "catalog:",
+    "colorjs.io": "catalog:",
+    "lodash": "catalog:",
+    "oxfmt": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
