@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
+  formatCliException,
   formatPolicyEngineCliErrorForTerminal,
   formatPolicyEngineCliException,
   PolicyEngineCliError,
@@ -44,5 +45,38 @@ describe('PolicyEngineCliError', () => {
 
   it('returns undefined for non-policy errors', () => {
     expect(formatPolicyEngineCliException(new Error('other failure'))).toBeUndefined();
+  });
+
+  describe('formatCliException', () => {
+    it('suppresses the stack for plain Errors by default, showing only the message', () => {
+      const error = new Error('Policy bundle "missing" was not found for this organization.');
+
+      expect(formatCliException(error)).toBe(
+        'Policy bundle "missing" was not found for this organization.',
+      );
+      expect(formatCliException(error)).not.toContain('at ');
+    });
+
+    it('includes the stack for plain Errors when --debug is enabled', () => {
+      setPolicyEngineCliDebug(true);
+      const error = new Error('boom');
+
+      const message = formatCliException(error);
+
+      expect(message).toContain('boom');
+      expect(message).toContain('at ');
+    });
+
+    it('delegates PolicyEngineCliError to the policy formatter (no stack by default)', () => {
+      const error = new PolicyEngineCliError('Authentication failed (401 Unauthorized).');
+
+      expect(formatCliException(error)).toBe('Authentication failed (401 Unauthorized).');
+      expect(formatCliException(error)).not.toContain('at ');
+    });
+
+    it('stringifies non-Error thrown values', () => {
+      expect(formatCliException('a string failure')).toBe('a string failure');
+      expect(formatCliException(undefined)).toBe('undefined');
+    });
   });
 });
