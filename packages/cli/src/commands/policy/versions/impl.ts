@@ -6,9 +6,11 @@ import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
   buildPolicyEngineClient,
+  policyEngineRequest,
   printResult,
   renderTable,
   resolveBundleIdByName,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { PolicyBundleVersionListResponse } from '../types.js';
 
@@ -26,6 +28,8 @@ export interface VersionsCommandFlags {
   after?: string;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -43,9 +47,11 @@ export async function versions(
     limit,
     after,
     json,
+    debug = false,
   }: VersionsCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
   const bundleId = await resolveBundleIdByName(client, bundleName);
@@ -61,11 +67,13 @@ export async function versions(
     searchParams.after = after;
   }
 
-  const body = await client
-    .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
-      searchParams,
-    })
-    .json<PolicyBundleVersionListResponse>();
+  const body = await policyEngineRequest(
+    client
+      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
+        searchParams,
+      })
+      .json<PolicyBundleVersionListResponse>(),
+  );
 
   printResult(this.process.stdout, {
     json,

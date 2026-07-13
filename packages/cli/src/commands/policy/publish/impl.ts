@@ -15,9 +15,10 @@ import {
   buildOpaBundleTarball,
   defaultPolicyVersionLabel,
   formatPolicyBundleVersionSummary,
-  formatPolicyEngineRequestError,
+  policyEngineRequest,
   printResult,
   resolveBundleIdByName,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { CreatePolicyBundleResponse, CreatePolicyBundleVersionResponse } from '../types.js';
 
@@ -39,6 +40,8 @@ export interface PublishCommandFlags {
   json: boolean;
   /** Skip the "create new bundle" confirmation */
   yes: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -58,9 +61,11 @@ export async function publish(
     description,
     json,
     yes,
+    debug = false,
   }: PublishCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const resolvedDir = path.resolve(dir);
   const versionLabel = version ?? defaultPolicyVersionLabel(bundleName);
@@ -82,13 +87,11 @@ export async function publish(
         version: versionLabel,
         description,
       });
-      try {
-        responseBody = await client
+      responseBody = await policyEngineRequest(
+        client
           .post(`v1/policy-engine/policy-bundles/${existingBundleId}/versions`, { body: form })
-          .json<CreatePolicyBundleVersionResponse>();
-      } catch (err) {
-        throw new Error(formatPolicyEngineRequestError(err), { cause: err });
-      }
+          .json<CreatePolicyBundleVersionResponse>(),
+      );
     } else {
       if (!this.process.stdin.isTTY && !yes) {
         logger.error(
@@ -120,15 +123,13 @@ export async function publish(
         description,
         bundleName,
       });
-      try {
-        responseBody = await client
+      responseBody = await policyEngineRequest(
+        client
           .post('v1/policy-engine/policy-bundles', {
             body: createForm,
           })
-          .json<CreatePolicyBundleResponse>();
-      } catch (err) {
-        throw new Error(formatPolicyEngineRequestError(err), { cause: err });
-      }
+          .json<CreatePolicyBundleResponse>(),
+      );
     }
 
     printResult(this.process.stdout, {

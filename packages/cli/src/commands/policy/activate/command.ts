@@ -5,6 +5,7 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
 
 export const activateCommand = buildCommand({
   loader: async () => {
@@ -40,6 +41,7 @@ export const activateCommand = buildCommand({
         brief: 'Print the raw JSON API response',
         default: false,
       },
+      debug: createPolicyDebugParameter(),
     },
   },
   docs: {

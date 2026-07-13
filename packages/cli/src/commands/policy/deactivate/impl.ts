@@ -6,9 +6,11 @@ import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
-  formatPolicyEngineRequestError,
   printResult,
   resolveBundleIdByName,
+  setPolicyEngineCliDebug,
+  throwPolicyEngineRequestError,
+  PolicyEngineCliError,
 } from '../helpers/index.js';
 import type { DeactivatePolicyBundleResponse } from '../types.js';
 
@@ -22,6 +24,8 @@ export interface DeactivateCommandFlags {
   'transcend-url': string;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -36,9 +40,16 @@ export interface DeactivateCommandFlags {
  */
 export async function deactivate(
   this: LocalContext,
-  { 'bundle-name': bundleName, auth, 'transcend-url': transcendUrl, json }: DeactivateCommandFlags,
+  {
+    'bundle-name': bundleName,
+    auth,
+    'transcend-url': transcendUrl,
+    json,
+    debug = false,
+  }: DeactivateCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
@@ -59,9 +70,11 @@ export async function deactivate(
     // user-supplied bundle name so the error is actionable.
     const statusCode = (err as { response?: { statusCode?: number } })?.response?.statusCode;
     if (statusCode === 409) {
-      throw new Error(`Policy bundle "${bundleName}" has no active version.`, { cause: err });
+      throw new PolicyEngineCliError(`Policy bundle "${bundleName}" has no active version.`, {
+        cause: err,
+      });
     }
-    throw new Error(formatPolicyEngineRequestError(err), { cause: err });
+    throwPolicyEngineRequestError(err);
   }
 
   printResult(this.process.stdout, {

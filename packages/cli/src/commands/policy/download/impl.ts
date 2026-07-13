@@ -10,10 +10,11 @@ import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
   buildPolicyEngineClient,
-  formatPolicyEngineRequestError,
+  policyEngineRequest,
   printResult,
   resolveBundleByName,
   resolvePolicyBundleVersion,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { GetPolicyBundleVersionResponse } from '../types.js';
 
@@ -34,6 +35,8 @@ export interface DownloadCommandFlags {
   'transcend-url': string;
   /** Print metadata + presigned URL as JSON without writing a file */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -88,9 +91,11 @@ export async function download(
     auth,
     'transcend-url': transcendUrl,
     json,
+    debug = false,
   }: DownloadCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
@@ -118,14 +123,11 @@ export async function download(
     ),
   );
 
-  let body: GetPolicyBundleVersionResponse;
-  try {
-    body = await client
+  const body = await policyEngineRequest(
+    client
       .get(`v1/policy-engine/policy-bundles/${bundle.id}/versions/${versionId}`)
-      .json<GetPolicyBundleVersionResponse>();
-  } catch (err) {
-    throw new Error(formatPolicyEngineRequestError(err), { cause: err });
-  }
+      .json<GetPolicyBundleVersionResponse>(),
+  );
 
   if (json) {
     printResult(this.process.stdout, {

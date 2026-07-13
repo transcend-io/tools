@@ -5,6 +5,7 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
 
 export const downloadCommand = buildCommand({
   loader: async () => {
@@ -42,6 +43,7 @@ export const downloadCommand = buildCommand({
           'Print version metadata and the presigned download URL as JSON without writing a file',
         default: false,
       },
+      debug: createPolicyDebugParameter(),
     },
   },
   docs: {

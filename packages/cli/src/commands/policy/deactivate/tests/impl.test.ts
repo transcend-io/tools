@@ -157,6 +157,6 @@ describe('deactivate', () => {
         'transcend-url': 'https://api.transcend.io',
         json: false,
       }),
-    ).rejects.toThrow('Missing required scope.');
+    ).rejects.toThrow(/Authentication failed \(401 Unauthorized\)/);
   });
 });

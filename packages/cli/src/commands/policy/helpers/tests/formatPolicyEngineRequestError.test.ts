@@ -1,26 +1,33 @@
 import { describe, expect, it } from 'vitest';
 
-import { formatPolicyEngineRequestError } from '../formatPolicyEngineRequestError.js';
+import {
+  formatPolicyEngineRequestError,
+  policyEngineRequest,
+  throwPolicyEngineRequestError,
+} from '../formatPolicyEngineRequestError.js';
+import { PolicyEngineCliError } from '../policyEngineCliError.js';
 
 describe('formatPolicyEngineRequestError', () => {
-  it('extracts the message from a JSON error body string', () => {
+  it('extracts the message from a JSON error body string (400 validation)', () => {
     const error = {
       response: {
+        statusCode: 400,
         body: JSON.stringify({
           message:
-            'Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
+            'Client error: Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
         }),
       },
     };
 
     expect(formatPolicyEngineRequestError(error)).toBe(
-      'Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
+      'Client error: Policy bundle contains invalid Rego: policy.rego:5: var cannot be used for rule name.',
     );
   });
 
   it('extracts the message from a parsed JSON error body', () => {
     const error = {
       response: {
+        statusCode: 400,
         body: {
           message: 'Missing required field "bundleName".',
         },
@@ -30,7 +37,207 @@ describe('formatPolicyEngineRequestError', () => {
     expect(formatPolicyEngineRequestError(error)).toBe('Missing required field "bundleName".');
   });
 
+  it('returns an actionable auth message for 401 responses', () => {
+    const error = {
+      response: {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Missing required scope.' }),
+      },
+      message:
+        'Request failed with status code 401 (Unauthorized): GET https://api.transcend.io/v1/policy-engine/policy-bundles',
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toContain('Authentication failed (401 Unauthorized).');
+    expect(message).toContain('TRANSCEND_API_KEY');
+    expect(message).toContain('--auth=');
+    expect(message).not.toContain('got');
+  });
+
+  it('prefers the API message for 403 responses', () => {
+    const error = {
+      response: {
+        statusCode: 403,
+        body: JSON.stringify({ message: 'Client error: Access denied.' }),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toBe('Client error: Access denied.');
+  });
+
+  it('returns a generic fallback for 403 when the API body has no message', () => {
+    const error = {
+      response: {
+        statusCode: 403,
+        body: JSON.stringify({}),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toContain('Access was denied (403 Forbidden).');
+  });
+
+  it('returns an actionable not-found message for 404 responses', () => {
+    const error = {
+      response: {
+        statusCode: 404,
+        body: JSON.stringify({ message: 'Not found' }),
+      },
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toContain('Resource not found (404 Not Found).');
+    expect(message).toContain('transcend policy bundles');
+  });
+
+  it('prefers the API message for 409 responses', () => {
+    const error = {
+      response: {
+        statusCode: 409,
+        body: JSON.stringify({ message: 'Version already active.' }),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toBe('Version already active.');
+  });
+
+  it('returns a fallback message for 409 when the API body has no message', () => {
+    const error = {
+      response: {
+        statusCode: 409,
+        body: JSON.stringify({}),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toContain('conflicted with the current policy');
+  });
+
+  it('returns upload-limit guidance for 413 responses without an API message', () => {
+    const error = {
+      response: {
+        statusCode: 413,
+        body: JSON.stringify({}),
+      },
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toContain('Policy bundle upload is too large (413 Payload Too Large).');
+    expect(message).toContain('5 KiB compressed');
+    expect(message).toContain('50 KiB decompressed');
+  });
+
+  it('prefers the API message for 413 responses', () => {
+    const error = {
+      response: {
+        statusCode: 413,
+        body: JSON.stringify({ message: 'Client error: Bundle exceeds upload cap.' }),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toBe('Client error: Bundle exceeds upload cap.');
+  });
+
+  it('returns a fallback message for 400 when the API body has no message', () => {
+    const error = {
+      response: {
+        statusCode: 400,
+        body: JSON.stringify({}),
+      },
+    };
+
+    expect(formatPolicyEngineRequestError(error)).toContain('The request was invalid');
+  });
+
+  it('surfaces the plain-text 429 body from the API', () => {
+    const error = {
+      response: {
+        statusCode: 429,
+        body: 'Too Many Requests',
+        headers: {
+          'retry-after': '30',
+        },
+      },
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toBe('Too Many Requests');
+  });
+
+  it('returns rate-limit guidance when 429 has no API message', () => {
+    const error = {
+      response: {
+        statusCode: 429,
+        body: '',
+        headers: {
+          'retry-after': '30',
+        },
+      },
+    };
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toContain('Rate limit exceeded (429 Too Many Requests).');
+    expect(message).toContain('Retry after 30 second(s)');
+  });
+
+  it('returns a network message for connectivity failures', () => {
+    const error = new Error('connect ECONNREFUSED 127.0.0.1:443');
+    (error as NodeJS.ErrnoException).code = 'ECONNREFUSED';
+
+    const message = formatPolicyEngineRequestError(error);
+
+    expect(message).toContain('Connection to Transcend failed.');
+    expect(message).toContain('--transcend-url');
+  });
+
   it('falls back to the error message when no response body is present', () => {
-    expect(formatPolicyEngineRequestError(new Error('network failure'))).toBe('network failure');
+    expect(formatPolicyEngineRequestError(new Error('unexpected failure'))).toBe(
+      'unexpected failure',
+    );
+  });
+});
+
+describe('throwPolicyEngineRequestError', () => {
+  it('throws a plain Error with a formatted message and cause', () => {
+    const httpError = {
+      response: {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      },
+    };
+
+    expect(() => throwPolicyEngineRequestError(httpError)).toThrow(
+      /Authentication failed \(401 Unauthorized\)/,
+    );
+
+    try {
+      throwPolicyEngineRequestError(httpError);
+    } catch (error) {
+      expect(error).toBeInstanceOf(PolicyEngineCliError);
+      expect((error as Error).name).toBe('PolicyEngineCliError');
+      expect((error as Error).cause).toBe(httpError);
+    }
+  });
+});
+
+describe('policyEngineRequest', () => {
+  it('returns the resolved value when the request succeeds', async () => {
+    await expect(policyEngineRequest(Promise.resolve({ ok: true }))).resolves.toEqual({ ok: true });
+  });
+
+  it('maps request failures to user-readable errors', async () => {
+    const httpError = {
+      response: {
+        statusCode: 401,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      },
+    };
+
+    await expect(policyEngineRequest(Promise.reject(httpError))).rejects.toThrow(
+      /Authentication failed \(401 Unauthorized\)/,
+    );
   });
 });

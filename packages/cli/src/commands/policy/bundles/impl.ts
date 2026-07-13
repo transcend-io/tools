@@ -4,7 +4,13 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
-import { buildPolicyEngineClient, printResult, renderTable } from '../helpers/index.js';
+import {
+  buildPolicyEngineClient,
+  policyEngineRequest,
+  printResult,
+  renderTable,
+  setPolicyEngineCliDebug,
+} from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
 
 /** CLI flags for `transcend policy bundles`. */
@@ -19,6 +25,8 @@ export interface BundlesCommandFlags {
   offset: number;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -29,19 +37,22 @@ export interface BundlesCommandFlags {
  */
 export async function bundles(
   this: LocalContext,
-  { auth, 'transcend-url': transcendUrl, limit, offset, json }: BundlesCommandFlags,
+  { auth, 'transcend-url': transcendUrl, limit, offset, json, debug = false }: BundlesCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
   logger.info(colors.green('Listing policy bundles...'));
 
-  const body = await client
-    .get('v1/policy-engine/policy-bundles', {
-      searchParams: { limit, offset },
-    })
-    .json<PolicyBundleListResponse>();
+  const body = await policyEngineRequest(
+    client
+      .get('v1/policy-engine/policy-bundles', {
+        searchParams: { limit, offset },
+      })
+      .json<PolicyBundleListResponse>(),
+  );
 
   printResult(this.process.stdout, {
     json,

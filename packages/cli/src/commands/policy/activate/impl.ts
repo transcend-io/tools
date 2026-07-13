@@ -6,9 +6,11 @@ import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
+  policyEngineRequest,
   printResult,
   resolveBundleIdByName,
   resolvePolicyBundleVersion,
+  setPolicyEngineCliDebug,
 } from '../helpers/index.js';
 import type { ActivatePolicyBundleVersionResponse } from '../types.js';
 
@@ -26,6 +28,8 @@ export interface ActivateCommandFlags {
   'dry-run': boolean;
   /** Print raw JSON response */
   json: boolean;
+  /** Include technical error details when a command fails */
+  debug?: boolean;
 }
 
 /**
@@ -47,9 +51,11 @@ export async function activate(
     'transcend-url': transcendUrl,
     'dry-run': dryRun,
     json,
+    debug = false,
   }: ActivateCommandFlags,
 ): Promise<void> {
   doneInputValidation(this.process.exit);
+  setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
   const resolvedBundleId = await resolveBundleIdByName(client, bundleName);
@@ -66,14 +72,16 @@ export async function activate(
     ),
   );
 
-  const body = await client
-    .post(
-      `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
-      {
-        json: dryRun ? { dryRun: true } : {},
-      },
-    )
-    .json<ActivatePolicyBundleVersionResponse>();
+  const body = await policyEngineRequest(
+    client
+      .post(
+        `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
+        {
+          json: dryRun ? { dryRun: true } : {},
+        },
+      )
+      .json<ActivatePolicyBundleVersionResponse>(),
+  );
 
   printResult(this.process.stdout, {
     json,
