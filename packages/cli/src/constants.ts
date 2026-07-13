@@ -44,7 +44,12 @@ export const TR_PUSH_RESOURCE_SCOPE_MAP: {
 } = {
   [TranscendPullResource.ApiKeys]: [ScopeName.ViewApiKeys],
   [TranscendPullResource.Templates]: [ScopeName.ManageEmailTemplates],
-  [TranscendPullResource.DataSilos]: [ScopeName.ManageDataMap, ScopeName.ConnectDataSilos],
+  // ViewApiKeys — resolve api-key-title → apiKeyId when present on data silos
+  [TranscendPullResource.DataSilos]: [
+    ScopeName.ManageDataMap,
+    ScopeName.ConnectDataSilos,
+    ScopeName.ViewApiKeys,
+  ],
   [TranscendPullResource.Enrichers]: [ScopeName.ManageRequestIdentities],
   [TranscendPullResource.BusinessEntities]: [ScopeName.ManageDataInventory],
   [TranscendPullResource.ProcessingActivities]: [ScopeName.ManageDataMap],
@@ -108,9 +113,11 @@ export const TR_PULL_RESOURCE_SCOPE_MAP: {
 } = {
   [TranscendPullResource.ApiKeys]: [ScopeName.ViewApiKeys],
   [TranscendPullResource.Templates]: [ScopeName.ViewEmailTemplates],
+  // ViewApiKeys — dataSilos.apiKeys on the enriched pull query
   [TranscendPullResource.DataSilos]: [
     ScopeName.ViewDataMap,
     ScopeName.ViewDataSubjectRequestSettings,
+    ScopeName.ViewApiKeys,
   ],
   [TranscendPullResource.Enrichers]: [ScopeName.ViewRequestIdentitySettings],
   [TranscendPullResource.BusinessEntities]: [ScopeName.ViewDataInventory],
