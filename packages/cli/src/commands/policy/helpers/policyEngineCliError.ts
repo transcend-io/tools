@@ -79,3 +79,28 @@ export function formatPolicyEngineCliException(exc: unknown): string | undefined
 
   return undefined;
 }
+
+/**
+ * Formats any thrown command value for terminal output.
+ *
+ * `PolicyEngineCliError` values are formatted by `formatPolicyEngineCliException`.
+ * Other errors (e.g. bundle-not-found, missing OPA binary, local OPA failures)
+ * are plain `Error`s -- return only their message by default so operators don't
+ * see a minified stack trace, and surface the stack only when a policy command
+ * opted in via `--debug`.
+ *
+ * @param exc - Thrown value from a command
+ * @returns Terminal-safe error text
+ */
+export function formatCliException(exc: unknown): string {
+  const policyMessage = formatPolicyEngineCliException(exc);
+  if (policyMessage) {
+    return policyMessage;
+  }
+
+  if (exc instanceof Error) {
+    return isPolicyEngineCliDebugEnabled() ? (exc.stack ?? String(exc)) : exc.message;
+  }
+
+  return String(exc);
+}

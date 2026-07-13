@@ -80,7 +80,12 @@ export async function versions(
     data: body,
     renderTable: () => {
       if (body.nodes.length === 0) {
-        return `No versions found for bundle "${bundleName}".`;
+        // Distinguish "this page is empty because you paginated past the end"
+        // from "the bundle genuinely has no versions" — the latter is already
+        // surfaced during version resolution upstream.
+        return after
+          ? `No more versions for bundle "${bundleName}" (end of results).`
+          : `No versions found for bundle "${bundleName}".`;
       }
 
       const rows = body.nodes.map((version) => [

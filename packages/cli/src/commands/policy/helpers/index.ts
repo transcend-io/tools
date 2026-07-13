@@ -5,6 +5,7 @@ export * from './buildPolicyEngineClient.js';
 export * from './defaultPolicyVersionLabel.js';
 export * from './formatPolicyBundleVersionSummary.js';
 export * from './formatPolicyEngineRequestError.js';
+export * from './parsePaginationFlags.js';
 export * from './policyCommandParameters.js';
 export * from './policyEngineCliError.js';
 export * from './printResult.js';

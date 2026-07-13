@@ -5,6 +5,7 @@ import {
   createAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
+import { parseLimitParam } from '../helpers/index.js';
 import { createPolicyDebugParameter } from '../helpers/policyCommandParameters.js';
 
 export const versionsCommand = buildCommand({
@@ -25,14 +26,8 @@ export const versionsCommand = buildCommand({
       'transcend-url': createTranscendUrlParameter(),
       limit: {
         kind: 'parsed',
-        parse: (value: string) => {
-          const parsed = Number(value);
-          if (!Number.isFinite(parsed) || parsed <= 0) {
-            throw new Error('limit must be a positive number');
-          }
-          return parsed;
-        },
-        brief: 'Maximum number of versions to return',
+        parse: parseLimitParam,
+        brief: 'Maximum number of versions to return (1-100)',
         default: '50',
       },
       after: {
