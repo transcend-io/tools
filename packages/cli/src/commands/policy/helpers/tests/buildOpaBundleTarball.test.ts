@@ -9,6 +9,13 @@ import { buildOpaBundleTarball } from '../buildOpaBundleTarball.js';
 
 const runOPACaptureMock = vi.hoisted(() => vi.fn());
 
+const constantsMock = vi.hoisted(() => ({
+  MAX_BUNDLE_COMPRESSED_BYTES: 5120,
+  MAX_BUNDLE_DECOMPRESSED_BYTES: 51200,
+}));
+
+vi.mock('../../constants.js', () => constantsMock);
+
 vi.mock('../assertOpaInstalled.js', () => ({
   assertOpaInstalled: vi.fn(),
 }));
@@ -25,6 +32,8 @@ describe('buildOpaBundleTarball', () => {
     vi.clearAllMocks();
     // Default: both `opa check` and `opa build` succeed.
     runOPACaptureMock.mockResolvedValue({ code: 0, stdout: '', stderr: '' });
+    constantsMock.MAX_BUNDLE_COMPRESSED_BYTES = 5120;
+    constantsMock.MAX_BUNDLE_DECOMPRESSED_BYTES = 51200;
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-bundle-test-'));
     outputPaths = [];
   });
@@ -148,5 +157,79 @@ describe('buildOpaBundleTarball', () => {
     fs.writeFileSync(path.join(tempDir, 'policy_test.rego'), 'package policy_engine\n');
 
     await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/at least one \.rego/i);
+  });
+
+  it('throws a clear error when manifest.json is not valid JSON', async () => {
+    fs.writeFileSync(path.join(tempDir, 'manifest.json'), '{ not valid json');
+    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+      /manifest\.json is not valid JSON/i,
+    );
+  });
+
+  it('throws when manifest.json roots is missing or empty', async () => {
+    fs.writeFileSync(path.join(tempDir, 'manifest.json'), JSON.stringify({}));
+    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+      /must declare "roots" as a non-empty array/i,
+    );
+  });
+
+  it('throws when manifest.json roots contains non-string entries', async () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'manifest.json'),
+      JSON.stringify({ roots: ['policy_engine', 42] }),
+    );
+    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+      /"roots" must be an array of non-empty strings/i,
+    );
+  });
+
+  it('throws when a Rego package is not covered by manifest roots', async () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'manifest.json'),
+      JSON.stringify({ roots: ['policy_engine'] }),
+    );
+    fs.writeFileSync(path.join(tempDir, 'other.rego'), 'package other.package\n');
+
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+      /do not cover all Rego packages[\s\S]*other\.rego \(package other\.package\)/,
+    );
+  });
+
+  it('accepts nested Rego packages under a manifest root', async () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'manifest.json'),
+      JSON.stringify({ roots: ['policy_engine'] }),
+    );
+    fs.mkdirSync(path.join(tempDir, 'policy_engine', 'transcend'), { recursive: true });
+    fs.writeFileSync(
+      path.join(tempDir, 'policy_engine', 'transcend', 'decision.rego'),
+      'package policy_engine.transcend\n\ndefault decision := "deny"\n',
+    );
+
+    const outputPath = await buildOpaBundleTarball(tempDir);
+    outputPaths.push(outputPath);
+
+    expect(runOPACaptureMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports the compressed size limit with human-readable units', async () => {
+    fs.writeFileSync(
+      path.join(tempDir, 'manifest.json'),
+      JSON.stringify({ roots: ['policy_engine'] }),
+    );
+    fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
+
+    // Force the compressed-size check to trip with a 1-byte limit.
+    constantsMock.MAX_BUNDLE_COMPRESSED_BYTES = 1;
+
+    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+      /exceeds the .* compressed upload limit[\s\S]*bundle is .*(KiB|B\))/,
+    );
   });
 });

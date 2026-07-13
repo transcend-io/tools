@@ -7,6 +7,7 @@ import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
   policyEngineRequest,
+  PolicyEngineCliError,
   printResult,
   resolveBundleIdByName,
   resolvePolicyBundleVersion,
@@ -72,16 +73,35 @@ export async function activate(
     ),
   );
 
-  const body = await policyEngineRequest(
-    client
-      .post(
-        `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
-        {
-          json: dryRun ? { dryRun: true } : {},
-        },
-      )
-      .json<ActivatePolicyBundleVersionResponse>(),
-  );
+  let body: ActivatePolicyBundleVersionResponse;
+  try {
+    body = await policyEngineRequest(
+      client
+        .post(
+          `v1/policy-engine/policy-bundles/${resolvedBundleId}/versions/${resolvedVersion.id}/activate`,
+          {
+            json: dryRun ? { dryRun: true } : {},
+          },
+        )
+        .json<ActivatePolicyBundleVersionResponse>(),
+    );
+  } catch (err) {
+    // A 409 here means the requested version is already the active version --
+    // surface that specifically (referencing the operator-facing bundle name
+    // and version label) rather than the generic conflict fallback.
+    const statusCode = (
+      err instanceof PolicyEngineCliError
+        ? (err.cause as { response?: { statusCode?: number } } | undefined)
+        : undefined
+    )?.response?.statusCode;
+    if (statusCode === 409) {
+      throw new PolicyEngineCliError(
+        `Version "${resolvedVersion.version}" of policy bundle "${bundleName}" is already the active version.`,
+        { cause: err },
+      );
+    }
+    throw err;
+  }
 
   printResult(this.process.stdout, {
     json,

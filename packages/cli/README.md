@@ -3914,7 +3914,7 @@ Lists policy bundles registered for the authenticated organization. Requires a T
 FLAGS
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
      [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--limit]            Maximum number of bundles to return                                                                                                                                                                [default = 50]
+     [--limit]            Maximum number of bundles to return (1-100)                                                                                                                                                        [default = 50]
      [--offset]           Number of records to skip before returning results                                                                                                                                                 [default = 0]
      [--json]             Print the raw JSON API response                                                                                                                                                                    [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails
@@ -4037,7 +4037,7 @@ FLAGS
       --bundle-name       Tenant-unique policy bundle name
       --auth              The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Policy"
      [--transcend-url]    URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
-     [--limit]            Maximum number of versions to return                                                                                                                                                               [default = 50]
+     [--limit]            Maximum number of versions to return (1-100)                                                                                                                                                       [default = 50]
      [--after]            Opaque cursor from a previous response pageInfo.endCursor
      [--json]             Print the raw JSON API response                                                                                                                                                                    [default = false]
      [--debug/--noDebug]  Include technical error details (underlying API message and stack trace) when a command fails

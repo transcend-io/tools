@@ -175,4 +175,30 @@ describe('activate', () => {
       expect.stringContaining('Activation validation succeeded.'),
     );
   });
+
+  it('rewrites a 409 (already active) to a clear operator-facing message', async () => {
+    const httpError = {
+      response: {
+        statusCode: 409,
+        body: JSON.stringify({ message: 'Version is already active.' }),
+      },
+    };
+    const post = vi.fn().mockReturnValue({
+      json: vi.fn().mockRejectedValue(httpError),
+    });
+    buildPolicyEngineClientMock.mockReturnValue({ post });
+    resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
+    resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
+
+    await expect(
+      activate.call(context, {
+        'bundle-name': 'main',
+        version: 'abc123',
+        auth: 'test-key',
+        'transcend-url': 'https://api.transcend.io',
+        'dry-run': false,
+        json: false,
+      }),
+    ).rejects.toThrow('Version "abc123" of policy bundle "main" is already the active version.');
+  });
 });
