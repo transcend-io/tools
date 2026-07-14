@@ -4,6 +4,7 @@
   "references": [
     { "path": "./packages/airgap.js-types" },
     { "path": "./packages/cli" },
+    { "path": "./packages/design-tokens" },
     { "path": "./packages/internationalization" },
     { "path": "./packages/mcp/mcp" },
     { "path": "./packages/mcp/mcp-server-admin" },

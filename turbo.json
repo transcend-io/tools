@@ -100,6 +100,19 @@
     },
     "//#format:check:root": {},
     "//#check:packages": {},
-    "//#check:deps:root": {}
+    "//#check:deps:root": {},
+    "@transcend-io/design-tokens#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["tokens/**", "plugins/**", "terrazzo.config.ts"],
+      "outputs": ["dist/**", "src/primitive/**", "src/semantic/**", "src/index.ts"]
+    },
+    "@transcend-io/design-tokens#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "@transcend-io/design-tokens#typecheck": {
+      "dependsOn": ["build"],
+      "outputs": []
+    }
   }
 }
