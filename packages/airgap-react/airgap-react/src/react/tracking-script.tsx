@@ -1,0 +1,91 @@
+'use client';
+
+import { useEffect } from 'react';
+
+import { type ReactAirgapScriptProps, appendScriptElement } from './script-element.js';
+
+export interface TrackingScriptProps extends ReactAirgapScriptProps {
+  /**
+   * Wait for this promise before injecting the underlying `<script>`.
+   * Use `Promise.all(...)` or `Promise.race(...)` at the call site to compose
+   * multiple conditions. If the promise rejects, the script remains unloaded.
+   */
+  loadAfter: PromiseLike<unknown>;
+  /** External script URL to inject after `loadAfter` resolves. */
+  src?: string;
+  /** Inline script body. */
+  children?: string;
+}
+
+/**
+ * Build a stable dependency key from the passthrough script props, ignoring
+ * function values (event handlers) so re-injection is driven by attribute
+ * changes rather than inline handler identity.
+ */
+function getScriptPropsDependencyKey(scriptProps: Record<string, unknown>): string {
+  return JSON.stringify(
+    Object.entries(scriptProps)
+      .filter(([, value]) => typeof value !== 'function')
+      .sort(([left], [right]) => left.localeCompare(right)),
+  );
+}
+
+/**
+ * Client component that injects a script element only after `loadAfter`
+ * resolves.
+ *
+ * Any prop other than `loadAfter`, `src`, and `children` is forwarded onto the
+ * injected `<script>` (see {@link ReactAirgapScriptProps}), mirroring the
+ * transparent passthrough of `next/script`. `onLoad`/`onError` receive the
+ * native DOM `Event`; there is no `onReady` (a `next/script`-only concept).
+ *
+ * @example
+ * ```tsx
+ * import { TrackingScript } from '@transcend-io/airgap-react';
+ *
+ * const analyticsReady = new Promise<void>((resolve) => {
+ *   if (window.analyticsReady) {
+ *     resolve();
+ *     return;
+ *   }
+ *
+ *   window.addEventListener('analytics:ready', () => resolve(), { once: true });
+ * });
+ *
+ * <TrackingScript
+ *   src="https://cdn.example.com/analytics.js"
+ *   loadAfter={analyticsReady}
+ *   onLoad={() => console.log('analytics loaded')}
+ * />
+ * ```
+ */
+export function TrackingScript(props: TrackingScriptProps): null {
+  const { loadAfter, src, children, ...scriptProps } = props;
+
+  // Function props (event handlers) are excluded from the key so a changing
+  // inline handler identity does not force the script to be re-injected.
+  const scriptPropsDependencyKey = getScriptPropsDependencyKey(scriptProps);
+
+  useEffect(() => {
+    let cancelled = false;
+    let cleanup: (() => void) | undefined;
+    void Promise.resolve(loadAfter).then(
+      () => {
+        if (cancelled || typeof document === 'undefined') return;
+
+        cleanup = appendScriptElement({
+          scriptProps,
+          src,
+          text: children,
+        });
+      },
+      () => undefined,
+    );
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, [loadAfter, src, children, scriptPropsDependencyKey]);
+
+  return null;
+}

@@ -1,5 +1,6 @@
 packages:
   - packages/*
+  - packages/airgap-react/*
   - packages/mcp/*
 
 catalog:
@@ -11,13 +12,18 @@ catalog:
   '@modelcontextprotocol/sdk': ^1.29.0
   '@types/json-schema': ^7.0.15
   '@types/node': ^22.19.15
+  '@types/react': ^19.2.15
+  '@types/react-dom': ^19.2.3
   '@types/semver': ^7.7.1
   graphql: ^16.14.0
   husky: ^9.1.7
   lru-cache: ^11.5.1
+  next: ^16.2.6
   oxfmt: ^0.54.0
   oxlint: ^1.53.0
   publint: ^0.3.18
+  react: ^19.2.6
+  react-dom: ^19.2.6
   semver: ^7.7.4
   syncpack: ^14.2.0
   tsdown: ^0.21.2
@@ -26,8 +32,8 @@ catalog:
   vitest: ^4.0.18
   zod: ^4.3.6
 
-# Only install npm packages that are at least 3 days old
 minimumReleaseAge: 4320
+
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
 

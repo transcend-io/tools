@@ -3,6 +3,8 @@
   "files": [],
   "references": [
     { "path": "./packages/airgap.js-types" },
+    { "path": "./packages/airgap-react/airgap-nextjs" },
+    { "path": "./packages/airgap-react/airgap-react" },
     { "path": "./packages/cli" },
     { "path": "./packages/internationalization" },
     { "path": "./packages/mcp/mcp" },
