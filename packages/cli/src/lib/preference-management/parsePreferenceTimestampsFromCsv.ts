@@ -1,9 +1,10 @@
+import { select } from '@inquirer/prompts';
 import { FileMetadataState } from '@transcend-io/sdk';
 import colors from 'colors';
-import inquirer from 'inquirer';
 import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
+import { chooseTimestampColumn } from '../promptMessages.js';
 
 export const NONE_PREFERENCE_MAP = '[NONE]';
 
@@ -36,22 +37,14 @@ export async function parsePreferenceTimestampsFromCsv(
 
   // Determine the timestamp column to work off of
   if (!currentState.timestampColum) {
-    const { timestampName } = await inquirer.prompt<{
-      /** timestamp name */
-      timestampName: string;
-    }>([
-      {
-        name: 'timestampName',
-        message: 'Choose the column that will be used as the timestamp of last preference update',
-        type: 'list',
-        default:
-          remainingColumnsForTimestamp.find((col) => col.toLowerCase().includes('date')) ||
-          remainingColumnsForTimestamp.find((col) => col.toLowerCase().includes('time')) ||
-          remainingColumnsForTimestamp[0],
-        choices: [...remainingColumnsForTimestamp, NONE_PREFERENCE_MAP],
-      },
-    ]);
-    currentState.timestampColum = timestampName;
+    currentState.timestampColum = await select({
+      message: chooseTimestampColumn,
+      default:
+        remainingColumnsForTimestamp.find((col) => col.toLowerCase().includes('date')) ||
+        remainingColumnsForTimestamp.find((col) => col.toLowerCase().includes('time')) ||
+        remainingColumnsForTimestamp[0],
+      choices: [...remainingColumnsForTimestamp, NONE_PREFERENCE_MAP],
+    });
   }
   logger.info(colors.magenta(`Using timestamp column "${currentState.timestampColum}"`));
 

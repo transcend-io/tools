@@ -1,10 +1,11 @@
 import path from 'node:path';
 
+import { confirm } from '@inquirer/prompts';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
+import { formatUnformattedPolicyFiles } from '../../../lib/promptMessages.js';
 import { logger } from '../../../logger.js';
 import { assertOpaInstalled, runOpa, runOPACapture } from '../helpers/index.js';
 
@@ -52,8 +53,8 @@ export async function lint(this: LocalContext, { dir }: LintCommandFlags): Promi
       this.process.exit(1);
     }
 
-    const shouldFormat = await inquirerConfirmBoolean({
-      message: 'Format the unformatted policy files listed above?',
+    const shouldFormat = await confirm({
+      message: formatUnformattedPolicyFiles,
     });
     if (!shouldFormat) {
       this.process.exit(1);

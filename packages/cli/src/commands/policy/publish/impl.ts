@@ -1,12 +1,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { confirm } from '@inquirer/prompts';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildExampleCommand } from '../../../lib/docgen/buildExamples.js';
-import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
+import { createPolicyBundle } from '../../../lib/promptMessages.js';
 import { logger } from '../../../logger.js';
 import type { ActivateCommandFlags } from '../activate/impl.js';
 import {
@@ -107,8 +108,8 @@ export async function publish(
         logger.warn(
           colors.yellow(`No policy bundle named "${bundleName}" exists for this organization.`),
         );
-        const shouldCreate = await inquirerConfirmBoolean({
-          message: `No policy bundle named "${bundleName}" exists. Create a new bundle and upload its first version?`,
+        const shouldCreate = await confirm({
+          message: createPolicyBundle(bundleName),
         });
         if (!shouldCreate) {
           logger.info(colors.yellow('Publish cancelled.'));

@@ -1,6 +1,5 @@
 export * from './buildAIIntegrationType.js';
 export * from './buildEnabledRouteType.js';
-export * from './inquirer.js';
 export * from './parseVariablesFromString.js';
 export * from './readSafe.js';
 export * from './collectParquetFilesOrExit.js';

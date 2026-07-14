@@ -9,7 +9,7 @@ import { publish } from '../impl.js';
 const buildOpaBundleTarballMock = vi.hoisted(() => vi.fn());
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 const resolveBundleIdByNameMock = vi.hoisted(() => vi.fn());
-const inquirerConfirmBooleanMock = vi.hoisted(() => vi.fn());
+const confirmMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../helpers/index.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../helpers/index.js')>();
@@ -23,8 +23,8 @@ vi.mock('../../helpers/index.js', async (importOriginal) => {
   };
 });
 
-vi.mock('../../../../lib/helpers/inquirer.js', () => ({
-  inquirerConfirmBoolean: inquirerConfirmBooleanMock,
+vi.mock('@inquirer/prompts', () => ({
+  confirm: confirmMock,
 }));
 
 const sampleVersion = {
@@ -56,7 +56,7 @@ describe('publish', () => {
     buildOpaBundleTarballMock.mockResolvedValue('/tmp/bundle.tar.gz');
     vi.spyOn(fs, 'existsSync').mockReturnValue(true);
     vi.spyOn(fs, 'unlinkSync').mockImplementation(() => undefined);
-    inquirerConfirmBooleanMock.mockResolvedValue(true);
+    confirmMock.mockResolvedValue(true);
   });
 
   it('creates a bundle when the name does not exist yet and --yes is set', async () => {
@@ -87,7 +87,7 @@ describe('publish', () => {
     });
 
     expect(post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', expect.any(Object));
-    expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
+    expect(confirmMock).not.toHaveBeenCalled();
     expect(stdout.write).toHaveBeenCalled();
     expect(logger.info).toHaveBeenCalledWith(
       expect.stringContaining(
@@ -123,7 +123,7 @@ describe('publish', () => {
       'v1/policy-engine/policy-bundles/existing-bundle-id/versions',
       expect.any(Object),
     );
-    expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
+    expect(confirmMock).not.toHaveBeenCalled();
   });
 
   it('prompts before creating a bundle when the name does not exist', async () => {
@@ -143,7 +143,7 @@ describe('publish', () => {
     });
     buildPolicyEngineClientMock.mockReturnValue({ post });
     resolveBundleIdByNameMock.mockResolvedValue(undefined);
-    inquirerConfirmBooleanMock.mockResolvedValue(true);
+    confirmMock.mockResolvedValue(true);
 
     await publish.call(context, {
       dir: './policies',
@@ -154,7 +154,7 @@ describe('publish', () => {
       yes: false,
     });
 
-    expect(inquirerConfirmBooleanMock).toHaveBeenCalledWith({
+    expect(confirmMock).toHaveBeenCalledWith({
       message:
         'No policy bundle named "main" exists. Create a new bundle and upload its first version?',
     });
@@ -165,7 +165,7 @@ describe('publish', () => {
     const post = vi.fn();
     buildPolicyEngineClientMock.mockReturnValue({ post });
     resolveBundleIdByNameMock.mockResolvedValue(undefined);
-    inquirerConfirmBooleanMock.mockResolvedValue(false);
+    confirmMock.mockResolvedValue(false);
 
     await publish.call(context, {
       dir: './policies',

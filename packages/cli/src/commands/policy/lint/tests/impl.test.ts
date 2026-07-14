@@ -6,7 +6,7 @@ import { lint } from '../impl.js';
 const runOpaMock = vi.hoisted(() => vi.fn());
 const runOPACaptureMock = vi.hoisted(() => vi.fn());
 const assertOpaInstalledMock = vi.hoisted(() => vi.fn());
-const inquirerConfirmBooleanMock = vi.hoisted(() => vi.fn());
+const confirmMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../helpers/index.js', () => ({
   assertOpaInstalled: assertOpaInstalledMock,
@@ -14,8 +14,8 @@ vi.mock('../../helpers/index.js', () => ({
   runOPACapture: runOPACaptureMock,
 }));
 
-vi.mock('../../../../lib/helpers/inquirer.js', () => ({
-  inquirerConfirmBoolean: inquirerConfirmBooleanMock,
+vi.mock('@inquirer/prompts', () => ({
+  confirm: confirmMock,
 }));
 
 describe('lint', () => {
@@ -53,13 +53,13 @@ describe('lint', () => {
       stdout: '/tmp/policies/policy.rego\n',
       stderr: '',
     });
-    inquirerConfirmBooleanMock.mockResolvedValueOnce(false);
+    confirmMock.mockResolvedValueOnce(false);
 
     await expect(lint.call(context, { dir: './policies' })).rejects.toThrow('exit:1');
 
     expect(runOPACaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
     expect(runOpaMock).toHaveBeenNthCalledWith(2, ['fmt', '--diff', expect.any(String)]);
-    expect(inquirerConfirmBooleanMock).toHaveBeenCalledWith({
+    expect(confirmMock).toHaveBeenCalledWith({
       message: 'Format the unformatted policy files listed above?',
     });
     expect(runOpaMock).not.toHaveBeenCalledWith(['fmt', '-w', expect.any(String)]);
@@ -72,7 +72,7 @@ describe('lint', () => {
       stdout: '/tmp/policies/policy.rego\n',
       stderr: '',
     });
-    inquirerConfirmBooleanMock.mockResolvedValueOnce(true);
+    confirmMock.mockResolvedValueOnce(true);
 
     await lint.call(context, { dir: './policies' });
 
@@ -98,7 +98,7 @@ describe('lint', () => {
 
     await expect(lint.call(nonInteractiveContext, { dir: './policies' })).rejects.toThrow('exit:1');
 
-    expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
+    expect(confirmMock).not.toHaveBeenCalled();
     expect(runOpaMock).not.toHaveBeenCalledWith(['fmt', '-w', expect.any(String)]);
   });
 
