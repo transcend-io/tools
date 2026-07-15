@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { TRANSCEND_MCP_USER_AGENT } from '../src/clients/mcp-user-agent.js';
 import { DEFAULT_TRANSCEND_API_URL, DEFAULT_US_TRANSCEND_API_URL } from '../src/defaults.js';
 import {
   resolveRegionalOAuthIssuer,
@@ -41,7 +42,11 @@ describe('verifyOAuthClientCredentials', () => {
 
     expect(fetch).toHaveBeenCalledWith('https://yo.com:4001/oauth/client-verify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': TRANSCEND_MCP_USER_AGENT,
+      },
       body: JSON.stringify({
         client_id: 'client-abc',
         client_secret: 'secret-value',
@@ -225,7 +230,11 @@ describe('resolveRegionalOAuthIssuer', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch).toHaveBeenCalledWith(`${DEFAULT_TRANSCEND_API_URL}/oauth/client-verify`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'User-Agent': TRANSCEND_MCP_USER_AGENT,
+      },
       body: JSON.stringify({
         client_id: 'client-abc',
         client_secret: 'secret',
