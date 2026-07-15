@@ -1,5 +1,21 @@
 # @transcend-io/mcp
 
+## 0.6.9
+
+### Patch Changes
+
+- Updated dependencies [3f41944]
+  - @transcend-io/mcp-server-base@0.6.2
+  - @transcend-io/mcp-server-admin@0.4.9
+  - @transcend-io/mcp-server-assessment@0.4.9
+  - @transcend-io/mcp-server-consent@0.4.10
+  - @transcend-io/mcp-server-discovery@0.4.9
+  - @transcend-io/mcp-server-docs@0.3.3
+  - @transcend-io/mcp-server-dsr@0.4.9
+  - @transcend-io/mcp-server-inventory@0.4.9
+  - @transcend-io/mcp-server-preferences@0.4.9
+  - @transcend-io/mcp-server-workflows@0.4.9
+
 ## 0.6.8
 
 ### Patch Changes
