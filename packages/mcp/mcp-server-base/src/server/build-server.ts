@@ -6,6 +6,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 
 import { getRequestAuth, requestAuthContext } from '../auth-context.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
+import { elicitContext } from '../elicit-context.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
@@ -66,7 +67,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     return { tools: toolList };
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;
     logger.info(`Executing tool: ${name}`, { args: Object.keys(args || {}) });
 
@@ -98,15 +99,24 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         oauthCredentials = getLazyOAuthCredentials();
       }
 
+      const supportsFormElicitation = !!server.getClientCapabilities()?.elicitation?.form;
       const result = await toolCallContext.run(
         { toolName: name, correlationId: randomUUID() },
-        () => {
-          const execute = () => tool.handler(parseResult.data);
-          if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {
-            return requestAuthContext.run(oauthCredentials, execute);
-          }
-          return execute();
-        },
+        () =>
+          elicitContext.run(
+            {
+              supportsFormElicitation,
+              elicitInput: (params) =>
+                server.elicitInput(params, { relatedRequestId: extra.requestId }),
+            },
+            () => {
+              const execute = () => tool.handler(parseResult.data);
+              if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {
+                return requestAuthContext.run(oauthCredentials, execute);
+              }
+              return execute();
+            },
+          ),
       );
       logger.debug(`Tool ${name} completed successfully`);
 
