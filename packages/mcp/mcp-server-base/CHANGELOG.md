@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 0.6.2
+
+### Patch Changes
+
+- 3f41944: Includes the mcp user agent in the client verify request
+
 ## 0.6.1
 
 ### Patch Changes
