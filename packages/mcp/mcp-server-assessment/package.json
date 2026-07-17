@@ -14,7 +14,8 @@
     "transcend-mcp-assessment": "./dist/cli.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "type": "module",
   "sideEffects": false,
