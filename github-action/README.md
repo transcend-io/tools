@@ -76,7 +76,7 @@ jobs:
 | Input             | Required | Default                     | Description                                                                                                                    |
 | ----------------- | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `api-key`         | Yes      | —                           | Transcend API key with the **Manage Data Map** scope.                                                                          |
-| `sombra-auth`     | No       | —                           | Sombra internal key, needed for additional authentication when self-hosting Sombra.                                           |
+| `sombra-auth`     | No       | —                           | Sombra internal key, needed for additional authentication when self-hosting Sombra.                                            |
 | `transcend-url`   | No       | `https://api.transcend.io`  | Transcend backend URL. Use `https://api.us.transcend.io` for US hosting.                                                       |
 | `file`            | No       | `./transcend-functions.yml` | Path to the manifest file.                                                                                                     |
 | `variables`       | No       | `''`                        | Comma-separated `key:value` pairs templated into `<<parameters.key>>` placeholders in the manifest. Use for secret env values. |
