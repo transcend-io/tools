@@ -1,20 +1,16 @@
 import type { Logger } from '@transcend-io/utils';
+import type { Got } from 'got';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import {
-  createCustomFunctionDhEncrypted,
-  diffCustomFunctionCode,
-  type CustomFunctionSignPayload,
-} from './codeSigning.js';
-import type { SombraApiKeySession } from './createSombraApiKeySession.js';
+import { diffCustomFunctionCode, type CustomFunctionSignPayload } from './codeSigning.js';
 import type { CustomFunction, CustomFunctionType } from './fetchAllCustomFunctions.js';
 import {
   CREATE_CUSTOM_FUNCTION,
   PROMOTE_CUSTOM_FUNCTION_VERSION,
-  UPDATE_CUSTOM_FUNCTION,
   UPDATE_STANDALONE_CUSTOM_FUNCTION,
 } from './gqls/index.js';
+import { signCustomFunctionCode } from './signCustomFunctionCode.js';
 
 /**
  * The desired state of a custom function to sync to Transcend.
@@ -36,7 +32,7 @@ export interface CustomFunctionConfigInput {
   type?: CustomFunctionType;
   /** Data silo ID the function is attached to (required for DSR functions) */
   dataSiloId?: string;
-  /** Dedicated Sombra gateway ID (GENERAL functions; defaults to the session's Sombra) */
+  /** Dedicated Sombra gateway ID (defaults to the organization's primary Sombra) */
   sombraId?: string;
   /** Hosts the function is allowed to make network requests to */
   allowedHosts?: string[];
@@ -148,6 +144,10 @@ export function buildCustomFunctionSignPayload(
  *   created and (unless `promote` is false) promoted to active.
  * - When nothing changed, the function is skipped (unless `force` is set).
  *
+ * Code is signed against the Sombra customer-ingress `/v1/custom/sign` route
+ * before being saved via the GraphQL API, so plaintext code and env values
+ * never reach Transcend's backend.
+ *
  * Environment variable values are encrypted server-side and cannot be diffed;
  * use `force` to re-push when only env values changed.
  *
@@ -160,8 +160,8 @@ export async function syncCustomFunction(
   options: {
     /** The desired custom function state */
     input: CustomFunctionConfigInput;
-    /** The Sombra session used to sign code. Required unless `dryRun` is set */
-    session?: SombraApiKeySession;
+    /** Got instance authenticated against the Sombra customer ingress. Required unless `dryRun` is set */
+    sombra?: Got;
     /** All existing custom functions in the organization (see `fetchAllCustomFunctions`) */
     existing: CustomFunction[];
     /** Whether to promote new revisions to active. Defaults to true */
@@ -176,7 +176,7 @@ export async function syncCustomFunction(
 ): Promise<CustomFunctionSyncResult> {
   const {
     input,
-    session,
+    sombra,
     existing: allExisting,
     promote = true,
     dryRun = false,
@@ -220,45 +220,19 @@ export async function syncCustomFunction(
     };
   }
 
-  if (!session) {
-    throw new Error('A Sombra session is required to push custom function code.');
-  }
-  const dhEncrypted = createCustomFunctionDhEncrypted(session, signPayload);
-
-  // DSR custom functions are upserted by data silo and are always active
-  if (type === 'DSR') {
-    const {
-      updateCustomFunction: { customFunction },
-    } = await makeGraphQLRequest<{
-      /** Mutation response */
-      updateCustomFunction: {
-        /** The upserted custom function */
-        customFunction: {
-          /** Custom function ID */
-          id: string;
-        };
-      };
-    }>(client, UPDATE_CUSTOM_FUNCTION, {
-      variables: {
-        input: {
-          ...(existing ? { id: existing.id } : {}),
-          dataSiloId: input.dataSiloId,
-          name: input.name,
-          ...(input.description !== undefined ? { description: input.description } : {}),
-        },
-        dhEncrypted,
-      },
-      logger,
-    });
-    return {
-      outcome: existing ? 'updated' : 'created',
-      customFunctionId: customFunction.id,
-      changedFields,
-      promoted: true,
-    };
+  if (!sombra) {
+    throw new Error('A Sombra customer-ingress client is required to push custom function code.');
   }
 
-  // GENERAL: create fresh
+  // Sign the code and context against the Sombra gateway; the resulting JWTs
+  // are stored via the GraphQL API
+  const { signedCodeJwt, signedCodeContextJwt } = await signCustomFunctionCode(
+    sombra,
+    signPayload,
+    { customFunctionId: existing?.id },
+  );
+
+  // Create fresh
   if (!existing) {
     const {
       createCustomFunction: { customFunction },
@@ -288,13 +262,15 @@ export async function syncCustomFunction(
     }>(client, CREATE_CUSTOM_FUNCTION, {
       variables: {
         input: {
-          type: 'GENERAL',
-          sombraId: input.sombraId ?? session.sombraId,
+          type,
+          ...(input.sombraId !== undefined ? { sombraId: input.sombraId } : {}),
+          ...(type === 'DSR' ? { dataSiloId: input.dataSiloId } : {}),
           name: input.name,
           ...(input.description !== undefined ? { description: input.description } : {}),
           setActive: promote,
+          signedCodeJwt,
+          signedCodeContextJwt,
         },
-        dhEncrypted,
       },
       logger,
     });
@@ -308,7 +284,7 @@ export async function syncCustomFunction(
     };
   }
 
-  // GENERAL: push a new draft revision to the existing function
+  // Push a new draft revision to the existing function
   const {
     updateStandaloneCustomFunction: { customFunction: updated },
   } = await makeGraphQLRequest<{
@@ -333,8 +309,9 @@ export async function syncCustomFunction(
         id: existing.id,
         name: input.name,
         ...(input.description !== undefined ? { description: input.description } : {}),
+        signedCodeJwt,
+        signedCodeContextJwt,
       },
-      dhEncrypted,
     },
     logger,
   });

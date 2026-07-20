@@ -31,11 +31,8 @@ export const CUSTOM_FUNCTIONS = gql`
 `;
 
 export const CREATE_CUSTOM_FUNCTION = gql`
-  mutation TranscendCliCreateCustomFunction(
-    $input: CreateCustomFunctionInput!
-    $dhEncrypted: String!
-  ) {
-    createCustomFunction(input: $input, dhEncrypted: $dhEncrypted) {
+  mutation TranscendCliCreateCustomFunction($input: CreateCustomFunctionInput!) {
+    createCustomFunction(input: $input) {
       customFunction {
         id
         name
@@ -56,9 +53,8 @@ export const CREATE_CUSTOM_FUNCTION = gql`
 export const UPDATE_STANDALONE_CUSTOM_FUNCTION = gql`
   mutation TranscendCliUpdateStandaloneCustomFunction(
     $input: UpdateStandaloneCustomFunctionInput!
-    $dhEncrypted: String
   ) {
-    updateStandaloneCustomFunction(input: $input, dhEncrypted: $dhEncrypted) {
+    updateStandaloneCustomFunction(input: $input) {
       customFunction {
         id
         name
@@ -71,21 +67,6 @@ export const UPDATE_STANDALONE_CUSTOM_FUNCTION = gql`
           id
           versionNumber
         }
-      }
-      success
-    }
-  }
-`;
-
-export const UPDATE_CUSTOM_FUNCTION = gql`
-  mutation TranscendCliUpdateCustomFunction(
-    $input: UpdateCustomFunctionInput!
-    $dhEncrypted: String!
-  ) {
-    updateCustomFunction(input: $input, dhEncrypted: $dhEncrypted) {
-      customFunction {
-        id
-        name
       }
       success
     }

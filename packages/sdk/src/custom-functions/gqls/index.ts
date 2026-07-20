@@ -1,2 +1,2 @@
 export * from './customFunction.js';
-export * from './sombraSession.js';
+export * from './sombra.js';
