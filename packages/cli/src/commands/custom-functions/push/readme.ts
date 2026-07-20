@@ -94,13 +94,15 @@ functions:
 | \`description\` | No | Description shown in the Transcend dashboard. |
 | \`type\` | No | \`GENERAL\` (default) or \`DSR\`. DSR functions require \`data-silo-id\`. |
 | \`data-silo-id\` | DSR only | The data silo the DSR function is attached to. |
-| \`sombra-id\` | No | Dedicated Sombra gateway for the function. |
+| \`sombra-id\` | No | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or \`--sombraId\`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway. |
 | \`allowed-hosts\` | No | Hosts the function may make network requests to. |
 | \`timeout-ms\` | No | Execution timeout in milliseconds. |
 | \`allow-third-party-imports\` | No | Whether the function may import third party modules. |
 | \`env\` | No | Environment variables exposed to the function. Use \`<<parameters.name>>\` placeholders with the \`--variables\` flag to avoid committing secrets. |
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use \`--force\` to push a new revision.
+
+Functions may belong to different Sombra gateways within one manifest; the command connects to each distinct gateway as needed. A single \`--sombraAuth\` internal key is applied to every gateway, so self-hosted gateways with *different* internal keys require one push per gateway.
 
 #### How manifest entries are matched to existing functions
 
