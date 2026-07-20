@@ -76,6 +76,7 @@ jobs:
 | Input             | Required | Default                     | Description                                                                                                                    |
 | ----------------- | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `api-key`         | Yes      | —                           | Transcend API key with the **Manage Data Map** scope.                                                                          |
+| `sombra-auth`     | No       | —                           | Sombra internal key, needed for additional authentication when self-hosting Sombra.                                           |
 | `transcend-url`   | No       | `https://api.transcend.io`  | Transcend backend URL. Use `https://api.us.transcend.io` for US hosting.                                                       |
 | `file`            | No       | `./transcend-functions.yml` | Path to the manifest file.                                                                                                     |
 | `variables`       | No       | `''`                        | Comma-separated `key:value` pairs templated into `<<parameters.key>>` placeholders in the manifest. Use for secret env values. |
@@ -88,7 +89,6 @@ jobs:
 
 ## How it works
 
-1. The action exchanges your API key for a short-lived Sombra signing session.
-2. Each function's code and context are encrypted client-side over a Diffie-Hellman channel with your Sombra gateway (code is never visible to Transcend's backend in plaintext).
-3. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).
-4. The job fails if any function fails to sync, so a red check means Transcend is out of sync with your repository.
+1. The action signs each function's code and context directly against your Sombra gateway's customer ingress over TLS, authenticated by your API key (plus the Sombra internal key when self-hosting). Code and env values never reach Transcend's backend in plaintext — only the signed JWTs are saved via the API.
+2. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).
+3. The job fails if any function fails to sync, so a red check means Transcend is out of sync with your repository.

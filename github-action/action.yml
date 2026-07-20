@@ -14,6 +14,12 @@ inputs:
       Transcend API key with the "Manage Data Map" scope. Store this as a
       GitHub Actions secret.
     required: true
+  sombra-auth:
+    description: >-
+      Sombra internal key, needed for additional authentication when
+      self-hosting Sombra. Store this as a GitHub Actions secret.
+    required: false
+    default: ''
   transcend-url:
     description: >-
       URL of the Transcend backend. Use https://api.us.transcend.io for US
@@ -76,6 +82,7 @@ runs:
       shell: bash
       env:
         TRANSCEND_API_KEY: ${{ inputs.api-key }}
+        INPUT_SOMBRA_AUTH: ${{ inputs.sombra-auth }}
         TRANSCEND_API_URL: ${{ inputs.transcend-url }}
         INPUT_FILE: ${{ inputs.file }}
         INPUT_VARIABLES: ${{ inputs.variables }}
@@ -90,6 +97,9 @@ runs:
 
         args=(custom-functions push "--file=${INPUT_FILE}")
 
+        if [[ -n "${INPUT_SOMBRA_AUTH}" ]]; then
+          args+=("--sombraAuth=${INPUT_SOMBRA_AUTH}")
+        fi
         if [[ -n "${INPUT_VARIABLES}" ]]; then
           args+=("--variables=${INPUT_VARIABLES}")
         fi
