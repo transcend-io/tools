@@ -49,6 +49,13 @@ const examples = buildExamples<CustomFunctionsPushCommandFlags>(
       },
     },
     {
+      description: 'With Sombra authentication, needed when self-hosting Sombra',
+      flags: {
+        auth: '$TRANSCEND_API_KEY',
+        sombraAuth: '$SOMBRA_INTERNAL_KEY',
+      },
+    },
+    {
       description: 'Specifying the backend URL, needed for US hosted backend infrastructure',
       flags: {
         auth: '$TRANSCEND_API_KEY',
@@ -87,7 +94,7 @@ functions:
 | \`description\` | No | Description shown in the Transcend dashboard. |
 | \`type\` | No | \`GENERAL\` (default) or \`DSR\`. DSR functions require \`data-silo-id\`. |
 | \`data-silo-id\` | DSR only | The data silo the DSR function is attached to. |
-| \`sombra-id\` | No | Dedicated Sombra gateway for the function (GENERAL only). |
+| \`sombra-id\` | No | Dedicated Sombra gateway for the function. |
 | \`allowed-hosts\` | No | Hosts the function may make network requests to. |
 | \`timeout-ms\` | No | Execution timeout in milliseconds. |
 | \`allow-third-party-imports\` | No | Whether the function may import third party modules. |

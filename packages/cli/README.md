@@ -2434,14 +2434,14 @@ transcend consent delete-preference-records \
 
 ```txt
 USAGE
-  transcend custom-functions push (--auth value) [--transcendUrl value] [--file value] [--variables value] [--dryRun] [--promote] [--force] [--updateManifest] [--sombraId value]
+  transcend custom-functions push (--auth value) [--sombraAuth value] [--transcendUrl value] [--file value] [--variables value] [--dryRun] [--promote] [--force] [--updateManifest] [--sombraId value]
   transcend custom-functions push --help
 
 Sync custom function source code from your repository to Transcend.
 
 Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
 
-1. Exchanges your API key for a short-lived Sombra signing session
+1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
 2. Creates any custom functions that do not exist yet
 3. Pushes a new code revision for any function whose code or context changed
 4. Promotes new revisions to active (unless --promote=false)
@@ -2450,6 +2450,7 @@ Functions whose code and context are unchanged are skipped, so this command is s
 
 FLAGS
       --auth                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Map"
+     [--sombraAuth]           The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--transcendUrl]         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
      [--file]                 Path to the custom functions manifest YAML file                                                                                                                                                    [default = ./transcend-functions.yml]
      [--variables]            The variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                [default = ""]
@@ -2457,7 +2458,7 @@ FLAGS
      [--promote/--noPromote]  When true, promote new revisions to active. Set to false to leave new revisions as drafts for review in the dashboard.                                                                             [default = true]
      [--force]                Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.                                                               [default = false]
      [--updateManifest]       After pushing, write the assigned custom function IDs back into the manifest file so future pushes match by ID instead of by name. Comments and <<parameters.x>> placeholders are preserved.       [default = false]
-     [--sombraId]             The Sombra gateway to sign code against and attach new GENERAL functions to. Defaults to the primary Sombra of the organization.
+     [--sombraId]             The Sombra gateway to sign code against and attach new functions to. Defaults to the primary Sombra of the organization.
   -h  --help                  Print help information and exit
 ```
 
@@ -2490,7 +2491,7 @@ functions:
 | `description`               | No       | Description shown in the Transcend dashboard.                                                                                                                                                                      |
 | `type`                      | No       | `GENERAL` (default) or `DSR`. DSR functions require `data-silo-id`.                                                                                                                                                |
 | `data-silo-id`              | DSR only | The data silo the DSR function is attached to.                                                                                                                                                                     |
-| `sombra-id`                 | No       | Dedicated Sombra gateway for the function (GENERAL only).                                                                                                                                                          |
+| `sombra-id`                 | No       | Dedicated Sombra gateway for the function.                                                                                                                                                                         |
 | `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                   |
 | `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                 |
 | `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                               |
@@ -2551,6 +2552,12 @@ transcend custom-functions push --auth="$TRANSCEND_API_KEY" --updateManifest
 
 ```sh
 transcend custom-functions push --auth="$TRANSCEND_API_KEY" --force
+```
+
+**With Sombra authentication, needed when self-hosting Sombra**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --sombraAuth="$SOMBRA_INTERNAL_KEY"
 ```
 
 **Specifying the backend URL, needed for US hosted backend infrastructure**
