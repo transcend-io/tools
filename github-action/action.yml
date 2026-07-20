@@ -1,0 +1,112 @@
+name: 'Transcend Custom Functions Sync'
+description: >-
+  Create or update Transcend custom function code revisions from a manifest in
+  your repository. Wraps `transcend custom-functions push` from
+  @transcend-io/cli.
+author: 'Transcend Inc.'
+branding:
+  icon: 'upload-cloud'
+  color: 'purple'
+
+inputs:
+  api-key:
+    description: >-
+      Transcend API key with the "Manage Data Map" scope. Store this as a
+      GitHub Actions secret.
+    required: true
+  transcend-url:
+    description: >-
+      URL of the Transcend backend. Use https://api.us.transcend.io for US
+      hosting.
+    required: false
+    default: 'https://api.transcend.io'
+  file:
+    description: 'Path to the custom functions manifest YAML file.'
+    required: false
+    default: './transcend-functions.yml'
+  variables:
+    description: >-
+      Variables to template into the manifest (e.g. secret env values).
+      Comma-separated list of key:value pairs.
+    required: false
+    default: ''
+  dry-run:
+    description: 'When true, report what would change without pushing anything.'
+    required: false
+    default: 'false'
+  promote:
+    description: >-
+      When true, promote new revisions to active. Set to false to leave new
+      revisions as drafts for review in the Transcend dashboard.
+    required: false
+    default: 'true'
+  force:
+    description: >-
+      Push a new revision even when no changes are detected. Useful when only
+      environment variable values changed, which cannot be diffed.
+    required: false
+    default: 'false'
+  update-manifest:
+    description: >-
+      After pushing, write the assigned custom function IDs back into the
+      manifest file. Pair with a commit step (e.g. stefanzweifel/git-auto-commit-action)
+      to persist the IDs to your repository.
+    required: false
+    default: 'false'
+  sombra-id:
+    description: >-
+      The Sombra gateway to sign code against. Defaults to the primary Sombra
+      of the organization.
+    required: false
+    default: ''
+  cli-version:
+    description: 'Version of @transcend-io/cli to use.'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+
+    - name: Push custom functions to Transcend
+      shell: bash
+      env:
+        TRANSCEND_API_KEY: ${{ inputs.api-key }}
+        TRANSCEND_API_URL: ${{ inputs.transcend-url }}
+        INPUT_FILE: ${{ inputs.file }}
+        INPUT_VARIABLES: ${{ inputs.variables }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        INPUT_PROMOTE: ${{ inputs.promote }}
+        INPUT_FORCE: ${{ inputs.force }}
+        INPUT_UPDATE_MANIFEST: ${{ inputs.update-manifest }}
+        INPUT_SOMBRA_ID: ${{ inputs.sombra-id }}
+        INPUT_CLI_VERSION: ${{ inputs.cli-version }}
+      run: |
+        set -euo pipefail
+
+        args=(custom-functions push "--file=${INPUT_FILE}")
+
+        if [[ -n "${INPUT_VARIABLES}" ]]; then
+          args+=("--variables=${INPUT_VARIABLES}")
+        fi
+        if [[ "${INPUT_DRY_RUN}" == "true" ]]; then
+          args+=(--dryRun)
+        fi
+        if [[ "${INPUT_PROMOTE}" == "false" ]]; then
+          args+=(--noPromote)
+        fi
+        if [[ "${INPUT_FORCE}" == "true" ]]; then
+          args+=(--force)
+        fi
+        if [[ "${INPUT_UPDATE_MANIFEST}" == "true" ]]; then
+          args+=(--updateManifest)
+        fi
+        if [[ -n "${INPUT_SOMBRA_ID}" ]]; then
+          args+=("--sombraId=${INPUT_SOMBRA_ID}")
+        fi
+
+        npx --yes --package="@transcend-io/cli@${INPUT_CLI_VERSION}" -- transcend "${args[@]}"

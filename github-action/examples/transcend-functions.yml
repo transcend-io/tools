@@ -1,0 +1,14 @@
+# Example manifest for `transcend custom-functions push` and the
+# transcend-io/tools/github-action composite action.
+functions:
+  - name: Score Lead
+    code: ./functions/score-lead.ts
+    description: Scores an inbound lead against the CRM
+    allowed-hosts:
+      - api.example.com
+    timeout-ms: 30000
+    allow-third-party-imports: false
+    env:
+      # Filled from --variables=crmApiKey:... / the `variables` action input,
+      # so the secret never lives in the repository.
+      CRM_API_KEY: <<parameters.crmApiKey>>
