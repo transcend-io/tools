@@ -60,7 +60,7 @@ export const pushCommand = buildCommand({
         kind: 'parsed',
         parse: uuidParser,
         brief:
-          'The Sombra gateway to sign code against and attach new functions to. Defaults to the primary Sombra of the organization.',
+          'Default Sombra gateway for functions whose manifest entry (or existing function) does not pin one. Each function is signed against the gateway it belongs to. Defaults to the primary Sombra of the organization.',
         optional: true,
       },
     },

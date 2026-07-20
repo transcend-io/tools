@@ -115,6 +115,41 @@ export function resolveExistingCustomFunction(
 }
 
 /**
+ * Resolve which Sombra gateway a custom function's code must be signed
+ * against.
+ *
+ * Each custom function belongs to a single gateway, whose keys sign the code
+ * and encrypt the env values — signing against any other gateway would
+ * produce JWTs that fail verification at execution time. The gateway is
+ * resolved as: the config's `sombraId`, else the existing function's
+ * gateway, else the caller's default (e.g. a CLI flag), else `undefined`
+ * meaning the organization's primary Sombra.
+ *
+ * A config that pins a different gateway than the existing function is an
+ * error — the gateway of an existing function cannot be changed by a push.
+ *
+ * @param input - The custom function config
+ * @param existing - The matching existing custom function, when there is one
+ * @param defaultSombraId - Fallback gateway ID when neither the config nor the existing function specify one
+ * @returns The Sombra gateway ID to sign against, or undefined for the primary gateway
+ */
+export function resolveEffectiveSombraId(
+  input: Pick<CustomFunctionConfigInput, 'name' | 'sombraId'>,
+  existing: Pick<CustomFunction, 'id' | 'sombraId'> | undefined,
+  defaultSombraId?: string,
+): string | undefined {
+  if (input.sombraId && existing?.sombraId && input.sombraId !== existing.sombraId) {
+    throw new Error(
+      `Custom function "${input.name}" specifies sombra-id "${input.sombraId}" but the ` +
+        `existing function (id: ${existing.id}) belongs to Sombra gateway "${existing.sombraId}". ` +
+        'A push cannot move a custom function between gateways — fix the sombra-id in the ' +
+        'manifest, or remove it to keep the existing gateway.',
+    );
+  }
+  return input.sombraId ?? existing?.sombraId ?? defaultSombraId;
+}
+
+/**
  * Build the sign payload for a custom function config.
  *
  * @param input - The custom function config
@@ -160,8 +195,14 @@ export async function syncCustomFunction(
   options: {
     /** The desired custom function state */
     input: CustomFunctionConfigInput;
-    /** Got instance authenticated against the Sombra customer ingress. Required unless `dryRun` is set */
+    /**
+     * Got instance authenticated against the customer ingress of the Sombra
+     * gateway the function belongs to (see `resolveEffectiveSombraId`).
+     * Required unless `dryRun` is set
+     */
     sombra?: Got;
+    /** Default Sombra gateway ID when neither the config nor the existing function specify one */
+    defaultSombraId?: string;
     /** All existing custom functions in the organization (see `fetchAllCustomFunctions`) */
     existing: CustomFunction[];
     /** Whether to promote new revisions to active. Defaults to true */
@@ -177,6 +218,7 @@ export async function syncCustomFunction(
   const {
     input,
     sombra,
+    defaultSombraId,
     existing: allExisting,
     promote = true,
     dryRun = false,
@@ -190,6 +232,8 @@ export async function syncCustomFunction(
   }
 
   const existing = resolveExistingCustomFunction(allExisting, input);
+  // Validates config-vs-existing gateway mismatches, including on dry runs
+  const effectiveSombraId = resolveEffectiveSombraId(input, existing, defaultSombraId);
   const signPayload = buildCustomFunctionSignPayload(input);
 
   // Diff against the existing preferred (draft if pending, else active) version
@@ -263,7 +307,7 @@ export async function syncCustomFunction(
       variables: {
         input: {
           type,
-          ...(input.sombraId !== undefined ? { sombraId: input.sombraId } : {}),
+          ...(effectiveSombraId !== undefined ? { sombraId: effectiveSombraId } : {}),
           ...(type === 'DSR' ? { dataSiloId: input.dataSiloId } : {}),
           name: input.name,
           ...(input.description !== undefined ? { description: input.description } : {}),

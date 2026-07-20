@@ -4,6 +4,8 @@ import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllCustomFunctions,
+  resolveEffectiveSombraId,
+  resolveExistingCustomFunction,
   resolveSombraCustomerUrl,
   syncCustomFunction,
   type CustomFunctionSyncResult,
@@ -83,27 +85,52 @@ export async function push(
   // Fetch existing functions once to diff against
   const existing = await fetchAllCustomFunctions(client, { logger });
 
-  // Connect to the Sombra customer ingress (used to sign code) — not needed for dry runs
-  let sombra: Awaited<ReturnType<typeof createSombraGotInstance>> | undefined;
-  if (!dryRun) {
-    logger.info(colors.magenta('Connecting to the Sombra gateway to sign code...'));
-    const sombraUrl = sombraId
-      ? await resolveSombraCustomerUrl(client, sombraId, { logger })
+  // Each custom function belongs to a single Sombra gateway whose keys sign
+  // its code, so code must be signed against that specific gateway's customer
+  // ingress. Cache one connection per distinct gateway across the run.
+  type SombraGot = Awaited<ReturnType<typeof createSombraGotInstance>>;
+  const sombraByGateway = new Map<string, SombraGot>();
+  const getSombraForGateway = async (gatewaySombraId?: string): Promise<SombraGot> => {
+    const key = gatewaySombraId ?? '';
+    const cached = sombraByGateway.get(key);
+    if (cached) {
+      return cached;
+    }
+    logger.info(
+      colors.magenta(
+        `Connecting to the ${
+          gatewaySombraId ? `Sombra gateway "${gatewaySombraId}"` : 'primary Sombra gateway'
+        } to sign code...`,
+      ),
+    );
+    const sombraUrl = gatewaySombraId
+      ? await resolveSombraCustomerUrl(client, gatewaySombraId, { logger })
       : undefined;
-    sombra = await createSombraGotInstance(transcendUrl, apiKey, {
+    const sombra = await createSombraGotInstance(transcendUrl, apiKey, {
       logger,
       sombraApiKey: sombraAuth,
       sombraUrl,
     });
-  }
+    sombraByGateway.set(key, sombra);
+    return sombra;
+  };
 
   // Sync each function in order
   const results: { name: string; result?: CustomFunctionSyncResult; error?: Error }[] = [];
   await mapSeries(configs, async (input) => {
     try {
+      // Resolve the gateway this function belongs to: manifest sombra-id,
+      // else the existing function's gateway, else --sombraId, else primary.
+      // Also validates manifest-vs-existing gateway mismatches.
+      const effectiveSombraId = resolveEffectiveSombraId(
+        input,
+        resolveExistingCustomFunction(existing, input),
+        sombraId,
+      );
       const result = await syncCustomFunction(client, {
         input,
-        sombra,
+        sombra: dryRun ? undefined : await getSombraForGateway(effectiveSombraId),
+        defaultSombraId: sombraId,
         existing,
         promote,
         dryRun,
