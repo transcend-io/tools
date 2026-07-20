@@ -39,6 +39,8 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend consent upload-data-flows-from-csv`](#transcend-consent-upload-data-flows-from-csv)
   - [`transcend consent upload-preferences`](#transcend-consent-upload-preferences)
   - [`transcend consent delete-preference-records`](#transcend-consent-delete-preference-records)
+  - [`transcend custom-functions push`](#transcend-custom-functions-push)
+  - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
   - [`transcend inventory scan-packages`](#transcend-inventory-scan-packages)
@@ -2426,6 +2428,150 @@ transcend consent delete-preference-records \
   --maxItemsInChunk=5 \
   --receiptDirectory=./receipts \
   --timestamp=2025-08-26T00:00:00.000Z
+```
+
+### `transcend custom-functions push`
+
+```txt
+USAGE
+  transcend custom-functions push (--auth value) [--transcendUrl value] [--file value] [--variables value] [--dryRun] [--promote] [--force] [--updateManifest] [--sombraId value]
+  transcend custom-functions push --help
+
+Sync custom function source code from your repository to Transcend.
+
+Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
+
+1. Exchanges your API key for a short-lived Sombra signing session
+2. Creates any custom functions that do not exist yet
+3. Pushes a new code revision for any function whose code or context changed
+4. Promotes new revisions to active (unless --promote=false)
+
+Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.
+
+FLAGS
+      --auth                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Map"
+     [--transcendUrl]         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+     [--file]                 Path to the custom functions manifest YAML file                                                                                                                                                    [default = ./transcend-functions.yml]
+     [--variables]            The variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                [default = ""]
+     [--dryRun]               When true, report what would change without pushing anything                                                                                                                                       [default = false]
+     [--promote/--noPromote]  When true, promote new revisions to active. Set to false to leave new revisions as drafts for review in the dashboard.                                                                             [default = true]
+     [--force]                Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.                                                               [default = false]
+     [--updateManifest]       After pushing, write the assigned custom function IDs back into the manifest file so future pushes match by ID instead of by name. Comments and <<parameters.x>> placeholders are preserved.       [default = false]
+     [--sombraId]             The Sombra gateway to sign code against and attach new GENERAL functions to. Defaults to the primary Sombra of the organization.
+  -h  --help                  Print help information and exit
+```
+
+#### Manifest file
+
+The manifest maps custom function names to source files in your repository:
+
+```yaml
+# transcend-functions.yml
+functions:
+  - name: Score Lead
+    code: ./functions/score-lead.ts
+    description: Scores an inbound lead against the CRM
+    allowed-hosts:
+      - api.example.com
+    timeout-ms: 30000
+    env:
+      CRM_API_KEY: <<parameters.crmApiKey>>
+  - name: DSR Lookup
+    code: ./functions/dsr-lookup.ts
+    type: DSR
+    data-silo-id: 5a4b0f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+| Field                       | Required | Description                                                                                                                                                                                                        |
+| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`                      | Yes      | Display name of the function. Used as the sync key when no `id` is set — renaming an id-less entry creates a new function.                                                                                         |
+| `code`                      | Yes      | Path to the TypeScript source file, relative to the manifest.                                                                                                                                                      |
+| `id`                        | No       | Custom function ID. When set, it becomes the sync key (allowing renames and disambiguating non-unique names). Find IDs via `transcend custom-functions list`, or let `--updateManifest` fill them in after a push. |
+| `description`               | No       | Description shown in the Transcend dashboard.                                                                                                                                                                      |
+| `type`                      | No       | `GENERAL` (default) or `DSR`. DSR functions require `data-silo-id`.                                                                                                                                                |
+| `data-silo-id`              | DSR only | The data silo the DSR function is attached to.                                                                                                                                                                     |
+| `sombra-id`                 | No       | Dedicated Sombra gateway for the function (GENERAL only).                                                                                                                                                          |
+| `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                   |
+| `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                 |
+| `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                               |
+| `env`                       | No       | Environment variables exposed to the function. Use `<<parameters.name>>` placeholders with the `--variables` flag to avoid committing secrets.                                                                     |
+
+Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use `--force` to push a new revision.
+
+#### How manifest entries are matched to existing functions
+
+Each entry is resolved against the custom functions in your organization in this order:
+
+1. **By `id`, when set.** The ID is the sync key: the matched function is updated, and `name` may be changed freely (it just renames the function). If no function with that ID exists, the push **fails** for that entry — a stale or mistyped ID never silently creates a duplicate. Remove the `id` to create a new function instead.
+2. **By exact `name`, when no `id` is set.**
+   - Exactly one function with that name → it is updated.
+   - No function with that name → a new one is created.
+   - **More than one** function with that name → the push fails with an error listing the candidate IDs. Add the right `id` to the entry to disambiguate, or grab IDs from `transcend custom-functions list`.
+
+Within the manifest itself, duplicate `id`s are always rejected, and duplicate `name`s are only allowed when every entry sharing the name has an `id`.
+
+Because ID matching is strictly safer, prefer pinning IDs once functions exist: run `transcend custom-functions push --updateManifest` after the first push and the assigned IDs are written back into the manifest automatically (comments and `<<parameters.x>>` placeholders are preserved).
+
+#### Examples
+
+**Push all custom functions defined in ./transcend-functions.yml**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview changes without pushing anything**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --dryRun
+```
+
+**Use a manifest at a custom path with templated secrets**
+
+```sh
+transcend custom-functions push \
+  --auth="$TRANSCEND_API_KEY" \
+  --file=./transcend/functions.yml \
+  --variables=crmApiKey:example-secret-value
+```
+
+**Push new revisions as drafts for review instead of promoting them**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --promote=false
+```
+
+**Record the assigned custom function IDs in the manifest so future pushes match by ID**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --updateManifest
+```
+
+**Force a new revision even when no code changes are detected (e.g. env value rotation)**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --force
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend custom-functions list`
+
+```txt
+USAGE
+  transcend custom-functions list (--auth value) [--transcendUrl value]
+  transcend custom-functions list --help
+
+List all custom functions in the organization along with their lifecycle state, active version, and any pending draft version.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Map"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help           Print help information and exit
 ```
 
 ### `transcend inventory pull`

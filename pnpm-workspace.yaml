@@ -28,6 +28,7 @@ catalog:
   turbo: ^2.9.14
   typescript: ^6.0.0
   vitest: ^4.0.18
+  yaml: ^2.9.0
   zod: ^4.3.6
 
 # Only install npm packages that are at least 3 days old
