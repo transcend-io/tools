@@ -121,6 +121,7 @@
     "query-string": "=7.0.0",
     "semver": "catalog:",
     "undici": "6.27.0",
+    "yaml": "catalog:",
     "yargs-parser": "^21.1.1"
   },
   "devDependencies": {
