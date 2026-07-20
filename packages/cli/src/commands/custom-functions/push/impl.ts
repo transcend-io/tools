@@ -2,11 +2,11 @@ import { existsSync } from 'node:fs';
 
 import {
   buildTranscendGraphQLClient,
-  createSombraApiKeySession,
+  createSombraGotInstance,
   fetchAllCustomFunctions,
+  resolveSombraCustomerUrl,
   syncCustomFunction,
   type CustomFunctionSyncResult,
-  type SombraApiKeySession,
 } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
@@ -23,6 +23,7 @@ import { logger } from '../../../logger.js';
 
 export interface CustomFunctionsPushCommandFlags {
   auth: string;
+  sombraAuth?: string;
   transcendUrl: string;
   file: string;
   variables: string;
@@ -37,6 +38,7 @@ export async function push(
   this: LocalContext,
   {
     auth,
+    sombraAuth,
     transcendUrl,
     file = './transcend-functions.yml',
     variables,
@@ -81,11 +83,18 @@ export async function push(
   // Fetch existing functions once to diff against
   const existing = await fetchAllCustomFunctions(client, { logger });
 
-  // Establish a Sombra session (used to sign code) — not needed for dry runs
-  let session: SombraApiKeySession | undefined;
+  // Connect to the Sombra customer ingress (used to sign code) — not needed for dry runs
+  let sombra: Awaited<ReturnType<typeof createSombraGotInstance>> | undefined;
   if (!dryRun) {
-    logger.info(colors.magenta('Exchanging API key for a Sombra signing session...'));
-    session = await createSombraApiKeySession(client, { sombraId, logger });
+    logger.info(colors.magenta('Connecting to the Sombra gateway to sign code...'));
+    const sombraUrl = sombraId
+      ? await resolveSombraCustomerUrl(client, sombraId, { logger })
+      : undefined;
+    sombra = await createSombraGotInstance(transcendUrl, apiKey, {
+      logger,
+      sombraApiKey: sombraAuth,
+      sombraUrl,
+    });
   }
 
   // Sync each function in order
@@ -94,7 +103,7 @@ export async function push(
     try {
       const result = await syncCustomFunction(client, {
         input,
-        session,
+        sombra,
         existing,
         promote,
         dryRun,

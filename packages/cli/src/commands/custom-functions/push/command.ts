@@ -3,6 +3,7 @@ import { ScopeName } from '@transcend-io/privacy-types';
 
 import {
   createAuthParameter,
+  createSombraAuthParameter,
   createTranscendUrlParameter,
 } from '../../../lib/cli/common-parameters.js';
 import { uuidParser } from '../../../lib/cli/parsers.js';
@@ -17,6 +18,7 @@ export const pushCommand = buildCommand({
       auth: createAuthParameter({
         scopes: [ScopeName.ManageDataMap],
       }),
+      sombraAuth: createSombraAuthParameter(),
       transcendUrl: createTranscendUrlParameter(),
       file: {
         kind: 'parsed',
@@ -58,7 +60,7 @@ export const pushCommand = buildCommand({
         kind: 'parsed',
         parse: uuidParser,
         brief:
-          'The Sombra gateway to sign code against and attach new GENERAL functions to. Defaults to the primary Sombra of the organization.',
+          'The Sombra gateway to sign code against and attach new functions to. Defaults to the primary Sombra of the organization.',
         optional: true,
       },
     },
@@ -69,7 +71,7 @@ export const pushCommand = buildCommand({
 
 Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
 
-1. Exchanges your API key for a short-lived Sombra signing session
+1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
 2. Creates any custom functions that do not exist yet
 3. Pushes a new code revision for any function whose code or context changed
 4. Promotes new revisions to active (unless --promote=false)
