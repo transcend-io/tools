@@ -9,6 +9,7 @@ export const CUSTOM_FUNCTIONS = gql`
         description
         type
         lifecycleState
+        sombraId
         signedCodeJwt
         signedCodeContextJwt
         hasPendingDraft

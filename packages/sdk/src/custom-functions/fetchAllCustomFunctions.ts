@@ -47,6 +47,8 @@ export interface CustomFunction {
   type: CustomFunctionType;
   /** Lifecycle state */
   lifecycleState: CustomFunctionLifecycleState;
+  /** ID of the Sombra gateway the function belongs to (signs its code and runs it) */
+  sombraId?: string | null;
   /** Signed code JWT of the preferred (draft if pending, else active) version */
   signedCodeJwt: string;
   /** Signed code context JWT of the preferred version */

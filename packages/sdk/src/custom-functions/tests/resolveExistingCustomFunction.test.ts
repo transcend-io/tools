@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CustomFunction } from '../fetchAllCustomFunctions.js';
-import { resolveExistingCustomFunction } from '../syncCustomFunction.js';
+import { resolveEffectiveSombraId, resolveExistingCustomFunction } from '../syncCustomFunction.js';
 
 /**
  * Build a minimal custom function node for resolution tests
@@ -53,5 +53,48 @@ describe('resolveExistingCustomFunction', () => {
     expect(() => resolveExistingCustomFunction(existing, { name: 'Duplicated Name' })).toThrow(
       /Multiple custom functions are named "Duplicated Name".*id-2, id-3/s,
     );
+  });
+});
+
+describe('resolveEffectiveSombraId', () => {
+  it('prefers the config sombraId', () => {
+    expect(
+      resolveEffectiveSombraId(
+        { name: 'Fn', sombraId: 'sombra-a' },
+        { id: 'id-1', sombraId: 'sombra-a' },
+        'sombra-default',
+      ),
+    ).toBe('sombra-a');
+  });
+
+  it('falls back to the existing function gateway', () => {
+    expect(
+      resolveEffectiveSombraId(
+        { name: 'Fn' },
+        { id: 'id-1', sombraId: 'sombra-b' },
+        'sombra-default',
+      ),
+    ).toBe('sombra-b');
+  });
+
+  it('falls back to the default when creating without a pinned gateway', () => {
+    expect(resolveEffectiveSombraId({ name: 'Fn' }, undefined, 'sombra-default')).toBe(
+      'sombra-default',
+    );
+  });
+
+  it('returns undefined (primary gateway) when nothing specifies one', () => {
+    expect(
+      resolveEffectiveSombraId({ name: 'Fn' }, { id: 'id-1', sombraId: null }),
+    ).toBeUndefined();
+  });
+
+  it('throws when the config pins a different gateway than the existing function', () => {
+    expect(() =>
+      resolveEffectiveSombraId(
+        { name: 'Fn', sombraId: 'sombra-a' },
+        { id: 'id-1', sombraId: 'sombra-b' },
+      ),
+    ).toThrow(/cannot move a custom function between gateways/);
   });
 });
