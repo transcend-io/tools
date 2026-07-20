@@ -1,6 +1,3 @@
-import type { SombraApiKeySession } from './createSombraApiKeySession.js';
-import { createDhEncrypted, createDhEncryptionKeys } from './dhEncryption.js';
-
 /**
  * The execution context for a custom function's code.
  */
@@ -16,31 +13,14 @@ export interface CustomFunctionCodeContextInput {
 }
 
 /**
- * The plaintext payload sent (Diffie-Hellman encrypted) to Sombra's
- * `/v2/custom/sign` endpoint via the custom function GraphQL mutations.
+ * The plaintext payload sent to the Sombra customer-ingress
+ * `/v1/custom/sign` endpoint.
  */
 export interface CustomFunctionSignPayload {
   /** The plaintext TypeScript source code of the custom function */
   code: string;
   /** The execution context for the code */
   context: CustomFunctionCodeContextInput;
-}
-
-/**
- * Build the `dhEncrypted` argument for a custom function mutation: a fresh
- * Diffie-Hellman channel carrying the Sombra session secret and the sign
- * payload (code + context).
- *
- * @param session - The Sombra session to authenticate the channel with
- * @param signPayload - The code and context to sign
- * @returns The stringified dhEncrypted payload
- */
-export function createCustomFunctionDhEncrypted(
-  session: SombraApiKeySession,
-  signPayload: CustomFunctionSignPayload,
-): string {
-  const dhEncryptionKeys = createDhEncryptionKeys(session.sombraPublicKeyECDH);
-  return createDhEncrypted(dhEncryptionKeys, session.authSecret, 'session', signPayload);
 }
 
 /**
