@@ -106,7 +106,7 @@ export const LoadOptions = t.intersection([
     forceTheme: ThemeKey,
     // if cssFolder is defined, per-theme CSS will be fetched from `${cssFolder}/${themeKey}.css`
     cssFolder: AbsoluteUrlString,
-    hostThemeMap: t.record(AbsoluteUrlString, ThemeKey),
+    hostThemeMap: t.record(t.string, ThemeKey),
   }),
 ]);
 
