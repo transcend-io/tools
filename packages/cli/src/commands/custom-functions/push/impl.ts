@@ -87,11 +87,15 @@ export async function push(
 
   // Each custom function belongs to a single Sombra gateway whose keys sign
   // its code, so code must be signed against that specific gateway's customer
-  // ingress. Cache one connection per distinct gateway across the run.
+  // ingress. Cache one connection per distinct gateway + internal key across
+  // the run.
   type SombraGot = Awaited<ReturnType<typeof createSombraGotInstance>>;
   const sombraByGateway = new Map<string, SombraGot>();
-  const getSombraForGateway = async (gatewaySombraId?: string): Promise<SombraGot> => {
-    const key = gatewaySombraId ?? '';
+  const getSombraForGateway = async (
+    gatewaySombraId: string | undefined,
+    sombraApiKey: string | undefined,
+  ): Promise<SombraGot> => {
+    const key = `${gatewaySombraId ?? ''}\u0000${sombraApiKey ?? ''}`;
     const cached = sombraByGateway.get(key);
     if (cached) {
       return cached;
@@ -108,11 +112,39 @@ export async function push(
       : undefined;
     const sombra = await createSombraGotInstance(transcendUrl, apiKey, {
       logger,
-      sombraApiKey: sombraAuth,
+      sombraApiKey,
       sombraUrl,
     });
     sombraByGateway.set(key, sombra);
     return sombra;
+  };
+
+  /**
+   * Resolve the Sombra internal key for a manifest entry: the env variable
+   * named by `sombra-auth-env` when set (which must be exported), else the
+   * `--sombraAuth` flag.
+   *
+   * @param input - The manifest entry
+   * @returns The internal key to authenticate with, if any
+   */
+  const resolveEntrySombraAuth = (input: {
+    /** Function name, for error messages */
+    name: string;
+    /** Env variable name holding the gateway's internal key */
+    sombraAuthEnv?: string;
+  }): string | undefined => {
+    if (!input.sombraAuthEnv) {
+      return sombraAuth;
+    }
+    const value = process.env[input.sombraAuthEnv];
+    if (!value) {
+      throw new Error(
+        `Custom function "${input.name}" sets sombra-auth-env: ${input.sombraAuthEnv}, ` +
+          'but that environment variable is not set. Export it (e.g. from a CI secret) ' +
+          'before pushing.',
+      );
+    }
+    return value;
   };
 
   // Sync each function in order
@@ -129,7 +161,9 @@ export async function push(
       );
       const result = await syncCustomFunction(client, {
         input,
-        sombra: dryRun ? undefined : await getSombraForGateway(effectiveSombraId),
+        sombra: dryRun
+          ? undefined
+          : await getSombraForGateway(effectiveSombraId, resolveEntrySombraAuth(input)),
         defaultSombraId: sombraId,
         existing,
         promote,
