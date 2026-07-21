@@ -1,11 +1,17 @@
 export enum ErrorCode {
+  /** Invalid tool arguments or request shape */
   VALIDATION_ERROR = 'VALIDATION_ERROR',
+  /** Missing or invalid credentials (HTTP 401/403, OAuth failures) */
   AUTH_ERROR = 'AUTH_ERROR',
-  /** Missing GraphQL route scopes (or similar authorization denial). */
+  /** Missing GraphQL route scopes (or similar authorization denial) */
   PERMISSION_ERROR = 'PERMISSION_ERROR',
+  /** Requested resource does not exist */
   NOT_FOUND = 'NOT_FOUND',
+  /** Upstream rate limit; may be retried */
   RATE_LIMITED = 'RATE_LIMITED',
+  /** Generic API / GraphQL failure */
   API_ERROR = 'API_ERROR',
+  /** Request aborted due to timeout; may be retried */
   TIMEOUT = 'TIMEOUT',
 }
 

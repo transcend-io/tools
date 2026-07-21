@@ -44,9 +44,13 @@ export function createErrorResult(error: unknown): unknown {
 export function createListResult(
   items: unknown[],
   options?: {
+    /** Total number of items available across all pages */
     totalCount?: number;
+    /** Whether another page of results exists */
     hasNextPage?: boolean;
+    /** Cursor for fetching the next page */
     cursor?: string;
+    /** Human-readable note about pagination behavior */
     paginationNote?: string;
   },
 ): unknown {
