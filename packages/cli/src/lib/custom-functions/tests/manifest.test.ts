@@ -46,6 +46,24 @@ describe('readCustomFunctionsManifest', () => {
     expect(configs[0]!.env).toEqual({ CRM_API_KEY: 'secret' });
   });
 
+  it('passes per-entry sombra gateway and auth env through', () => {
+    const filePath = writeFixture(`functions:
+  - name: EU Function
+    code: ./functions/a.ts
+    sombra-id: sombra-eu
+    sombra-auth-env: SOMBRA_EU_INTERNAL_KEY
+  - name: US Function
+    code: ./functions/b.ts
+`);
+    const configs = readCustomFunctionsManifest(filePath);
+    expect(configs[0]).toMatchObject({
+      sombraId: 'sombra-eu',
+      sombraAuthEnv: 'SOMBRA_EU_INTERNAL_KEY',
+    });
+    expect(configs[1]!.sombraId).toBeUndefined();
+    expect(configs[1]!.sombraAuthEnv).toBeUndefined();
+  });
+
   it('rejects duplicate names without ids', () => {
     const filePath = writeFixture(`functions:
   - name: Same Name

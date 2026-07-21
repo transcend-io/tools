@@ -2492,6 +2492,7 @@ functions:
 | `type`                      | No       | `GENERAL` (default) or `DSR`. DSR functions require `data-silo-id`.                                                                                                                                                                                                   |
 | `data-silo-id`              | DSR only | The data silo the DSR function is attached to.                                                                                                                                                                                                                        |
 | `sombra-id`                 | No       | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or `--sombraId`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway. |
+| `sombra-auth-env`           | No       | Name of the environment variable holding the internal key of the function's Sombra gateway (e.g. `SOMBRA_EU_INTERNAL_KEY`). The key itself never lives in the manifest — it is read from the environment at push time. Overrides `--sombraAuth` for this entry.       |
 | `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                                                                      |
 | `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                                                                    |
 | `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                                                                                  |
@@ -2499,7 +2500,18 @@ functions:
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use `--force` to push a new revision.
 
-Functions may belong to different Sombra gateways within one manifest; the command connects to each distinct gateway as needed. A single `--sombraAuth` internal key is applied to every gateway, so self-hosted gateways with _different_ internal keys require one push per gateway.
+Functions may belong to different Sombra gateways within one manifest; the command connects to each distinct gateway as needed. `--sombraAuth` provides the default internal key; when self-hosted gateways use _different_ internal keys, set `sombra-auth-env` per entry to the name of the environment variable holding that gateway's key:
+
+```yaml
+functions:
+  - name: US Function
+    code: ./functions/us.ts
+    # primary gateway, authenticated by --sombraAuth (if self-hosted)
+  - name: EU Function
+    code: ./functions/eu.ts
+    sombra-id: 8c0b1f2a-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    sombra-auth-env: SOMBRA_EU_INTERNAL_KEY
+```
 
 #### How manifest entries are matched to existing functions
 

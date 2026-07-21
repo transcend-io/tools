@@ -28,8 +28,15 @@ export const CustomFunctionManifestEntry = t.intersection([
     type: t.union([t.literal('DSR'), t.literal('GENERAL')]),
     /** Data silo ID to attach to (required for DSR functions) */
     'data-silo-id': t.string,
-    /** Dedicated Sombra gateway ID (GENERAL functions) */
+    /** The Sombra gateway the function belongs to */
     'sombra-id': t.string,
+    /**
+     * Name of the environment variable holding the internal key of the
+     * function's Sombra gateway. The key itself never lives in the manifest —
+     * it is read from the CLI's process environment at push time. Overrides
+     * `--sombraAuth` for this entry.
+     */
+    'sombra-auth-env': t.string,
     /** Hosts the function may make network requests to */
     'allowed-hosts': t.array(t.string),
     /** Execution timeout in milliseconds */
@@ -60,10 +67,19 @@ export type CustomFunctionsManifest = t.TypeOf<typeof CustomFunctionsManifest>;
  * @param variables - Variables to fill into `<<parameters.x>>` placeholders
  * @returns The custom function configs, with code loaded from disk
  */
+/**
+ * A custom function config from the manifest, plus CLI-level settings that
+ * are not part of the SDK sync input.
+ */
+export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
+  /** Env variable name holding the internal key of the function's Sombra gateway */
+  sombraAuthEnv?: string;
+};
+
 export function readCustomFunctionsManifest(
   filePath: string,
   variables: ObjByString = {},
-): CustomFunctionConfigInput[] {
+): CustomFunctionManifestConfig[] {
   const fileContents = readFileSync(filePath, 'utf-8');
 
   const replacedVariables = replaceVariablesInYaml(
@@ -111,6 +127,9 @@ export function readCustomFunctionsManifest(
       ...(entry.type !== undefined ? { type: entry.type } : {}),
       ...(entry['data-silo-id'] !== undefined ? { dataSiloId: entry['data-silo-id'] } : {}),
       ...(entry['sombra-id'] !== undefined ? { sombraId: entry['sombra-id'] } : {}),
+      ...(entry['sombra-auth-env'] !== undefined
+        ? { sombraAuthEnv: entry['sombra-auth-env'] }
+        : {}),
       ...(entry['allowed-hosts'] !== undefined ? { allowedHosts: entry['allowed-hosts'] } : {}),
       ...(entry['timeout-ms'] !== undefined ? { timeoutMs: entry['timeout-ms'] } : {}),
       ...(entry['allow-third-party-imports'] !== undefined
