@@ -2,7 +2,7 @@ import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
-import { AbsoluteUrlString, UIConfiguration } from './consentUiConfiguration.js';
+import { AbsoluteUrlString, UIConfiguration, URLHostString } from './consentUiConfiguration.js';
 import { ThemeConfiguration, ThemeConfigurationMinimal } from './consentUiTheme.js';
 
 /**
@@ -106,7 +106,7 @@ export const LoadOptions = t.intersection([
     forceTheme: ThemeKey,
     // if cssFolder is defined, per-theme CSS will be fetched from `${cssFolder}/${themeKey}.css`
     cssFolder: AbsoluteUrlString,
-    hostThemeMap: t.record(t.string, ThemeKey),
+    hostThemeMap: t.record(URLHostString, ThemeKey),
   }),
 ]);
 
