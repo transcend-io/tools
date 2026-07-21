@@ -66,6 +66,7 @@ async function main(): Promise<void> {
           return buildMcpServer({
             ...buildServerOptions,
             tools: registry.getAllTools(),
+            resources: registry.getAllResources(),
           });
         },
       },
@@ -97,6 +98,7 @@ async function main(): Promise<void> {
   const server = buildMcpServer({
     ...buildServerOptions,
     tools: toolRegistry.getAllTools(),
+    resources: toolRegistry.getAllResources(),
   });
 
   logger.info(`Starting Transcend MCP Server v${VERSION}...`, {

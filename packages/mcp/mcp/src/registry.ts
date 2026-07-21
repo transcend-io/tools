@@ -1,9 +1,13 @@
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
-import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
+import {
+  getAssessmentResources,
+  getAssessmentTools,
+} from '@transcend-io/mcp-server-assessment';
 import {
   createErrorResult,
   SimpleLogger,
+  type ResourceDefinition,
   type ToolDefinition,
   type TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
@@ -29,12 +33,14 @@ export interface UmbrellaToolClients {
 export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
   private jsonSchemaCache: Map<string, Record<string, unknown>> = new Map();
+  private resources: ResourceDefinition[] = [];
   private clients: UmbrellaToolClients;
   private logger = new SimpleLogger();
 
   constructor(clients: UmbrellaToolClients) {
     this.clients = clients;
     this.registerAllTools();
+    this.resources = [...getAssessmentResources(this.clients)];
   }
 
   private registerAllTools(): void {
@@ -120,6 +126,10 @@ export class ToolRegistry {
 
   getAllTools(): ToolDefinition[] {
     return Array.from(this.tools.values());
+  }
+
+  getAllResources(): ResourceDefinition[] {
+    return this.resources;
   }
 
   getToolCount(): number {

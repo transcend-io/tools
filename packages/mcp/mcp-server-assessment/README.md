@@ -103,6 +103,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
+- `hello_world` — MCP App hello-world demo (interactive UI; no API auth required for the tool itself)
 - `assessments_list` — List assessments with filtering
 - `assessments_get` — Get assessment details
 - `assessments_create` — Create a new assessment
@@ -117,6 +118,10 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `assessments_export_template` — Export an assessment template
 - `assessments_list_groups` — List assessment groups
 - `assessments_create_group` — Create an assessment group
+
+### MCP Apps
+
+`hello_world` is a minimal [MCP App](https://modelcontextprotocol.io/extensions/apps): a tool plus a `ui://assessments/hello-world.html` resource (`text/html;profile=mcp-app`). Compatible hosts (e.g. Cursor) render the View in-chat when the tool is called. Rebuild the embedded UI with `pnpm run build:app` inside this package (also runs as part of `pnpm run build`).
 
 ## Related packages
 

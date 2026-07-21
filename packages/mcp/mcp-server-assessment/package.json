@@ -30,7 +30,8 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown",
+    "build:app": "node ./scripts/build-hello-world-app.mjs",
+    "build": "tsdown && pnpm run build:app",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
@@ -38,6 +39,7 @@
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "catalog:",
+    "@modelcontextprotocol/ext-apps": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
     "@transcend-io/mcp-server-base": "workspace:*",
     "@transcend-io/privacy-types": "workspace:*",
@@ -47,6 +49,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@types/node": "catalog:",
+    "esbuild": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",

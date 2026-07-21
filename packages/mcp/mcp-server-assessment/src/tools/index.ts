@@ -1,4 +1,8 @@
-import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
+import type {
+  ResourceDefinition,
+  ToolClients,
+  ToolDefinition,
+} from '@transcend-io/mcp-server-base';
 
 import { createAssessmentsAddSectionTool } from './assessments_add_section.js';
 import { createAssessmentsAnswerQuestionTool } from './assessments_answer_question.js';
@@ -14,9 +18,11 @@ import { createAssessmentsPrefillTool } from './assessments_prefill.js';
 import { createAssessmentsSubmitResponseTool } from './assessments_submit_response.js';
 import { createAssessmentsUpdateTool } from './assessments_update.js';
 import { createAssessmentsUpdateAssigneesTool } from './assessments_update_assignees.js';
+import { createHelloWorldTool, getHelloWorldResource } from './hello_world.js';
 
 export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
   return [
+    createHelloWorldTool(),
     createAssessmentsListTool(clients),
     createAssessmentsGetTool(clients),
     createAssessmentsCreateTool(clients),
@@ -32,4 +38,9 @@ export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
     createAssessmentsExportTemplateTool(clients),
     createAssessmentsPrefillTool(clients),
   ];
+}
+
+/** MCP App (and other) resources for the assessments server. */
+export function getAssessmentResources(_clients?: ToolClients): ResourceDefinition[] {
+  return [getHelloWorldResource()];
 }

@@ -8,6 +8,7 @@ catalog:
   '@graphql-codegen/cli': ^7.1.0
   '@graphql-codegen/client-preset': ^6.0.1
   '@graphql-typed-document-node/core': ^3.2.0
+  '@modelcontextprotocol/ext-apps': ^1.7.4
   '@modelcontextprotocol/sdk': ^1.29.0
   '@terrazzo/cli': 2.0.3
   '@types/json-schema': ^7.0.15
@@ -21,6 +22,7 @@ catalog:
   lru-cache: ^11.5.1
   oxfmt: ^0.54.0
   oxlint: ^1.53.0
+  esbuild: ^0.28.1
   publint: ^0.3.18
   semver: ^7.7.4
   syncpack: ^14.2.0

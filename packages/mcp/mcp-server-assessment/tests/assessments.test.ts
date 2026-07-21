@@ -648,4 +648,32 @@ describe('Assessment Tools', () => {
       );
     });
   });
+
+  describe('hello_world', () => {
+    it('returns a greeting and declares the MCP App resource URI', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'hello_world')!;
+      expect(tool.requireAuth).toBe(false);
+      expect(tool._meta?.ui?.resourceUri).toBe('ui://assessments/hello-world.html');
+
+      const result = await tool.handler({});
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          greeting: 'Hello, World!',
+          app: 'assessments-hello-world',
+        },
+      });
+    });
+
+    it('uses the provided name in the greeting', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'hello_world')!;
+      const result = await tool.handler({ name: 'Dawson' });
+      expect(result).toMatchObject({
+        success: true,
+        data: { greeting: 'Hello, Dawson!' },
+      });
+    });
+  });
 });

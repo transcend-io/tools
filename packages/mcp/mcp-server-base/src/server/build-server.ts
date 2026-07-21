@@ -2,14 +2,20 @@ import { randomUUID } from 'node:crypto';
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListResourcesRequestSchema,
+  ListToolsRequestSchema,
+  ReadResourceRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
 
 import { getRequestAuth, requestAuthContext } from '../auth-context.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
-import type { ToolDefinition } from '../tools/types.js';
+import type { ResourceDefinition, ToolDefinition } from '../tools/types.js';
+import { normalizeUiToolMeta } from './ui-meta.js';
 
 export interface BuildMcpServerOptions {
   /** Server display name */
@@ -18,6 +24,8 @@ export interface BuildMcpServerOptions {
   version: string;
   /** Pre-constructed tool definitions */
   tools: ToolDefinition[];
+  /** Optional MCP resources (e.g. MCP App HTML views) */
+  resources?: ResourceDefinition[];
   /** Optional MCP initialize instructions injected into the client system prompt. */
   instructions?: string;
 }
@@ -31,6 +39,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   const logger = new SimpleLogger();
   const toolMap = new Map<string, ToolDefinition>();
   const jsonSchemaCache = new Map<string, Record<string, unknown>>();
+  const resourceMap = new Map<string, ResourceDefinition>();
 
   for (const tool of options.tools) {
     if (toolMap.has(tool.name)) {
@@ -44,27 +53,94 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     );
   }
 
+  for (const resource of options.resources ?? []) {
+    if (resourceMap.has(resource.uri)) {
+      logger.warn(`Duplicate resource URI "${resource.uri}" — skipping`);
+      continue;
+    }
+    resourceMap.set(resource.uri, resource);
+  }
+
   logger.info(`Registered ${toolMap.size} tools`, { toolCount: toolMap.size });
+  if (resourceMap.size > 0) {
+    logger.info(`Registered ${resourceMap.size} resources`, { resourceCount: resourceMap.size });
+  }
 
   const server = new Server(
     { name: options.name, version: options.version },
     {
-      capabilities: { tools: {} },
+      capabilities: {
+        tools: {},
+        ...(resourceMap.size > 0 ? { resources: {} } : {}),
+      },
       ...(options.instructions ? { instructions: options.instructions } : {}),
     },
   );
 
+  // Log whether the connected client (e.g. Cursor) declared elicitation support.
+  // Client capabilities are only available after the initialize handshake completes.
+  server.oninitialized = () => {
+    const clientCapabilities = server.getClientCapabilities();
+    const elicitation = clientCapabilities?.elicitation;
+    const supported = elicitation !== undefined;
+    logger.info('=========Elicitation support==========', {
+      supported,
+      elicitation: elicitation ?? null,
+      client: server.getClientVersion() ?? null,
+    });
+  };
+
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     logger.debug('Listing MCP tools');
-    const toolList = Array.from(toolMap.entries()).map(([name, t]) => ({
-      name: t.name,
-      description: t.description,
-      inputSchema: jsonSchemaCache.get(name) || { type: 'object', properties: {} },
-      annotations: t.annotations,
-    }));
+    const toolList = Array.from(toolMap.entries()).map(([name, t]) => {
+      const entry: Record<string, unknown> = {
+        name: t.name,
+        description: t.description,
+        inputSchema: jsonSchemaCache.get(name) || { type: 'object', properties: {} },
+        annotations: t.annotations,
+      };
+      const meta = normalizeUiToolMeta(t._meta as Record<string, unknown> | undefined);
+      if (meta) {
+        entry._meta = meta;
+      }
+      return entry;
+    });
     logger.info(`Returning ${toolList.length} tools`);
     return { tools: toolList };
   });
+
+  if (resourceMap.size > 0) {
+    server.setRequestHandler(ListResourcesRequestSchema, async () => {
+      logger.debug('Listing MCP resources');
+      const resources = Array.from(resourceMap.values()).map((r) => ({
+        uri: r.uri,
+        name: r.name,
+        ...(r.description ? { description: r.description } : {}),
+        mimeType: r.mimeType,
+      }));
+      return { resources };
+    });
+
+    server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+      const { uri } = request.params;
+      logger.info(`Reading MCP resource: ${uri}`);
+      const resource = resourceMap.get(uri);
+      if (!resource) {
+        throw new Error(`Unknown resource: ${uri}`);
+      }
+      const body = await resource.read();
+      return {
+        contents: [
+          {
+            uri: resource.uri,
+            mimeType: resource.mimeType,
+            text: body.text,
+            ...(body._meta ? { _meta: body._meta } : {}),
+          },
+        ],
+      };
+    });
+  }
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
@@ -110,9 +186,17 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       );
       logger.debug(`Tool ${name} completed successfully`);
 
-      return {
+      const response: {
+        content: Array<{ type: 'text'; text: string }>;
+        _meta?: Record<string, unknown>;
+      } = {
         content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
       };
+      const meta = normalizeUiToolMeta(tool._meta as Record<string, unknown> | undefined);
+      if (meta) {
+        response._meta = meta;
+      }
+      return response;
     } catch (error) {
       logger.error(`Error executing tool ${name}:`, error);
       return {

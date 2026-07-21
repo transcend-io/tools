@@ -12,7 +12,39 @@
     "transcend-assessments": {
       "disabled": true,
       "command": "bash",
-      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-assessment/dist/cli.mjs"]
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-assessment/dist/cli.mjs"],
+      "env": {
+        "TRANSCEND_OAUTH_CLIENT_ID": "6098c873-daad-4151-a986-71bde53d9076",
+        "TRANSCEND_OAUTH_CLIENT_SECRET": "f914b367083004345a904b99638458f235d518be5a708f799b2786b22f3cfcc5",
+        "TRANSCEND_OAUTH_REDIRECT_PORT": "5555",
+        "NODE_ENV": "test",
+        "TRANSCEND_OAUTH_ISSUER": "https://yo.com:4001",
+        "TRANSCEND_DASHBOARD_URL": "https://yo.com:3000",
+        "TRANSCEND_API_URL": "https://yo.com:4001",
+        "NODE_TLS_REJECT_UNAUTHORIZED": "0"
+      }
+    },
+    "linear": {
+      "url": "https://mcp.linear.app/mcp",
+      "alwaysAllow": [
+        "get_issue",
+        "get_team",
+        "get_user",
+        "get_project",
+        "get_authenticated_user",
+        "list_teams",
+        "list_users",
+        "list_issues",
+        "list_comments",
+        "list_issue_labels",
+        "list_issue_statuses",
+        "list_projects",
+        "list_customers",
+        "list_initiatives",
+        "search_issues",
+        "mcp_linear_search_projects",
+        "linear_search_users"
+      ]
     },
     "transcend-consent": {
       "disabled": true,
@@ -24,10 +56,24 @@
       "command": "bash",
       "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-discovery/dist/cli.mjs"]
     },
+    "Notion": {
+      "url": "https://mcp.notion.com/mcp",
+      "alwaysAllow": [
+        "notion-fetch",
+        "notion-search",
+        "notion-update-page",
+        "notion-get-users",
+        "retrieve_page"
+      ]
+    },
     "transcend-dsr": {
       "disabled": true,
       "command": "bash",
       "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-dsr/dist/cli.mjs"]
+    },
+    "transcend-docs": {
+      "command": "bash",
+      "args": ["scripts/mcp-run.sh", "packages/mcp/mcp-server-docs/dist/cli.mjs"]
     },
     "transcend-inventory": {
       "disabled": true,

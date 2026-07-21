@@ -35,7 +35,13 @@ export {
 } from './validation/schemas.js';
 export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
 
-export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
+export type {
+  ToolAnnotations,
+  ToolDefinition,
+  ToolClients,
+  ToolUiMeta,
+  ResourceDefinition,
+} from './tools/types.js';
 export { defineTool } from './tools/types.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
@@ -45,6 +51,12 @@ export type { MCPServerOptions } from './server/create-server.js';
 
 export { buildMcpServer } from './server/build-server.js';
 export type { BuildMcpServerOptions } from './server/build-server.js';
+
+export {
+  normalizeUiToolMeta,
+  UI_RESOURCE_URI_META_KEY,
+  MCP_APP_RESOURCE_MIME_TYPE,
+} from './server/ui-meta.js';
 
 export { resolveAuth, tryResolveAuth, extractApiKeyFromHeaders } from './server/resolve-auth.js';
 

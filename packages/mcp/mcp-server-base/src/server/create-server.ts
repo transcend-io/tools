@@ -7,7 +7,7 @@ import { DEFAULT_SOMBRA_URL } from '../defaults.js';
 import { isOAuthModeEnabled } from '../oauth/config.js';
 import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
 import { configureOAuthScopes } from '../oauth/scopes.js';
-import type { ToolClients, ToolDefinition } from '../tools/types.js';
+import type { ResourceDefinition, ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
 import { resolveMcpDashboardUrl } from './resolve-dashboard-url.js';
@@ -45,6 +45,11 @@ export interface MCPServerOptions {
   oauthScopes: readonly string[];
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
+  /**
+   * Optional factory that returns MCP resources (e.g. MCP App HTML views).
+   * When provided, the server advertises the `resources` capability.
+   */
+  getResources?: (clients: ToolClients) => ResourceDefinition[];
   /**
    * Optional custom client factory. Receives a {@link CreateClientsArgs}
    * object so new fields can be added without breaking call sites.
@@ -105,10 +110,12 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
             options.createClients,
           );
           const tools = options.getTools(clients);
+          const resources = options.getResources?.(clients) ?? [];
           return buildMcpServer({
             name: options.name,
             version: options.version,
             tools,
+            resources,
             instructions: options.instructions,
           });
         },
@@ -125,14 +132,19 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
     options.createClients,
   );
   const tools = options.getTools(clients);
+  const resources = options.getResources?.(clients) ?? [];
   const server = buildMcpServer({
     name: options.name,
     version: options.version,
     tools,
+    resources,
     instructions: options.instructions,
   });
 
-  logger.info(`Starting ${options.name} v${options.version}...`, { toolCount: tools.length });
+  logger.info(`Starting ${options.name} v${options.version}...`, {
+    toolCount: tools.length,
+    resourceCount: resources.length,
+  });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);

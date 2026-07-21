@@ -157,6 +157,100 @@ describe('buildMcpServer per-tool requireAuth', () => {
   });
 });
 
+describe('buildMcpServer MCP App resources', () => {
+  let httpServer: McpHttpServer;
+  let baseUrl: string;
+
+  const appTool: ToolDefinition = {
+    ...publicTool,
+    name: 'hello_world',
+    description: 'Hello world MCP App demo tool',
+    _meta: { ui: { resourceUri: 'ui://test/hello.html' } },
+  };
+
+  beforeAll(async () => {
+    httpServer = await runMcpHttp(
+      {
+        name: 'resources-test',
+        version: '0.0.1',
+        createServer: () =>
+          buildMcpServer({
+            name: 'resources-test',
+            version: '0.0.1',
+            tools: [appTool],
+            resources: [
+              {
+                uri: 'ui://test/hello.html',
+                name: 'Hello',
+                mimeType: 'text/html;profile=mcp-app',
+                read: async () => ({ text: '<html><body>Hello</body></html>' }),
+              },
+            ],
+          }),
+      },
+      testConfig(0),
+    );
+
+    const addr = httpServer.httpServer.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterAll(async () => {
+    await httpServer.shutdown();
+  });
+
+  it('advertises resources capability and serves UI resource', async () => {
+    const sessionId = await initSession(baseUrl);
+
+    const listRes = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'resources/list',
+        params: {},
+        id: 2,
+      }),
+    });
+    expect(listRes.status).toBe(200);
+    const listText = await listRes.text();
+    expect(listText).toContain('ui://test/hello.html');
+
+    const readRes = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'resources/read',
+        params: { uri: 'ui://test/hello.html' },
+        id: 3,
+      }),
+    });
+    expect(readRes.status).toBe(200);
+    const readText = await readRes.text();
+    expect(readText).toContain('text/html;profile=mcp-app');
+    expect(readText).toContain('<html><body>Hello</body></html>');
+  });
+
+  it('includes ui resourceUri meta on tools/list', async () => {
+    const sessionId = await initSession(baseUrl);
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/list',
+        params: {},
+        id: 4,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    expect(text).toContain('ui://test/hello.html');
+    expect(text).toContain('ui/resourceUri');
+  });
+});
+
 describe('buildMcpServer instructions', () => {
   let httpServer: McpHttpServer;
   let baseUrl: string;

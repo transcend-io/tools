@@ -4,13 +4,14 @@ import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-b
 import packageJson from '../package.json' with { type: 'json' };
 import { AssessmentsMixin } from './graphql.js';
 import { ASSESSMENT_OAUTH_SCOPES } from './scopes.js';
-import { getAssessmentTools } from './tools/index.js';
+import { getAssessmentResources, getAssessmentTools } from './tools/index.js';
 
 createMCPServer({
   name: 'transcend-mcp-assessment',
   version: packageJson.version,
   oauthScopes: ASSESSMENT_OAUTH_SCOPES,
   getTools: getAssessmentTools,
+  getResources: getAssessmentResources,
   createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
     rest: new TranscendRestClient(auth, sombraUrl),
     graphql: new AssessmentsMixin(auth, graphqlUrl),

@@ -1,4 +1,4 @@
-export { getAssessmentTools } from './tools/index.js';
+export { getAssessmentTools, getAssessmentResources } from './tools/index.js';
 export { ASSESSMENT_OAUTH_SCOPES } from './scopes.js';
 export { AssessmentsMixin } from './graphql.js';
 export {
@@ -8,6 +8,11 @@ export {
   type BuildAssessmentLinksInput,
 } from './helpers/buildAssessmentLinks.js';
 
+export {
+  HelloWorldSchema,
+  HELLO_WORLD_RESOURCE_URI,
+  type HelloWorldInput,
+} from './tools/hello_world.js';
 export { AddSectionSchema, type AddSectionInput } from './tools/assessments_add_section.js';
 export {
   AnswerQuestionSchema,
