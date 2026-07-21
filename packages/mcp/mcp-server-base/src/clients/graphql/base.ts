@@ -4,7 +4,7 @@ import { type DocumentNode, print } from 'graphql';
 import { getRequestAuth } from '../../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../../auth.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../../defaults.js';
-import { ToolError, ErrorCode, classifyHttpError } from '../../errors.js';
+import { ToolError, ErrorCode, classifyGraphQLErrors, classifyHttpError } from '../../errors.js';
 import { MCP_CALLER_HEADER, TOOLCALL_ID_HEADER } from '../../http-header-names.js';
 import { getRequestMcpCaller } from '../../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../../tool-call-context.js';
@@ -241,8 +241,7 @@ export class TranscendGraphQLBase {
           (await response.json()) as GraphQLResponse<TResult>;
 
         if (result.errors && result.errors.length > 0) {
-          const errorMessages = result.errors.map((e) => e.message).join('; ');
-          throw new ToolError(ErrorCode.API_ERROR, `GraphQL errors: ${errorMessages}`, false);
+          throw classifyGraphQLErrors(result.errors);
         }
 
         if (!result.data) {
