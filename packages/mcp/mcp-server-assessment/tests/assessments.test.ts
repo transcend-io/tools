@@ -653,7 +653,7 @@ describe('Assessment Tools', () => {
     it('returns a greeting and declares the MCP App resource URI', async () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'hello_world')!;
-      expect(tool.requireAuth).toBe(false);
+      expect(tool.requireAuth).toBe(true);
       expect(tool._meta?.ui?.resourceUri).toBe('ui://assessments/hello-world.html');
 
       const result = await tool.handler({});
