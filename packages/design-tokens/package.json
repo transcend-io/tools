@@ -14,14 +14,17 @@
     "dist"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
-    }
+    },
+    "./tokens.css": "./dist/tokens.css"
   },
   "publishConfig": {
     "access": "public"
@@ -38,6 +41,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@terrazzo/cli": "catalog:",
+    "@terrazzo/plugin-css": "catalog:",
     "@types/lodash": "catalog:",
     "@types/node": "catalog:",
     "colorjs.io": "catalog:",
