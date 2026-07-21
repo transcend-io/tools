@@ -4,7 +4,14 @@ export function createToolResult(
   success: boolean,
   data?: unknown,
   error?: string,
-  meta?: { code?: string; retryable?: boolean },
+  meta?: {
+    /** Machine-readable error code */
+    code?: string;
+    /** Whether the caller may retry the operation */
+    retryable?: boolean;
+    /** Structured error details (e.g. route, requiredScopes) */
+    details?: Record<string, unknown>;
+  },
 ): unknown {
   if (success) {
     return {
@@ -18,6 +25,7 @@ export function createToolResult(
     error: error || 'Unknown error',
     ...(meta?.code && { code: meta.code }),
     ...(meta?.retryable !== undefined && { retryable: meta.retryable }),
+    ...(meta?.details && Object.keys(meta.details).length > 0 && { details: meta.details }),
     timestamp: new Date().toISOString(),
   };
 }
@@ -27,6 +35,7 @@ export function createErrorResult(error: unknown): unknown {
     return createToolResult(false, undefined, error.message, {
       code: error.code,
       retryable: error.retryable,
+      details: error.details,
     });
   }
   return createToolResult(false, undefined, error instanceof Error ? error.message : String(error));
