@@ -1,13 +1,14 @@
 #!/usr/bin/env node
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 /**
  * Bundles the Hello World MCP App UI into a single HTML file under `dist/apps/`.
  *
  * Run after `tsdown` (tsdown cleans `dist/`).
  */
 import * as esbuild from 'esbuild';
-import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const entry = join(root, 'src/apps/hello-world/main.ts');
