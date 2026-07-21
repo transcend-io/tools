@@ -84,8 +84,33 @@ jobs:
 | `promote`         | No       | `true`                      | Promote new revisions to active. Set to `false` to leave revisions as drafts for review in the dashboard.                      |
 | `force`           | No       | `false`                     | Push a new revision even when no changes are detected (e.g. when only env values rotated).                                     |
 | `update-manifest` | No       | `false`                     | Write assigned custom function IDs back into the manifest after pushing. Pair with an auto-commit step to persist them.        |
-| `sombra-id`       | No       | primary Sombra              | The Sombra gateway to sign code against.                                                                                       |
+| `sombra-id`       | No       | primary Sombra              | Default Sombra gateway to sign code against, for entries that don't set `sombra-id` in the manifest.                           |
 | `cli-version`     | No       | `latest`                    | Version of `@transcend-io/cli` to use. Pin this for reproducible builds.                                                       |
+
+## Multiple Sombra gateways
+
+Functions in one manifest may belong to different Sombra gateways — set `sombra-id` per manifest entry and each function is signed against its own gateway. When self-hosted gateways use different internal keys, `sombra-auth` alone is not enough: set `sombra-auth-env` on the manifest entry to the name of an environment variable holding that gateway's key, and export the variable on the action step (composite action steps inherit the step's `env:`):
+
+```yaml
+- name: Push custom functions
+  uses: transcend-io/tools/github-action@main
+  with:
+    api-key: ${{ secrets.TRANSCEND_API_KEY }}
+    sombra-auth: ${{ secrets.SOMBRA_US_INTERNAL_KEY }} # default key
+  env:
+    SOMBRA_EU_INTERNAL_KEY: ${{ secrets.SOMBRA_EU_INTERNAL_KEY }} # for entries with sombra-auth-env
+```
+
+```yaml
+# transcend-functions.yml
+functions:
+  - name: US Function
+    code: ./functions/us.ts
+  - name: EU Function
+    code: ./functions/eu.ts
+    sombra-id: 8c0b1f2a-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    sombra-auth-env: SOMBRA_EU_INTERNAL_KEY
+```
 
 ## How it works
 
