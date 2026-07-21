@@ -1,9 +1,13 @@
 import { ToolError } from '../errors.js';
 
 export function createToolResult(
+  /** Whether the tool call succeeded */
   success: boolean,
+  /** Result payload when successful */
   data?: unknown,
+  /** Human-readable error message when unsuccessful */
   error?: string,
+  /** Structured error metadata for unsuccessful results */
   meta?: {
     /** Machine-readable error code */
     code?: string;
@@ -30,7 +34,10 @@ export function createToolResult(
   };
 }
 
-export function createErrorResult(error: unknown): unknown {
+export function createErrorResult(
+  /** Thrown value or ToolError to serialize into a tool result */
+  error: unknown,
+): unknown {
   if (error instanceof ToolError) {
     return createToolResult(false, undefined, error.message, {
       code: error.code,
@@ -42,7 +49,9 @@ export function createErrorResult(error: unknown): unknown {
 }
 
 export function createListResult(
+  /** Items for the current page */
   items: unknown[],
+  /** Optional pagination metadata */
   options?: {
     /** Total number of items available across all pages */
     totalCount?: number;
