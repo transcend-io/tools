@@ -17,10 +17,8 @@ CSS custom properties on `:root`:
 @import '@transcend-io/design-tokens/tokens.css';
 
 .button {
-  /* both resolve to the same token */
   color: var(--text);
-  background: var(--background-brand-bold);
-  /* background: var(--background-brand-bold-default); */
+  background: var(--background-brand-bold); /* same as --background-brand-bold-default */
 }
 ```
 
