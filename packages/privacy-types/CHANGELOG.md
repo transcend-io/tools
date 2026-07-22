@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.8.4
+
+### Patch Changes
+
+- 54f4aff: added hostThemeMap
+
 ## 5.8.2
 
 ### Patch Changes
