@@ -36,6 +36,12 @@ export const AbsoluteUrlString = t.string;
 /** Type override */
 export type AbsoluteUrlString = t.TypeOf<typeof AbsoluteUrlString>;
 
+/** URL host string */
+export const URLHostString = t.string;
+
+/** Type override */
+export type URLHostString = t.TypeOf<typeof URLHostString>;
+
 /** Top-level configuration shared between the UI layers */
 export const SharedTopLevelConfig = t.type({
   /** Supported locales */
