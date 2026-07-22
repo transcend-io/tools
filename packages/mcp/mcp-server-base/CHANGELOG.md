@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 0.7.0
+
+### Minor Changes
+
+- e410109: Map GraphQL `extensions.code: "ACCESS_DENIED"` to MCP `PERMISSION_ERROR`, and serialize optional `details` (`route`, `requiredScopes`) on tool error results so Agentic Assist can classify scope denials without parsing the English message.
+
 ## 0.6.2
 
 ### Patch Changes

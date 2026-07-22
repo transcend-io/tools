@@ -28,7 +28,7 @@ OAuth credentials for running a domain or unified MCP server locally belong in t
 - **`parseTransportArgs`** — Parses `--transport`, `--port`, `--host`, and related CLI flags / env vars.
 - **`InMemoryEventStore`** — In-memory SSE event store for session resumability.
 - **Tool helpers** — `validateArgs`, `createToolResult`, `createListResult`, common Zod schemas (`PaginationSchema`), and shared TypeScript types (`ToolDefinition`, `ToolClients`, `ToolAnnotations`).
-- **Error utilities** — `ToolError`, `ErrorCode`, `classifyHttpError` for consistent error responses.
+- **Error utilities** — `ToolError`, `ErrorCode`, `classifyHttpError`, `classifyGraphQLErrors` for consistent error responses (including `PERMISSION_ERROR` for GraphQL `ACCESS_DENIED`).
 
 ## Usage
 
