@@ -1,10 +1,32 @@
 export enum ErrorCode {
+  /** Invalid tool arguments or request shape */
   VALIDATION_ERROR = 'VALIDATION_ERROR',
+  /** Missing or invalid credentials (HTTP 401/403, OAuth failures) */
   AUTH_ERROR = 'AUTH_ERROR',
+  /** Missing GraphQL route scopes (or similar authorization denial) */
+  PERMISSION_ERROR = 'PERMISSION_ERROR',
+  /** Requested resource does not exist */
   NOT_FOUND = 'NOT_FOUND',
+  /** Upstream rate limit; may be retried */
   RATE_LIMITED = 'RATE_LIMITED',
+  /** Generic API / GraphQL failure */
   API_ERROR = 'API_ERROR',
+  /** Request aborted due to timeout; may be retried */
   TIMEOUT = 'TIMEOUT',
+}
+
+/**
+ * Stable GraphQL `errors[].extensions.code` for missing route scopes.
+ * Emitted by the Transcend GraphQL server; MCP maps it to {@link ErrorCode.PERMISSION_ERROR}.
+ */
+export const GRAPHQL_ACCESS_DENIED_CODE = 'ACCESS_DENIED' as const;
+
+/** A single GraphQL error payload (message + optional extensions). */
+export interface GraphQLErrorItem {
+  /** Human-readable error message */
+  message: string;
+  /** Structured extensions from the GraphQL server */
+  extensions?: Record<string, unknown>;
 }
 
 export class ToolError extends Error {
@@ -40,4 +62,41 @@ export function classifyHttpError(status: number, body: string): ToolError {
     return new ToolError(ErrorCode.API_ERROR, `Client error (${status}): ${body}`, false);
   }
   return new ToolError(ErrorCode.API_ERROR, `Server error (${status}): ${body}`, true);
+}
+
+/**
+ * Map GraphQL `errors[]` to a {@link ToolError}.
+ *
+ * When any error has `extensions.code === "ACCESS_DENIED"`, returns
+ * {@link ErrorCode.PERMISSION_ERROR} with optional `route` / `requiredScopes`
+ * details from the first such error. Otherwise returns {@link ErrorCode.API_ERROR}.
+ */
+export function classifyGraphQLErrors(errors: GraphQLErrorItem[]): ToolError {
+  const errorMessages = errors.map((e) => e.message).join('; ');
+  const message = `GraphQL errors: ${errorMessages}`;
+
+  const accessDenied = errors.find((e) => e.extensions?.code === GRAPHQL_ACCESS_DENIED_CODE);
+
+  if (!accessDenied) {
+    return new ToolError(ErrorCode.API_ERROR, message, false);
+  }
+
+  const details: Record<string, unknown> = {};
+  const { extensions } = accessDenied;
+
+  if (typeof extensions?.route === 'string') {
+    details.route = extensions.route;
+  }
+  if (Array.isArray(extensions?.requiredScopes)) {
+    details.requiredScopes = extensions.requiredScopes.filter(
+      (scope): scope is string => typeof scope === 'string',
+    );
+  }
+
+  return new ToolError(
+    ErrorCode.PERMISSION_ERROR,
+    message,
+    false,
+    Object.keys(details).length > 0 ? details : undefined,
+  );
 }

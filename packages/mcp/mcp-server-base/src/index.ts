@@ -23,7 +23,14 @@ export {
   DEFAULT_TRANSCEND_API_URL,
 } from './defaults.js';
 
-export { ToolError, ErrorCode, classifyHttpError } from './errors.js';
+export {
+  ToolError,
+  ErrorCode,
+  GRAPHQL_ACCESS_DENIED_CODE,
+  classifyHttpError,
+  classifyGraphQLErrors,
+} from './errors.js';
+export type { GraphQLErrorItem } from './errors.js';
 
 export { validateArgs, z } from './validation/index.js';
 export type { ValidationResult } from './validation/index.js';

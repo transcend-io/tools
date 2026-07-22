@@ -1,10 +1,21 @@
 import { ToolError } from '../errors.js';
 
 export function createToolResult(
+  /** Whether the tool call succeeded */
   success: boolean,
+  /** Result payload when successful */
   data?: unknown,
+  /** Human-readable error message when unsuccessful */
   error?: string,
-  meta?: { code?: string; retryable?: boolean },
+  /** Structured error metadata for unsuccessful results */
+  meta?: {
+    /** Machine-readable error code */
+    code?: string;
+    /** Whether the caller may retry the operation */
+    retryable?: boolean;
+    /** Structured error details (e.g. route, requiredScopes) */
+    details?: Record<string, unknown>;
+  },
 ): unknown {
   if (success) {
     return {
@@ -18,26 +29,37 @@ export function createToolResult(
     error: error || 'Unknown error',
     ...(meta?.code && { code: meta.code }),
     ...(meta?.retryable !== undefined && { retryable: meta.retryable }),
+    ...(meta?.details && Object.keys(meta.details).length > 0 && { details: meta.details }),
     timestamp: new Date().toISOString(),
   };
 }
 
-export function createErrorResult(error: unknown): unknown {
+export function createErrorResult(
+  /** Thrown value or ToolError to serialize into a tool result */
+  error: unknown,
+): unknown {
   if (error instanceof ToolError) {
     return createToolResult(false, undefined, error.message, {
       code: error.code,
       retryable: error.retryable,
+      details: error.details,
     });
   }
   return createToolResult(false, undefined, error instanceof Error ? error.message : String(error));
 }
 
 export function createListResult(
+  /** Items for the current page */
   items: unknown[],
+  /** Optional pagination metadata */
   options?: {
+    /** Total number of items available across all pages */
     totalCount?: number;
+    /** Whether another page of results exists */
     hasNextPage?: boolean;
+    /** Cursor for fetching the next page */
     cursor?: string;
+    /** Human-readable note about pagination behavior */
     paginationNote?: string;
   },
 ): unknown {
