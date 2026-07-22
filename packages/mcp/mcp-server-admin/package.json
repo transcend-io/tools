@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-admin",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "description": "Transcend MCP Server — Admin tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-admin",
   "license": "Apache-2.0",
