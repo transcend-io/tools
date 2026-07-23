@@ -125,9 +125,12 @@ export { resolveMcpDashboardUrl } from './server/resolve-dashboard-url.js';
 export { resolveMcpGraphqlUrl } from './server/resolve-graphql-url.js';
 
 export {
+  assertMcpSombraAiSettings,
+  assertOrganizationMcpSombraEnabled,
   createTranscendRestClient,
   fetchOrganizationSombraContext,
   readSombraEnvConfig,
+  resolveSombraHostForMcp,
   resolveSombraHostUrl,
   resolveSombraUrl,
   SOMBRA_CUSTOMER_KEY_ENV,
@@ -135,6 +138,7 @@ export {
   SOMBRA_URL_ENV,
 } from './server/resolve-sombra-url.js';
 export type {
+  OrganizationAiSetting,
   OrganizationSombraContext,
   ResolveSombraUrlOptions,
 } from './server/resolve-sombra-url.js';

@@ -78,6 +78,38 @@ describe('TranscendRestClient Sombra host and headers', () => {
     expect(client.getBaseUrl()).toBe('https://resolved.sombra.example.com');
   });
 
+  it('re-runs assertReady on every Sombra call while keeping host sticky', async () => {
+    const resolveBaseUrl = vi.fn().mockResolvedValue('https://resolved.sombra.example.com');
+    const assertReady = vi.fn().mockResolvedValue(undefined);
+    const mockFetch = vi.fn().mockImplementation(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ key: 'pk' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, { resolveBaseUrl, assertReady });
+    await client.getSombraPublicKey();
+    await client.getSombraPublicKey();
+
+    expect(assertReady).toHaveBeenCalledTimes(2);
+    expect(resolveBaseUrl).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks the Sombra call when assertReady rejects', async () => {
+    const resolveBaseUrl = vi.fn().mockResolvedValue('https://resolved.sombra.example.com');
+    const assertReady = vi.fn().mockRejectedValue(new Error('MCP × Sombra is disabled'));
+    const mockFetch = vi.fn();
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, { resolveBaseUrl, assertReady });
+    await expect(client.getSombraPublicKey()).rejects.toThrow(/MCP × Sombra is disabled/);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
   it('string constructor remains sticky without resolve', async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ key: 'pk' }), {

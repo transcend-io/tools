@@ -17,19 +17,35 @@ export const SOMBRA_REVERSE_TUNNEL_URLS = [
 const SOMBRA_NETWORKING_DOCS_URL =
   'https://docs.transcend.io/docs/articles/sombra/deploying/customizing-sombra/networking';
 
-const ORGANIZATION_SOMBRA_CUSTOMER_URL_QUERY = `
-  query McpOrganizationSombraCustomerUrl {
+const AI_SETTINGS_DOCS_HINT =
+  'Enable AI and MCP × Sombra under Administration → AI Settings in the Transcend Admin Dashboard.';
+
+const ORGANIZATION_SOMBRA_CONTEXT_QUERY = `
+  query McpOrganizationSombraContext {
     organization {
       sombra {
         customerUrl
+      }
+      aiSetting {
+        isAiEnabled
+        isMcpSombraEnabled
       }
     }
   }
 `;
 
+export interface OrganizationAiSetting {
+  /** Whether AI-powered features are enabled for this organization */
+  isAiEnabled: boolean;
+  /** Whether MCP may use Sombra-backed tools for this organization */
+  isMcpSombraEnabled: boolean;
+}
+
 export interface OrganizationSombraContext {
   /** Customer ingress URL from `organization.sombra.customerUrl` */
   customerUrl: string | null | undefined;
+  /** Org AI / MCP × Sombra settings */
+  aiSetting: OrganizationAiSetting;
 }
 
 export interface ResolveSombraUrlOptions {
@@ -37,6 +53,24 @@ export interface ResolveSombraUrlOptions {
   sombraUrlOverride?: string;
   /** `organization.sombra.customerUrl` when no override is set */
   customerUrl?: string | null;
+}
+
+/**
+ * Enforces org AiSettings before MCP may call Sombra.
+ * Fail-closed when either flag is false or missing.
+ */
+export function assertMcpSombraAiSettings(
+  aiSetting: OrganizationAiSetting | null | undefined,
+): void {
+  if (!aiSetting?.isAiEnabled) {
+    throw new Error(
+      'AI features are disabled for this organization, so MCP cannot call Sombra. ' +
+        AI_SETTINGS_DOCS_HINT,
+    );
+  }
+  if (!aiSetting.isMcpSombraEnabled) {
+    throw new Error('MCP × Sombra is disabled for this organization. ' + AI_SETTINGS_DOCS_HINT);
+  }
 }
 
 /**
@@ -72,7 +106,7 @@ export function resolveSombraUrl(options: ResolveSombraUrlOptions): string {
 }
 
 /**
- * GraphQL-fetches the Sombra customer URL for the authenticated org.
+ * GraphQL-fetches Sombra customer URL and AiSettings for the authenticated org.
  */
 export async function fetchOrganizationSombraContext(
   graphql: TranscendGraphQLBase,
@@ -85,17 +119,44 @@ export async function fetchOrganizationSombraContext(
         /** Customer ingress URL */
         customerUrl: string;
       };
+      /** AI feature settings */
+      aiSetting: OrganizationAiSetting | null;
     };
-  }>(ORGANIZATION_SOMBRA_CUSTOMER_URL_QUERY);
+  }>(ORGANIZATION_SOMBRA_CONTEXT_QUERY);
 
   const organization = data.organization;
   return {
     customerUrl: organization?.sombra?.customerUrl,
+    aiSetting: {
+      isAiEnabled: organization?.aiSetting?.isAiEnabled === true,
+      isMcpSombraEnabled: organization?.aiSetting?.isMcpSombraEnabled === true,
+    },
   };
 }
 
 /**
- * Resolves the sticky Sombra host.
+ * Fetches org Sombra context, enforces AiSettings, and resolves the sticky host.
+ *
+ * Prefer {@link createTranscendRestClient}, which keeps the host sticky but
+ * re-checks AiSettings on every Sombra call.
+ */
+export async function resolveSombraHostForMcp(
+  graphql: TranscendGraphQLBase,
+  options: {
+    /** Sticky host override from `SOMBRA_URL` */
+    sombraUrlOverride?: string;
+  } = {},
+): Promise<string> {
+  const context = await fetchOrganizationSombraContext(graphql);
+  assertMcpSombraAiSettings(context.aiSetting);
+  return resolveSombraUrl({
+    sombraUrlOverride: options.sombraUrlOverride,
+    customerUrl: context.customerUrl,
+  });
+}
+
+/**
+ * Resolves the sticky Sombra host without checking AiSettings.
  *
  * When `sombraUrlOverride` is set, skips GraphQL. Otherwise fetches
  * `organization.sombra.customerUrl`.
@@ -116,6 +177,16 @@ export async function resolveSombraHostUrl(
 }
 
 /**
+ * Fetches and enforces org AiSettings for MCP × Sombra (fail-closed).
+ */
+export async function assertOrganizationMcpSombraEnabled(
+  graphql: TranscendGraphQLBase,
+): Promise<void> {
+  const context = await fetchOrganizationSombraContext(graphql);
+  assertMcpSombraAiSettings(context.aiSetting);
+}
+
+/**
  * Reads optional Sombra env overrides from `process.env`.
  */
 export function readSombraEnvConfig(): {
@@ -131,10 +202,11 @@ export function readSombraEnvConfig(): {
 
 /**
  * Builds a Sombra REST client that lazy-resolves the customer host via GraphQL
- * (sticky) and optionally sends `X-Sombra-Authorization`.
+ * (sticky), re-checks org AiSettings on every Sombra call, and optionally sends
+ * `X-Sombra-Authorization`.
  *
- * The host itself is resolved once. Pass `assertReady` via a follow-up when org
- * AiSettings gating is required.
+ * AiSettings GraphQL runs on each REST call even when `SOMBRA_URL` is set as a
+ * sticky host override. The host itself is resolved once.
  */
 export function createTranscendRestClient(
   auth: AuthCredentials | null,
@@ -152,6 +224,7 @@ export function createTranscendRestClient(
   return new TranscendRestClient(auth, {
     sombraCustomerKey: options.sombraCustomerKey?.trim() || undefined,
     resolveBaseUrl: () => resolveSombraHostUrl(graphql, { sombraUrlOverride: override }),
+    assertReady: () => assertOrganizationMcpSombraEnabled(graphql),
     logger: options.logger,
   });
 }

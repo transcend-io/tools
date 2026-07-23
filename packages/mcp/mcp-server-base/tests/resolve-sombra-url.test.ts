@@ -2,8 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { TranscendGraphQLBase } from '../src/clients/graphql/base.js';
 import {
+  assertMcpSombraAiSettings,
+  assertOrganizationMcpSombraEnabled,
   resolveSombraUrl,
   readSombraEnvConfig,
+  resolveSombraHostForMcp,
   resolveSombraHostUrl,
   SOMBRA_CUSTOMER_KEY_ENV,
   SOMBRA_REVERSE_TUNNEL_URLS,
@@ -54,6 +57,89 @@ describe('resolveSombraUrl', () => {
   });
 });
 
+describe('assertMcpSombraAiSettings', () => {
+  it('passes when both flags are true', () => {
+    expect(() =>
+      assertMcpSombraAiSettings({ isAiEnabled: true, isMcpSombraEnabled: true }),
+    ).not.toThrow();
+  });
+
+  it('throws when AI is disabled', () => {
+    expect(() =>
+      assertMcpSombraAiSettings({ isAiEnabled: false, isMcpSombraEnabled: true }),
+    ).toThrow(/AI features are disabled/);
+  });
+
+  it('throws when MCP × Sombra is disabled', () => {
+    expect(() =>
+      assertMcpSombraAiSettings({ isAiEnabled: true, isMcpSombraEnabled: false }),
+    ).toThrow(/MCP × Sombra is disabled/);
+  });
+
+  it('throws when aiSetting is missing', () => {
+    expect(() => assertMcpSombraAiSettings(undefined)).toThrow(/AI features are disabled/);
+  });
+});
+
+describe('resolveSombraHostForMcp', () => {
+  it('enforces AiSettings then returns override host', async () => {
+    const makeRequest = vi.fn().mockResolvedValue({
+      organization: {
+        sombra: { customerUrl: 'https://from-gql.example.com' },
+        aiSetting: { isAiEnabled: true, isMcpSombraEnabled: true },
+      },
+    });
+    const graphql = { makeRequest } as unknown as TranscendGraphQLBase;
+
+    await expect(
+      resolveSombraHostForMcp(graphql, {
+        sombraUrlOverride: 'https://override.example.com/',
+      }),
+    ).resolves.toBe('https://override.example.com');
+    expect(makeRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses GraphQL customerUrl when override is unset', async () => {
+    const makeRequest = vi.fn().mockResolvedValue({
+      organization: {
+        sombra: { customerUrl: 'https://from-gql.example.com/' },
+        aiSetting: { isAiEnabled: true, isMcpSombraEnabled: true },
+      },
+    });
+    const graphql = { makeRequest } as unknown as TranscendGraphQLBase;
+
+    await expect(resolveSombraHostForMcp(graphql)).resolves.toBe('https://from-gql.example.com');
+  });
+
+  it('blocks when isMcpSombraEnabled is false even with SOMBRA_URL override', async () => {
+    const makeRequest = vi.fn().mockResolvedValue({
+      organization: {
+        sombra: { customerUrl: 'https://from-gql.example.com' },
+        aiSetting: { isAiEnabled: true, isMcpSombraEnabled: false },
+      },
+    });
+    const graphql = { makeRequest } as unknown as TranscendGraphQLBase;
+
+    await expect(
+      resolveSombraHostForMcp(graphql, {
+        sombraUrlOverride: 'https://override.example.com',
+      }),
+    ).rejects.toThrow(/MCP × Sombra is disabled/);
+  });
+
+  it('blocks when isAiEnabled is false', async () => {
+    const makeRequest = vi.fn().mockResolvedValue({
+      organization: {
+        sombra: { customerUrl: 'https://from-gql.example.com' },
+        aiSetting: { isAiEnabled: false, isMcpSombraEnabled: true },
+      },
+    });
+    const graphql = { makeRequest } as unknown as TranscendGraphQLBase;
+
+    await expect(resolveSombraHostForMcp(graphql)).rejects.toThrow(/AI features are disabled/);
+  });
+});
+
 describe('resolveSombraHostUrl', () => {
   it('uses override without GraphQL', async () => {
     const makeRequest = vi.fn();
@@ -71,12 +157,41 @@ describe('resolveSombraHostUrl', () => {
     const makeRequest = vi.fn().mockResolvedValue({
       organization: {
         sombra: { customerUrl: 'https://from-gql.example.com/' },
+        aiSetting: { isAiEnabled: false, isMcpSombraEnabled: false },
       },
     });
     const graphql = { makeRequest } as unknown as TranscendGraphQLBase;
 
     await expect(resolveSombraHostUrl(graphql)).resolves.toBe('https://from-gql.example.com');
     expect(makeRequest).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('assertOrganizationMcpSombraEnabled', () => {
+  it('passes when both flags are true', async () => {
+    const makeRequest = vi.fn().mockResolvedValue({
+      organization: {
+        sombra: { customerUrl: 'https://from-gql.example.com' },
+        aiSetting: { isAiEnabled: true, isMcpSombraEnabled: true },
+      },
+    });
+    const graphql = { makeRequest } as unknown as TranscendGraphQLBase;
+
+    await expect(assertOrganizationMcpSombraEnabled(graphql)).resolves.toBeUndefined();
+  });
+
+  it('throws when MCP × Sombra is disabled', async () => {
+    const makeRequest = vi.fn().mockResolvedValue({
+      organization: {
+        sombra: { customerUrl: 'https://from-gql.example.com' },
+        aiSetting: { isAiEnabled: true, isMcpSombraEnabled: false },
+      },
+    });
+    const graphql = { makeRequest } as unknown as TranscendGraphQLBase;
+
+    await expect(assertOrganizationMcpSombraEnabled(graphql)).rejects.toThrow(
+      /MCP × Sombra is disabled/,
+    );
   });
 });
 
