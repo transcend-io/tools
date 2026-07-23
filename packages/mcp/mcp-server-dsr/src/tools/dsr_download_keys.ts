@@ -15,6 +15,7 @@ export function createDsrDownloadKeysTool(clients: ToolClients) {
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: downloadKeysSchema,
     handler: async ({ requestId }) => {
       const keys = await rest.getDSRDownloadKeys(requestId);

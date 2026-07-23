@@ -20,6 +20,7 @@ export function createDsrRespondErasureTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Confirms erasure completion for the data silo',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: respondErasureSchema,
     handler: async ({ requestId, dataSiloId, profileIds }) => {
       const result = await rest.confirmErasure({

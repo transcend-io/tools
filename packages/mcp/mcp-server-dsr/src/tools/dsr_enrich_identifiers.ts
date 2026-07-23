@@ -19,6 +19,7 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Adds identifiers to the DSR during preflight',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    requireSombra: true,
     zodSchema: enrichIdentifiersSchema,
     handler: async ({ requestId, identifiers }) => {
       const result = await rest.enrichIdentifiers({

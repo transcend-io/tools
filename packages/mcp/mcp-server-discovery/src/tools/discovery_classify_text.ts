@@ -19,6 +19,7 @@ export function createDiscoveryClassifyTextTool(clients: ToolClients) {
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: ClassifyTextSchema,
     handler: async ({ texts, categories, model }) => {
       const results = await rest.classifyText({

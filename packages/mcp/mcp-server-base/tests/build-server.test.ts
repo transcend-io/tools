@@ -206,3 +206,70 @@ describe('buildMcpServer instructions', () => {
     expect(text).toContain('Call docs_list before API tools.');
   });
 });
+
+const sombraTool: ToolDefinition = {
+  name: 'sombra_echo',
+  description: 'Tool that requires Sombra',
+  category: 'test',
+  readOnly: true,
+  requireAuth: false,
+  requireSombra: true,
+  annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  zodSchema: z.object({}),
+  handler: async () => ({ ok: true }),
+};
+
+describe('buildMcpServer requireSombra ListTools meta', () => {
+  let httpServer: McpHttpServer;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    httpServer = await runMcpHttp(
+      {
+        name: 'require-sombra-test',
+        version: '0.0.1',
+        createServer: () =>
+          buildMcpServer({
+            name: 'require-sombra-test',
+            version: '0.0.1',
+            tools: [publicTool, sombraTool],
+          }),
+      },
+      testConfig(0),
+    );
+
+    const addr = httpServer.httpServer.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterAll(async () => {
+    await httpServer.shutdown();
+  });
+
+  it('emits _meta.requireSombra only for tools marked requireSombra: true', async () => {
+    const sessionId = await initSession(baseUrl);
+    const res = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: { ...MCP_HEADERS, [MCP_SESSION_ID_HEADER]: sessionId },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'tools/list',
+        params: {},
+        id: 2,
+      }),
+    });
+    expect(res.status).toBe(200);
+    const text = await res.text();
+    // SSE or JSON body — parse JSON-RPC result payload from the response text
+    const jsonMatch = text.match(/\{[\s\S]*"result"[\s\S]*\}/);
+    expect(jsonMatch).toBeTruthy();
+    const payload = JSON.parse(jsonMatch![0]!) as {
+      result: {
+        tools: Array<{ name: string; _meta?: { requireSombra?: boolean } }>;
+      };
+    };
+    const byName = Object.fromEntries(payload.result.tools.map((t) => [t.name, t]));
+    expect(byName.public_echo?._meta?.requireSombra).toBeUndefined();
+    expect(byName.sombra_echo?._meta?.requireSombra).toBe(true);
+  });
+});
