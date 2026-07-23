@@ -30,6 +30,7 @@ export function createDsrSubmitTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Creates a new data subject request',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    requireSombra: true,
     zodSchema: submitDsrSchema,
     handler: async ({ type, email, subjectType, coreIdentifier, name, locale, isSilent }) => {
       const result = await rest.submitDSR({

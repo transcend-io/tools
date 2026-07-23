@@ -20,6 +20,7 @@ export function createPreferencesQueryTool(clients: ToolClients) {
     category: 'Preference Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: QueryPreferencesSchema,
     handler: async ({ partition, identifiers }) => {
       const result = await rest.queryPreferences({

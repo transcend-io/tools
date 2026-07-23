@@ -20,6 +20,7 @@ export function createDsrRespondAccessTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Uploads access response data for the DSR',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    requireSombra: true,
     zodSchema: respondAccessSchema,
     handler: async ({ requestId, dataSiloId, profiles }) => {
       const result = await rest.respondToAccess({

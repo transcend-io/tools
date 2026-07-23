@@ -18,6 +18,7 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Appends identifiers to the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    requireSombra: true,
     zodSchema: AppendIdentifiersSchema,
     handler: async ({ partition, userId, identifiers }) => {
       const result = await rest.appendIdentifiers(

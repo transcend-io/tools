@@ -25,6 +25,7 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Updates identifiers for the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: UpdateIdentifiersSchema,
     handler: async ({ partition, userId, identifiers }) => {
       const result = await rest.updateIdentifiers(

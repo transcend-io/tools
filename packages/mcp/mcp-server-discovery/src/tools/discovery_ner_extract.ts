@@ -17,6 +17,7 @@ export function createDiscoveryNerExtractTool(clients: ToolClients) {
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: NerExtractSchema,
     handler: async ({ text, entityTypes }) => {
       const result = await rest.extractEntities({

@@ -29,6 +29,7 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Creates or updates preference records for users',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: UpsertPreferencesSchema,
     handler: async ({ partition, records }) => {
       const result = await rest.upsertPreferences({

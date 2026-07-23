@@ -37,6 +37,12 @@ export interface ToolDefinition {
    * Use for tools that only access public resources. Default true.
    */
   requireAuth?: boolean;
+  /**
+   * When true, this tool calls the Sombra REST customer ingress.
+   * Agentic Assist (Prometheus) omits tools where `requireSombra === true`.
+   * Leave undefined for GraphQL-only / non-Sombra tools.
+   */
+  requireSombra?: boolean;
 }
 
 export interface ToolClients {
@@ -80,6 +86,12 @@ export function defineTool<T>(config: {
    * Use for tools that only access public resources. Default true.
    */
   requireAuth?: boolean;
+  /**
+   * When true, this tool calls the Sombra REST customer ingress.
+   * Agentic Assist (Prometheus) omits tools where `requireSombra === true`.
+   * Leave undefined for GraphQL-only / non-Sombra tools.
+   */
+  requireSombra?: boolean;
 }): ToolDefinition {
   // Descriptions are the only signal an LLM caller has for what each argument
   // means, so refuse to construct a tool whose input schema has any field
