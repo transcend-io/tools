@@ -1,9 +1,10 @@
 /**
  * Production default URLs for the Transcend backend services that MCP servers
- * talk to. `TRANSCEND_API_URL` and `SOMBRA_URL` may override the GraphQL and
- * Sombra hosts when unset callers use these constants. OAuth stdio mode probes
- * {@link OAUTH_REGIONAL_ISSUERS} at startup to pick the matching regional API;
- * `TRANSCEND_OAUTH_ISSUER` and `TRANSCEND_DASHBOARD_URL` are test-only overrides.
+ * talk to. `TRANSCEND_API_URL` may override the GraphQL host. `SOMBRA_URL` is an
+ * optional sticky override for the Sombra customer ingress; when unset, MCP
+ * lazy-resolves `organization.sombra.customerUrl` via GraphQL. OAuth stdio mode
+ * probes {@link OAUTH_REGIONAL_ISSUERS} at startup to pick the matching regional
+ * API; `TRANSCEND_OAUTH_ISSUER` and `TRANSCEND_DASHBOARD_URL` are test-only overrides.
  */
 
 /** GraphQL backend API URL (`api.transcend.io`, regional split lives here). */
@@ -18,7 +19,10 @@ export const OAUTH_REGIONAL_ISSUERS = [
   DEFAULT_US_TRANSCEND_API_URL,
 ] as const;
 
-/** Sombra REST API URL — the multi-tenant gateway in front of customer Sombras. */
+/**
+ * Multi-tenant Sombra gateway URL. Kept for docs/tests; MCP no longer boots
+ * with this as an implicit default — set `SOMBRA_URL` or resolve via GraphQL.
+ */
 export const DEFAULT_SOMBRA_URL = 'https://multi-tenant.sombra.transcend.io';
 
 /**

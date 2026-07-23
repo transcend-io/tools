@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import {
   createMCPServer,
+  createTranscendRestClient,
   TranscendGraphQLBase,
-  TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
 
 import packageJson from '../package.json' with { type: 'json' };
@@ -14,9 +14,12 @@ createMCPServer({
   version: packageJson.version,
   oauthScopes: PREFERENCE_OAUTH_SCOPES,
   getTools: getPreferenceTools,
-  createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
-    rest: new TranscendRestClient(auth, sombraUrl),
-    graphql: new TranscendGraphQLBase(auth, graphqlUrl),
-    dashboardUrl,
-  }),
+  createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
+    const graphql = new TranscendGraphQLBase(auth, graphqlUrl);
+    return {
+      rest: createTranscendRestClient(auth, graphql, { sombraUrl, sombraCustomerKey }),
+      graphql,
+      dashboardUrl,
+    };
+  },
 });

@@ -3,16 +3,16 @@
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   buildMcpServer,
-  DEFAULT_SOMBRA_URL,
+  createTranscendRestClient,
   isOAuthModeEnabled,
   parseTransportArgs,
   resolveStdioStartupAuthOptional,
   configureOAuthScopes,
   resolveMcpDashboardUrl,
   resolveMcpGraphqlUrl,
+  readSombraEnvConfig,
   runMcpHttp,
   SimpleLogger,
-  TranscendRestClient,
   type AuthCredentials,
 } from '@transcend-io/mcp-server-base';
 
@@ -32,12 +32,16 @@ const buildServerOptions = {
 
 function createToolRegistry(
   auth: AuthCredentials | null,
-  sombraUrl: string,
+  sombraUrl: string | undefined,
+  sombraCustomerKey: string | undefined,
   graphqlUrl: string,
   dashboardUrl: string,
 ): ToolRegistry {
-  const restClient = new TranscendRestClient(auth, sombraUrl);
   const graphqlClient = new TranscendGraphQLClient(auth, graphqlUrl);
+  const restClient = createTranscendRestClient(auth, graphqlClient, {
+    sombraUrl,
+    sombraCustomerKey,
+  });
   return new ToolRegistry({ rest: restClient, graphql: graphqlClient, dashboardUrl });
 }
 
@@ -46,7 +50,7 @@ async function main(): Promise<void> {
   const isHttpTransport = config.transport === 'http';
   SimpleLogger.setInfoToStdout(isHttpTransport);
   const logger = new SimpleLogger();
-  const sombraUrl = process.env.SOMBRA_URL || DEFAULT_SOMBRA_URL;
+  const { sombraUrl, sombraCustomerKey } = readSombraEnvConfig();
   const dashboardUrl = resolveMcpDashboardUrl();
   const graphqlUrl = await resolveMcpGraphqlUrl(logger);
 
@@ -57,12 +61,19 @@ async function main(): Promise<void> {
         version: VERSION,
         createServer: async (auth) => {
           logger.info('Creating unified MCP server for new HTTP session...', {
-            sombraUrl,
+            sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
             graphqlUrl,
             dashboardUrl,
             authType: auth?.type ?? 'none',
+            hasSombraCustomerKey: Boolean(sombraCustomerKey),
           });
-          const registry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
+          const registry = createToolRegistry(
+            auth,
+            sombraUrl,
+            sombraCustomerKey,
+            graphqlUrl,
+            dashboardUrl,
+          );
           return buildMcpServer({
             ...buildServerOptions,
             tools: registry.getAllTools(),
@@ -78,13 +89,19 @@ async function main(): Promise<void> {
   configureOAuthScopes(UMBRELLA_OAUTH_SCOPES);
   const auth = resolveStdioStartupAuthOptional();
   logger.info('Initializing Transcend API clients...', {
-    sombraUrl,
+    sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
     graphqlUrl,
     dashboardUrl,
     authType: auth?.type ?? (isOAuthModeEnabled() ? 'oauth-pending' : 'none'),
   });
 
-  const toolRegistry = createToolRegistry(auth, sombraUrl, graphqlUrl, dashboardUrl);
+  const toolRegistry = createToolRegistry(
+    auth,
+    sombraUrl,
+    sombraCustomerKey,
+    graphqlUrl,
+    dashboardUrl,
+  );
 
   logger.info(
     `Registered ${toolRegistry.getToolCount()} tools across ${toolRegistry.getCategories().length} categories`,
@@ -108,7 +125,7 @@ async function main(): Promise<void> {
   await server.connect(transport);
 
   logger.info('Transcend MCP Server started successfully', {
-    sombraUrl,
+    sombraUrl: sombraUrl ?? '(lazy GraphQL resolve)',
     graphqlUrl,
     dashboardUrl,
     tools: toolRegistry.getToolCount(),

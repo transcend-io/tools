@@ -28,15 +28,16 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 
 ### Environment variables
 
-| Variable                       | Default                                    | Description                                                                                                     |
-| ------------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | —                                          | Default API key for HTTP transport, or stdio alternative to OAuth. Disables OAuth when set alongside client ID. |
-| `TRANSCEND_API_URL`            | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                |
-| `SOMBRA_URL`                   | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                              |
-| `TRANSCEND_HTTP_PORT`          | `3000`                                     | HTTP listen port (overridden by `--port`)                                                                       |
-| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                                | HTTP listen host (overridden by `--host`)                                                                       |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | —                                          | Comma-separated allowed CORS origins                                                                            |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)                         | Idle session timeout in milliseconds                                                                            |
+| Variable                       | Default                    | Description                                                                                                                              |
+| ------------------------------ | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`            | —                          | Default API key for HTTP transport, or stdio alternative to OAuth. Disables OAuth when set alongside client ID.                          |
+| `TRANSCEND_API_URL`            | `https://api.transcend.io` | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                         |
+| `SOMBRA_URL`                   | _(lazy GraphQL resolve)_   | Sticky Sombra host override. When unset, resolves `organization.sombra.customerUrl` once; AiSettings are re-checked on every Sombra call |
+| `SOMBRA_CUSTOMER_KEY`          | —                          | Optional Sombra customer-ingress key (STS / self-hosted). Sent as `X-Sombra-Authorization: Bearer …`                                     |
+| `TRANSCEND_HTTP_PORT`          | `3000`                     | HTTP listen port (overridden by `--port`)                                                                                                |
+| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                | HTTP listen host (overridden by `--host`)                                                                                                |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | —                          | Comma-separated allowed CORS origins                                                                                                     |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)         | Idle session timeout in milliseconds                                                                                                     |
 
 ## Authentication
 
