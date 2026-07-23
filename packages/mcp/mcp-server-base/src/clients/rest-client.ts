@@ -322,7 +322,11 @@ export class TranscendRestClient {
 
   async listRequestIdentifiers(requestId: string): Promise<Record<string, string>[]> {
     const response = await this.makeRequest<{ identifiers: Record<string, string>[] }>(
-      `/v1/request-identifiers?requestId=${encodeURIComponent(requestId)}`,
+      '/v1/request-identifiers',
+      {
+        method: 'POST',
+        body: JSON.stringify({ requestId }),
+      },
     );
     return response.identifiers || [];
   }
