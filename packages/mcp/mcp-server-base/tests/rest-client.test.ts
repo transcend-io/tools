@@ -125,4 +125,28 @@ describe('TranscendRestClient Sombra host and headers', () => {
       'http://localhost:9/public-keys/sombra-general-signing-key',
     );
   });
+
+  it('listRequestIdentifiers POSTs requestId in the body', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ identifiers: [{ email: 'a@b.com' }] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    const identifiers = await client.listRequestIdentifiers('d6e2445a-32d2-4c35-9aa5-9e80cb8e3f89');
+
+    expect(identifiers).toEqual([{ email: 'a@b.com' }]);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toBe('https://sombra.example.com/v1/request-identifiers');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body)).toEqual({
+      requestId: 'd6e2445a-32d2-4c35-9aa5-9e80cb8e3f89',
+    });
+  });
 });
