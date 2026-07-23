@@ -2237,6 +2237,7 @@ enum CookieOrderField {
   createdAt
   updatedAt
   lastDiscoveredAt
+  occurrences
 }
 
 enum DataFlowType {
