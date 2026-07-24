@@ -434,6 +434,7 @@ enum ScopeName {
   manageIntlMessages
   viewIntlMessages
   llmLogTransfer
+  viewWorkflows
   manageWorkflows
   viewDataSubCategories
   manageDataSubCategories
@@ -507,6 +508,7 @@ enum IdentifierType {
   adobeAudienceManagerId
   adobeExperienceCloudId
   adobeTargetId
+  adobeCampaignRecipientId
   transcend
 }
 
@@ -676,6 +678,8 @@ enum DatabaseModelName {
   CatalogCatalogCategory
   CatalogAiFeature
   ComplianceReportToken
+  CustomFunctionUser
+  CustomFunctionTeam
   DataPointLevelUser
   SubDataPointSubject
   DataPointUser
@@ -921,6 +925,11 @@ enum DatabaseModelName {
   dataSubCategory
   dataCollection
   dataSilo
+  DropArtifact
+  dropBrokerCredential
+  DropRunRequest
+  dropRun
+  DropSubmissionDiscrepancy
   dataPoint
   subDataPoint
   unstructuredSubDataPointRecommendation
@@ -1006,7 +1015,9 @@ enum DatabaseModelName {
   catalogCategory
   aiFeature
   aiUsageEvidenceItem
+  aiBaseModelDeveloperEvidenceItem
   customAiFeature
+  inaccurateAiFeatureReport
   vendorAiDraft
   saaSVendor
   aiDocumentationLink
@@ -2376,6 +2387,11 @@ enum PostCompileStatus {
   DOWNLOADABLE
 }
 
+enum AiBaseModelDeveloperEvidenceSourceType {
+  NAMED_SUB_PROCESSOR
+  OTHER_PUBLIC_DOCUMENTATION
+}
+
 enum AiDocumentationLinkType {
   AI_POLICY
   AI_DISCLOSURE
@@ -2384,6 +2400,11 @@ enum AiDocumentationLinkType {
   PRIVACY
   TERMS
   OTHER
+}
+
+enum AiDocumentationLinkTarget {
+  VENDOR
+  INTEGRATION
 }
 
 enum BusinessEntityOrderField {
@@ -2786,6 +2807,96 @@ enum DataProcessingAgreementStatus {
   MISSING
 }
 
+enum DropBrokerEnvironment {
+  sandbox
+  production
+}
+
+enum CppaWireListType {
+  NDZ
+  EMAIL
+  PHONE
+  MAID
+  NVIN
+  CTVID
+}
+
+enum DropListType {
+  email
+  phone
+  maid
+  ctv
+  ndz
+  name_vin
+}
+
+enum DropSubmissionDiscrepancyResult {
+  failed
+  missing
+}
+
+enum DropRunSourcePattern {
+  BROKER_OWNED
+  TRANSCEND_OWNED
+}
+
+enum DropBrokerMatchMode {
+  FILE_EXCHANGE
+  REST_LOOKUP
+  MANUAL
+}
+
+enum DropRunState {
+  DOWNLOADED
+  AWAITING_BROKER_MATCH
+  INTAKE_IN_PROGRESS
+  DSRS_CREATED
+  REPORT_GENERATED
+  REPORT_SUBMITTED
+  AMENDED
+  FORCE_FINALIZED
+  FAILED
+}
+
+enum DropRunMode {
+  LIVE
+  SANDBOX
+}
+
+enum DropArtifactType {
+  CPPA_DOWNLOAD
+  MATCHED_RECORDS_UPLOAD
+  RESPONSE_CSV
+  AMEND_CSV
+  SUBMISSION_SUMMARY
+  RESPONSE_MANIFEST
+}
+
+enum DropArtifactAuthorKind {
+  USER
+  DAEMON
+  CPPA
+}
+
+enum DropSampleRowStatus {
+  OK
+  WARNING
+  ERROR
+}
+
+enum DropSessionIssueLevel {
+  WARNING
+  ERROR
+}
+
+enum DropPollInterval {
+  EVERY_HOUR
+  EVERY_6_HOURS
+  EVERY_12_HOURS
+  DAILY
+  WEEKLY
+}
+
 enum ActivityCode {
   REQUEST_DATA_SILO_ERROR
   REQUEST_DATA_SILO_ACTION_REQUIRED
@@ -2886,10 +2997,13 @@ enum DownloadAndDecryptError {
   DECRYPTION_FAILED_FINALIZATION
   STREAM_PIPELINE_TIMEOUT
   SINK_STALL_TIMEOUT
+  SERVICE_WORKER_LOST
+  SINK_BACKPRESSURE_TIMEOUT
   STREAMSAVER_INIT_FAILED
   BROWSER_BLOCKED
   NETWORK_ERROR
   SAVE_DIALOG_CANCELLED
+  SAVE_DIALOG_UNAVAILABLE
   NATIVE_WRITER_FAILED
   UNKNOWN
 }
@@ -2903,6 +3017,7 @@ enum DownloadAndDecryptEventType {
   PHASE_COMPLETE
   DOWNLOAD_SUCCEEDED
   ERROR_RECOVERED
+  STALLED
   ERROR
 }
 
@@ -3288,8 +3403,8 @@ enum PlaintextReasonStaticType {
 }
 
 enum CustomFunctionSource {
-  DSR
-  RULES_AUTOMATION
+  UI
+  API
 }
 
 enum CustomFunctionType {
@@ -3656,6 +3771,17 @@ enum PrivacyCenterType {
   PREVIEW
 }
 
+enum PrivacyCenterModule {
+  PRIVACY_CENTER
+  POLICIES
+  MESSAGES
+  SUBJECTS
+  REQUESTS_PROCESSED_STATS
+  PURPOSES
+  WORKFLOW_CONFIGS
+  TRACKING_TECHNOLOGY
+}
+
 enum PrivacyCenterAssetName {
   logo
   favicon
@@ -3913,6 +4039,7 @@ enum TableId {
   DATA_INVENTORY_SENSITIVE_CATEGORIES
   MAESTRO_RULE_EXECUTION_HISTORY
   ACTION_ITEMS
+  CUSTOM_FUNCTION_ACTIVITY
 }
 
 enum IntegrationsDataSilosColumnName {
@@ -4013,6 +4140,7 @@ enum DataCategoriesColumnName {
   dataPointCount
   dataSiloRegions
   dataSilos
+  dataSubCategoryId
   description
   owners
   identifier
@@ -4036,6 +4164,7 @@ enum PurposesColumnName {
   owners
   purpose
   purposeCategory
+  purposeSubCategoryId
   subCategoryName
   subDataPointCount
   subDataPointRetentionSchedules
@@ -4076,6 +4205,7 @@ enum VendorsColumnName {
 
 enum BusinessEntitiesColumnName {
   address
+  businessEntityId
   catalogRecipients
   dataProtectionOfficerEmail
   dataProtectionOfficerName
@@ -4217,6 +4347,7 @@ enum DsrIncomingRequestColumnName {
   successfullyCompletedAt
   replyToEmailAddresses
   details
+  dropRecordCount
 }
 
 enum ProcessingActivitiesColumnName {
@@ -4226,6 +4357,7 @@ enum ProcessingActivitiesColumnName {
   owners
   businessEntities
   dataSilos
+  processingActivityId
   vendors
   securityMeasureDetails
   controllerships
@@ -4384,6 +4516,7 @@ enum AuditEventCode {
   VENDOR_TEAM
   VENDOR_BUSINESS_ENTITY
   VENDOR_ATTRIBUTE
+  VENDOR_AI_USAGE
   SAAS_VENDOR
   DATA_SUB_CATEGORY
   IDENTIFIER
@@ -4432,6 +4565,10 @@ enum AuditEventCode {
   CONSENT_SITE
   AIRGAP_BUNDLE_TCF_STACK
   AIRGAP_PARTITION
+  AIRGAP_PREFIX_MODULE
+  AIRGAP_PREFIX_MODULE_RELEASE
+  AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE
+  AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE_SETTINGS
   RISK_FRAMEWORK
   RISK_LEVEL
   RISK_CATEGORY
@@ -4443,6 +4580,7 @@ enum AuditEventCode {
   PREFERENCE_TOPIC
   CONSENT_WORKFLOW_TRIGGER
   FEATURE
+  DATA_SUBJECT
   VENDOR_LIST
   CONSENT_UI_VARIANT
   CONSENT_UI_THEME
@@ -4459,6 +4597,32 @@ enum AuditEventCode {
   MAESTRO_RULE_TRIGGER
   MAESTRO_SECRET
   MAESTRO_CUSTOM_FUNCTION
+  DROP_RUN
+  DROP_BROKER_CREDENTIAL
+}
+
+enum AiFeatureAuditChangeKind {
+  REPORTED_AS_INACCURATE
+  REPORTED_AS_INACCURATE_AND_HIDDEN
+  MARKED_HIGH_RISK
+  CLEARED_HIGH_RISK
+  VISIBILITY_SHOWN
+  VISIBILITY_HIDDEN
+}
+
+enum DropRunLifecycleKind {
+  RUN_INGESTED
+  CPPA_DOWNLOADED
+  DSRS_CREATED
+  RECORD_MATCHED
+  RECORD_UNMATCHED
+  SUPPRESSION_APPLIED
+  REPORT_GENERATED
+  REPORT_SUBMITTED
+  REPORT_AMENDED
+  SUBMISSION_SUMMARY_RECEIVED
+  SUBMISSION_DISCREPANCY_FLAGGED
+  RUN_FORCE_FINALIZED
 }
 
 enum AuditEventBaseModelCode {
@@ -4513,6 +4677,7 @@ enum AuditEventBaseModelCode {
   CONSENT_SITE
   AIRGAP_BUNDLE_TCF_STACK
   AIRGAP_PARTITION
+  AIRGAP_PREFIX_MODULE
   RISK_FRAMEWORK
   RISK_LEVEL
   RISK_CATEGORY
@@ -4522,6 +4687,7 @@ enum AuditEventBaseModelCode {
   PREFERENCE_TOPIC
   CONSENT_WORKFLOW_TRIGGER
   FEATURE
+  DATA_SUBJECT
   VENDOR_LIST
   CONSENT_UI_VARIANT
   CONSENT_UI_THEME
@@ -4530,6 +4696,8 @@ enum AuditEventBaseModelCode {
   MAESTRO_CUSTOM_FUNCTION
   MAESTRO_RULE_TRIGGER
   MAESTRO_SECRET
+  DROP_RUN
+  DROP_BROKER_CREDENTIAL
 }
 
 enum CONSENT_AUDIT_EVENTS {
@@ -4877,6 +5045,8 @@ type Query {
   currentDnsRecords(input: CurrentDnsRecordsInput!): CurrentDnsRecordsPayload!
   currentEmailDomains: [EmailDomain!]!
   currentEmailSenderAddresses(input: CurrentEmailSenderAddressesInput!): CurrentEmailSenderAddressesPayload!
+  customFunctionRunFileLink(input: CustomFunctionRunFileLinkInput!): CustomFunctionRunFileLinkPayload!
+  customFunctionRuns(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionRunFilterInput): CustomFunctionRunsPayload!
   customFunctions(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionFilterInput): CustomFunctionsPayload!
   customSyncEndpoints(id: ID!): CustomSyncEndpointsPayload!
   dataCategories(first: Int, offset: Int = 0, last: Int, filterBy: DataCategoryFiltersInput): DataCategoriesPayload!
@@ -4907,6 +5077,10 @@ type Query {
   discoClassScans(first: Int, offset: Int = 0, last: Int, filterBy: DiscoClassScanFiltersInput): DiscoClassScansPayload!
   downloadFiles(first: Int, offset: Int = 0, last: Int, dhEncrypted: String, filterBy: DownloadFileFiltersInput!, orderBy: [DownloadFileOrder!], lookup: PrivacyCenterLookupInput): DownloadFilesPayload!
   downloadFilesCountsOnly(dhEncrypted: String!, filterBy: DownloadFileFiltersInput!, lookup: PrivacyCenterLookupInput): DownloadFilesCountsOnlyPayload!
+  dropBrokerConfig: DropBrokerConfigPayload!
+  dropRun(id: ID!): DropRunSummary!
+  dropRunRequests(first: Int, last: Int, before: String, after: String, filterBy: DropRunRequestFiltersInput!): DropRunRequestsPayload!
+  dropRuns(first: Int, last: Int, before: String, after: String, filterBy: DropRunFiltersInput): DropRunsPayload!
   enricher(id: ID!): Enricher!
   enrichers(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: EnricherFiltersInput, orderBy: [EnricherOrder!]): EnrichersPayload!
   experiences(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ExperienceFiltersInput, orderBy: [ExperienceOrder!]): ExperiencesPayload!
@@ -5036,6 +5210,7 @@ type Query {
   user: CurrentUser
   users(first: Int, offset: Int = 0, last: Int, filterBy: UserFiltersInput, orderBy: [UserOrder!]): UsersPayload!
   vendorCommunicationsMetadata(first: Int, offset: Int = 0, last: Int, input: VendorCommunicationsMetadataInput!): VendorCommunicationsMetadataPayload!
+  vendorModelProviders: VendorModelProviders!
   vendors(first: Int, offset: Int = 0, last: Int, filterBy: VendorsFiltersInput, orderBy: [VendorOrder!], useMaster: Boolean, isExportCsv: Boolean): VendorsPayload!
   workflowCommunicationsSettings(input: WorkflowConfigIdInput!): WorkflowCommunicationsSettingsPayload!
   workflowConfig(input: WorkflowConfigInput!): WorkflowConfigPayload!
@@ -5062,7 +5237,7 @@ type Mutation {
   approveRequests(input: ApproveRequestsInput!): ApproveRequestsPayload!
   approveRequestSecondary(input: CommunicationInput!): ApproveRequestSecondaryPayload!
   archiveCustomFunction(input: ArchiveCustomFunctionInput!): ArchiveCustomFunctionPayload!
-  assignConsentSitesToConsentUiTheme(input: AssignConsentSitesToConsentUiThemeInput!): AssignConsentSitesToConsentUiThemePayload!
+  assignMaestroRuleCustomFunction(input: AssignMaestroRuleCustomFunctionInput!): AssignMaestroRuleCustomFunctionPayload!
   assumeRole(id: ID!, publicKey: String!): AssumeRolePayload!
   bulkRetryProfileDataPoints(input: BulkRetryProfileDataPointsInput!): BulkRetryProfileDataPointsPayload!
   bulkUnwrapProfileIdentifiers(input: BulkUnwrapProfileIdentifiersInput!, dhEncrypted: String!): BulkUnwrapProfileIdentifiersPayload!
@@ -5110,6 +5285,7 @@ type Mutation {
   createContract(input: CreateContractInput!): CreateContractPayload!
   createContractScan(input: CreateContractScanInput!): CreateContractScanPayload!
   createCopiedComplianceReport(useMaster: Boolean, isExportCsv: Boolean, input: CreateCopiedComplianceReportInput!): CreateCopiedComplianceReportPayload!
+  createCustomFunction(input: CreateCustomFunctionInput!, dhEncrypted: String): CreateCustomFunctionPayload!
   createDataCollection(input: NewDataCollectionInput!): CreateDataCollectionPayload!
   createDataFlows(input: CreateDataFlowInput!): CreateDataFlowsPayload!
   createDataReport(input: CreateDataReportInput!): CreateDataReportPayload!
@@ -5240,14 +5416,14 @@ type Mutation {
   deleteSensitiveCategories(input: DeleteSensitiveCategoriesInput!): DeleteSensitiveCategoriesPayload!
   deleteSoftwareDevelopmentKits(input: DeleteSoftwareDevelopmentKitsInput!): DeleteSoftwareDevelopmentKitsPayload!
   deleteSubDataPoints(input: DeleteSubDataPointsInput!): DeleteSubDataPointsPayload!
-  deleteSubject(id: ID!, skipPublish: Boolean): DeleteSubjectPayload!
+  deleteSubject(id: ID!, skipPublish: Boolean, confirmDisableWorkflows: Boolean): DeleteSubjectPayload!
   deleteTeam(id: ID!): DeleteTeamPayload!
   deleteTemplate(id: ID!): DeleteTemplatePayload!
   deleteVendors(input: DeleteVendorsInput!): DeleteVendorsPayload!
   deleteWorkflow(input: DeleteWorkflowInput!): DeleteWorkflowPayload!
   deployCloudfront(input: PrivacyCenterIdInput!): DeployCloudfrontPayload!
   deployConsentManagerBundle(id: ID!, input: DeployConsentManagerInput!): DeployConsentManagerBundlePayload!
-  deployDraftVersionForPrivacyCenter(input: PrivacyCenterIdInput!): DeployDraftVersionForPrivacyCenterPayload!
+  deployDraftVersionForPrivacyCenter(input: DeployDraftVersionForPrivacyCenterInput!): DeployDraftVersionForPrivacyCenterPayload!
   destroyAccount(input: DestroyUserInput!): DestroyAccountPayload!
   determineLoginMethod(input: LoginDetailsInput!): DetermineLoginMethodPayload!
   disableExperiences(input: DisableExperiencesInput!): DisableExperiencesPayload!
@@ -5292,6 +5468,7 @@ type Mutation {
   oauthRevoke(input: OAuthRevokeInput!): OauthRevokePayload!
   oauthToken(input: OAuthTokenInput!): OauthTokenPayload!
   placeRequestOnHold(id: ID!): PlaceRequestOnHoldPayload!
+  pollDropForRequests: PollDropForRequestsPayload!
   prepareDataSubjectRequestAttachments(input: PrepareDataSubjectRequestAttachmentsInput!, lookup: PrivacyCenterLookupInput, dhEncrypted: String!): PrepareDataSubjectRequestAttachmentsPayload!
   prepareRequestAttachments(input: PrepareRequestAttachmentsInput!): PrepareRequestAttachmentsPayload!
   privacyCenterEmailLogin(lookup: PrivacyCenterLookupInput, input: EmailLoginInput!): PrivacyCenterEmailLoginPayload!
@@ -5302,7 +5479,6 @@ type Mutation {
   reconnectDataSilo(input: ReconnectDataSiloInput!, dhEncrypted: String!): ReconnectDataSiloPayload!
   redactRequestFiles(input: RedactRequestFilesInput!): RedactRequestFilesPayload!
   refetchSubDataPointSample(input: RefetchSubDataPointSampleInput!): RefetchSubDataPointSamplePayload!
-  removeConsentSitesFromConsentUiTheme(input: RemoveConsentSitesFromConsentUiThemeInput!): RemoveConsentSitesFromConsentUiThemePayload!
   removeDataSiloFromWorkflowConfig(input: WorkflowDataSiloInput!): RemoveDataSiloFromWorkflowConfigPayload!
   removeEnrichersFromWorkflowConfig(input: RemoveEnrichersFromWorkflowConfigInput!): RemoveEnrichersFromWorkflowConfigPayload!
   removeFileUploadsFromWorkflowConfig(input: RemoveFileUploadsFromWorkflowConfigInput!): RemoveFileUploadsFromWorkflowConfigPayload!
@@ -5310,6 +5486,7 @@ type Mutation {
   removeSombra(id: ID!): RemoveSombraPayload!
   removeTCFStacksFromBundle(input: SetTCFStacksInput!): RemoveTcfStacksFromBundlePayload!
   removeUser(id: ID, input: RemoveUserInput): RemoveUserPayload!
+  reportAiFeatureAsInaccurate(input: ReportAiFeatureAsInaccurateInput!): ReportAiFeatureAsInaccuratePayload!
   reportPromptRun(input: ReportPromptRunInput!): ReportPromptRunPayload!
   reprocessComplianceReport(input: ReprocessComplianceReportInput!): ReprocessComplianceReportPayload!
   requestCertificate(input: PrivacyCenterIdInput!): RequestCertificatePayload!
@@ -5351,6 +5528,7 @@ type Mutation {
   setAiFeatureHighRiskForVendor(input: SetAiFeatureHighRiskForVendorInput!): SetAiFeatureHighRiskForVendorPayload!
   setAiFeatureVisibilityForVendor(input: SetAiFeatureVisibilityForVendorInput!): SetAiFeatureVisibilityForVendorPayload!
   setAirgapBundleTcfStacks(input: SetTCFStacksInput!): SetAirgapBundleTcfStacksPayload!
+  setDropBrokerConfig(input: SetDropBrokerConfigInput!, dhEncrypted: String): SetDropBrokerConfigPayload!
   setOrgNotificationDestinationAllowList(input: AllowNotificationDestinationsInput!): SetOrgNotificationDestinationAllowListPayload!
   setRequestsProcessedDisclosureStatsSettings(input: RequestsProcessedDisclosureStatsSettingsInput!): SetRequestsProcessedDisclosureStatsSettingsPayload!
   setResourceAttributes(input: SetResourceAttributesInput!): SetResourceAttributesPayload!
@@ -5428,7 +5606,7 @@ type Mutation {
   updateConsentUiVariant(input: UpdateConsentUiVariantInput!): UpdateConsentUiVariantPayload!
   updateContracts(input: UpdateContractsInput!): UpdateContractsPayload!
   updateContractScans(input: UpdateContractScansInput!): UpdateContractScansPayload!
-  updateCustomFunction(input: UpdateCustomFunctionInput!, dhEncrypted: String!): UpdateCustomFunctionPayload!
+  updateCustomFunction(input: UpdateCustomFunctionInput!, dhEncrypted: String): UpdateCustomFunctionPayload!
   updateDataFlows(input: UpdateDataFlowsInput!): UpdateDataFlowsPayload!
   updateDataPointLevel(input: UpdateDataPointLevelInput!): UpdateDataPointLevelPayload!
   updateDataReports(input: UpdateDataReportsInput!): UpdateDataReportsPayload!
@@ -5492,6 +5670,7 @@ type Mutation {
   updateSombraOAuthConfig(input: UpdateSombraOAuthConfigInput!, dhEncrypted: String!): UpdateSombraOAuthConfigPayload!
   updateSombraTenantConfig(dhEncrypted: String!): UpdateSombraTenantConfigPayload!
   updateSsoProvider(input: SsoProviderInput!, dhEncrypted: String!): UpdateSsoProviderPayload!
+  updateStandaloneCustomFunction(input: UpdateStandaloneCustomFunctionInput!, dhEncrypted: String): UpdateStandaloneCustomFunctionPayload!
   updateSubDataPoints(input: UpdateSubDataPointsInput!): UpdateSubDataPointsPayload!
   updateSubject(input: UpdateSubjectInput!): UpdateSubjectPayload!
   updateSyncEndpoint(input: UpdateSyncEndpointInput!): UpdateSyncEndpointPayload!
@@ -6010,11 +6189,22 @@ type AgentsPayload {
   totalCount: Int!
 }
 
+type AiBaseModelDeveloperEvidenceItemPreview {
+  id: ID!
+  providerName: String!
+  url: String!
+  quote: String!
+  accessedAt: Date!
+  sourceType: AiBaseModelDeveloperEvidenceSourceType!
+}
+
 type AiDocumentationLinkPreview {
   id: ID!
   type: AiDocumentationLinkType!
   name: String!
   url: String!
+  catalogId: ID
+  target: AiDocumentationLinkTarget
 }
 
 type AiFeaturePreview {
@@ -6128,6 +6318,41 @@ type AirgapBundleVersion {
   gpp: String
   tcfStylesheet: String
   tcfVendorsList: String
+  tcfGvlAr: String
+  tcfGvlBg: String
+  tcfGvlBs: String
+  tcfGvlCs: String
+  tcfGvlDa: String
+  tcfGvlDe: String
+  tcfGvlEl: String
+  tcfGvlEn: String
+  tcfGvlEs: String
+  tcfGvlFi: String
+  tcfGvlFr: String
+  tcfGvlHe: String
+  tcfGvlHi: String
+  tcfGvlHr: String
+  tcfGvlHu: String
+  tcfGvlId: String
+  tcfGvlIs: String
+  tcfGvlIt: String
+  tcfGvlJa: String
+  tcfGvlKo: String
+  tcfGvlLt: String
+  tcfGvlMs: String
+  tcfGvlNl: String
+  tcfGvlNo: String
+  tcfGvlPl: String
+  tcfGvlPtBr: String
+  tcfGvlRo: String
+  tcfGvlRu: String
+  tcfGvlSrLatn: String
+  tcfGvlSv: String
+  tcfGvlTh: String
+  tcfGvlTr: String
+  tcfGvlUk: String
+  tcfGvlVi: String
+  tcfGvlZh: String
   tcfEn: String
   tcfHe: String
   tcfBs: String
@@ -6230,6 +6455,7 @@ input AirgapVersionsInput {
 type AiSetting {
   id: ID!
   isAiEnabled: Boolean!
+  isMcpSombraEnabled: Boolean!
 }
 
 type AiUsageEvidenceItemPreview {
@@ -6467,6 +6693,22 @@ type ApplicationUsersPayload {
   totalCount: Int!
 }
 
+input ApplyApprovedVendorAiDraftInput {
+  approvedPayloadJson: String!
+}
+
+type ApplyApprovedVendorAiDraftResult {
+  draftId: ID!
+  status: String!
+  reviewedByUserId: ID
+  reviewedAt: String
+  reviewNotes: String
+  applied: Boolean!
+  alreadyApproved: Boolean!
+  saaSVendorId: ID
+  integrationName: String
+}
+
 type ApproveRequestPayload {
   clientMutationId: String
   request: Request!
@@ -6489,17 +6731,45 @@ input ApproveRequestsInput {
   isSilent: Boolean
 }
 
+input ApproveVendorAiDraftInput {
+  draftId: ID!
+  reviewNotes: String
+  proposedFieldsOverrideJson: String
+  evidenceOverrideJson: String
+}
+
+type ApproveVendorAiDraftResult {
+  draftId: ID!
+  status: String!
+  reviewedByUserId: ID
+  reviewedAt: String
+  reviewNotes: String
+  approved: Boolean!
+  alreadyApproved: Boolean!
+  saaSVendorId: ID
+  integrationName: String
+  fieldsOverridden: Boolean!
+  evidenceOverridden: Boolean!
+  contentfulEntryIds: [String!]
+  approvedPayloadJson: String!
+}
+
 type ArchiveCustomFunctionPayload {
   clientMutationId: String
-  customFunction: CustomFunction!
-  dependencyWarnings: [CustomFunctionLifecycleDependencyWarning!]!
+  results: [ArchiveCustomFunctionResult!]!
   blocked: Boolean!
   success: Boolean!
 }
 
 input ArchiveCustomFunctionInput {
-  id: ID!
+  ids: [ID!]!
   dryRun: Boolean
+}
+
+type ArchiveCustomFunctionResult {
+  customFunction: CustomFunction!
+  dependencyWarnings: [CustomFunctionLifecycleDependencyWarning!]!
+  blocked: Boolean!
 }
 
 type AssessmentAnswer implements AssessmentAnswerInterface {
@@ -7160,15 +7430,14 @@ type AssetFilesPayload {
   totalCount: Int!
 }
 
-type AssignConsentSitesToConsentUiThemePayload {
+type AssignMaestroRuleCustomFunctionPayload {
   clientMutationId: String
-  consentUiTheme: ConsentUiTheme!
+  maestroRule: MaestroRule!
 }
 
-input AssignConsentSitesToConsentUiThemeInput {
-  airgapBundleId: ID!
-  consentUiThemeId: ID!
-  consentSiteIds: [ID!]!
+input AssignMaestroRuleCustomFunctionInput {
+  maestroRuleId: ID!
+  customFunctionId: ID!
 }
 
 input AssociateReplyWithSombraInput {
@@ -7508,12 +7777,15 @@ input AuditEventFiltersInput {
   consentServiceIds: [ID!]
   consentSiteIds: [ID!]
   airgapPartitionIds: [ID!]
+  airgapPrefixModuleIds: [ID!]
+  airgapPrefixModuleReleaseIds: [ID!]
   saaSCategoryIds: [ID!]
   riskFrameworkIds: [ID!]
   riskLevelIds: [ID!]
   riskCategoryIds: [ID!]
   customFunctionIds: [ID!]
   featureIds: [ID!]
+  subjectIds: [ID!]
   consentUiVariantIds: [ID!]
   workflowConfigIds: [ID!]
   maestroRuleIds: [ID!]
@@ -7573,6 +7845,9 @@ type AuditEventPreviewRaw {
   consentServiceId: ID
   consentSiteId: ID
   airgapPartitionId: ID
+  airgapPrefixModuleId: ID
+  airgapPrefixModuleReleaseId: ID
+  AirgapBundleAirgapPrefixModuleId: ID
   saaSCategoryId: ID
   riskFrameworkId: ID
   riskLevelId: ID
@@ -7583,6 +7858,7 @@ type AuditEventPreviewRaw {
   processingPurposeSubCategoryId: ID
   processingActivityId: ID
   subDataPointId: ID
+  subjectId: ID
   consentUiVariantId: ID
   workflowConfigId: ID
   maestroRuleId: ID
@@ -8902,6 +9178,7 @@ input ConsentApplicationUpsertInput {
 type ConsentHost {
   id: ID!
   host: String!
+  site: String!
   user: UserPreview
   lastDiscoveredAt: Date
   description: String
@@ -8912,6 +9189,8 @@ type ConsentHost {
   dataFlowCountTriageLastWeek: Int!
   cookieCountApprovedLastWeek: Int!
   cookieCountTriageLastWeek: Int!
+  consentUiThemeId: ID
+  consentUiTheme: ConsentUiThemePreview
 }
 
 type ConsentHostsPayload {
@@ -9243,6 +9522,11 @@ input ConsentUiThemeConfigInput {
 
 input ConsentUiThemeFilterInput {
   id: ID
+}
+
+type ConsentUiThemePreview {
+  id: ID!
+  name: String!
 }
 
 type ConsentUiThemesPayload {
@@ -10112,6 +10396,25 @@ input CreateCopiedComplianceReportInput {
   description: String
 }
 
+type CreateCustomFunctionPayload {
+  clientMutationId: String
+  customFunction: CustomFunction!
+  success: Boolean!
+}
+
+input CreateCustomFunctionInput {
+  type: CustomFunctionType!
+  dataSiloId: ID
+  sombraId: ID
+  setActive: Boolean
+  name: String
+  description: String
+  ownerUserIds: [ID!]
+  ownerTeamIds: [ID!]
+  signedCodeJwt: String
+  signedCodeContextJwt: String
+}
+
 type CreatedApiKey implements ApiKeyInterface {
   apiKey: String!
   id: ID!
@@ -10221,6 +10524,7 @@ type CreatedOauthClient implements OauthClientInterface {
   preview: String!
   redirectUris: [String!]!
   expiresAt: Date
+  isMcp: Boolean!
 }
 
 type CreateEmailSenderAddressPayload {
@@ -10332,6 +10636,7 @@ input CreateOauthClientInput {
   consentDisplayName: String!
   redirectUris: [String!]!
   expiresAt: Date
+  isMcp: Boolean
 }
 
 type CreateOnPremiseSombraPayload {
@@ -10947,11 +11252,24 @@ type CustomAiFeaturePreview {
 
 type CustomFunction {
   id: ID!
+  name: String!
+  description: String
   lastModifiedAt: Date!
+  createdAt: Date!
   signedCodeJwt: String!
   signedCodeContextJwt: String!
   lifecycleState: CustomFunctionLifecycleState!
   type: CustomFunctionType!
+  sombraId: ID
+  runsLink: String!
+  owners: [UserPreview!]!
+  activeVersion: CustomFunctionVersionPreview
+  draftVersion: CustomFunctionVersionPreview
+  hasPendingDraft: Boolean!
+  source: CustomFunctionSource!
+  lastRunDate: Date
+  runsLast7Days: Int!
+  referencedBy: [CustomFunctionReference!]!
 }
 
 type CustomFunctionExecutionError {
@@ -10985,6 +11303,9 @@ type CustomFunctionExecutionResult {
 input CustomFunctionFilterInput {
   id: ID
   dataSiloId: ID
+  type: CustomFunctionType
+  lifecycleState: CustomFunctionLifecycleState
+  text: String
 }
 
 type CustomFunctionLifecycleDependencyWarning {
@@ -10995,10 +11316,56 @@ type CustomFunctionLifecycleDependencyWarning {
   message: String!
 }
 
+type CustomFunctionReference {
+  id: String!
+  type: String!
+  name: String!
+  status: String!
+}
+
+type CustomFunctionRun {
+  id: String!
+  startedAt: Date!
+  customFunction: CustomFunction!
+  lifecycleState: CustomFunctionRunLifecycleState
+  isSuccess: Boolean!
+  failureAttribution: CustomFunctionRunFailureAttribution
+  runMetadataS3Path: String!
+  duration: Int!
+}
+
+type CustomFunctionRunFileLinkPayload {
+  clientMutationId: String
+  temporaryLink: String!
+}
+
+input CustomFunctionRunFileLinkInput {
+  customFunctionRunId: String!
+}
+
+input CustomFunctionRunFilterInput {
+  customFunctionId: ID
+  text: String
+}
+
+type CustomFunctionRunsPayload {
+  clientMutationId: String
+  nodes: [CustomFunctionRun!]!
+  totalCount: Int!
+}
+
 type CustomFunctionsPayload {
   clientMutationId: String
   nodes: [CustomFunction!]!
   totalCount: Int!
+}
+
+type CustomFunctionVersionPreview {
+  id: ID!
+  versionNumber: String!
+  lifecycleState: CustomFunctionVersionLifecycleState!
+  lastModifiedAt: Date!
+  signedCodeJwt: String!
 }
 
 type CustomHeader {
@@ -11634,6 +12001,7 @@ type DataSilo implements DatamapDataSiloInterface {
   allowDsrProcessingEndTime: String
   isPaidIntegration: Boolean!
   isPausedForDsrs: Boolean!
+  skipSecondaryIfNoFiles: Boolean!
   privacyRequestSubdatapointEnabled: Boolean!
   users: [UserPreview!]!
   plaintextContext: [PlaintextContext!]!
@@ -11740,6 +12108,7 @@ type DataSiloBulkPreview implements DatamapDataSiloInterface {
   WorkflowConfigDataSilo: WorkflowConfigDataSilo
   sensitiveCategories: [SensitiveCategory!]
   isPausedForDsrs: Boolean!
+  skipSecondaryIfNoFiles: Boolean!
 }
 
 input DataSiloBulkPreviewOrder {
@@ -12082,6 +12451,7 @@ type DataSubjectInternal implements DataSubjectInterface {
   openRequestCount: Int!
   fulFilledRequestCount: Int!
   closedRequestCount: Int!
+  hasRequests: Boolean!
 }
 
 type DataSubjectUpdateConsentPreferencesPayload {
@@ -12941,6 +13311,11 @@ type DeployDraftVersionForPrivacyCenterPayload {
   success: Boolean!
 }
 
+input DeployDraftVersionForPrivacyCenterInput {
+  privacyCenterId: ID!
+  modules: [PrivacyCenterModule!]
+}
+
 input DeprecatedRequestIdentifierInput {
   name: String
   value: String!
@@ -12978,6 +13353,7 @@ input DeprecatedRequestIdentifiersInput {
   adobeAudienceManagerId: [DeprecatedRequestIdentifierInput!]
   adobeExperienceCloudId: [DeprecatedRequestIdentifierInput!]
   adobeTargetId: [DeprecatedRequestIdentifierInput!]
+  adobeCampaignRecipientId: [DeprecatedRequestIdentifierInput!]
   transcend: [DeprecatedRequestIdentifierInput!]
 }
 
@@ -13169,6 +13545,125 @@ type DownloadFilesCountsOnlyPayload {
   nodes: [DownloadFileCounts!]!
 }
 
+type DropArtifact {
+  id: ID!
+  artifactType: DropArtifactType!
+  filename: String!
+  sha256: String!
+  byteSize: Int!
+  downloadUrl: String
+  creator: UserPreview
+  createdAt: Date!
+}
+
+type DropBrokerConfigPayload {
+  clientMutationId: String
+  config: DropBrokerConfig
+}
+
+type DropBrokerConfig {
+  id: ID!
+  dataBrokerId: String!
+  environment: DropBrokerEnvironment!
+  listTypesEnabled: [DropListType!]!
+  lastValidatedAt: Date
+  workflowConfig: WorkflowConfigPreview
+  apiKeyConfigured: Boolean!
+  pollingEnabled: Boolean!
+  pollIntervalMinutes: Int!
+  autoSubmitReportBack: Boolean!
+  matchMode: DropBrokerMatchMode!
+}
+
+input DropRecordRefInput {
+  dropRecordId: Int!
+  dropListType: DropListType!
+}
+
+type DropRunDsrProcessingStats {
+  totalDsrs: Int!
+  completedCount: Int!
+  pendingCount: Int!
+  medianCompletionDays: Float
+  p90CompletionDays: Float
+}
+
+input DropRunFiltersInput {
+  text: String
+  states: [DropRunState!]
+  listTypes: [DropListType!]
+  sourcePatterns: [DropRunSourcePattern!]
+}
+
+type DropRunReportingFunnel {
+  cppaDownloadRecordCount: Int!
+  mappingRowCount: Int!
+  dsrsCreated: Int!
+  dsrsCompleted: Int!
+  dsrsPending: Int!
+}
+
+type DropRunReportingTiming {
+  downloadedAt: Date!
+  deadlineAt: Date!
+  reportGeneratedAt: Date
+  submittedAt: Date
+  daysSinceDownload: Int!
+  daysUntilDeadline: Int!
+  daysDownloadToReport: Int
+  daysDownloadToSubmit: Int
+}
+
+input DropRunRequestFiltersInput {
+  requestIds: [ID!]
+  dropRunIds: [ID!]
+  text: String
+}
+
+type DropRunRequestsPayload {
+  clientMutationId: String
+  nodes: [DropRunRequestSummary!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type DropRunRequestSummary {
+  id: ID!
+  requestId: ID
+  dropRunId: ID!
+  dropRecordId: Int!
+  dropListType: DropListType!
+  cppaStatusCode: Int
+}
+
+type DropRunsPayload {
+  clientMutationId: String
+  nodes: [DropRunSummary!]!
+  pageInfo: PageInfo!
+}
+
+type DropRunSubmissionDiscrepancyCounts {
+  failedCount: Int!
+  missingCount: Int!
+}
+
+type DropRunSummary {
+  id: ID!
+  dataBrokerId: String!
+  listTypes: [DropListType!]!
+  sourcePattern: DropRunSourcePattern!
+  cycleNumber: Int!
+  state: DropRunState!
+  downloadedAt: Date!
+  deadlineAt: Date!
+  submittedAt: Date
+  totalRecords: Int!
+  matchedRows: Int!
+  requestsCount: Int!
+  pendingRecordsCount: Int!
+  artifacts: [DropArtifact!]!
+}
+
 type DsrFormIdentifier implements IdentifierInterface {
   id: String!
   name: String!
@@ -13271,7 +13766,9 @@ input EmployeeBulkRequestInput {
   attributes: [AttributeInput!]
   partitionKey: String
   idempotencyKey: String
-  workflowConfigId: ID
+  workflowConfigId: ID!
+  dropRecords: [DropRecordRefInput!]
+  dropRunId: ID
 }
 
 type EmployeeDownloadCekPayload {
@@ -13317,6 +13814,8 @@ input EmployeeRequestInput {
   idempotencyKey: String
   subjectType: String!
   type: RequestAction!
+  dropRecords: [DropRecordRefInput!]
+  dropRunId: ID
 }
 
 type EmployeeReSignEncryptedCekContextsPayload {
@@ -14136,6 +14635,15 @@ input ImportOnetrustAssessmentsInput {
   json: String
 }
 
+type InaccurateAiFeatureReportPreview {
+  id: ID!
+  vendorId: ID!
+  aiFeatureId: ID!
+  reportedByUserId: ID
+  reason: String
+  createdAt: Date!
+}
+
 type InitiateSitescanPayload {
   clientMutationId: String
   success: Boolean!
@@ -14521,7 +15029,7 @@ type MaestroRuleAction {
   order: Int!
   customFunctionId: ID
   sombraId: ID
-  customFunction: MaestroCustomFunction
+  customFunction: CustomFunction
   sendAssessmentMode: MaestroSendAssessmentMode
   assessmentName: String
   assessmentDescription: String
@@ -14816,6 +15324,7 @@ type OauthClient implements OauthClientInterface {
   preview: String!
   redirectUris: [String!]!
   expiresAt: Date
+  isMcp: Boolean!
 }
 
 input OauthClientFiltersInput {
@@ -14830,6 +15339,7 @@ interface OauthClientInterface {
   preview: String!
   redirectUris: [String!]!
   expiresAt: Date
+  isMcp: Boolean!
 }
 
 type OauthClientsPayload {
@@ -15380,6 +15890,11 @@ input PolicyVersionInput {
   content: PolicyContentInput
 }
 
+type PollDropForRequestsPayload {
+  clientMutationId: String
+  dropRun: DropRunSummary!
+}
+
 type PossibleDataSiloDependenciesPayload {
   clientMutationId: String
   nodes: [DataSilo!]!
@@ -15499,8 +16014,10 @@ input PreferenceTopicOptionValueDataPointFilterInput {
   purposeIds: [ID!]
   preferenceTopicIds: [ID!]
   preferenceOptionValueIds: [ID!]
+  preferenceTopicOptionValueIds: [ID!]
   text: String
   preferenceState: PreferenceSelectionState
+  actions: [RequestAction!]
   dataPointIds: [ID!]
   notAssociatedWithWorkflowConfigId: ID
 }
@@ -15649,12 +16166,16 @@ type PrivacyCenterFooterLink {
   displayOrder: Int!
   title: LocalizedMessage!
   url: LocalizedMessage!
+  icon: AssetFile
+  iconOnly: Boolean
 }
 
 input PrivacyCenterFooterLinkInput {
   id: ID
   title: String
   url: String
+  iconId: ID
+  iconOnly: Boolean
 }
 
 input PrivacyCenterIdInput {
@@ -16360,6 +16881,8 @@ type PtovDataPointWorkflowMappingsPayload {
 input PtovDataPointWorkflowMappingsFilterInput {
   workflowConfigId: ID
   preferenceTopicOptionValueDataPointIds: [ID!]
+  preferenceTopicOptionValueIds: [ID!]
+  text: String
   isActive: Boolean
 }
 
@@ -16424,6 +16947,7 @@ input PurposeDataPointsFilterInput {
   text: String
   purposeState: PreferenceSelectionState
   notAssociatedWithWorkflowConfigId: ID
+  actions: [RequestAction!]
 }
 
 type PurposeDataPoint {
@@ -16446,6 +16970,7 @@ type PurposeDataPointWorkflowMappingsPayload {
 input PurposeDataPointWorkflowMappingsFilterInput {
   workflowConfigId: ID
   purposeDataPointIds: [ID!]
+  text: String
   isActive: Boolean
 }
 
@@ -16703,6 +17228,21 @@ input RegionInput {
   countrySubDivision: String
 }
 
+input RejectVendorAiDraftInput {
+  draftId: ID!
+  reviewNotes: String!
+}
+
+type RejectVendorAiDraftResult {
+  draftId: ID!
+  status: String!
+  reviewedByUserId: ID
+  reviewedAt: String
+  reviewNotes: String
+  rejected: Boolean!
+  alreadyRejected: Boolean!
+}
+
 input ReleaseAirgapPrefixModuleVersionInput {
   organizationId: ID
   name: String!
@@ -16714,18 +17254,6 @@ input ReleaseAirgapPrefixModuleVersionInput {
 type ReleaseAirgapPrefixModuleVersionResult {
   airgapPrefixModuleId: ID!
   airgapPrefixModuleReleaseId: ID!
-  created: Boolean!
-}
-
-type RemoveConsentSitesFromConsentUiThemePayload {
-  clientMutationId: String
-  consentUiTheme: ConsentUiTheme!
-}
-
-input RemoveConsentSitesFromConsentUiThemeInput {
-  airgapBundleId: ID!
-  consentUiThemeId: ID!
-  consentSiteIds: [ID!]!
 }
 
 type RemoveDataSiloFromWorkflowConfigPayload {
@@ -16780,6 +17308,19 @@ type RemoveUserPayload {
 
 input RemoveUserInput {
   email: String
+}
+
+type ReportAiFeatureAsInaccuratePayload {
+  clientMutationId: String
+  inaccurateAiFeatureReport: InaccurateAiFeatureReportPreview!
+  customAiFeature: CustomAiFeaturePreview
+}
+
+input ReportAiFeatureAsInaccurateInput {
+  vendorId: ID!
+  aiFeatureId: ID!
+  reason: String
+  suppressVisibility: Boolean
 }
 
 type ReportPromptRunPayload {
@@ -16930,6 +17471,7 @@ type Request implements RequestInterface {
   isTest: Boolean!
   isSilent: Boolean!
   origin: RequestOrigin!
+  dropRecordCount: Int!
   link: String!
   steps: RequestSteps!
   parentId: ID @deprecated(reason: "Child/parent requests are no longer supported")
@@ -17265,6 +17807,7 @@ input RequestFiltersInput {
   hasEnricherErrors: Boolean
   identifierValue: String
   workflowConfigIds: [ID!]
+  dropRunIds: [ID!]
   partitionKeys: [String!]
   partitionIds: [ID!]
   purposeNames: [String!]
@@ -17403,6 +17946,7 @@ input RequestIdentifierOrder {
 
 type RequestIdentityEnrichmentJob {
   id: ID!
+  isMissingDestinationModel: Boolean
   status: String!
   scheduledAt: Date!
   error: String
@@ -17704,6 +18248,7 @@ type RetryDataSiloErrorsPayload {
 type RetryEnricherErrorsPayload {
   clientMutationId: String
   enricher: Enricher!
+  retriedCount: Int!
 }
 
 type RetryProfileDataPointPayload {
@@ -17914,6 +18459,41 @@ input RollbackAirgapBundleInput {
   gpp: String
   tcfStylesheet: String
   tcfVendorsList: String
+  tcfGvlAr: String
+  tcfGvlBg: String
+  tcfGvlBs: String
+  tcfGvlCs: String
+  tcfGvlDa: String
+  tcfGvlDe: String
+  tcfGvlEl: String
+  tcfGvlEn: String
+  tcfGvlEs: String
+  tcfGvlFi: String
+  tcfGvlFr: String
+  tcfGvlHe: String
+  tcfGvlHi: String
+  tcfGvlHr: String
+  tcfGvlHu: String
+  tcfGvlId: String
+  tcfGvlIs: String
+  tcfGvlIt: String
+  tcfGvlJa: String
+  tcfGvlKo: String
+  tcfGvlLt: String
+  tcfGvlMs: String
+  tcfGvlNl: String
+  tcfGvlNo: String
+  tcfGvlPl: String
+  tcfGvlPtBr: String
+  tcfGvlRo: String
+  tcfGvlRu: String
+  tcfGvlSrLatn: String
+  tcfGvlSv: String
+  tcfGvlTh: String
+  tcfGvlTr: String
+  tcfGvlUk: String
+  tcfGvlVi: String
+  tcfGvlZh: String
   tcfEn: String
   tcfHe: String
   tcfBs: String
@@ -18000,7 +18580,7 @@ type RunCustomFunctionPayload {
 }
 
 input RunCustomFunctionInput {
-  type: CustomFunctionType
+  type: CustomFunctionType!
   id: ID
   sombraId: ID
   payload: String!
@@ -18069,6 +18649,7 @@ type SaaSVendorPreview {
   logoSquare: String!
   aiDocumentationLinks: [AiDocumentationLinkPreview!]
   aiBaseModel: [String!]
+  baseModelDeveloperEvidence: [AiBaseModelDeveloperEvidenceItemPreview!]
   catalogs: [SaaSVendorAttachedCatalog!]
 }
 
@@ -18631,6 +19212,23 @@ input SetAirgapVersionInput {
   version: String!
 }
 
+type SetDropBrokerConfigPayload {
+  clientMutationId: String
+  config: DropBrokerConfig!
+}
+
+input SetDropBrokerConfigInput {
+  dataBrokerId: String
+  environment: DropBrokerEnvironment
+  listTypesEnabled: [DropListType!]
+  workflowConfigId: ID
+  clearApiKey: Boolean
+  pollingEnabled: Boolean
+  pollIntervalMinutes: Int
+  autoSubmitReportBack: Boolean
+  matchMode: DropBrokerMatchMode
+}
+
 type SetOrgNotificationDestinationAllowListPayload {
   clientMutationId: String
   orgNotificationDestinationAllowList: OrgNotificationDestinationAllowList!
@@ -18784,6 +19382,7 @@ input SignedRequestIdentifiersInput {
   adobeAudienceManagerId: [SignedRequestIdentifierInput!]
   adobeExperienceCloudId: [SignedRequestIdentifierInput!]
   adobeTargetId: [SignedRequestIdentifierInput!]
+  adobeCampaignRecipientId: [SignedRequestIdentifierInput!]
   transcend: [SignedRequestIdentifierInput!]
 }
 
@@ -19471,6 +20070,7 @@ input TablesPreferencesInput {
   DATA_INVENTORY_SENSITIVE_CATEGORIES: TablePreferencesInput
   MAESTRO_RULE_EXECUTION_HISTORY: TablePreferencesInput
   ACTION_ITEMS: TablePreferencesInput
+  CUSTOM_FUNCTION_ACTIVITY: TablePreferencesInput
 }
 
 type TCFDataCategory {
@@ -20048,6 +20648,7 @@ type UnwrapCustomFunctionPayload {
 
 input UnwrapCustomFunctionInput {
   id: ID!
+  versionId: ID
 }
 
 type UnwrapEmailContentsPayload {
@@ -20264,7 +20865,8 @@ type UpdateAiSettingPayload {
 }
 
 input UpdateAiSettingInput {
-  isAiEnabled: Boolean!
+  isAiEnabled: Boolean
+  isMcpSombraEnabled: Boolean
 }
 
 type UpdateApiKeyPayload {
@@ -20748,6 +21350,7 @@ input UpdateConsentUiThemeInput {
   id: ID!
   name: String
   configuration: ConsentUiThemeConfigInput
+  consentSiteIds: [ID!]
 }
 
 type UpdateConsentUiVariantPayload {
@@ -20806,9 +21409,31 @@ type UpdateCustomFunctionPayload {
   success: Boolean!
 }
 
+input UpdateCustomFunctionAsAdminInput {
+  organizationId: ID!
+  dataSiloId: ID!
+  customFunctionId: ID
+  code: String!
+  userDefinedEnv: [UpdateCustomFunctionUserDefinedEnvInput!]!
+  name: String
+  description: String
+  allowedHosts: [String!]
+  allowThirdPartyImports: Boolean
+}
+
 input UpdateCustomFunctionInput {
   id: ID
   dataSiloId: ID!
+  name: String
+  description: String
+  ownerUserIds: [ID!]
+  signedCodeJwt: String
+  signedCodeContextJwt: String
+}
+
+input UpdateCustomFunctionUserDefinedEnvInput {
+  key: String!
+  value: String!
 }
 
 input UpdateDataFlowInput {
@@ -20909,6 +21534,7 @@ input UpdateDataSiloInput {
   defaultAccessRequestVisibility: Boolean
   isLive: Boolean
   isPausedForDsrs: Boolean
+  skipSecondaryIfNoFiles: Boolean
   headers: [CustomHeaderInput!]
   attributes: [AttributeInput!]
   dependedOnDataSiloIds: [ID!]
@@ -21305,6 +21931,7 @@ input UpdateOauthClientInput {
   consentDisplayName: String!
   redirectUris: [String!]!
   expiresAt: Date
+  isMcp: Boolean
 }
 
 type UpdateOrCreateApplicationUsersPayload {
@@ -22067,6 +22694,23 @@ type UpdateSsoProviderPayload {
   ssoProvider: SsoProvider!
 }
 
+type UpdateStandaloneCustomFunctionPayload {
+  clientMutationId: String
+  customFunction: CustomFunction!
+  success: Boolean!
+}
+
+input UpdateStandaloneCustomFunctionInput {
+  id: ID!
+  versionId: ID
+  name: String
+  description: String
+  ownerUserIds: [ID!]
+  ownerTeamIds: [ID!]
+  signedCodeJwt: String
+  signedCodeContextJwt: String
+}
+
 input UpdateSubDataPointInput {
   id: ID!
   name: String
@@ -22410,6 +23054,14 @@ type Vendor implements VendorInterface {
   catalogRecipients: [SaaSCategoryBase!]!
 }
 
+type VendorAiDraftReviewResult {
+  draftId: ID!
+  status: String!
+  reviewedByUserId: ID
+  reviewedAt: String
+  reviewNotes: String
+}
+
 type VendorCommunicationsMetadataPayload {
   clientMutationId: String
   nodes: [CommunicationMetadata!]!
@@ -22438,6 +23090,10 @@ interface VendorInterface {
   dataProcessingAgreementStatus: DataProcessingAgreementStatus
   businessEntity: BusinessEntityPreview
   saaSVendor: SaaSVendorPreview
+}
+
+type VendorModelProviders {
+  providers: [String!]!
 }
 
 input VendorOrder {
@@ -22491,6 +23147,7 @@ input VendorsFiltersInput {
   dataProcessingAgreementStatus: [DataProcessingAgreementStatus!]
   aiFeaturesIdentified: Boolean
   highRiskAiFeaturesIdentified: Boolean
+  aiBaseModelDevelopers: [String!]
 }
 
 type VerifyPrivacyCenterLoginEmailPayload {
@@ -22577,6 +23234,7 @@ type WorkflowConfig {
   expiryTime: [ExpiryTime!]
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   internalName: String
+  unresolvedRequiredIdentifierCount: Int
 }
 
 type WorkflowConfigAttributeKey {
@@ -22632,6 +23290,13 @@ input WorkflowConfigIdInput {
 
 input WorkflowConfigInput {
   id: ID!
+}
+
+type WorkflowConfigPreview {
+  id: ID!
+  title: LocalizedMessage!
+  internalName: String
+  description: LocalizedMessage
 }
 
 type WorkflowDataPoint {
@@ -22702,6 +23367,7 @@ type WorkflowIdentifier implements WorkflowIdentifierBaseInterface {
   destinationDataSilos: [IdentifierDestinationDataSilo!]!
   missingIdBehavior: MissingIdBehavior!
   isDisabled: Boolean!
+  hasResolutionPath: Boolean!
 }
 
 type WorkflowIdentifierBase implements WorkflowIdentifierBaseInterface {
@@ -22753,7 +23419,7 @@ input WorkflowRequestInput {
   partitionKey: String
   attributes: [AttributeInput!]
   idempotencyKey: String
-  workflowConfigId: ID
+  workflowConfigId: ID!
 }
 
 type WorkflowsResponse {
