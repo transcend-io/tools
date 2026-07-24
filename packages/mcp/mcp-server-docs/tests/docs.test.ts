@@ -15,8 +15,12 @@ const fixtureLlmsTxt = readFileSync(fixturePath, 'utf8');
 describe('getDocsTools', () => {
   it('registers list and fetch tools', () => {
     const tools = getDocsTools();
-    expect(tools).toHaveLength(2);
-    expect(tools.map((tool) => tool.name)).toEqual(['docs_list', 'docs_fetch']);
+    expect(tools).toHaveLength(3);
+    expect(tools.map((tool) => tool.name)).toEqual([
+      'docs_list',
+      'docs_fetch',
+      'docs_confirm_demo',
+    ]);
     expect(tools.every((tool) => tool.requireAuth === false)).toBe(true);
   });
 });

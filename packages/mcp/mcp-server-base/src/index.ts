@@ -13,6 +13,9 @@ export {
 export { toolCallContext, getToolCallIdHeader, TOOLCALL_ID_HEADER } from './tool-call-context.js';
 export type { ToolCallContext } from './tool-call-context.js';
 
+export { elicitContext, getElicitContext } from './elicit-context.js';
+export type { ElicitContext } from './elicit-context.js';
+
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { TranscendRestClient } from './clients/rest-client.js';
