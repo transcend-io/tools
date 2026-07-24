@@ -21,6 +21,13 @@ type PackageManifest = {
       default?: string;
       types?: string;
     };
+    [subpath: string]:
+      | string
+      | {
+          '@transcend-io/source'?: string;
+          default?: string;
+          types?: string;
+        };
   };
   files?: string[];
   homepage?: string;
@@ -38,7 +45,7 @@ type PackageManifest = {
     url?: string;
   };
   scripts?: Record<string, string>;
-  sideEffects?: boolean;
+  sideEffects?: boolean | string[];
   type?: string;
   types?: string;
   version?: string;
@@ -147,14 +154,15 @@ describe('package conventions', () => {
 
   test.each(workspacePackages)(
     '$directory uses the shared manifest baseline',
-    ({ basename, manifest }) => {
+    ({ basename, directory, manifest }) => {
       const expectedName = `@transcend-io/${basename}`;
       const exportDot = manifest.exports?.['.'];
+      const isDesignTokens = directory === 'packages/design-tokens';
 
       expect(manifest.name).toBe(expectedName);
       expect(manifest.license).toBe('Apache-2.0');
       expect(manifest.type).toBe('module');
-      expect(manifest.sideEffects).toBe(false);
+      expect(manifest.sideEffects).toEqual(isDesignTokens ? ['*.css'] : false);
       expect(manifest.types).toBe('./dist/index.d.mts');
       expect(manifest.files).toEqual(['dist']);
       expect(manifest.engines?.node).toBe('>=22.12.0');
@@ -174,6 +182,9 @@ describe('package conventions', () => {
       expect(manifest.devDependencies?.tsdown).toBe(requiredDevDependencies.tsdown);
       expect(manifest.devDependencies?.typescript).toBe(requiredDevDependencies.typescript);
       expect(manifest.devDependencies?.vitest).toBe(requiredDevDependencies.vitest);
+      if (isDesignTokens) {
+        expect(manifest.exports?.['./tokens.css']).toBe('./dist/tokens.css');
+      }
     },
   );
 

@@ -104,7 +104,13 @@
     "@transcend-io/design-tokens#build": {
       "dependsOn": ["^build"],
       "inputs": ["tokens/**", "plugins/**", "terrazzo.config.ts"],
-      "outputs": ["dist/**", "src/primitive/**", "src/semantic/**", "src/index.ts"]
+      "outputs": [
+        "dist/**",
+        "src/primitive/**",
+        "src/semantic/**",
+        "src/index.ts",
+        "src/tokens.css"
+      ]
     },
     "@transcend-io/design-tokens#test": {
       "dependsOn": ["build"],
