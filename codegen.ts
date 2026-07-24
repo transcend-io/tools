@@ -18,12 +18,20 @@ const SCHEMA_PATH = './schema.graphql';
 /**
  * GraphQL-backed MCP servers. Each entry corresponds to a package directory
  * `packages/mcp/mcp-server-${name}` containing a `src/graphql.ts` file with
- * embedded operations. The `mcp-server-base`, `mcp-server-consent`, and
- * `mcp-server-preferences` packages are intentionally excluded:
+ * embedded operations. The `mcp-server-base` and `mcp-server-preferences`
+ * packages are intentionally excluded:
  *   - base has no GraphQL operations of its own.
- *   - consent/preferences hit REST endpoints, not GraphQL.
+ *   - preferences hits REST endpoints, not GraphQL.
  */
-const SERVERS = ['admin', 'assessment', 'discovery', 'dsr', 'inventory', 'workflows'] as const;
+const SERVERS = [
+  'admin',
+  'assessment',
+  'consent',
+  'discovery',
+  'dsr',
+  'inventory',
+  'workflows',
+] as const;
 
 const config: CodegenConfig = {
   schema: SCHEMA_PATH,

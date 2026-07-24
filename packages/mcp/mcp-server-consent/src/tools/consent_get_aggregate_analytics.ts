@@ -1,14 +1,8 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import {
-  AirgapBundleAnalyticsDimension,
-  AirgapBundleAnalyticsMetric,
-} from '@transcend-io/privacy-types';
-import {
-  AIRGAP_BUNDLE_AGGREGATE_ANALYTICS,
-  type TranscendCliAirgapBundleAggregateAnalyticsResponse,
-} from '@transcend-io/sdk';
+import { AirgapBundleAnalyticsDimension } from '@transcend-io/privacy-types';
 
 import { resolveAnalyticsDateRange } from '../analyticsDateRange.js';
+import { AggregateAnalyticsDoc } from '../graphql.js';
 import { airgapBundleAnalyticsMetricSchema } from '../normalizeAnalyticsMetric.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
@@ -50,19 +44,15 @@ export function createConsentGetAggregateAnalyticsTool(clients: ToolClients) {
     handler: async ({ metric, start, end, days, include_dimensions }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const range = resolveAnalyticsDateRange({ start, end, days });
-      const data =
-        await clients.graphql.makeRequest<TranscendCliAirgapBundleAggregateAnalyticsResponse>(
-          AIRGAP_BUNDLE_AGGREGATE_ANALYTICS,
-          {
-            id: airgapBundleId,
-            input: {
-              metric,
-              start: range.startEpoch,
-              end: range.endEpoch,
-              ...(include_dimensions?.length ? { includeDimensions: include_dimensions } : {}),
-            },
-          },
-        );
+      const data = await clients.graphql.makeRequest(AggregateAnalyticsDoc, {
+        id: airgapBundleId,
+        input: {
+          metric,
+          start: range.startEpoch,
+          end: range.endEpoch,
+          ...(include_dimensions?.length ? { includeDimensions: include_dimensions } : {}),
+        },
+      });
       const items = data.airgapBundleAggregateAnalytics.items;
 
       return createToolResult(true, {

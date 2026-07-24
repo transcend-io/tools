@@ -1,11 +1,7 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import {
-  UPDATE_OR_CREATE_COOKIES,
-  type TranscendUpdateCookieInputGql,
-  type TranscendCliUpdateOrCreateCookiesResponse,
-} from '@transcend-io/sdk';
 
+import { UpdateOrCreateCookiesDoc, type UpdateOrCreateCookieInput } from '../graphql.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const UpdateCookieItemSchema = z.object({
@@ -43,7 +39,7 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
     zodSchema: UpdateCookiesSchema,
     handler: async ({ cookies }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const cookieInputs: TranscendUpdateCookieInputGql[] = cookies.map((c) => ({
+      const cookieInputs: UpdateOrCreateCookieInput[] = cookies.map((c) => ({
         name: c.name,
         ...(c.trackingPurposes ? { trackingPurposes: c.trackingPurposes } : {}),
         ...(c.description !== undefined ? { description: c.description } : {}),
@@ -51,13 +47,10 @@ export function createConsentUpdateCookiesTool(clients: ToolClients) {
         ...(c.isJunk !== undefined ? { isJunk: c.isJunk } : {}),
         ...(c.status !== undefined ? { status: c.status } : {}),
       }));
-      await clients.graphql.makeRequest<TranscendCliUpdateOrCreateCookiesResponse>(
-        UPDATE_OR_CREATE_COOKIES,
-        {
-          airgapBundleId,
-          cookies: cookieInputs,
-        },
-      );
+      await clients.graphql.makeRequest(UpdateOrCreateCookiesDoc, {
+        airgapBundleId,
+        cookies: cookieInputs,
+      });
       return createToolResult(true, {
         updated: cookieInputs.length,
         cookies: cookieInputs.map((c) => ({

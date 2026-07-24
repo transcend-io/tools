@@ -641,6 +641,9 @@ importers:
 
   packages/mcp/mcp-server-consent:
     dependencies:
+      '@graphql-typed-document-node/core':
+        specifier: 'catalog:'
+        version: 3.2.0(graphql@16.14.2)
       '@modelcontextprotocol/sdk':
         specifier: 'catalog:'
         version: 1.29.0(zod@4.4.3)
@@ -650,9 +653,9 @@ importers:
       '@transcend-io/privacy-types':
         specifier: workspace:*
         version: link:../../privacy-types
-      '@transcend-io/sdk':
-        specifier: workspace:*
-        version: link:../../sdk
+      graphql:
+        specifier: 'catalog:'
+        version: 16.14.2
       zod:
         specifier: 'catalog:'
         version: 4.4.3

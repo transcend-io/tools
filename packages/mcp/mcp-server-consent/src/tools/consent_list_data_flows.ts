@@ -5,8 +5,8 @@ import {
   DataFlowScope,
   OrderDirection,
 } from '@transcend-io/privacy-types';
-import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sdk';
 
+import { DataFlowsDoc } from '../graphql.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const ListDataFlowsSchema = z.object({
@@ -86,7 +86,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       orderDirection,
     }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
+      const data = await clients.graphql.makeRequest(DataFlowsDoc, {
         input: { airgapBundleId },
         first: limit,
         offset,
