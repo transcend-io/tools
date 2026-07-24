@@ -35,6 +35,8 @@ catalog:
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
+  # Renovate security update: pnpm@11.5.3
+  - pnpm@11.5.3
 
 onlyBuiltDependencies:
   - esbuild
