@@ -4,6 +4,7 @@ import { decodeCodec, ObjByString } from '@transcend-io/type-utils';
 import yaml from 'js-yaml';
 
 import { TranscendInput } from '../codecs.js';
+import { normalizeTranscendInputForPush } from './validateTranscendInputForPush.js';
 
 export const VARIABLE_PARAMETERS_REGEXP = /<<parameters\.(.+?)>>/;
 export const VARIABLE_PARAMETERS_NAME = 'parameters';
@@ -60,8 +61,9 @@ export function readTranscendYaml(filePath: string, variables: ObjByString = {})
     `Also check that there are no extra variables defined in your yaml: ${filePath}`,
   );
 
-  // Validate shape
-  return decodeCodec(TranscendInput, yaml.load(replacedVariables));
+  // Normalize aliases / strip unsupported fields, then validate shape
+  const { config } = normalizeTranscendInputForPush(yaml.load(replacedVariables));
+  return decodeCodec(TranscendInput, config);
 }
 
 /**
