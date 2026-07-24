@@ -4,15 +4,13 @@ import {
   ConsentTrackerType,
   TriageAction,
 } from '@transcend-io/privacy-types';
-import {
-  UPDATE_OR_CREATE_COOKIES,
-  UPDATE_DATA_FLOWS,
-  type TranscendUpdateCookieInputGql,
-  type TranscendUpdateDataFlowInputGql,
-  type TranscendCliUpdateOrCreateCookiesResponse,
-  type TranscendCliUpdateDataFlowsResponse,
-} from '@transcend-io/sdk';
 
+import {
+  UpdateDataFlowsDoc,
+  UpdateOrCreateCookiesDoc,
+  type UpdateDataFlowInput,
+  type UpdateOrCreateCookieInput,
+} from '../graphql.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const BulkTriageItemSchema = z.object({
@@ -57,7 +55,7 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
       } = { cookies: [], dataFlows: [] };
 
       if (cookieItems.length > 0) {
-        const cookieInputs: TranscendUpdateCookieInputGql[] = cookieItems.map((item) => ({
+        const cookieInputs: UpdateOrCreateCookieInput[] = cookieItems.map((item) => ({
           name: item.id,
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
@@ -65,13 +63,10 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.trackingPurposes ? { trackingPurposes: item.trackingPurposes } : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
-        await clients.graphql.makeRequest<TranscendCliUpdateOrCreateCookiesResponse>(
-          UPDATE_OR_CREATE_COOKIES,
-          {
-            airgapBundleId,
-            cookies: cookieInputs,
-          },
-        );
+        await clients.graphql.makeRequest(UpdateOrCreateCookiesDoc, {
+          airgapBundleId,
+          cookies: cookieInputs,
+        });
         results.cookies = cookieInputs.map((c) => ({
           name: c.name,
           action: c.isJunk ? 'JUNKED' : 'APPROVED',
@@ -80,7 +75,7 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
       }
 
       if (dfItems.length > 0) {
-        const dfInputs: TranscendUpdateDataFlowInputGql[] = dfItems.map((item) => ({
+        const dfInputs: UpdateDataFlowInput[] = dfItems.map((item) => ({
           id: item.id,
           ...(item.action === 'APPROVE'
             ? { status: ConsentTrackerStatus.Live, isJunk: false }
@@ -88,13 +83,10 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
           ...(item.trackingPurposes ? { purposeIds: item.trackingPurposes } : {}),
           ...(item.service ? { service: item.service } : {}),
         }));
-        const dfResult = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(
-          UPDATE_DATA_FLOWS,
-          {
-            airgapBundleId,
-            dataFlows: dfInputs,
-          },
-        );
+        const dfResult = await clients.graphql.makeRequest(UpdateDataFlowsDoc, {
+          airgapBundleId,
+          dataFlows: dfInputs,
+        });
         results.dataFlows = dfResult.updateDataFlows.dataFlows.map((df) => ({
           id: df.id,
           action: df.isJunk ? 'JUNKED' : 'APPROVED',

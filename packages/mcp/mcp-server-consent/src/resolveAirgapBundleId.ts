@@ -1,8 +1,6 @@
 import type { TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
-import {
-  FETCH_CONSENT_MANAGER_ID,
-  type TranscendCliFetchConsentManagerIdResponse,
-} from '@transcend-io/sdk';
+
+import { FetchConsentManagerIdDoc } from './graphql.js';
 
 const bundleIdCache = new WeakMap<TranscendGraphQLBase, string>();
 
@@ -15,10 +13,7 @@ export async function resolveAirgapBundleId(graphql: TranscendGraphQLBase): Prom
   const cached = bundleIdCache.get(graphql);
   if (cached) return cached;
 
-  const data = await graphql.makeRequest<TranscendCliFetchConsentManagerIdResponse>(
-    FETCH_CONSENT_MANAGER_ID,
-    {},
-  );
+  const data = await graphql.makeRequest(FetchConsentManagerIdDoc);
 
   const id = data.consentManager.consentManager.id;
   bundleIdCache.set(graphql, id);

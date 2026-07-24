@@ -4,8 +4,8 @@ import {
   CookieOrderField,
   OrderDirection,
 } from '@transcend-io/privacy-types';
-import { COOKIES, type TranscendCliCookiesResponse } from '@transcend-io/sdk';
 
+import { CookiesDoc } from '../graphql.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const ListCookiesSchema = z.object({
@@ -75,7 +75,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       orderDirection,
     }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const data = await clients.graphql.makeRequest<TranscendCliCookiesResponse>(COOKIES, {
+      const data = await clients.graphql.makeRequest(CookiesDoc, {
         input: { airgapBundleId },
         first: limit,
         offset,
