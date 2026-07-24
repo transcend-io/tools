@@ -5284,7 +5284,7 @@ type Mutation {
   createContract(input: CreateContractInput!): CreateContractPayload!
   createContractScan(input: CreateContractScanInput!): CreateContractScanPayload!
   createCopiedComplianceReport(useMaster: Boolean, isExportCsv: Boolean, input: CreateCopiedComplianceReportInput!): CreateCopiedComplianceReportPayload!
-  createCustomFunction(input: CreateCustomFunctionInput!, dhEncrypted: String!): CreateCustomFunctionPayload!
+  createCustomFunction(input: CreateCustomFunctionInput!, dhEncrypted: String): CreateCustomFunctionPayload!
   createDataCollection(input: NewDataCollectionInput!): CreateDataCollectionPayload!
   createDataFlows(input: CreateDataFlowInput!): CreateDataFlowsPayload!
   createDataReport(input: CreateDataReportInput!): CreateDataReportPayload!
@@ -5605,7 +5605,7 @@ type Mutation {
   updateConsentUiVariant(input: UpdateConsentUiVariantInput!): UpdateConsentUiVariantPayload!
   updateContracts(input: UpdateContractsInput!): UpdateContractsPayload!
   updateContractScans(input: UpdateContractScansInput!): UpdateContractScansPayload!
-  updateCustomFunction(input: UpdateCustomFunctionInput!, dhEncrypted: String!): UpdateCustomFunctionPayload!
+  updateCustomFunction(input: UpdateCustomFunctionInput!, dhEncrypted: String): UpdateCustomFunctionPayload!
   updateDataFlows(input: UpdateDataFlowsInput!): UpdateDataFlowsPayload!
   updateDataPointLevel(input: UpdateDataPointLevelInput!): UpdateDataPointLevelPayload!
   updateDataReports(input: UpdateDataReportsInput!): UpdateDataReportsPayload!
@@ -10410,6 +10410,8 @@ input CreateCustomFunctionInput {
   description: String
   ownerUserIds: [ID!]
   ownerTeamIds: [ID!]
+  signedCodeJwt: String
+  signedCodeContextJwt: String
 }
 
 type CreatedApiKey implements ApiKeyInterface {
@@ -11257,6 +11259,7 @@ type CustomFunction {
   signedCodeContextJwt: String!
   lifecycleState: CustomFunctionLifecycleState!
   type: CustomFunctionType!
+  sombraId: ID
   runsLink: String!
   owners: [UserPreview!]!
   activeVersion: CustomFunctionVersionPreview
@@ -17250,7 +17253,6 @@ input ReleaseAirgapPrefixModuleVersionInput {
 type ReleaseAirgapPrefixModuleVersionResult {
   airgapPrefixModuleId: ID!
   airgapPrefixModuleReleaseId: ID!
-  created: Boolean!
 }
 
 type RemoveDataSiloFromWorkflowConfigPayload {
@@ -20645,6 +20647,7 @@ type UnwrapCustomFunctionPayload {
 
 input UnwrapCustomFunctionInput {
   id: ID!
+  versionId: ID
 }
 
 type UnwrapEmailContentsPayload {
@@ -21423,6 +21426,8 @@ input UpdateCustomFunctionInput {
   name: String
   description: String
   ownerUserIds: [ID!]
+  signedCodeJwt: String
+  signedCodeContextJwt: String
 }
 
 input UpdateCustomFunctionUserDefinedEnvInput {
@@ -22701,6 +22706,8 @@ input UpdateStandaloneCustomFunctionInput {
   description: String
   ownerUserIds: [ID!]
   ownerTeamIds: [ID!]
+  signedCodeJwt: String
+  signedCodeContextJwt: String
 }
 
 input UpdateSubDataPointInput {
@@ -23226,6 +23233,7 @@ type WorkflowConfig {
   expiryTime: [ExpiryTime!]
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   internalName: String
+  unresolvedRequiredIdentifierCount: Int
 }
 
 type WorkflowConfigAttributeKey {
@@ -23358,6 +23366,7 @@ type WorkflowIdentifier implements WorkflowIdentifierBaseInterface {
   destinationDataSilos: [IdentifierDestinationDataSilo!]!
   missingIdBehavior: MissingIdBehavior!
   isDisabled: Boolean!
+  hasResolutionPath: Boolean!
 }
 
 type WorkflowIdentifierBase implements WorkflowIdentifierBaseInterface {
