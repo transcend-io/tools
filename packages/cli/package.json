@@ -104,7 +104,7 @@
     "fast-glob": "^3.2.12",
     "fp-ts": "^2.16.1",
     "fuzzysearch": "^1.0.3",
-    "global-agent": "^3.0.0",
+    "global-agent": "^4.0.0",
     "got": "^15.0.0",
     "graphql": "catalog:",
     "graphql-request": "^5.0.0",
