@@ -93,6 +93,74 @@ describe('Consent Tools', () => {
     });
   });
 
+  describe('consent_list_data_flows', () => {
+    const mockBundle = () =>
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        consentManager: { consentManager: { id: 'bundle-1' } },
+      });
+
+    const runDataFlows = async (input: Record<string, unknown>) => {
+      mockBundle();
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        dataFlows: { nodes: [], totalCount: 0 },
+      });
+      const tool = getTools().find((t) => t.name === 'consent_list_data_flows')!;
+      await tool.handler(tool.zodSchema.parse(input));
+      // Second call is the DATA_FLOWS query; grab its variables.
+      return mockGraphql.makeRequest.mock.calls[1][1];
+    };
+
+    it('sends filterBy.service = "" when unmappedOnly is set (takes precedence over service)', async () => {
+      const variables = await runDataFlows({
+        status: 'LIVE',
+        unmappedOnly: true,
+        service: 'Google Analytics',
+      });
+      expect(variables.filterBy.service).toBe('');
+    });
+
+    it('passes through type and minOccurrences filters', async () => {
+      const variables = await runDataFlows({
+        status: 'NEEDS_REVIEW',
+        type: 'CSP',
+        minOccurrences: 10,
+      });
+      expect(variables.filterBy).toMatchObject({ type: 'CSP', minOccurrences: 10 });
+    });
+
+    it('omits showZeroActivity by default for NEEDS_REVIEW so counts match inventory stats', async () => {
+      const variables = await runDataFlows({ status: 'NEEDS_REVIEW' });
+      expect(variables.filterBy).not.toHaveProperty('showZeroActivity');
+    });
+  });
+
+  describe('consent_list_cookies', () => {
+    it('forwards orderBy when sorting by occurrences', async () => {
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        consentManager: { consentManager: { id: 'bundle-1' } },
+      });
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        cookies: { nodes: [], totalCount: 0 },
+      });
+      const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
+      await tool.handler(
+        tool.zodSchema.parse({
+          status: 'LIVE',
+          orderField: 'occurrences',
+          orderDirection: 'DESC',
+        }),
+      );
+      const variables = mockGraphql.makeRequest.mock.calls[1][1];
+      expect(variables.orderBy).toEqual([{ field: 'occurrences', direction: 'DESC' }]);
+    });
+
+    it('zodSchema accepts occurrences as an orderField', () => {
+      const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
+      const result = tool.zodSchema.safeParse({ status: 'LIVE', orderField: 'occurrences' });
+      expect(result.success).toBe(true);
+    });
+  });
+
   describe('consent_get_aggregate_analytics', () => {
     it('queries aggregate analytics with resolved bundle id', async () => {
       mockGraphql.makeRequest

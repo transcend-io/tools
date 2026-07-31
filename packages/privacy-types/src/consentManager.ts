@@ -221,6 +221,8 @@ export const CookieOrderField = makeEnum({
   CreatedAt: 'createdAt',
   /** The time the cookie was updated */
   UpdatedAt: 'updatedAt',
+  /** The number of occurrences (traffic) of this cookie */
+  Occurrences: 'occurrences',
 });
 
 /** Type override */
