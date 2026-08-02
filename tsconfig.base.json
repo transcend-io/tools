@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "files": ["./types/svg.d.ts"],
+  "files": ["./types/svg.d.ts", "./types/css.d.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
