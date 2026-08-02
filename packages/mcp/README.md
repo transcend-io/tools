@@ -333,6 +333,8 @@ For a server with no views, nothing: the `resources` capability is only declared
 
 For a server with views, `resources/list` and `resources/read` are registered, tools carry a `_meta.ui.resourceUri` binding, and `resources/read` returns the HTML with the `text/html;profile=mcp-app` MIME type. The binding is emitted regardless of host support, since the spec's degradation path is that hosts without the extension ignore it and show the text result.
 
+See [`dev/mcp-server-examples`](../../dev/mcp-server-examples/README.md) for two worked examples: `example_hello_app`, which uses all three paths, and `example_elicitation`, which is form collection alone — every field shape the spec allows, and a separate outcome for each way a request can end. They live in `dev/` rather than beside a published package because each view inlines hundreds of kilobytes, and a `private` package cannot carry them into a tarball.
+
 ### Usage attribution
 
 Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host detected at `initialize`, which gives stdio sessions attribution they previously had no way to send. The resolved host and capability set are also logged once per session.
@@ -367,7 +369,7 @@ A view is a React component that runs inside the host's sandboxed iframe. It rea
 
 Views are React apps built by Vite into a single self-contained HTML document. That single-file constraint is not a style preference: `resources/read` returns one string, and the host renders it in a sandboxed iframe with no same-origin server, so anything left as a separate file or CDN URL cannot be fetched. Inlining everything also means a view needs no CSP `resourceDomains` at all.
 
-A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory. Prefix a directory with `_` to hold shared code that is not a view.
+A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory, and `scripts/mcp-app-views.test.ts` catches a mismatch before a build does. Prefix a directory with `_` to hold shared code that is not a view.
 
 Two files that a view needs are **synthesized during the build and exist nowhere on disk**, served by `synthesizeMcpAppViews` in the repo-root `vite.config.base.ts` from ids inside the view's own directory:
 
@@ -424,6 +426,7 @@ Import view code only from `@transcend-io/mcp-server-base/ui`, never the package
 A few constraints worth knowing before adding a view:
 
 - **A package has no Vite config of its own.** `scripts/build-mcp-views.ts` discovers the package's views and runs one Vite build per view, because the single-file plugin collapses a whole bundle into one document — so a config naming a single entry could not express a package with two views, and would have silently emitted both into one document. The script also passes `configFile: false`, since Vitest auto-loads a `vite.config.ts` when a package has no test config and would otherwise replace the shared root config.
+- **The built document is generated into `src/ui/generated/` and gitignored**, then inlined as a string by tsdown's `.html` text loader. Because a source file imports it, `typecheck` and `test` for view-building packages depend on `build` in `turbo.json`, as do the same tasks for their dependents.
 - **Views are checked by a second tsconfig.** `tsconfig.json` excludes `src/ui`, since browser code needs bundler module resolution — `@modelcontextprotocol/ext-apps` re-exports its React entry with extensionless specifiers that `NodeNext` refuses to resolve.
 - **Expect a few hundred kilobytes per view.** React, the Apps SDK, and its Zod dependency are all inlined. That is fine for a locally served resource, but it is not a budget for many small views.
 
@@ -458,7 +461,7 @@ The namespaces available, all of which are host-aware:
 | `text-sm`, `text-md`, `text-heading-sm`, `text-heading-md` | Font sizes, each carrying its line height                                                                                                      |
 | `rounded-*`, `shadow-sm`, `font-*`                         | `sm`, `md`, `lg`, `full`                                                                                                                       |
 
-Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
+Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that. `scripts/mcp-app-styling.test.ts` enforces the distinction, since Tailwind has no config switch for it.
 
 The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
 
