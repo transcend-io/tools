@@ -1,0 +1,213 @@
+/*
+ * Shared Tailwind theme for MCP App views.
+ *
+ * A view imports this and gets its whole styling vocabulary: utilities named
+ * after semantic roles, a reset tuned for a sandboxed iframe, and nothing else.
+ * There is deliberately no default Tailwind theme underneath, so `bg-red-500`
+ * and the rest of the stock palette do not exist — every utility here resolves
+ * to a host value, a Transcend token, or a literal fallback, in that order.
+ */
+
+/*
+ * `tokens` sits below `base` so the `color-scheme: light` that the design
+ * tokens stylesheet declares cannot pin a view to light mode inside a dark
+ * host, and `utilities` sits last so a utility always beats the reset.
+ */
+@layer theme, tokens, base, components, utilities;
+
+@import '@transcend-io/design-tokens/tokens.css' layer(tokens);
+
+/*
+ * Only `utilities` is imported from Tailwind. Skipping `theme.css` is what
+ * removes the stock palette and type scale, and skipping `preflight.css` leaves
+ * the `base` layer below as the single reset — ours is transparent-bodied and
+ * never traps content in a scroller, neither of which Preflight knows about.
+ *
+ * `source(none)` because automatic class detection starts at the working
+ * directory, which differs between a package build and the dev harness. Each
+ * view registers its own `@source` instead, so the same classes are generated
+ * either way.
+ */
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+
+@theme {
+  /*
+   * Surfaces, text, and lines follow the host so a view reads as part of the
+   * conversation rather than an embedded box. Each chain is: host style
+   * variable, then Transcend token, then a literal for hosts that send neither.
+   *
+   * The token names in the middle position have no `--color-` prefix and are
+   * colors despite living in what Tailwind calls the `--text-*` namespace here
+   * (`--text-subtle` is a token; `--text-sm` below is a font size). They are
+   * distinct variables, so nothing collides.
+   */
+  --color-surface: var(--color-background-primary, var(--background-default, #ffffff));
+  --color-surface-raised: var(
+    --color-background-secondary,
+    var(--background-default-hover, #f4f4f6)
+  );
+  --color-surface-sunken: var(--color-background-tertiary, var(--background-neutral, #ebebef));
+  --color-content: var(--color-text-primary, var(--text, #1e1d28));
+  --color-content-muted: var(--color-text-secondary, var(--text-subtle, #55535f));
+  --color-content-subtle: var(--color-text-tertiary, var(--text-subtlest, #85838f));
+  --color-content-inverse: var(--color-text-inverse, var(--text-inverse, #ffffff));
+  --color-line: var(--color-border-primary, var(--border-default, #d6d5db));
+  --color-line-subtle: var(--color-border-secondary, var(--border-subtle, #ebebef));
+  --color-focus: var(--color-ring-primary, var(--border-focused, #3e2ebc));
+
+  /*
+   * Brand and status are Transcend's identity, so tokens lead here and the host
+   * is only the fallback.
+   */
+  --color-brand: var(--background-brand-bold, var(--color-background-info, #5f5bf7));
+  --color-brand-hovered: var(--background-brand-bold-hovered, var(--color-brand));
+  --color-brand-pressed: var(--background-brand-bold-pressed, var(--color-brand));
+  --color-brand-text: var(--text-brand-bold, var(--color-text-info, #3e2ebc));
+  --color-success: var(--text-success-bold, var(--color-text-success, #1a7f4b));
+  --color-warning: var(--text-warning-bold, var(--color-text-warning, #8a5a00));
+  --color-danger: var(--text-danger-bold, var(--color-text-danger, #b42318));
+
+  /*
+   * These four namespaces are named exactly what the host names them, so a
+   * `var()` chain would reference itself and be invalid. It is also unnecessary:
+   * the host applies its variables as inline styles on the document element,
+   * which outranks the `:root` rule Tailwind emits from this block. So these are
+   * the fallback values, and a host that sends its own silently wins.
+   */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.08);
+
+  /* Type scale. Sizes and their line heights travel together as one utility. */
+  --text-sm: var(--font-text-sm-size, 0.8125rem);
+  --text-sm--line-height: var(--font-text-sm-line-height, 1.25rem);
+  --text-md: var(--font-text-md-size, 0.875rem);
+  --text-md--line-height: var(--font-text-md-line-height, 1.375rem);
+  --text-heading-sm: var(--font-heading-sm-size, 1rem);
+  --text-heading-sm--line-height: var(--font-heading-sm-line-height, 1.5rem);
+  --text-heading-md: var(--font-heading-md-size, 1.125rem);
+  --text-heading-md--line-height: var(--font-heading-md-line-height, 1.625rem);
+
+  --radius-sm: var(--border-radius-sm, 6px);
+  --radius-md: var(--border-radius-md, 8px);
+  --radius-lg: var(--border-radius-lg, 12px);
+  --radius-full: var(--border-radius-full, 9999px);
+
+  /*
+   * Ours, not the host's: the MCP Apps spec excludes spacing on purpose, on the
+   * grounds that layouts break when spacing shifts underneath them. Breakpoints
+   * are likewise ours, since none survive skipping Tailwind's default theme, and
+   * a view has to work from 320px up.
+   */
+  --spacing: 0.25rem;
+  --breakpoint-sm: 24rem;
+  --breakpoint-md: 32rem;
+}
+
+@layer base {
+  :root {
+    /*
+     * Let the OS decide until the host reports its theme. The Apps SDK sets
+     * `color-scheme` inline once connected, which outranks this.
+     */
+    color-scheme: light dark;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    /*
+     * Preflight's rule, kept because the `border` utility only sets a width and
+     * would otherwise render nothing.
+     */
+    border: 0 solid;
+  }
+
+  body {
+    margin: 0;
+    /*
+     * Transparent so the host's own surface shows through; a view that paints
+     * its own page background reads as a foreign box inside the conversation.
+     */
+    background: transparent;
+    color: var(--color-content);
+    font-family: var(--font-sans);
+    font-size: var(--text-md);
+    line-height: var(--text-md--line-height);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * Views are measured and resized by the host, so never trap content in a
+   * scroller of our own.
+   */
+  html,
+  body {
+    overflow: visible;
+  }
+
+  /* The rest of what Preflight would have normalized, minus its opinions we do
+     not need. Headings and lists are unstyled so type comes from the scale
+     above rather than from the user-agent stylesheet. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
+  }
+
+  p,
+  dl,
+  dd,
+  figure,
+  blockquote {
+    margin: 0;
+  }
+
+  ol,
+  ul,
+  menu {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  img,
+  svg,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

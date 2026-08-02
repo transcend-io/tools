@@ -26,6 +26,10 @@
       "@transcend-io/source": "./src/ui/index.ts",
       "types": "./dist/ui/index.d.mts",
       "default": "./dist/ui/index.mjs"
+    },
+    "./ui/theme.css": {
+      "@transcend-io/source": "./src/ui/theme.css",
+      "default": "./dist/ui/theme.css"
     }
   },
   "publishConfig": {
@@ -51,25 +55,35 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@modelcontextprotocol/ext-apps": "catalog:",
+    "@transcend-io/design-tokens": "workspace:*",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "publint": "catalog:",
     "react": "catalog:",
+    "tailwindcss": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "peerDependencies": {
     "@modelcontextprotocol/ext-apps": "catalog:",
-    "react": "catalog:"
+    "@transcend-io/design-tokens": "workspace:*",
+    "react": "catalog:",
+    "tailwindcss": "catalog:"
   },
   "peerDependenciesMeta": {
     "@modelcontextprotocol/ext-apps": {
       "optional": true
     },
+    "@transcend-io/design-tokens": {
+      "optional": true
+    },
     "react": {
+      "optional": true
+    },
+    "tailwindcss": {
       "optional": true
     }
   },
