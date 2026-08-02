@@ -363,6 +363,70 @@ All servers share the same environment variables:
 
 A view is a React component that runs inside the host's sandboxed iframe. It reaches the host through `useMcpApp` from `@transcend-io/mcp-server-base/ui`, and it is styled with the Tailwind theme published alongside that entry point.
 
+### Building a view with React
+
+Views are React apps built by Vite into a single self-contained HTML document. That single-file constraint is not a style preference: `resources/read` returns one string, and the host renders it in a sandboxed iframe with no same-origin server, so anything left as a separate file or CDN URL cannot be fetched. Inlining everything also means a view needs no CSP `resourceDomains` at all.
+
+A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory. Prefix a directory with `_` to hold shared code that is not a view.
+
+Two files that a view needs are **synthesized during the build and exist nowhere on disk**, served by `synthesizeMcpAppViews` in the repo-root `vite.config.base.ts` from ids inside the view's own directory:
+
+- `mcp-app-entry.tsx` — imports the component, mounts it into `#root` under `StrictMode`, and imports the stylesheet below.
+- `mcp-app-theme.css` — imports the shared theme and registers the view's directory as a Tailwind source, i.e. exactly the two statements under [Styling and design tokens](#styling-and-design-tokens).
+
+The tradeoff is deliberate: a view directory no longer shows how it boots, which is why that is spelled out here. If a view needs CSS that utilities cannot express — keyframes, or an `@layer components` rule — add `src/ui/<name>/<name>.css` and the synthesized entry imports it automatically.
+
+#### Splitting a view into components
+
+A view is one _entry_ component, not one file. Break it up freely:
+
+```
+src/ui/
+  _shared/                       shared across views; `_` means "not a view"
+    Badge.tsx
+  cookie-triage/
+    CookieTriageView.tsx         the entry — the only *View.tsx here
+    ActionBar.tsx                sibling components
+    ConfirmModal.tsx
+    useTriageSelection.ts
+    table/
+      TriageTable.tsx            nested as deep as you like
+      TableRow.tsx
+    cookie-triage.css            optional, imported automatically
+```
+
+Two rules, both enforced rather than trusted:
+
+- **Only the entry may end in `View.tsx`.** Discovery looks for exactly one match at the top level of the view directory, so a sibling named `ConfirmModalView.tsx` fails the build by name. Nesting is unaffected — `table/TriageTableView.tsx` would be fine, since the search is not recursive — but the simplest habit is to reserve the suffix for the entry.
+- **Shared components go in a `_`-prefixed directory under `src/ui/`.** Tailwind generates utilities per document by scanning files, so the synthesized stylesheet sources every `_` directory in addition to the view's own. Putting a shared component anywhere else outside the view directory bundles it correctly and then renders it unstyled, which reads as a CSS bug rather than a missing `@source`. The cost of sourcing them is that shared components' utilities appear in every view's document, which is why `_shared` is for genuinely shared UI rather than a dumping ground.
+
+```tsx
+// src/ui/hello/HelloView.tsx
+import { useMcpApp } from '@transcend-io/mcp-server-base/ui';
+
+export function HelloView() {
+  const { data, theme, callTool, isCallingTool } = useMcpApp<{ greeting: string }>({
+    appInfo: { name: 'my-view', version: '1.0.0' },
+  });
+
+  return (
+    <button onClick={() => void callTool('my_tool_refresh', {})} disabled={isCallingTool}>
+      {data?.greeting} ({theme})
+    </button>
+  );
+}
+```
+
+`useMcpApp` wraps `@modelcontextprotocol/ext-apps` with this repo's conventions: it connects to the host, applies the host's style variables to the document so the shared theme can pick them up, keeps `theme` in sync, and unwraps the `createToolResult` envelope into typed `data`. `callTool` invokes a tool on the originating server and folds the response back into `data`, so a refresh re-renders the view.
+
+Import view code only from `@transcend-io/mcp-server-base/ui`, never the package root. That subpath exists so browser code cannot reach the root barrel, which pulls in `node:async_hooks`, GraphQL clients, and OAuth.
+
+A few constraints worth knowing before adding a view:
+
+- **A package has no Vite config of its own.** `scripts/build-mcp-views.ts` discovers the package's views and runs one Vite build per view, because the single-file plugin collapses a whole bundle into one document — so a config naming a single entry could not express a package with two views, and would have silently emitted both into one document. The script also passes `configFile: false`, since Vitest auto-loads a `vite.config.ts` when a package has no test config and would otherwise replace the shared root config.
+- **Views are checked by a second tsconfig.** `tsconfig.json` excludes `src/ui`, since browser code needs bundler module resolution — `@modelcontextprotocol/ext-apps` re-exports its React entry with extensionless specifiers that `NodeNext` refuses to resolve.
+- **Expect a few hundred kilobytes per view.** React, the Apps SDK, and its Zod dependency are all inlined. That is fine for a locally served resource, but it is not a budget for many small views.
+
 ### Styling and design tokens
 
 Views are styled with Tailwind utilities, but not stock Tailwind: the default theme is never imported, so `bg-red-500` does not exist. Every utility resolves through `@transcend-io/mcp-server-base/ui/theme.css`, which deliberately splits where a value comes from:
@@ -370,6 +434,17 @@ Views are styled with Tailwind utilities, but not stock Tailwind: the default th
 - **Surfaces, typography, radii, and shadows follow the host**, via the style variables it sends during the handshake. A view then looks native in light or dark Claude, and this covers what `@transcend-io/design-tokens` does not yet define.
 - **Brand and status colors come from Transcend tokens**, so a view still reads as ours.
 - **Spacing is Tailwind's own scale.** The MCP Apps spec omits spacing on purpose, since layouts break when it shifts underneath them.
+
+So a view's stylesheet is two statements, which is why the build writes it rather than each view repeating it:
+
+```css
+@import '@transcend-io/mcp-server-base/ui/theme.css';
+
+/* The theme sets `source(none)`, so each view registers its own files. */
+@source './**/*.tsx';
+```
+
+The `@source` cannot be left implicit even though it is now generated. Tailwind's automatic detection starts at the working directory, which differs depending on whether the build was invoked from the package or from the repo root, so an implicit scan would generate a different set of utilities depending on how it was run. Naming the directory is also what forces the synthesized stylesheet's id to sit _inside_ the view directory: Tailwind resolves `@source` against `path.dirname` of the stylesheet's id.
 
 The namespaces available, all of which are host-aware:
 
