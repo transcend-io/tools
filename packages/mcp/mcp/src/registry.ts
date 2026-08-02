@@ -3,7 +3,12 @@ import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
   createErrorResult,
+  EMPTY_CAPABILITY_REPORT,
+  expandToolsForClient,
+  isVisibleToModel,
+  resolveToolVariant,
   SimpleLogger,
+  type ClientCapabilityReport,
   type ToolDefinition,
   type TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
@@ -63,7 +68,19 @@ export class ToolRegistry {
     }
   }
 
-  getToolList(): Array<{
+  /**
+   * Tool descriptors as a host would see them.
+   *
+   * The serving path builds descriptors in `buildMcpServer` rather than here, so
+   * this method exists for callers embedding the registry directly. It still
+   * resolves capability variants and carries `_meta`, because a descriptor list
+   * that quietly disagreed with what the server actually serves would be worse
+   * than no method at all.
+   */
+  getToolList(
+    /** Capabilities of the host being served; defaults to a host with none */
+    client: ClientCapabilityReport = EMPTY_CAPABILITY_REPORT,
+  ): Array<{
     name: string;
     description: string;
     inputSchema: Record<string, unknown>;
@@ -72,24 +89,41 @@ export class ToolRegistry {
       destructiveHint: boolean;
       idempotentHint: boolean;
     };
+    _meta?: Record<string, unknown>;
   }> {
-    return Array.from(this.tools.values()).map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: this.jsonSchemaCache.get(tool.name) || { type: 'object', properties: {} },
-      annotations: tool.annotations,
-    }));
+    return expandToolsForClient(Array.from(this.tools.values()), client)
+      .filter((tool) => isVisibleToModel(tool))
+      .map((tool) => {
+        const resourceUri = tool.ui?.resource.uri;
+        return {
+          name: tool.name,
+          description: tool.description,
+          inputSchema: this.jsonSchemaCache.get(tool.name) || { type: 'object', properties: {} },
+          annotations: tool.annotations,
+          ...(resourceUri && {
+            _meta: { ui: { resourceUri }, 'ui/resourceUri': resourceUri },
+          }),
+        };
+      });
   }
 
   getTool(name: string): ToolDefinition | undefined {
     return this.tools.get(name);
   }
 
-  async executeTool(name: string, args: Record<string, unknown>): Promise<unknown> {
-    const tool = this.tools.get(name);
-    if (!tool) {
+  async executeTool(
+    name: string,
+    args: Record<string, unknown>,
+    /** Capabilities of the host being served; defaults to a host with none */
+    client: ClientCapabilityReport = EMPTY_CAPABILITY_REPORT,
+  ): Promise<unknown> {
+    const registered = this.tools.get(name);
+    if (!registered) {
       throw new Error(`Unknown tool: ${name}`);
     }
+
+    // Resolve so the handler that runs matches the descriptor getToolList emitted.
+    const tool = resolveToolVariant(registered, client);
 
     const parseResult = tool.zodSchema.safeParse(args);
     if (!parseResult.success) {
