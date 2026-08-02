@@ -359,6 +359,32 @@ All servers share the same environment variables:
 
 **Monorepo:** store these in root **`secret.env`** (from [`secret.env.example`](../../secret.env.example)); load with `source` or [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh). See [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers).
 
+## Building MCP App views
+
+A view is a React component that runs inside the host's sandboxed iframe. It reaches the host through `useMcpApp` from `@transcend-io/mcp-server-base/ui`, and it is styled with the Tailwind theme published alongside that entry point.
+
+### Styling and design tokens
+
+Views are styled with Tailwind utilities, but not stock Tailwind: the default theme is never imported, so `bg-red-500` does not exist. Every utility resolves through `@transcend-io/mcp-server-base/ui/theme.css`, which deliberately splits where a value comes from:
+
+- **Surfaces, typography, radii, and shadows follow the host**, via the style variables it sends during the handshake. A view then looks native in light or dark Claude, and this covers what `@transcend-io/design-tokens` does not yet define.
+- **Brand and status colors come from Transcend tokens**, so a view still reads as ours.
+- **Spacing is Tailwind's own scale.** The MCP Apps spec omits spacing on purpose, since layouts break when it shifts underneath them.
+
+The namespaces available, all of which are host-aware:
+
+| Utilities                                                  | Values                                                                                                                                         |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bg-*`, `text-*`, `border-*`                               | `surface`, `surface-raised`, `surface-sunken`, `content`, `content-muted`, `content-subtle`, `content-inverse`, `line`, `line-subtle`, `focus` |
+| `bg-brand*`, `text-brand-text`                             | `brand`, `brand-hovered`, `brand-pressed`, `brand-text`                                                                                        |
+| `text-success`, `text-warning`, `text-danger`              | Transcend status colors                                                                                                                        |
+| `text-sm`, `text-md`, `text-heading-sm`, `text-heading-md` | Font sizes, each carrying its line height                                                                                                      |
+| `rounded-*`, `shadow-sm`, `font-*`                         | `sm`, `md`, `lg`, `full`                                                                                                                       |
+
+Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
+
+The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
+
 ## Contributing
 
 See the [MCP Servers section of CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers) for how to add tools, run tests, and publish packages.

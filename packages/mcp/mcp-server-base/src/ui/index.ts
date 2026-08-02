@@ -7,8 +7,12 @@
  * clients, and OAuth, none of which can run in a sandboxed iframe. Import only
  * from this subpath in view code so that graph stays unreachable.
  *
- * React and `@modelcontextprotocol/ext-apps` are optional peer dependencies —
- * they are needed only by packages that actually ship a view.
+ * React, `@modelcontextprotocol/ext-apps`, and `tailwindcss` are optional peer
+ * dependencies — they are needed only by packages that actually ship a view.
+ *
+ * Styling lives alongside this entry as `./theme.css`, imported from a view's
+ * own stylesheet rather than re-exported here, because Tailwind has to see it at
+ * build time.
  *
  * @example
  * ```tsx
