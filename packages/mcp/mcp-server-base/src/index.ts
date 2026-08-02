@@ -10,6 +10,31 @@ export {
   requestMcpCallerContext,
 } from './mcp-caller-context.js';
 
+export {
+  EMPTY_CAPABILITY_REPORT,
+  McpClientCapability,
+  McpHostClient,
+} from './capabilities/types.js';
+export type { ClientCapabilityReport } from './capabilities/types.js';
+export { deriveClientCapabilities, describeCapabilities } from './capabilities/derive.js';
+export type { ClientCapabilitySource } from './capabilities/derive.js';
+export {
+  ASSUME_CAPABILITIES_ENV_VAR,
+  assumedCapabilitiesFromEnv,
+  parseAssumedCapabilities,
+} from './capabilities/assume.js';
+export type { AssumedCapabilities } from './capabilities/assume.js';
+export { HOST_QUIRKS, quirksFor, whatIsTheClient } from './capabilities/client-detection.js';
+export type { HostQuirks } from './capabilities/client-detection.js';
+
+export {
+  getMcpSession,
+  hasCapability,
+  mcpSessionContext,
+  requestElicitation,
+} from './mcp-session-context.js';
+export type { McpSession } from './mcp-session-context.js';
+
 export { toolCallContext, getToolCallIdHeader, TOOLCALL_ID_HEADER } from './tool-call-context.js';
 export type { ToolCallContext } from './tool-call-context.js';
 

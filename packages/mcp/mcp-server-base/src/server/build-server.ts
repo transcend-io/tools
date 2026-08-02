@@ -5,7 +5,12 @@ import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-sc
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 
 import { getRequestAuth, requestAuthContext } from '../auth-context.js';
+import { ASSUME_CAPABILITIES_ENV_VAR, assumedCapabilitiesFromEnv } from '../capabilities/assume.js';
+import { deriveClientCapabilities, describeCapabilities } from '../capabilities/derive.js';
+import { EMPTY_CAPABILITY_REPORT, type ClientCapabilityReport } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
+import { getRequestMcpCaller } from '../mcp-caller-context.js';
+import { mcpSessionContext } from '../mcp-session-context.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
@@ -46,6 +51,23 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   logger.info(`Registered ${toolMap.size} tools`, { toolCount: toolMap.size });
 
+  // Read once at construction: the value cannot change for a running process,
+  // and warning here means it appears in startup output rather than buried in a
+  // per-request log.
+  const assumed = assumedCapabilitiesFromEnv();
+  if (assumed.capabilities.length > 0) {
+    logger.warn(
+      `${ASSUME_CAPABILITIES_ENV_VAR} is forcing client capabilities on. This is a local ` +
+        'debugging aid and must not be set in production.',
+      { assumed: assumed.capabilities },
+    );
+  }
+  if (assumed.unknown.length > 0) {
+    logger.warn(`${ASSUME_CAPABILITIES_ENV_VAR} contains unrecognized entries, which are ignored`, {
+      unknown: assumed.unknown,
+    });
+  }
+
   const server = new Server(
     { name: options.name, version: options.version },
     {
@@ -54,21 +76,60 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     },
   );
 
+  /**
+   * Capabilities are fixed for a connection's lifetime, so derive once and reuse.
+   * `runMcpHttp` builds a fresh Server per session and stdio has exactly one, so
+   * caching on this closure stays correct per client.
+   */
+  let cachedClient: ClientCapabilityReport | undefined;
+  const currentClient = (): ClientCapabilityReport => {
+    if (!cachedClient) {
+      const clientInfo = server.getClientVersion();
+      if (!clientInfo && !server.getClientCapabilities()) {
+        // Pre-handshake: do not cache, a real report is coming.
+        return EMPTY_CAPABILITY_REPORT;
+      }
+      cachedClient = deriveClientCapabilities({
+        capabilities: server.getClientCapabilities(),
+        clientInfo,
+        callerHeader: getRequestMcpCaller(),
+        assumeCapabilities: assumed.capabilities,
+      });
+    }
+    return cachedClient;
+  };
+
+  server.oninitialized = () => {
+    const client = currentClient();
+    logger.info('MCP client connected', {
+      host: client.host,
+      clientName: client.clientInfo?.name,
+      clientVersion: client.clientInfo?.version,
+      capabilities: describeCapabilities(client),
+    });
+  };
+
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    logger.debug('Listing MCP tools');
-    const toolList = Array.from(toolMap.entries()).map(([name, t]) => ({
-      name: t.name,
-      description: t.description,
-      inputSchema: jsonSchemaCache.get(name) || { type: 'object', properties: {} },
-      annotations: t.annotations,
-    }));
+    const client = currentClient();
+    logger.debug('Listing MCP tools', { host: client.host });
+
+    const toolList = await mcpSessionContext.run({ client, server }, async () =>
+      Array.from(toolMap.entries()).map(([name, t]) => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: jsonSchemaCache.get(name) || { type: 'object', properties: {} },
+        annotations: t.annotations,
+      })),
+    );
+
     logger.info(`Returning ${toolList.length} tools`);
     return { tools: toolList };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    logger.info(`Executing tool: ${name}`, { args: Object.keys(args || {}) });
+    const client = currentClient();
+    logger.info(`Executing tool: ${name}`, { args: Object.keys(args || {}), host: client.host });
 
     try {
       const tool = toolMap.get(name);
@@ -79,7 +140,10 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
       const parseResult = tool.zodSchema.safeParse(args || {});
       if (!parseResult.success) {
         const issues = parseResult.error.issues
-          .map((i: any) => `${i.path.join('.') || 'input'}: ${i.message}`)
+          .map(
+            (i: { path: PropertyKey[]; message: string }) =>
+              `${i.path.join('.') || 'input'}: ${i.message}`,
+          )
           .join('; ');
         const errorResult = createToolResult(false, undefined, `Invalid input: ${issues}`, {
           code: 'VALIDATION_ERROR',
@@ -98,15 +162,14 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         oauthCredentials = getLazyOAuthCredentials();
       }
 
-      const result = await toolCallContext.run(
-        { toolName: name, correlationId: randomUUID() },
-        () => {
+      const result = await mcpSessionContext.run({ client, server }, () =>
+        toolCallContext.run({ toolName: name, correlationId: randomUUID() }, () => {
           const execute = () => tool.handler(parseResult.data);
           if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {
             return requestAuthContext.run(oauthCredentials, execute);
           }
           return execute();
-        },
+        }),
       );
       logger.debug(`Tool ${name} completed successfully`);
 
