@@ -8,6 +8,12 @@ import { fileExists, readJsonFile, readRepoFile, repoRoot } from './lib/repo-fil
 
 type DependencyMap = Record<string, string>;
 
+type ExportConditions = {
+  '@transcend-io/source'?: string;
+  default?: string;
+  types?: string;
+};
+
 type PackageManifest = {
   author?: string;
   dependencies?: DependencyMap;
@@ -16,18 +22,8 @@ type PackageManifest = {
     node?: string;
   };
   exports?: {
-    '.': {
-      '@transcend-io/source'?: string;
-      default?: string;
-      types?: string;
-    };
-    [subpath: string]:
-      | string
-      | {
-          '@transcend-io/source'?: string;
-          default?: string;
-          types?: string;
-        };
+    '.': ExportConditions;
+    [subpath: string]: string | ExportConditions;
   };
   files?: string[];
   homepage?: string;
@@ -183,7 +179,12 @@ describe('package conventions', () => {
       expect(manifest.devDependencies?.typescript).toBe(requiredDevDependencies.typescript);
       expect(manifest.devDependencies?.vitest).toBe(requiredDevDependencies.vitest);
       if (isDesignTokens) {
-        expect(manifest.exports?.['./tokens.css']).toBe('./dist/tokens.css');
+        // Conditions mirror the `.` entry above: consumers read the built
+        // stylesheet, builds inside this monorepo read source.
+        expect(manifest.exports?.['./tokens.css']).toEqual({
+          '@transcend-io/source': './src/tokens.css',
+          default: './dist/tokens.css',
+        });
       }
     },
   );
