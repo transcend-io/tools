@@ -458,7 +458,7 @@ describe('buildMcpServer MCP Apps', () => {
   it('serves the MCP App variant with view metadata to a host that supports it', async () => {
     const sessionId = await initSession(baseUrl, {
       capabilities: MCP_APP_CAPABILITIES,
-      clientName: 'claude-desktop',
+      clientName: 'claude-ai',
     });
     const listed = await rpc<{ tools: ListedTool[] }>(baseUrl, sessionId, 'tools/list');
 
