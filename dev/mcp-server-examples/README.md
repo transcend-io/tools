@@ -11,7 +11,8 @@ pnpm mcp:inspect --examples  # the official Inspector, over stdio
 ```
 
 That builds the package first, then serves both examples below, rebuilding the
-`hello` view on save.
+`hello` view on save. `pnpm mcp:new-view examples <name>` scaffolds another view
+here.
 
 ## Why it is not published
 
