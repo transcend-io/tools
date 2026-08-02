@@ -69,8 +69,44 @@ export {
 } from './validation/schemas.js';
 export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
 
-export type { ToolAnnotations, ToolDefinition, ToolClients } from './tools/types.js';
-export { defineTool } from './tools/types.js';
+export type {
+  ToolAnnotations,
+  ToolClients,
+  ToolDefinition,
+  ToolUiBinding,
+  ToolVisibility,
+} from './tools/types.js';
+export { DEFAULT_TOOL_VISIBILITY, defineTool, isVisibleToModel } from './tools/types.js';
+
+export {
+  MCP_APP_MIME_TYPE,
+  MCP_UI_EXTENSION_ID,
+  UI_URI_SCHEME,
+  assertHtmlDocument,
+  buildUiResourceMeta,
+  defineUiResource,
+  readUiResourceHtml,
+} from './tools/ui-resource.js';
+export type {
+  UiResourceCsp,
+  UiResourceDefinition,
+  UiResourcePermissions,
+} from './tools/ui-resource.js';
+
+export {
+  assertElicitFormSchema,
+  defineToolWithCapabilities,
+  expandToolsForClient,
+  isCapabilityAwareTool,
+  resolveToolVariant,
+} from './tools/define-tool-with-capabilities.js';
+export type {
+  CapabilityAwareToolDefinition,
+  ElicitFormSchema,
+  ElicitationVariant,
+  McpAppVariant,
+  ToolVariants,
+} from './tools/define-tool-with-capabilities.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
 

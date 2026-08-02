@@ -299,6 +299,40 @@ Only two capabilities are detected, because they are the only ones we can act on
 
 Sampling and roots are deliberately excluded. Roots is inert for these servers (they are API-backed, so there is no filesystem scope to negotiate), our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
 
+### Adding variants to a tool
+
+Use `defineToolWithCapabilities` instead of `defineTool`. The inherited `handler` is the required baseline; each variant is optional:
+
+```typescript
+defineToolWithCapabilities({
+  name: 'my_tool',
+  // ...everything defineTool takes; this handler is the baseline
+  handler: async (args) => plainTextResult(args),
+  variants: {
+    [McpClientCapability.Elicitation]: {
+      elicitMessage: 'Which environment should this apply to?',
+      elicitSchema: { type: 'object', properties: { env: { type: 'string', description: '...' } } },
+      handler: async (args) => withForm(args),
+    },
+    [McpClientCapability.McpApp]: {
+      resource: MY_VIEW,
+      handler: async (args) => richPayload(args),
+      appOnlyTools: [refreshTool],
+    },
+  },
+});
+```
+
+Precedence is fixed at MCP App, then elicitation, then baseline, so `tools/list` and `tools/call` always agree for a given host. Note that `elicitSchema` is not a Zod schema: the spec restricts elicitation to a flat object of primitives, so it cannot reuse a tool's `zodSchema`. Both that restriction and the usual description requirements are validated at construction, so mistakes fail in CI rather than mid-conversation.
+
+`appOnlyTools` are emitted with `visibility: ['app']`, which keeps them callable by the view via `tools/call` but hides them from the model.
+
+### What this changes on the wire
+
+For a server with no views, nothing: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+For a server with views, `resources/list` and `resources/read` are registered, tools carry a `_meta.ui.resourceUri` binding, and `resources/read` returns the HTML with the `text/html;profile=mcp-app` MIME type. The binding is emitted regardless of host support, since the spec's degradation path is that hosts without the extension ignore it and show the text result.
+
 ### Usage attribution
 
 Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host detected at `initialize`, which gives stdio sessions attribution they previously had no way to send. The resolved host and capability set are also logged once per session.

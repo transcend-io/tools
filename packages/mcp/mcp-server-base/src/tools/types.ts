@@ -3,6 +3,7 @@ import { type z } from 'zod';
 import type { TranscendGraphQLBase } from '../clients/graphql/base.js';
 import type { TranscendRestClient } from '../clients/rest-client.js';
 import { collectMissingDescriptions } from '../validation/describe-audit.js';
+import type { UiResourceDefinition } from './ui-resource.js';
 
 export interface ToolAnnotations {
   /** Whether this tool only reads data */
@@ -11,6 +12,23 @@ export interface ToolAnnotations {
   destructiveHint: boolean;
   /** Whether repeated calls with same args produce same result */
   idempotentHint: boolean;
+}
+
+/**
+ * Who may call a tool, per the MCP Apps spec.
+ *
+ * - `model`: the agent sees the tool in `tools/list` and may call it
+ * - `app`: an MCP App view served by this server may call it
+ */
+export type ToolVisibility = 'model' | 'app';
+
+/** Default when a tool does not declare visibility: reachable by both. */
+export const DEFAULT_TOOL_VISIBILITY: readonly ToolVisibility[] = ['model', 'app'];
+
+/** Binds a tool's results to an MCP App view that renders them. */
+export interface ToolUiBinding {
+  /** UI resource the host should render for this tool's results */
+  resource: UiResourceDefinition;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -43,6 +61,16 @@ export interface ToolDefinition {
    * Leave undefined for GraphQL-only / non-Sombra tools.
    */
   requireSombra?: boolean;
+  /**
+   * MCP App view that renders this tool's results. Hosts without MCP Apps
+   * support ignore the metadata and show the text result instead.
+   */
+  ui?: ToolUiBinding;
+  /**
+   * Who may call this tool. Defaults to {@link DEFAULT_TOOL_VISIBILITY}. Omit
+   * `model` for tools that exist only so an MCP App view can call them.
+   */
+  visibility?: readonly ToolVisibility[];
 }
 
 export interface ToolClients {
@@ -92,6 +120,16 @@ export function defineTool<T>(config: {
    * Leave undefined for GraphQL-only / non-Sombra tools.
    */
   requireSombra?: boolean;
+  /**
+   * MCP App view that renders this tool's results. Hosts without MCP Apps
+   * support ignore the metadata and show the text result instead.
+   */
+  ui?: ToolUiBinding;
+  /**
+   * Who may call this tool. Defaults to {@link DEFAULT_TOOL_VISIBILITY}. Omit
+   * `model` for tools that exist only so an MCP App view can call them.
+   */
+  visibility?: readonly ToolVisibility[];
 }): ToolDefinition {
   // Descriptions are the only signal an LLM caller has for what each argument
   // means, so refuse to construct a tool whose input schema has any field
@@ -107,4 +145,15 @@ export function defineTool<T>(config: {
     );
   }
   return config;
+}
+
+/**
+ * Whether the agent should see this tool in `tools/list`. App-only tools stay
+ * callable via `tools/call` so an MCP App view can still reach them.
+ */
+export function isVisibleToModel(
+  /** Tool to test */
+  tool: ToolDefinition,
+): boolean {
+  return (tool.visibility ?? DEFAULT_TOOL_VISIBILITY).includes('model');
 }
