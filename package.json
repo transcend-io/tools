@@ -26,7 +26,7 @@
     "changeset:version": "changeset version",
     "changeset:version:release": "changeset version && pnpm format:root",
     "release": "turbo run build && changeset publish",
-    "test:root": "vitest run scripts/check-changeset.test.ts scripts/package-conventions.test.ts scripts/check-mcp-descriptions.test.ts",
+    "test:root": "vitest run --dir scripts",
     "typecheck:root": "tsc -p scripts/tsconfig.json --noEmit",
     "lint:root": "oxlint",
     "lint:fix:root": "oxlint --fix",

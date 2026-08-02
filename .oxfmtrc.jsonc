@@ -1,6 +1,14 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [".changeset/*.md", "**/__generated__/**", "schema.graphql", "pnpm-lock.yaml"],
+  "ignorePatterns": [
+    ".changeset/*.md",
+    "**/__generated__/**",
+    "schema.graphql",
+    "pnpm-lock.yaml",
+    // Vendored verbatim from upstream so `curl | diff` can prove it has not
+    // drifted; reformatting its inline script would defeat that check.
+    "scripts/lib/inspector-sandbox-proxy.html"
+  ],
   "printWidth": 100,
   "tabWidth": 2,
   "semi": true,
