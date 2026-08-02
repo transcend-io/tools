@@ -1,6 +1,9 @@
 packages:
   - packages/*
   - packages/mcp/*
+  # Private local tooling, never published. Kept out of `packages/` so it is not
+  # subject to the publishable-package conventions.
+  - dev/*
 
 catalog:
   '@arethetypeswrong/cli': ^0.18.2
