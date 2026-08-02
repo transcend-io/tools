@@ -93,6 +93,9 @@ export type {
   UiResourcePermissions,
 } from './tools/ui-resource.js';
 
+export { DEV_VIEWS_ENV_VAR, devViewsEnabled, viewHtml } from './tools/dev-view-html.js';
+export type { ViewHtmlOptions } from './tools/dev-view-html.js';
+
 export {
   assertElicitFormSchema,
   defineToolWithCapabilities,

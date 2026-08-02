@@ -157,7 +157,7 @@ function echoPayload(
  * elicitation, then baseline, so a tool offering both resolves to its view on any
  * host that supports one — which is every host worth testing against, including
  * the Inspector. Keeping this one form-only is what makes the form flow reachable
- * from a host that renders views, instead of only from one that cannot.
+ * in the normal `pnpm mcp:inspect` loop rather than only under `--v1`.
  */
 export function createExampleElicitationTool(_clients?: ToolClients) {
   return defineToolWithCapabilities({
