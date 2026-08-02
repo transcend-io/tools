@@ -299,6 +299,10 @@ Only two capabilities are detected, because they are the only ones we can act on
 
 Sampling and roots are deliberately excluded. Roots is inert for these servers (they are API-backed, so there is no filesystem scope to negotiate), our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
 
+### Usage attribution
+
+Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host detected at `initialize`, which gives stdio sessions attribution they previously had no way to send. The resolved host and capability set are also logged once per session.
+
 ## Environment variables
 
 All servers share the same environment variables:

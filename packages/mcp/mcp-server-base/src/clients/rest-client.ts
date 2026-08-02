@@ -7,7 +7,7 @@ import {
   TRANSCEND_VERSION_HEADER,
   TRANSCEND_VERSION_HEADER_VALUE,
 } from '../http-header-names.js';
-import { getRequestMcpCaller } from '../mcp-caller-context.js';
+import { resolveMcpCallerAttribution } from '../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
@@ -73,7 +73,7 @@ export class TranscendRestClient {
     } = options;
 
     const toolCallId = getToolCallIdHeader();
-    const mcpCaller = getRequestMcpCaller();
+    const mcpCaller = resolveMcpCallerAttribution();
     const headers: Record<string, string> = {
       ...authHeaders(effectiveAuth),
       'Content-Type': 'application/json',
@@ -203,7 +203,7 @@ export class TranscendRestClient {
     }
     const url = `${this.baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
     const toolCallId = getToolCallIdHeader();
-    const mcpCaller = getRequestMcpCaller();
+    const mcpCaller = resolveMcpCallerAttribution();
     const response = await fetch(url, {
       headers: {
         ...authHeaders(effectiveAuth),
