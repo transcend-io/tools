@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    // MCP App views are browser code bundled by Vite, so they need a different
+    // baseline than the Node libraries this repo otherwise ships.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    // Bundler resolution is required, not just convenient:
+    // `@modelcontextprotocol/ext-apps` re-exports its React entry with
+    // extensionless specifiers, which NodeNext refuses to resolve.
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    // Vite resolves `./Component.tsx` literally, so view code says what it means
+    // instead of pointing at a `.js` file that never exists.
+    "allowImportingTsExtensions": true,
+    // No ambient Node or Vitest globals; a view runs in a sandboxed iframe.
+    "types": [],
+    // Vite emits the bundle, so tsc is only ever a checker here. Declarations
+    // and project references are therefore off.
+    "noEmit": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "isolatedDeclarations": false
+  }
+}
