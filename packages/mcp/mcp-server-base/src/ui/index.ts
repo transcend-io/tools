@@ -1,0 +1,26 @@
+/**
+ * Browser-side helpers for building MCP App views with React.
+ *
+ * This entry point is **browser-only** and is published separately from the
+ * package root as `@transcend-io/mcp-server-base/ui`. Keeping it separate is
+ * load-bearing: the root barrel reaches into `node:async_hooks`, GraphQL
+ * clients, and OAuth, none of which can run in a sandboxed iframe. Import only
+ * from this subpath in view code so that graph stays unreachable.
+ *
+ * React and `@modelcontextprotocol/ext-apps` are optional peer dependencies —
+ * they are needed only by packages that actually ship a view.
+ *
+ * @example
+ * ```tsx
+ * import { useMcpApp } from '@transcend-io/mcp-server-base/ui';
+ *
+ * export function View() {
+ *   const { data, isConnected } = useMcpApp<{ greeting: string }>({
+ *     appInfo: { name: 'my-view', version: '1.0.0' },
+ *   });
+ *   return <p>{isConnected ? data?.greeting : 'Connecting…'}</p>;
+ * }
+ * ```
+ */
+
+export { useMcpApp, type McpAppState, type UseMcpAppOptions } from './use-mcp-app.js';

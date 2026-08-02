@@ -13,6 +13,7 @@
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "graphql:refresh-schema": "node scripts/refresh-graphql-schema.ts",
     "typecheck": "turbo run typecheck typecheck:root",
+    "typecheck:ui": "turbo run typecheck:ui",
     "lint": "turbo run lint lint:root",
     "lint:fix": "turbo run lint:fix lint:fix:root",
     "format": "turbo run format format:root",
