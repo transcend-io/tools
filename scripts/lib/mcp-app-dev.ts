@@ -1,8 +1,9 @@
-import { spawn } from 'node:child_process';
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { spawn, type ChildProcess } from 'node:child_process';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { discoverMcpAppViews, MCP_APP_OUT_DIR, type McpAppView } from '../../vite.config.base.ts';
 import { logger } from '../logger.ts';
 
 /** Directory holding this file, used to locate assets that ship beside it. */
@@ -11,7 +12,48 @@ const scriptsLibDir = dirname(fileURLToPath(import.meta.url));
 /** Repository root, derived from this file rather than the working directory. */
 export const repoRoot = resolve(scriptsLibDir, '..', '..');
 
-/** Package the Inspector specs resolve to. */
+/**
+ * Directories searched for MCP servers, in the order they are listed.
+ *
+ * `dev` is included because the example server lives there rather than beside the
+ * published packages: its views inline hundreds of kilobytes each, and a private
+ * package cannot leak them into a tarball. Nothing else distinguishes it — it is
+ * built, served, and inspected exactly like a published server.
+ */
+const PACKAGE_ROOTS = [join(repoRoot, 'packages', 'mcp'), join(repoRoot, 'dev')];
+
+/** Root whose packages are development-only, matched against {@link PACKAGE_ROOTS}. */
+const DEV_ROOT = join(repoRoot, 'dev');
+
+/** The aggregate server, which exposes every sub-package's tools and views. */
+export const UMBRELLA_PACKAGE = '@transcend-io/mcp';
+
+/** The example server, which `--examples` selects. */
+export const EXAMPLES_PACKAGE = '@transcend-io/mcp-server-examples';
+
+/**
+ * The Inspector release `pnpm mcp:inspect` uses by default.
+ *
+ * v2 is the right default, measured rather than assumed. All three of its clients
+ * (web, CLI, TUI) declare `extensions["io.modelcontextprotocol/ui"]` in
+ * `initialize`, which is what a spec-correct server requires before it will bind
+ * a view to a tool, and its CLI has an `--app-info` probe that reports a tool's
+ * app metadata directly. Pinned to the major so security fixes land without a
+ * surprise rewrite.
+ */
+export const INSPECTOR_V2_SPEC = '@modelcontextprotocol/inspector@2';
+
+/**
+ * The v1 Inspector, available behind `--v1`.
+ *
+ * Kept as an escape hatch, not a default. v1 ships an Apps tab that reads
+ * `_meta["ui/resourceUri"]`, but its client declares `capabilities: {}`, so a
+ * spec-correct server withholds every view and the tab renders empty. `--v1`
+ * therefore also turns on the capability override to compensate.
+ */
+export const INSPECTOR_V1_SPEC = '@modelcontextprotocol/inspector@v1-latest';
+
+/** Package the Inspector specs above resolve to. */
 const INSPECTOR_PACKAGE_NAME = '@modelcontextprotocol/inspector';
 
 /**
@@ -168,6 +210,342 @@ export async function ensureInspectorSandboxProxy(spec: string): Promise<void> {
     logger.log(
       `Could not check the app sandbox document in ${spec}: ` +
         `${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+/** Environment variable that makes servers read views from disk per request. */
+export const DEV_VIEWS_ENV_VAR = 'TRANSCEND_MCP_DEV_VIEWS';
+
+/** Environment variable that forces client capabilities on for local debugging. */
+export const ASSUME_CAPABILITIES_ENV_VAR = 'TRANSCEND_MCP_ASSUME_CAPABILITIES';
+
+/** Variables a stdio server needs from us, in the order they are passed. */
+const INSPECTOR_FORWARDED_ENV_VARS = [DEV_VIEWS_ENV_VAR, ASSUME_CAPABILITIES_ENV_VAR] as const;
+
+/**
+ * Builds the `-e KEY=VALUE` arguments a stdio Inspector launch needs.
+ *
+ * The Inspector does not give a stdio server our environment. Its proxy builds
+ * the child's environment from a fixed allowlist — `HOME`, `LOGNAME`, `PATH`,
+ * `SHELL`, `TERM`, `USER` on POSIX — and merges in only what `-e` supplied, so
+ * exporting a variable in this process reaches the Inspector and stops there.
+ *
+ * That gap is worth a comment this long because its symptom accuses the wrong
+ * thing. Without {@link DEV_VIEWS_ENV_VAR} the server serves each view as it was
+ * inlined at package build time, so a rebuilt view keeps rendering its old markup
+ * through app reopens, page reloads, reconnects, and Inspector restarts — while
+ * the watcher reports success on every save. It reads as a stuck host or a broken
+ * watcher rather than a dropped variable.
+ *
+ * Credentials are deliberately absent: arguments are readable by anyone on the
+ * machine (`ps -o command`), which is no place for an API key. Use `--http` when
+ * a tool needs to reach the Transcend API, since we spawn the server there and it
+ * inherits the environment normally.
+ *
+ * @param env - Environment to read, defaulting to this process's
+ * @returns Inspector arguments, as `-e KEY=VALUE` pairs
+ */
+export function inspectorEnvArgs(env: NodeJS.ProcessEnv = process.env): string[] {
+  return INSPECTOR_FORWARDED_ENV_VARS.flatMap((name) => {
+    const value = env[name];
+    // An empty value is an error to the Inspector, not a no-op, so drop it here.
+    return value === undefined || value === '' ? [] : ['-e', `${name}=${value}`];
+  });
+}
+
+/** One MCP App view found in a package. */
+export interface DiscoveredView extends McpAppView {
+  /** Built document's absolute path, once the view build has run */
+  builtHtml: string;
+}
+
+/** One MCP package, with whatever views it ships. */
+export interface McpPackage {
+  /** Package name, e.g. `@transcend-io/mcp-server-docs` */
+  name: string;
+  /** Directory name within its root, e.g. `mcp-server-docs` */
+  dirName: string;
+  /** Absolute package directory */
+  dir: string;
+  /** Absolute path to the built CLI entry point */
+  cliPath: string;
+  /** Whether the package declares a `bin`, and so can be served at all */
+  hasCli: boolean;
+  /** Whether the package lives under `dev`, and so is never published or aggregated */
+  devOnly: boolean;
+  /** Views this package ships */
+  views: DiscoveredView[];
+}
+
+interface PackageManifest {
+  /** Published package name */
+  name?: string;
+  /** Executables the package publishes */
+  bin?: Record<string, string>;
+}
+
+function readManifest(packageDir: string): PackageManifest | undefined {
+  const manifestPath = join(packageDir, 'package.json');
+  if (!existsSync(manifestPath)) return undefined;
+  try {
+    return JSON.parse(readFileSync(manifestPath, 'utf8')) as PackageManifest;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Finds a package's views, using the same discovery the build uses.
+ *
+ * Shared deliberately: this used to look for `src/ui/<name>/main.tsx` while each
+ * package's Vite config named its entry separately, so the watchers and the build
+ * could disagree about what a package's views even were.
+ */
+function discoverViews(packageDir: string): DiscoveredView[] {
+  return discoverMcpAppViews(packageDir).map((view) => ({
+    ...view,
+    builtHtml: join(packageDir, MCP_APP_OUT_DIR, view.fileName),
+  }));
+}
+
+/** Every MCP package in the workspace, sorted by directory name. */
+export function discoverMcpPackages(): McpPackage[] {
+  const packages: McpPackage[] = [];
+
+  for (const root of PACKAGE_ROOTS) {
+    if (!existsSync(root)) continue;
+
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const dir = join(root, entry.name);
+      const manifest = readManifest(dir);
+      if (!manifest?.name) continue;
+
+      packages.push({
+        name: manifest.name,
+        dirName: entry.name,
+        dir,
+        cliPath: join(dir, 'dist', 'cli.mjs'),
+        hasCli: manifest.bin !== undefined && Object.keys(manifest.bin).length > 0,
+        devOnly: root === DEV_ROOT,
+        views: discoverViews(dir),
+      });
+    }
+  }
+
+  return packages.sort((a, b) => a.dirName.localeCompare(b.dirName));
+}
+
+/** How a command-line invocation chose its server. */
+export interface TargetSelection {
+  /** Positional package argument, e.g. `docs` */
+  argument?: string | undefined;
+  /** Whether `--examples` was passed */
+  examples?: boolean;
+}
+
+/**
+ * Resolves a command-line invocation to the server to run.
+ *
+ * Omitting everything selects the umbrella server, so the default shows every app
+ * across every published package. `--examples` selects the example server, which
+ * the umbrella deliberately does not aggregate. A positional argument accepts the
+ * short form (`docs`), the directory name (`mcp-server-docs`), or the full package
+ * name.
+ */
+export function resolveTarget(
+  selection: string | undefined | TargetSelection,
+  packages: McpPackage[],
+): McpPackage {
+  const { argument, examples } =
+    typeof selection === 'string' || selection === undefined ? { argument: selection } : selection;
+
+  if (examples === true) {
+    if (argument !== undefined && argument !== '') {
+      throw new Error(
+        `Pass either --examples or a package name, not both (got "${argument}" alongside --examples).`,
+      );
+    }
+    const examplesPackage = packages.find((pkg) => pkg.name === EXAMPLES_PACKAGE);
+    if (!examplesPackage) {
+      throw new Error(`Could not find the example server ${EXAMPLES_PACKAGE}.`);
+    }
+    return examplesPackage;
+  }
+
+  if (argument === undefined) {
+    const umbrella = packages.find((pkg) => pkg.name === UMBRELLA_PACKAGE);
+    if (!umbrella) {
+      throw new Error(`Could not find the umbrella package ${UMBRELLA_PACKAGE}.`);
+    }
+    return umbrella;
+  }
+
+  // A package without a `bin` is a library, so there is nothing to serve.
+  const servable = packages.filter((pkg) => pkg.hasCli);
+  const needle = argument.trim().toLowerCase();
+  const match = servable.find(
+    (pkg) =>
+      pkg.name.toLowerCase() === needle ||
+      pkg.dirName.toLowerCase() === needle ||
+      pkg.dirName.toLowerCase() === `mcp-server-${needle}`,
+  );
+
+  if (!match) {
+    const options = servable
+      .filter((pkg) => pkg.name !== UMBRELLA_PACKAGE && !pkg.devOnly)
+      .map((pkg) => pkg.dirName.replace(/^mcp-server-/, ''))
+      .join(', ');
+    throw new Error(
+      `Unknown server "${argument}". Pass one of: ${options}, --examples for the example server, ` +
+        'or omit it to run the umbrella server.',
+    );
+  }
+  return match;
+}
+
+/**
+ * Packages whose views should be watched while `target` is being served.
+ *
+ * The umbrella aggregates every published sub-package, so working against it means
+ * every one of their views is reachable and all of them need a watcher. A single
+ * package needs only its own.
+ *
+ * Development-only packages are excluded from umbrella scope because the umbrella
+ * does not depend on them, so it owns neither their tools nor their `ui://`
+ * resources. Watching them anyway would rebuild a view no running server can
+ * serve, which reads as a broken rebuild rather than a server that was never
+ * asked to serve it. Select them with `--examples` instead.
+ */
+export function viewPackagesInScope(target: McpPackage, packages: McpPackage[]): McpPackage[] {
+  const candidates =
+    target.name === UMBRELLA_PACKAGE ? packages.filter((pkg) => !pkg.devOnly) : [target];
+  return candidates.filter((pkg) => pkg.views.length > 0);
+}
+
+/**
+ * Loads `secret.env` into `process.env` when present.
+ *
+ * Processes we spawn inherit the result, which covers the server under `--http`
+ * and every view watcher. A stdio server spawned by the Inspector does not, for
+ * the reason {@link inspectorEnvArgs} explains.
+ */
+export function loadSecretEnv(): void {
+  const secretEnv = join(repoRoot, 'secret.env');
+  if (existsSync(secretEnv)) process.loadEnvFile(secretEnv);
+}
+
+/** A child process this script owns, tracked so it can be torn down together. */
+interface TrackedChild {
+  label: string;
+  child: ChildProcess;
+}
+
+const children: TrackedChild[] = [];
+let shuttingDown = false;
+
+/**
+ * Starts a long-lived child process and registers it for shutdown.
+ *
+ * @param label - Name used in log output
+ * @param command - Executable to run
+ * @param args - Arguments for the executable
+ * @param options - Working directory and extra environment
+ * @returns The spawned process
+ */
+export function startProcess(
+  label: string,
+  command: string,
+  args: string[],
+  options: { cwd?: string; env?: Record<string, string | undefined> } = {},
+): ChildProcess {
+  const child = spawn(command, args, {
+    cwd: options.cwd === undefined ? repoRoot : resolve(repoRoot, options.cwd),
+    env: { ...process.env, ...options.env },
+    stdio: 'inherit',
+    shell: false,
+  });
+
+  children.push({ label, child });
+
+  child.on('exit', (code, signal) => {
+    if (shuttingDown) return;
+    // One process dying leaves the rest useless, so fail the whole command
+    // rather than leaving a half-running environment that looks healthy.
+    logger.error(`\n[${label}] exited with ${signal ? `signal ${signal}` : `code ${code}`}.`);
+    shutdown(code ?? 1);
+  });
+
+  return child;
+}
+
+/** Terminates every tracked child and exits. */
+export function shutdown(code: number): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  for (const { child } of children) {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+  }
+  process.exit(code);
+}
+
+/** Installs SIGINT and SIGTERM handlers that tear the whole group down. */
+export function installShutdownHandlers(): void {
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.on(signal, () => shutdown(0));
+  }
+}
+
+/**
+ * Runs a command to completion, rejecting when it fails.
+ *
+ * @param label - Name used in log output
+ * @param command - Executable to run
+ * @param args - Arguments for the executable
+ * @param options - Working directory
+ */
+export async function runToCompletion(
+  label: string,
+  command: string,
+  args: string[],
+  options: { cwd?: string } = {},
+): Promise<void> {
+  await new Promise<void>((resolvePromise, reject) => {
+    const child = spawn(command, args, {
+      cwd: options.cwd ?? repoRoot,
+      env: process.env,
+      stdio: 'inherit',
+      shell: false,
+    });
+    child.on('error', reject);
+    child.on('exit', (code) => {
+      if (code === 0) resolvePromise();
+      else reject(new Error(`${label} failed with exit code ${code}.`));
+    });
+  });
+}
+
+/** Builds the target package and everything it depends on. */
+export async function buildTarget(target: McpPackage): Promise<void> {
+  logger.log(`\nBuilding ${target.name} and its dependencies...`);
+  await runToCompletion('turbo build', 'pnpm', [
+    'turbo',
+    'run',
+    'build',
+    `--filter=${target.name}...`,
+  ]);
+}
+
+/** Starts a watching view build for each package whose views are in scope. */
+export function startViewWatchers(packages: McpPackage[]): void {
+  for (const pkg of packages) {
+    logger.log(`Watching views in ${pkg.name} (${pkg.views.map((v) => v.name).join(', ')})`);
+    startProcess(
+      `views:${pkg.dirName}`,
+      'node',
+      [join(repoRoot, 'scripts', 'build-mcp-views.ts'), '--watch'],
+      { cwd: pkg.dir },
     );
   }
 }
