@@ -10,6 +10,7 @@
     "quality:fix": "turbo run quality:fix",
     "changeset": "changeset",
     "mcp:inspect": "node ./scripts/mcp-inspect.ts",
+    "mcp:new-view": "node ./scripts/mcp-new-view.ts",
     "codegen": "graphql-codegen --config codegen.ts",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "graphql:refresh-schema": "node scripts/refresh-graphql-schema.ts",
