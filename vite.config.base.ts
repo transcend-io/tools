@@ -71,10 +71,11 @@ export interface McpAppView {
  * each holding exactly one `*View.tsx`.
  *
  * The component's filename determines the export the synthesized entry imports,
- * so `HelloView.tsx` must export `HelloView`. A directory holding no `*View.tsx`
- * or several is an error rather than a skip: silently ignoring it is how a
- * renamed component turns into a view that simply stops existing, with a passing
- * build. Prefix a directory with `_` to hold shared code that is not a view.
+ * so `HelloView.tsx` must export `HelloView`. A directory holding files but no
+ * `*View.tsx`, or several, is an error rather than a skip: silently ignoring it
+ * is how a renamed component turns into a view that simply stops existing, with
+ * a passing build. Prefix a directory with `_` to hold shared code that is not a
+ * view.
  *
  * @param packageDir - Absolute path to the package
  * @returns Views in a stable order
@@ -97,9 +98,14 @@ export function discoverMcpAppViews(packageDir: string): McpAppView[] {
     if (entry.name === path.basename(MCP_APP_OUT_DIR) || entry.name.startsWith('_')) continue;
 
     const directory = path.join(viewsDir, entry.name);
-    const components = readdirSync(directory)
-      .filter((file) => file.endsWith('View.tsx'))
-      .sort();
+    const files = readdirSync(directory);
+
+    // An entirely empty directory can only be what a deleted view left behind:
+    // git cannot track one and no build step creates one. Erroring on it would
+    // mean deleting a view and scaffolding it again fails on the leftover folder.
+    if (files.length === 0) continue;
+
+    const components = files.filter((file) => file.endsWith('View.tsx')).sort();
 
     if (components.length !== 1) {
       throw new Error(
