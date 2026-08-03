@@ -1,11 +1,17 @@
 /**
  * Scaffolds a new MCP App view.
  *
- * A view is two files: the component, and the Node-side module that binds the
- * built document to a `ui://` resource. Everything mechanical — the entry that
- * mounts React, the stylesheet that generates the utilities, the Vite config —
- * is synthesized at build time by `vite.config.base.ts`, which is what keeps
- * this template short enough not to drift from what the build expects.
+ * A view is three files: the component, the Node-side module that binds the built
+ * document to a `ui://` resource, and the tool that opens it. Everything
+ * mechanical — the entry that mounts React, the stylesheet that generates the
+ * utilities, the Vite config — is synthesized at build time by
+ * `vite.config.base.ts`, which is what keeps this template short enough not to
+ * drift from what the build expects.
+ *
+ * The generated tool is deliberately left unregistered. A tool's name and
+ * description are public API on a published package, so exporting a placeholder
+ * is a decision a person should make; writing the `defineToolWithCapabilities`
+ * shape for them is not.
  *
  * The first view in a package also needs package-level wiring, which this adds
  * only when it is missing: `tsconfig.ui.json`, the gitignore entry for the built
@@ -16,6 +22,7 @@
  *   pnpm mcp:new-view mcp-server-consent consent-summary
  */
 
+import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { parseArgs } from 'node:util';
@@ -179,6 +186,87 @@ export const ${constant}_RESOURCE: UiResourceDefinition = defineUiResource({
 `;
 }
 
+/** Options for {@link toolSource}. */
+interface ToolSourceOptions {
+  /** Constant prefix used by the resource module, e.g. `USAGE_CHART_APP` */
+  constant: string;
+  /** Exported factory's name, e.g. `createUsageChartAppTool` */
+  factory: string;
+  /** Payload helper's name, e.g. `usageChartPayload` */
+  payload: string;
+  /** Zod schema constant's name, e.g. `UsageChartAppSchema` */
+  schema: string;
+  /** Tool's name on the wire, e.g. `docs_usage_chart` */
+  toolName: string;
+  /** View's directory name, e.g. `usage-chart` */
+  view: string;
+}
+
+/** Source for the tool that opens the view. */
+function toolSource({
+  constant,
+  factory,
+  payload,
+  schema,
+  toolName,
+  view,
+}: ToolSourceOptions): string {
+  return `import {
+  createToolResult,
+  defineToolWithCapabilities,
+  McpClientCapability,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
+
+import { ${constant}_RESOURCE } from '../apps/${view}.js';
+
+export const ${schema} = z.object({
+  // TODO: replace with the arguments this tool takes. Every field needs a
+  // description: it is what the model reads to decide how to call this.
+  message: z.string().optional().describe('Message to show in the view.'),
+});
+export type ${schema.replace(/Schema$/, 'Input')} = z.infer<typeof ${schema}>;
+
+/**
+ * Payload shared by both variants, so the text a host without MCP Apps shows
+ * describes the same result the view renders.
+ */
+function ${payload}(message: string | undefined): unknown {
+  return createToolResult(true, {
+    message: message ?? 'TODO: return the data this view renders.',
+  });
+}
+
+/**
+ * TODO: describe what this tool does and why its result is worth a view.
+ *
+ * Not registered yet. Add \`${factory}()\` to the array its package returns from
+ * \`src/tools/index.ts\`, which is the point at which the name and description
+ * below become public API.
+ */
+export function ${factory}(_clients?: ToolClients) {
+  return defineToolWithCapabilities({
+    name: '${toolName}',
+    description: 'TODO: what this returns, and when the model should call it.',
+    category: 'TODO',
+    readOnly: true,
+    requireAuth: false,
+    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    zodSchema: ${schema},
+    // Baseline, used by every host that cannot render a view.
+    handler: async ({ message }) => ${payload}(message),
+    variants: {
+      [McpClientCapability.McpApp]: {
+        resource: ${constant}_RESOURCE,
+        handler: async ({ message }) => ${payload}(message),
+      },
+    },
+  });
+}
+`;
+}
+
 /** Inserts a key beside its anchor, appending when the anchor is absent. */
 function insertBeside<T>(
   target: Record<string, T>,
@@ -236,6 +324,25 @@ function wirePackageManifest(pkg: McpPackage): boolean {
   return true;
 }
 
+/**
+ * Installs the devDependencies just added to the manifest.
+ *
+ * Done here rather than left as an instruction because skipping it does not fail
+ * where you would look for it: the view build's entry point is synthesized, so an
+ * uninstalled React surfaces as a resolver error naming a file that exists
+ * nowhere on disk.
+ */
+function installDevDependencies(): void {
+  logger.log('\nInstalling the devDependencies just added...');
+  const result = spawnSync('pnpm', ['install'], { cwd: repoRoot, stdio: 'inherit' });
+  if (result.status !== 0) {
+    throw new Error(
+      'pnpm install failed, so the view cannot build yet. Fix the install and re-run it; ' +
+        'the generated files are already in place.',
+    );
+  }
+}
+
 /** Adds `tsconfig.ui.json` and the gitignore entry, if absent. */
 function wirePackageFiles(pkg: McpPackage): void {
   const tsconfigPath = join(pkg.dir, 'tsconfig.ui.json');
@@ -290,10 +397,11 @@ async function main(): Promise<void> {
   }
 
   const shortName = pkg.dirName.replace(/^mcp-server-/, '');
-  const componentName = `${toPascalCase(viewName)}View`;
-  const constant = `${toPascalCase(viewName)
-    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
-    .toUpperCase()}_APP`;
+  const pascalCase = toPascalCase(viewName);
+  const componentName = `${pascalCase}View`;
+  const snakeCase = viewName.replace(/-/g, '_');
+  const constant = `${pascalCase.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toUpperCase()}_APP`;
+  const factory = `create${pascalCase}AppTool`;
   const hadViews = pkg.views.length > 0;
 
   logger.log(`Adding view "${viewName}" to ${pkg.name}`);
@@ -306,15 +414,26 @@ async function main(): Promise<void> {
     join(pkg.dir, 'src', 'apps', `${viewName}.ts`),
     resourceSource(viewName, constant, `ui://transcend-${shortName}/${viewName}`),
   );
+  writeNew(
+    join(pkg.dir, 'src', 'tools', `${snakeCase}_app.ts`),
+    toolSource({
+      constant,
+      factory,
+      payload: `${pascalCase[0]!.toLowerCase()}${pascalCase.slice(1)}Payload`,
+      schema: `${pascalCase}AppSchema`,
+      toolName: `${shortName.replace(/-/g, '_')}_${snakeCase}`,
+      view: viewName,
+    }),
+  );
 
   wirePackageFiles(pkg);
-  const manifestChanged = wirePackageManifest(pkg);
+  if (wirePackageManifest(pkg)) installDevDependencies();
 
   logger.log('\nStill to do by hand:');
   logger.log(
-    `  1. Bind ${constant}_RESOURCE to a tool with defineToolWithCapabilities, and export it from src/index.ts.`,
+    `  1. Add ${factory}() to the tools src/tools/index.ts returns, which is what makes the view reachable.`,
   );
-  if (manifestChanged) logger.log('  2. pnpm install, for the devDependencies just added.');
+  logger.log('  2. Replace the TODOs in all three files, starting with the tool name.');
   logger.log(
     `\nThen: pnpm --filter ${pkg.name} build:ui, and pnpm mcp:inspect ${shortName} to iterate on it.`,
   );

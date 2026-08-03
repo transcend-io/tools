@@ -13,7 +13,7 @@
  *   node scripts/build-mcp-views.ts --watch            # rebuild on change
  */
 
-import { rmSync } from 'node:fs';
+import { existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
@@ -21,6 +21,42 @@ import { build } from 'vite';
 
 import { defineMcpAppView, discoverMcpAppViews, MCP_APP_OUT_DIR } from '../vite.config.base.ts';
 import { logger } from './logger.ts';
+
+/**
+ * Packages the synthesized entry and stylesheet import, and so must be installed
+ * in the package being built rather than merely somewhere in the workspace.
+ */
+const REQUIRED_VIEW_DEPENDENCIES = [
+  'react',
+  'react-dom',
+  'tailwindcss',
+  '@transcend-io/design-tokens',
+];
+
+/**
+ * Fails early when a package declares views but has not installed what they need.
+ *
+ * Worth the check because the entry point and stylesheet are synthesized at build
+ * time, so the resolver error names a file that exists nowhere on disk and never
+ * mentions the install. That is a confusing first minute for anyone who has just
+ * run `pnpm mcp:new-view`, or who has checked out a branch where a package gained
+ * its first view.
+ *
+ * pnpm links every declared dependency into the package's own `node_modules`, so
+ * a missing symlink there means the dependency is genuinely not installed.
+ */
+function assertViewDependenciesInstalled(packageDir: string): void {
+  const missing = REQUIRED_VIEW_DEPENDENCIES.filter(
+    (dependency) => !existsSync(path.join(packageDir, 'node_modules', dependency)),
+  );
+  if (missing.length === 0) return;
+
+  throw new Error(
+    `${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} not installed in ` +
+      `${path.basename(packageDir)}, and a view cannot build without ${missing.length === 1 ? 'it' : 'them'}. ` +
+      'Run `pnpm install` from the repo root.',
+  );
+}
 
 async function main(): Promise<void> {
   const { values, positionals } = parseArgs({
@@ -37,6 +73,8 @@ async function main(): Promise<void> {
         'A view is a directory there holding exactly one *View.tsx.',
     );
   }
+
+  assertViewDependenciesInstalled(packageDir);
 
   // Cleared once here rather than per build, since every view writes into it.
   // This is also what retires the document of a view that has been deleted.
