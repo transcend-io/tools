@@ -24,9 +24,11 @@ CSS custom properties on `:root`:
 
 ## Development
 
-Token source lives in `tokens/` (DTCG JSON). Terrazzo generates TypeScript and `tokens.css` into `src/` on `prebuild`:
+Token source lives in `tokens/` (DTCG JSON). Terrazzo generates TypeScript and `tokens.css` into `src/` on `prebuild`, and `build` copies the stylesheet to `dist/`:
 
 ```bash
 pnpm --filter @transcend-io/design-tokens build
 pnpm --filter @transcend-io/design-tokens check:tokens
 ```
+
+Both exports carry the `@transcend-io/source` condition, so a build inside this monorepo reads `src/` and a consumer reads `dist/`. For `./tokens.css` that is not only about skipping a build step: `build` empties `dist/` before restoring the stylesheet, so anything watching for changes — a `vite build --watch` over an MCP App view, say — sees `dist/tokens.css` briefly missing whenever this package is rebuilt, and fails to resolve the import. `src/tokens.css` is rewritten in place and never disappears.
