@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-consent
 
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [be15c28]
+  - @transcend-io/privacy-types@5.9.0
+  - @transcend-io/sdk@1.7.3
+
 ## 0.5.0
 
 ### Minor Changes

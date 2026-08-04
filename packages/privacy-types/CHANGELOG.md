@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.9.0
+
+### Minor Changes
+
+- be15c28: Add `DropListType` enum for DROP list types.
+
 ## 5.8.5
 
 ### Patch Changes
