@@ -18,3 +18,9 @@ export const TRANSCEND_VERSION_HEADER_VALUE = '2021-11-15';
 
 /** Correlates outbound Transcend requests to a single MCP `tools/call` */
 export const TOOLCALL_ID_HEADER = 'x-toolcall-id';
+
+/**
+ * Optional Sombra customer-ingress API key (self-hosted / STS).
+ * Sent as `X-Sombra-Authorization: Bearer …` when `SOMBRA_CUSTOMER_KEY` is set.
+ */
+export const SOMBRA_AUTHORIZATION_HEADER = 'X-Sombra-Authorization';

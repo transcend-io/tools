@@ -1,8 +1,8 @@
 import { getRequestAuth } from '../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../auth.js';
-import { DEFAULT_SOMBRA_URL } from '../defaults.js';
 import {
   MCP_CALLER_HEADER,
+  SOMBRA_AUTHORIZATION_HEADER,
   TOOLCALL_ID_HEADER,
   TRANSCEND_VERSION_HEADER,
   TRANSCEND_VERSION_HEADER_VALUE,
@@ -28,21 +28,118 @@ import type {
 import { SimpleLogger, type Logger } from './graphql/base.js';
 import { TRANSCEND_MCP_USER_AGENT } from './mcp-user-agent.js';
 
+export interface TranscendRestClientOptions {
+  /**
+   * Sticky Sombra host override (e.g. from `SOMBRA_URL`).
+   * When set, GraphQL customerUrl lookup is skipped.
+   */
+  baseUrl?: string;
+  /**
+   * Optional Sombra customer-ingress API key.
+   * Sent as `X-Sombra-Authorization: Bearer …` when present.
+   */
+  sombraCustomerKey?: string;
+  /**
+   * Lazy host resolver used when {@link baseUrl} is unset.
+   * Invoked once; the result is sticky for the client lifetime.
+   */
+  resolveBaseUrl?: () => Promise<string>;
+  /**
+   * Gate checked before every Sombra HTTP call (not sticky).
+   * Use for org AiSettings / MCP × Sombra enablement.
+   */
+  assertReady?: () => Promise<void>;
+  /** Logger instance */
+  logger?: Logger;
+}
+
 export class TranscendRestClient {
   private auth: AuthCredentials | null;
-  private baseUrl: string;
+  private baseUrl: string | null;
+  private readonly sombraCustomerKey: string | undefined;
+  private readonly resolveBaseUrl: (() => Promise<string>) | undefined;
+  private readonly assertReady: (() => Promise<void>) | undefined;
+  private resolvePromise: Promise<string> | null = null;
   private logger: Logger;
   private defaultTimeout: number;
   private defaultRetries: number;
   private lastRequestTime: number = 0;
   private minRequestInterval: number = 200;
 
-  constructor(auth: AuthCredentials | null, baseUrl: string = DEFAULT_SOMBRA_URL, logger?: Logger) {
+  /**
+   * @param auth - Default credentials (may be overridden per-request via ALS)
+   * @param baseUrlOrOptions - Sticky base URL string, or options with lazy resolve
+   * @param logger - Optional logger when the second argument is a base URL string
+   */
+  constructor(
+    auth: AuthCredentials | null,
+    baseUrlOrOptions: string | TranscendRestClientOptions = {},
+    logger?: Logger,
+  ) {
     this.auth = auth;
-    this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.logger = logger || new SimpleLogger();
+
+    if (typeof baseUrlOrOptions === 'string') {
+      this.baseUrl = baseUrlOrOptions.replace(/\/$/, '');
+      this.sombraCustomerKey = undefined;
+      this.resolveBaseUrl = undefined;
+      this.assertReady = undefined;
+      this.logger = logger || new SimpleLogger();
+    } else {
+      const opts = baseUrlOrOptions;
+      const trimmed = opts.baseUrl?.trim();
+      this.baseUrl = trimmed ? trimmed.replace(/\/$/, '') : null;
+      this.sombraCustomerKey = opts.sombraCustomerKey?.trim() || undefined;
+      this.resolveBaseUrl = opts.resolveBaseUrl;
+      this.assertReady = opts.assertReady;
+      this.logger = opts.logger || logger || new SimpleLogger();
+    }
+
     this.defaultTimeout = 30000;
     this.defaultRetries = 3;
+  }
+
+  /**
+   * Runs the non-sticky readiness gate (e.g. org AiSettings), then ensures the
+   * Sombra host is resolved. Host resolution remains sticky; the gate does not.
+   */
+  async prepareRequest(): Promise<string> {
+    if (this.assertReady) {
+      await this.assertReady();
+    }
+    return this.ensureResolved();
+  }
+
+  /**
+   * Ensures the Sombra host is resolved and sticky.
+   * Safe to call multiple times; only the first resolve runs.
+   * Does not re-check org enablement — use {@link prepareRequest} for that.
+   */
+  async ensureResolved(): Promise<string> {
+    if (this.baseUrl) {
+      return this.baseUrl;
+    }
+    if (!this.resolveBaseUrl) {
+      throw new Error(
+        'Sombra URL is not configured. Set SOMBRA_URL or provide a GraphQL-backed host resolver.',
+      );
+    }
+    if (!this.resolvePromise) {
+      this.resolvePromise = this.resolveBaseUrl().then((url) => {
+        this.baseUrl = url.replace(/\/$/, '');
+        this.logger.info(`Using sombra: ${this.baseUrl}`);
+        return this.baseUrl;
+      });
+    }
+    return this.resolvePromise;
+  }
+
+  private sombraAuthHeaders(): Record<string, string> {
+    if (!this.sombraCustomerKey) {
+      return {};
+    }
+    return {
+      [SOMBRA_AUTHORIZATION_HEADER]: `Bearer ${this.sombraCustomerKey}`,
+    };
   }
 
   private async rateLimitWait(): Promise<void> {
@@ -63,9 +160,10 @@ export class TranscendRestClient {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
 
+    const baseUrl = await this.prepareRequest();
     await this.rateLimitWait();
 
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = `${baseUrl}${endpoint}`;
     const {
       timeout = this.defaultTimeout,
       retries = this.defaultRetries,
@@ -76,6 +174,7 @@ export class TranscendRestClient {
     const mcpCaller = getRequestMcpCaller();
     const headers: Record<string, string> = {
       ...authHeaders(effectiveAuth),
+      ...this.sombraAuthHeaders(),
       'Content-Type': 'application/json',
       Accept: 'application/json',
       [TRANSCEND_VERSION_HEADER]: TRANSCEND_VERSION_HEADER_VALUE,
@@ -201,12 +300,14 @@ export class TranscendRestClient {
     if (!effectiveAuth) {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
-    const url = `${this.baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
+    const baseUrl = await this.prepareRequest();
+    const url = `${baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
     const toolCallId = getToolCallIdHeader();
     const mcpCaller = getRequestMcpCaller();
     const response = await fetch(url, {
       headers: {
         ...authHeaders(effectiveAuth),
+        ...this.sombraAuthHeaders(),
         Accept: 'application/octet-stream',
         'User-Agent': TRANSCEND_MCP_USER_AGENT,
         ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
@@ -387,7 +488,10 @@ export class TranscendRestClient {
     }
   }
 
+  /**
+   * Returns the resolved Sombra base URL, or an empty string if not yet resolved.
+   */
   getBaseUrl(): string {
-    return this.baseUrl;
+    return this.baseUrl ?? '';
   }
 }
