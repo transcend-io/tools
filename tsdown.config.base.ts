@@ -68,7 +68,8 @@ const sharedLibraryConfig: UserConfig = {
   sourcemap: true,
   // `.html` covers prebuilt MCP App views, which Vite emits as a single
   // self-contained document that the server then inlines as a string.
-  loader: { '.svg': 'text', '.html': 'text' },
+  // `.md` covers agent-facing guides served by tools.
+  loader: { '.svg': 'text', '.html': 'text', '.md': 'text' },
   alias: {
     '@tools/assets': path.join(repoRoot, 'assets'),
   },
