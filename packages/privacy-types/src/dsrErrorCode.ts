@@ -2,7 +2,7 @@ import { makeEnum } from '@transcend-io/type-utils';
 
 /**
  * Stable, machine-readable error codes for the DSR submission API
- * (`POST /v1/data-subject-request` and `POST /v1/data-subject-request-bulk`).
+ * (`POST /v1/data-subject-request-bulk`).
  *
  * Surfaced to clients as `extensions.code` on GraphQL errors so they can branch
  * on the failure type without parsing the error message.
