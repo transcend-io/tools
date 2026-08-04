@@ -8,6 +8,7 @@ export {
   extractMcpCallerFromHeaders,
   getRequestMcpCaller,
   requestMcpCallerContext,
+  resolveMcpCallerAttribution,
 } from './mcp-caller-context.js';
 
 export {
