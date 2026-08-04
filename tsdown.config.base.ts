@@ -5,6 +5,16 @@ import type { TsdownPlugin, UserConfig } from 'tsdown';
 
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Extensions imported for their text rather than parsed as code.
+ *
+ * `.svg` and `.html` cover assets and prebuilt MCP App views; `.md` covers
+ * agent-facing guides served by tools. Exported because `vitest.config.ts` has
+ * to load the same set the same way — a build that inlines an extension the
+ * test runner does not know about fails only once something imports it.
+ */
+export const TEXT_ASSET_EXTENSIONS = ['.svg', '.html', '.md'] as const;
+
 /** Source extensions whose text is inlined verbatim and so is useless in a sourcemap. */
 const OPAQUE_SOURCE_EXTENSIONS = ['.html', '.svg'];
 
@@ -66,10 +76,9 @@ const sharedLibraryConfig: UserConfig = {
   dts: true,
   format: ['esm'],
   sourcemap: true,
-  // `.html` covers prebuilt MCP App views, which Vite emits as a single
-  // self-contained document that the server then inlines as a string.
-  // `.md` covers agent-facing guides served by tools.
-  loader: { '.svg': 'text', '.html': 'text', '.md': 'text' },
+  loader: Object.fromEntries(
+    TEXT_ASSET_EXTENSIONS.map((extension) => [extension, 'text']),
+  ) as UserConfig['loader'],
   alias: {
     '@tools/assets': path.join(repoRoot, 'assets'),
   },

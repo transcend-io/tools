@@ -8,6 +8,7 @@ import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
+import { createRenderUiTool, createUiGuideTool } from '@transcend-io/mcp-ui-json-render';
 import { describe, it, expect, vi } from 'vitest';
 
 import { EXPECTED_UMBRELLA_TOOL_COUNT } from './umbrella-tool-count.js';
@@ -30,6 +31,8 @@ const allTools = [
   ...getAssessmentTools(mockClients),
   ...getWorkflowTools(mockClients),
   ...getAdminTools(mockClients),
+  createUiGuideTool(),
+  createRenderUiTool(),
 ];
 
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
