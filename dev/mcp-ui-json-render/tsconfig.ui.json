@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.ui.base.json",
+  "include": ["src/ui/**/*.ts", "src/ui/**/*.tsx", "src/catalog.ts"],
+  "exclude": ["src/ui/generated/**"]
+}

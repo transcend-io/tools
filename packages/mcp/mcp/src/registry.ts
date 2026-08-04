@@ -19,6 +19,7 @@ import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
+import { createRenderUiTool, createUiGuideTool } from '@transcend-io/mcp-ui-json-render';
 
 import type { TranscendGraphQLClient } from './graphql-client.js';
 
@@ -52,6 +53,11 @@ export class ToolRegistry {
     this.registerToolsFromModule(getAssessmentTools(this.clients));
     this.registerToolsFromModule(getWorkflowTools(this.clients));
     this.registerToolsFromModule(getAdminTools(this.clients));
+    // Generative dashboard view — agent composes a json-render spec after calling
+    // domain tools (e.g. consent_get_aggregate_analytics). Private MVP package.
+    // `ui_guide` ships alongside it because a model that has not read the guide
+    // tends to hand-roll an HTML or Python dashboard instead of calling ui_render.
+    this.registerToolsFromModule([createUiGuideTool(), createRenderUiTool()]);
   }
 
   private registerToolsFromModule(tools: ToolDefinition[]): void {

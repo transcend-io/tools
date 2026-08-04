@@ -48,6 +48,7 @@
     "@transcend-io/mcp-server-inventory": "workspace:*",
     "@transcend-io/mcp-server-preferences": "workspace:*",
     "@transcend-io/mcp-server-workflows": "workspace:*",
+    "@transcend-io/mcp-ui-json-render": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
