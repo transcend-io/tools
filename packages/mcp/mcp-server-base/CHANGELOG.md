@@ -1,5 +1,17 @@
 # @transcend-io/mcp-server-base
 
+## 0.8.0
+
+### Minor Changes
+
+- 637b357: Enables sombra integration with mcp
+
+### Patch Changes
+
+- cf74715: enforce orgs mcp x sombra setting
+- 29821b9: Adds condition sombra header and lazy load the customers sombra url
+- fb24b96: Adds sombra metadata to tools
+
 ## 0.7.0
 
 ### Minor Changes
