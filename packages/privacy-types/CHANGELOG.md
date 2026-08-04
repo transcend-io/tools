@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.9.1
+
+### Patch Changes
+
+- 8bfe3cc: Add `DsrErrorCode.DropIdentifierCoverageMismatch` for DROP DSR submit validation.
+
 ## 5.9.0
 
 ### Minor Changes
