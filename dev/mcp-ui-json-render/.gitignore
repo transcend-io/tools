@@ -1,5 +1,2 @@
 # Vite-built MCP App views, rebuilt by `pnpm prebuild`
 src/ui/generated/
-
-# Local styling preview, written by scripts/preview.tsx
-preview.html
