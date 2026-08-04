@@ -280,6 +280,25 @@ Each domain package (admin, consent, dsr, ...) is a self-contained MCP server wi
 
 The unified `mcp` package aggregates tools via `ToolRegistry` and composes a `TranscendGraphQLClient` that mixes in all domain GraphQL capabilities.
 
+## Client capabilities and MCP Apps
+
+MCP hosts differ widely in what they can render. Claude Desktop can show interactive views and forms; a plain scripted client can only handle text. Rather than shipping the lowest common denominator or branching per host inside tool handlers, `mcp-server-base` negotiates capabilities once per connection and resolves each tool to the best variant that host supports.
+
+Because every server funnels its tools through `buildMcpServer`, all packages get this behavior without any per-package wiring.
+
+### How a session is negotiated
+
+During `initialize`, the host declares its capabilities and identifies itself. `deriveClientCapabilities` reduces that to the set we can act on, and `whatIsTheClient` maps `clientInfo.name` to an `McpHostClient`. The result is stored in an `AsyncLocalStorage` context for the request, so handlers can read it via `getMcpSession()` without any change to their signatures.
+
+Only two capabilities are detected, because they are the only ones we can act on:
+
+| Capability                        | Detected from                                           |
+| --------------------------------- | ------------------------------------------------------- |
+| `McpClientCapability.Elicitation` | `capabilities.elicitation.form`                         |
+| `McpClientCapability.McpApp`      | `capabilities.extensions['io.modelcontextprotocol/ui']` |
+
+Sampling and roots are deliberately excluded. Roots is inert for these servers (they are API-backed, so there is no filesystem scope to negotiate), our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
+
 ## Environment variables
 
 All servers share the same environment variables:
