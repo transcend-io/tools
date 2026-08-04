@@ -119,6 +119,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         description: t.description,
         inputSchema: jsonSchemaCache.get(name) || { type: 'object', properties: {} },
         annotations: t.annotations,
+        ...(t.requireSombra === true ? { _meta: { requireSombra: true } } : {}),
       })),
     );
 

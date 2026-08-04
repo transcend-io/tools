@@ -18,6 +18,7 @@ export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Deletes identifiers from the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    requireSombra: true,
     zodSchema: DeleteIdentifiersSchema,
     handler: async ({ partition, userId, identifiers }) => {
       const result = await rest.deleteIdentifiers(

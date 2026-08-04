@@ -22,6 +22,7 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: listIdentifiersSchema,
     handler: async ({ requestId }) => {
       const identifiers = await rest.listRequestIdentifiers(requestId);
