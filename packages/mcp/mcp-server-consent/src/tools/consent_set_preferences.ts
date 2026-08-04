@@ -23,6 +23,7 @@ export function createConsentSetPreferencesTool(clients: ToolClients) {
     readOnly: false,
     confirmationHint: 'Updates consent preferences for the user',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: SetPreferencesSchema,
     handler: async ({ partition, identifier, purposes, confirmed }) => {
       const result = await rest.syncConsent({
