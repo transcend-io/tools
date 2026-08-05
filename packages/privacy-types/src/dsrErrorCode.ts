@@ -16,8 +16,6 @@ export const DsrErrorCode = makeEnum({
   RestartRequestNotFound: 'RESTART_REQUEST_NOT_FOUND',
   /** A restart was requested for a request closed beyond the org's time limit. */
   RestartTimeLimitExceeded: 'RESTART_TIME_LIMIT_EXCEEDED',
-  /** The required Diffie-Hellman encrypted payload was missing on this request. */
-  DhContextRequired: 'DH_CONTEXT_REQUIRED',
   /** The referenced receipt email template does not exist. */
   ReceiptTemplateNotFound: 'RECEIPT_TEMPLATE_NOT_FOUND',
   /** DROP linkage identifiers on this request do not cover the required identifier types. */
@@ -32,8 +30,6 @@ export const DsrErrorCode = makeEnum({
   MaxDropRecordsPerRequestExceeded: 'MAX_DROP_RECORDS_PER_REQUEST_EXCEEDED',
   /** One or more DROP records on this request are not part of the run's CPPA download. */
   UnknownDropRecords: 'UNKNOWN_DROP_RECORDS',
-  /** A concurrent submission already created this request. */
-  ConcurrentSubmissionConflict: 'CONCURRENT_SUBMISSION_CONFLICT',
   /** The DROP run referenced by this request does not exist. */
   DropRunNotFound: 'DROP_RUN_NOT_FOUND',
 });

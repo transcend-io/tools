@@ -41,7 +41,6 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.MissingCoreIdentifier]: () => string;
   [DsrErrorCode.RestartRequestNotFound]: () => string;
   [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
-  [DsrErrorCode.DhContextRequired]: () => string;
   [DsrErrorCode.ReceiptTemplateNotFound]: (templateId: string) => string;
   [DsrErrorCode.DropIdentifierCoverageMismatch]: () => string;
   [DsrErrorCode.DuplicateDropRecords]: () => string;
@@ -49,7 +48,6 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.DropRecordsRequireDropRunId]: () => string;
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
-  [DsrErrorCode.ConcurrentSubmissionConflict]: () => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
 };
 
@@ -77,13 +75,12 @@ export const DSR_ERROR_MESSAGE = {
     restartTimeLimitDays,
   }: RestartTimeLimitExceededMessageInput) =>
     `This request's status last changed ${daysSinceLastTransition} days ago, which exceeds your organization's restart time limit of ${restartTimeLimitDays} days. Create a new request instead.`,
-  [DsrErrorCode.DhContextRequired]: () => 'No encrypted data subject payload provided',
   [DsrErrorCode.ReceiptTemplateNotFound]: (templateId: string) =>
     `Could not find specified email template ID: ${templateId}`,
   [DsrErrorCode.DropIdentifierCoverageMismatch]: () =>
-    'Cannot link DROP records to an existing request until every identifier on this request is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
+    'Cannot link DROP records to an existing request until every identifier on this submission is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
   [DsrErrorCode.DuplicateDropRecords]: () =>
-    'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request.',
+    'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
   [DsrErrorCode.InBatchDropIdempotencyKeyCollision]: () =>
     "This request's identifiers conflict with another input in the batch that shares the same dropRunId idempotency key.",
   [DsrErrorCode.DropRecordsRequireDropRunId]: () => 'dropRecords requires dropRunId',
@@ -104,8 +101,6 @@ export const DSR_ERROR_MESSAGE = {
       'download a fresh matched-records file and edit that.'
     );
   },
-  [DsrErrorCode.ConcurrentSubmissionConflict]: () =>
-    'A concurrent submission already created this request. Retry.',
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,
 } as const satisfies DsrErrorMessageMap;

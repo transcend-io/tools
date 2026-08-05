@@ -14,6 +14,18 @@ export const DsrBulkErrorCode = makeEnum({
   SubmissionLimitExceeded: 'SUBMISSION_LIMIT_EXCEEDED',
   /** The bulk submission mixed inputs with and without a pre-generated CEK context. */
   MixedCekContext: 'MIXED_CEK_CONTEXT',
+  /**
+   * The required Diffie-Hellman encrypted payload was missing. Whether `dhEncrypted`
+   * is required depends on the entire input set — it is required only when at least
+   * one input is missing a pre-generated `encryptedCEKContext`.
+   */
+  DhContextRequired: 'DH_CONTEXT_REQUIRED',
+  /**
+   * A concurrent DROP submission won the `dropRunId` unique-index idempotency race
+   * during bulk create. The retry loop cannot determine which input lost, so no
+   * input index can be attributed.
+   */
+  ConcurrentSubmissionConflict: 'CONCURRENT_SUBMISSION_CONFLICT',
 });
 
 /** Type override */

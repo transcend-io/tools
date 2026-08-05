@@ -23,5 +23,11 @@ describe('DSR_BULK_ERROR_MESSAGE', () => {
     expect(DSR_BULK_ERROR_MESSAGE[DsrBulkErrorCode.MixedCekContext]()).toBe(
       'Either all or none of the requests must include encryptedCEKContext',
     );
+    expect(DSR_BULK_ERROR_MESSAGE[DsrBulkErrorCode.DhContextRequired]()).toBe(
+      'No encrypted data subject payload provided',
+    );
+    expect(DSR_BULK_ERROR_MESSAGE[DsrBulkErrorCode.ConcurrentSubmissionConflict]()).toBe(
+      'A concurrent DROP submission already created one or more of these requests. Retry the batch.',
+    );
   });
 });
