@@ -1421,7 +1421,6 @@ enum PromptRunProductArea {
   promptManager
   unstructuredDiscovery
   dataInventory
-  pathfinder
 }
 
 enum ConfidenceLabel {
