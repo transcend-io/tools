@@ -20,10 +20,7 @@ export interface RestartTimeLimitExceededMessageInput {
   restartTimeLimitDays: number;
 }
 
-/** {@link DsrErrorCode} values with a builder in {@link DSR_ERROR_MESSAGE}. */
-export type DsrErrorCodeWithMessage = Exclude<DsrErrorCode, typeof DsrErrorCode.InvalidInput>;
-
-/** Canonical message builder for each {@link DsrErrorCodeWithMessage}. */
+/** Canonical message builder for each {@link DsrErrorCode}. */
 export type DsrErrorMessageMap = {
   [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) => string;
   [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
@@ -39,8 +36,8 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
 };
 
-type _AssertAllCodesHaveBuilders = DsrErrorCodeWithMessage extends keyof DsrErrorMessageMap
-  ? keyof DsrErrorMessageMap extends DsrErrorCodeWithMessage
+type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
+  ? keyof DsrErrorMessageMap extends DsrErrorCode
     ? true
     : never
   : never;
@@ -49,13 +46,10 @@ const _assertAllCodesHaveBuilders: _AssertAllCodesHaveBuilders = true;
 /**
  * Canonical DSR bulk submission error messages.
  *
- * Each {@link DsrErrorCodeWithMessage} has exactly one builder; call
+ * Each {@link DsrErrorCode} has exactly one builder; call
  * `DSR_ERROR_MESSAGE[code](...)` to render the runtime string. DSR submission
  * errors currently surface as HTTP 400 bad-request validation failures, so no
  * separate status map is exported.
- *
- * {@link DsrErrorCode.InvalidInput} has no entry — it is a generic fallback for
- * validation failures without a more specific code.
  *
  * The unknown-DROP-records error in `linkDropRunRequests.ts` is intentionally
  * not centralized here; its truncation and list formatting stay in `main`.

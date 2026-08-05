@@ -7,12 +7,10 @@ import {
   REQUEST_SUBMISSION_LIMIT,
 } from './index.js';
 
-const DSR_ERROR_MESSAGE_CODES = Object.values(DsrErrorCode).filter(
-  (code) => code !== DsrErrorCode.InvalidInput,
-);
+const DSR_ERROR_MESSAGE_CODES = Object.values(DsrErrorCode);
 
 describe('DSR_ERROR_MESSAGE', () => {
-  it('defines a builder for every code except INVALID_INPUT', () => {
+  it('defines a builder for every code', () => {
     for (const code of DSR_ERROR_MESSAGE_CODES) {
       expect(DSR_ERROR_MESSAGE[code]).toBeTypeOf('function');
     }

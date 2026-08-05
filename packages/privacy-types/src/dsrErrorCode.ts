@@ -18,8 +18,6 @@ export const DsrErrorCode = makeEnum({
   MixedCekContext: 'MIXED_CEK_CONTEXT',
   /** The required Diffie-Hellman encrypted payload was missing. */
   DhContextRequired: 'DH_CONTEXT_REQUIRED',
-  /** Generic input validation failure without a more specific code. */
-  InvalidInput: 'INVALID_INPUT',
   /** DROP linkage identifiers do not cover the required identifier types. */
   DropIdentifierCoverageMismatch: 'DROP_IDENTIFIER_COVERAGE_MISMATCH',
   /** The same DROP record was claimed more than once in one submission. */
