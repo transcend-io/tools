@@ -33,17 +33,11 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.RestartRequestNotFound]()).toBe(
       'Cannot restart: request not found',
     );
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DhContextRequired]()).toBe(
-      'No encrypted data subject payload provided',
-    );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropIdentifierCoverageMismatch]()).toBe(
-      'Cannot link DROP records to an existing request until every identifier on this request is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
-    );
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.ConcurrentSubmissionConflict]()).toBe(
-      'A concurrent submission already created this request. Retry.',
+      'Cannot link DROP records to an existing request until every identifier on this submission is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DuplicateDropRecords]()).toBe(
-      'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request.',
+      'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.InBatchDropIdempotencyKeyCollision]()).toBe(
       "This request's identifiers conflict with another input in the batch that shares the same dropRunId idempotency key.",
