@@ -30,9 +30,6 @@ describe('DSR_ERROR_MESSAGE', () => {
   });
 
   it('renders canonical static messages', () => {
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DuplicateRequest]()).toBe(
-      'You have already made this request.',
-    );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DhContextRequired]()).toBe(
       'No encrypted data subject payload provided',
     );

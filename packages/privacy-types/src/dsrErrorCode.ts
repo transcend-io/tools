@@ -8,14 +8,6 @@ import { makeEnum } from '@transcend-io/type-utils';
  * on the failure type without parsing the error message.
  */
 export const DsrErrorCode = makeEnum({
-  /**
-   * A duplicate open request already exists for this data subject + type.
-   *
-   * Bulk submission returns {@link DsrRequestOutcome.AlreadyOpen} instead once
-   * Phase 6a lands; exclude from the bulk error docs table. Kept for singular
-   * submit compatibility.
-   */
-  DuplicateRequest: 'DUPLICATE_REQUEST',
   /** A restart was requested for a request ID that does not exist. */
   RestartRequestNotFound: 'RESTART_REQUEST_NOT_FOUND',
   /** A restart was requested for a request closed beyond the org's time limit. */

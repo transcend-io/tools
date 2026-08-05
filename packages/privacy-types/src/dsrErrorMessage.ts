@@ -25,7 +25,6 @@ export type DsrErrorCodeWithMessage = Exclude<DsrErrorCode, typeof DsrErrorCode.
 
 /** Canonical message builder for each {@link DsrErrorCodeWithMessage}. */
 export type DsrErrorMessageMap = {
-  [DsrErrorCode.DuplicateRequest]: () => string;
   [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) => string;
   [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
   [DsrErrorCode.SubmissionLimitExceeded]: () => string;
@@ -62,7 +61,6 @@ const _assertAllCodesHaveBuilders: _AssertAllCodesHaveBuilders = true;
  * not centralized here; its truncation and list formatting stay in `main`.
  */
 export const DSR_ERROR_MESSAGE = {
-  [DsrErrorCode.DuplicateRequest]: () => 'You have already made this request.',
   [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) =>
     `Cannot restart: request(s) not found for ID(s): ${requestIds.join(', ')}`,
   [DsrErrorCode.RestartTimeLimitExceeded]: ({
