@@ -2206,6 +2206,12 @@ enum ContractScanOrderField {
   updatedAt
 }
 
+enum ConsentTrackerFilter {
+  LIVE
+  NEEDS_REVIEW
+  ALL
+}
+
 enum BundleDeployStatus {
   DEPLOYED
   DEPLOY_PENDING
@@ -2835,17 +2841,6 @@ enum DropSubmissionDiscrepancyResult {
   missing
 }
 
-enum DropRunSourcePattern {
-  BROKER_OWNED
-  TRANSCEND_OWNED
-}
-
-enum DropBrokerMatchMode {
-  FILE_EXCHANGE
-  REST_LOOKUP
-  MANUAL
-}
-
 enum DropRunState {
   DOWNLOADED
   AWAITING_BROKER_MATCH
@@ -2861,6 +2856,13 @@ enum DropRunState {
 enum DropRunMode {
   LIVE
   SANDBOX
+}
+
+enum DropAccessCadenceStatus {
+  NEVER_ACCESSED
+  OK
+  DUE_SOON
+  OVERDUE
 }
 
 enum DropArtifactType {
@@ -2895,6 +2897,13 @@ enum DropPollInterval {
   EVERY_12_HOURS
   DAILY
   WEEKLY
+}
+
+enum DropRunRecordsMaterializationStatus {
+  COMPLETE
+  IN_PROGRESS
+  INCOMPLETE
+  NOT_STARTED
 }
 
 enum ActivityCode {
@@ -4595,6 +4604,7 @@ enum AuditEventCode {
   MAESTRO_RULE_OWNER
   MAESTRO_RULE_TEAM
   MAESTRO_RULE_TRIGGER
+  MAESTRO_RULE_EXECUTION
   MAESTRO_SECRET
   MAESTRO_CUSTOM_FUNCTION
   DROP_RUN
@@ -4623,6 +4633,11 @@ enum DropRunLifecycleKind {
   SUBMISSION_SUMMARY_RECEIVED
   SUBMISSION_DISCREPANCY_FLAGGED
   RUN_FORCE_FINALIZED
+}
+
+enum RuleExecutionAuditKind {
+  SUCCEEDED
+  FAILED
 }
 
 enum AuditEventBaseModelCode {
@@ -5463,6 +5478,7 @@ type Mutation {
   manuallyTestAndRefreshDataSilo(id: ID!): ManuallyTestAndRefreshDataSiloPayload!
   markDataSiloDiscoveryResultsDuplicate(input: [MarkDataSiloDiscoveryResultsDuplicateInput!]!): MarkDataSiloDiscoveryResultsDuplicatePayload!
   markDataSiloDiscoveryResultsJunk(input: [MarkDataSiloDiscoveryResultsJunkInput!]!): MarkDataSiloDiscoveryResultsJunkPayload!
+  materializeDropRun(id: ID!): MaterializeDropRunPayload!
   notifyAdditionalTime(input: AdditionalTimeInput!): NotifyAdditionalTimePayload!
   oauthLink(input: OAuthLinkInput!): OauthLinkPayload!
   oauthRevoke(input: OAuthRevokeInput!): OauthRevokePayload!
@@ -9849,7 +9865,7 @@ input CookiesFiltersInput {
   text: String
   isJunk: Boolean
   source: ConsentTrackerSource
-  status: ConsentTrackerStatus
+  status: ConsentTrackerFilter
   ownerIds: [ID!]
   teamIds: [ID!]
   attributeValueIds: [ID!]
@@ -10413,6 +10429,7 @@ input CreateCustomFunctionInput {
   ownerTeamIds: [ID!]
   signedCodeJwt: String
   signedCodeContextJwt: String
+  successfulTestRun: Boolean
 }
 
 type CreatedApiKey implements ApiKeyInterface {
@@ -11332,6 +11349,8 @@ type CustomFunctionRun {
   failureAttribution: CustomFunctionRunFailureAttribution
   runMetadataS3Path: String!
   duration: Int!
+  metadata: CustomFunctionRunMetadata
+  isTestRun: Boolean
 }
 
 type CustomFunctionRunFileLinkPayload {
@@ -11346,6 +11365,12 @@ input CustomFunctionRunFileLinkInput {
 input CustomFunctionRunFilterInput {
   customFunctionId: ID
   text: String
+}
+
+type CustomFunctionRunMetadata {
+  maestroRuleId: ID
+  dataSiloId: ID
+  requestId: ID
 }
 
 type CustomFunctionRunsPayload {
@@ -11366,6 +11391,7 @@ type CustomFunctionVersionPreview {
   lifecycleState: CustomFunctionVersionLifecycleState!
   lastModifiedAt: Date!
   signedCodeJwt: String!
+  successfulTestRun: Boolean!
 }
 
 type CustomHeader {
@@ -11651,6 +11677,7 @@ interface DatamapDataSiloInterface {
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
   dependentDataSilos: [DataSiloPreview!]!
+  dependedOnDataSilos: [DataSiloPreview!]!
   apiKeys: [ApiKeyPreview!]!
   businessEntities: [BusinessEntityPreview!]!
   allowDsrProcessingStartTime: String
@@ -11995,6 +12022,7 @@ type DataSilo implements DatamapDataSiloInterface {
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
   dependentDataSilos: [DataSiloPreview!]!
+  dependedOnDataSilos: [DataSiloPreview!]!
   apiKeys: [ApiKeyPreview!]!
   businessEntities: [BusinessEntityPreview!]!
   allowDsrProcessingStartTime: String
@@ -12092,6 +12120,7 @@ type DataSiloBulkPreview implements DatamapDataSiloInterface {
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
   dependentDataSilos: [DataSiloPreview!]!
+  dependedOnDataSilos: [DataSiloPreview!]!
   apiKeys: [ApiKeyPreview!]!
   businessEntities: [BusinessEntityPreview!]!
   allowDsrProcessingStartTime: String
@@ -13572,11 +13601,17 @@ type DropBrokerConfig {
   pollingEnabled: Boolean!
   pollIntervalMinutes: Int!
   autoSubmitReportBack: Boolean!
-  matchMode: DropBrokerMatchMode!
+  lastAccessAt: Date
+  nextAccessDueAt: Date!
+  accessCadenceStatus: DropAccessCadenceStatus!
+  pollInProgress: Boolean!
+  pollLeaseExpiresAt: Date
+  pollLeaseOwner: UserPreview
+  pollLeaseOwnerApiKey: ApiKeyPreview
 }
 
 input DropRecordRefInput {
-  dropRecordId: Int!
+  dropRecordId: String!
   dropListType: DropListType!
 }
 
@@ -13592,7 +13627,6 @@ input DropRunFiltersInput {
   text: String
   states: [DropRunState!]
   listTypes: [DropListType!]
-  sourcePatterns: [DropRunSourcePattern!]
 }
 
 type DropRunReportingFunnel {
@@ -13618,6 +13652,7 @@ input DropRunRequestFiltersInput {
   requestIds: [ID!]
   dropRunIds: [ID!]
   text: String
+  outstandingOnly: Boolean
 }
 
 type DropRunRequestsPayload {
@@ -13631,8 +13666,9 @@ type DropRunRequestSummary {
   id: ID!
   requestId: ID
   dropRunId: ID!
-  dropRecordId: Int!
+  dropRecordId: String!
   dropListType: DropListType!
+  cppaHash: String
   cppaStatusCode: Int
 }
 
@@ -13651,13 +13687,13 @@ type DropRunSummary {
   id: ID!
   dataBrokerId: String!
   listTypes: [DropListType!]!
-  sourcePattern: DropRunSourcePattern!
   cycleNumber: Int!
   state: DropRunState!
   downloadedAt: Date!
   deadlineAt: Date!
   submittedAt: Date
   totalRecords: Int!
+  recordsMaterializationStatus: DropRunRecordsMaterializationStatus!
   matchedRows: Int!
   requestsCount: Int!
   pendingRecordsCount: Int!
@@ -15208,6 +15244,11 @@ input MarkDataSiloDiscoveryResultsJunkInput {
   id: ID!
 }
 
+type MaterializeDropRunPayload {
+  clientMutationId: String
+  dropRun: DropRunSummary!
+}
+
 type MaxWidthEntry {
   flow: String!
   width: String!
@@ -15892,7 +15933,7 @@ input PolicyVersionInput {
 
 type PollDropForRequestsPayload {
   clientMutationId: String
-  dropRun: DropRunSummary!
+  dropRun: DropRunSummary
 }
 
 type PossibleDataSiloDependenciesPayload {
@@ -18171,7 +18212,7 @@ type Resource {
 
 type RestartSiloObjectClassificationsPayload {
   clientMutationId: String
-  plugin: Plugin!
+  success: Boolean!
 }
 
 input RestartSiloObjectClassificationsInput {
@@ -19226,7 +19267,6 @@ input SetDropBrokerConfigInput {
   pollingEnabled: Boolean
   pollIntervalMinutes: Int
   autoSubmitReportBack: Boolean
-  matchMode: DropBrokerMatchMode
 }
 
 type SetOrgNotificationDestinationAllowListPayload {
@@ -22709,6 +22749,7 @@ input UpdateStandaloneCustomFunctionInput {
   ownerTeamIds: [ID!]
   signedCodeJwt: String
   signedCodeContextJwt: String
+  successfulTestRun: Boolean
 }
 
 input UpdateSubDataPointInput {
