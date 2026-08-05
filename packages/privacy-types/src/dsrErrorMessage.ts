@@ -17,7 +17,7 @@ export const REQUEST_SUBMISSION_LIMIT = 100;
  * Maximum unknown DROP records named in an {@link DsrErrorCode.UnknownDropRecords}
  * error message before truncating with an "and N more" suffix.
  */
-export const MAX_UNKNOWN_RECORDS_IN_ERROR = 20;
+export const MAX_UNKNOWN_DROP_RECORDS_IN_ERROR = 20;
 
 /** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
 export interface RestartTimeLimitExceededMessageInput {
@@ -29,7 +29,9 @@ export interface RestartTimeLimitExceededMessageInput {
 
 /** Inputs for the {@link DsrErrorCode.UnknownDropRecords} message builder. */
 export interface UnknownDropRecordsMessageInput {
+  /** DROP record identifier from the submission payload */
   dropRecordId: string;
+  /** DROP list type for the referenced record */
   dropListType: DropListType;
 }
 
@@ -98,12 +100,12 @@ export const DSR_ERROR_MESSAGE = {
     `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => {
     const named = records
-      .slice(0, MAX_UNKNOWN_RECORDS_IN_ERROR)
+      .slice(0, MAX_UNKNOWN_DROP_RECORDS_IN_ERROR)
       .map(({ dropRecordId, dropListType }) => `${dropRecordId} (${dropListType})`)
       .join(', ');
     const remainder =
-      records.length > MAX_UNKNOWN_RECORDS_IN_ERROR
-        ? ` and ${records.length - MAX_UNKNOWN_RECORDS_IN_ERROR} more`
+      records.length > MAX_UNKNOWN_DROP_RECORDS_IN_ERROR
+        ? ` and ${records.length - MAX_UNKNOWN_DROP_RECORDS_IN_ERROR} more`
         : '';
     return (
       `${records.length} DROP record(s) are not part of this run's CPPA ` +
