@@ -49,9 +49,9 @@ pnpm-workspace.yaml @transcend-io/lakitu
 
 /packages/airgap.js-types/ @transcend-io/goomba @transcend-io/resetti
 /packages/design-tokens/ @transcend-io/ganondorf
+/packages/mcp/ @transcend-io/zelda
 # /packages/cli/                    TBD?
 # /packages/internationalization/   TBD?
-# /packages/mcp/                    TBD?
 # /packages/privacy-types/          TBD?
 # /packages/sdk/                    TBD?
 # /packages/type-utils/             TBD?
