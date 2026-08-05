@@ -1,14 +1,8 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import {
-  AirgapBundleAnalyticsBinInterval,
-  AirgapBundleAnalyticsMetric,
-} from '@transcend-io/privacy-types';
-import {
-  AIRGAP_BUNDLE_TIMESERIES_ANALYTICS,
-  type TranscendCliAirgapBundleTimeseriesAnalyticsResponse,
-} from '@transcend-io/sdk';
+import { AirgapBundleAnalyticsBinInterval } from '@transcend-io/privacy-types';
 
 import { resolveAnalyticsDateRange } from '../analyticsDateRange.js';
+import { TimeseriesAnalyticsDoc } from '../graphql.js';
 import { airgapBundleAnalyticsMetricSchema } from '../normalizeAnalyticsMetric.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
@@ -50,19 +44,15 @@ export function createConsentGetTimeseriesAnalyticsTool(clients: ToolClients) {
     handler: async ({ metric, start, end, days, bin_interval }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const range = resolveAnalyticsDateRange({ start, end, days });
-      const data =
-        await clients.graphql.makeRequest<TranscendCliAirgapBundleTimeseriesAnalyticsResponse>(
-          AIRGAP_BUNDLE_TIMESERIES_ANALYTICS,
-          {
-            id: airgapBundleId,
-            input: {
-              metric,
-              start: range.startEpoch,
-              end: range.endEpoch,
-              binInterval: bin_interval,
-            },
-          },
-        );
+      const data = await clients.graphql.makeRequest(TimeseriesAnalyticsDoc, {
+        id: airgapBundleId,
+        input: {
+          metric,
+          start: range.startEpoch,
+          end: range.endEpoch,
+          binInterval: bin_interval,
+        },
+      });
       const items = data.airgapBundleTimeseriesAnalytics.items;
 
       return createToolResult(true, {

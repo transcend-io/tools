@@ -3,9 +3,9 @@ import {
   ConsentManagerAnalyticsDataSource,
   ConsentManagerMetricBin,
 } from '@transcend-io/privacy-types';
-import { CONSENT_MANAGER_ANALYTICS_DATA, type ConsentManagerMetric } from '@transcend-io/sdk';
 
 import { resolveAnalyticsDateRange } from '../analyticsDateRange.js';
+import { ConsentManagerAnalyticsDataDoc } from '../graphql.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const GetAnalyticsDataSchema = z.object({
@@ -48,9 +48,7 @@ export function createConsentGetAnalyticsDataTool(clients: ToolClients) {
     handler: async ({ data_source, start, end, days, bin }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const range = resolveAnalyticsDateRange({ start, end, days });
-      const data = await clients.graphql.makeRequest<{
-        analyticsData: { series: ConsentManagerMetric[] };
-      }>(CONSENT_MANAGER_ANALYTICS_DATA, {
+      const data = await clients.graphql.makeRequest(ConsentManagerAnalyticsDataDoc, {
         input: {
           dataSource: data_source,
           startDate: range.startIso,

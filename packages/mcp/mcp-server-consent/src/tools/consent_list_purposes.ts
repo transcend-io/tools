@@ -1,5 +1,6 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { PURPOSES, type TranscendCliPurposesResponse } from '@transcend-io/sdk';
+
+import { PurposesDoc } from '../graphql.js';
 
 export const ListPurposesSchema = z.object({
   limit: z.coerce
@@ -21,7 +22,7 @@ export function createConsentListPurposesTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListPurposesSchema,
     handler: async ({ limit }) => {
-      const data = await clients.graphql.makeRequest<TranscendCliPurposesResponse>(PURPOSES, {
+      const data = await clients.graphql.makeRequest(PurposesDoc, {
         first: Math.min(limit, 100),
       });
       const { nodes, totalCount } = data.purposes;

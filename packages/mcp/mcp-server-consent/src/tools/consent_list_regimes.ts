@@ -1,5 +1,6 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { EXPERIENCES, type TranscendCliExperiencesResponse } from '@transcend-io/sdk';
+
+import { ExperiencesDoc } from '../graphql.js';
 
 export const ListRegimesSchema = z.object({
   limit: z.coerce
@@ -29,7 +30,7 @@ export function createConsentListRegimesTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListRegimesSchema,
     handler: async ({ limit, offset }) => {
-      const data = await clients.graphql.makeRequest<TranscendCliExperiencesResponse>(EXPERIENCES, {
+      const data = await clients.graphql.makeRequest(ExperiencesDoc, {
         first: limit,
         offset,
       });

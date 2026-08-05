@@ -1,11 +1,6 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import {
-  COOKIE_STATS,
-  DATA_FLOW_STATS,
-  type TranscendCliCookieStatsResponse,
-  type TranscendCliDataFlowStatsResponse,
-} from '@transcend-io/sdk';
 
+import { CookieStatsDoc, DataFlowStatsDoc } from '../graphql.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const GetInventoryStatsSchema = z.object({});
@@ -26,8 +21,8 @@ export function createConsentGetInventoryStatsTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const variables = { input: { airgapBundleId } };
       const [cookieData, dfData] = await Promise.all([
-        clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, variables),
-        clients.graphql.makeRequest<TranscendCliDataFlowStatsResponse>(DATA_FLOW_STATS, variables),
+        clients.graphql.makeRequest(CookieStatsDoc, variables),
+        clients.graphql.makeRequest(DataFlowStatsDoc, variables),
       ]);
       return createToolResult(true, {
         cookies: cookieData.cookieStats,

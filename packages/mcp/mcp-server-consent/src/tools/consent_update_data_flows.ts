@@ -1,11 +1,7 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import {
-  UPDATE_DATA_FLOWS,
-  type TranscendUpdateDataFlowInputGql,
-  type TranscendCliUpdateDataFlowsResponse,
-} from '@transcend-io/sdk';
 
+import { UpdateDataFlowsDoc, type UpdateDataFlowInput } from '../graphql.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const UpdateDataFlowItemSchema = z.object({
@@ -39,7 +35,7 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
     zodSchema: UpdateDataFlowsSchema,
     handler: async ({ dataFlows }) => {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const dfInputs: TranscendUpdateDataFlowInputGql[] = dataFlows.map((df) => ({
+      const dfInputs: UpdateDataFlowInput[] = dataFlows.map((df) => ({
         id: df.id,
         ...(df.trackingPurposes ? { purposeIds: df.trackingPurposes } : {}),
         ...(df.description !== undefined ? { description: df.description } : {}),
@@ -47,13 +43,10 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
         ...(df.isJunk !== undefined ? { isJunk: df.isJunk } : {}),
         ...(df.status !== undefined ? { status: df.status } : {}),
       }));
-      const data = await clients.graphql.makeRequest<TranscendCliUpdateDataFlowsResponse>(
-        UPDATE_DATA_FLOWS,
-        {
-          airgapBundleId,
-          dataFlows: dfInputs,
-        },
-      );
+      const data = await clients.graphql.makeRequest(UpdateDataFlowsDoc, {
+        airgapBundleId,
+        dataFlows: dfInputs,
+      });
       return createToolResult(true, {
         updated: data.updateDataFlows.dataFlows.length,
         dataFlows: data.updateDataFlows.dataFlows.map((df) => ({

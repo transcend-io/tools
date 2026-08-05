@@ -4,10 +4,8 @@ import {
   EmptySchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
-import {
-  FETCH_CONSENT_MANAGER,
-  type TranscendCliFetchConsentManagerResponse,
-} from '@transcend-io/sdk';
+
+import { FetchConsentManagerDoc } from '../graphql.js';
 
 export const ListAirgapBundlesSchema = EmptySchema;
 export type ListAirgapBundlesInput = Record<string, never>;
@@ -23,10 +21,7 @@ export function createConsentListAirgapBundlesTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAirgapBundlesSchema,
     handler: async (_args) => {
-      const data = await clients.graphql.makeRequest<TranscendCliFetchConsentManagerResponse>(
-        FETCH_CONSENT_MANAGER,
-        {},
-      );
+      const data = await clients.graphql.makeRequest(FetchConsentManagerDoc);
       return createToolResult(true, data.consentManager.consentManager);
     },
   });
