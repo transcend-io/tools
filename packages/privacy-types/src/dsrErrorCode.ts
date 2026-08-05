@@ -32,6 +32,8 @@ export const DsrErrorCode = makeEnum({
   UnknownDropRecords: 'UNKNOWN_DROP_RECORDS',
   /** The DROP run referenced by this request does not exist. */
   DropRunNotFound: 'DROP_RUN_NOT_FOUND',
+  /** An open parent request already accommodates this submission. */
+  OpenParentRequest: 'OPEN_PARENT_REQUEST',
 });
 
 /** Type override */

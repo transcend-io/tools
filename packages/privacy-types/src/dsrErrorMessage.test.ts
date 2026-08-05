@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { DropListType } from './drop.js';
 import {
+  DSR_BULK_SUBMISSION_REJECTED_MESSAGE,
   DSR_ERROR_MESSAGE,
   DsrErrorCode,
+  MAX_DSR_BULK_SUBMISSION_ERRORS,
   MAX_DROP_RECORDS_PER_REQUEST,
   MAX_UNKNOWN_DROP_RECORDS_IN_ERROR,
 } from './index.js';
@@ -15,6 +17,13 @@ describe('DSR_ERROR_MESSAGE', () => {
     for (const code of DSR_ERROR_MESSAGE_CODES) {
       expect(DSR_ERROR_MESSAGE[code]).toBeTypeOf('function');
     }
+  });
+
+  it('exports bulk submission rejection constants', () => {
+    expect(DSR_BULK_SUBMISSION_REJECTED_MESSAGE).toBe(
+      'The submission was rejected. No requests were created.',
+    );
+    expect(MAX_DSR_BULK_SUBMISSION_ERRORS).toBe(20);
   });
 
   it('interpolates numeric limits from exported constants', () => {
@@ -44,6 +53,9 @@ describe('DSR_ERROR_MESSAGE', () => {
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRecordsRequireDropRunId]()).toBe(
       'dropRecords requires dropRunId',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.OpenParentRequest]()).toBe(
+      'You have already submitted a previous request that will also accommodate this current one.',
     );
   });
 

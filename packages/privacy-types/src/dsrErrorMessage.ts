@@ -19,6 +19,17 @@ export const REQUEST_SUBMISSION_LIMIT = 100;
  */
 export const MAX_UNKNOWN_DROP_RECORDS_IN_ERROR = 20;
 
+/**
+ * Summary message when an entire bulk submission is rejected.
+ */
+export const DSR_BULK_SUBMISSION_REJECTED_MESSAGE =
+  'The submission was rejected. No requests were created.';
+
+/**
+ * Cap on structured error entries returned for a rejected bulk submission.
+ */
+export const MAX_DSR_BULK_SUBMISSION_ERRORS = 20;
+
 /** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
 export interface RestartTimeLimitExceededMessageInput {
   /** Days since the request's status last changed */
@@ -49,6 +60,7 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
+  [DsrErrorCode.OpenParentRequest]: () => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -103,4 +115,6 @@ export const DSR_ERROR_MESSAGE = {
   },
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,
+  [DsrErrorCode.OpenParentRequest]: () =>
+    'You have already submitted a previous request that will also accommodate this current one.',
 } as const satisfies DsrErrorMessageMap;
