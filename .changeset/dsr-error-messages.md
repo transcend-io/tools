@@ -2,4 +2,4 @@
 '@transcend-io/privacy-types': minor
 ---
 
-Publish canonical DSR submission error messages, limits, and HTTP status mappings.
+Publish canonical DSR submission error message builders keyed by error code.
