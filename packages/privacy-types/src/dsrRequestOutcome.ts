@@ -12,7 +12,7 @@ export const DsrRequestOutcome = makeEnum({
   /** An equivalent open request already exists for this submission. */
   AlreadyOpen: 'ALREADY_OPEN',
   /** DROP records were linked to an existing request without creating a new one. */
-  Linked: 'LINKED',
+  DropRecordsLinked: 'DROP_RECORDS_LINKED',
   /** An existing request was restarted. */
   Restarted: 'RESTARTED',
 });

@@ -7,7 +7,7 @@ describe('DsrRequestOutcome', () => {
     expect(Object.values(DsrRequestOutcome)).toEqual([
       'CREATED',
       'ALREADY_OPEN',
-      'LINKED',
+      'DROP_RECORDS_LINKED',
       'RESTARTED',
     ]);
   });

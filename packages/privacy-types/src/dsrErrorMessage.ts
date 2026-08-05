@@ -26,7 +26,6 @@ export type DsrErrorCodeWithMessage = Exclude<DsrErrorCode, typeof DsrErrorCode.
 /** Message builders keyed by {@link DsrErrorCode} (except {@link DsrErrorCode.InvalidInput}). */
 type DsrErrorMessageByCode = {
   [DsrErrorCode.DuplicateRequest]: () => string;
-  [DsrErrorCode.OpenParentRequestExists]: () => string;
   [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) => string;
   [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
   [DsrErrorCode.SubmissionLimitExceeded]: () => string;
@@ -74,7 +73,6 @@ export type DsrErrorMessageMap = DsrErrorMessageByCode & {
  */
 export const DSR_ERROR_MESSAGE = {
   [DsrErrorCode.DuplicateRequest]: () => 'You have already made this request.',
-  [DsrErrorCode.OpenParentRequestExists]: () => 'An open parent request already exists',
   [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) =>
     `Cannot restart: request(s) not found for ID(s): ${requestIds.join(', ')}`,
   [DsrErrorCode.RestartTimeLimitExceeded]: ({

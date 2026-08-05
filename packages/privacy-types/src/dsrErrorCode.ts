@@ -16,13 +16,6 @@ export const DsrErrorCode = makeEnum({
    * submit compatibility.
    */
   DuplicateRequest: 'DUPLICATE_REQUEST',
-  /**
-   * An open parent request already exists for this data subject.
-   *
-   * Bulk submission stops emitting this once Phase 6a lands; exclude from the
-   * bulk error docs table. Kept for singular submit compatibility.
-   */
-  OpenParentRequestExists: 'OPEN_PARENT_REQUEST_EXISTS',
   /** A restart was requested for a request ID that does not exist. */
   RestartRequestNotFound: 'RESTART_REQUEST_NOT_FOUND',
   /** A restart was requested for a request closed beyond the org's time limit. */
