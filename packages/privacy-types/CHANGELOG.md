@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.10.2
+
+### Patch Changes
+
+- e68d245: Export `DROP_RECORD_ID_MAX_LENGTH` from `drop.ts` for shared DROP ingress validation.
+
 ## 5.10.1
 
 ### Patch Changes
