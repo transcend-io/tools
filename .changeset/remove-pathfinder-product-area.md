@@ -4,4 +4,4 @@
 '@transcend-io/sdk': minor
 ---
 
-Remove Pathfinder from the tools repo: drop `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, and related CLI/SDK types.
+Remove Pathfinder from the tools repo and drop CLI prompt-manager integration: remove `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, `TranscendPromptManager`, and related CLI/SDK types.
