@@ -1,5 +1,99 @@
 # @transcend-io/mcp
 
+## 0.8.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.5.4
+- @transcend-io/mcp-server-assessment@0.5.4
+- @transcend-io/mcp-server-consent@0.6.4
+- @transcend-io/mcp-server-discovery@0.5.4
+- @transcend-io/mcp-server-dsr@0.5.4
+- @transcend-io/mcp-server-inventory@0.5.4
+- @transcend-io/mcp-server-preferences@0.5.4
+- @transcend-io/mcp-server-workflows@0.5.4
+
+## 0.8.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.5.3
+- @transcend-io/mcp-server-assessment@0.5.3
+- @transcend-io/mcp-server-consent@0.6.3
+- @transcend-io/mcp-server-discovery@0.5.3
+- @transcend-io/mcp-server-dsr@0.5.3
+- @transcend-io/mcp-server-inventory@0.5.3
+- @transcend-io/mcp-server-preferences@0.5.3
+- @transcend-io/mcp-server-workflows@0.5.3
+
+## 0.8.0
+
+### Minor Changes
+
+- c00f3c5: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- Updated dependencies [8034d59]
+- Updated dependencies [c00f3c5]
+  - @transcend-io/mcp-server-base@0.10.0
+  - @transcend-io/mcp-server-admin@0.5.2
+  - @transcend-io/mcp-server-assessment@0.5.2
+  - @transcend-io/mcp-server-consent@0.6.2
+  - @transcend-io/mcp-server-discovery@0.5.2
+  - @transcend-io/mcp-server-dsr@0.5.2
+  - @transcend-io/mcp-server-inventory@0.5.2
+  - @transcend-io/mcp-server-preferences@0.5.2
+  - @transcend-io/mcp-server-workflows@0.5.2
+  - @transcend-io/mcp-server-docs@0.3.7
+
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [c65d41e]
+  - @transcend-io/mcp-server-base@0.9.0
+  - @transcend-io/mcp-server-admin@0.5.1
+  - @transcend-io/mcp-server-assessment@0.5.1
+  - @transcend-io/mcp-server-consent@0.6.1
+  - @transcend-io/mcp-server-discovery@0.5.1
+  - @transcend-io/mcp-server-dsr@0.5.1
+  - @transcend-io/mcp-server-inventory@0.5.1
+  - @transcend-io/mcp-server-preferences@0.5.1
+  - @transcend-io/mcp-server-workflows@0.5.1
+  - @transcend-io/mcp-server-docs@0.3.6
+
+## 0.7.0
+
+### Minor Changes
+
+- 637b357: Enables sombra integration with mcp
+
+### Patch Changes
+
+- cf74715: enforce orgs mcp x sombra setting
+- 29821b9: Adds condition sombra header and lazy load the customers sombra url
+- fb24b96: Adds sombra metadata to tools
+- Updated dependencies [29821b9]
+- Updated dependencies [cf74715]
+- Updated dependencies [29821b9]
+- Updated dependencies [fb24b96]
+- Updated dependencies [637b357]
+  - @transcend-io/mcp-server-consent@0.6.0
+  - @transcend-io/mcp-server-preferences@0.5.0
+  - @transcend-io/mcp-server-assessment@0.5.0
+  - @transcend-io/mcp-server-discovery@0.5.0
+  - @transcend-io/mcp-server-inventory@0.5.0
+  - @transcend-io/mcp-server-workflows@0.5.0
+  - @transcend-io/mcp-server-admin@0.5.0
+  - @transcend-io/mcp-server-base@0.8.0
+  - @transcend-io/mcp-server-dsr@0.5.0
+  - @transcend-io/mcp-server-docs@0.3.5
+
 ## 0.6.13
 
 ### Patch Changes

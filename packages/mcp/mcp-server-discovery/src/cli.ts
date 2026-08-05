@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createMCPServer, TranscendRestClient } from '@transcend-io/mcp-server-base';
+import { createMCPServer, createTranscendRestClient } from '@transcend-io/mcp-server-base';
 
 import packageJson from '../package.json' with { type: 'json' };
 import { DiscoveryMixin } from './graphql.js';
@@ -11,9 +11,12 @@ createMCPServer({
   version: packageJson.version,
   oauthScopes: DISCOVERY_OAUTH_SCOPES,
   getTools: getDiscoveryTools,
-  createClients: ({ auth, sombraUrl, graphqlUrl, dashboardUrl }) => ({
-    rest: new TranscendRestClient(auth, sombraUrl),
-    graphql: new DiscoveryMixin(auth, graphqlUrl),
-    dashboardUrl,
-  }),
+  createClients: ({ auth, sombraUrl, sombraCustomerKey, graphqlUrl, dashboardUrl }) => {
+    const graphql = new DiscoveryMixin(auth, graphqlUrl);
+    return {
+      rest: createTranscendRestClient(auth, graphql, { sombraUrl, sombraCustomerKey }),
+      graphql,
+      dashboardUrl,
+    };
+  },
 });

@@ -1,6 +1,10 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./tsconfig.base.json",
+  // Repeats the base's ambient declarations because `files` replaces rather
+  // than extends. `css.d.ts` is listed only here: stylesheet imports are a view
+  // concern, and the Node packages should keep rejecting them.
+  "files": ["./types/svg.d.ts", "./types/css.d.ts"],
   "compilerOptions": {
     // MCP App views are browser code bundled by Vite, so they need a different
     // baseline than the Node libraries this repo otherwise ships.

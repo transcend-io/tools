@@ -1,5 +1,55 @@
 # @transcend-io/mcp-server-workflows
 
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [e68d245]
+  - @transcend-io/privacy-types@5.10.2
+
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [841f1a9]
+  - @transcend-io/privacy-types@5.10.1
+
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [da3e443]
+- Updated dependencies [8034d59]
+- Updated dependencies [c00f3c5]
+  - @transcend-io/privacy-types@5.10.0
+  - @transcend-io/mcp-server-base@0.10.0
+
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [8bfe3cc]
+- Updated dependencies [c65d41e]
+  - @transcend-io/privacy-types@5.9.1
+  - @transcend-io/mcp-server-base@0.9.0
+
+## 0.5.0
+
+### Minor Changes
+
+- 637b357: Enables sombra integration with mcp
+
+### Patch Changes
+
+- cf74715: enforce orgs mcp x sombra setting
+- 29821b9: Adds condition sombra header and lazy load the customers sombra url
+- fb24b96: Adds sombra metadata to tools
+- Updated dependencies [cf74715]
+- Updated dependencies [29821b9]
+- Updated dependencies [fb24b96]
+- Updated dependencies [637b357]
+  - @transcend-io/mcp-server-base@0.8.0
+
 ## 0.4.13
 
 ### Patch Changes

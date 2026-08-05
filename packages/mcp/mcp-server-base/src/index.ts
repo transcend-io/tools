@@ -42,6 +42,7 @@ export type { ToolCallContext } from './tool-call-context.js';
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { TranscendRestClient } from './clients/rest-client.js';
+export type { TranscendRestClientOptions } from './clients/rest-client.js';
 
 export {
   DEFAULT_DASHBOARD_URL,
@@ -184,6 +185,25 @@ export type {
 export { resolveMcpDashboardUrl } from './server/resolve-dashboard-url.js';
 
 export { resolveMcpGraphqlUrl } from './server/resolve-graphql-url.js';
+
+export {
+  assertMcpSombraAiSettings,
+  assertOrganizationMcpSombraEnabled,
+  createTranscendRestClient,
+  fetchOrganizationSombraContext,
+  readSombraEnvConfig,
+  resolveSombraHostForMcp,
+  resolveSombraHostUrl,
+  resolveSombraUrl,
+  SOMBRA_CUSTOMER_KEY_ENV,
+  SOMBRA_REVERSE_TUNNEL_URLS,
+  SOMBRA_URL_ENV,
+} from './server/resolve-sombra-url.js';
+export type {
+  OrganizationAiSetting,
+  OrganizationSombraContext,
+  ResolveSombraUrlOptions,
+} from './server/resolve-sombra-url.js';
 
 export { parseTransportArgs } from './server/parse-args.js';
 export type { TransportConfig } from './server/parse-args.js';
