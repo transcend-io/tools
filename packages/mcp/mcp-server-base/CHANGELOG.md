@@ -1,5 +1,53 @@
 # @transcend-io/mcp-server-base
 
+## 0.11.0
+
+### Minor Changes
+
+- 6932df1: Add a browser-only `@transcend-io/mcp-server-base/ui` subpath exporting `useMcpApp`, the React hook a view uses to connect to its host, read the payload the tool sent, and call tools back.
+
+  The separate subpath is load-bearing rather than cosmetic: the package root reaches into `node:async_hooks`, GraphQL clients, and OAuth, none of which can run in a sandboxed iframe. Importing only from `/ui` in view code keeps that graph unreachable. React and `@modelcontextprotocol/ext-apps` are optional peer dependencies, so packages that ship no view install nothing new.
+
+## 0.10.0
+
+### Minor Changes
+
+- c00f3c5: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- 8034d59: Fall back to the host detected at `initialize` when setting `x-transcend-mcp-caller` on outbound Transcend requests, so stdio sessions carry usage attribution they previously had no way to send.
+
+  An explicitly forwarded header still takes precedence, since a caller proxying on a user's behalf knows its own identity better than we can infer it. Nothing is sent when the host could not be identified, rather than guessing.
+
+## 0.9.0
+
+### Minor Changes
+
+- c65d41e: Negotiate client capabilities from the `initialize` handshake, so a tool can adapt to what the connected host is actually able to render.
+
+  Servers now derive the host's capabilities and identity once per connection (`deriveClientCapabilities`, `whatIsTheClient`) and expose them to handlers through an `AsyncLocalStorage` session context, reachable with `getMcpSession()` and `hasCapability()` without threading a server through every call signature. `requestElicitation` asks the host for a form and returns `undefined` when it cannot show one, rather than letting the SDK's own capability check throw and fail the tool call.
+
+  Only elicitation and MCP Apps are detected, being the only capabilities a tool can act on differently. Sampling and roots are deliberately excluded: roots is inert for API-backed servers, our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
+
+  Nothing changes on the wire yet. Handshakes stay byte-identical, and no tool behaves differently until per-capability variants land.
+
+## 0.8.0
+
+### Minor Changes
+
+- 637b357: Enables sombra integration with mcp
+
+### Patch Changes
+
+- cf74715: enforce orgs mcp x sombra setting
+- 29821b9: Adds condition sombra header and lazy load the customers sombra url
+- fb24b96: Adds sombra metadata to tools
+
 ## 0.7.0
 
 ### Minor Changes

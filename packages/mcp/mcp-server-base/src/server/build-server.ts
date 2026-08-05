@@ -95,15 +95,19 @@ function collectUiResources(
  * for the flat key and the spec's own compatibility guidance is to send both.
  */
 function buildToolMeta(tool: ToolDefinition): Record<string, unknown> | undefined {
-  if (!tool.ui) return undefined;
-  const resourceUri = tool.ui.resource.uri;
-  return {
-    ui: {
+  const meta: Record<string, unknown> = {};
+  if (tool.ui) {
+    const resourceUri = tool.ui.resource.uri;
+    meta.ui = {
       resourceUri,
       ...(tool.visibility && { visibility: tool.visibility }),
-    },
-    'ui/resourceUri': resourceUri,
-  };
+    };
+    meta['ui/resourceUri'] = resourceUri;
+  }
+  if (tool.requireSombra === true) {
+    meta.requireSombra = true;
+  }
+  return Object.keys(meta).length > 0 ? meta : undefined;
 }
 
 /**

@@ -7,9 +7,6 @@ import {
   syncAction,
   syncActionItemCollections,
   syncActionItems,
-  syncAgentFiles,
-  syncAgentFunctions,
-  syncAgents,
   syncAttribute,
   syncBusinessEntities,
   syncDataCategories,
@@ -112,9 +109,6 @@ export async function syncConfigurationToTranscend(
     prompts,
     'prompt-groups': promptGroups,
     'prompt-partials': promptPartials,
-    agents,
-    'agent-functions': agentFunctions,
-    'agent-files': agentFiles,
     vendors,
     'data-categories': dataCategories,
     'processing-activities': processingActivities,
@@ -312,24 +306,6 @@ export async function syncConfigurationToTranscend(
   if (partitions) {
     const partitionsSuccess = await syncPartitions(client, partitions, { logger });
     encounteredError = encounteredError || !partitionsSuccess;
-  }
-
-  // Sync agents
-  if (agents) {
-    const agentsSuccess = await syncAgents(client, agents, { logger });
-    encounteredError = encounteredError || !agentsSuccess;
-  }
-
-  // Sync agent functions
-  if (agentFunctions) {
-    const agentFunctionsSuccess = await syncAgentFunctions(client, agentFunctions, { logger });
-    encounteredError = encounteredError || !agentFunctionsSuccess;
-  }
-
-  // Sync agent files
-  if (agentFiles) {
-    const agentFilesSuccess = await syncAgentFiles(client, agentFiles, { logger });
-    encounteredError = encounteredError || !agentFilesSuccess;
   }
 
   // Sync cookies

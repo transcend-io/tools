@@ -1,5 +1,37 @@
 # @transcend-io/privacy-types
 
+## 5.11.0
+
+### Minor Changes
+
+- 29e9d5f: Remove Pathfinder from the tools repo and drop CLI prompt-manager integration: remove `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, `TranscendPromptManager`, `reportPromptRun`, and related CLI/SDK types.
+
+## 5.10.2
+
+### Patch Changes
+
+- e68d245: Export `DROP_RECORD_ID_MAX_LENGTH` from `drop.ts` for shared DROP ingress validation.
+
+## 5.10.1
+
+### Patch Changes
+
+- 841f1a9: Scope `DhContextRequired` and `ConcurrentSubmissionConflict` under `DsrBulkErrorCode` (no single `input[]` index can be attributed) and restore `DropIdentifierCoverageMismatch` and `DuplicateDropRecords` message wording from main.
+
+## 5.10.0
+
+### Minor Changes
+
+- da3e443: Publish canonical DSR submission error codes, message builders, numeric limits, and `DsrRequestOutcome`. Per-input failures use `DsrErrorCode` with `DSR_ERROR_MESSAGE`; bulk-call failures use `DsrBulkErrorCode` with `DSR_BULK_ERROR_MESSAGE`.
+
+  `DsrErrorCode` landed in 5.9.0, but no endpoint has ever emitted any of its values. `OPEN_PARENT_REQUEST_EXISTS`, `DUPLICATE_REQUEST`, and `INVALID_INPUT` never had producers (`DUPLICATE_REQUEST` becomes `DsrRequestOutcome.AlreadyOpen` on bulk instead of an error; former `INVALID_INPUT` cases now have dedicated codes). No consumer can depend on removed members. Strict semver would call removing them breaking; this note is what makes the minor bump defensible.
+
+## 5.9.1
+
+### Patch Changes
+
+- 8bfe3cc: Add `DsrErrorCode.DropIdentifierCoverageMismatch` for DROP DSR submit validation.
+
 ## 5.9.0
 
 ### Minor Changes

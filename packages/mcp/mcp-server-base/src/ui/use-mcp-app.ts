@@ -6,59 +6,10 @@ import {
   type McpUiAppCapabilities,
   type McpUiTheme,
 } from '@modelcontextprotocol/ext-apps/react';
-import type { CallToolResult, Implementation } from '@modelcontextprotocol/sdk/types.js';
-import { useCallback, useState } from 'react';
+import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
+import { useCallback, useRef, useState } from 'react';
 
-/**
- * The envelope every Transcend MCP tool returns, as produced by
- * `createToolResult`. Views receive it as JSON in the first text content block.
- */
-interface ToolEnvelope<TData> {
-  /** Whether the tool call succeeded */
-  success?: boolean;
-  /** Result payload when successful */
-  data?: TData;
-  /** Human-readable error message when unsuccessful */
-  error?: string;
-}
-
-/**
- * Pulls the payload out of a tool result.
- *
- * `structuredContent` is preferred because it is the spec's typed channel, but
- * our servers currently serialize the envelope as JSON into the first text
- * block, so that is the path taken in practice.
- */
-function parseToolEnvelope<TData>(result: CallToolResult): {
-  data: TData | undefined;
-  error: string | undefined;
-} {
-  const raw =
-    result.structuredContent ??
-    (() => {
-      const firstText = result.content?.find((block) => block.type === 'text');
-      if (firstText?.type !== 'text') {
-        return undefined;
-      }
-      try {
-        return JSON.parse(firstText.text) as unknown;
-      } catch {
-        // A tool that returns prose rather than JSON is still worth surfacing.
-        return { success: !result.isError, data: firstText.text };
-      }
-    })();
-
-  if (raw === null || typeof raw !== 'object') {
-    return { data: undefined, error: result.isError ? 'Tool call failed' : undefined };
-  }
-
-  const envelope = raw as ToolEnvelope<TData>;
-  const failed = result.isError === true || envelope.success === false;
-  return {
-    data: envelope.data,
-    error: failed ? (envelope.error ?? 'Tool call failed') : undefined,
-  };
-}
+import { parseToolEnvelope } from './tool-envelope.js';
 
 /** Options for {@link useMcpApp}. */
 export interface UseMcpAppOptions {
@@ -99,13 +50,19 @@ export interface McpAppState<TData> {
  * Wraps the MCP Apps SDK with the conventions this monorepo already uses: host
  * style variables and fonts are applied so the view matches the surrounding
  * client, and tool results are unwrapped from the `createToolResult` envelope
- * into typed `data`. Styling comes from `@transcend-io/mcp-server-base/ui/theme.css`,
- * which a view imports; this hook only feeds it the host's values.
+ * into typed `data`. This hook only feeds the host's values to CSS custom
+ * properties; the view supplies its own stylesheet.
  *
  * The initial payload arrives as a `ui/notifications/tool-result` notification
- * rather than in the handshake response, so the handler is registered in
+ * rather than in the handshake response, so listeners are registered in
  * `onAppCreated` — before `connect()` — to avoid dropping a result that lands
- * immediately.
+ * immediately. They are attached with `addEventListener` rather than the `on*`
+ * setters so a view can observe the same notifications on the returned `app`
+ * without displacing this hook's own handling.
+ *
+ * `appInfo` and `capabilities` are read once, on mount: the underlying `useApp`
+ * deliberately does not reconnect when its options change, so later values are
+ * ignored.
  *
  * @param options - View identity and declared capabilities
  * @returns Connection state, host theme, tool data, and a tool caller
@@ -125,19 +82,31 @@ export function useMcpApp<TData = unknown>({
   const [toolError, setToolError] = useState<string | undefined>(undefined);
   const [isCallingTool, setIsCallingTool] = useState(false);
 
+  // Overlapping `callTool` invocations share one loading flag and one `data`
+  // slot, so track how many are outstanding and which one is newest. Without
+  // this, the first response to land clears the flag while another call is
+  // still running, and a slow earlier response overwrites a newer one.
+  const inFlightCount = useRef(0);
+  const latestCallId = useRef(0);
+
   const { app, isConnected, error } = useApp({
     appInfo,
     capabilities,
     autoResize: true,
     onAppCreated: (created: App) => {
-      created.ontoolresult = (params) => {
+      created.addEventListener('toolresult', (params) => {
         const parsed = parseToolEnvelope<TData>(params);
         setData(parsed.data);
         setToolError(parsed.error);
-      };
-      created.ontoolcancelled = (params) => {
+      });
+      created.addEventListener('toolcancelled', (params) => {
         setToolError(params.reason ?? 'Tool call cancelled');
-      };
+        // A cancelled call may never settle, so abandon everything in flight
+        // rather than leaving `isCallingTool` stuck on forever.
+        latestCallId.current += 1;
+        inFlightCount.current = 0;
+        setIsCallingTool(false);
+      });
     },
   });
 
@@ -149,15 +118,23 @@ export function useMcpApp<TData = unknown>({
       if (!app) {
         throw new Error(`Cannot call "${name}" before the app is connected to its host`);
       }
+      latestCallId.current += 1;
+      const callId = latestCallId.current;
+      inFlightCount.current += 1;
       setIsCallingTool(true);
       try {
         const result = await app.callServerTool({ name, arguments: args ?? {} });
         const parsed = parseToolEnvelope<TData>(result);
-        setData(parsed.data);
-        setToolError(parsed.error);
+        if (callId === latestCallId.current) {
+          setData(parsed.data);
+          setToolError(parsed.error);
+        }
         return parsed.error === undefined ? parsed.data : undefined;
       } finally {
-        setIsCallingTool(false);
+        inFlightCount.current = Math.max(0, inFlightCount.current - 1);
+        if (inFlightCount.current === 0) {
+          setIsCallingTool(false);
+        }
       }
     },
     [app],

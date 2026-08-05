@@ -56,6 +56,12 @@ export interface ToolDefinition {
    */
   requireAuth?: boolean;
   /**
+   * When true, this tool calls the Sombra REST customer ingress.
+   * Agentic Assist (Prometheus) omits tools where `requireSombra === true`.
+   * Leave undefined for GraphQL-only / non-Sombra tools.
+   */
+  requireSombra?: boolean;
+  /**
    * MCP App view that renders this tool's results. Hosts without MCP Apps
    * support ignore the metadata and show the text result instead.
    */
@@ -108,6 +114,12 @@ export function defineTool<T>(config: {
    * Use for tools that only access public resources. Default true.
    */
   requireAuth?: boolean;
+  /**
+   * When true, this tool calls the Sombra REST customer ingress.
+   * Agentic Assist (Prometheus) omits tools where `requireSombra === true`.
+   * Leave undefined for GraphQL-only / non-Sombra tools.
+   */
+  requireSombra?: boolean;
   /**
    * MCP App view that renders this tool's results. Hosts without MCP Apps
    * support ignore the metadata and show the text result instead.
