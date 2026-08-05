@@ -26,6 +26,10 @@ export const DsrErrorCode = makeEnum({
   InvalidInput: 'INVALID_INPUT',
   /** DROP linkage identifiers do not cover the required identifier types. */
   DropIdentifierCoverageMismatch: 'DROP_IDENTIFIER_COVERAGE_MISMATCH',
+  /** A concurrent bulk submission already created one or more of these requests. */
+  ConcurrentSubmissionConflict: 'CONCURRENT_SUBMISSION_CONFLICT',
+  /** The referenced DROP run does not exist. */
+  DropRunNotFound: 'DROP_RUN_NOT_FOUND',
 });
 
 /** Type override */
