@@ -1,12 +1,25 @@
 import { DsrErrorCode } from './dsrErrorCode.js';
 
-/** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
-export interface RestartTimeLimitExceededMessageInput {
-  /** Days since the request's status last changed */
-  daysSinceLastTransition: number;
-  /** Organization-configured restart time limit in days */
-  restartTimeLimitDays: number;
-}
+/** {@link DsrErrorCode} values with a builder in {@link DSR_ERROR_MESSAGE}. */
+export type DsrErrorCodeWithMessage = Exclude<DsrErrorCode, typeof DsrErrorCode.InvalidInput>;
+
+/** Message builders keyed by {@link DsrErrorCode} (except {@link DsrErrorCode.InvalidInput}). */
+type DsrErrorMessageByCode = {
+  [K in DsrErrorCodeWithMessage]: (...args: any[]) => string;
+};
+
+/** {@link DsrErrorCode.InvalidInput} validation messages with distinct text per failure. */
+type DsrInvalidInputMessageMap = {
+  duplicateDropRecords: () => string;
+  inBatchDropIdempotencyKeyCollision: () => string;
+  dropRecordsRequireDropRunId: () => string;
+  maxDropRecordsPerRequestExceeded: () => string;
+};
+
+/** Canonical DSR bulk submission error message builders. */
+export type DsrErrorMessageMap = DsrErrorMessageByCode & {
+  invalidInput: DsrInvalidInputMessageMap;
+};
 
 /**
  * Canonical DSR bulk submission error messages.
@@ -53,7 +66,12 @@ export const DSR_ERROR_MESSAGE = {
     maxDropRecordsPerRequestExceeded: () =>
       'Cannot link more than 500 DROP records to a single request.',
   },
-} as const;
+} as const satisfies DsrErrorMessageMap;
 
-/** {@link DsrErrorCode} values with a builder in {@link DSR_ERROR_MESSAGE}. */
-export type DsrErrorCodeWithMessage = Exclude<DsrErrorCode, typeof DsrErrorCode.InvalidInput>;
+/** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
+export interface RestartTimeLimitExceededMessageInput {
+  /** Days since the request's status last changed */
+  daysSinceLastTransition: number;
+  /** Organization-configured restart time limit in days */
+  restartTimeLimitDays: number;
+}
