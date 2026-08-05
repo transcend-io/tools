@@ -71,8 +71,9 @@ export type SandboxProxyOutcome = 'present' | 'written' | 'unrecognized';
 /**
  * Writes the sandbox proxy document into an Inspector install that is missing it.
  *
- * TODO: https://github.com/modelcontextprotocol/inspector/issues/1859 — delete
- * this, the vendored document, and its call site once a release ships the file.
+ * TODO(ZEL-8153): https://github.com/modelcontextprotocol/inspector/issues/1859 —
+ * delete this, the vendored document, and its call site once a release ships the
+ * file. Tracking ticket: https://linear.app/transcend/issue/ZEL-8153
  * The published v2 tarball's `files` list covers `clients/web/build` and
  * `clients/web/dist` but not `clients/web/static`, so the one document the Apps
  * tab needs is absent. The web server reads it at startup, swallows the ENOENT,
