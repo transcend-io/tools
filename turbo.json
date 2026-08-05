@@ -5,6 +5,7 @@
     "mise.toml",
     "mise.lock",
     "tsconfig.base.json",
+    "tsconfig.ui.base.json",
     "tsdown.config.base.ts",
     "vitest.config.ts",
     "types/**",
@@ -35,6 +36,7 @@
     "quality:checks": {
       "dependsOn": [
         "typecheck",
+        "typecheck:ui",
         "//#typecheck:root",
         "//#check:packages",
         "check:deps",
@@ -48,6 +50,10 @@
     },
     "typecheck": {
       "dependsOn": ["transit", "//#codegen"],
+      "outputs": []
+    },
+    "typecheck:ui": {
+      "dependsOn": ["transit"],
       "outputs": []
     },
     "//#codegen": {

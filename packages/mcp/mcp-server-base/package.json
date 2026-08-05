@@ -21,6 +21,11 @@
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./ui": {
+      "@transcend-io/source": "./src/ui/index.ts",
+      "types": "./dist/ui/index.d.mts",
+      "default": "./dist/ui/index.mjs"
     }
   },
   "publishConfig": {
@@ -30,6 +35,7 @@
     "build": "tsdown",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
@@ -44,13 +50,28 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@modelcontextprotocol/ext-apps": "catalog:",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
     "publint": "catalog:",
+    "react": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/ext-apps": "catalog:",
+    "react": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/ext-apps": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22.12.0"
