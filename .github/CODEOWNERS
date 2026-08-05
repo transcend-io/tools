@@ -1,0 +1,58 @@
+
+# -----------------------------------------------
+# Configuration (Defaults)
+# -----------------------------------------------
+
+# TypeScript
+tsconfig.json @transcend-io/lakitu
+tsconfig.*.json @transcend-io/lakitu
+
+# General
+*.config.* @transcend-io/lakitu
+turbo.json @transcend-io/lakitu
+
+# -----------------------------------------------
+# Continuous Integration (Defaults)
+# -----------------------------------------------
+
+# GitHub Actions
+/.github/ @transcend-io/lakitu
+
+# -----------------------------------------------
+# Manifests (Defaults)
+# -----------------------------------------------
+
+.node-version @transcend-io/lakitu
+mise.toml @transcend-io/lakitu
+package.json @transcend-io/lakitu
+pnpm-workspace.yaml @transcend-io/lakitu
+
+# -----------------------------------------------
+# Lakitu
+# -----------------------------------------------
+
+# Dependency Management
+/renovate.json @transcend-io/lakitu
+
+# Environment
+/.vscode/ @transcend-io/lakitu
+
+# Linting
+.editorconfig @transcend-io/lakitu
+.oxfmtrc.* @transcend-io/lakitu
+.oxlintrc.* @transcend-io/lakitu
+
+
+# -----------------------------------------------
+# Packages
+# -----------------------------------------------
+
+/packages/airgap.js-types/ @transcend-io/goomba @transcend-io/resetti
+/packages/design-tokens/ @transcend-io/ganondorf
+# /packages/cli/                    TBD?
+# /packages/internationalization/   TBD?
+# /packages/mcp/                    TBD?
+# /packages/privacy-types/          TBD?
+# /packages/sdk/                    TBD?
+# /packages/type-utils/             TBD?
+# /packages/utils/                  TBD?
