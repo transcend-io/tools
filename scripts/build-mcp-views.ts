@@ -39,7 +39,7 @@ const REQUIRED_VIEW_DEPENDENCIES = [
  * Worth the check because the entry point and stylesheet are synthesized at build
  * time, so the resolver error names a file that exists nowhere on disk and never
  * mentions the install. That is a confusing first minute for anyone who has just
- * run `pnpm mcp:new-view`, or who has checked out a branch where a package gained
+ * run `pnpm mcp:new app`, or who has checked out a branch where a package gained
  * its first view.
  *
  * pnpm links every declared dependency into the package's own `node_modules`, so

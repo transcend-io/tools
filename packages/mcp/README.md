@@ -339,6 +339,31 @@ See [`dev/mcp-server-examples`](../../dev/mcp-server-examples/README.md) for two
 
 Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host detected at `initialize`, which gives stdio sessions attribution they previously had no way to send. The resolved host and capability set are also logged once per session.
 
+## Scaffolding a tool, an app, or a form
+
+One command writes any of the three, taking the kind, the package, and a kebab-case name:
+
+```bash
+pnpm mcp:new tool        docs      fetch-usage     # src/tools/docs_fetch_usage.ts
+pnpm mcp:new app         inventory usage-chart     # a view, its ui:// resource, and the tool that opens it
+pnpm mcp:new elicitation consent   confirm-optout  # a tool that collects its arguments through a form
+```
+
+| Kind          | Writes                                                                       | Touches the manifest      |
+| ------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| `tool`        | one `defineTool`, no variants                                                | no                        |
+| `app`         | the component, the `ui://` resource, and a `defineToolWithCapabilities` tool | on a package's first view |
+| `elicitation` | one tool whose elicitation variant collects what the agent left out          | no                        |
+
+Only `app` needs package-level wiring, which is why it is the only kind that edits a `package.json`: a tool that renders as text needs none of React, Vite, or Tailwind, and a command that added them anyway would put a browser toolchain into packages that ship no view.
+
+The name is kebab-case for every kind because it has to serve as a directory name, a `*View.tsx` component name, the last segment of a `ui://` uri, and a tool name on the wire; `usage-chart` in the `docs` package becomes the tool `docs_usage_chart`. The generated file is left **unregistered** in all three cases, and the command prints the import and array entry to paste into `src/tools/index.ts`.
+
+Two things the templates deliberately do rather than stub:
+
+- The `elicitation` kind emits a **valid** form — one required field, a real prompt — because `assertElicitFormSchema` and the empty-message check run at construction. A placeholder schema would produce a package that throws on boot.
+- The `app` kind emits the MCP App variant **only**. To serve a form as well, generate one with `pnpm mcp:new elicitation` and move its variant across; `example_hello_app` is the worked example of a single tool serving all three paths.
+
 ## Building MCP App views
 
 A view is a React component that runs inside the host's sandboxed iframe. It reaches the host through `useMcpApp` from `@transcend-io/mcp-server-base/ui`, and it is styled with the Tailwind theme published alongside that entry point.
@@ -347,13 +372,17 @@ A view is a React component that runs inside the host's sandboxed iframe. It rea
 
 Views are React apps built by Vite into a single self-contained HTML document. That single-file constraint is not a style preference: `resources/read` returns one string, and the host renders it in a sandboxed iframe with no same-origin server, so anything left as a separate file or CDN URL cannot be fetched. Inlining everything also means a view needs no CSP `resourceDomains` at all.
 
-To add a view, run the generator and fill in the two files it writes:
+To add a view, run the generator and fill in the three files it writes:
 
 ```bash
-pnpm mcp:new-view inventory usage-chart
+pnpm mcp:new app inventory usage-chart
 ```
 
-That is `src/ui/usage-chart/UsageChartView.tsx`, the component, and `src/apps/usage-chart.ts`, which binds the built document to a `ui://` resource. The one step it cannot do is bind that resource to a tool with `defineToolWithCapabilities`. On a package with no views yet it also adds `tsconfig.ui.json`, the gitignore entry, three scripts, and the browser-side devDependencies.
+That is `src/ui/usage-chart/UsageChartView.tsx`, the component; `src/apps/usage-chart.ts`, which binds the built document to a `ui://` resource; and `src/tools/usage_chart_app.ts`, the `defineToolWithCapabilities` tool that opens it with the resource already bound. On a package with no views yet it also adds `tsconfig.ui.json`, the gitignore entry, three scripts, and the browser-side devDependencies, then installs them.
+
+The one step it leaves alone is adding the generated factory to the array `src/tools/index.ts` returns. That line is where a tool's name and description become public API on a published package, so it stays a person's decision; the command prints the two lines to paste.
+
+See [Scaffolding a tool, an app, or a form](#scaffolding-a-tool-an-app-or-a-form) for the other two kinds.
 
 A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory, and `scripts/mcp-app-views.test.ts` catches a mismatch before a build does. Prefix a directory with `_` to hold shared code that is not a view.
 
