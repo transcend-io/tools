@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.10.1
+
+### Patch Changes
+
+- 841f1a9: Scope `DhContextRequired` and `ConcurrentSubmissionConflict` under `DsrBulkErrorCode` (no single `input[]` index can be attributed) and restore `DropIdentifierCoverageMismatch` and `DuplicateDropRecords` message wording from main.
+
 ## 5.10.0
 
 ### Minor Changes
