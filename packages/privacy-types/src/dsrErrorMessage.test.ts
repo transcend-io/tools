@@ -24,7 +24,7 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.SubmissionLimitExceeded]()).toBe(
       `Cannot submit more than ${REQUEST_SUBMISSION_LIMIT} requests at once. Please split your requests into smaller batches and try again.`,
     );
-    expect(DSR_ERROR_MESSAGE.invalidInput.maxDropRecordsPerRequestExceeded()).toBe(
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.MaxDropRecordsPerRequestExceeded]()).toBe(
       `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
     );
   });
@@ -45,6 +45,15 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.MixedCekContext]()).toBe(
       'Either all or none of the requests must include encryptedCEKContext',
     );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DuplicateDropRecords]()).toBe(
+      'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.InBatchDropIdempotencyKeyCollision]()).toBe(
+      'In-batch DROP rows that share a dropRunId idempotency key must carry the same identifier values.',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRecordsRequireDropRunId]()).toBe(
+      'dropRecords requires dropRunId',
+    );
   });
 
   it('renders parameterized code messages', () => {
@@ -61,18 +70,6 @@ describe('DSR_ERROR_MESSAGE', () => {
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRunNotFound]('run-123')).toBe(
       'Could not find DROP run with id "run-123"',
-    );
-  });
-
-  it('renders INVALID_INPUT validation messages', () => {
-    expect(DSR_ERROR_MESSAGE.invalidInput.duplicateDropRecords()).toBe(
-      'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
-    );
-    expect(DSR_ERROR_MESSAGE.invalidInput.inBatchDropIdempotencyKeyCollision()).toBe(
-      'In-batch DROP rows that share a dropRunId idempotency key must carry the same identifier values.',
-    );
-    expect(DSR_ERROR_MESSAGE.invalidInput.dropRecordsRequireDropRunId()).toBe(
-      'dropRecords requires dropRunId',
     );
   });
 });

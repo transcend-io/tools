@@ -26,10 +26,18 @@ export const DsrErrorCode = makeEnum({
   MixedCekContext: 'MIXED_CEK_CONTEXT',
   /** The required Diffie-Hellman encrypted payload was missing. */
   DhContextRequired: 'DH_CONTEXT_REQUIRED',
-  /** Generic input validation failure. */
+  /** Generic input validation failure without a more specific code. */
   InvalidInput: 'INVALID_INPUT',
   /** DROP linkage identifiers do not cover the required identifier types. */
   DropIdentifierCoverageMismatch: 'DROP_IDENTIFIER_COVERAGE_MISMATCH',
+  /** The same DROP record was claimed more than once in one submission. */
+  DuplicateDropRecords: 'DUPLICATE_DROP_RECORDS',
+  /** In-batch DROP rows sharing a dropRunId idempotency key carry mismatched identifiers. */
+  InBatchDropIdempotencyKeyCollision: 'IN_BATCH_DROP_IDEMPOTENCY_KEY_COLLISION',
+  /** `dropRecords` was provided without a `dropRunId`. */
+  DropRecordsRequireDropRunId: 'DROP_RECORDS_REQUIRE_DROP_RUN_ID',
+  /** The submission exceeds the per-request DROP record link limit. */
+  MaxDropRecordsPerRequestExceeded: 'MAX_DROP_RECORDS_PER_REQUEST_EXCEEDED',
   /** A concurrent bulk submission already created one or more of these requests. */
   ConcurrentSubmissionConflict: 'CONCURRENT_SUBMISSION_CONFLICT',
   /** The referenced DROP run does not exist. */

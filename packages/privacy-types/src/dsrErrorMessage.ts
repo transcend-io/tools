@@ -23,8 +23,8 @@ export interface RestartTimeLimitExceededMessageInput {
 /** {@link DsrErrorCode} values with a builder in {@link DSR_ERROR_MESSAGE}. */
 export type DsrErrorCodeWithMessage = Exclude<DsrErrorCode, typeof DsrErrorCode.InvalidInput>;
 
-/** Message builders keyed by {@link DsrErrorCode} (except {@link DsrErrorCode.InvalidInput}). */
-type DsrErrorMessageByCode = {
+/** Canonical message builder for each {@link DsrErrorCodeWithMessage}. */
+export type DsrErrorMessageMap = {
   [DsrErrorCode.DuplicateRequest]: () => string;
   [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) => string;
   [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
@@ -32,41 +32,31 @@ type DsrErrorMessageByCode = {
   [DsrErrorCode.MixedCekContext]: () => string;
   [DsrErrorCode.DhContextRequired]: () => string;
   [DsrErrorCode.DropIdentifierCoverageMismatch]: () => string;
+  [DsrErrorCode.DuplicateDropRecords]: () => string;
+  [DsrErrorCode.InBatchDropIdempotencyKeyCollision]: () => string;
+  [DsrErrorCode.DropRecordsRequireDropRunId]: () => string;
+  [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.ConcurrentSubmissionConflict]: () => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
 };
 
-type _AssertAllCodesHaveBuilders = DsrErrorCodeWithMessage extends keyof DsrErrorMessageByCode
-  ? keyof DsrErrorMessageByCode extends DsrErrorCodeWithMessage
+type _AssertAllCodesHaveBuilders = DsrErrorCodeWithMessage extends keyof DsrErrorMessageMap
+  ? keyof DsrErrorMessageMap extends DsrErrorCodeWithMessage
     ? true
     : never
   : never;
 const _assertAllCodesHaveBuilders: _AssertAllCodesHaveBuilders = true;
 
-/** {@link DsrErrorCode.InvalidInput} validation messages with distinct text per failure. */
-type DsrInvalidInputMessageMap = {
-  duplicateDropRecords: () => string;
-  inBatchDropIdempotencyKeyCollision: () => string;
-  dropRecordsRequireDropRunId: () => string;
-  maxDropRecordsPerRequestExceeded: () => string;
-};
-
-/** Canonical DSR bulk submission error message builders. */
-export type DsrErrorMessageMap = DsrErrorMessageByCode & {
-  invalidInput: DsrInvalidInputMessageMap;
-};
-
 /**
  * Canonical DSR bulk submission error messages.
  *
- * Entries keyed by {@link DsrErrorCode} are message builders; call them to render
- * the runtime string (static messages use zero-arg functions). DSR submission
+ * Each {@link DsrErrorCodeWithMessage} has exactly one builder; call
+ * `DSR_ERROR_MESSAGE[code](...)` to render the runtime string. DSR submission
  * errors currently surface as HTTP 400 bad-request validation failures, so no
  * separate status map is exported.
  *
- * `INVALID_INPUT` is omitted from the code-keyed section because many distinct
- * validation failures share that code; use {@link DSR_ERROR_MESSAGE.invalidInput}
- * for those strings.
+ * {@link DsrErrorCode.InvalidInput} has no entry — it is a generic fallback for
+ * validation failures without a more specific code.
  *
  * The unknown-DROP-records error in `linkDropRunRequests.ts` is intentionally
  * not centralized here; its truncation and list formatting stay in `main`.
@@ -87,17 +77,15 @@ export const DSR_ERROR_MESSAGE = {
   [DsrErrorCode.DhContextRequired]: () => 'No encrypted data subject payload provided',
   [DsrErrorCode.DropIdentifierCoverageMismatch]: () =>
     'Cannot link DROP records to an existing request until every identifier on this submission is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
+  [DsrErrorCode.DuplicateDropRecords]: () =>
+    'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
+  [DsrErrorCode.InBatchDropIdempotencyKeyCollision]: () =>
+    'In-batch DROP rows that share a dropRunId idempotency key must carry the same identifier values.',
+  [DsrErrorCode.DropRecordsRequireDropRunId]: () => 'dropRecords requires dropRunId',
+  [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () =>
+    `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
   [DsrErrorCode.ConcurrentSubmissionConflict]: () =>
     'A concurrent DROP submission already created one or more of these requests. Retry the batch.',
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,
-  invalidInput: {
-    duplicateDropRecords: () =>
-      'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
-    inBatchDropIdempotencyKeyCollision: () =>
-      'In-batch DROP rows that share a dropRunId idempotency key must carry the same identifier values.',
-    dropRecordsRequireDropRunId: () => 'dropRecords requires dropRunId',
-    maxDropRecordsPerRequestExceeded: () =>
-      `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
-  },
 } as const satisfies DsrErrorMessageMap;
