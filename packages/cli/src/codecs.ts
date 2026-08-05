@@ -71,10 +71,6 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
 
-import { OpenAIRouteName, PathfinderPolicyName } from './enums.js';
-import { buildAIIntegrationType } from './lib/helpers/buildAIIntegrationType.js';
-import { buildEnabledRouteType } from './lib/helpers/buildEnabledRouteType.js';
-
 /**
  * Input to define email templates that can be used to communicate to end-users
  * about the status of their requests
@@ -2360,105 +2356,6 @@ export const ConsentManagerServiceMetadata = t.type({
 
 /** Type override */
 export type ConsentManagerServiceMetadata = t.TypeOf<typeof ConsentManagerServiceMetadata>;
-/// //////////////////////////////////////
-// Pathfinder policies                  //
-/// //////////////////////////////////////
-
-export const PathfinderPolicyNameC = valuesOf(PathfinderPolicyName);
-
-/** the codec of a route enabled in an AI integration */
-export type EnabledRouteC<T extends t.Mixed> = t.TypeC<{
-  /** the name of the enabled route */
-  routeName: T;
-  /** the enabled policies */
-  enabledPolicies: t.ArrayC<typeof PathfinderPolicyNameC>;
-}>;
-
-/** the codec of routes enabled in an AI integration */
-export type EnabledRoutesC<T extends t.Mixed> = t.ArrayC<EnabledRouteC<T>>;
-
-/** the codec of an AI Integration */
-export type AIIntegrationC<T extends t.Mixed> = t.TypeC<{
-  /** the routes enabled in the AI integration */
-  enabledRoutes: EnabledRoutesC<T>;
-}>;
-
-export const OpenAIEnabledRoute = buildEnabledRouteType({
-  TRouteName: valuesOf(OpenAIRouteName),
-});
-
-/** Type override */
-export type OpenAIEnabledRoute = t.TypeOf<typeof OpenAIEnabledRoute>;
-
-const OpenAIRouteNameC = valuesOf(OpenAIRouteName);
-
-/** The enabled routes for OpenAI */
-export const OpenAIEnabledRoutes: EnabledRoutesC<typeof OpenAIRouteNameC> =
-  t.array(OpenAIEnabledRoute);
-
-/** Type override */
-export type OpenAIEnabledRoutes = t.TypeOf<typeof OpenAIEnabledRoutes>;
-
-export const OpenAIIntegration = buildAIIntegrationType<
-  typeof OpenAIRouteNameC,
-  EnabledRoutesC<typeof OpenAIRouteNameC>
->({
-  TEnabledRoutes: OpenAIEnabledRoutes,
-});
-
-/** Type override */
-export type OpenAIIntegration = t.TypeOf<typeof OpenAIIntegration>;
-
-export const PathfinderPolicy = t.partial({
-  enabledIntegrations: t.partial({
-    openAI: OpenAIIntegration,
-  }),
-});
-
-/** Type override */
-export type PathfinderPolicy = t.TypeOf<typeof PathfinderPolicy>;
-
-/**
- * Interface of metadata that can be passed for logging purposes
- * via the Transcend Pathfinder
- */
-export const PathfinderPromptRunMetadata = t.partial({
-  /** Unique name for the current prompt run */
-  promptRunName: t.string,
-  /** ID of the Transcend prompt being reported */
-  promptId: t.string,
-  /** Title of the prompt being reported on */
-  promptTitle: t.string,
-  /** The ID of the prompt group being reported */
-  promptGroupId: t.string,
-  /** The title of the prompt group being reported */
-  promptGroupTitle: t.string,
-  /** Employee email that is executing the request */
-  runByEmployeeEmail: t.string,
-  /** ID of the application calling pathfinder  */
-  applicationId: t.string,
-  /** Name of the application calling pathfinder  */
-  applicationName: t.string,
-  /** Name of the code package calling pathfinder  */
-  codePackageName: t.string,
-  /** Name of the repository calling pathfinder  */
-  repositoryName: t.string,
-  /** Core identifier of the application user being reported on  */
-  applicationUserCoreIdentifier: t.string,
-  /** Name of the application user being reported on  */
-  applicationUserName: t.string,
-  /** Slack message ts that is in context of the API call */
-  slackMessageTs: t.string,
-  /** Slack team ID in context of the API call */
-  slackTeamId: t.string,
-  /** Slack channel ID in context of the API call */
-  slackChannelId: t.string,
-  /** Slack channel name in context of the API call */
-  slackChannelName: t.string,
-});
-
-/** Type override */
-export type PathfinderPromptRunMetadata = t.TypeOf<typeof PathfinderPromptRunMetadata>;
 
 /** The columns of a row of a OneTrust Assessment form to import into Transcend. */
 const OneTrustAssessmentColumnInput = t.intersection([

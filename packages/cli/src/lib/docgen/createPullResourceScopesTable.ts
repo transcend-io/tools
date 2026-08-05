@@ -122,18 +122,20 @@ const RESOURCE_DOCUMENTATION: Record<
     markdownLinks: ['[Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)'],
   },
   [TranscendPullResource.Agents]: {
-    description: 'The agents in Pathfinder.',
-    markdownLinks: ['[Pathfinder -> Agents](https://app.transcend.io/pathfinder/agents)'],
+    description: 'The agents in Prompt Manager.',
+    markdownLinks: ['[Prompt Manager -> Agents](https://app.transcend.io/prompts/agents)'],
   },
   [TranscendPullResource.AgentFunctions]: {
-    description: 'The agent functions in Pathfinder.',
+    description: 'The agent functions in Prompt Manager.',
     markdownLinks: [
-      '[Pathfinder -> Agent Functions](https://app.transcend.io/pathfinder/agent-functions)',
+      '[Prompt Manager -> Agent Functions](https://app.transcend.io/prompts/agent-functions)',
     ],
   },
   [TranscendPullResource.AgentFiles]: {
-    description: 'The agent files in Pathfinder.',
-    markdownLinks: ['[Pathfinder -> Agent Files](https://app.transcend.io/pathfinder/agent-files)'],
+    description: 'The agent files in Prompt Manager.',
+    markdownLinks: [
+      '[Prompt Manager -> Agent Files](https://app.transcend.io/prompts/agent-files)',
+    ],
   },
   [TranscendPullResource.Vendors]: {
     description: 'The vendors in the Data Inventory.',

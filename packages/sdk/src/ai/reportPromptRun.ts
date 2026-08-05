@@ -52,18 +52,14 @@ export interface ReportPromptRunInput {
   largeLanguageModelName?: string;
   /** The name of the large language model client reported on */
   largeLanguageModelClient?: LargeLanguageModelClient;
-  /** ID of the application calling pathfinder  */
+  /** ID of the application making the request */
   applicationId?: string;
-  /** Name of the application calling pathfinder  */
+  /** Name of the application making the request */
   applicationName?: string;
-  /** Name of the code package calling pathfinder  */
+  /** Name of the code package making the request */
   codePackageName?: string;
-  /** Name of the repository calling pathfinder  */
+  /** Name of the repository making the request */
   repositoryName?: string;
-  /** ID of the pathfinder applying policies  */
-  pathfinderId?: string;
-  /** Name of the pathfinder applying policies  */
-  pathfinderName?: string;
   /** Core identifier of the application user being reported on  */
   applicationUserCoreIdentifier?: string;
   /** Name of the application user being reported on  */
