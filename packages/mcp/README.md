@@ -335,7 +335,7 @@ For a server with views, `resources/list` and `resources/read` are registered, t
 
 ### Usage attribution
 
-Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host detected at `initialize`, which gives stdio sessions attribution they previously had no way to send. The resolved host and capability set are also logged once per session.
+Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host from `initialize`: the canonical `McpHostClient` value when recognized, or a sanitized `clientInfo.name` when not, so unrecognized hosts still show up in usage dashboards instead of as N/A. Nothing is sent only when there is no usable name. The resolved host and capability set are also logged once per session.
 
 ## Environment variables
 

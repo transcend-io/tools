@@ -7,6 +7,12 @@ import { getMcpSession } from './mcp-session-context.js';
 export { MCP_CALLER_HEADER };
 
 /**
+ * Cap on inferred labels from raw `clientInfo.name`, so a pathological host
+ * string cannot blow out dashboard cardinality.
+ */
+const MAX_INFERRED_CALLER_LENGTH = 64;
+
+/**
  * Per-request MCP caller label from {@link MCP_CALLER_HEADER}. Populated for HTTP
  * transport so outbound Transcend API calls can attribute traffic to the client.
  */
@@ -21,20 +27,42 @@ export function getRequestMcpCaller(): string | undefined {
 }
 
 /**
+ * Normalizes a raw `clientInfo.name` into a stable attribution label.
+ *
+ * Known hosts still use the canonical {@link McpHostClient} value; this is only
+ * for unrecognized names so dashboards can discover new hosts without sending
+ * the {@link McpHostClient.Unknown} sentinel.
+ */
+export function sanitizeMcpCallerLabel(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  const normalized = raw.trim().toLowerCase().replace(/\s+/g, '-');
+  if (normalized === '' || normalized === McpHostClient.Unknown) return undefined;
+  return normalized.length <= MAX_INFERRED_CALLER_LENGTH
+    ? normalized
+    : normalized.slice(0, MAX_INFERRED_CALLER_LENGTH);
+}
+
+/**
  * Value to send as {@link MCP_CALLER_HEADER} on outbound Transcend requests.
  *
  * An explicitly forwarded header always wins, since a caller proxying on a
  * user's behalf knows its own identity better than we can infer it. Otherwise
- * falls back to the host detected from the MCP `initialize` handshake, which is
- * the only attribution available on stdio — those sessions previously sent
- * nothing at all.
+ * falls back to the host from the MCP `initialize` handshake: the canonical
+ * {@link McpHostClient} value when recognized, or a sanitized `clientInfo.name`
+ * when not. Sends nothing only when there is no session or no usable name.
  */
 export function resolveMcpCallerAttribution(): string | undefined {
   const forwarded = getRequestMcpCaller();
   if (forwarded) return forwarded;
 
-  const host = getMcpSession()?.client.host;
-  return host && host !== McpHostClient.Unknown ? host : undefined;
+  const client = getMcpSession()?.client;
+  if (!client) return undefined;
+
+  if (client.host !== McpHostClient.Unknown) {
+    return client.host;
+  }
+
+  return sanitizeMcpCallerLabel(client.clientInfo?.name);
 }
 
 /** Normalizes Node / Express header values to a list of strings (drops non-string entries). */

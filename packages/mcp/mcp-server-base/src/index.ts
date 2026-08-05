@@ -9,6 +9,7 @@ export {
   getRequestMcpCaller,
   requestMcpCallerContext,
   resolveMcpCallerAttribution,
+  sanitizeMcpCallerLabel,
 } from './mcp-caller-context.js';
 
 export {

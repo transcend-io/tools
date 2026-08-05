@@ -1,4 +1,5 @@
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
 import { describe, it, expect } from 'vitest';
 
 import { McpClientCapability, McpHostClient } from '../src/capabilities/types.js';
@@ -7,6 +8,7 @@ import {
   extractMcpCallerFromHeaders,
   requestMcpCallerContext,
   resolveMcpCallerAttribution,
+  sanitizeMcpCallerLabel,
 } from '../src/mcp-caller-context.js';
 import { mcpSessionContext } from '../src/mcp-session-context.js';
 
@@ -15,9 +17,14 @@ function asRequest(
   host: McpHostClient,
   forwarded: string | undefined,
   read: () => string | undefined,
+  clientInfo?: Implementation,
 ): string | undefined {
   const session = {
-    client: { capabilities: new Set<McpClientCapability>(), host },
+    client: {
+      capabilities: new Set<McpClientCapability>(),
+      host,
+      ...(clientInfo && { clientInfo }),
+    },
     server: {} as Server,
   };
   return mcpSessionContext.run(session, () =>
@@ -49,6 +56,23 @@ describe('extractMcpCallerFromHeaders', () => {
   });
 });
 
+describe('sanitizeMcpCallerLabel', () => {
+  it('lowercases and collapses whitespace', () => {
+    expect(sanitizeMcpCallerLabel('  Visual Studio Code  ')).toBe('visual-studio-code');
+  });
+
+  it('returns undefined for blank or the unknown sentinel', () => {
+    expect(sanitizeMcpCallerLabel(undefined)).toBeUndefined();
+    expect(sanitizeMcpCallerLabel('')).toBeUndefined();
+    expect(sanitizeMcpCallerLabel('   ')).toBeUndefined();
+    expect(sanitizeMcpCallerLabel('unknown')).toBeUndefined();
+  });
+
+  it('truncates pathological names', () => {
+    expect(sanitizeMcpCallerLabel('a'.repeat(80))).toBe('a'.repeat(64));
+  });
+});
+
 describe('resolveMcpCallerAttribution', () => {
   it('prefers a forwarded header over the host we detected', () => {
     // A caller proxying on a user's behalf knows its own identity better than we
@@ -66,7 +90,18 @@ describe('resolveMcpCallerAttribution', () => {
     );
   });
 
-  it('sends nothing for an unrecognized host, rather than attributing traffic to "UNKNOWN"', () => {
+  it('falls back to a sanitized clientInfo.name for unrecognized hosts', () => {
+    // Enum membership drives quirks and capability behavior; attribution should
+    // still surface the raw name so new hosts show up in usage dashboards.
+    expect(
+      asRequest(McpHostClient.Unknown, undefined, resolveMcpCallerAttribution, {
+        name: 'Some New Host',
+        version: '1.0.0',
+      }),
+    ).toBe('some-new-host');
+  });
+
+  it('sends nothing for an unrecognized host with no clientInfo.name', () => {
     expect(
       asRequest(McpHostClient.Unknown, undefined, resolveMcpCallerAttribution),
     ).toBeUndefined();
