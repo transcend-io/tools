@@ -7,7 +7,6 @@ export * from './fetchPromptGroups.js';
 export * from './fetchPromptPartials.js';
 export * from './fetchPrompts.js';
 export * from './fetchPromptThreads.js';
-export * from './reportPromptRun.js';
 export * from './syncAgentFiles.js';
 export * from './syncAgentFunctions.js';
 export * from './syncAgents.js';

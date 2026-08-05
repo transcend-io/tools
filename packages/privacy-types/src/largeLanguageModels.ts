@@ -22,7 +22,6 @@ export enum PromptRunProductArea {
   PromptManager = 'promptManager',
   UnstructuredDiscovery = 'unstructuredDiscovery',
   DataInventory = 'dataInventory',
-  Pathfinder = 'pathfinder',
 }
 
 export const ChatCompletionMessage = t.type({

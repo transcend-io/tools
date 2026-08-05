@@ -63,7 +63,6 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend policy publish`](#transcend-policy-publish)
   - [`transcend policy test`](#transcend-policy-test)
   - [`transcend policy versions`](#transcend-policy-versions)
-- [Prompt Manager](#prompt-manager)
 - [Proxy usage](#proxy-usage)
 - [Using non-primary Sombra](#using-non-primary-sombra)
 
@@ -2432,7 +2431,7 @@ transcend consent delete-preference-records \
 
 ```txt
 USAGE
-  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
+  transcend inventory pull (--auth value) [--resources all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs] [--file value] [--transcendUrl value] [--dataSiloIds value]... [--integrationNames value]... [--trackerStatuses LIVE|NEEDS_REVIEW] [--pageSize value] [--skipDatapoints] [--skipSubDatapoints] [--includeGuessedCategories] [--debug]
   transcend inventory pull --help
 
 Generates a transcend.yml by pulling the configuration from your Transcend instance.
@@ -2446,7 +2445,7 @@ This command can be helpful if you are looking to:
 
 FLAGS
       --auth                       The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. The scopes required will vary depending on the operation performed. If in doubt, the Full Admin scope will always work.
-     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|agents|agentFunctions|agentFiles|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs, separator = ,]
+     [--resources]                 The different resource types to pull in. Defaults to dataSilos,enrichers,templates,apiKeys.                                                                                                                                                                 [all|apiKeys|customFields|templates|dataSilos|enrichers|dataFlows|businessEntities|processingActivities|actions|dataSubjects|identifiers|cookies|consentManager|partitions|prompts|promptPartials|promptGroups|vendors|dataCategories|processingPurposes|actionItems|actionItemCollections|teams|privacyCenters|policies|messages|assessments|assessmentTemplates|purposes|preferenceOptions|systemDiscovery|preferenceWorkflowConfigs|workflowConfigs, separator = ,]
      [--file]                      Path to the YAML file to pull into                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]              URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--dataSiloIds]...            The UUIDs of the data silos that should be pulled into the YAML file                                                                                                                                                                                        [separator = ,]
@@ -2483,9 +2482,6 @@ The API key permissions for this command vary based on the `resources` argument:
 | `prompts`                   | `prompts`                     | The Transcend AI prompts                                                                                                                                                                 | View Prompts                                                     | [Prompt Manager -> Browse](https://app.transcend.io/prompts/browse)                                                                                                                                                                                    |
 | `promptPartials`            | `prompt-partials`             | The Transcend AI prompt partials                                                                                                                                                         | View Prompts                                                     | [Prompt Manager -> Partials](https://app.transcend.io/prompts/partials)                                                                                                                                                                                |
 | `promptGroups`              | `prompt-groups`               | The Transcend AI prompt groups                                                                                                                                                           | View Prompts                                                     | [Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)                                                                                                                                                                                    |
-| `agents`                    | `agents`                      | The agents in Pathfinder.                                                                                                                                                                | View Pathfinder                                                  | [Pathfinder -> Agents](https://app.transcend.io/pathfinder/agents)                                                                                                                                                                                     |
-| `agentFunctions`            | `agent-functions`             | The agent functions in Pathfinder.                                                                                                                                                       | View Pathfinder                                                  | [Pathfinder -> Agent Functions](https://app.transcend.io/pathfinder/agent-functions)                                                                                                                                                                   |
-| `agentFiles`                | `agent-files`                 | The agent files in Pathfinder.                                                                                                                                                           | View Pathfinder                                                  | [Pathfinder -> Agent Files](https://app.transcend.io/pathfinder/agent-files)                                                                                                                                                                           |
 | `vendors`                   | `vendors`                     | The vendors in the Data Inventory.                                                                                                                                                       | View Data Inventory                                              | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
 | `dataCategories`            | `data-categories`             | The data categories in the Data Inventory.                                                                                                                                               | View Data Inventory                                              | [Data Inventory -> Data Categories](https://app.transcend.io/data-map/data-inventory/data-categories)                                                                                                                                                  |
 | `processingPurposes`        | `processing-purposes`         | The processing purposes in the Data Inventory.                                                                                                                                           | View Data Inventory                                              | [Data Inventory -> Processing Purposes](https://app.transcend.io/data-map/data-inventory/purposes)                                                                                                                                                     |
@@ -2698,9 +2694,6 @@ The API key permissions for this command vary based on the resources declared as
 | `prompts`                   | `prompts`                     | The Transcend AI prompts                                                                                                                                                                 | Manage Prompts                                                                                                              | [Prompt Manager -> Browse](https://app.transcend.io/prompts/browse)                                                                                                                                                                                    |
 | `promptPartials`            | `prompt-partials`             | The Transcend AI prompt partials                                                                                                                                                         | Manage Prompts                                                                                                              | [Prompt Manager -> Partials](https://app.transcend.io/prompts/partials)                                                                                                                                                                                |
 | `promptGroups`              | `prompt-groups`               | The Transcend AI prompt groups                                                                                                                                                           | Manage Prompts                                                                                                              | [Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)                                                                                                                                                                                    |
-| `agents`                    | `agents`                      | The agents in Pathfinder.                                                                                                                                                                | Manage Pathfinder                                                                                                           | [Pathfinder -> Agents](https://app.transcend.io/pathfinder/agents)                                                                                                                                                                                     |
-| `agentFunctions`            | `agent-functions`             | The agent functions in Pathfinder.                                                                                                                                                       | Manage Pathfinder                                                                                                           | [Pathfinder -> Agent Functions](https://app.transcend.io/pathfinder/agent-functions)                                                                                                                                                                   |
-| `agentFiles`                | `agent-files`                 | The agent files in Pathfinder.                                                                                                                                                           | Manage Pathfinder                                                                                                           | [Pathfinder -> Agent Files](https://app.transcend.io/pathfinder/agent-files)                                                                                                                                                                           |
 | `vendors`                   | `vendors`                     | The vendors in the Data Inventory.                                                                                                                                                       | Manage Data Inventory                                                                                                       | [Data Inventory -> Vendors](https://app.transcend.io/data-map/data-inventory/vendors)                                                                                                                                                                  |
 | `dataCategories`            | `data-categories`             | The data categories in the Data Inventory.                                                                                                                                               | Manage Data Inventory                                                                                                       | [Data Inventory -> Data Categories](https://app.transcend.io/data-map/data-inventory/data-categories)                                                                                                                                                  |
 | `processingPurposes`        | `processing-purposes`         | The processing purposes in the Data Inventory.                                                                                                                                           | Manage Data Inventory                                                                                                       | [Data Inventory -> Processing Purposes](https://app.transcend.io/data-map/data-inventory/purposes)                                                                                                                                                     |
@@ -3355,7 +3348,7 @@ transcend inventory consent-managers-to-business-entities \
 
 ```txt
 USAGE
-  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
+  transcend admin generate-api-keys (--email value) (--password value) (--apiKeyTitle value) (--file value) (--scopes View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules) [--deleteExistingApiKey] [--createNewApiKey] [--parentOrganizationId value] [--transcendUrl value]
   transcend admin generate-api-keys --help
 
 This command allows for creating API keys across multiple Transcend instances. This is useful for customers that are managing many Transcend instances and need to regularly create, cycle or delete API keys across all of their instances.
@@ -3369,7 +3362,7 @@ FLAGS
       --password                                        The password for your account login
       --apiKeyTitle                                     The title of the API key being generated or destroyed
       --file                                            The file where API keys should be written to
-      --scopes                                          The list of scopes that should be given to the API key                                                                                                                                             [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Pathfinder|Manage Pathfinder|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules, separator = ,]
+      --scopes                                          The list of scopes that should be given to the API key                                                                                                                                             [View Only|Full Admin|Rotate Hosted Sombra keys|Manage Global Attributes|Manage Access Controls|Manage Billing|Manage SSO|Manage API Keys|Manage Organization Information|Manage Email Domains|Manage Data Sub Categories|View Customer Data in Privacy Requests|View Customer Data in Data Mapping|View API Keys|View Audit Events|View SSO|View Scopes|View All Action Items|Manage All Action Items|View Employees|View Email Domains|View Global Attributes|View Legal Hold|Manage Legal Holds|Manage Request Security|Manage Request Compilation|Manage Assigned Privacy Requests|Manage Assigned Bulk Respond|Submit New Data Subject Request|Manage Data Subject Request Settings|Manage Email Templates|Manage Request Identity Verification|Publish Privacy Center|Manage Data Map|Manage Privacy Center Layout|Manage Privacy Center Policies|View Privacy Center Policies|View Policy|Manage Policy|Activate Policy|Manage Internationalization Messages|View Internationalization Messages|Request Approval and Communication|View Data Subject Request Settings|View the Request Compilation|View Identity Verification Settings|View Incoming Requests|View Assigned Privacy Requests|View Privacy Center Layout|View Email Templates|Connect Data Silos|Manage Data Inventory|Manage Assigned Data Inventory|Manage Assigned Integrations|View Data Map|View Assigned Integrations|View Assigned Data Inventory|View Data Inventory|Manage Consent Manager|Manage Consent Manager Developer Settings|Manage Consent Manager Display Settings|Deploy Test Consent Manager|Deploy Consent Manager|Manage Assigned Consent Manager|Manage Data Flows|View Data Flows|View Assigned Consent Manager|View Consent Manager|View Assessments|Manage Assessments|View Assigned Assessments|Manage Assigned Assessments|View Contract Scanning|Manage Contract Scanning|View Prompts|Manage Prompts|View Prompt Runs|Manage Prompt Runs|View Code Scanning|Manage Code Scanning|Execute Prompt|View Auditor Runs|Manage Auditor Runs and Schedules|Execute Auditor|Approve Prompts|Manage Action Item Collections|View Managed Consent Database Admin API|Modify User Stored Preferences|Manage Preference Store Settings|View Preference Store Settings|LLM Log Transfer|View Workflows|Manage Workflows|View Data Sub Categories|Generate Preference Access Tokens|View Rules|Manage Rules|View Assigned Rules|Manage Assigned Rules|Execute Rules, separator = ,]
      [--deleteExistingApiKey/--noDeleteExistingApiKey]  When true, if an API key exists with the specified apiKeyTitle, the existing API key is deleted                                                                                                    [default = true]
      [--createNewApiKey/--noCreateNewApiKey]            When true, new API keys will be created. Set to false if you simply want to delete all API keys with a title                                                                                       [default = true]
      [--parentOrganizationId]                           Filter for only a specific organization by ID, returning all child accounts associated with that organization
@@ -4067,144 +4060,6 @@ transcend policy versions --bundle-name=main
 Requires the **View Policy** scope on your API key.
 
 <!-- COMMANDS_END -->
-
-## Prompt Manager
-
-If you are integrating Transcend's Prompt Manager into your code, it may look like:
-
-```ts
-import * as t from 'io-ts';
-import { TranscendPromptManager } from '@transcend-io/cli';
-import { ChatCompletionMessage, PromptRunProductArea } from '@transcend-io/privacy-types';
-
-/**
- * Example prompt integration
- */
-export async function main(): Promise<void> {
-  // Instantiate the Transcend Prompt Manager instance
-  const promptManager = new TranscendPromptManager({
-    // API key
-    transcendApiKey: process.env.TRANSCEND_API_KEY,
-    // Define the prompts that are stored in Transcend
-    prompts: {
-      test: {
-        // identify by ID
-        id: '30bcaa79-889a-4af3-842d-2e8ba443d36d',
-        // no runtime variables
-        paramCodec: t.type({}),
-        // response is list of strings
-        outputCodec: t.array(t.string),
-      },
-      json: {
-        // identify by title
-        title: 'test',
-        // one runtime variable "test"
-        paramCodec: t.type({ test: t.string }),
-        // runtime is json object
-        outputCodec: t.record(t.string, t.string),
-        // response is stored in <json></json> atg
-        extractFromTag: 'json',
-      },
-      predictProductLine: {
-        // identify by title
-        title: 'Predict Product Line',
-        // runtime parameter for slack channel name
-        paramCodec: t.type({
-          slackChannelName: t.string,
-        }),
-        // response is specific JSON shape
-        outputCodec: t.type({
-          product: t.union([t.string, t.null]),
-          clarification: t.union([t.string, t.null]),
-        }),
-        // response is stored in <json></json> atg
-        extractFromTag: 'json',
-      },
-    },
-    // Optional arguments
-    //  transcendUrl: 'https://api.us.transcend.io', // defaults to 'https://api.transcend.io'
-    //  requireApproval: false, // defaults to true
-    //  cacheDuration: 1000 * 60 * 60, // defaults to undefined, no cache
-    //  defaultVariables: { myVariable: 'this is custom', other: [{ name: 'custom' }] }, // defaults to {}
-    //  handlebarsOptions: { helpers, templates }, // defaults to {}
-  });
-
-  // Fetch the prompt from Transcend and template any variables
-  // in this case, we template the slack channel name in the LLM prompt
-  const systemPrompt = await promptManager.compilePrompt('predictProductLine', {
-    slackChannelName: channelName,
-  });
-
-  // Parameters to pass to the LLM
-  const input: ChatCompletionMessage[] = [
-    {
-      role: 'system',
-      content: systemPrompt,
-    },
-    {
-      role: 'user',
-      content: input,
-    },
-  ];
-  const largeLanguageModel = {
-    name: 'gpt-4',
-    client: 'openai' as const,
-  };
-  const temperature = 1;
-  const topP = 1;
-  const maxTokensToSample = 1000;
-
-  // Run prompt against LLM
-  let response: string;
-  const t0 = new Date().getTime();
-  try {
-    response = await openai.createCompletion(input, {
-      temperature,
-      top_p: topP,
-      max_tokens: maxTokensToSample,
-    });
-  } catch (err) {
-    // report error upon failure
-    await promptManager.reportPromptRunError('predictProductLine', {
-      promptRunMessages: input,
-      duration: new Date().getTime() - t0,
-      temperature,
-      topP,
-      error: err.message,
-      maxTokensToSample,
-      largeLanguageModel,
-    });
-  }
-  const t1 = new Date().getTime();
-
-  // Parsed response as JSON and do not report to Transcend
-  //   const parsedResponse = promptManager.parseAiResponse(
-  //     'predictProductLine',
-  //     response,
-  //   );
-
-  // Parsed response as JSON and report output to Transcend
-  const parsedResponse = await promptManager.reportAndParsePromptRun('predictProductLine', {
-    promptRunMessages: [
-      ...input,
-      {
-        role: 'assistant',
-        content: response,
-      },
-    ],
-    duration: t1 - t0,
-    temperature,
-    topP,
-    maxTokensToSample,
-    largeLanguageModel,
-    // Optional parameters
-    // name, // unique identifier for this run
-    // productArea, // Transcend product area that the prompt relates to
-    // runByEmployeeEmail, // Employee email that is executing the request
-    // promptGroupId, // The prompt group being reported
-  });
-}
-```
 
 ## Proxy usage
 

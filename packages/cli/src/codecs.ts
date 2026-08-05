@@ -39,8 +39,6 @@ import {
   PreflightRequestStatus,
   AttributeSupportedResourceType,
   SubDataPointDataSubCategoryGuessStatus,
-  LargeLanguageModelClient,
-  PromptFilePurpose,
   CodePackageType,
   ActionItemPriorityOverride,
   ActionItemCode,
@@ -70,10 +68,6 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // eslint-disable-next-line eslint-comments/disable-enable-pair
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
-
-import { OpenAIRouteName, PathfinderPolicyName } from './enums.js';
-import { buildAIIntegrationType } from './lib/helpers/buildAIIntegrationType.js';
-import { buildEnabledRouteType } from './lib/helpers/buildEnabledRouteType.js';
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -346,105 +340,6 @@ export const AttributePreview = t.type({
 
 /** Type override */
 export type AttributePreview = t.TypeOf<typeof AttributePreview>;
-
-/**
- * Agent type definition.
- */
-export const AgentInput = t.intersection([
-  t.type({
-    /** The name of the agent. */
-    name: t.string,
-    /** The instructions of the agent. */
-    instructions: t.string,
-    /** The ID of the agent */
-    agentId: t.string,
-    /** Whether the agent has code interpreter enabled */
-    codeInterpreterEnabled: t.boolean,
-    /** Whether the agent has retrieval enabled */
-    retrievalEnabled: t.boolean,
-    /** Large language model powering the agent */
-    'large-language-model': t.type({
-      /** Name of the model */
-      name: t.string,
-      /** Client of the model */
-      client: valuesOf(LargeLanguageModelClient),
-    }),
-  }),
-  t.partial({
-    /** The description of the agent. */
-    description: t.string,
-    /** The title of the prompt that the agent is based on */
-    prompt: t.string,
-    /**
-     * The email addresses of the employees within your company that are the go-to individuals
-     * for managing this agent
-     */
-    owners: t.array(t.string),
-    /**
-     * The names of teams within your Transcend instance that should be responsible
-     * for managing this agent
-     *
-     * @see https://docs.transcend.io/docs/security/access-control#teams
-     * for more information about how to create and manage teams
-     */
-    teams: t.array(t.string),
-    /**
-     * The names of the functions that the agent has access to
-     */
-    'agent-functions': t.array(t.string),
-    /**
-     * The names of the files that the agent has access to for retrieval
-     */
-    'agent-files': t.array(t.string),
-  }),
-]);
-
-/**
- * Type override
- */
-export type AgentInput = t.TypeOf<typeof AgentInput>;
-
-/**
- * AgentFunction type definition.
- */
-export const AgentFunctionInput = t.type({
-  /** Name of the agentFunction */
-  name: t.string,
-  /** Description of the agentFunction */
-  description: t.string,
-  /** The JSON schema */
-  parameters: t.string,
-});
-
-/**
- * Type override
- */
-export type AgentFunctionInput = t.TypeOf<typeof AgentFunctionInput>;
-
-/**
- * AgentFile type definition.
- */
-export const AgentFileInput = t.intersection([
-  t.type({
-    /** Name of the agentFile */
-    name: t.string,
-    /** File ID */
-    fileId: t.string,
-    /** File size */
-    size: t.number,
-    /** File purpose */
-    purpose: valuesOf(PromptFilePurpose),
-  }),
-  t.partial({
-    /** Description of the agentFile */
-    description: t.string,
-  }),
-]);
-
-/**
- * Type override
- */
-export type AgentFileInput = t.TypeOf<typeof AgentFileInput>;
 
 /**
  * Vendor type definition.
@@ -2194,18 +2089,6 @@ export const TranscendInput = t.partial({
    */
   'prompt-groups': t.array(PromptGroupInput),
   /**
-   * Agent definitions
-   */
-  agents: t.array(AgentInput),
-  /**
-   * Agent function definitions
-   */
-  'agent-functions': t.array(AgentFunctionInput),
-  /**
-   * Agent file definitions
-   */
-  'agent-files': t.array(AgentFileInput),
-  /**
    * The privacy center configuration
    */
   'privacy-center': PrivacyCenterInput,
@@ -2360,105 +2243,6 @@ export const ConsentManagerServiceMetadata = t.type({
 
 /** Type override */
 export type ConsentManagerServiceMetadata = t.TypeOf<typeof ConsentManagerServiceMetadata>;
-/// //////////////////////////////////////
-// Pathfinder policies                  //
-/// //////////////////////////////////////
-
-export const PathfinderPolicyNameC = valuesOf(PathfinderPolicyName);
-
-/** the codec of a route enabled in an AI integration */
-export type EnabledRouteC<T extends t.Mixed> = t.TypeC<{
-  /** the name of the enabled route */
-  routeName: T;
-  /** the enabled policies */
-  enabledPolicies: t.ArrayC<typeof PathfinderPolicyNameC>;
-}>;
-
-/** the codec of routes enabled in an AI integration */
-export type EnabledRoutesC<T extends t.Mixed> = t.ArrayC<EnabledRouteC<T>>;
-
-/** the codec of an AI Integration */
-export type AIIntegrationC<T extends t.Mixed> = t.TypeC<{
-  /** the routes enabled in the AI integration */
-  enabledRoutes: EnabledRoutesC<T>;
-}>;
-
-export const OpenAIEnabledRoute = buildEnabledRouteType({
-  TRouteName: valuesOf(OpenAIRouteName),
-});
-
-/** Type override */
-export type OpenAIEnabledRoute = t.TypeOf<typeof OpenAIEnabledRoute>;
-
-const OpenAIRouteNameC = valuesOf(OpenAIRouteName);
-
-/** The enabled routes for OpenAI */
-export const OpenAIEnabledRoutes: EnabledRoutesC<typeof OpenAIRouteNameC> =
-  t.array(OpenAIEnabledRoute);
-
-/** Type override */
-export type OpenAIEnabledRoutes = t.TypeOf<typeof OpenAIEnabledRoutes>;
-
-export const OpenAIIntegration = buildAIIntegrationType<
-  typeof OpenAIRouteNameC,
-  EnabledRoutesC<typeof OpenAIRouteNameC>
->({
-  TEnabledRoutes: OpenAIEnabledRoutes,
-});
-
-/** Type override */
-export type OpenAIIntegration = t.TypeOf<typeof OpenAIIntegration>;
-
-export const PathfinderPolicy = t.partial({
-  enabledIntegrations: t.partial({
-    openAI: OpenAIIntegration,
-  }),
-});
-
-/** Type override */
-export type PathfinderPolicy = t.TypeOf<typeof PathfinderPolicy>;
-
-/**
- * Interface of metadata that can be passed for logging purposes
- * via the Transcend Pathfinder
- */
-export const PathfinderPromptRunMetadata = t.partial({
-  /** Unique name for the current prompt run */
-  promptRunName: t.string,
-  /** ID of the Transcend prompt being reported */
-  promptId: t.string,
-  /** Title of the prompt being reported on */
-  promptTitle: t.string,
-  /** The ID of the prompt group being reported */
-  promptGroupId: t.string,
-  /** The title of the prompt group being reported */
-  promptGroupTitle: t.string,
-  /** Employee email that is executing the request */
-  runByEmployeeEmail: t.string,
-  /** ID of the application calling pathfinder  */
-  applicationId: t.string,
-  /** Name of the application calling pathfinder  */
-  applicationName: t.string,
-  /** Name of the code package calling pathfinder  */
-  codePackageName: t.string,
-  /** Name of the repository calling pathfinder  */
-  repositoryName: t.string,
-  /** Core identifier of the application user being reported on  */
-  applicationUserCoreIdentifier: t.string,
-  /** Name of the application user being reported on  */
-  applicationUserName: t.string,
-  /** Slack message ts that is in context of the API call */
-  slackMessageTs: t.string,
-  /** Slack team ID in context of the API call */
-  slackTeamId: t.string,
-  /** Slack channel ID in context of the API call */
-  slackChannelId: t.string,
-  /** Slack channel name in context of the API call */
-  slackChannelName: t.string,
-});
-
-/** Type override */
-export type PathfinderPromptRunMetadata = t.TypeOf<typeof PathfinderPromptRunMetadata>;
 
 /** The columns of a row of a OneTrust Assessment form to import into Transcend. */
 const OneTrustAssessmentColumnInput = t.intersection([
