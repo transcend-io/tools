@@ -1,5 +1,17 @@
 # @transcend-io/sdk
 
+## 1.8.0
+
+### Minor Changes
+
+- 29e9d5f: Remove Pathfinder from the tools repo and drop CLI prompt-manager integration: remove `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, `TranscendPromptManager`, `reportPromptRun`, and related CLI/SDK types.
+
+### Patch Changes
+
+- Updated dependencies [29e9d5f]
+  - @transcend-io/privacy-types@5.11.0
+  - @transcend-io/airgap.js-types@14.2.27
+
 ## 1.7.7
 
 ### Patch Changes
