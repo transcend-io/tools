@@ -13,9 +13,6 @@ import {
   fetchAllActionItemCollections,
   fetchAllActionItems,
   fetchAllActions,
-  fetchAllAgentFiles,
-  fetchAllAgentFunctions,
-  fetchAllAgents,
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
@@ -85,9 +82,6 @@ import {
   ProcessingActivityInput,
   DataCategoryInput,
   VendorInput,
-  AgentFileInput,
-  AgentFunctionInput,
-  AgentInput,
   PolicyInput,
   IntlMessageInput,
   ActionItemInput,
@@ -185,9 +179,6 @@ export async function pullTranscendConfiguration(
     prompts,
     promptPartials,
     promptGroups,
-    agents,
-    agentFunctions,
-    agentFiles,
     vendors,
     dataCategories,
     processingPurposes,
@@ -313,16 +304,6 @@ export async function pullTranscendConfiguration(
     // Fetch promptGroups
     resources.includes(TranscendPullResource.PromptGroups)
       ? fetchAllPromptGroups(client, { logger })
-      : [],
-    // Fetch agents
-    resources.includes(TranscendPullResource.Agents) ? fetchAllAgents(client, { logger }) : [],
-    // Fetch agentFunctions
-    resources.includes(TranscendPullResource.AgentFunctions)
-      ? fetchAllAgentFunctions(client, { logger })
-      : [],
-    // Fetch agentFiles
-    resources.includes(TranscendPullResource.AgentFiles)
-      ? fetchAllAgentFiles(client, { logger })
       : [],
     // Fetch vendors
     resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client, { logger }) : [],
@@ -1149,46 +1130,6 @@ export async function pullTranscendConfiguration(
     );
   }
 
-  // Save agents
-  if (agents.length > 0 && resources.includes(TranscendPullResource.Agents)) {
-    result.agents = agents.map(
-      ({
-        name,
-        agentId,
-        description,
-        instructions,
-        codeInterpreterEnabled,
-        retrievalEnabled,
-        prompt,
-        largeLanguageModel,
-        teams,
-        owners,
-        agentFunctions,
-        agentFiles,
-      }): AgentInput => ({
-        name,
-        agentId,
-        description: description || undefined,
-        instructions,
-        codeInterpreterEnabled,
-        retrievalEnabled,
-        prompt: prompt?.title,
-        'large-language-model': {
-          name: largeLanguageModel.name,
-          client: largeLanguageModel.client,
-        },
-        teams: teams && teams.length > 0 ? teams.map(({ name }) => name) : undefined,
-        owners: owners && owners.length > 0 ? owners.map(({ email }) => email) : undefined,
-        'agent-functions':
-          agentFunctions && agentFunctions.length > 0
-            ? agentFunctions.map(({ name }) => name)
-            : undefined,
-        'agent-files':
-          agentFiles && agentFiles.length > 0 ? agentFiles.map(({ name }) => name) : undefined,
-      }),
-    );
-  }
-
   // Save action items
   if (actionItems.length > 0 && resources.includes(TranscendPullResource.ActionItems)) {
     result['action-items'] = actionItems.map(
@@ -1236,30 +1177,6 @@ export async function pullTranscendConfiguration(
         description: description || undefined,
         hidden,
         productLine,
-      }),
-    );
-  }
-
-  // Save agent functions
-  if (agentFunctions.length > 0 && resources.includes(TranscendPullResource.AgentFunctions)) {
-    result['agent-functions'] = agentFunctions.map(
-      ({ name, description, parameters }): AgentFunctionInput => ({
-        name,
-        description,
-        parameters: JSON.stringify(parameters),
-      }),
-    );
-  }
-
-  // Save agent files
-  if (agentFiles.length > 0 && resources.includes(TranscendPullResource.AgentFiles)) {
-    result['agent-files'] = agentFiles.map(
-      ({ name, description, fileId, size, purpose }): AgentFileInput => ({
-        name,
-        description,
-        fileId,
-        size,
-        purpose,
       }),
     );
   }

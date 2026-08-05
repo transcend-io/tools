@@ -39,8 +39,6 @@ import {
   PreflightRequestStatus,
   AttributeSupportedResourceType,
   SubDataPointDataSubCategoryGuessStatus,
-  LargeLanguageModelClient,
-  PromptFilePurpose,
   CodePackageType,
   ActionItemPriorityOverride,
   ActionItemCode,
@@ -342,105 +340,6 @@ export const AttributePreview = t.type({
 
 /** Type override */
 export type AttributePreview = t.TypeOf<typeof AttributePreview>;
-
-/**
- * Agent type definition.
- */
-export const AgentInput = t.intersection([
-  t.type({
-    /** The name of the agent. */
-    name: t.string,
-    /** The instructions of the agent. */
-    instructions: t.string,
-    /** The ID of the agent */
-    agentId: t.string,
-    /** Whether the agent has code interpreter enabled */
-    codeInterpreterEnabled: t.boolean,
-    /** Whether the agent has retrieval enabled */
-    retrievalEnabled: t.boolean,
-    /** Large language model powering the agent */
-    'large-language-model': t.type({
-      /** Name of the model */
-      name: t.string,
-      /** Client of the model */
-      client: valuesOf(LargeLanguageModelClient),
-    }),
-  }),
-  t.partial({
-    /** The description of the agent. */
-    description: t.string,
-    /** The title of the prompt that the agent is based on */
-    prompt: t.string,
-    /**
-     * The email addresses of the employees within your company that are the go-to individuals
-     * for managing this agent
-     */
-    owners: t.array(t.string),
-    /**
-     * The names of teams within your Transcend instance that should be responsible
-     * for managing this agent
-     *
-     * @see https://docs.transcend.io/docs/security/access-control#teams
-     * for more information about how to create and manage teams
-     */
-    teams: t.array(t.string),
-    /**
-     * The names of the functions that the agent has access to
-     */
-    'agent-functions': t.array(t.string),
-    /**
-     * The names of the files that the agent has access to for retrieval
-     */
-    'agent-files': t.array(t.string),
-  }),
-]);
-
-/**
- * Type override
- */
-export type AgentInput = t.TypeOf<typeof AgentInput>;
-
-/**
- * AgentFunction type definition.
- */
-export const AgentFunctionInput = t.type({
-  /** Name of the agentFunction */
-  name: t.string,
-  /** Description of the agentFunction */
-  description: t.string,
-  /** The JSON schema */
-  parameters: t.string,
-});
-
-/**
- * Type override
- */
-export type AgentFunctionInput = t.TypeOf<typeof AgentFunctionInput>;
-
-/**
- * AgentFile type definition.
- */
-export const AgentFileInput = t.intersection([
-  t.type({
-    /** Name of the agentFile */
-    name: t.string,
-    /** File ID */
-    fileId: t.string,
-    /** File size */
-    size: t.number,
-    /** File purpose */
-    purpose: valuesOf(PromptFilePurpose),
-  }),
-  t.partial({
-    /** Description of the agentFile */
-    description: t.string,
-  }),
-]);
-
-/**
- * Type override
- */
-export type AgentFileInput = t.TypeOf<typeof AgentFileInput>;
 
 /**
  * Vendor type definition.
@@ -2189,18 +2088,6 @@ export const TranscendInput = t.partial({
    * Prompt group definitions
    */
   'prompt-groups': t.array(PromptGroupInput),
-  /**
-   * Agent definitions
-   */
-  agents: t.array(AgentInput),
-  /**
-   * Agent function definitions
-   */
-  'agent-functions': t.array(AgentFunctionInput),
-  /**
-   * Agent file definitions
-   */
-  'agent-files': t.array(AgentFileInput),
   /**
    * The privacy center configuration
    */

@@ -121,22 +121,6 @@ const RESOURCE_DOCUMENTATION: Record<
     description: 'The Transcend AI prompt groups',
     markdownLinks: ['[Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)'],
   },
-  [TranscendPullResource.Agents]: {
-    description: 'The agents in Prompt Manager.',
-    markdownLinks: ['[Prompt Manager -> Agents](https://app.transcend.io/prompts/agents)'],
-  },
-  [TranscendPullResource.AgentFunctions]: {
-    description: 'The agent functions in Prompt Manager.',
-    markdownLinks: [
-      '[Prompt Manager -> Agent Functions](https://app.transcend.io/prompts/agent-functions)',
-    ],
-  },
-  [TranscendPullResource.AgentFiles]: {
-    description: 'The agent files in Prompt Manager.',
-    markdownLinks: [
-      '[Prompt Manager -> Agent Files](https://app.transcend.io/prompts/agent-files)',
-    ],
-  },
   [TranscendPullResource.Vendors]: {
     description: 'The vendors in the Data Inventory.',
     markdownLinks: [
