@@ -1,12 +1,48 @@
 import { DsrErrorCode } from './dsrErrorCode.js';
 
+/**
+ * Maximum CPPA DROP records that can be linked to a single DSR at submission
+ * time.
+ */
+export const MAX_DROP_RECORDS_PER_REQUEST = 500;
+
+/**
+ * Maximum number of requests that can be submitted at once in a bulk
+ * operation.
+ */
+export const REQUEST_SUBMISSION_LIMIT = 100;
+
+/** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
+export interface RestartTimeLimitExceededMessageInput {
+  /** Days since the request's status last changed */
+  daysSinceLastTransition: number;
+  /** Organization-configured restart time limit in days */
+  restartTimeLimitDays: number;
+}
+
 /** {@link DsrErrorCode} values with a builder in {@link DSR_ERROR_MESSAGE}. */
 export type DsrErrorCodeWithMessage = Exclude<DsrErrorCode, typeof DsrErrorCode.InvalidInput>;
 
 /** Message builders keyed by {@link DsrErrorCode} (except {@link DsrErrorCode.InvalidInput}). */
 type DsrErrorMessageByCode = {
-  [K in DsrErrorCodeWithMessage]: (...args: any[]) => string;
+  [DsrErrorCode.DuplicateRequest]: () => string;
+  [DsrErrorCode.OpenParentRequestExists]: () => string;
+  [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) => string;
+  [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
+  [DsrErrorCode.SubmissionLimitExceeded]: () => string;
+  [DsrErrorCode.MixedCekContext]: () => string;
+  [DsrErrorCode.DhContextRequired]: () => string;
+  [DsrErrorCode.DropIdentifierCoverageMismatch]: () => string;
+  [DsrErrorCode.ConcurrentSubmissionConflict]: () => string;
+  [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
 };
+
+type _AssertAllCodesHaveBuilders = DsrErrorCodeWithMessage extends keyof DsrErrorMessageByCode
+  ? keyof DsrErrorMessageByCode extends DsrErrorCodeWithMessage
+    ? true
+    : never
+  : never;
+const _assertAllCodesHaveBuilders: _AssertAllCodesHaveBuilders = true;
 
 /** {@link DsrErrorCode.InvalidInput} validation messages with distinct text per failure. */
 type DsrInvalidInputMessageMap = {
@@ -47,7 +83,7 @@ export const DSR_ERROR_MESSAGE = {
   }: RestartTimeLimitExceededMessageInput) =>
     `This request's status last changed ${daysSinceLastTransition} days ago, which exceeds your organization's restart time limit of ${restartTimeLimitDays} days. Create a new request instead.`,
   [DsrErrorCode.SubmissionLimitExceeded]: () =>
-    'Cannot submit more than 100 requests at once. Please split your requests into smaller batches and try again.',
+    `Cannot submit more than ${REQUEST_SUBMISSION_LIMIT} requests at once. Please split your requests into smaller batches and try again.`,
   [DsrErrorCode.MixedCekContext]: () =>
     'Either all or none of the requests must include encryptedCEKContext',
   [DsrErrorCode.DhContextRequired]: () => 'No encrypted data subject payload provided',
@@ -64,14 +100,6 @@ export const DSR_ERROR_MESSAGE = {
       'In-batch DROP rows that share a dropRunId idempotency key must carry the same identifier values.',
     dropRecordsRequireDropRunId: () => 'dropRecords requires dropRunId',
     maxDropRecordsPerRequestExceeded: () =>
-      'Cannot link more than 500 DROP records to a single request.',
+      `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
   },
 } as const satisfies DsrErrorMessageMap;
-
-/** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
-export interface RestartTimeLimitExceededMessageInput {
-  /** Days since the request's status last changed */
-  daysSinceLastTransition: number;
-  /** Organization-configured restart time limit in days */
-  restartTimeLimitDays: number;
-}

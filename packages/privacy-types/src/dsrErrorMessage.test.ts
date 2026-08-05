@@ -1,17 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { DSR_ERROR_MESSAGE, DsrErrorCode } from './index.js';
+import {
+  DSR_ERROR_MESSAGE,
+  DsrErrorCode,
+  MAX_DROP_RECORDS_PER_REQUEST,
+  REQUEST_SUBMISSION_LIMIT,
+} from './index.js';
 
 const DSR_ERROR_MESSAGE_CODES = Object.values(DsrErrorCode).filter(
   (code) => code !== DsrErrorCode.InvalidInput,
 );
-
-describe('DsrErrorCode', () => {
-  it('exports the two new DROP submission error codes', () => {
-    expect(Object.values(DsrErrorCode)).toContain('CONCURRENT_SUBMISSION_CONFLICT');
-    expect(Object.values(DsrErrorCode)).toContain('DROP_RUN_NOT_FOUND');
-  });
-});
 
 describe('DSR_ERROR_MESSAGE', () => {
   it('defines a builder for every code except INVALID_INPUT', () => {
@@ -20,15 +18,23 @@ describe('DSR_ERROR_MESSAGE', () => {
     }
   });
 
+  it('interpolates numeric limits from exported constants', () => {
+    expect(MAX_DROP_RECORDS_PER_REQUEST).toBe(500);
+    expect(REQUEST_SUBMISSION_LIMIT).toBe(100);
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.SubmissionLimitExceeded]()).toBe(
+      `Cannot submit more than ${REQUEST_SUBMISSION_LIMIT} requests at once. Please split your requests into smaller batches and try again.`,
+    );
+    expect(DSR_ERROR_MESSAGE.invalidInput.maxDropRecordsPerRequestExceeded()).toBe(
+      `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
+    );
+  });
+
   it('renders canonical static messages', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DuplicateRequest]()).toBe(
       'You have already made this request.',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.OpenParentRequestExists]()).toBe(
       'An open parent request already exists',
-    );
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.SubmissionLimitExceeded]()).toBe(
-      'Cannot submit more than 100 requests at once. Please split your requests into smaller batches and try again.',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DhContextRequired]()).toBe(
       'No encrypted data subject payload provided',
@@ -70,9 +76,6 @@ describe('DSR_ERROR_MESSAGE', () => {
     );
     expect(DSR_ERROR_MESSAGE.invalidInput.dropRecordsRequireDropRunId()).toBe(
       'dropRecords requires dropRunId',
-    );
-    expect(DSR_ERROR_MESSAGE.invalidInput.maxDropRecordsPerRequestExceeded()).toBe(
-      'Cannot link more than 500 DROP records to a single request.',
     );
   });
 });

@@ -8,9 +8,20 @@ import { makeEnum } from '@transcend-io/type-utils';
  * on the failure type without parsing the error message.
  */
 export const DsrErrorCode = makeEnum({
-  /** A duplicate open request already exists for this data subject + type. */
+  /**
+   * A duplicate open request already exists for this data subject + type.
+   *
+   * Bulk submission returns {@link DsrRequestOutcome.AlreadyOpen} instead once
+   * Phase 6a lands; exclude from the bulk error docs table. Kept for singular
+   * submit compatibility.
+   */
   DuplicateRequest: 'DUPLICATE_REQUEST',
-  /** An open parent request already exists for this data subject. */
+  /**
+   * An open parent request already exists for this data subject.
+   *
+   * Bulk submission stops emitting this once Phase 6a lands; exclude from the
+   * bulk error docs table. Kept for singular submit compatibility.
+   */
   OpenParentRequestExists: 'OPEN_PARENT_REQUEST_EXISTS',
   /** A restart was requested for a request ID that does not exist. */
   RestartRequestNotFound: 'RESTART_REQUEST_NOT_FOUND',

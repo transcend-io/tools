@@ -15,6 +15,7 @@ export * from './datapoint.js';
 export * from './drop.js';
 export * from './dsrErrorCode.js';
 export * from './dsrErrorMessage.js';
+export * from './dsrRequestOutcome.js';
 export * from './enricher.js';
 export * from './getRegistryLink.js';
 export * from './identifier.js';
