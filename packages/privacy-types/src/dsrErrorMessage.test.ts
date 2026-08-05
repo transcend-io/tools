@@ -6,7 +6,6 @@ import {
   DsrErrorCode,
   MAX_DROP_RECORDS_PER_REQUEST,
   MAX_UNKNOWN_DROP_RECORDS_IN_ERROR,
-  REQUEST_SUBMISSION_LIMIT,
 } from './index.js';
 
 const DSR_ERROR_MESSAGE_CODES = Object.values(DsrErrorCode);
@@ -20,49 +19,41 @@ describe('DSR_ERROR_MESSAGE', () => {
 
   it('interpolates numeric limits from exported constants', () => {
     expect(MAX_DROP_RECORDS_PER_REQUEST).toBe(500);
-    expect(REQUEST_SUBMISSION_LIMIT).toBe(100);
     expect(MAX_UNKNOWN_DROP_RECORDS_IN_ERROR).toBe(20);
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.SubmissionLimitExceeded]()).toBe(
-      `Cannot submit more than ${REQUEST_SUBMISSION_LIMIT} requests at once. Please split your requests into smaller batches and try again.`,
-    );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.MaxDropRecordsPerRequestExceeded]()).toBe(
       `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
     );
   });
 
-  it('renders canonical static messages', () => {
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.NoInputsProvided]()).toBe('No inputs provided');
+  it('renders canonical per-request static messages', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.InvalidWorkflowConfigId]()).toBe(
-      'All requests must have a valid workflowConfigId',
+      'Invalid workflowConfigId',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.MissingCoreIdentifier]()).toBe('Missing core identifier');
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.RestartRequestNotFound]()).toBe(
+      'Cannot restart: request not found',
+    );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DhContextRequired]()).toBe(
       'No encrypted data subject payload provided',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropIdentifierCoverageMismatch]()).toBe(
-      'Cannot link DROP records to an existing request until every identifier on this submission is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
+      'Cannot link DROP records to an existing request until every identifier on this request is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.ConcurrentSubmissionConflict]()).toBe(
-      'A concurrent DROP submission already created one or more of these requests. Retry the batch.',
-    );
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.MixedCekContext]()).toBe(
-      'Either all or none of the requests must include encryptedCEKContext',
+      'A concurrent submission already created this request. Retry.',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DuplicateDropRecords]()).toBe(
-      'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
+      'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request.',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.InBatchDropIdempotencyKeyCollision]()).toBe(
-      'In-batch DROP rows that share a dropRunId idempotency key must carry the same identifier values.',
+      "This request's identifiers conflict with another input in the batch that shares the same dropRunId idempotency key.",
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRecordsRequireDropRunId]()).toBe(
       'dropRecords requires dropRunId',
     );
   });
 
-  it('renders parameterized code messages', () => {
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.RestartRequestNotFound](['req-1', 'req-2'])).toBe(
-      'Cannot restart: request(s) not found for ID(s): req-1, req-2',
-    );
+  it('renders parameterized per-request messages', () => {
     expect(
       DSR_ERROR_MESSAGE[DsrErrorCode.RestartTimeLimitExceeded]({
         daysSinceLastTransition: 45,

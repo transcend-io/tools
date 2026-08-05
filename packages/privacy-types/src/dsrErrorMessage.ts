@@ -37,13 +37,10 @@ export interface UnknownDropRecordsMessageInput {
 
 /** Canonical message builder for each {@link DsrErrorCode}. */
 export type DsrErrorMessageMap = {
-  [DsrErrorCode.NoInputsProvided]: () => string;
   [DsrErrorCode.InvalidWorkflowConfigId]: () => string;
   [DsrErrorCode.MissingCoreIdentifier]: () => string;
-  [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) => string;
+  [DsrErrorCode.RestartRequestNotFound]: () => string;
   [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
-  [DsrErrorCode.SubmissionLimitExceeded]: () => string;
-  [DsrErrorCode.MixedCekContext]: () => string;
   [DsrErrorCode.DhContextRequired]: () => string;
   [DsrErrorCode.ReceiptTemplateNotFound]: (templateId: string) => string;
   [DsrErrorCode.DropIdentifierCoverageMismatch]: () => string;
@@ -64,37 +61,31 @@ type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
 const _assertAllCodesHaveBuilders: _AssertAllCodesHaveBuilders = true;
 
 /**
- * Canonical DSR bulk submission error messages.
+ * Canonical per-input DSR bulk submission error messages.
  *
  * Each {@link DsrErrorCode} has exactly one builder; call
- * `DSR_ERROR_MESSAGE[code](...)` to render the runtime string. DSR submission
- * errors currently surface as HTTP 400 bad-request validation failures, so no
- * separate status map is exported.
+ * `DSR_ERROR_MESSAGE[code](...)` to render the runtime string for one failed
+ * `input[]` item. Per-input errors currently surface as HTTP 400 bad-request
+ * validation failures.
  */
 export const DSR_ERROR_MESSAGE = {
-  [DsrErrorCode.NoInputsProvided]: () => 'No inputs provided',
-  [DsrErrorCode.InvalidWorkflowConfigId]: () => 'All requests must have a valid workflowConfigId',
+  [DsrErrorCode.InvalidWorkflowConfigId]: () => 'Invalid workflowConfigId',
   [DsrErrorCode.MissingCoreIdentifier]: () => 'Missing core identifier',
-  [DsrErrorCode.RestartRequestNotFound]: (requestIds: readonly string[]) =>
-    `Cannot restart: request(s) not found for ID(s): ${requestIds.join(', ')}`,
+  [DsrErrorCode.RestartRequestNotFound]: () => 'Cannot restart: request not found',
   [DsrErrorCode.RestartTimeLimitExceeded]: ({
     daysSinceLastTransition,
     restartTimeLimitDays,
   }: RestartTimeLimitExceededMessageInput) =>
     `This request's status last changed ${daysSinceLastTransition} days ago, which exceeds your organization's restart time limit of ${restartTimeLimitDays} days. Create a new request instead.`,
-  [DsrErrorCode.SubmissionLimitExceeded]: () =>
-    `Cannot submit more than ${REQUEST_SUBMISSION_LIMIT} requests at once. Please split your requests into smaller batches and try again.`,
-  [DsrErrorCode.MixedCekContext]: () =>
-    'Either all or none of the requests must include encryptedCEKContext',
   [DsrErrorCode.DhContextRequired]: () => 'No encrypted data subject payload provided',
   [DsrErrorCode.ReceiptTemplateNotFound]: (templateId: string) =>
     `Could not find specified email template ID: ${templateId}`,
   [DsrErrorCode.DropIdentifierCoverageMismatch]: () =>
-    'Cannot link DROP records to an existing request until every identifier on this submission is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
+    'Cannot link DROP records to an existing request until every identifier on this request is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
   [DsrErrorCode.DuplicateDropRecords]: () =>
-    'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request per submission.',
+    'dropRecords contains duplicate (dropRecordId, dropListType) entries: each DROP record can only be linked to one request.',
   [DsrErrorCode.InBatchDropIdempotencyKeyCollision]: () =>
-    'In-batch DROP rows that share a dropRunId idempotency key must carry the same identifier values.',
+    "This request's identifiers conflict with another input in the batch that shares the same dropRunId idempotency key.",
   [DsrErrorCode.DropRecordsRequireDropRunId]: () => 'dropRecords requires dropRunId',
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () =>
     `Cannot link more than ${MAX_DROP_RECORDS_PER_REQUEST} DROP records to a single request.`,
@@ -114,7 +105,7 @@ export const DSR_ERROR_MESSAGE = {
     );
   },
   [DsrErrorCode.ConcurrentSubmissionConflict]: () =>
-    'A concurrent DROP submission already created one or more of these requests. Retry the batch.',
+    'A concurrent submission already created this request. Retry.',
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,
 } as const satisfies DsrErrorMessageMap;
