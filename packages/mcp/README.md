@@ -441,8 +441,10 @@ So a view's stylesheet is two statements, which is why the build writes it rathe
 @import '@transcend-io/mcp-server-base/ui/theme.css';
 
 /* The theme sets `source(none)`, so each view registers its own files. */
-@source './**/*.tsx';
+@source './**/*.{ts,tsx}';
 ```
+
+`.ts` is scanned as well as `.tsx` because class names are not confined to JSX. A status-to-color lookup or a variant map is an ordinary module, and one left unscanned bundles correctly and then renders unstyled — the same break as a shared component outside a `_` directory.
 
 The `@source` cannot be left implicit even though it is now generated. Tailwind's automatic detection starts at the working directory, which differs depending on whether the build was invoked from the package or from the repo root, so an implicit scan would generate a different set of utilities depending on how it was run. Naming the directory is also what forces the synthesized stylesheet's id to sit _inside_ the view directory: Tailwind resolves `@source` against `path.dirname` of the stylesheet's id.
 

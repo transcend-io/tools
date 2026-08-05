@@ -92,9 +92,9 @@ export function discoverMcpAppViews(packageDir: string): McpAppView[] {
     .map((entry) => path.join(viewsDir, entry.name));
 
   for (const entry of directories) {
-    // `generated` holds the built documents, not source, and `_` marks shared
-    // code rather than a view.
-    if (entry.name === 'generated' || entry.name.startsWith('_')) continue;
+    // The output directory holds the built documents, not source, and `_` marks
+    // shared code rather than a view.
+    if (entry.name === path.basename(MCP_APP_OUT_DIR) || entry.name.startsWith('_')) continue;
 
     const directory = path.join(viewsDir, entry.name);
     const components = readdirSync(directory)
@@ -157,6 +157,15 @@ createRoot(container).render(
 `;
 }
 
+/**
+ * Extensions a `@source` glob claims.
+ *
+ * `.ts` as well as `.tsx` because class names do not only appear in JSX: a
+ * status-to-color lookup or a variant map is an ordinary module, and a view that
+ * imports one bundles it correctly and then renders it unstyled.
+ */
+const SOURCE_EXTENSIONS = '{ts,tsx}';
+
 /** Source of the stylesheet that gives one view its utilities. */
 function synthesizedStylesheet(view: McpAppView): string {
   // `source(none)` in the theme means utilities are only generated for files a
@@ -164,7 +173,7 @@ function synthesizedStylesheet(view: McpAppView): string {
   // is why the id has to sit inside it, plus any shared directories — a component
   // under `_shared` would otherwise be bundled and render unstyled.
   const sources = [
-    './**/*.tsx',
+    `./**/*.${SOURCE_EXTENSIONS}`,
     ...view.sharedDirectories.map((directory) => globFrom(view.directory, directory)),
   ];
 
@@ -179,7 +188,7 @@ function synthesizedStylesheet(view: McpAppView): string {
 /** A `@source` glob for `directory`, written relative to `from` in posix form. */
 function globFrom(from: string, directory: string): string {
   const relative = path.relative(from, directory).split(path.sep).join('/');
-  return `${relative}/**/*.tsx`;
+  return `${relative}/**/*.${SOURCE_EXTENSIONS}`;
 }
 
 /** Splits Vite's `?direct`-style suffix off an id. */
@@ -292,6 +301,20 @@ function escapeForInlineScript(code: string): string {
   return code.replace(/<\/(script)/gi, String.raw`<\/$1`).replace(/<!--/g, String.raw`<\!--`);
 }
 
+/**
+ * Escapes the one sequence that would let compiled CSS break out of the
+ * `<style>` element it is inlined into.
+ *
+ * The same hazard as {@link escapeForInlineScript} and not a hypothetical one:
+ * `content-['</style>']` is a legal Tailwind arbitrary value, and a view's own
+ * stylesheet may write that string directly. `\/` is a valid CSS escape for `/`,
+ * and `</style` cannot appear outside a string in valid CSS, so escaping every
+ * occurrence is safe.
+ */
+function escapeForInlineStyle(css: string): string {
+  return css.replace(/<\/(style)/gi, String.raw`<\/$1`);
+}
+
 /** Escapes text interpolated into HTML character data. */
 function escapeHtmlText(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -309,8 +332,23 @@ function decodeSource(source: string | Uint8Array): string {
  * behind as a separate file to fetch. Inlining also means the resource needs no
  * CSP `resourceDomains` entry at all, and the host's default
  * `script-src 'self' 'unsafe-inline'` is enough to run it.
+ *
+ * Exported so the document's shape and its escaping can be asserted from a fake
+ * bundle. Building a real view to test them would need a package with React
+ * installed, which is the one thing this layer deliberately does not have.
+ *
+ * @param options - Name to emit the document under and its `<title>`
+ * @returns A Vite plugin
  */
-function inlineIntoSingleHtml({ fileName, title }: { fileName: string; title: string }): Plugin {
+export function inlineIntoSingleHtml({
+  fileName,
+  title,
+}: {
+  /** Name the emitted document is written under, e.g. `hello.html` */
+  fileName: string;
+  /** Text of the document's `<title>` */
+  title: string;
+}): Plugin {
   return {
     name: 'transcend:mcp-app-single-file',
     enforce: 'post',
@@ -339,7 +377,9 @@ function inlineIntoSingleHtml({ fileName, title }: { fileName: string; title: st
         );
       }
 
-      const styleTags = styles.map((css) => `    <style>\n${css}\n    </style>`).join('\n');
+      const styleTags = styles
+        .map((css) => `    <style>\n${escapeForInlineStyle(css)}\n    </style>`)
+        .join('\n');
       const scriptTags = scripts
         .map((code) => `    <script>\n${escapeForInlineScript(code)}\n    </script>`)
         .join('\n');
@@ -398,6 +438,11 @@ export function defineMcpAppView({
       'process.env.NODE_ENV': JSON.stringify('production'),
     },
     resolve: mcpAppResolve(),
+    // A package's `public/` would be copied to the output directory verbatim,
+    // and copied files never enter the bundle — so `inlineIntoSingleHtml` would
+    // not see them and could not report that they cannot be fetched. Disabling
+    // the directory is what keeps that check exhaustive.
+    publicDir: false,
     build: {
       outDir: MCP_APP_OUT_DIR,
       // Every view in a package writes here, so emptying it would leave only the
