@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
+import { DropListType } from './drop.js';
 import {
   DSR_ERROR_MESSAGE,
   DsrErrorCode,
   MAX_DROP_RECORDS_PER_REQUEST,
+  MAX_UNKNOWN_RECORDS_IN_ERROR,
   REQUEST_SUBMISSION_LIMIT,
 } from './index.js';
 
@@ -16,9 +18,14 @@ describe('DSR_ERROR_MESSAGE', () => {
     }
   });
 
+  it('exports 17 DsrErrorCode members', () => {
+    expect(DSR_ERROR_MESSAGE_CODES).toHaveLength(17);
+  });
+
   it('interpolates numeric limits from exported constants', () => {
     expect(MAX_DROP_RECORDS_PER_REQUEST).toBe(500);
     expect(REQUEST_SUBMISSION_LIMIT).toBe(100);
+    expect(MAX_UNKNOWN_RECORDS_IN_ERROR).toBe(20);
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.SubmissionLimitExceeded]()).toBe(
       `Cannot submit more than ${REQUEST_SUBMISSION_LIMIT} requests at once. Please split your requests into smaller batches and try again.`,
     );
@@ -28,6 +35,11 @@ describe('DSR_ERROR_MESSAGE', () => {
   });
 
   it('renders canonical static messages', () => {
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.NoInputsProvided]()).toBe('No inputs provided');
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.InvalidWorkflowConfigId]()).toBe(
+      'All requests must have a valid workflowConfigId',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.MissingCoreIdentifier]()).toBe('Missing core identifier');
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DhContextRequired]()).toBe(
       'No encrypted data subject payload provided',
     );
@@ -65,6 +77,37 @@ describe('DSR_ERROR_MESSAGE', () => {
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRunNotFound]('run-123')).toBe(
       'Could not find DROP run with id "run-123"',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.ReceiptTemplateNotFound]('template-456')).toBe(
+      'Could not find specified email template ID: template-456',
+    );
+  });
+
+  it('renders UnknownDropRecords with truncation at MAX_UNKNOWN_RECORDS_IN_ERROR', () => {
+    const records = Array.from({ length: MAX_UNKNOWN_RECORDS_IN_ERROR }, (_, index) => ({
+      dropRecordId: `record-${index}`,
+      dropListType: DropListType.Email,
+    }));
+
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.UnknownDropRecords](records)).toBe(
+      `${MAX_UNKNOWN_RECORDS_IN_ERROR} DROP record(s) are not part of this run's CPPA download: ${records
+        .map(({ dropRecordId, dropListType }) => `${dropRecordId} (${dropListType})`)
+        .join(
+          ', ',
+        )}. Re-index the run's records, or download a fresh matched-records file and edit that.`,
+    );
+
+    const truncatedRecords = [
+      ...records,
+      { dropRecordId: 'record-extra', dropListType: DropListType.Phone },
+    ];
+
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.UnknownDropRecords](truncatedRecords)).toBe(
+      `${MAX_UNKNOWN_RECORDS_IN_ERROR + 1} DROP record(s) are not part of this run's CPPA download: ${records
+        .map(({ dropRecordId, dropListType }) => `${dropRecordId} (${dropListType})`)
+        .join(
+          ', ',
+        )} and 1 more. Re-index the run's records, or download a fresh matched-records file and edit that.`,
     );
   });
 });

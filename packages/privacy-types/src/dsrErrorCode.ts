@@ -8,6 +8,12 @@ import { makeEnum } from '@transcend-io/type-utils';
  * on the failure type without parsing the error message.
  */
 export const DsrErrorCode = makeEnum({
+  /** The bulk submission included no request inputs. */
+  NoInputsProvided: 'NO_INPUTS_PROVIDED',
+  /** One or more requests have an invalid or missing workflowConfigId. */
+  InvalidWorkflowConfigId: 'INVALID_WORKFLOW_CONFIG_ID',
+  /** A request is missing a core identifier. */
+  MissingCoreIdentifier: 'MISSING_CORE_IDENTIFIER',
   /** A restart was requested for a request ID that does not exist. */
   RestartRequestNotFound: 'RESTART_REQUEST_NOT_FOUND',
   /** A restart was requested for a request closed beyond the org's time limit. */
@@ -18,6 +24,8 @@ export const DsrErrorCode = makeEnum({
   MixedCekContext: 'MIXED_CEK_CONTEXT',
   /** The required Diffie-Hellman encrypted payload was missing. */
   DhContextRequired: 'DH_CONTEXT_REQUIRED',
+  /** The referenced receipt email template does not exist. */
+  ReceiptTemplateNotFound: 'RECEIPT_TEMPLATE_NOT_FOUND',
   /** DROP linkage identifiers do not cover the required identifier types. */
   DropIdentifierCoverageMismatch: 'DROP_IDENTIFIER_COVERAGE_MISMATCH',
   /** The same DROP record was claimed more than once in one submission. */
@@ -28,6 +36,8 @@ export const DsrErrorCode = makeEnum({
   DropRecordsRequireDropRunId: 'DROP_RECORDS_REQUIRE_DROP_RUN_ID',
   /** The submission exceeds the per-request DROP record link limit. */
   MaxDropRecordsPerRequestExceeded: 'MAX_DROP_RECORDS_PER_REQUEST_EXCEEDED',
+  /** One or more referenced DROP records are not part of the run's CPPA download. */
+  UnknownDropRecords: 'UNKNOWN_DROP_RECORDS',
   /** A concurrent bulk submission already created one or more of these requests. */
   ConcurrentSubmissionConflict: 'CONCURRENT_SUBMISSION_CONFLICT',
   /** The referenced DROP run does not exist. */
