@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest';
 
 import {
   CONCURRENT_DROP_SUBMISSION_MESSAGE,
+  DH_CONTEXT_REQUIRED_MESSAGE,
   DROP_IDENTIFIER_COVERAGE_MISMATCH_MESSAGE,
   DROP_RECORDS_REQUIRE_DROP_RUN_ID_MESSAGE,
   DUPLICATE_DROP_RECORDS_MESSAGE,
+  DUPLICATE_REQUEST_MESSAGE,
   DSR_ERROR_HTTP_STATUS,
   DSR_ERROR_MESSAGE,
   DsrErrorCode,
   IN_BATCH_DROP_IDEMPOTENCY_KEY_COLLISION_MESSAGE,
   MAX_DROP_RECORDS_PER_REQUEST,
+  OPEN_PARENT_REQUEST_EXISTS_MESSAGE,
   REQUEST_SUBMISSION_LIMIT,
   dropRunNotFoundMessage,
   maxDropRecordsPerRequestExceededMessage,
@@ -17,6 +20,15 @@ import {
   restartRequestsNotFoundMessage,
   restartTimeLimitExceededMessage,
 } from './index.js';
+
+const STATIC_DSR_ERROR_MESSAGE_CODES = [
+  DsrErrorCode.DuplicateRequest,
+  DsrErrorCode.OpenParentRequestExists,
+  DsrErrorCode.SubmissionLimitExceeded,
+  DsrErrorCode.DhContextRequired,
+  DsrErrorCode.DropIdentifierCoverageMismatch,
+  DsrErrorCode.ConcurrentSubmissionConflict,
+] as const satisfies readonly DsrErrorCode[];
 
 describe('DsrErrorCode', () => {
   it('exports the two new DROP submission error codes', () => {
@@ -26,25 +38,45 @@ describe('DsrErrorCode', () => {
 });
 
 describe('DSR_ERROR_MESSAGE', () => {
-  it('maps every static code to a non-empty message', () => {
-    for (const [code, message] of Object.entries(DSR_ERROR_MESSAGE)) {
-      expect(Object.values(DsrErrorCode)).toContain(code);
-      expect(message.length).toBeGreaterThan(0);
-    }
+  it('maps exactly the static one-to-one codes', () => {
+    expect(Object.keys(DSR_ERROR_MESSAGE).sort()).toEqual(
+      [...STATIC_DSR_ERROR_MESSAGE_CODES].sort(),
+    );
   });
 
-  it('includes the DROP identifier coverage mismatch message', () => {
+  it('maps each static code to its canonical message', () => {
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DuplicateRequest]).toBe(DUPLICATE_REQUEST_MESSAGE);
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.OpenParentRequestExists]).toBe(
+      OPEN_PARENT_REQUEST_EXISTS_MESSAGE,
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.SubmissionLimitExceeded]).toBe(
+      requestSubmissionThresholdExceededMessage(),
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DhContextRequired]).toBe(DH_CONTEXT_REQUIRED_MESSAGE);
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropIdentifierCoverageMismatch]).toBe(
       DROP_IDENTIFIER_COVERAGE_MISMATCH_MESSAGE,
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.ConcurrentSubmissionConflict]).toBe(
+      CONCURRENT_DROP_SUBMISSION_MESSAGE,
     );
   });
 });
 
 describe('DSR_ERROR_HTTP_STATUS', () => {
-  it('maps every error code to an HTTP status', () => {
-    for (const code of Object.values(DsrErrorCode)) {
-      expect(DSR_ERROR_HTTP_STATUS[code]).toBe(400);
-    }
+  it('maps each error code to its HTTP status', () => {
+    expect(DSR_ERROR_HTTP_STATUS).toEqual({
+      [DsrErrorCode.DuplicateRequest]: 400,
+      [DsrErrorCode.OpenParentRequestExists]: 400,
+      [DsrErrorCode.RestartRequestNotFound]: 400,
+      [DsrErrorCode.RestartTimeLimitExceeded]: 400,
+      [DsrErrorCode.SubmissionLimitExceeded]: 400,
+      [DsrErrorCode.MixedCekContext]: 400,
+      [DsrErrorCode.DhContextRequired]: 400,
+      [DsrErrorCode.InvalidInput]: 400,
+      [DsrErrorCode.DropIdentifierCoverageMismatch]: 400,
+      [DsrErrorCode.ConcurrentSubmissionConflict]: 400,
+      [DsrErrorCode.DropRunNotFound]: 400,
+    });
   });
 });
 

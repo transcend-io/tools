@@ -36,6 +36,15 @@ export const IN_BATCH_DROP_IDEMPOTENCY_KEY_COLLISION_MESSAGE =
 /** Error when `dropRecords` is present without a `dropRunId`. */
 export const DROP_RECORDS_REQUIRE_DROP_RUN_ID_MESSAGE = 'dropRecords requires dropRunId';
 
+/** Error when a duplicate open request already exists for this data subject. */
+export const DUPLICATE_REQUEST_MESSAGE = 'You have already made this request.';
+
+/** Error when a broader open parent request already covers this submission. */
+export const OPEN_PARENT_REQUEST_EXISTS_MESSAGE = 'An open parent request already exists';
+
+/** Error when the batch is missing the required Diffie-Hellman encrypted payload. */
+export const DH_CONTEXT_REQUIRED_MESSAGE = 'No encrypted data subject payload provided';
+
 /**
  * Error when a concurrent DROP bulk submission wins the unique-index race and
  * creates one or more of the same requests first.
@@ -92,17 +101,26 @@ export function dropRunNotFoundMessage(dropRunId: string): string {
  *
  * Codes omitted from this map:
  * - `INVALID_INPUT` — one code maps to many distinct messages; use the
- *   standalone constants and builder functions exported from this module
- *   instead of a single fallback string.
+ *   standalone constants and builder functions exported from this module.
+ * - `MIXED_CEK_CONTEXT` — the GraphQL bulk resolver and internal submit
+ *   helper use different strings today.
  * - `RESTART_REQUEST_NOT_FOUND`, `RESTART_TIME_LIMIT_EXCEEDED`,
- *   `DROP_RUN_NOT_FOUND` — messages are parameterized; use
+ *   `DROP_RUN_NOT_FOUND` — parameterized; use
  *   {@link restartRequestsNotFoundMessage}, {@link restartTimeLimitExceededMessage},
  *   and {@link dropRunNotFoundMessage}.
- * - Remaining codes — their messages are not yet centralized here; Phase 3 in
- *   `main` will wire callers before Phase 7 generates the public docs table.
+ *
+ * `SUBMISSION_LIMIT_EXCEEDED` is included even though
+ * {@link requestSubmissionThresholdExceededMessage} exists, because the text
+ * is fully determined by {@link REQUEST_SUBMISSION_LIMIT}.
+ *
+ * The unknown-DROP-records error in `linkDropRunRequests.ts` is intentionally
+ * not centralized here; its truncation and list formatting stay in `main`.
  */
 export const DSR_ERROR_MESSAGE: Partial<Record<DsrErrorCode, string>> = {
+  [DsrErrorCode.DuplicateRequest]: DUPLICATE_REQUEST_MESSAGE,
+  [DsrErrorCode.OpenParentRequestExists]: OPEN_PARENT_REQUEST_EXISTS_MESSAGE,
+  [DsrErrorCode.SubmissionLimitExceeded]: requestSubmissionThresholdExceededMessage(),
+  [DsrErrorCode.DhContextRequired]: DH_CONTEXT_REQUIRED_MESSAGE,
   [DsrErrorCode.DropIdentifierCoverageMismatch]: DROP_IDENTIFIER_COVERAGE_MISMATCH_MESSAGE,
   [DsrErrorCode.ConcurrentSubmissionConflict]: CONCURRENT_DROP_SUBMISSION_MESSAGE,
-  [DsrErrorCode.SubmissionLimitExceeded]: requestSubmissionThresholdExceededMessage(),
 };
