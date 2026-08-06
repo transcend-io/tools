@@ -1,10 +1,9 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import { McpHostClient } from './capabilities/types.js';
-import { MCP_CALLER_HEADER } from './http-header-names.js';
+import { MCP_CALLER_HEADER, MCP_CLIENT_NAME_HEADER } from './http-header-names.js';
 import { getMcpSession } from './mcp-session-context.js';
 
-export { MCP_CALLER_HEADER };
+export { MCP_CALLER_HEADER, MCP_CLIENT_NAME_HEADER };
 
 /**
  * Cap on inferred labels from raw `clientInfo.name`, so a pathological host
@@ -27,19 +26,25 @@ export function getRequestMcpCaller(): string | undefined {
 }
 
 /**
- * Normalizes a raw `clientInfo.name` into a stable attribution label.
+ * Normalizes a raw `clientInfo.name` into a header-safe discovery label.
  *
- * Known hosts still use the canonical {@link McpHostClient} value; this is only
- * for unrecognized names so dashboards can discover new hosts without sending
- * the {@link McpHostClient.Unknown} sentinel.
+ * The value is client-controlled and only ever used for attribution, never for
+ * a trust decision. Restricted to an ASCII allowlist because a header value is
+ * converted to a ByteString on the way out, so any code point above 255 would
+ * throw and fail the request outright.
+ *
+ * @param raw - `clientInfo.name` from the `initialize` handshake
+ * @returns A bounded ASCII label, or `undefined` when nothing usable remains
  */
-export function sanitizeMcpCallerLabel(raw: string | undefined): string | undefined {
+export function sanitizeMcpClientName(raw: string | undefined): string | undefined {
   if (raw === undefined) return undefined;
-  const normalized = raw.trim().toLowerCase().replace(/\s+/g, '-');
-  if (normalized === '' || normalized === McpHostClient.Unknown) return undefined;
-  return normalized.length <= MAX_INFERRED_CALLER_LENGTH
-    ? normalized
-    : normalized.slice(0, MAX_INFERRED_CALLER_LENGTH);
+  const normalized = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .slice(0, MAX_INFERRED_CALLER_LENGTH)
+    .replace(/^-+|-+$/g, '');
+  return normalized === '' ? undefined : normalized;
 }
 
 /**
@@ -47,22 +52,26 @@ export function sanitizeMcpCallerLabel(raw: string | undefined): string | undefi
  *
  * An explicitly forwarded header always wins, since a caller proxying on a
  * user's behalf knows its own identity better than we can infer it. Otherwise
- * falls back to the host from the MCP `initialize` handshake: the canonical
- * {@link McpHostClient} value when recognized, or a sanitized `clientInfo.name`
- * when not. Sends nothing only when there is no session or no usable name.
+ * falls back to the session's `McpHostClient` value from `initialize`,
+ * including `unknown` so unrecognized traffic is an honest slice rather than a
+ * missing tag.
  */
 export function resolveMcpCallerAttribution(): string | undefined {
   const forwarded = getRequestMcpCaller();
   if (forwarded) return forwarded;
 
-  const client = getMcpSession()?.client;
-  if (!client) return undefined;
+  return getMcpSession()?.client.host;
+}
 
-  if (client.host !== McpHostClient.Unknown) {
-    return client.host;
-  }
-
-  return sanitizeMcpCallerLabel(client.clientInfo?.name);
+/**
+ * Value to send as {@link MCP_CLIENT_NAME_HEADER} on outbound Transcend requests.
+ *
+ * Orthogonal to {@link resolveMcpCallerAttribution}: always the sanitized
+ * `clientInfo.name` when present, so a forwarded caller header does not hide
+ * the underlying host name used for discovery.
+ */
+export function resolveMcpClientName(): string | undefined {
+  return sanitizeMcpClientName(getMcpSession()?.client.clientInfo?.name);
 }
 
 /** Normalizes Node / Express header values to a list of strings (drops non-string entries). */

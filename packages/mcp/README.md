@@ -335,7 +335,12 @@ For a server with views, `resources/list` and `resources/read` are registered, t
 
 ### Usage attribution
 
-Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host from `initialize`: the canonical `McpHostClient` value when recognized, or a sanitized `clientInfo.name` when not, so unrecognized hosts still show up in usage dashboards instead of as N/A. Nothing is sent only when there is no usable name. The resolved host and capability set are also logged once per session.
+Outbound Transcend requests carry two orthogonal headers:
+
+- `x-transcend-mcp-caller` — billing / usage identity. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the value is the session's `McpHostClient` from `initialize`, including `unknown` when the host is unrecognized. That keeps the dashboard's denominator honest: unrecognized traffic is an `unknown` slice, not a missing tag.
+- `x-transcend-mcp-client-name` — discovery. A sanitized `clientInfo.name` from `initialize`, sent whenever a usable name exists, independent of how caller resolved. Restricted to an ASCII allowlist so a client-controlled string cannot break outbound `fetch` (header values are ByteStrings).
+
+When a name shows up often enough in the discovery view, promote it: add a member to `McpHostClient`, a pattern in `HOST_PATTERNS`, and expect its dashboard series to split from `unknown` (and from the raw discovery label) at that point. The resolved host and capability set are also logged once per session.
 
 ## Environment variables
 

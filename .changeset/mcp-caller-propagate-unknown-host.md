@@ -1,7 +1,7 @@
 ---
-'@transcend-io/mcp-server-base': patch
+'@transcend-io/mcp-server-base': minor
 ---
 
-Fall back to a sanitized `clientInfo.name` for `x-transcend-mcp-caller` when the connected host is not in `McpHostClient`, so unrecognized stdio clients still get usage attribution instead of appearing as N/A.
+Split MCP usage attribution into two outbound headers: `x-transcend-mcp-caller` stays an `McpHostClient` value (including `unknown` when unrecognized), and `x-transcend-mcp-client-name` carries a sanitized `clientInfo.name` for discovering hosts not yet in the enum.
 
-Known hosts keep the canonical enum value, and an explicitly forwarded header still wins. Quirks and capability behavior remain enum-gated.
+An explicitly forwarded caller header still wins for billing identity. The discovery header is sent whenever a usable name exists, independent of caller. Sanitization uses an ASCII allowlist so client-controlled names cannot break outbound `fetch`.
