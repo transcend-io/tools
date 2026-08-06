@@ -25,11 +25,6 @@ export const MAX_UNKNOWN_DROP_RECORDS_IN_ERROR = 20;
 export const DSR_BULK_SUBMISSION_REJECTED_MESSAGE =
   'The submission was rejected. No requests were created.';
 
-/**
- * Cap on structured error entries returned for a rejected bulk submission.
- */
-export const MAX_DSR_BULK_SUBMISSION_ERRORS = 20;
-
 /** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
 export interface RestartTimeLimitExceededMessageInput {
   /** Days since the request's status last changed */
@@ -60,7 +55,7 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
-  [DsrErrorCode.IdentifierValidationFailed]: (identifierTitles: readonly string[]) => string;
+  [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) => string;
   [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
   [DsrErrorCode.MissingRequiredEmail]: () => string;
 };
@@ -124,8 +119,8 @@ export const DSR_ERROR_MESSAGE = {
    * from this string. Downstream consumers must branch on `code` and display the
    * returned `message` — never reconstruct it from `DSR_ERROR_MESSAGE`.
    */
-  [DsrErrorCode.IdentifierValidationFailed]: (identifierTitles: readonly string[]) =>
-    `${identifierTitles.join(', ')} did not pass validation`,
+  [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) =>
+    `${identifierNames.join(', ')} did not pass validation`,
   [DsrErrorCode.UnsupportedIdentifierName]: (name: string) =>
     `The organization does not support identifiers with name: "${name}" at time of request submission.`,
   [DsrErrorCode.MissingRequiredEmail]: () =>
