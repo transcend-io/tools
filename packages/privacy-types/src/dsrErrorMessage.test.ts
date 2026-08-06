@@ -6,6 +6,7 @@ import {
   DSR_ERROR_MESSAGE,
   DsrErrorCode,
   MAX_DROP_RECORDS_PER_REQUEST,
+  MAX_DSR_BULK_SUBMISSION_ERRORS,
   MAX_UNKNOWN_DROP_RECORDS_IN_ERROR,
 } from './index.js';
 
@@ -22,6 +23,10 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_BULK_SUBMISSION_REJECTED_MESSAGE).toBe(
       'The submission was rejected. No requests were created.',
     );
+  });
+
+  it('exports MAX_DSR_BULK_SUBMISSION_ERRORS', () => {
+    expect(MAX_DSR_BULK_SUBMISSION_ERRORS).toBe(20);
   });
 
   it('interpolates numeric limits from exported constants', () => {

@@ -14,6 +14,12 @@ export const MAX_DROP_RECORDS_PER_REQUEST = 500;
 export const REQUEST_SUBMISSION_LIMIT = 100;
 
 /**
+ * Maximum structured error entries returned in a rejected bulk DSR submission.
+ * Additional failures are summarized only in the top-level message.
+ */
+export const MAX_DSR_BULK_SUBMISSION_ERRORS = 20;
+
+/**
  * Maximum unknown DROP records named in an {@link DsrErrorCode.UnknownDropRecords}
  * error message before truncating with an "and N more" suffix.
  */
