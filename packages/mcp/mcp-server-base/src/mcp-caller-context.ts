@@ -41,8 +41,11 @@ export function sanitizeMcpClientName(raw: string | undefined): string | undefin
   const normalized = raw
     .trim()
     .toLowerCase()
+    // Drop anything outside [a-z0-9._-] (spaces, punctuation, non-ASCII) to a
+    // single dash so the value is a ByteString-safe header label.
     .replace(/[^a-z0-9._-]+/g, '-')
     .slice(0, MAX_INFERRED_CALLER_LENGTH)
+    // Trim leading/trailing dashes left by the replace or by truncating mid-run.
     .replace(/^-+|-+$/g, '');
   return normalized === '' ? undefined : normalized;
 }
