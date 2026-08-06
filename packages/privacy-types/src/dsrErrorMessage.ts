@@ -19,6 +19,12 @@ export const REQUEST_SUBMISSION_LIMIT = 100;
  */
 export const MAX_UNKNOWN_DROP_RECORDS_IN_ERROR = 20;
 
+/**
+ * Summary message when an entire bulk submission is rejected.
+ */
+export const DSR_BULK_SUBMISSION_REJECTED_MESSAGE =
+  'The submission was rejected. No requests were created.';
+
 /** Inputs for the {@link DsrErrorCode.RestartTimeLimitExceeded} message builder. */
 export interface RestartTimeLimitExceededMessageInput {
   /** Days since the request's status last changed */
@@ -49,6 +55,9 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
+  [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) => string;
+  [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
+  [DsrErrorCode.MissingRequiredEmail]: () => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -103,4 +112,17 @@ export const DSR_ERROR_MESSAGE = {
   },
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,
+  /**
+   * Fallback canonical message for {@link DsrErrorCode.IdentifierValidationFailed}.
+   * Organizations can configure a custom, locale-translated `validationErrorMessage`
+   * per identifier, so the runtime message on the error entry will often differ
+   * from this string. Downstream consumers must branch on `code` and display the
+   * returned `message` — never reconstruct it from `DSR_ERROR_MESSAGE`.
+   */
+  [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) =>
+    `${identifierNames.join(', ')} did not pass validation`,
+  [DsrErrorCode.UnsupportedIdentifierName]: (name: string) =>
+    `The organization does not support identifiers with name: "${name}" at time of request submission.`,
+  [DsrErrorCode.MissingRequiredEmail]: () =>
+    'At least one email must be provided before a request can be created when not in silent mode',
 } as const satisfies DsrErrorMessageMap;
