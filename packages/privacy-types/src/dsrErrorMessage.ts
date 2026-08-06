@@ -61,6 +61,9 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
   [DsrErrorCode.OpenParentRequest]: () => string;
+  [DsrErrorCode.IdentifierValidationFailed]: (identifierTitle: string) => string;
+  [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
+  [DsrErrorCode.MissingRequiredEmail]: () => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -117,4 +120,17 @@ export const DSR_ERROR_MESSAGE = {
     `Could not find DROP run with id "${dropRunId}"`,
   [DsrErrorCode.OpenParentRequest]: () =>
     'You have already submitted a previous request that will also accommodate this current one.',
+  /**
+   * Fallback canonical message for {@link DsrErrorCode.IdentifierValidationFailed}.
+   * Organizations can configure a custom, locale-translated `validationErrorMessage`
+   * per identifier, so the runtime message on the error entry will often differ
+   * from this string. Downstream consumers must branch on `code` and display the
+   * returned `message` — never reconstruct it from `DSR_ERROR_MESSAGE`.
+   */
+  [DsrErrorCode.IdentifierValidationFailed]: (identifierTitle: string) =>
+    `${identifierTitle} did not pass validation`,
+  [DsrErrorCode.UnsupportedIdentifierName]: (name: string) =>
+    `The organization does not support identifiers with name: "${name}" at time of request submission.`,
+  [DsrErrorCode.MissingRequiredEmail]: () =>
+    'At least one email must be provided before a request can be created when not in silent mode',
 } as const satisfies DsrErrorMessageMap;
