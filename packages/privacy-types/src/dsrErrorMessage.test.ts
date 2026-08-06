@@ -54,9 +54,6 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRecordsRequireDropRunId]()).toBe(
       'dropRecords requires dropRunId',
     );
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.OpenParentRequest]()).toBe(
-      'You have already submitted a previous request that will also accommodate this current one.',
-    );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.MissingRequiredEmail]()).toBe(
       'At least one email must be provided before a request can be created when not in silent mode',
     );
@@ -77,8 +74,11 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.ReceiptTemplateNotFound]('template-456')).toBe(
       'Could not find specified email template ID: template-456',
     );
-    expect(DSR_ERROR_MESSAGE[DsrErrorCode.IdentifierValidationFailed]('Email')).toBe(
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.IdentifierValidationFailed](['Email'])).toBe(
       'Email did not pass validation',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.IdentifierValidationFailed](['Email', 'Phone'])).toBe(
+      'Email, Phone did not pass validation',
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.UnsupportedIdentifierName]('custom-username')).toBe(
       'The organization does not support identifiers with name: "custom-username" at time of request submission.',
