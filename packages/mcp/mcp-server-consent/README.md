@@ -116,6 +116,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_update_cookies` — Update cookies (approve, junk, assign purposes)
 - `consent_update_data_flows` — Update data flows
 - `consent_bulk_triage` — Bulk approve or junk cookies and data flows
+- `consent_cookie_triage` — Interactive cookie / data-flow triage review (MCP App). Opens a NEEDS_REVIEW queue; hosts with MCP Apps get Approve / Junk / Skip / bulk-approve controls.
 
 Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api).
 

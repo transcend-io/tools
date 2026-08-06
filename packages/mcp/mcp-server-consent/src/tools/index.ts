@@ -14,6 +14,7 @@ import { createConsentListRegimesTool } from './consent_list_regimes.js';
 import { createConsentSetPreferencesTool } from './consent_set_preferences.js';
 import { createConsentUpdateCookiesTool } from './consent_update_cookies.js';
 import { createConsentUpdateDataFlowsTool } from './consent_update_data_flows.js';
+import { createCookieTriageAppTool } from './cookie_triage_app.js';
 
 export function getConsentTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -31,5 +32,6 @@ export function getConsentTools(clients: ToolClients): ToolDefinition[] {
     createConsentUpdateCookiesTool(clients),
     createConsentUpdateDataFlowsTool(clients),
     createConsentBulkTriageTool(clients),
+    createCookieTriageAppTool(clients),
   ];
 }

@@ -25,6 +25,7 @@ const EXPECTED_TOOL_NAMES = [
   'consent_update_cookies',
   'consent_update_data_flows',
   'consent_bulk_triage',
+  'consent_cookie_triage',
 ] as const;
 
 describe('Consent Tools', () => {
@@ -53,6 +54,16 @@ describe('Consent Tools', () => {
     const tools = getTools();
     expect(tools).toHaveLength(EXPECTED_TOOL_NAMES.length);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  describe('consent_cookie_triage', () => {
+    it('accepts an empty input object and optional skippedIds', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'consent_cookie_triage')!;
+
+      expect(tool.zodSchema.safeParse({}).success).toBe(true);
+      expect(tool.zodSchema.safeParse({ skippedIds: ['a'] }).success).toBe(true);
+    });
   });
 
   describe('consent_update_cookies', () => {

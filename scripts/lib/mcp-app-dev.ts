@@ -13,6 +13,15 @@ const scriptsLibDir = dirname(fileURLToPath(import.meta.url));
 export const repoRoot = resolve(scriptsLibDir, '..', '..');
 
 /**
+ * Wrapper that sources root `secret.env` then `exec`s `node`.
+ *
+ * Used by Cursor (`.cursor/mcp.json`) and by `pnpm mcp:inspect` stdio so the
+ * Inspector-spawned server gets credentials without putting them on `-e`
+ * (which would expose them in process args).
+ */
+export const MCP_RUN_SCRIPT = join(repoRoot, 'scripts', 'mcp-run.sh');
+
+/**
  * Directories searched for MCP servers, in the order they are listed.
  *
  * `dev` is included because the example server lives there rather than beside the
@@ -239,9 +248,10 @@ const INSPECTOR_FORWARDED_ENV_VARS = [DEV_VIEWS_ENV_VAR, ASSUME_CAPABILITIES_ENV
  * watcher rather than a dropped variable.
  *
  * Credentials are deliberately absent: arguments are readable by anyone on the
- * machine (`ps -o command`), which is no place for an API key. Use `--http` when
- * a tool needs to reach the Transcend API, since we spawn the server there and it
- * inherits the environment normally.
+ * machine (`ps -o command`), which is no place for an API key. Stdio Inspector
+ * launches go through {@link MCP_RUN_SCRIPT}, which sources `secret.env` into
+ * the server process. Under `--http` we spawn the server ourselves and it
+ * inherits the environment from {@link loadSecretEnv}.
  *
  * @param env - Environment to read, defaulting to this process's
  * @returns Inspector arguments, as `-e KEY=VALUE` pairs
@@ -428,8 +438,9 @@ export function viewPackagesInScope(target: McpPackage, packages: McpPackage[]):
  * Loads `secret.env` into `process.env` when present.
  *
  * Processes we spawn inherit the result, which covers the server under `--http`
- * and every view watcher. A stdio server spawned by the Inspector does not, for
- * the reason {@link inspectorEnvArgs} explains.
+ * and every view watcher. A stdio server spawned by the Inspector still needs
+ * {@link MCP_RUN_SCRIPT}: the Inspector does not forward our environment (see
+ * {@link inspectorEnvArgs}).
  */
 export function loadSecretEnv(): void {
   const secretEnv = join(repoRoot, 'secret.env');
