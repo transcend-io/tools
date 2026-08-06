@@ -92,7 +92,7 @@ describe('sanitizeMcpClientName', () => {
 describe('resolveMcpCallerAttribution', () => {
   it('prefers a forwarded header over the host we detected', () => {
     // A caller proxying on a user's behalf knows its own identity better than we
-    // can infer it, and it is the one being billed for the traffic.
+    // can infer it.
     expect(
       asRequest(McpHostClient.Claude, 'partner-integration', resolveMcpCallerAttribution),
     ).toBe('partner-integration');
