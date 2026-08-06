@@ -32,6 +32,12 @@ export const DsrErrorCode = makeEnum({
   UnknownDropRecords: 'UNKNOWN_DROP_RECORDS',
   /** The DROP run referenced by this request does not exist. */
   DropRunNotFound: 'DROP_RUN_NOT_FOUND',
+  /** An identifier value on this request failed format or regex validation. */
+  IdentifierValidationFailed: 'IDENTIFIER_VALIDATION_FAILED',
+  /** This request names an identifier the organization does not have configured. */
+  UnsupportedIdentifierName: 'UNSUPPORTED_IDENTIFIER_NAME',
+  /** This request has no email, which is required outside silent mode. */
+  MissingRequiredEmail: 'MISSING_REQUIRED_EMAIL',
 });
 
 /** Type override */

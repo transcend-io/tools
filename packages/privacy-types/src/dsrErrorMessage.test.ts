@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DropListType } from './drop.js';
 import {
+  DSR_BULK_SUBMISSION_REJECTED_MESSAGE,
   DSR_ERROR_MESSAGE,
   DsrErrorCode,
   MAX_DROP_RECORDS_PER_REQUEST,
@@ -15,6 +16,12 @@ describe('DSR_ERROR_MESSAGE', () => {
     for (const code of DSR_ERROR_MESSAGE_CODES) {
       expect(DSR_ERROR_MESSAGE[code]).toBeTypeOf('function');
     }
+  });
+
+  it('exports bulk submission rejection constants', () => {
+    expect(DSR_BULK_SUBMISSION_REJECTED_MESSAGE).toBe(
+      'The submission was rejected. No requests were created.',
+    );
   });
 
   it('interpolates numeric limits from exported constants', () => {
@@ -45,6 +52,9 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRecordsRequireDropRunId]()).toBe(
       'dropRecords requires dropRunId',
     );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.MissingRequiredEmail]()).toBe(
+      'At least one email must be provided before a request can be created when not in silent mode',
+    );
   });
 
   it('renders parameterized per-request messages', () => {
@@ -61,6 +71,15 @@ describe('DSR_ERROR_MESSAGE', () => {
     );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.ReceiptTemplateNotFound]('template-456')).toBe(
       'Could not find specified email template ID: template-456',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.IdentifierValidationFailed](['Email'])).toBe(
+      'Email did not pass validation',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.IdentifierValidationFailed](['Email', 'Phone'])).toBe(
+      'Email, Phone did not pass validation',
+    );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.UnsupportedIdentifierName]('custom-username')).toBe(
+      'The organization does not support identifiers with name: "custom-username" at time of request submission.',
     );
   });
 

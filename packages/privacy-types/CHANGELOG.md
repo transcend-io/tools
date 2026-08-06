@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.12.0
+
+### Minor Changes
+
+- 188ba6f: Add WAL-10304 bulk DSR submission symbols: `DSR_BULK_SUBMISSION_REJECTED_MESSAGE`. Also add `DsrErrorCode.IdentifierValidationFailed`, `DsrErrorCode.UnsupportedIdentifierName`, and `DsrErrorCode.MissingRequiredEmail` with their `DSR_ERROR_MESSAGE` builders.
+
 ## 5.11.0
 
 ### Minor Changes
