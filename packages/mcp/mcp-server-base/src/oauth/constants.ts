@@ -6,7 +6,7 @@ export enum OAuthGrantType {
   RefreshToken = 'refresh_token',
 }
 
-/** Environment variable for the OAuth issuer URL (test-only override). */
+/** Environment variable for the OAuth issuer URL (test-only; requires ALLOW_TEST_OVERRIDES=1). */
 export const TRANSCEND_OAUTH_ISSUER_ENV = 'TRANSCEND_OAUTH_ISSUER';
 
 /** Environment variable for the OAuth client identifier. */
@@ -69,7 +69,7 @@ export const DEFAULT_OAUTH_EXPIRES_IN_SECONDS = 3600;
 /** Subtract this many seconds from expires_in before treating a token as expired. */
 export const OAUTH_TOKEN_EXPIRY_SKEW_SECONDS = 60;
 
-/** Environment variable for the Transcend admin dashboard base URL (test-only override). */
+/** Environment variable for the Transcend admin dashboard base URL (test-only; requires ALLOW_TEST_OVERRIDES=1). */
 export const TRANSCEND_DASHBOARD_URL_ENV = 'TRANSCEND_DASHBOARD_URL';
 
 /** Path on the admin dashboard where OAuth clients are managed. */

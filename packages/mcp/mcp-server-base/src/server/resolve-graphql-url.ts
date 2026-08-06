@@ -1,7 +1,7 @@
 import type { Logger } from '../clients/graphql/base.js';
 import { DEFAULT_TRANSCEND_API_URL } from '../defaults.js';
 import { getResolvedTranscendApiUrl, isOAuthModeEnabled } from '../oauth/config.js';
-import { isTestEnv, resolveTestOverride } from '../oauth/env.js';
+import { allowTestOverrides, resolveTestOverride } from '../oauth/env.js';
 import { ensureOAuthStartupReady } from '../oauth/startup.js';
 
 /** Environment variable for the Transcend GraphQL backend API URL. */
@@ -28,7 +28,7 @@ export async function resolveMcpGraphqlUrl(
     return getResolvedTranscendApiUrl();
   }
 
-  if (isTestEnv()) {
+  if (allowTestOverrides()) {
     return resolveTestOverride(TRANSCEND_API_URL_ENV, DEFAULT_TRANSCEND_API_URL);
   }
 

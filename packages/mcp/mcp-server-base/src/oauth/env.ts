@@ -1,13 +1,19 @@
-/** Returns true when running under Vitest or with NODE_ENV=test. */
-export function isTestEnv(): boolean {
-  return process.env.VITEST === 'true' || process.env.NODE_ENV === 'test';
+/** Environment variable that enables test-only URL overrides when set to `1`. */
+export const ALLOW_TEST_OVERRIDES_ENV = 'ALLOW_TEST_OVERRIDES';
+
+/**
+ * Returns true when test-only environment overrides are enabled.
+ * Requires `ALLOW_TEST_OVERRIDES=1`; unset or any other value is treated as disabled.
+ */
+export function allowTestOverrides(): boolean {
+  return process.env[ALLOW_TEST_OVERRIDES_ENV] === '1';
 }
 
 /**
  * Returns a test-only environment override, or the production default.
  */
 export function resolveTestOverride(envVar: string, productionDefault: string): string {
-  if (isTestEnv()) {
+  if (allowTestOverrides()) {
     const override = process.env[envVar]?.trim();
     if (override) {
       return override;
