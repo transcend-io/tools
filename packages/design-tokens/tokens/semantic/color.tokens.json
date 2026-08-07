@@ -104,6 +104,11 @@
           "$value": "{palette.pink.900}",
           "$description": "Pink text on subtle background"
         }
+      },
+      "gray": {
+        "bold": {
+          "$value": "{palette.gray.900}"
+        }
       }
     }
   },
@@ -117,7 +122,7 @@
       "$description": "Hyperlink, pressed or selected state"
     },
     "visited": {
-      "default": {
+      "$root": {
         "$value": "{palette.gray.700}",
         "$description": "Visited hyperlink, rest state"
       },
@@ -208,7 +213,7 @@
         "$description": "Orange label or badge border"
       },
       "yellow": {
-        "$value": "{palette.yellow.300}",
+        "$value": "{palette.yellow.500}",
         "$description": "Yellow label or badge border"
       },
       "lime": {
@@ -230,12 +235,15 @@
       "pink": {
         "$value": "{palette.pink.300}",
         "$description": "Pink label or badge border"
+      },
+      "gray": {
+        "$value": "{palette.gray.500}"
       }
     }
   },
   "background": {
     "default": {
-      "default": {
+      "$root": {
         "$value": "{palette.white}",
         "$description": "Interactive surface, rest state"
       },
@@ -249,7 +257,7 @@
       }
     },
     "neutral": {
-      "default": {
+      "$root": {
         "$value": "{palette.gray.100}",
         "$description": "Neutral surface, rest state — form elements, nav bars, inputs, secondary buttons, code blocks, skeleton loaders"
       },
@@ -272,7 +280,7 @@
         "$description": "Lightest brand tint — subtle label or badge background"
       },
       "bold": {
-        "default": {
+        "$root": {
           "$value": "{palette.indigo.500}",
           "$description": "Brand surface — primary buttons, CTAs"
         },
@@ -296,7 +304,7 @@
         "$description": "Light success tint — success label or badge background with slightly more emphasis"
       },
       "bold": {
-        "default": {
+        "$root": {
           "$value": "{palette.green.500}",
           "$description": "Success surface — banners, toasts, filled badges"
         },
@@ -316,7 +324,7 @@
     },
     "warning": {
       "bold": {
-        "default": {
+        "$root": {
           "$value": "{palette.gold.500}",
           "$description": "Warning surface — banners, toasts, filled badges"
         },
@@ -344,7 +352,7 @@
         "$description": "Lightest danger tint — subtle danger label or badge background"
       },
       "bold": {
-        "default": {
+        "$root": {
           "$value": "{palette.red.500}",
           "$description": "Danger surface — banners, toasts, filled badges, destructive buttons"
         },
@@ -474,6 +482,17 @@
           "$value": "{palette.pink.500}",
           "$description": "Pink accent surface — filled badges, banners, toasts"
         }
+      },
+      "gray": {
+        "subtlest": {
+          "$value": "{palette.gray.200}"
+        },
+        "subtle": {
+          "$value": "{palette.gray.300}"
+        },
+        "bold": {
+          "$value": "{palette.gray.500}"
+        }
       }
     }
   },
@@ -504,6 +523,10 @@
     },
     "pink": {
       "$value": "{palette.pink.400}",
+      "$description": "Pink data series — charts, graphs, visualizations"
+    },
+    "gray": {
+      "$value": "{palette.gray.400}",
       "$description": "Pink data series — charts, graphs, visualizations"
     }
   }
