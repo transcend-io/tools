@@ -381,7 +381,7 @@ A view is a React component that runs inside the host's sandboxed iframe. It rea
 
 Views are React apps built by Vite into a single self-contained HTML document. That single-file constraint is not a style preference: `resources/read` returns one string, and the host renders it in a sandboxed iframe with no same-origin server, so anything left as a separate file or CDN URL cannot be fetched. Inlining everything also means a view needs no CSP `resourceDomains` at all.
 
-A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory. Prefix a directory with `_` to hold shared code that is not a view.
+A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory, and `scripts/mcp-app-views.test.ts` catches a mismatch before a build does. Prefix a directory with `_` to hold shared code that is not a view.
 
 Two files that a view needs are **synthesized during the build and exist nowhere on disk**, served by `synthesizeMcpAppViews` in the repo-root `vite.config.base.ts` from ids inside the view's own directory:
 
