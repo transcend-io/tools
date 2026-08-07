@@ -2,10 +2,9 @@
  * Scaffolds a new MCP artifact: a tool, an MCP App, or a form-collecting tool.
  *
  * One command rather than three because the kinds differ only in what they write.
- * Resolving the package, spelling the generated names, and refusing to clobber an
- * existing file are shared, and so is the one thing left undone — registration,
- * which stays a person's decision because a tool's name and description are public
- * API on a published package.
+ * They also share the one thing left undone — registration, which stays a person's
+ * decision because a tool's name and description are public API on a published
+ * package.
  *
  * The kind is required and has no default. Only `app` touches a package manifest,
  * which is what keeps React out of a package that ships no view.
@@ -85,7 +84,7 @@ async function main(): Promise<void> {
   logger.log(`  1. Register it, by adding these two lines to ${pkg.dirName}/src/tools/index.ts:`);
   logger.log(`\n       import { ${result.factory} } from '${result.toolModule}';`);
   logger.log(`       ${result.factory}(),\n`);
-  result.steps.forEach((step, index) => logger.log(`  ${index + 2}. ${step}`));
+  logger.log(`  2. ${result.step}`);
   for (const note of result.notes) logger.log(`\n${note}`);
 }
 

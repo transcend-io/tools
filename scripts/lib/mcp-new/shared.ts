@@ -7,7 +7,7 @@
  */
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 
 import { logger } from '../../logger.ts';
 import {
@@ -17,8 +17,6 @@ import {
   UMBRELLA_PACKAGE,
   type McpPackage,
 } from '../mcp-app-dev.ts';
-
-export { repoRoot };
 
 /** Artifacts `pnpm mcp:new` knows how to scaffold. */
 export const ARTIFACT_KINDS = ['app', 'tool', 'elicitation'] as const;
@@ -49,14 +47,27 @@ export interface ArtifactNames {
   camelCase: string;
   /** Constant form, e.g. `USAGE_CHART` */
   constantCase: string;
-  /** Package's short name, e.g. `docs` */
+  /** Package's short name, as used in `ui://` uris and `pnpm mcp:inspect`, e.g. `docs` */
   shortName: string;
   /** Name on the wire, e.g. `docs_usage_chart` */
   toolName: string;
 }
 
+/**
+ * Packages whose tools are not prefixed with their directory's short name.
+ *
+ * The prefix is a package's own established spelling rather than anything
+ * derived, and these two disagree with their directory in opposite directions, so
+ * no rule fits both. Listed rather than scraped from each package's tool names,
+ * which nothing enforces.
+ */
+const TOOL_PREFIXES: Record<string, string> = {
+  'mcp-server-assessment': 'assessments',
+  'mcp-server-examples': 'example',
+};
+
 /** Turns a kebab-case name into its PascalCase form, e.g. `UsageChart`. */
-export function toPascalCase(name: string): string {
+function toPascalCase(name: string): string {
   return name
     .split(/[^a-zA-Z0-9]+/)
     .filter((part) => part !== '')
@@ -69,8 +80,7 @@ export function toPascalCase(name: string): string {
  *
  * Not cosmetic: the name becomes a directory name, a `*View.tsx` component name,
  * the last segment of a `ui://` uri, and a tool name on the wire. Only one
- * spelling satisfies all four, so the check is the same for every kind rather
- * than each kind guessing at a conversion.
+ * spelling satisfies all four.
  */
 export function validateArtifactName(name: string): void {
   if (!/^[a-z][a-z0-9-]*$/.test(name)) {
@@ -85,6 +95,7 @@ export function deriveNames(pkg: McpPackage, kebabCase: string): ArtifactNames {
   const pascalCase = toPascalCase(kebabCase);
   const snakeCase = kebabCase.replace(/-/g, '_');
   const shortName = pkg.dirName.replace(/^mcp-server-/, '');
+  const toolPrefix = (TOOL_PREFIXES[pkg.dirName] ?? shortName).replace(/-/g, '_');
 
   return {
     kebabCase,
@@ -93,8 +104,20 @@ export function deriveNames(pkg: McpPackage, kebabCase: string): ArtifactNames {
     camelCase: `${pascalCase[0]!.toLowerCase()}${pascalCase.slice(1)}`,
     constantCase: snakeCase.toUpperCase(),
     shortName,
-    toolName: `${shortName.replace(/-/g, '_')}_${snakeCase}`,
+    toolName: `${toolPrefix}_${snakeCase}`,
   };
+}
+
+/**
+ * Path from a package to the repo root, in the form a script or `extends` needs.
+ *
+ * Derived rather than written, because a package's depth is not fixed:
+ * `packages/mcp/*` is three levels up and `dev/*` is two, and a generated script
+ * that guesses resolves outside the repo. Posix separators, since both the
+ * manifest and tsconfig read the result as a path.
+ */
+export function pathToRepoRoot(packageDir: string): string {
+  return relative(packageDir, repoRoot).split(sep).join('/');
 }
 
 /**
@@ -155,8 +178,8 @@ export interface ScaffoldResult {
   factory: string;
   /** Module the factory lives in, as `src/tools/index.ts` would import it */
   toolModule: string;
-  /** Remaining steps, numbered after registration in the epilogue */
-  steps: string[];
+  /** What to do after registering, printed as the second step */
+  step: string;
   /** Closing lines that are not steps, such as what to run next */
   notes: string[];
   /**

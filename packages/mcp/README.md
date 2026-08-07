@@ -362,7 +362,9 @@ pnpm mcp:new elicitation consent   confirm-optout  # a tool that collects its ar
 
 Only `app` needs package-level wiring, which is why it is the only kind that edits a `package.json`: a tool that renders as text needs none of React, Vite, or Tailwind, and a command that added them anyway would put a browser toolchain into packages that ship no view.
 
-The name is kebab-case for every kind because it has to serve as a directory name, a `*View.tsx` component name, the last segment of a `ui://` uri, and a tool name on the wire; `usage-chart` in the `docs` package becomes the tool `docs_usage_chart`. The generated file is left **unregistered** in all three cases, and the command prints the import and array entry to paste into `src/tools/index.ts`.
+The name is kebab-case for every kind because it has to serve as a directory name, a `*View.tsx` component name, the last segment of a `ui://` uri, and a tool name on the wire; `usage-chart` in the `docs` package becomes the tool `docs_usage_chart`, or `docs_usage_chart_app` for the `app` kind. The suffix is what lets one name carry both: a tool and the view that renders its result are separate registrations, and `example_hello_app` is spelled the same way. The generated file is left **unregistered** in all three cases, and the command prints the import and array entry to paste into `src/tools/index.ts`.
+
+The prefix is the package's own, which is not always its directory's short name — `mcp-server-examples` ships `example_*` and `mcp-server-assessment` ships `assessments_*` — so the two exceptions are listed in `scripts/lib/mcp-new/shared.ts` rather than derived. The `ui://` uri and `pnpm mcp:inspect` still take the directory's short name, matching what those packages already serve.
 
 Two things the templates deliberately do rather than stub:
 

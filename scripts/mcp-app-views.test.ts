@@ -73,9 +73,8 @@ describe('MCP app view convention', () => {
   });
 
   test('an empty view directory is what a deleted view leaves behind, so it is skipped', () => {
-    // Not merely tolerated for its own sake: the generator discovers views before
-    // writing anything, so erroring here is what made re-scaffolding a deleted
-    // view fail on a directory git could not have removed.
+    // The generator discovers views before writing anything, so erroring here is
+    // what made re-scaffolding a deleted view fail on a leftover directory.
     const root = fakePackageWithViewFiles([]);
     try {
       expect(discoverMcpAppViews(root)).toEqual([]);
