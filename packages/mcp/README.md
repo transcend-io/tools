@@ -364,6 +364,13 @@ All servers share the same environment variables:
 | `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                                          | Comma-separated allowed CORS origins                                                                                                              |
 | `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                                  | Idle session timeout (ms)                                                                                                                         |
 
+Two more exist for local view development only, both set automatically by `pnpm mcp:inspect`:
+
+| Variable                            | Description                                                                                                                                                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_MCP_DEV_VIEWS`           | Read each view's built HTML from disk on every `resources/read` instead of using the copy inlined at build time, so a view rebuild needs no restart                                                               |
+| `TRANSCEND_MCP_ASSUME_CAPABILITIES` | Comma-separated capabilities to force on regardless of what the client declared. Never set in production: it claims a host can render a view when it may not, turning a graceful text fallback into a blank panel |
+
 **Monorepo:** store these in root **`secret.env`** (from [`secret.env.example`](../../secret.env.example)); load with `source` or [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh). See [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers).
 
 ## Building MCP App views
@@ -374,7 +381,7 @@ A view is a React component that runs inside the host's sandboxed iframe. It rea
 
 Views are React apps built by Vite into a single self-contained HTML document. That single-file constraint is not a style preference: `resources/read` returns one string, and the host renders it in a sandboxed iframe with no same-origin server, so anything left as a separate file or CDN URL cannot be fetched. Inlining everything also means a view needs no CSP `resourceDomains` at all.
 
-A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory. Prefix a directory with `_` to hold shared code that is not a view.
+A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory, and `scripts/mcp-app-views.test.ts` catches a mismatch before a build does. Prefix a directory with `_` to hold shared code that is not a view.
 
 Two files that a view needs are **synthesized during the build and exist nowhere on disk**, served by `synthesizeMcpAppViews` in the repo-root `vite.config.base.ts` from ids inside the view's own directory:
 
@@ -469,6 +476,53 @@ The namespaces available, all of which are host-aware:
 Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
 
 The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
+
+### Developing and debugging a view
+
+`pnpm mcp:inspect [pkg]` is the loop. It builds the target, starts a watcher that rebuilds a view on save, and opens the official MCP Inspector against it: a real `initialize` handshake, real `_meta.ui` binding, a real sandboxed iframe, and real `tools/call` traffic from inside the view. A simulated host is faster to iterate against but can only ever agree with itself, and the failures that matter here are the ones a real host produces.
+
+It defaults to the umbrella server when no package is given, so every app across every published package is listed. Passing a package (`inventory`, or the full name) narrows the build, which is noticeably faster. Credentials are not needed for view work, but the umbrella starts without them, so any tool that calls the Transcend API fails at call time — that is expected, not a bug.
+
+Add `--examples` to serve [`dev/mcp-server-examples`](../../dev/mcp-server-examples/README.md) instead. The umbrella does not aggregate it — a published package depending on a development-only one is exactly what keeping the reference views out of `packages/` prevents — so `--examples` is how you reach them, and it is the fastest way to check a host's render path against a view that needs no credentials.
+
+The command uses Inspector v2, which was chosen by measurement rather than recency. All three of its clients declare `extensions["io.modelcontextprotocol/ui"]`, and its CLI has a scriptable probe:
+
+```bash
+npx -y @modelcontextprotocol/inspector@2 --cli node dev/mcp-server-examples/dist/cli.mjs \
+  --method tools/list --app-info
+# {"hasApp":true,"toolName":"example_hello_app","resourceUri":"ui://transcend-examples/hello",...}
+```
+
+v2 is a floor rather than a preference. Earlier Inspector releases ship an Apps tab that reads `_meta["ui/resourceUri"]`, but their client declares `capabilities: {}`, so a spec-correct server withholds every view and the tab renders empty. Running one against this loop would mean overriding negotiation to compensate, which is the one thing the loop exists to check.
+
+A view's document is read once, when the app's sandbox iframe mounts, and never again while that app is alive — later tool calls arrive as `ui/notifications/tool-result` over the bridge. So after a rebuild the data a view renders updates but its markup does not, until you reopen the app or reload the tab. That is how a real host loads an app rather than an Inspector quirk, so reopening the app is the step that shows a markup edit.
+
+Two things must be true for that reopen to show new markup, and both are handled for you. The server has to read the view from disk rather than the copy inlined at build time, and it has to actually receive `TRANSCEND_MCP_DEV_VIEWS` — which exporting it cannot achieve, because the Inspector spawns a stdio server with an allowlisted environment (`HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM`, `USER`) plus only what its `-e KEY=VALUE` flag supplied. `pnpm mcp:inspect` passes the flag. The same allowlist drops API credentials, and we deliberately leave them out rather than exposing them in a command line every local process can read, so use `--http` when a tool needs to reach the Transcend API: there we spawn the server ourselves and it inherits the environment normally.
+
+One workaround runs before launch. v2's published tarball omits `clients/web/static/sandbox_proxy.html`, the document that hosts the app's iframe, so opening an app renders `Sandbox not loaded: ENOENT ...` inside the app frame — a missing file that looks like a broken view. `pnpm mcp:inspect` restores it from a vendored copy of upstream's file and logs a line when it does. It is a workaround for [inspector#1859](https://github.com/modelcontextprotocol/inspector/issues/1859), tracked by a `TODO` in [`scripts/lib/mcp-app-dev.ts`](../../scripts/lib/mcp-app-dev.ts) to delete once a release ships the file; an install that already has the document is left alone. Because the Inspector reads it once at startup, an instance that was already running when the file appeared keeps serving the error — restart it.
+
+#### When a view does not appear, check the capability gate first
+
+This is the failure that looks exactly like a broken view. A tool's `_meta.ui` is only attached when the client declared the MCP Apps extension:
+
+```typescript
+// mcp-server-base/src/capabilities/derive.ts
+function supportsMcpApps(capabilities: ClientCapabilities | undefined): boolean {
+  const settings = capabilities?.extensions?.[MCP_UI_EXTENSION_ID];
+  if (!settings) return false;
+  // ...then the view's MIME type must be one the host accepts
+}
+```
+
+That check is the same one `@modelcontextprotocol/ext-apps` makes server-side in `getUiCapability`, so the strictness is the spec's, not ours. A host that does not advertise gets no view and falls back to the text result, which is the intended degradation — but during development it is indistinguishable from a bug. Confirm what the host declared before looking anywhere else, and use `TRANSCEND_MCP_ASSUME_CAPABILITIES=MCP_APP` to force the issue for a host that ships app support without declaring it.
+
+#### Seeing the other branches of a tool
+
+To exercise a form, call `example_elicitation`. It ships no view, so v2 resolves it to the elicitation variant and renders the request under **Elicitation Request** — no override, no restart, and the same `mode: 'form'` path a production host takes.
+
+The other branches of a tool that _does_ have a view are not reachable here, and the override cannot get you there: it only ever adds a capability, never removes one, while the Inspector declares both the Apps extension and `elicitation/create`. Such a tool therefore always resolves to its view.
+
+That is a limit of the Inspector rather than a gap in coverage. Variant selection is exhaustively checked in [`define-tool-with-capabilities.test.ts`](mcp-server-base/tests/define-tool-with-capabilities.test.ts), which is both cheaper to consult and more precise than reading a rendered panel. It is also why `example_elicitation` deliberately ships no view: keeping one tool form-only is what makes the form flow reachable in this loop at all.
 
 ## Contributing
 

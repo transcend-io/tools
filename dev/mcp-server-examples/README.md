@@ -7,17 +7,11 @@ published.
 ## Running it
 
 ```bash
-pnpm --filter @transcend-io/mcp-server-examples build
-node dev/mcp-server-examples/dist/cli.mjs
+pnpm mcp:inspect --examples  # the official Inspector, over stdio
 ```
 
-The build turns each view into one self-contained document and inlines it; the
-second command then serves both examples below over stdio. Point any MCP host at
-it, including the official Inspector:
-
-```bash
-npx -y @modelcontextprotocol/inspector@2 node dev/mcp-server-examples/dist/cli.mjs
-```
+That builds the package first, then serves both examples below, rebuilding the
+`hello` view on save.
 
 ## Why it is not published
 
@@ -53,8 +47,8 @@ and re-rendering from the result the host pushes back.
 `src/tools/elicitation.ts` is form collection on its own, with no view. It has no
 MCP App variant on purpose: precedence is app, then elicitation, then baseline, so
 a tool offering both resolves to its view on every host worth testing against —
-including the Inspector. Form-only is what keeps the form reachable from a host
-that renders views, instead of only from one that cannot.
+including the Inspector. Form-only is what keeps the form reachable in the
+`pnpm mcp:inspect` loop at all.
 
 It covers two things `example_hello_app`'s single optional string does not. First,
 every field shape the spec allows: a length-bounded string, a titled single-select

@@ -160,7 +160,8 @@ function echoPayload(
  *
  * No MCP App variant on purpose. Precedence is app, then elicitation, so a tool
  * offering both resolves to its view on every host worth testing against. Staying
- * form-only is what keeps this flow reachable at all.
+ * form-only is what keeps this flow reachable in the `pnpm mcp:inspect` loop at
+ * all.
  */
 export function createExampleElicitationTool(_clients?: ToolClients) {
   return defineToolWithCapabilities({

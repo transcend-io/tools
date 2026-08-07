@@ -6,11 +6,11 @@ import { McpClientCapability } from './types.js';
  *
  * This exists for one specific reason. The MCP Apps spec has hosts advertise
  * support through `capabilities.extensions["io.modelcontextprotocol/ui"]`, and
- * this server correctly withholds a tool's view when that is absent. But the v1
- * MCP Inspector ships an Apps tab while declaring `capabilities: {}`, so against
- * a spec-correct server its Apps tab is always empty. Rather than weaken
- * negotiation for every host, `pnpm mcp:inspect` sets this variable so the
- * Inspector can see views.
+ * this server correctly withholds a tool's view when that is absent. A host that
+ * ships app support without declaring it therefore renders no view, and looks
+ * broken while being served exactly what it asked for. Rather than weaken
+ * negotiation for every host, this variable forces the capability on for the one
+ * session you are debugging.
  *
  * Never set this in production: it makes the server claim a host can render a
  * view when it may not, which shows up as a blank panel instead of a graceful
