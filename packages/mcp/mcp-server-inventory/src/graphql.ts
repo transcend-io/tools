@@ -3,6 +3,7 @@ import {
   type BusinessEntity,
   type DataCategory,
   type DataPoint,
+  type DataPointUpdateOrCreateInput,
   type DataPurpose,
   type DataSilo,
   type DataSiloCreateInput,
@@ -182,6 +183,17 @@ const UpdateDataSilosDoc = graphql(/* GraphQL */ `
         description
         isLive
         createdAt
+      }
+    }
+  }
+`);
+
+const UpdateOrCreateDataPointDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateOrCreateDataPoint($input: UpdateOrCreateDataPointInput!) {
+    updateOrCreateDataPoint(input: $input) {
+      dataPoint {
+        id
+        name
       }
     }
   }
@@ -666,6 +678,15 @@ export class InventoryMixin extends TranscendGraphQLBase {
       totalCount: nodes.length,
       pageInfo: { hasNextPage: false, hasPreviousPage: false },
     };
+  }
+
+  async updateOrCreateDataPoint(
+    input: DataPointUpdateOrCreateInput,
+  ): Promise<{ id: string; name: string }> {
+    const data = await this.makeRequest(UpdateOrCreateDataPointDoc, {
+      input: input as never,
+    });
+    return data.updateOrCreateDataPoint.dataPoint;
   }
 
   async listProcessingPurposes(options?: ListOptions): Promise<PaginatedResponse<DataPurpose>> {

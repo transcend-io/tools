@@ -107,6 +107,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `inventory_create_data_silo` — Create a data silo
 - `inventory_update_data_silo` — Update a data silo (owners, vendor, purposes, subjects, metadata)
 - `inventory_list_data_points` — List data points (optional `dataSiloId` filter)
+- `inventory_update_or_create_data_point` — Create/update a datapoint and field-level purpose assignments
 - `inventory_list_sub_data_points` — List sub-data points (includes purposes and categories)
 - `inventory_list_categories` — List data categories
 - `inventory_list_processing_purposes` — List processing purpose subcategories
