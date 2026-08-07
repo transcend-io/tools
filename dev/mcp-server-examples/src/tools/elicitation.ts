@@ -109,6 +109,23 @@ export const ExampleElicitationSchema = z.object({
 });
 export type ExampleElicitationInput = z.infer<typeof ExampleElicitationSchema>;
 
+/**
+ * The same fields, held to what the form actually insisted on.
+ *
+ * The schema above keeps everything optional because an agent may supply any
+ * subset, and whatever it omits is what the form collects. A host's answer is a
+ * different thing: accepting with a required field missing is not an answer, so
+ * it belongs in `malformed` rather than being echoed as though a user had filled
+ * the form in.
+ *
+ * The mask is checked against `REQUIRED_FIELDS` so the form and the schema that
+ * parses its answers cannot drift apart.
+ */
+const FormAnswerSchema = ExampleElicitationSchema.required({
+  label: true,
+  priority: true,
+} satisfies { [Field in (typeof REQUIRED_FIELDS)[number]]: true });
+
 /** Why a response holds the values it holds. */
 export type FormOutcome =
   /** The user filled the form in */
@@ -136,7 +153,7 @@ function echoPayload(
   outcome: FormOutcome,
   /** Values to echo, from the agent, the form, or both */
   fields: ExampleElicitationInput,
-  /** Field paths a host answered with the wrong type */
+  /** Field paths a host answered with the wrong type, or left out entirely */
   invalidFields?: string[],
 ): unknown {
   const label = fields.label?.trim();
@@ -200,8 +217,9 @@ export function createExampleElicitationTool(_clients?: ToolClients) {
 
           // Parsed rather than trusted: `requestedSchema` states what a host
           // should collect and nothing enforces that what comes back matches, so
-          // a wrong type here would otherwise surface as a puzzling echo.
-          const parsed = ExampleElicitationSchema.safeParse(answer.content ?? {});
+          // a wrong type or a missing required field would otherwise surface as a
+          // puzzling echo.
+          const parsed = FormAnswerSchema.safeParse(answer.content ?? {});
           if (!parsed.success) {
             return echoPayload(
               'malformed',

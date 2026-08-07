@@ -33,7 +33,7 @@
     "lint:fix:root": "oxlint --fix",
     "format:root": "oxfmt",
     "format:check:root": "oxfmt --check",
-    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\" --source \"packages/mcp/*/package.json\"",
+    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\" --source \"packages/mcp/*/package.json\" --source \"dev/*/package.json\"",
     "prepare": "husky"
   },
   "devDependencies": {
