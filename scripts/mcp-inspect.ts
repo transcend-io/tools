@@ -1,10 +1,10 @@
 /**
  * Opens the official MCP Inspector against a Transcend MCP server.
  *
- * This is the development loop for a view: a real host, a real `initialize`
- * handshake, real `_meta.ui` binding, and a real sandboxed iframe. Views are
- * rebuilt on save and read from disk per `resources/read`, so seeing an edit takes
- * a rebuild and reopening the app rather than a server restart.
+ * The development loop for a view: a real host, a real `initialize` handshake, real
+ * `_meta.ui` binding, and a real sandboxed iframe. Views are rebuilt on save and
+ * read from disk per `resources/read`, so seeing an edit takes reopening the app
+ * rather than a server restart.
  *
  * Usage:
  *   pnpm mcp:inspect               # umbrella server: every app, every published package
@@ -67,19 +67,16 @@ async function main(): Promise<void> {
   loadSecretEnv();
   installShutdownHandlers();
 
-  // Independent of each other, so overlap them: the sandbox check costs an `npx`
-  // resolution that the build's several seconds hides entirely.
+  // Overlapped because the sandbox check costs an `npx` resolution the build hides.
   await Promise.all([buildTarget(target), ensureInspectorSandboxProxy(INSPECTOR_V2_SPEC)]);
 
-  // Serving views from disk means a rebuild is picked up by reopening the app in
-  // the Inspector, with no server restart and no reconnect. Set here for the
-  // server we spawn under `--http`; a stdio server is handed it explicitly below,
-  // because the Inspector does not pass our environment on.
+  // Set here for the server we spawn under `--http`; a stdio server is handed it
+  // explicitly below, because the Inspector does not pass our environment on.
   process.env[DEV_VIEWS_ENV_VAR] = '1';
 
-  // Never set here: the Inspector declares the Apps extension itself, and forcing
-  // a capability on would mask a genuine failure to declare one. Reported when set
-  // by hand, since it changes which variant every tool resolves to.
+  // Never set here, since forcing a capability on would mask a genuine failure to
+  // declare one. Reported when set by hand, because it changes which variant every
+  // tool resolves to.
   const forcedCapabilities = process.env[ASSUME_CAPABILITIES_ENV_VAR];
   if (forcedCapabilities !== undefined) {
     logger.log(
@@ -102,8 +99,7 @@ async function main(): Promise<void> {
       `--port=${port}`,
     ]);
 
-    // The Inspector infers the transport from the target, and a /mcp path means
-    // Streamable HTTP.
+    // The Inspector infers the transport, and a /mcp path means Streamable HTTP.
     startProcess('inspector', 'npx', ['-y', INSPECTOR_V2_SPEC, url]);
     logger.log(`\nServer listening on ${url}. Open the Apps tab once the Inspector connects.\n`);
     return;
@@ -111,11 +107,9 @@ async function main(): Promise<void> {
 
   logger.log('\nLaunching the Inspector. Open the Apps tab once it connects.\n');
 
-  // No `--transport=stdio`: the Inspector parses trailing arguments as its own, so
-  // rely on the server defaulting to stdio instead of passing a flag it would eat.
-  //
-  // The `-e` pairs precede the command because the Inspector parses its own options
-  // first and treats the rest as the server to spawn.
+  // No `--transport=stdio`, because the Inspector would parse it as its own; the
+  // server defaults to stdio anyway. Same reason the `-e` pairs precede the command:
+  // the Inspector takes its own options first and the rest as the server to spawn.
   startProcess('inspector', 'npx', [
     '-y',
     INSPECTOR_V2_SPEC,

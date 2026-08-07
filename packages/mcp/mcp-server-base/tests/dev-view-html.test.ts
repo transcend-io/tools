@@ -14,14 +14,13 @@ const ON_DISK = '<!doctype html><html><body>from disk</body></html>';
 const VIEW = 'hello';
 
 /**
- * Stands in for a package that ships a view: a `package.json` at the root, the
- * built document where a view build would leave it, and a nested directory the
- * "module" pretends to run from so the package-root walk has something to climb.
+ * Stands in for a package that ships a view: a manifest at the root, the built
+ * document where a view build leaves it, and a nested directory the "module" runs
+ * from so the package-root walk has something to climb.
  */
 function createFakePackage(): { root: string; moduleUrl: string; builtPath: string } {
   const root = mkdtempSync(join(tmpdir(), 'mcp-dev-view-'));
-  // Where `viewHtml` derives the document's location from the view's name, which
-  // this has to agree with by hand — that agreement is what these tests check.
+  // Duplicated by hand from `viewHtml`'s own derivation; the agreement is the point.
   const builtPath = join('src', 'ui', 'generated', `${VIEW}.html`);
 
   writeFileSync(join(root, 'package.json'), JSON.stringify({ name: 'fake-pkg' }));

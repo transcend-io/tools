@@ -15,10 +15,9 @@ export const repoRoot = resolve(scriptsLibDir, '..', '..');
 /**
  * Directories searched for MCP servers, in the order they are listed.
  *
- * `dev` is included because the example server lives there rather than beside the
- * published packages: its views inline hundreds of kilobytes each, and a private
- * package cannot leak them into a tarball. Nothing else distinguishes it — it is
- * built, served, and inspected exactly like a published server.
+ * `dev` is here because the example server lives outside `packages/`: its views
+ * inline hundreds of kilobytes each, which a private package cannot leak into a
+ * tarball. It is otherwise built and served like any published server.
  */
 const PACKAGE_ROOTS = [join(repoRoot, 'packages', 'mcp'), join(repoRoot, 'dev')];
 
@@ -34,17 +33,15 @@ export const EXAMPLES_PACKAGE = '@transcend-io/mcp-server-examples';
 /**
  * The Inspector release `pnpm mcp:inspect` runs.
  *
- * v2 is the floor rather than a preference. All three of its clients (web, CLI,
- * TUI) declare `extensions["io.modelcontextprotocol/ui"]` in `initialize`, which
- * is what a spec-correct server requires before it will bind a view to a tool,
- * and its CLI has an `--app-info` probe that reports a tool's app metadata
- * directly. Earlier releases declare no capabilities at all, so every view is
- * withheld and the Apps tab renders empty. Pinned to the major so security fixes
- * land without a surprise rewrite.
+ * v2 is a floor rather than a preference: its clients declare
+ * `extensions["io.modelcontextprotocol/ui"]`, which a spec-correct server requires
+ * before binding a view to a tool, while earlier releases declare nothing at all
+ * and every view is withheld. Pinned to the major so security fixes land without a
+ * surprise rewrite.
  */
 export const INSPECTOR_V2_SPEC = '@modelcontextprotocol/inspector@2';
 
-/** Package the Inspector specs above resolve to. */
+/** Package the spec above resolves to. */
 const INSPECTOR_PACKAGE_NAME = '@modelcontextprotocol/inspector';
 
 /**
@@ -217,34 +214,26 @@ const INSPECTOR_FORWARDED_ENV_VARS = [DEV_VIEWS_ENV_VAR, ASSUME_CAPABILITIES_ENV
 /**
  * Node arguments every server we launch is given, before its own.
  *
- * We always run a server from `dist`, so an unhandled rejection in a tool would
- * otherwise report a line in a bundled chunk. MCP sourcemaps carry mappings
- * without embedded sources, which node resolves by reading the TypeScript beside
- * the build — true here, and the reason this belongs to the dev loop rather than
- * to the servers themselves. Only error formatting on stderr changes, so a stdio
- * session is unaffected.
+ * Servers run from `dist`, so a rejection would otherwise name a line in a bundled
+ * chunk. MCP sourcemaps omit embedded sources, which node resolves by reading the
+ * TypeScript beside the build — true here, and why this belongs to the dev loop
+ * rather than the servers. Only stderr formatting changes, so stdio is unaffected.
  */
 export const SERVER_NODE_ARGS = ['--enable-source-maps'] as const;
 
 /**
  * Builds the `-e KEY=VALUE` arguments a stdio Inspector launch needs.
  *
- * The Inspector does not give a stdio server our environment. Its proxy builds
- * the child's environment from a fixed allowlist — `HOME`, `LOGNAME`, `PATH`,
- * `SHELL`, `TERM`, `USER` on POSIX — and merges in only what `-e` supplied, so
- * exporting a variable in this process reaches the Inspector and stops there.
+ * The Inspector does not give a stdio server our environment: its proxy builds the
+ * child's from a fixed allowlist (`HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM`,
+ * `USER` on POSIX) plus whatever `-e` supplied, so exporting a variable here
+ * reaches the Inspector and stops. Losing {@link DEV_VIEWS_ENV_VAR} that way is
+ * quiet and misleading: the server keeps serving each view as it was inlined at
+ * build time while the watcher reports success on every save.
  *
- * That gap is worth a comment this long because its symptom accuses the wrong
- * thing. Without {@link DEV_VIEWS_ENV_VAR} the server serves each view as it was
- * inlined at package build time, so a rebuilt view keeps rendering its old markup
- * through app reopens, page reloads, reconnects, and Inspector restarts — while
- * the watcher reports success on every save. It reads as a stuck host or a broken
- * watcher rather than a dropped variable.
- *
- * Credentials are deliberately absent: arguments are readable by anyone on the
- * machine (`ps -o command`), which is no place for an API key. Use `--http` when
- * a tool needs to reach the Transcend API, since we spawn the server there and it
- * inherits the environment normally.
+ * Credentials are deliberately absent, since arguments are readable by anyone on
+ * the machine (`ps -o command`). Use `--http` when a tool needs the Transcend API,
+ * where we spawn the server ourselves and it inherits the environment.
  *
  * @param env - Environment to read, defaulting to this process's
  * @returns Inspector arguments, as `-e KEY=VALUE` pairs
@@ -301,9 +290,8 @@ function readManifest(packageDir: string): PackageManifest | undefined {
 /**
  * Finds a package's views, using the same discovery the build uses.
  *
- * Shared deliberately: this used to look for `src/ui/<name>/main.tsx` while each
- * package's Vite config named its entry separately, so the watchers and the build
- * could disagree about what a package's views even were.
+ * Shared deliberately: a second implementation here once disagreed with the Vite
+ * config about what a package's views even were.
  */
 function discoverViews(packageDir: string): DiscoveredView[] {
   return discoverMcpAppViews(packageDir).map((view) => ({
@@ -351,11 +339,10 @@ export interface TargetSelection {
 /**
  * Resolves a command-line invocation to the server to run.
  *
- * Omitting everything selects the umbrella server, so the default shows every app
- * across every published package. `--examples` selects the example server, which
- * the umbrella deliberately does not aggregate. A positional argument accepts the
- * short form (`docs`), the directory name (`mcp-server-docs`), or the full package
- * name.
+ * No argument selects the umbrella server, so the default shows every app across
+ * every published package. `--examples` selects the example server, which the
+ * umbrella does not aggregate. A positional accepts `docs`, `mcp-server-docs`, or
+ * the full package name.
  */
 export function resolveTarget(
   selection: string | undefined | TargetSelection,
@@ -411,15 +398,13 @@ export function resolveTarget(
 /**
  * Packages whose views should be watched while `target` is being served.
  *
- * The umbrella aggregates every published sub-package, so working against it means
- * every one of their views is reachable and all of them need a watcher. A single
- * package needs only its own.
+ * The umbrella aggregates every published sub-package, so all of their views are
+ * reachable and all need a watcher; a single package needs only its own.
  *
- * Development-only packages are excluded from umbrella scope because the umbrella
- * does not depend on them, so it owns neither their tools nor their `ui://`
- * resources. Watching them anyway would rebuild a view no running server can
- * serve, which reads as a broken rebuild rather than a server that was never
- * asked to serve it. Select them with `--examples` instead.
+ * Development-only packages are left out of umbrella scope because the umbrella
+ * does not depend on them, so it serves neither their tools nor their `ui://`
+ * resources. Watching them would rebuild a view nothing running can serve, which
+ * reads as a broken rebuild. Select them with `--examples`.
  */
 export function viewPackagesInScope(target: McpPackage, packages: McpPackage[]): McpPackage[] {
   const candidates =
@@ -430,9 +415,9 @@ export function viewPackagesInScope(target: McpPackage, packages: McpPackage[]):
 /**
  * Loads `secret.env` into `process.env` when present.
  *
- * Processes we spawn inherit the result, which covers the server under `--http`
- * and every view watcher. A stdio server spawned by the Inspector does not, for
- * the reason {@link inspectorEnvArgs} explains.
+ * Spawned processes inherit it, covering the `--http` server and every view
+ * watcher. A stdio server spawned by the Inspector does not, for the reason
+ * {@link inspectorEnvArgs} explains.
  */
 export function loadSecretEnv(): void {
   const secretEnv = join(repoRoot, 'secret.env');
@@ -474,8 +459,8 @@ export function startProcess(
 
   child.on('exit', (code, signal) => {
     if (shuttingDown) return;
-    // One process dying leaves the rest useless, so fail the whole command
-    // rather than leaving a half-running environment that looks healthy.
+    // One process dying leaves the rest useless, and a half-running environment
+    // looks healthy.
     logger.error(`\n[${label}] exited with ${signal ? `signal ${signal}` : `code ${code}`}.`);
     shutdown(code ?? 1);
   });

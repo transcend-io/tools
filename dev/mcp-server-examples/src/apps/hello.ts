@@ -18,8 +18,8 @@ export const HELLO_APP_RESOURCE: UiResourceDefinition = defineUiResource({
   name: 'Transcend MCP App hello world',
   description:
     'Minimal interactive view that confirms a host can fetch, sandbox, and render a ui:// resource.',
-  // Reads from disk instead when TRANSCEND_MCP_DEV_VIEWS is set, so `pnpm mcp:inspect`
-  // picks up a view rebuild without restarting the server.
+  // Reads from disk instead when TRANSCEND_MCP_DEV_VIEWS is set, so a rebuild needs
+  // no restart.
   html: viewHtml({
     bundled: HELLO_APP_HTML,
     moduleUrl: import.meta.url,
