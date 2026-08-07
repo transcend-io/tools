@@ -1,20 +1,76 @@
 import {
   TranscendGraphQLBase,
+  type BusinessEntity,
   type DataCategory,
   type DataPoint,
+  type DataPurpose,
   type DataSilo,
   type DataSiloCreateInput,
   type DataSiloDetails,
   type DataSiloType,
   type DataSiloUpdateInput,
+  type DataSubject,
   type Identifier,
   type ListOptions,
   type PaginatedResponse,
   type SubDataPoint,
   type Vendor,
 } from '@transcend-io/mcp-server-base';
+import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
+
+/**
+ * Normalize empty / whitespace subcategory names to
+ * {@link DefaultPurposeSubCategoryType.Other} so read keys match write-tool defaults.
+ */
+function normalizeSubCategoryName(name: string | null | undefined): string {
+  return name && name.trim() ? name : DefaultPurposeSubCategoryType.Other;
+}
+
+function mapDataPurpose(node: {
+  id: string;
+  name: string;
+  purpose: string;
+  description?: string | null;
+}): DataPurpose {
+  return {
+    id: node.id,
+    name: normalizeSubCategoryName(node.name),
+    purpose: node.purpose,
+    description: node.description ?? undefined,
+  };
+}
+
+function mapDataCategory(node: {
+  id?: string | null;
+  name: string | null;
+  category: string;
+  description?: string | null;
+}): DataCategory {
+  return {
+    id: node.id ?? '',
+    name: normalizeSubCategoryName(node.name),
+    category: node.category,
+    description: node.description ?? undefined,
+  };
+}
+
+function mapDataSubject(node: {
+  id: string;
+  type: string;
+  active?: boolean | null;
+  title?: { defaultMessage: string } | string | null;
+}): DataSubject {
+  const title =
+    typeof node.title === 'string' ? node.title : (node.title?.defaultMessage ?? undefined);
+  return {
+    id: node.id,
+    type: node.type,
+    title,
+    active: node.active ?? undefined,
+  };
+}
 
 // The single-fetch operations (get/create/update) use the typed `graphql()`
 // tag so drift fails at compile time. The `list*` methods below intentionally
@@ -33,6 +89,55 @@ const GetDataSiloDoc = graphql(/* GraphQL */ `
       outerType
       createdAt
       connectionState
+      notes
+      contactName
+      contactEmail
+      websiteUrl
+      country
+      countrySubDivision
+      vendor {
+        id
+        title
+        description
+        contactName
+        contactEmail
+        websiteUrl
+        dataProcessingAgreementLink
+      }
+      processingPurposeSubCategories {
+        id
+        name
+        purpose
+        description
+      }
+      owners {
+        id
+        email
+        name
+      }
+      teams {
+        id
+        name
+      }
+      businessEntities {
+        id
+        title
+        description
+      }
+      subjects {
+        id
+        type
+        title {
+          defaultMessage
+        }
+      }
+      subjectBlocklist {
+        id
+        type
+        title {
+          defaultMessage
+        }
+      }
       identifiers {
         id
         name
@@ -96,6 +201,38 @@ function mapDataSilo<
   };
 }
 
+function mapVendorPreview<
+  T extends {
+    id: string;
+    title: string;
+    description?: string | null;
+    dataProcessingAgreementLink?: string | null;
+    contactName?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    websiteUrl?: string | null;
+    address?: string | null;
+    headquarterCountry?: string | null;
+    headquarterSubDivision?: string | null;
+    createdAt?: string | null;
+  },
+>(node: T): Vendor {
+  return {
+    id: node.id,
+    title: node.title,
+    description: node.description ?? undefined,
+    dataProcessingAgreementLink: node.dataProcessingAgreementLink ?? undefined,
+    contactName: node.contactName ?? undefined,
+    contactEmail: node.contactEmail ?? undefined,
+    contactPhone: node.contactPhone ?? undefined,
+    websiteUrl: node.websiteUrl ?? undefined,
+    address: node.address ?? undefined,
+    headquarterCountry: node.headquarterCountry ?? undefined,
+    headquarterSubDivision: node.headquarterSubDivision ?? undefined,
+    createdAt: node.createdAt ?? new Date().toISOString(),
+  };
+}
+
 export class InventoryMixin extends TranscendGraphQLBase {
   async listDataSilos(options?: ListOptions): Promise<PaginatedResponse<DataSilo>> {
     const query = `
@@ -128,6 +265,40 @@ export class InventoryMixin extends TranscendGraphQLBase {
       isLive: silo.isLive,
       outerType: silo.outerType ?? undefined,
       createdAt: silo.createdAt,
+      notes: silo.notes ?? undefined,
+      contactName: silo.contactName ?? undefined,
+      contactEmail: silo.contactEmail ?? undefined,
+      websiteUrl: silo.websiteUrl ?? undefined,
+      country: silo.country ?? undefined,
+      countrySubDivision: silo.countrySubDivision ?? undefined,
+      vendor: silo.vendor
+        ? {
+            id: silo.vendor.id,
+            title: silo.vendor.title,
+            description: silo.vendor.description ?? undefined,
+            contactName: silo.vendor.contactName ?? undefined,
+            contactEmail: silo.vendor.contactEmail ?? undefined,
+            websiteUrl: silo.vendor.websiteUrl ?? undefined,
+            dataProcessingAgreementLink: silo.vendor.dataProcessingAgreementLink ?? undefined,
+          }
+        : undefined,
+      processingPurposeSubCategories: silo.processingPurposeSubCategories?.map(mapDataPurpose),
+      owners: silo.owners?.map((owner) => ({
+        id: owner.id,
+        email: owner.email,
+        name: owner.name ?? undefined,
+      })),
+      teams: silo.teams?.map((team) => ({
+        id: team.id,
+        name: team.name,
+      })),
+      businessEntities: silo.businessEntities?.map((entity) => ({
+        id: entity.id,
+        title: entity.title,
+        description: entity.description ?? undefined,
+      })),
+      subjects: silo.subjects?.map(mapDataSubject),
+      subjectBlocklist: silo.subjectBlocklist?.map(mapDataSubject),
       identifiers: silo.identifiers?.map((idf) => ({
         id: idf.id,
         name: idf.name,
@@ -160,24 +331,51 @@ export class InventoryMixin extends TranscendGraphQLBase {
           nodes {
             id
             title
+            description
+            dataProcessingAgreementLink
+            contactName
+            contactEmail
+            contactPhone
+            websiteUrl
+            address
+            headquarterCountry
+            headquarterSubDivision
+            createdAt
           }
           totalCount
         }
       }
     `;
-    return this.listConnection<Vendor>(query, 'vendors', options);
+    type RawVendor = {
+      id: string;
+      title: string;
+      description: string | null;
+      dataProcessingAgreementLink: string | null;
+      contactName: string | null;
+      contactEmail: string | null;
+      contactPhone: string | null;
+      websiteUrl: string | null;
+      address: string | null;
+      headquarterCountry: string | null;
+      headquarterSubDivision: string | null;
+      createdAt: string;
+    };
+    return this.listConnection<RawVendor, Vendor>(query, 'vendors', options, {
+      mapNode: mapVendorPreview,
+    });
   }
 
   async listDataPoints(
-    _dataSiloId?: string,
+    dataSiloId?: string,
     options?: ListOptions,
   ): Promise<PaginatedResponse<DataPoint>> {
     const query = `
-      query ListDataPoints($first: Int, $offset: Int) {
-        dataPoints(first: $first, offset: $offset) {
+      query ListDataPoints($first: Int, $offset: Int, $filterBy: DataPointFiltersInput) {
+        dataPoints(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
             id
             name
+            dataSiloId
             title {
               defaultMessage
             }
@@ -192,18 +390,21 @@ export class InventoryMixin extends TranscendGraphQLBase {
     type RawDataPoint = {
       id: string;
       name: string;
+      dataSiloId: string;
       title: { defaultMessage: string };
       description: { defaultMessage: string } | null;
     };
     const toDataPoint = (dp: RawDataPoint): DataPoint => ({
       id: dp.id,
       name: dp.name,
+      dataSiloId: dp.dataSiloId,
       title: dp.title?.defaultMessage,
       description: dp.description?.defaultMessage,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
     return this.listConnection<RawDataPoint, DataPoint>(query, 'dataPoints', options, {
+      variables: dataSiloId ? { filterBy: { dataSilos: [dataSiloId] } } : {},
       mapNode: toDataPoint,
     });
   }
@@ -220,14 +421,105 @@ export class InventoryMixin extends TranscendGraphQLBase {
             name
             description
             accessRequestVisibilityEnabled
+            categories {
+              id
+              name
+              category
+            }
+            purposes {
+              id
+              name
+              purpose
+              description
+            }
           }
           totalCount
         }
       }
     `;
-    return this.listConnection<SubDataPoint>(query, 'subDataPoints', options, {
+    type RawSubDataPoint = {
+      id: string;
+      name: string;
+      description: string | null;
+      accessRequestVisibilityEnabled: boolean;
+      categories: { id: string; name: string | null; category: string }[];
+      purposes: {
+        id: string;
+        name: string;
+        purpose: string;
+        description: string;
+      }[];
+    };
+    return this.listConnection<RawSubDataPoint, SubDataPoint>(query, 'subDataPoints', options, {
       variables: { filterBy: { dataPoints: [dataPointId] } },
+      mapNode: (node): SubDataPoint => ({
+        id: node.id,
+        name: node.name,
+        description: node.description ?? undefined,
+        accessRequestVisibilityEnabled: node.accessRequestVisibilityEnabled,
+        categories: node.categories.map(mapDataCategory),
+        purposes: node.purposes.map(mapDataPurpose),
+      }),
     });
+  }
+
+  async listBusinessEntities(options?: ListOptions): Promise<PaginatedResponse<BusinessEntity>> {
+    const query = `
+      query ListBusinessEntities($first: Int, $offset: Int) {
+        businessEntities(first: $first, offset: $offset) {
+          nodes {
+            id
+            title
+            description
+          }
+          totalCount
+        }
+      }
+    `;
+    type RawEntity = {
+      id: string;
+      title: string;
+      description: string | null;
+    };
+    return this.listConnection<RawEntity, BusinessEntity>(query, 'businessEntities', options, {
+      mapNode: (node): BusinessEntity => ({
+        id: node.id,
+        title: node.title,
+        description: node.description ?? undefined,
+      }),
+    });
+  }
+
+  /**
+   * List org data subject types. Not offset-paginated at the GraphQL layer —
+   * returns the full `internalSubjects` set in one request.
+   */
+  async listDataSubjects(): Promise<PaginatedResponse<DataSubject>> {
+    const query = `
+      query ListDataSubjects {
+        internalSubjects {
+          id
+          type
+          active
+          title {
+            defaultMessage
+          }
+        }
+      }
+    `;
+    type RawSubject = {
+      id: string;
+      type: string;
+      active: boolean;
+      title: { defaultMessage: string } | null;
+    };
+    const data = await this.makeRequest<{ internalSubjects: RawSubject[] }>(query);
+    const nodes = data.internalSubjects.map(mapDataSubject);
+    return {
+      nodes,
+      totalCount: nodes.length,
+      pageInfo: { hasNextPage: false, hasPreviousPage: false },
+    };
   }
 
   async listIdentifiers(options?: ListOptions): Promise<PaginatedResponse<Identifier>> {

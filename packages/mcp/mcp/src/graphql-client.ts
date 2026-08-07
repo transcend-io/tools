@@ -54,6 +54,8 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listSubDataPoints: InstanceType<typeof InventoryMixin>['listSubDataPoints'];
   declare listIdentifiers: InstanceType<typeof InventoryMixin>['listIdentifiers'];
   declare listDataCategories: InstanceType<typeof InventoryMixin>['listDataCategories'];
+  declare listBusinessEntities: InstanceType<typeof InventoryMixin>['listBusinessEntities'];
+  declare listDataSubjects: InstanceType<typeof InventoryMixin>['listDataSubjects'];
 
   // Consent tools now call makeRequest directly (no mixin needed)
 

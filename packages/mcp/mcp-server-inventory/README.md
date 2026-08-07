@@ -103,14 +103,16 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 ## Tools
 
 - `inventory_list_data_silos` — List data silos (integrations)
-- `inventory_get_data_silo` — Get data silo details
+- `inventory_get_data_silo` — Get data silo details (vendor, purposes, owners, subjects, metadata)
 - `inventory_create_data_silo` — Create a data silo
 - `inventory_update_data_silo` — Update a data silo
-- `inventory_list_data_points` — List data points
-- `inventory_list_sub_data_points` — List sub-data points
+- `inventory_list_data_points` — List data points (optional `dataSiloId` filter)
+- `inventory_list_sub_data_points` — List sub-data points (includes purposes and categories)
 - `inventory_list_categories` — List data categories
 - `inventory_list_identifiers` — List identifiers
-- `inventory_list_vendors` — List vendors
+- `inventory_list_vendors` — List vendors (contact / DPA / website fields)
+- `inventory_list_business_entities` — List business entities
+- `inventory_list_data_subjects` — List data subject types
 - `inventory_analyze` — Analyze inventory data
 
 ## Related packages

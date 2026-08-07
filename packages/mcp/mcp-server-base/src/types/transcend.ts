@@ -354,13 +354,88 @@ export interface DataSilo {
   updatedAt?: string;
 }
 
+/** Lightweight owner preview on inventory resources */
+export interface InventoryUserPreview {
+  /** User ID */
+  id: string;
+  /** Email address */
+  email: string;
+  /** Display name */
+  name?: string;
+}
+
+/** Lightweight team preview on inventory resources */
+export interface InventoryTeamPreview {
+  /** Team ID */
+  id: string;
+  /** Team name */
+  name: string;
+}
+
+/** Business entity row for inventory list / silo association */
+export interface BusinessEntity {
+  /** Unique identifier */
+  id: string;
+  /** Display title (use with inventory_update_data_silo `businessEntityTitles`) */
+  title: string;
+  /** Description */
+  description?: string;
+}
+
+/** Data subject row for inventory list / silo blocklist resolution */
+export interface DataSubject {
+  /** Unique identifier (use with inventory_update_data_silo `dataSubjectBlockListIds`) */
+  id: string;
+  /** Machine type key (e.g. CUSTOMER, EMPLOYEE) */
+  type: string;
+  /** Display title */
+  title?: string;
+  /** Whether the subject type is active */
+  active?: boolean;
+}
+
 export interface DataSiloDetails extends DataSilo {
+  /** Free-form notes */
+  notes?: string;
+  /** Primary contact name */
+  contactName?: string;
+  /** Primary contact email */
+  contactEmail?: string;
+  /** Website URL */
+  websiteUrl?: string;
+  /** ISO country code */
+  country?: string;
+  /** ISO country subdivision */
+  countrySubDivision?: string;
+  /** Linked vendor from the Vendors table */
+  vendor?: Pick<
+    Vendor,
+    | 'id'
+    | 'title'
+    | 'description'
+    | 'contactName'
+    | 'contactEmail'
+    | 'websiteUrl'
+    | 'dataProcessingAgreementLink'
+  >;
+  /** Silo-level purpose of processing assignments */
+  processingPurposeSubCategories?: DataPurpose[];
+  /** Owner users */
+  owners?: InventoryUserPreview[];
+  /** Owner teams */
+  teams?: InventoryTeamPreview[];
+  /** Linked business entities */
+  businessEntities?: BusinessEntity[];
+  /** Associated / allowlisted data subjects */
+  subjects?: DataSubject[];
+  /** Blocked data subjects (maps from GraphQL `subjectBlocklist`) */
+  subjectBlocklist?: DataSubject[];
+  /** Nested datapoints (optional; prefer inventory_list_data_points with dataSiloId) */
   dataPoints?: DataPoint[];
-  subjectBlocklist?: string[];
+  /** Connected identifiers */
   identifiers?: Identifier[];
+  /** Dependent data silos */
   dependentDataSilos?: DataSilo[];
-  owners?: User[];
-  teams?: Team[];
 }
 
 export interface DataSiloCreateInput {
@@ -382,39 +457,66 @@ export interface DataSiloUpdateInput {
 }
 
 export interface DataPoint {
+  /** Unique identifier */
   id: string;
+  /** Datapoint key / name */
   name: string;
+  /** Parent data silo ID when returned from list/filter queries */
+  dataSiloId?: string;
+  /** Display title */
   title?: string;
+  /** Description */
   description?: string;
+  /** Nested path segments */
   path?: string[];
+  /** Parent data collection */
   dataCollection?: DataCollection;
+  /** Field-level sub-data points */
   subDataPoints?: SubDataPoint[];
+  /** Assigned data categories */
   categories?: DataCategory[];
+  /** Created timestamp (ISO 8601) */
   createdAt: string;
+  /** Updated timestamp (ISO 8601) */
   updatedAt?: string;
 }
 
 export interface SubDataPoint {
+  /** Unique identifier */
   id: string;
+  /** Field name */
   name: string;
+  /** Field description */
   description?: string;
+  /** Assigned data categories */
   categories?: DataCategory[];
+  /** Purpose of processing assignments */
   purposes?: DataPurpose[];
-  accessRequestVisibility?: string;
+  /** Whether the field is visible in access requests */
+  accessRequestVisibilityEnabled?: boolean;
 }
 
 export interface DataCategory {
+  /** Unique identifier (may be empty for category catalog rows without an id) */
   id: string;
+  /** Subcategory display name */
   name: string;
+  /** Top-level data category type */
   category: string;
+  /** Description */
   description?: string;
+  /** Optional classification regex */
   regex?: string;
 }
 
 export interface DataPurpose {
+  /** Unique identifier */
   id: string;
+  /** Subcategory display name (e.g. "Other", "Login") */
   name: string;
+  /** Processing purpose enum value (e.g. "ESSENTIAL", "ANALYTICS") */
   purpose: string;
+  /** Description */
   description?: string;
 }
 
@@ -444,18 +546,35 @@ export interface Identifier {
 }
 
 export interface Vendor {
+  /** Unique identifier */
   id: string;
+  /** Display title */
   title: string;
+  /** Description */
   description?: string;
+  /** DPA link */
   dataProcessingAgreementLink?: string;
+  /** Privacy policy link */
   privacyPolicyLink?: string;
+  /** Primary contact name */
   contactName?: string;
+  /** Primary contact email */
   contactEmail?: string;
+  /** Primary contact phone */
+  contactPhone?: string;
+  /** Website URL */
   websiteUrl?: string;
+  /** Physical address */
+  address?: string;
+  /** Headquarters ISO country code */
   headquarterCountry?: string;
+  /** Headquarters country subdivision */
   headquarterSubDivision?: string;
+  /** Associated data silos */
   dataSilos?: DataSilo[];
+  /** Created timestamp (ISO 8601) */
   createdAt: string;
+  /** Updated timestamp (ISO 8601) */
   updatedAt?: string;
 }
 
