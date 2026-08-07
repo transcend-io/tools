@@ -3,13 +3,23 @@ import css from '@terrazzo/plugin-css';
 
 import tsCodegen from './plugins/ts-codegen.ts';
 
-/** For `--foo-default: …`, also emit `--foo: var(--foo-default)`. */
-function withDefaultAliases(contents: string): string {
-  return contents.replace(
-    /(^|\n)([ \t]*)(--([a-z0-9-]+)-default)(\s*:\s*[^;]+;)/g,
-    (_match, lead: string, indent: string, full: string, short: string, rest: string) =>
-      `${lead}${indent}${full}${rest}\n${indent}--${short}: var(${full});`,
-  );
+/**
+ * For rest-state suffixes, also emit a shorter alias:
+ * - `--foo-default: …` → `--foo: var(--foo-default)` (named default leaves)
+ * - `--foo-$root: …` → `--foo: var(--foo-$root)` (DTCG `$root` tokens)
+ */
+function withRestStateAliases(contents: string): string {
+  return contents
+    .replace(
+      /(^|\n)([ \t]*)(--([a-z0-9-]+)-default)(\s*:\s*[^;]+;)/g,
+      (_match, lead: string, indent: string, full: string, short: string, rest: string) =>
+        `${lead}${indent}${full}${rest}\n${indent}--${short}: var(${full});`,
+    )
+    .replace(
+      /(^|\n)([ \t]*)(--([a-z0-9-]+)-\$root)(\s*:\s*[^;]+;)/g,
+      (_match, lead: string, indent: string, full: string, short: string, rest: string) =>
+        `${lead}${indent}${full}${rest}\n${indent}--${short}: var(${full});`,
+    );
 }
 
 export default defineConfig({
@@ -26,7 +36,7 @@ export default defineConfig({
           // Dark mode omitted until color-dark.tokens.json has real overrides.
           input: { theme: 'light' },
           prepare: (contents) =>
-            `:root {\n  color-scheme: light;\n  ${withDefaultAliases(contents)}\n}`,
+            `:root {\n  color-scheme: light;\n  ${withRestStateAliases(contents)}\n}`,
         },
       ],
     }),

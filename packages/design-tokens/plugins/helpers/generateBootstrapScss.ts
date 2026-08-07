@@ -14,12 +14,13 @@ interface ResolvedToken {
  * Bootstrap compiles a single set of Sass variables.
  */
 const BOOTSTRAP_VARIABLE_MAP: Record<string, string> = {
-  primary: 'background.brand.bold.default',
-  secondary: 'background.neutral.default',
+  // Terrazzo flattens DTCG `$root` onto the parent ID.
+  primary: 'background.brand.bold',
+  secondary: 'background.neutral',
   dark: 'text.subtle',
-  danger: 'background.danger.bold.default',
-  success: 'background.success.bold.default',
-  warning: 'background.warning.bold.default',
+  danger: 'background.danger.bold',
+  success: 'background.success.bold',
+  warning: 'background.warning.bold',
 };
 
 /**
