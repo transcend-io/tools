@@ -7,6 +7,7 @@
     "tsconfig.base.json",
     "tsconfig.ui.base.json",
     "tsdown.config.base.ts",
+    "tsdown.config.mcp.ts",
     "vite.config.base.ts",
     "vitest.config.ts",
     "types/**",
