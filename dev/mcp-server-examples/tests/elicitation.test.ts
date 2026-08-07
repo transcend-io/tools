@@ -116,6 +116,15 @@ describe('example_elicitation', () => {
     expect(result.data.invalidFields).toEqual(expect.arrayContaining(['priority', 'repeat']));
   });
 
+  it('reports a host that accepts without the fields the form required', async () => {
+    // An empty acceptance is not an answer. Echoing it would be indistinguishable
+    // from a filled-in form, which is the distinction this tool exists to keep.
+    const { result } = await callAs(ELICITATION, {}, { action: 'accept', content: {} });
+
+    expect(result.data.outcome).toBe('malformed');
+    expect(result.data.invalidFields).toEqual(expect.arrayContaining(['label', 'priority']));
+  });
+
   it('echoes the agent arguments on a host that cannot be asked at all', async () => {
     const { result, elicitInput } = await callAs([], { label: 'ping', repeat: 2 });
 

@@ -14,4 +14,4 @@
 
 Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
 
-A server that inlines a prebuilt MCP App view otherwise ships that document twice, once in the chunk and again in the map's `sourcesContent`. Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk.
+Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.

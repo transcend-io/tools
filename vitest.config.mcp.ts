@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 import { mergeConfig, type Plugin, type ViteUserConfig } from 'vitest/config';
 
@@ -20,6 +20,14 @@ function mcpAppViewLoader(): Plugin {
     name: 'transcend:mcp-app-view-loader',
     load(id) {
       if (!id.endsWith('.html')) return undefined;
+
+      // The document is a gitignored build output, so a clean clone reaches here
+      // before anything has produced it. Naming the command beats the bare ENOENT
+      // that reading it would throw.
+      if (!existsSync(id)) {
+        throw new Error(`${id} has not been built. Run \`pnpm build:ui\` in the package first.`);
+      }
+
       return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`;
     },
   };
