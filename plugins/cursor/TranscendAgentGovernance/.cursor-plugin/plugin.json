@@ -1,7 +1,7 @@
 {
   "name": "transcend-agent-governance",
   "displayName": "Transcend Agent Governance",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Connect Cursor to Transcend Agent Governance for policy-enforced MCP tool access.",
   "author": {
     "name": "Transcend",
@@ -9,5 +9,26 @@
   },
   "license": "Apache-2.0",
   "keywords": ["transcend", "agent-governance", "mcp", "cursor", "governance", "policy"],
-  "logo": "assets/logo.svg"
+  "logo": "assets/logo.svg",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "GATEWAY_BASE_URL": {
+        "type": "string",
+        "title": "Gateway base URL",
+        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Copy it from the Connect Cursor panel in the Agent Governance dashboard. Do not append /mcp/... — the plugin adds that."
+      },
+      "TENANT_ID": {
+        "type": "string",
+        "title": "Tenant ID",
+        "description": "Your Agent Governance tenant (organization) identifier. Shown in the Connect Cursor panel next to the gateway URL."
+      },
+      "CREDENTIAL": {
+        "type": "string",
+        "title": "Credential",
+        "description": "Bound API key for the connected agent (preferred), or a machine access token. Create it in the Agent Governance dashboard under the agent's Connect Cursor / credentials flow — the secret is shown once. Prefer an API key: machine JWTs expire in about one hour and do not refresh."
+      }
+    },
+    "required": ["GATEWAY_BASE_URL", "TENANT_ID", "CREDENTIAL"]
+  }
 }
