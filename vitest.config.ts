@@ -23,11 +23,9 @@ export default defineConfig({
   },
   plugins: [
     {
-      // Mirrors the `loader` entries in tsdown.config.base.ts so tests resolve
-      // these imports the same way the published bundles do.
-      name: 'text-asset-loader',
+      name: 'svg-text-loader',
       load(id) {
-        if (id.endsWith('.svg') || id.endsWith('.html')) {
+        if (id.endsWith('.svg')) {
           return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`;
         }
       },

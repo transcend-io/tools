@@ -21,7 +21,7 @@
     "prebuild": "node ../../scripts/build-mcp-views.ts",
     "build": "tsdown",
     "build:ui": "node ../../scripts/build-mcp-views.ts",
-    "test": "vitest run",
+    "test": "vitest run --config ../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit"
   },
