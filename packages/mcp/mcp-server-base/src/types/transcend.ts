@@ -545,6 +545,79 @@ export interface Identifier {
   prompt?: string;
 }
 
+export interface VendorCreateInput {
+  /** Vendor display title */
+  title: string;
+  /** Description (required by GraphQL; empty string allowed) */
+  description: string;
+  /** DPA link */
+  dataProcessingAgreementLink?: string;
+  /** Primary contact name */
+  contactName?: string;
+  /** Primary contact email */
+  contactEmail?: string;
+  /** Primary contact phone */
+  contactPhone?: string;
+  /** Website URL */
+  websiteUrl?: string;
+  /** Physical address */
+  address?: string;
+  /** Headquarters ISO country code */
+  headquarterCountry?: string;
+  /** Headquarters country subdivision */
+  headquarterSubDivision?: string;
+}
+
+export interface VendorUpdateInput {
+  /** Vendor ID */
+  id: string;
+  /** Vendor display title */
+  title?: string;
+  /** Description */
+  description?: string;
+  /** DPA link */
+  dataProcessingAgreementLink?: string;
+  /** Primary contact name */
+  contactName?: string;
+  /** Primary contact email */
+  contactEmail?: string;
+  /** Primary contact phone */
+  contactPhone?: string;
+  /** Website URL */
+  websiteUrl?: string;
+  /** Physical address */
+  address?: string;
+  /** Headquarters ISO country code */
+  headquarterCountry?: string;
+  /** Headquarters country subdivision */
+  headquarterSubDivision?: string;
+}
+
+export interface VendorWriteInput {
+  /** Existing vendor ID (update path when set) */
+  id?: string;
+  /** Vendor display title (upsert key when id is omitted; required to create) */
+  title?: string;
+  /** Description */
+  description?: string;
+  /** DPA link */
+  dataProcessingAgreementLink?: string;
+  /** Primary contact name */
+  contactName?: string;
+  /** Primary contact email */
+  contactEmail?: string;
+  /** Primary contact phone */
+  contactPhone?: string;
+  /** Website URL */
+  websiteUrl?: string;
+  /** Physical address */
+  address?: string;
+  /** Headquarters ISO country code */
+  headquarterCountry?: string;
+  /** Headquarters country subdivision */
+  headquarterSubDivision?: string;
+}
+
 export interface Vendor {
   /** Unique identifier */
   id: string;
