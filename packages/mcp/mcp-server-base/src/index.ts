@@ -5,10 +5,12 @@ export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
 export {
   MCP_CALLER_HEADER,
+  MCP_CLIENT_NAME_HEADER,
   extractMcpCallerFromHeaders,
   getRequestMcpCaller,
   requestMcpCallerContext,
   resolveMcpCallerAttribution,
+  resolveMcpClientName,
 } from './mcp-caller-context.js';
 
 export {
