@@ -8,11 +8,11 @@ import {
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
-/** Prompt shown above the form, which is where a user learns why they are being asked. */
+/** Prompt shown above the form. */
 const FORM_MESSAGE =
   'These values are only echoed back into the conversation. Nothing is stored and no API is called.';
 
-/** Options the two select fields offer, with the titles a host displays for them. */
+/** Options the two select fields offer, with the titles a host displays. */
 const PRIORITIES = ['low', 'normal', 'high'] as const;
 const PRIORITY_TITLES: Record<(typeof PRIORITIES)[number], string> = {
   low: 'Low',
@@ -26,22 +26,16 @@ const TAG_TITLES: Record<(typeof TAGS)[number], string> = {
   gamma: 'Gamma',
 };
 
-/** Fields the form insists on, and therefore the only ones worth interrupting for. */
+/** Fields the form insists on, and the only ones worth interrupting for. */
 const REQUIRED_FIELDS = ['label', 'priority'] as const;
 
 /**
  * Every field shape `elicitation/create` allows, in one form.
  *
- * The spec restricts this to a flat object of primitives, which is narrower than
- * it sounds in two directions worth knowing. A select gets its display titles
- * from `oneOf` entries; the `enum` plus `enumNames` pair still validates but is
- * deprecated in the SDK, so copying it forward would spread a dead shape. And a
- * multi-select is the one legal `array` — of titled `anyOf` items — even though
- * arrays are otherwise rejected. `format` on a string is limited to `date`,
- * `date-time`, `email`, and `uri`.
- *
- * Nesting an object anywhere fails at construction, in `assertElicitFormSchema`,
- * rather than when a host refuses the request mid-conversation.
+ * A flat object of primitives, with two shapes worth copying carefully: a select
+ * takes its titles from `oneOf`, not the SDK-deprecated `enum`/`enumNames` pair,
+ * and a multi-select is the one legal `array`, of titled `anyOf` items. Nesting an
+ * object fails at construction in `assertElicitFormSchema`.
  */
 const FORM_SCHEMA: ElicitFormSchema = {
   type: 'object',
@@ -110,16 +104,11 @@ export const ExampleElicitationSchema = z.object({
 export type ExampleElicitationInput = z.infer<typeof ExampleElicitationSchema>;
 
 /**
- * The same fields, held to what the form actually insisted on.
+ * The same fields, held to what the form insisted on.
  *
- * The schema above keeps everything optional because an agent may supply any
- * subset, and whatever it omits is what the form collects. A host's answer is a
- * different thing: accepting with a required field missing is not an answer, so
- * it belongs in `malformed` rather than being echoed as though a user had filled
- * the form in.
- *
- * The mask is checked against `REQUIRED_FIELDS` so the form and the schema that
- * parses its answers cannot drift apart.
+ * The schema above stays optional because an agent may supply any subset. A host
+ * accepting without a required field is not an answer, though, so it belongs in
+ * `malformed`. The mask is typed from `REQUIRED_FIELDS` so the two cannot drift.
  */
 const FormAnswerSchema = ExampleElicitationSchema.required({
   label: true,
@@ -130,7 +119,7 @@ const FormAnswerSchema = ExampleElicitationSchema.required({
 export type FormOutcome =
   /** The user filled the form in */
   | 'answered'
-  /** The agent had already supplied everything the form would have collected */
+  /** The agent already supplied everything the form would collect */
   | 'not-asked'
   /** The user refused */
   | 'declined'
@@ -142,11 +131,10 @@ export type FormOutcome =
   | 'malformed';
 
 /**
- * Builds the response, which reports how the values were obtained alongside them.
+ * Builds the response, reporting how the values were obtained alongside them.
  *
- * Always a successful result, including when the user declined. The tool did
- * exactly what it was asked to; an outcome the agent can read is what lets it
- * explain itself rather than retry a refusal as though it were a transient error.
+ * Always a successful result, including a decline: the tool did what it was asked
+ * to, and a readable outcome keeps the agent from retrying a refusal as an error.
  */
 function echoPayload(
   /** How the values below were obtained */
@@ -170,11 +158,10 @@ function echoPayload(
 /**
  * Reference implementation of elicitation on its own.
  *
- * Deliberately has no MCP App variant. Variant precedence is app, then
- * elicitation, then baseline, so a tool offering both resolves to its view on any
- * host that supports one — which is every host worth testing against, including
- * the Inspector. Keeping this one form-only is what makes the form flow reachable
- * in the normal `pnpm mcp:inspect` loop rather than only under `--v1`.
+ * No MCP App variant on purpose. Precedence is app, then elicitation, so a tool
+ * offering both resolves to its view on every host worth testing against. Staying
+ * form-only is what keeps this flow reachable in the normal `pnpm mcp:inspect`
+ * loop rather than only under `--v1`.
  */
 export function createExampleElicitationTool(_clients?: ToolClients) {
   return defineToolWithCapabilities({
@@ -188,17 +175,16 @@ export function createExampleElicitationTool(_clients?: ToolClients) {
     requireAuth: false,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ExampleElicitationSchema,
-    // Hosts here cannot be asked anything, so echo what the agent supplied rather
-    // than inventing values it never chose.
+    // Nothing to ask here, so echo what the agent supplied rather than inventing
+    // values it never chose.
     handler: async (args) => echoPayload('unavailable', args),
     variants: {
       [McpClientCapability.Elicitation]: {
         elicitMessage: FORM_MESSAGE,
         elicitSchema: FORM_SCHEMA,
         handler: async (args) => {
-          // Interrupt only for what is actually missing. Re-prompting for an
-          // argument the agent already chose costs the user a dialog and changes
-          // nothing about the answer.
+          // Interrupt only for what is missing; re-prompting for an argument the
+          // agent already chose costs a dialog and changes nothing.
           if (REQUIRED_FIELDS.every((field) => args[field] !== undefined)) {
             return echoPayload('not-asked', args);
           }
@@ -209,16 +195,14 @@ export function createExampleElicitationTool(_clients?: ToolClients) {
           // hosts that declared elicitation.
           if (!answer) return echoPayload('unavailable', args);
 
-          // Declining and cancelling are kept apart on purpose. A decline is an
-          // answer — the user does not want this — so a caller should not ask
-          // again. A cancel is the absence of one, which it reasonably might.
+          // Kept apart on purpose: a decline is an answer, so a caller should not
+          // ask again, while a cancel is the absence of one and reasonably might.
           if (answer.action === 'decline') return echoPayload('declined', {});
           if (answer.action === 'cancel') return echoPayload('cancelled', {});
 
-          // Parsed rather than trusted: `requestedSchema` states what a host
-          // should collect and nothing enforces that what comes back matches, so
-          // a wrong type or a missing required field would otherwise surface as a
-          // puzzling echo.
+          // Nothing enforces that a host answers with the shape `requestedSchema`
+          // asked for, so a wrong type or missing field would otherwise surface as
+          // a puzzling echo.
           const parsed = FormAnswerSchema.safeParse(answer.content ?? {});
           if (!parsed.success) {
             return echoPayload(

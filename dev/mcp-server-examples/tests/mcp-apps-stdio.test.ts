@@ -1,18 +1,12 @@
 /**
- * End-to-end check that a real MCP host can fetch and render the hello-world
- * view over stdio, exercising the built CLI rather than an in-process server.
+ * Whether a real MCP host can fetch and render the hello-world view over stdio,
+ * driving the built CLI rather than an in-process server.
  *
- * This is the check that actually answers "would Claude Desktop render this".
- * Scope is deliberately limited to what only a built artifact on a real
- * transport can show: the shape of the single-file document the view build
- * produces, whether `_meta.ui` survives JSON-RPC serialization, and whether the
- * session detected during `initialize` reaches a tool handler.
- *
- * Capability negotiation itself — which variant a host resolves to, when the
- * `resources` capability is declared, and how app-only companions are exposed —
+ * Scoped to what only a built artifact on a real transport can show: the shape of
+ * the single-file document, whether `_meta.ui` survives serialization, and whether
+ * the session from `initialize` reaches a handler. Capability negotiation itself
  * belongs to `@transcend-io/mcp-server-base` and is tested there, against a
- * synthetic tool that needs no build. Re-asserting it here would only mean this
- * file fails alongside those rather than telling us anything new.
+ * synthetic tool that needs no build.
  */
 
 import { existsSync } from 'node:fs';
@@ -30,8 +24,8 @@ import { HELLO_APP_URI } from '../src/apps/hello.js';
 
 const cliPath = join(dirname(fileURLToPath(import.meta.url)), '../dist/cli.mjs');
 
-// The built CLI is the subject here, so skip rather than fail when only the
-// source has been compiled — `pnpm test` runs before `build` on a clean clone.
+// The built CLI is the subject, so skip rather than fail on a clean clone, where
+// `pnpm test` runs before `build`.
 const describeIfBuilt = existsSync(cliPath) ? describe : describe.skip;
 
 describeIfBuilt('examples server over stdio (MCP Apps host)', () => {
@@ -73,27 +67,24 @@ describeIfBuilt('examples server over stdio (MCP Apps host)', () => {
     const { contents } = await client.readResource({ uri: HELLO_APP_URI });
     const html = contents[0]!.text as string;
 
-    // A host renders views in a sandboxed iframe with no same-origin server, so a
-    // reference to a separate file or origin would render as a blank panel. This
-    // is the invariant the Vite single-file build exists to guarantee.
+    // Hosts render views in a sandboxed iframe with no same-origin server, so a
+    // reference to another file would render as a blank panel.
     expect(html).not.toMatch(/<script[^>]+\bsrc=/i);
     expect(html).not.toMatch(/<link[^>]+\bhref=/i);
     expect(html).toContain('<div id="root"></div>');
 
-    // React and the design tokens have to be inside the document, not imported.
-    // `sideEffects: false` on this package makes the CSS import droppable in
-    // principle, so assert a real token variable survived the bundle, along with
-    // the theme variable whose fallback chain ends at it.
+    // `sideEffects: false` makes the CSS import droppable in principle, so pin a
+    // token variable and the theme variable whose fallback chain ends at it.
     expect(html).toContain('--background-brand-bold');
     expect(html).toContain('--color-brand');
 
-    // Tailwind generates only the classes an `@source` glob reaches, so a stale
-    // or missing glob yields a styleless view rather than a build error.
+    // Tailwind only generates classes an `@source` glob reaches, so a stale glob
+    // yields a styleless view rather than a build error.
     expect(html).toContain('.bg-surface-raised');
     expect(html).toContain('.text-content-muted');
 
-    // Vite's library mode leaves `process.env.NODE_ENV` for a downstream bundler
-    // that a view does not have; unreplaced, it throws on first render.
+    // Library mode leaves this for a downstream bundler a view does not have;
+    // unreplaced, it throws on first render.
     expect(html).not.toContain('process.env.NODE_ENV');
   });
 
@@ -104,11 +95,9 @@ describeIfBuilt('examples server over stdio (MCP Apps host)', () => {
     const script = /<script>([\s\S]*)<\/script>/.exec(html)?.[1];
     expect(script).toBeDefined();
 
-    // Inlining has to rewrite any `</script` the bundle contains, or the HTML
-    // parser ends the element early and the view renders blank. React's bundle
-    // does contain that sequence, so this is a live concern rather than a
-    // theoretical one. Compiling without running proves the rewrite stayed
-    // syntactically valid.
+    // Inlining has to rewrite any `</script` the bundle contains, or the parser
+    // ends the element early and the view renders blank. React's bundle contains
+    // that sequence, so compiling proves the rewrite stayed valid.
     expect(() => new Script(script!)).not.toThrow();
   });
 
@@ -145,9 +134,8 @@ describeIfBuilt('examples server over stdio (elicitation-only host)', () => {
       { capabilities: { elicitation: { form: {} } } },
     );
 
-    // Stand in for the host's form UI, so the whole elicitation round trip runs
-    // rather than just the capability gate. Answers by what it was asked for,
-    // since the two tools here collect different fields.
+    // Stands in for the host's form UI so the whole round trip runs, answering by
+    // what it was asked for since the two tools collect different fields.
     client.setRequestHandler(ElicitRequestSchema, async (request) => {
       elicitRequests.push(request.params);
       const asked = Object.keys(request.params.requestedSchema.properties ?? {});
@@ -183,11 +171,10 @@ describeIfBuilt('examples server over stdio (elicitation-only host)', () => {
   });
 
   it('sends a form the SDK client accepts, with its select shapes intact', async () => {
-    // The client validates an inbound `elicitation/create` against
-    // ElicitRequestSchema before dispatching it, so a field shape that does not
-    // survive serialization fails here and nowhere else: a stubbed server in a
-    // unit test never encodes the schema at all. `oneOf` and `anyOf` are the ones
-    // worth pinning, being the only nested structures the spec allows.
+    // The client validates an inbound `elicitation/create` before dispatching it,
+    // so a field shape that does not survive serialization fails here and nowhere
+    // else — a stubbed server never encodes the schema at all. `oneOf` and `anyOf`
+    // are worth pinning, being the only nested structures the spec allows.
     elicitRequests = [];
     const result = await client.callTool({ name: 'example_elicitation', arguments: {} });
     const payload = JSON.parse((result.content as { text: string }[])[0]!.text);

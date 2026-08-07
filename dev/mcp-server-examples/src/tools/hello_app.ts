@@ -17,10 +17,7 @@ import { HELLO_APP_RESOURCE } from '../apps/hello.js';
 /** Prompt shown above the elicitation form. */
 const HELLO_ELICIT_MESSAGE = 'Who should this greeting be addressed to?';
 
-/**
- * Fields the host collects when it supports elicitation. Flat and primitives-only
- * because the spec allows nothing else here.
- */
+/** Fields the host collects when it supports elicitation. */
 const HELLO_ELICIT_SCHEMA: ElicitFormSchema = {
   type: 'object',
   properties: {
@@ -51,10 +48,7 @@ function helloPayload(name: string | undefined): unknown {
   });
 }
 
-/**
- * Companion tool that exists only so the view can refresh itself without going
- * back through the conversation. Never listed to the model.
- */
+/** Companion the view calls to refresh itself. Never listed to the model. */
 function createHelloRefreshTool() {
   return defineTool({
     name: 'example_hello_app_refresh',
@@ -71,11 +65,9 @@ function createHelloRefreshTool() {
 /**
  * Reference implementation of the capability layer.
  *
- * The same registration serves three different experiences: a plain text
- * greeting on a host with no relevant capabilities, a host-rendered form on one
- * that supports elicitation, and an interactive view on one that supports MCP
- * Apps. Useful on its own as a smoke test that a host's render path works, and
- * as the worked example for adding variants to a real tool.
+ * One registration serving three experiences: an interactive view on a host that
+ * supports MCP Apps, a host-rendered form on one that supports elicitation, and
+ * plain text everywhere else. Doubles as a smoke test of a host's render path.
  */
 export function createExampleHelloAppTool(_clients?: ToolClients) {
   return defineToolWithCapabilities({
@@ -95,8 +87,7 @@ export function createExampleHelloAppTool(_clients?: ToolClients) {
         elicitMessage: HELLO_ELICIT_MESSAGE,
         elicitSchema: HELLO_ELICIT_SCHEMA,
         handler: async ({ name }) => {
-          // Only ask when the caller left it out; re-prompting for an argument the
-          // agent already supplied is a needless interruption.
+          // Only ask when the caller left it out.
           if (name?.trim()) return helloPayload(name);
 
           const elicited = await requestElicitation(HELLO_ELICIT_MESSAGE, HELLO_ELICIT_SCHEMA);

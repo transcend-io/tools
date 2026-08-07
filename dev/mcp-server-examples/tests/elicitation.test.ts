@@ -1,14 +1,11 @@
 /**
  * What `example_elicitation` does with each way a host can answer a form.
  *
- * Scope is the handler's decisions, not the protocol: whether the request is sent
- * at all, and what a declined, dismissed, or malformed answer turns into. Sending
- * the request and gating it on the declared capability belong to
- * `requestElicitation` and are tested in `@transcend-io/mcp-server-base`.
- *
- * Runs against the source with a scripted host, so it needs no build and no
- * transport. `tests/mcp-apps-stdio.test.ts` is where a real client drives the
- * built artifact.
+ * Scoped to the handler's decisions: whether it asks at all, and what a declined,
+ * dismissed, or malformed answer turns into. Sending the request and gating it on
+ * the declared capability belong to `requestElicitation`, tested in
+ * `@transcend-io/mcp-server-base`. A scripted host stands in, so no build or
+ * transport is needed; `mcp-apps-stdio.test.ts` covers the real thing.
  */
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -35,10 +32,7 @@ interface EchoResult {
   };
 }
 
-/**
- * Runs the tool the way the server would: resolve the variant for a host, then
- * call it inside that host's session.
- */
+/** Runs the tool as the server would: resolve a variant, call it in that session. */
 async function callAs(
   capabilities: McpClientCapability[],
   args: Record<string, unknown>,
@@ -84,8 +78,7 @@ describe('example_elicitation', () => {
   });
 
   it('treats a decline as an answer and a cancel as the absence of one', async () => {
-    // Both stop the tool, but a caller should read them differently: a decline is
-    // the user saying no, a cancel leaves the question open.
+    // Both stop the tool, but a decline is a no and a cancel leaves it open.
     const declined = await callAs(ELICITATION, {}, { action: 'decline' });
     expect(declined.result.data.outcome).toBe('declined');
 
@@ -101,8 +94,8 @@ describe('example_elicitation', () => {
   });
 
   it('reports a host that answers with the wrong types instead of echoing them', async () => {
-    // Nothing enforces that a host's answer matches `requestedSchema`, so this is
-    // a real failure rather than a defensive one.
+    // Nothing enforces that an answer matches `requestedSchema`, so this is a real
+    // failure rather than a defensive one.
     const { result } = await callAs(
       ELICITATION,
       { label: 'ping' },
@@ -117,8 +110,7 @@ describe('example_elicitation', () => {
   });
 
   it('reports a host that accepts without the fields the form required', async () => {
-    // An empty acceptance is not an answer. Echoing it would be indistinguishable
-    // from a filled-in form, which is the distinction this tool exists to keep.
+    // Echoing an empty acceptance would be indistinguishable from a filled-in form.
     const { result } = await callAs(ELICITATION, {}, { action: 'accept', content: {} });
 
     expect(result.data.outcome).toBe('malformed');

@@ -250,8 +250,8 @@ describe('package conventions', () => {
     },
   );
 
-  // Asserted here because the per-package test above only sees which baseline a
-  // package names, so a detached MCP baseline would satisfy all of them.
+  // The per-package test above only sees which baseline a package names, so a
+  // detached MCP baseline would satisfy all of them.
   test('the MCP tsdown baseline extends the shared one', () => {
     expect(readRepoFile(MCP_TSDOWN_BASELINE)).toContain(
       "import sharedLibraryConfig from './tsdown.config.base.ts';",
@@ -287,8 +287,8 @@ describe('package conventions', () => {
   test('every package that builds a view tests on the MCP vitest baseline', () => {
     const viewPackages = getAllWorkspaceDirectories().filter(buildsMcpAppView);
 
-    // Scanned across the whole workspace rather than `workspacePackages` because
-    // the examples server lives in `dev/*`, which the conventions above skip.
+    // Scanned across the workspace rather than `workspacePackages`, since the
+    // examples server lives in `dev/*`.
     expect(viewPackages.length).toBeGreaterThan(0);
 
     const actual = Object.fromEntries(
@@ -363,9 +363,8 @@ function tsdownBaselineFor(directory: string): string {
  * The `test` script a package is expected to declare.
  *
  * MCP servers point vitest at the MCP baseline, which teaches it to load a
- * prebuilt view as a string. Asserted rather than left to each package because a
- * server that gains its first view would otherwise fail only once a test imported
- * that view, with an error about invalid JS syntax in an HTML file.
+ * prebuilt view as a string. Asserted here because a server gaining its first view
+ * would otherwise fail late, complaining of invalid JS syntax in an HTML file.
  *
  * @param directory - Package directory, relative to the repo root
  * @returns Expected `test` script
@@ -390,8 +389,8 @@ function buildsMcpAppView(directory: string): boolean {
 }
 
 /**
- * Every workspace package, including the `dev/*` tooling that the publishable
- * conventions deliberately skip.
+ * Every workspace package, including the `dev/*` tooling the publishable
+ * conventions skip.
  *
  * @returns Package directories, relative to the repo root
  */

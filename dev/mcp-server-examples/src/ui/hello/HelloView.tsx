@@ -13,10 +13,7 @@ interface HelloData {
   timestamp?: string;
 }
 
-/**
- * Classes shared by the card in every state, so the connecting and error states
- * cannot drift from the loaded one.
- */
+/** Classes shared by every state, so none can drift from the loaded one. */
 const CARD = 'rounded-lg bg-surface-raised px-6 py-5 shadow-sm';
 const TITLE = 'mb-1 text-heading-md font-semibold text-content';
 const SUBTITLE = 'text-sm text-content-muted';
@@ -37,14 +34,11 @@ function DetailRow({ label, value }: { label: string; value: string | undefined 
 /**
  * Interactive hello-world view for the `example_hello_app` tool.
  *
- * Beyond proving the render path works, this exercises the parts of the MCP Apps
- * contract that a static document cannot: local React state for the input, a
- * `tools/call` round trip back to the server via the app-only refresh tool, and
- * re-rendering from the result the host pushes back.
- *
- * Styled entirely with utilities from `@transcend-io/mcp-server-base/ui/theme.css`,
- * so every color and size resolves to a host value or a Transcend token. There is
- * no stock Tailwind palette to reach for by accident.
+ * Exercises the parts of the MCP Apps contract a static document cannot: local
+ * state, a `tools/call` round trip through the app-only refresh tool, and
+ * re-rendering from what the host pushes back. Styled only with utilities from
+ * `@transcend-io/mcp-server-base/ui/theme.css`, so every value resolves to a host
+ * value or a Transcend token.
  */
 export function HelloView() {
   const { data, theme, isConnected, connectionError, toolError, isCallingTool, callTool } =
