@@ -12,11 +12,11 @@ This is the dogfood / design-partner path while the public Cursor Marketplace re
 
 ## Status / blockers
 
-| Item | State |
-| --- | --- |
-| Plugin stack in `transcend-io/tools` | Landing via stacked PRs (scaffold → MCP → skills → OAuth); Team Marketplace import should track **`main` after merge** |
-| Partnership / listing questions | [LINK-7701](https://linear.app/transcend/issue/LINK-7701) is **Blocked** — confirm whether any Cursor partnership constraint affects Team Marketplace usage |
-| This registration | **Requires a Transcend Cursor team admin** — engineering cannot finish the dashboard import without that role |
+| Item                                 | State                                                                                                                                                       |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plugin stack in `transcend-io/tools` | Landing via stacked PRs (scaffold → MCP → skills → OAuth); Team Marketplace import should track **`main` after merge**                                      |
+| Partnership / listing questions      | [LINK-7701](https://linear.app/transcend/issue/LINK-7701) is **Blocked** — confirm whether any Cursor partnership constraint affects Team Marketplace usage |
+| This registration                    | **Requires a Transcend Cursor team admin** — engineering cannot finish the dashboard import without that role                                               |
 
 If Team Marketplace is unavailable on the Transcend plan until partnership answers land, keep this runbook and escalate (see bottom).
 
@@ -26,11 +26,11 @@ If Team Marketplace is unavailable on the Transcend plan until partnership answe
 
 ### Cursor plan and roles
 
-| Who | Needs |
-| --- | --- |
-| Transcend org (dogfooding) | Cursor **Teams** (≤1 team marketplace) or **Enterprise** (unlimited) |
-| Design partner org | Same — their own Cursor team on Teams or Enterprise |
-| Person who clicks Import | Cursor **team admin** (Enterprise: only admins can add marketplaces from **Dashboard → Plugins**) |
+| Who                                         | Needs                                                                                               |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Transcend org (dogfooding)                  | Cursor **Teams** (≤1 team marketplace) or **Enterprise** (unlimited)                                |
+| Design partner org                          | Same — their own Cursor team on Teams or Enterprise                                                 |
+| Person who clicks Import                    | Cursor **team admin** (Enterprise: only admins can add marketplaces from **Dashboard → Plugins**)   |
 | GitHub App (Auto Refresh / private sources) | Cursor admin **and** GitHub org admin for [Integrations](https://cursor.com/dashboard/integrations) |
 
 `transcend-io/tools` is **public**, so partners can import the marketplace without granting Cursor read access to a private GitHub org. Auto Refresh still works best with the [Cursor GitHub App](https://cursor.com/docs/integrations/github.md) installed so push webhooks re-index the marketplace.
@@ -79,11 +79,11 @@ Skip is possible for a one-shot public import, but Auto Refresh and reliable re-
 
 For **Transcend Agent Governance** during dogfood:
 
-| Mode | When to use |
-| --- | --- |
+| Mode                                | When to use                                                              |
+| ----------------------------------- | ------------------------------------------------------------------------ |
 | **Default Off** (recommended first) | Teammates opt in from Customize; safest while validating OAuth + gateway |
-| **Default On** | Broader dogfood after clean-machine install works |
-| **Required** | Only after policy/product sign-off — cannot be uninstalled |
+| **Default On**                      | Broader dogfood after clean-machine install works                        |
+| **Required**                        | Only after policy/product sign-off — cannot be uninstalled               |
 
 ### A4. Smoke-check as admin
 
@@ -160,27 +160,27 @@ Same as **Part B**, using Connect Cursor values for **their** tenant.
 
 ### C4. Admin permissions summary
 
-| Surface | Permission |
-| --- | --- |
+| Surface                                             | Permission                                     |
+| --------------------------------------------------- | ---------------------------------------------- |
 | Cursor Dashboard → Plugins (add/import marketplace) | Cursor **team admin** (Enterprise: admin-only) |
-| Cursor Integrations → GitHub App | Cursor admin + GitHub org admin |
-| Marketplace Access / install mode / Refresh | Cursor team admin |
-| Agent Governance Connect Cursor values | Tenant operator / admin |
-| Assign MCP servers after first OAuth | Agent Governance administrator |
-| Install from Customize (Default Off) | Any team member with marketplace access |
+| Cursor Integrations → GitHub App                    | Cursor admin + GitHub org admin                |
+| Marketplace Access / install mode / Refresh         | Cursor team admin                              |
+| Agent Governance Connect Cursor values              | Tenant operator / admin                        |
+| Assign MCP servers after first OAuth                | Agent Governance administrator                 |
+| Install from Customize (Default Off)                | Any team member with marketplace access        |
 
 ---
 
 ## Part D — Update cadence (version bumps → installed users)
 
-| Mechanism | Behavior | Admin action? |
-| --- | --- | --- |
-| **Auto Refresh** (recommended) | Push to the tracked branch re-indexes the marketplace (≤1× / 10 minutes). Manifest + plugin files refresh for the marketplace. | No, after Auto Refresh is enabled once |
-| **Manual Refresh** | Admin clicks **Refresh** on the marketplace in **Dashboard → Plugins** | Yes — use if Auto Refresh is off or stuck |
-| **Already-installed clients** | After re-index, Cursor picks up updated plugin content on the client refresh/reload path used by Team Marketplaces (developers may need **Reload Window** / restart if components look stale) | Usually no; escalate if clients stay on old skills/MCP after refresh |
-| **New plugins added to `marketplace.json`** | Import-from-repo + Auto Refresh picks up new entries automatically. Marketplaces built by adding plugins one-by-one may need a **re-import** of the repo URL for *new* plugins | Re-import only for individually-added marketplaces |
-| **Install mode / access changes** | Immediate for who can see/install; does not by itself bump plugin version | Admin changes in dashboard |
-| **Public Marketplace** (later) | Each version bump needs Cursor review — slower than Team Marketplace | Separate from this runbook |
+| Mechanism                                   | Behavior                                                                                                                                                                                      | Admin action?                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Auto Refresh** (recommended)              | Push to the tracked branch re-indexes the marketplace (≤1× / 10 minutes). Manifest + plugin files refresh for the marketplace.                                                                | No, after Auto Refresh is enabled once                               |
+| **Manual Refresh**                          | Admin clicks **Refresh** on the marketplace in **Dashboard → Plugins**                                                                                                                        | Yes — use if Auto Refresh is off or stuck                            |
+| **Already-installed clients**               | After re-index, Cursor picks up updated plugin content on the client refresh/reload path used by Team Marketplaces (developers may need **Reload Window** / restart if components look stale) | Usually no; escalate if clients stay on old skills/MCP after refresh |
+| **New plugins added to `marketplace.json`** | Import-from-repo + Auto Refresh picks up new entries automatically. Marketplaces built by adding plugins one-by-one may need a **re-import** of the repo URL for _new_ plugins                | Re-import only for individually-added marketplaces                   |
+| **Install mode / access changes**           | Immediate for who can see/install; does not by itself bump plugin version                                                                                                                     | Admin changes in dashboard                                           |
+| **Public Marketplace** (later)              | Each version bump needs Cursor review — slower than Team Marketplace                                                                                                                          | Separate from this runbook                                           |
 
 **Engineering cadence (suggested):**
 
@@ -190,7 +190,7 @@ Same as **Part B**, using Connect Cursor values for **their** tenant.
 4. Announce dogfood/design-partner notes in the usual channel when the bump changes MCP URL shape, variables, or OAuth client behavior.
 
 **Does a version bump require partner admins to re-import?**  
-No — not if they already imported this repo with Auto Refresh (or they click Refresh). They only re-import when adding a *new* marketplace or when Cursor support advises resetting a broken index.
+No — not if they already imported this repo with Auto Refresh (or they click Refresh). They only re-import when adding a _new_ marketplace or when Cursor support advises resetting a broken index.
 
 ---
 
@@ -198,18 +198,18 @@ No — not if they already imported this repo with Auto Refresh (or they click R
 
 Capture install-path problems here as ticket seeds (do not absorb silently). This rehearsal feeds the public listing story.
 
-| Friction | Suggested follow-up |
-| --- | --- |
-| Transcend Cursor plan cannot add Team Marketplaces / UI missing | Unblock [LINK-7701](https://linear.app/transcend/issue/LINK-7701); confirm Teams vs Enterprise entitlement with Cursor partnership contacts |
-| Admin-only import but no available admin | Ops: grant temporary Cursor admin or pair on a recorded call; do not invent a clone-based “customer” path |
-| Import succeeds but `transcend-agent-governance` missing from parse list | Engineering: marketplace.json path / branch / validate script; confirm merge to tracked branch |
-| Auto Refresh never updates | Confirm GitHub App installed on `transcend-io` **and** has repo access; check webhooks; fall back to Manual Refresh |
-| Clean-machine user still told to clone or edit JSON | Docs/bug: Customize discovery, Marketplace Access group exclusion, or wrong install mode |
-| Install works; OAuth / discovery fails | Platform tickets (issuer, PRM/AS metadata, redirect allowlist) — not a marketplace packaging issue |
-| Tools missing after OAuth | Agent Governance admin assignment gap; document in partner packet (already Part B step 8) |
-| Partner on Free/Pro cannot import | Product: require Teams/Enterprise in partner prerequisites; no unsupported workaround |
-| Required mode locks a bad build onto the fleet | Process: never use Required until clean-machine AC passes; add rollback note (Default Off + Refresh) |
-| Public listing still blocked while Team path works | Continue dogfood on Team Marketplace; public path remains [LINK-7714](https://linear.app/transcend/issue/LINK-7714) / epic parent |
+| Friction                                                                 | Suggested follow-up                                                                                                                         |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Transcend Cursor plan cannot add Team Marketplaces / UI missing          | Unblock [LINK-7701](https://linear.app/transcend/issue/LINK-7701); confirm Teams vs Enterprise entitlement with Cursor partnership contacts |
+| Admin-only import but no available admin                                 | Ops: grant temporary Cursor admin or pair on a recorded call; do not invent a clone-based “customer” path                                   |
+| Import succeeds but `transcend-agent-governance` missing from parse list | Engineering: marketplace.json path / branch / validate script; confirm merge to tracked branch                                              |
+| Auto Refresh never updates                                               | Confirm GitHub App installed on `transcend-io` **and** has repo access; check webhooks; fall back to Manual Refresh                         |
+| Clean-machine user still told to clone or edit JSON                      | Docs/bug: Customize discovery, Marketplace Access group exclusion, or wrong install mode                                                    |
+| Install works; OAuth / discovery fails                                   | Platform tickets (issuer, PRM/AS metadata, redirect allowlist) — not a marketplace packaging issue                                          |
+| Tools missing after OAuth                                                | Agent Governance admin assignment gap; document in partner packet (already Part B step 8)                                                   |
+| Partner on Free/Pro cannot import                                        | Product: require Teams/Enterprise in partner prerequisites; no unsupported workaround                                                       |
+| Required mode locks a bad build onto the fleet                           | Process: never use Required until clean-machine AC passes; add rollback note (Default Off + Refresh)                                        |
+| Public listing still blocked while Team path works                       | Continue dogfood on Team Marketplace; public path remains [LINK-7714](https://linear.app/transcend/issue/LINK-7714) / epic parent           |
 
 ---
 
