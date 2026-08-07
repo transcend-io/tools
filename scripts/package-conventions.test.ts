@@ -160,7 +160,7 @@ describe('package conventions', () => {
       expect(manifest.type).toBe('module');
       expect(manifest.sideEffects).toEqual(isDesignTokens ? ['*.css'] : false);
       expect(manifest.types).toBe('./dist/index.d.mts');
-      expect(manifest.files).toEqual(['dist']);
+      expect(manifest.files).toEqual(isDesignTokens ? ['dist', 'tokens'] : ['dist']);
       expect(manifest.engines?.node).toBe('>=22.12.0');
       expect(exportDot?.['@transcend-io/source']).toBe('./src/index.ts');
       expect(exportDot?.types).toBe('./dist/index.d.mts');
@@ -185,6 +185,24 @@ describe('package conventions', () => {
           '@transcend-io/source': './src/tokens.css',
           default: './dist/tokens.css',
         });
+        // Raw DTCG JSON is published alongside generated artifacts so consumers
+        // can run their own pipelines (Style Dictionary, Terrazzo, etc.).
+        expect(manifest.exports?.['./tokens']).toBe('./tokens/tokens.resolver.json');
+        expect(manifest.exports?.['./tokens/tokens.resolver.json']).toBe(
+          './tokens/tokens.resolver.json',
+        );
+        expect(manifest.exports?.['./tokens/primitive/palette.tokens.json']).toBe(
+          './tokens/primitive/palette.tokens.json',
+        );
+        expect(manifest.exports?.['./tokens/semantic/color.tokens.json']).toBe(
+          './tokens/semantic/color.tokens.json',
+        );
+        expect(manifest.exports?.['./tokens/semantic/color-dark.tokens.json']).toBe(
+          './tokens/semantic/color-dark.tokens.json',
+        );
+        expect(manifest.exports?.['./tokens/semantic/typography.tokens.json']).toBe(
+          './tokens/semantic/typography.tokens.json',
+        );
       }
     },
   );

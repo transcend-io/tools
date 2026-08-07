@@ -7,8 +7,12 @@ Centralized design token primitives and semantic tokens for Transcend frontends.
 TypeScript theme objects:
 
 ```typescript
-import { color, palette } from '@transcend-io/design-tokens';
+import { color, palette, typography } from '@transcend-io/design-tokens';
 import type { ColorMode, SemanticColors } from '@transcend-io/design-tokens';
+
+color.light.text.default;
+color.light.background.brand.bold; // rest state via toString() → $root
+typography.light.display.lg.fontSize;
 ```
 
 CSS custom properties on `:root`:
@@ -17,14 +21,24 @@ CSS custom properties on `:root`:
 @import '@transcend-io/design-tokens/tokens.css';
 
 .button {
-  color: var(--text);
-  background: var(--background-brand-bold); /* same as --background-brand-bold-default */
+  color: var(--text); /* alias of --text-default */
+  background: var(--background-brand-bold); /* rest state ($root flattened to parent id) */
+  font-size: var(--display-lg-font-size);
 }
+```
+
+Raw DTCG JSON (resolver + token files) for custom pipelines:
+
+```ts
+import resolver from '@transcend-io/design-tokens/tokens' with { type: 'json' };
+import palette from '@transcend-io/design-tokens/tokens/primitive/palette.tokens.json' with { type: 'json' };
+import color from '@transcend-io/design-tokens/tokens/semantic/color.tokens.json' with { type: 'json' };
+import typography from '@transcend-io/design-tokens/tokens/semantic/typography.tokens.json' with { type: 'json' };
 ```
 
 ## Development
 
-Token source lives in `tokens/` (DTCG JSON). Terrazzo generates TypeScript and `tokens.css` into `src/` on `prebuild`, and `build` copies the stylesheet to `dist/`:
+Token source lives in `tokens/` (DTCG JSON) and is published as package subpaths. Terrazzo generates TypeScript and `tokens.css` into `src/` on `prebuild`, and `build` copies the stylesheet to `dist/`:
 
 ```bash
 pnpm --filter @transcend-io/design-tokens build
