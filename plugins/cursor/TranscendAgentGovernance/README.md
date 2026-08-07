@@ -24,19 +24,30 @@ Ask your Agent Governance administrator for the Connect Cursor values if you do 
 
 ## Install → sign in → tools
 
-### Marketplace (when listed)
+Prefer a **Team Marketplace** (or later public Marketplace) install. That path needs **no** repo clone and **no** `mcp.json` editing. Admins: see [Team Marketplace rollout](../TEAM_MARKETPLACE.md).
 
-1. In Cursor, open **Customize** / Marketplace and install **Transcend Agent Governance**.
-2. When prompted, set:
+### Team Marketplace (dogfood / design partners)
+
+Your Cursor team admin imports [`transcend-io/tools`](https://github.com/transcend-io/tools) once as a [Team Marketplace](https://cursor.com/docs/plugins.md#team-marketplaces) (Teams or Enterprise plan). Then:
+
+1. Open **Customize** in the Cursor sidebar.
+2. Find **Transcend Agent Governance** under your team's marketplace and **Install** (skip if your admin set Default On / Required).
+3. When prompted, set:
    - `GATEWAY_BASE_URL` — scheme + host only (no `/mcp/...` path)
    - `TENANT_ID` — your organization identifier
-3. Open **Settings → Tools & MCP**. Find **transcend-agent-governance** and choose **Connect** / authenticate if Cursor has not already opened the browser.
-4. Complete sign-in and consent in the browser (pick your tenant if asked). Cursor receives tokens; no client secret is involved.
-5. Confirm tools appear (names follow the aggregator's `{slug}__{tool}` convention).
+4. Open **Settings → Tools & MCP**. Find **transcend-agent-governance** and choose **Connect** / authenticate if Cursor has not already opened the browser.
+5. Complete sign-in and consent in the browser (pick your tenant if asked). Cursor receives tokens; no client secret is involved.
+6. Confirm tools appear (names follow the aggregator's `{slug}__{tool}` convention).
 
 The plugin builds the MCP endpoint as `{gateway}/mcp/{tenant_id}/agent` and declares the published public OAuth client id `myelin_cursor_plugin` with scopes `mcp` and `offline_access`. Cursor discovers the authorization server from the gateway (Protected Resource Metadata → Authorization Server Metadata) and performs PKCE.
 
-### Local development (until Marketplace listing)
+### Public Marketplace (when listed)
+
+Same Customize → Install flow as Team Marketplace once the plugin is listed at [cursor.com/marketplace](https://cursor.com/marketplace). Until then, use Team Marketplace for real installs.
+
+### Local development (engineers only)
+
+Use this only while developing the plugin itself — not for teammates or design partners:
 
 1. Clone [`transcend-io/tools`](https://github.com/transcend-io/tools).
 2. Symlink or copy this plugin into Cursor's local plugins folder:
@@ -70,8 +81,8 @@ Token TTLs and refresh windows are owned by the Agent Governance issuer (short-l
 
 Live Cursor against a deployed environment may be unavailable in CI. Use this checklist on a clean machine (or a profile with no prior Agent Governance credentials):
 
-1. **Clean state** — Remove any existing Agent Governance MCP entries and local plugin symlink/credentials for this server. Quit and relaunch Cursor.
-2. **Install** — Symlink or Marketplace-install this plugin. Confirm install prompts ask only for `GATEWAY_BASE_URL` and `TENANT_ID` (no credential paste).
+1. **Clean state** — Remove any existing Agent Governance MCP entries and local plugin symlink/credentials for this server. Quit and relaunch Cursor. Do **not** leave a `~/.cursor/plugins/local` symlink if you are verifying the Team Marketplace path.
+2. **Install** — Prefer Team Marketplace install from Customize ([rollout runbook](../TEAM_MARKETPLACE.md)). Confirm install prompts ask only for `GATEWAY_BASE_URL` and `TENANT_ID` (no credential paste, no `mcp.json` edit, no repo clone).
 3. **Configure** — Enter gateway + tenant from the Connect Cursor panel of a deployed-dev (or staging) tenant that has 3LO + discovery enabled.
 4. **Browser sign-in** — Trigger Connect; browser opens to the Agent Governance consent / sign-in UI; complete consent. Confirm redirect returns to Cursor (`http://localhost:8787/callback` or the Cursor deep-link / web callback).
 5. **Auto-register** — In the dashboard, confirm a connected agent appeared for your user (display name like `Cursor — {user}`) with no MCP servers until an admin assigns them.
