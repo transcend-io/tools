@@ -32,7 +32,7 @@ catalog:
   semver: ^7.7.4
   syncpack: ^14.2.0
   tailwindcss: ^4.3.3
-  tsdown: ^0.21.2
+  tsdown: ^0.22.0
   turbo: ^2.9.14
   typescript: ^6.0.0
   vite: ^8.0.16
