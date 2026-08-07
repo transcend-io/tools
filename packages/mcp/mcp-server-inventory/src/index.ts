@@ -12,14 +12,26 @@ export {
   type ListCategoriesInput,
 } from './tools/inventory_list_categories.js';
 export {
+  ListBusinessEntitiesSchema,
+  type ListBusinessEntitiesInput,
+} from './tools/inventory_list_business_entities.js';
+export {
   ListDataPointsSchema,
   type ListDataPointsInput,
 } from './tools/inventory_list_data_points.js';
 export { ListDataSilosSchema, type ListDataSilosInput } from './tools/inventory_list_data_silos.js';
 export {
+  ListDataSubjectsSchema,
+  type ListDataSubjectsInput,
+} from './tools/inventory_list_data_subjects.js';
+export {
   ListIdentifiersSchema,
   type ListIdentifiersInput,
 } from './tools/inventory_list_identifiers.js';
+export {
+  ListProcessingPurposesSchema,
+  type ListProcessingPurposesInput,
+} from './tools/inventory_list_processing_purposes.js';
 export {
   ListSubDataPointsSchema,
   type ListSubDataPointsInput,
@@ -29,3 +41,12 @@ export {
   UpdateDataSiloSchema,
   type UpdateDataSiloInput,
 } from './tools/inventory_update_data_silo.js';
+export {
+  UpdateOrCreateDataPointSchema,
+  type UpdateOrCreateDataPointInput,
+} from './tools/inventory_update_or_create_data_point.js';
+export {
+  WriteProcessingPurposeSchema,
+  type WriteProcessingPurposeInput,
+} from './tools/inventory_write_processing_purpose.js';
+export { WriteVendorSchema, type WriteVendorInput } from './tools/inventory_write_vendor.js';

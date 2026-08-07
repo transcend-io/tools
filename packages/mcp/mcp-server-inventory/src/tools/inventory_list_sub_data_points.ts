@@ -1,4 +1,5 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 
 import type { InventoryMixin } from '../graphql.js';
 
@@ -25,7 +26,10 @@ export function createInventoryListSubDataPointsTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_list_sub_data_points',
     description:
-      'List sub-data points (individual data fields) for a specific data point. Note: This feature may have limited availability.',
+      'List sub-data points (individual data fields) for a specific data point, including ' +
+      'purpose of processing and data category assignments. Empty subcategory names are ' +
+      `normalized to "${DefaultPurposeSubCategoryType.Other}" so they match ` +
+      'inventory_update_or_create_data_point write defaults.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
