@@ -30,6 +30,7 @@ import {
   installShutdownHandlers,
   loadSecretEnv,
   resolveTarget,
+  SERVER_NODE_ARGS,
   startProcess,
   startViewWatchers,
   UMBRELLA_PACKAGE,
@@ -112,7 +113,12 @@ async function main(): Promise<void> {
     const port = values.port ?? String(DEFAULT_HTTP_PORT);
     const url = `http://127.0.0.1:${port}/mcp`;
 
-    startProcess('server', 'node', [target.cliPath, '--transport=http', `--port=${port}`]);
+    startProcess('server', 'node', [
+      ...SERVER_NODE_ARGS,
+      target.cliPath,
+      '--transport=http',
+      `--port=${port}`,
+    ]);
 
     if (values.v1) {
       startProcess('inspector', 'npx', ['-y', inspectorSpec]);
@@ -143,6 +149,7 @@ async function main(): Promise<void> {
     inspectorSpec,
     ...inspectorEnvArgs(),
     'node',
+    ...SERVER_NODE_ARGS,
     ...serverArgs,
   ]);
 }

@@ -224,6 +224,18 @@ export const ASSUME_CAPABILITIES_ENV_VAR = 'TRANSCEND_MCP_ASSUME_CAPABILITIES';
 const INSPECTOR_FORWARDED_ENV_VARS = [DEV_VIEWS_ENV_VAR, ASSUME_CAPABILITIES_ENV_VAR] as const;
 
 /**
+ * Node arguments every server we launch is given, before its own.
+ *
+ * We always run a server from `dist`, so an unhandled rejection in a tool would
+ * otherwise report a line in a bundled chunk. MCP sourcemaps carry mappings
+ * without embedded sources, which node resolves by reading the TypeScript beside
+ * the build — true here, and the reason this belongs to the dev loop rather than
+ * to the servers themselves. Only error formatting on stderr changes, so a stdio
+ * session is unaffected.
+ */
+export const SERVER_NODE_ARGS = ['--enable-source-maps'] as const;
+
+/**
  * Builds the `-e KEY=VALUE` arguments a stdio Inspector launch needs.
  *
  * The Inspector does not give a stdio server our environment. Its proxy builds
