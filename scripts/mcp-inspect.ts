@@ -14,6 +14,10 @@
  *   pnpm mcp:inspect --v1          # the older Inspector, with the capability override
  *   pnpm mcp:inspect --assume-app  # force the MCP Apps capability on
  *   pnpm mcp:inspect --no-build    # skip the build, when dist is already current
+ *
+ * Stdio launches the server via scripts/mcp-run.sh so root secret.env (API key
+ * or OAuth) is available for real API calls. HTTP mode inherits the same file
+ * through loadSecretEnv().
  */
 
 import { parseArgs } from 'node:util';
@@ -29,6 +33,7 @@ import {
   inspectorEnvArgs,
   installShutdownHandlers,
   loadSecretEnv,
+  MCP_RUN_SCRIPT,
   resolveTarget,
   startProcess,
   startViewWatchers,
@@ -134,6 +139,8 @@ async function main(): Promise<void> {
 
   // v1 forwards trailing arguments to the server; v2 parses them as its own, so
   // rely on the server defaulting to stdio there instead of passing a flag.
+  // mcp-run.sh sources secret.env then execs node — same path as Cursor — so
+  // credentials reach the server without putting them on Inspector `-e` args.
   const serverArgs = values.v1 ? [target.cliPath, '--transport=stdio'] : [target.cliPath];
 
   // The `-e` pairs precede the command because both Inspector versions parse
@@ -142,7 +149,8 @@ async function main(): Promise<void> {
     '-y',
     inspectorSpec,
     ...inspectorEnvArgs(),
-    'node',
+    'bash',
+    MCP_RUN_SCRIPT,
     ...serverArgs,
   ]);
 }
