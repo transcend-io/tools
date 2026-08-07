@@ -102,18 +102,19 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-- `inventory_list_data_silos` — List data silos (integrations)
+- `inventory_list_data_silos` — List data silos (optional `text` / `titles` filters)
 - `inventory_get_data_silo` — Get data silo details (vendor, purposes, owners, subjects, metadata)
-- `inventory_create_data_silo` — Create a data silo
+- `inventory_list_catalog_integrations` — Search the integration catalog for valid `integrationName` values (optional `text` filter)
+- `inventory_create_data_silo` — Create a data silo (`integrationName` required; optional display `title` / `description`)
 - `inventory_update_data_silo` — Update a data silo (owners, vendor, purposes, subjects, metadata)
-- `inventory_list_data_points` — List data points (optional `dataSiloId` filter)
+- `inventory_list_data_points` — List data points (optional `dataSiloId` and `text` filters)
 - `inventory_update_or_create_data_point` — Create/update a datapoint and field-level purpose assignments
 - `inventory_list_sub_data_points` — List sub-data points (includes purposes and categories)
 - `inventory_list_categories` — List data categories
-- `inventory_list_processing_purposes` — List processing purpose subcategories
+- `inventory_list_processing_purposes` — List processing purpose subcategories (optional `text` filter)
 - `inventory_write_processing_purpose` — Create or update a processing purpose subcategory
 - `inventory_list_identifiers` — List identifiers
-- `inventory_list_vendors` — List vendors (contact / DPA / website fields)
+- `inventory_list_vendors` — List vendors (contact / DPA / website fields; optional `text` filter)
 - `inventory_write_vendor` — Create or update a vendor (upsert by title or id)
 - `inventory_list_business_entities` — List business entities
 - `inventory_list_data_subjects` — List data subject types

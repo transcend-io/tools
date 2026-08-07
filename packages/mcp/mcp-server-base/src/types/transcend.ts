@@ -439,7 +439,12 @@ export interface DataSiloDetails extends DataSilo {
 }
 
 export interface DataSiloCreateInput {
+  /** Catalog integration name (GraphQL `name`), e.g. "server", "Salesforce" */
   name: string;
+  /** Display title for the data system */
+  title?: string;
+  /** Description for the data system */
+  description?: string;
   pluginId?: string;
   resourceId?: string;
   region?: string;
@@ -510,9 +515,15 @@ export interface DataPoint {
   subDataPoints?: SubDataPoint[];
   /** Assigned data categories */
   categories?: DataCategory[];
-  /** Created timestamp (ISO 8601) */
-  createdAt: string;
-  /** Updated timestamp (ISO 8601) */
+  /**
+   * Created timestamp (ISO 8601). Not exposed on GraphQL `DataPoint` today;
+   * omitted from inventory list responses.
+   */
+  createdAt?: string;
+  /**
+   * Updated timestamp (ISO 8601). Not exposed on GraphQL `DataPoint` today;
+   * omitted from inventory list responses.
+   */
   updatedAt?: string;
 }
 
@@ -567,6 +578,27 @@ export interface DataCatalog {
   title: string;
   description?: string;
   integrations?: DataSilo[];
+}
+
+/**
+ * Integration catalog entry from GraphQL `catalogs`.
+ * Pass `integrationName` to `inventory_create_data_silo`.
+ */
+export interface CatalogIntegration {
+  /** Catalog slug for createDataSilos (`name`) */
+  integrationName: string;
+  /** Display title */
+  title: string;
+  /** Catalog description */
+  description?: string;
+  /** Whether the integration supports API-based DSRs */
+  hasApiFunctionality: boolean;
+  /** Whether the integration supports Advise Vendor Communications */
+  hasAvcFunctionality: boolean;
+  /** Count of already-connected instances of this integration in the org */
+  alreadyConnected: number;
+  /** High-level integration category enum value, when set */
+  integrationCategory?: string;
 }
 
 export interface Identifier {
@@ -751,8 +783,8 @@ export interface Vendor {
   headquarterSubDivision?: string;
   /** Associated data silos */
   dataSilos?: DataSilo[];
-  /** Created timestamp (ISO 8601) */
-  createdAt: string;
+  /** Created timestamp (ISO 8601) when returned by the API */
+  createdAt?: string;
   /** Updated timestamp (ISO 8601) */
   updatedAt?: string;
 }
