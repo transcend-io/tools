@@ -315,6 +315,80 @@ function validateVariablesSchema(variables, pluginName) {
 }
 
 /**
+ * Cursor-native remote OAuth `auth` block (static public client; no secret).
+ * @param {unknown} auth
+ * @param {string} serverLabel
+ * @param {string} pluginName
+ */
+function validateOAuthAuthBlock(auth, serverLabel, pluginName) {
+  if (!auth || typeof auth !== 'object' || Array.isArray(auth)) {
+    addError(`${serverLabel}.auth: must be an object.`);
+    return;
+  }
+
+  /** @type {Record<string, unknown>} */
+  const block = auth;
+  const allowedAuthKeys = new Set(['CLIENT_ID', 'CLIENT_SECRET', 'scopes']);
+
+  for (const key of Object.keys(block)) {
+    if (!allowedAuthKeys.has(key)) {
+      addError(
+        `${serverLabel}.auth: unsupported field "${key}". Cursor accepts CLIENT_ID, optional CLIENT_SECRET, and optional scopes.`,
+      );
+    }
+  }
+
+  if (typeof block.CLIENT_ID !== 'string' || block.CLIENT_ID.trim().length === 0) {
+    addError(
+      `${serverLabel}.auth.CLIENT_ID: required non-empty string (published public client id).`,
+    );
+  } else {
+    rejectSecretsAndInternalHosts(block.CLIENT_ID, `${serverLabel}.auth.CLIENT_ID`);
+    if (/\$\{/.test(block.CLIENT_ID)) {
+      addError(
+        `${serverLabel}.auth.CLIENT_ID: must be the published public client id literal, not a variable placeholder.`,
+      );
+    }
+    if (pluginName === 'transcend-agent-governance' && block.CLIENT_ID !== 'myelin_cursor_plugin') {
+      addError(
+        `${serverLabel}.auth.CLIENT_ID: transcend-agent-governance must use published client id "myelin_cursor_plugin".`,
+      );
+    }
+  }
+
+  if (block.CLIENT_SECRET !== undefined) {
+    addError(
+      `${serverLabel}.auth.CLIENT_SECRET: must not be present — this plugin ships a public OAuth client (PKCE only; no secret).`,
+    );
+  }
+
+  if (block.scopes !== undefined) {
+    if (!Array.isArray(block.scopes) || block.scopes.length === 0) {
+      addError(`${serverLabel}.auth.scopes: when present must be a non-empty array of strings.`);
+    } else if (
+      !block.scopes.every((scope) => typeof scope === 'string' && scope.trim().length > 0)
+    ) {
+      addError(`${serverLabel}.auth.scopes: every entry must be a non-empty string.`);
+    } else {
+      for (const scope of block.scopes) {
+        rejectSecretsAndInternalHosts(scope, `${serverLabel}.auth.scopes`);
+      }
+      if (pluginName === 'transcend-agent-governance') {
+        const scopeSet = new Set(block.scopes);
+        if (!scopeSet.has('mcp')) {
+          addError(`${serverLabel}.auth.scopes: must include "mcp".`);
+        }
+        if (!scopeSet.has('offline_access')) {
+          addError(
+            `${serverLabel}.auth.scopes: must include "offline_access" for IDE refresh / session durability.`,
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
  * @param {object} mcpConfig
  * @param {string} pluginName
  * @param {Set<string>} declaredVariables
@@ -366,19 +440,38 @@ function validateMcpConfig(mcpConfig, pluginName, declaredVariables) {
       );
     }
 
-    if (server.auth !== undefined) {
+    const hasAuth = server.auth !== undefined;
+    if (hasAuth) {
+      validateOAuthAuthBlock(server.auth, serverLabel, pluginName);
+    }
+
+    const headers =
+      server.headers && typeof server.headers === 'object' && !Array.isArray(server.headers)
+        ? server.headers
+        : null;
+    const authorization = headers ? (headers.Authorization ?? headers.authorization) : undefined;
+    const hasBearerHeader = typeof authorization === 'string' && authorization.trim().length > 0;
+
+    if (hasAuth && hasBearerHeader) {
       addError(
-        `${serverLabel}: do not add an "auth" (OAuth) block yet — that ships in a follow-up ticket.`,
+        `${serverLabel}: do not combine Cursor-native "auth" with headers.Authorization — OAuth is the primary path; keep static Bearer credentials as a documented manual fallback outside this plugin.`,
       );
     }
 
-    if (!server.headers || typeof server.headers !== 'object' || Array.isArray(server.headers)) {
-      addError(`${serverLabel}: "headers" object is required for Bearer auth.`);
-    } else {
-      const authorization = server.headers.Authorization ?? server.headers.authorization;
-      if (typeof authorization !== 'string') {
-        addError(`${serverLabel}.headers: "Authorization" is required.`);
-      } else {
+    if (!hasAuth && !hasBearerHeader) {
+      addError(
+        `${serverLabel}: require either an "auth" (OAuth) block or headers.Authorization Bearer \${VAR}.`,
+      );
+    }
+
+    if (headers) {
+      for (const [headerName, headerValue] of Object.entries(headers)) {
+        if (typeof headerValue === 'string') {
+          rejectSecretsAndInternalHosts(headerValue, `${serverLabel}.headers.${headerName}`);
+        }
+      }
+
+      if (hasBearerHeader && typeof authorization === 'string') {
         rejectSecretsAndInternalHosts(authorization, `${serverLabel}.headers.Authorization`);
         if (!/^Bearer\s+\$\{[A-Z][A-Z0-9_]*\}$/.test(authorization.trim())) {
           addError(
@@ -386,13 +479,23 @@ function validateMcpConfig(mcpConfig, pluginName, declaredVariables) {
           );
         }
       }
-
-      for (const [headerName, headerValue] of Object.entries(server.headers)) {
-        if (typeof headerValue === 'string') {
-          rejectSecretsAndInternalHosts(headerValue, `${serverLabel}.headers.${headerName}`);
-        }
-      }
+    } else if (!hasAuth) {
+      addError(
+        `${serverLabel}: "headers" object is required when using Bearer auth without OAuth.`,
+      );
     }
+
+    if (pluginName === 'transcend-agent-governance' && !hasAuth) {
+      addError(
+        `${serverLabel}: transcend-agent-governance must declare Cursor-native "auth" (public client myelin_cursor_plugin).`,
+      );
+    }
+  }
+
+  if (declaredVariables.has('CREDENTIAL')) {
+    addError(
+      `${pluginName}: plugin.json must not declare a CREDENTIAL variable — browser OAuth is primary; static credentials are a documented manual fallback only.`,
+    );
   }
 
   for (const ref of refs) {
