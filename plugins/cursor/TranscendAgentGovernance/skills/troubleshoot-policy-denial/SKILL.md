@@ -26,11 +26,11 @@ Do **not** treat every MCP failure as a denial. If tools never appear, auth fail
 
 ## Distinguish denial vs connection failure
 
-| Signal | Likely cause | What to tell the user |
-| --- | --- | --- |
-| Tools list loads; one specific call fails with deny / policy / approval wording | Policy (or approval hold) | Expected under governance; admin/policy change or approval needed |
-| Tools list empty; server shows disconnected / auth error / 401 at session start | Connection or credential | Fix install variables / credential; not a per-tool policy deny |
-| Intermittent transport errors, timeouts with no policy text | Network / gateway availability | Retry later or check gateway health with admin; not a bypass invitation |
+| Signal                                                                          | Likely cause                   | What to tell the user                                                   |
+| ------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------- |
+| Tools list loads; one specific call fails with deny / policy / approval wording | Policy (or approval hold)      | Expected under governance; admin/policy change or approval needed       |
+| Tools list empty; server shows disconnected / auth error / 401 at session start | Connection or credential       | Fix install variables / credential; not a per-tool policy deny          |
+| Intermittent transport errors, timeouts with no policy text                     | Network / gateway availability | Retry later or check gateway health with admin; not a bypass invitation |
 
 If unsure, prefer: "This looks like a **policy decision**; if tools otherwise work, ask your administrator to review policy for this tool and action." Avoid diagnosing internal service names.
 

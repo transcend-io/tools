@@ -42,9 +42,9 @@ Work through these in order. Prefer Cursor's MCP / plugin UI and the tools Curso
    Tell the user to refresh the credential in the plugin configuration (or obtain a new one from their Agent Governance administrator). Do **not** suggest a personal or alternate token meant to bypass the gateway.
 
 5. **Smoke a low-risk list/read tool (optional)**  
-   If a harmless discovery tool is available, call it once.  
-   - Success → connection is healthy; later denials are likely policy (hand off to **troubleshoot-policy-denial**).  
-   - Immediate auth failure → credential / connection.  
+   If a harmless discovery tool is available, call it once.
+   - Success → connection is healthy; later denials are likely policy (hand off to **troubleshoot-policy-denial**).
+   - Immediate auth failure → credential / connection.
    - Explicit deny on that tool → policy, not "gateway down."
 
 ## Reporting back to the user
