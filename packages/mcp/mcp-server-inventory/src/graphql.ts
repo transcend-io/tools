@@ -15,6 +15,9 @@ import {
   type PaginatedResponse,
   type SubDataPoint,
   type Vendor,
+  type VendorCreateInput,
+  type VendorUpdateInput,
+  type VendorWriteInput,
 } from '@transcend-io/mcp-server-base';
 import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 
@@ -175,6 +178,48 @@ const UpdateDataSilosDoc = graphql(/* GraphQL */ `
         type
         description
         isLive
+        createdAt
+      }
+    }
+  }
+`);
+
+const CreateVendorDoc = graphql(/* GraphQL */ `
+  mutation InventoryCreateVendor($input: CreateVendorInput!) {
+    createVendor(input: $input) {
+      vendor {
+        id
+        title
+        description
+        dataProcessingAgreementLink
+        contactName
+        contactEmail
+        contactPhone
+        websiteUrl
+        address
+        headquarterCountry
+        headquarterSubDivision
+        createdAt
+      }
+    }
+  }
+`);
+
+const UpdateVendorsDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateVendors($input: UpdateVendorsInput!) {
+    updateVendors(input: $input) {
+      vendors {
+        id
+        title
+        description
+        dataProcessingAgreementLink
+        contactName
+        contactEmail
+        contactPhone
+        websiteUrl
+        address
+        headquarterCountry
+        headquarterSubDivision
         createdAt
       }
     }
@@ -363,6 +408,74 @@ export class InventoryMixin extends TranscendGraphQLBase {
     return this.listConnection<RawVendor, Vendor>(query, 'vendors', options, {
       mapNode: mapVendorPreview,
     });
+  }
+
+  async createVendor(input: VendorCreateInput): Promise<Vendor> {
+    const data = await this.makeRequest(CreateVendorDoc, { input: input as never });
+    return mapVendorPreview(data.createVendor.vendor);
+  }
+
+  async updateVendor(input: VendorUpdateInput): Promise<Vendor> {
+    const data = await this.makeRequest(UpdateVendorsDoc, {
+      input: { vendors: [input as never] },
+    });
+    const updated = data.updateVendors.vendors[0];
+    if (!updated) throw new Error('updateVendors returned an empty array');
+    return mapVendorPreview(updated);
+  }
+
+  /**
+   * Upsert a vendor: update by id when provided, otherwise look up by title
+   * and create if missing (CLI sync semantics).
+   */
+  async writeVendor(input: VendorWriteInput): Promise<{
+    /** Written vendor */
+    vendor: Vendor;
+    /** True when a new vendor was created */
+    created: boolean;
+  }> {
+    const fields = {
+      title: input.title,
+      description: input.description,
+      dataProcessingAgreementLink: input.dataProcessingAgreementLink,
+      contactName: input.contactName,
+      contactEmail: input.contactEmail,
+      contactPhone: input.contactPhone,
+      websiteUrl: input.websiteUrl,
+      address: input.address,
+      headquarterCountry: input.headquarterCountry,
+      headquarterSubDivision: input.headquarterSubDivision,
+    };
+
+    if (input.id) {
+      const vendor = await this.updateVendor({ id: input.id, ...fields });
+      return { vendor, created: false };
+    }
+
+    if (!input.title) {
+      throw new Error('writeVendor requires `id` or `title`');
+    }
+
+    const existing = await this.listVendors({ all: true });
+    const match = existing.nodes.find((v) => v.title === input.title);
+    if (match) {
+      const vendor = await this.updateVendor({ id: match.id, ...fields });
+      return { vendor, created: false };
+    }
+
+    const vendor = await this.createVendor({
+      title: input.title,
+      description: input.description ?? '',
+      dataProcessingAgreementLink: input.dataProcessingAgreementLink,
+      contactName: input.contactName,
+      contactEmail: input.contactEmail,
+      contactPhone: input.contactPhone,
+      websiteUrl: input.websiteUrl,
+      address: input.address,
+      headquarterCountry: input.headquarterCountry,
+      headquarterSubDivision: input.headquarterSubDivision,
+    });
+    return { vendor, created: true };
   }
 
   async listDataPoints(
