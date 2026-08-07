@@ -88,8 +88,8 @@ interface ${componentName}Data {
  *
  * Styled with utilities from \`@transcend-io/mcp-server-base/ui/theme.css\`, so
  * every color and size resolves to a host value or a Transcend token. There is no
- * stock Tailwind palette to reach for by accident, and arbitrary values for color
- * or length are rejected by \`scripts/mcp-app-styling.test.ts\`.
+ * stock Tailwind palette to reach for by accident. Avoid arbitrary values for
+ * color or length, which opt a view back out of the host's theme.
  */
 export function ${componentName}() {
   const { data, isConnected, connectionError } = useMcpApp<${componentName}Data>({
