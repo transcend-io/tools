@@ -8,13 +8,6 @@
     "email": "support@transcend.io"
   },
   "license": "Apache-2.0",
-  "keywords": [
-    "transcend",
-    "agent-governance",
-    "mcp",
-    "cursor",
-    "governance",
-    "policy"
-  ],
+  "keywords": ["transcend", "agent-governance", "mcp", "cursor", "governance", "policy"],
   "logo": "assets/logo.svg"
 }

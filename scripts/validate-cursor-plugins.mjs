@@ -200,9 +200,7 @@ async function main() {
     }
 
     if (typeof entry.name !== 'string' || !pluginNamePattern.test(entry.name)) {
-      addError(
-        `${label}.name must be lowercase and use only alphanumerics, hyphens, and periods.`,
-      );
+      addError(`${label}.name must be lowercase and use only alphanumerics, hyphens, and periods.`);
       continue;
     }
 
