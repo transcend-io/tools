@@ -41,6 +41,10 @@ export {
   UpdateDataSiloSchema,
   type UpdateDataSiloInput,
 } from './tools/inventory_update_data_silo.js';
+export {
+  UpdateOrCreateDataPointSchema,
+  type UpdateOrCreateDataPointInput,
+} from './tools/inventory_update_or_create_data_point.js';
 export { WriteVendorSchema, type WriteVendorInput } from './tools/inventory_write_vendor.js';
 export {
   WriteProcessingPurposeSchema,

@@ -10,6 +10,7 @@ const EXPECTED_TOOL_NAMES = [
   'inventory_list_vendors',
   'inventory_write_vendor',
   'inventory_list_data_points',
+  'inventory_update_or_create_data_point',
   'inventory_list_sub_data_points',
   'inventory_list_identifiers',
   'inventory_list_categories',
@@ -29,6 +30,7 @@ describe('Inventory Tools', () => {
     listVendors: ReturnType<typeof vi.fn>;
     writeVendor: ReturnType<typeof vi.fn>;
     listDataPoints: ReturnType<typeof vi.fn>;
+    updateOrCreateDataPoint: ReturnType<typeof vi.fn>;
     listSubDataPoints: ReturnType<typeof vi.fn>;
     listIdentifiers: ReturnType<typeof vi.fn>;
     listDataCategories: ReturnType<typeof vi.fn>;
@@ -47,6 +49,7 @@ describe('Inventory Tools', () => {
       listVendors: vi.fn(),
       writeVendor: vi.fn(),
       listDataPoints: vi.fn(),
+      updateOrCreateDataPoint: vi.fn(),
       listSubDataPoints: vi.fn(),
       listIdentifiers: vi.fn(),
       listDataCategories: vi.fn(),
@@ -64,9 +67,9 @@ describe('Inventory Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 15 tools with expected names', () => {
+  it('registers exactly 16 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(15);
+    expect(tools).toHaveLength(16);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -329,6 +332,55 @@ describe('Inventory Tools', () => {
 
       expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
       expect(mockGraphql.listDataSubjects).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('inventory_update_or_create_data_point', () => {
+    it('creates/updates a datapoint with field purposes', async () => {
+      mockGraphql.updateOrCreateDataPoint.mockResolvedValue({ id: 'dp-1', name: 'users' });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_update_or_create_data_point')!;
+
+      const result = await tool.handler({
+        dataSiloId: 'silo-1',
+        name: 'users',
+        subDataPoints: [
+          {
+            name: 'email',
+            purposes: [{ purpose: 'ESSENTIAL', name: 'Other' }],
+          },
+        ],
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { dataPoint: { id: 'dp-1', name: 'users' } },
+      });
+      expect(mockGraphql.updateOrCreateDataPoint).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dataSiloId: 'silo-1',
+          name: 'users',
+          subDataPoints: [
+            expect.objectContaining({
+              name: 'email',
+              purposes: [{ purpose: 'ESSENTIAL', name: 'Other' }],
+            }),
+          ],
+        }),
+      );
+    });
+
+    it('zodSchema rejects invalid purpose enums', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_update_or_create_data_point')!;
+
+      const result = tool.zodSchema.safeParse({
+        dataSiloId: 'silo-1',
+        name: 'users',
+        subDataPoints: [{ name: 'email', purposes: [{ purpose: 'NOT_A_PURPOSE' }] }],
+      });
+      expect(result.success).toBe(false);
     });
   });
 

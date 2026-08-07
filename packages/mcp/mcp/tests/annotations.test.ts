@@ -110,6 +110,7 @@ describe('MCP Tool Annotations', () => {
       'inventory_update_data_silo',
       'inventory_write_vendor',
       'inventory_write_processing_purpose',
+      'inventory_update_or_create_data_point',
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',

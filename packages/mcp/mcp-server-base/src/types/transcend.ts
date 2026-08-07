@@ -580,6 +580,46 @@ export interface Identifier {
   prompt?: string;
 }
 
+export interface DataPointSubDataPointInput {
+  /** Field name / key */
+  name: string;
+  /** Field description */
+  description?: string;
+  /** Purpose of processing assignments */
+  purposes?: {
+    /** Processing purpose enum value */
+    purpose: string;
+    /** Subcategory name (defaults to "Other") */
+    name: string;
+  }[];
+  /** Data category assignments */
+  categories?: {
+    /** Top-level data category type */
+    category: string;
+    /** Subcategory name */
+    name: string;
+  }[];
+}
+
+export interface DataPointUpdateOrCreateInput {
+  /** Parent data silo ID */
+  dataSiloId: string;
+  /** Datapoint key / name (upsert key) */
+  name: string;
+  /** Display title */
+  title?: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Team names */
+  teamNames?: string[];
+  /** Nested path segments */
+  path?: string[];
+  /** Field-level sub-data points (including purpose assignments) */
+  subDataPoints?: DataPointSubDataPointInput[];
+}
+
 export interface ProcessingPurposeCreateInput {
   /** Subcategory display name */
   name: string;
