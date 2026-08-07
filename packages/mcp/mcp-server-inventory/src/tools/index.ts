@@ -12,6 +12,7 @@ import { createInventoryListIdentifiersTool } from './inventory_list_identifiers
 import { createInventoryListSubDataPointsTool } from './inventory_list_sub_data_points.js';
 import { createInventoryListVendorsTool } from './inventory_list_vendors.js';
 import { createInventoryUpdateDataSiloTool } from './inventory_update_data_silo.js';
+import { createInventoryWriteVendorTool } from './inventory_write_vendor.js';
 
 export function getInventoryTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -20,6 +21,7 @@ export function getInventoryTools(clients: ToolClients): ToolDefinition[] {
     createInventoryCreateDataSiloTool(clients),
     createInventoryUpdateDataSiloTool(clients),
     createInventoryListVendorsTool(clients),
+    createInventoryWriteVendorTool(clients),
     createInventoryListDataPointsTool(clients),
     createInventoryListSubDataPointsTool(clients),
     createInventoryListIdentifiersTool(clients),

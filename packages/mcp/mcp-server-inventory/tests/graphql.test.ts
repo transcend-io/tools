@@ -28,6 +28,14 @@ function lastRequestBody(mockFetch: ReturnType<typeof vi.fn>) {
   };
 }
 
+function requestBodyAt(mockFetch: ReturnType<typeof vi.fn>, index: number) {
+  const [, init] = mockFetch.mock.calls[index];
+  return JSON.parse(init.body as string) as {
+    query: string;
+    variables: Record<string, unknown>;
+  };
+}
+
 describe('InventoryMixin', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -325,6 +333,134 @@ describe('InventoryMixin', () => {
         totalCount: 2,
         pageInfo: { hasNextPage: false, hasPreviousPage: false },
       });
+    });
+  });
+
+  describe('writeVendor', () => {
+    it('updates by id without listing vendors', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          updateVendors: {
+            vendors: [
+              {
+                id: 'v-1',
+                title: 'Acme',
+                description: 'Updated',
+                dataProcessingAgreementLink: null,
+                contactName: null,
+                contactEmail: null,
+                contactPhone: null,
+                websiteUrl: null,
+                address: null,
+                headquarterCountry: null,
+                headquarterSubDivision: null,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeVendor({ id: 'v-1', description: 'Updated' });
+
+      expect(result.created).toBe(false);
+      expect(result.vendor.description).toBe('Updated');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('updateVendors');
+    });
+
+    it('updates existing vendor matched by title', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          vendors: {
+            nodes: [
+              {
+                id: 'v-1',
+                title: 'Acme',
+                description: 'Old',
+                dataProcessingAgreementLink: null,
+                contactName: null,
+                contactEmail: null,
+                contactPhone: null,
+                websiteUrl: null,
+                address: null,
+                headquarterCountry: null,
+                headquarterSubDivision: null,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+            totalCount: 1,
+          },
+        },
+        {
+          updateVendors: {
+            vendors: [
+              {
+                id: 'v-1',
+                title: 'Acme',
+                description: 'New',
+                dataProcessingAgreementLink: null,
+                contactName: 'Pat',
+                contactEmail: null,
+                contactPhone: null,
+                websiteUrl: null,
+                address: null,
+                headquarterCountry: null,
+                headquarterSubDivision: null,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeVendor({
+        title: 'Acme',
+        description: 'New',
+        contactName: 'Pat',
+      });
+
+      expect(result.created).toBe(false);
+      expect(result.vendor).toMatchObject({ id: 'v-1', description: 'New', contactName: 'Pat' });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('creates when title is not found', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          vendors: { nodes: [], totalCount: 0 },
+        },
+        {
+          createVendor: {
+            vendor: {
+              id: 'v-new',
+              title: 'NewCo',
+              description: 'Brand new',
+              dataProcessingAgreementLink: null,
+              contactName: null,
+              contactEmail: null,
+              contactPhone: null,
+              websiteUrl: null,
+              address: null,
+              headquarterCountry: null,
+              headquarterSubDivision: null,
+              createdAt: '2024-02-01T00:00:00.000Z',
+            },
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeVendor({ title: 'NewCo', description: 'Brand new' });
+
+      expect(result.created).toBe(true);
+      expect(result.vendor.id).toBe('v-new');
+      expect(requestBodyAt(mockFetch, 1).query).toContain('createVendor');
     });
   });
 });

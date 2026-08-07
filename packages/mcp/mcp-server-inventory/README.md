@@ -111,6 +111,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `inventory_list_categories` — List data categories
 - `inventory_list_identifiers` — List identifiers
 - `inventory_list_vendors` — List vendors (contact / DPA / website fields)
+- `inventory_write_vendor` — Create or update a vendor (upsert by title or id)
 - `inventory_list_business_entities` — List business entities
 - `inventory_list_data_subjects` — List data subject types
 - `inventory_analyze` — Analyze inventory data
