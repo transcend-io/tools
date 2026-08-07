@@ -1,0 +1,49 @@
+{
+  "name": "@transcend-io/mcp-server-examples",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reference MCP App views and capability-aware tools. Development only, never published.",
+  "license": "Apache-2.0",
+  "bin": {
+    "transcend-mcp-examples": "./dist/cli.mjs"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "scripts": {
+    "prebuild": "node ../../scripts/build-mcp-views.ts",
+    "build": "tsdown",
+    "build:ui": "node ../../scripts/build-mcp-views.ts",
+    "test": "vitest run --config ../../vitest.config.mcp.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit"
+  },
+  "dependencies": {
+    "@transcend-io/mcp-server-base": "workspace:*"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/ext-apps": "catalog:",
+    "@modelcontextprotocol/sdk": "catalog:",
+    "@transcend-io/design-tokens": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "tailwindcss": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}

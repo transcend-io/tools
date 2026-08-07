@@ -7,8 +7,10 @@
     "tsconfig.base.json",
     "tsconfig.ui.base.json",
     "tsdown.config.base.ts",
+    "tsdown.config.mcp.ts",
     "vite.config.base.ts",
     "vitest.config.ts",
+    "vitest.config.mcp.ts",
     "types/**",
     "assets/**",
     "oxlint.json",
@@ -108,6 +110,14 @@
     "//#format:check:root": {},
     "//#check:packages": {},
     "//#check:deps:root": {},
+    "@transcend-io/mcp-server-examples#build": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": ["dist/**", "src/ui/generated/**"]
+    },
+    "@transcend-io/mcp-server-examples#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "@transcend-io/mcp#typecheck": {
       "dependsOn": ["^build", "//#codegen"],
       "outputs": []

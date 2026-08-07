@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsdown';
 
-import sharedConfig from '../../../tsdown.config.mcp.ts';
+import sharedConfig from '../../tsdown.config.mcp.ts';
 
 export default defineConfig({
   ...sharedConfig,

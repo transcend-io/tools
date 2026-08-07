@@ -333,6 +333,8 @@ For a server with no views, nothing: the `resources` capability is only declared
 
 For a server with views, `resources/list` and `resources/read` are registered, tools carry a `_meta.ui.resourceUri` binding, and `resources/read` returns the HTML with the `text/html;profile=mcp-app` MIME type. The binding is emitted regardless of host support, since the spec's degradation path is that hosts without the extension ignore it and show the text result.
 
+See [`dev/mcp-server-examples`](../../dev/mcp-server-examples/README.md) for two worked examples: `example_hello_app`, which uses all three paths, and `example_elicitation`, which is form collection alone — every field shape the spec allows, and a separate outcome for each way a request can end. They live in `dev/` rather than beside a published package because each view inlines hundreds of kilobytes, and a `private` package cannot carry them into a tarball.
+
 ### Usage attribution
 
 Outbound Transcend requests carry two orthogonal headers:
@@ -429,6 +431,7 @@ Import view code only from `@transcend-io/mcp-server-base/ui`, never the package
 A few constraints worth knowing before adding a view:
 
 - **A package has no Vite config of its own.** `scripts/build-mcp-views.ts` discovers the package's views and runs one Vite build per view, because the single-file plugin collapses a whole bundle into one document — so a config naming a single entry could not express a package with two views, and would have silently emitted both into one document. The script also passes `configFile: false`, since Vitest auto-loads a `vite.config.ts` when a package has no test config and would otherwise replace the shared root config.
+- **The built document is generated into `src/ui/generated/` and gitignored**, then inlined as a string by tsdown's `.html` text loader. Because a test reads the document off disk, `test` for a view-building package depends on `build` in `turbo.json`. Typecheck does not: the `declare module '*.html'` in `types/html.d.ts` is a wildcard, which TypeScript resolves without the file existing.
 - **Views are checked by a second tsconfig.** `tsconfig.json` excludes `src/ui`, since browser code needs bundler module resolution — `@modelcontextprotocol/ext-apps` re-exports its React entry with extensionless specifiers that `NodeNext` refuses to resolve.
 - **Expect a few hundred kilobytes per view.** React, the Apps SDK, and its Zod dependency are all inlined. That is fine for a locally served resource, but it is not a budget for many small views.
 
