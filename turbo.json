@@ -10,6 +10,7 @@
     "tsdown.config.mcp.ts",
     "vite.config.base.ts",
     "vitest.config.ts",
+    "vitest.config.mcp.ts",
     "types/**",
     "assets/**",
     "oxlint.json",
