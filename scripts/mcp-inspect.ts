@@ -11,11 +11,6 @@
  *   pnpm mcp:inspect --examples    # the example server, which the umbrella does not aggregate
  *   pnpm mcp:inspect docs          # one package, which builds faster
  *   pnpm mcp:inspect --http        # serve over Streamable HTTP instead of stdio
- *   pnpm mcp:inspect --no-build    # skip the build, when dist is already current
- *
- * `TRANSCEND_MCP_ASSUME_CAPABILITIES=MCP_APP pnpm mcp:inspect` forces a capability
- * on, for a host that ships app support without declaring it. The Inspector
- * declares its own, so this is only for pointing the loop at something else.
  */
 
 import { parseArgs } from 'node:util';
@@ -48,8 +43,6 @@ async function main(): Promise<void> {
       http: { type: 'boolean', default: false },
       port: { type: 'string' },
       examples: { type: 'boolean', default: false },
-      'no-build': { type: 'boolean', default: false },
-      'no-watch': { type: 'boolean', default: false },
     },
   });
 
@@ -76,10 +69,7 @@ async function main(): Promise<void> {
 
   // Independent of each other, so overlap them: the sandbox check costs an `npx`
   // resolution that the build's several seconds hides entirely.
-  await Promise.all([
-    values['no-build'] ? Promise.resolve() : buildTarget(target),
-    ensureInspectorSandboxProxy(INSPECTOR_V2_SPEC),
-  ]);
+  await Promise.all([buildTarget(target), ensureInspectorSandboxProxy(INSPECTOR_V2_SPEC)]);
 
   // Serving views from disk means a rebuild is picked up by reopening the app in
   // the Inspector, with no server restart and no reconnect. Set here for the
@@ -99,7 +89,7 @@ async function main(): Promise<void> {
     );
   }
 
-  if (!values['no-watch']) startViewWatchers(viewPackages);
+  startViewWatchers(viewPackages);
 
   if (values.http) {
     const port = values.port ?? String(DEFAULT_HTTP_PORT);
