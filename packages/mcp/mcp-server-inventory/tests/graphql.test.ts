@@ -1,4 +1,5 @@
 import type { AuthCredentials } from '@transcend-io/mcp-server-base';
+import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { InventoryMixin } from '../src/graphql.js';
@@ -333,6 +334,143 @@ describe('InventoryMixin', () => {
         totalCount: 2,
         pageInfo: { hasNextPage: false, hasPreviousPage: false },
       });
+    });
+  });
+
+  describe('listProcessingPurposes', () => {
+    it('normalizes blank subcategory names to Other', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          processingPurposeSubCategories: {
+            nodes: [
+              { id: 'pp-1', name: '', purpose: 'LEGAL', description: 'Legal default' },
+              { id: 'pp-2', name: 'Retention', purpose: 'LEGAL', description: 'Custom' },
+            ],
+            totalCount: 2,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.listProcessingPurposes({ first: 50, offset: 0 });
+
+      expect(result.nodes.map((p) => p.name)).toEqual([
+        DefaultPurposeSubCategoryType.Other,
+        'Retention',
+      ]);
+    });
+  });
+
+  describe('writeProcessingPurpose', () => {
+    it('treats empty API names as Other when matching upserts', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          processingPurposeSubCategories: {
+            nodes: [{ id: 'pp-1', name: '', purpose: 'ESSENTIAL', description: 'Essential' }],
+            totalCount: 1,
+          },
+        },
+        {
+          updateProcessingPurposeSubCategories: {
+            processingPurposeSubCategories: [
+              {
+                id: 'pp-1',
+                name: DefaultPurposeSubCategoryType.Other,
+                purpose: 'ESSENTIAL',
+                description: 'Updated essential',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeProcessingPurpose({
+        name: DefaultPurposeSubCategoryType.Other,
+        purpose: 'ESSENTIAL',
+        description: 'Updated essential',
+      });
+
+      expect(result.created).toBe(false);
+      expect(result.processingPurpose).toMatchObject({
+        id: 'pp-1',
+        name: DefaultPurposeSubCategoryType.Other,
+        purpose: 'ESSENTIAL',
+        description: 'Updated essential',
+      });
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const updateBody = requestBodyAt(mockFetch, 1);
+      expect(updateBody.query).toContain('updateProcessingPurposeSubCategories');
+    });
+
+    it('creates when no name+purpose match exists', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          processingPurposeSubCategories: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+        {
+          createProcessingPurposeSubCategory: {
+            processingPurposeSubCategory: {
+              id: 'pp-new',
+              name: 'Login',
+              purpose: 'ESSENTIAL',
+              description: 'Login flows',
+            },
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeProcessingPurpose({
+        name: 'Login',
+        purpose: 'ESSENTIAL',
+        description: 'Login flows',
+      });
+
+      expect(result).toEqual({
+        created: true,
+        processingPurpose: {
+          id: 'pp-new',
+          name: 'Login',
+          purpose: 'ESSENTIAL',
+          description: 'Login flows',
+        },
+      });
+      expect(requestBodyAt(mockFetch, 1).query).toContain('createProcessingPurposeSubCategory');
+    });
+
+    it('updates by id without listing', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          updateProcessingPurposeSubCategories: {
+            processingPurposeSubCategories: [
+              {
+                id: 'pp-1',
+                name: 'Other',
+                purpose: 'ESSENTIAL',
+                description: 'By id',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeProcessingPurpose({
+        id: 'pp-1',
+        description: 'By id',
+      });
+
+      expect(result.created).toBe(false);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('updateProcessingPurposeSubCategories');
     });
   });
 

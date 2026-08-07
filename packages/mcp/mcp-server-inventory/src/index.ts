@@ -29,6 +29,10 @@ export {
   type ListIdentifiersInput,
 } from './tools/inventory_list_identifiers.js';
 export {
+  ListProcessingPurposesSchema,
+  type ListProcessingPurposesInput,
+} from './tools/inventory_list_processing_purposes.js';
+export {
   ListSubDataPointsSchema,
   type ListSubDataPointsInput,
 } from './tools/inventory_list_sub_data_points.js';
@@ -38,3 +42,7 @@ export {
   type UpdateDataSiloInput,
 } from './tools/inventory_update_data_silo.js';
 export { WriteVendorSchema, type WriteVendorInput } from './tools/inventory_write_vendor.js';
+export {
+  WriteProcessingPurposeSchema,
+  type WriteProcessingPurposeInput,
+} from './tools/inventory_write_processing_purpose.js';
