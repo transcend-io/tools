@@ -55,6 +55,8 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare listSubDataPoints: InstanceType<typeof InventoryMixin>['listSubDataPoints'];
   declare listIdentifiers: InstanceType<typeof InventoryMixin>['listIdentifiers'];
   declare listDataCategories: InstanceType<typeof InventoryMixin>['listDataCategories'];
+  declare listProcessingPurposes: InstanceType<typeof InventoryMixin>['listProcessingPurposes'];
+  declare writeProcessingPurpose: InstanceType<typeof InventoryMixin>['writeProcessingPurpose'];
   declare listBusinessEntities: InstanceType<typeof InventoryMixin>['listBusinessEntities'];
   declare listDataSubjects: InstanceType<typeof InventoryMixin>['listDataSubjects'];
 

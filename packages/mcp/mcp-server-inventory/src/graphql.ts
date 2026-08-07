@@ -15,6 +15,9 @@ import {
   type PaginatedResponse,
   type SubDataPoint,
   type Vendor,
+  type ProcessingPurposeCreateInput,
+  type ProcessingPurposeUpdateInput,
+  type ProcessingPurposeWriteInput,
   type VendorCreateInput,
   type VendorUpdateInput,
   type VendorWriteInput,
@@ -179,6 +182,36 @@ const UpdateDataSilosDoc = graphql(/* GraphQL */ `
         description
         isLive
         createdAt
+      }
+    }
+  }
+`);
+
+const CreateProcessingPurposeSubCategoryDoc = graphql(/* GraphQL */ `
+  mutation InventoryCreateProcessingPurposeSubCategory(
+    $input: CreateProcessingPurposeCategoryInput!
+  ) {
+    createProcessingPurposeSubCategory(input: $input) {
+      processingPurposeSubCategory {
+        id
+        name
+        purpose
+        description
+      }
+    }
+  }
+`);
+
+const UpdateProcessingPurposeSubCategoriesDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateProcessingPurposeSubCategories(
+    $input: UpdateProcessingPurposeSubCategoriesInput!
+  ) {
+    updateProcessingPurposeSubCategories(input: $input) {
+      processingPurposeSubCategories {
+        id
+        name
+        purpose
+        description
       }
     }
   }
@@ -633,6 +666,103 @@ export class InventoryMixin extends TranscendGraphQLBase {
       totalCount: nodes.length,
       pageInfo: { hasNextPage: false, hasPreviousPage: false },
     };
+  }
+
+  async listProcessingPurposes(options?: ListOptions): Promise<PaginatedResponse<DataPurpose>> {
+    const query = `
+      query ListProcessingPurposes($first: Int, $offset: Int) {
+        processingPurposeSubCategories(first: $first, offset: $offset) {
+          nodes {
+            id
+            name
+            purpose
+            description
+          }
+          totalCount
+        }
+      }
+    `;
+    type RawPurpose = {
+      id: string;
+      name: string;
+      purpose: string;
+      description: string;
+    };
+    return this.listConnection<RawPurpose, DataPurpose>(
+      query,
+      'processingPurposeSubCategories',
+      options,
+      {
+        mapNode: mapDataPurpose,
+      },
+    );
+  }
+
+  async createProcessingPurpose(input: ProcessingPurposeCreateInput): Promise<DataPurpose> {
+    const data = await this.makeRequest(CreateProcessingPurposeSubCategoryDoc, {
+      input: input as never,
+    });
+    const created = data.createProcessingPurposeSubCategory.processingPurposeSubCategory;
+    return mapDataPurpose(created);
+  }
+
+  async updateProcessingPurpose(input: ProcessingPurposeUpdateInput): Promise<DataPurpose> {
+    const data = await this.makeRequest(UpdateProcessingPurposeSubCategoriesDoc, {
+      input: { processingPurposeSubCategories: [input as never] },
+    });
+    const updated = data.updateProcessingPurposeSubCategories.processingPurposeSubCategories[0];
+    if (!updated) {
+      throw new Error('updateProcessingPurposeSubCategories returned an empty array');
+    }
+    return mapDataPurpose(updated);
+  }
+
+  /**
+   * Upsert a processing purpose subcategory: update by id when provided,
+   * otherwise look up by `name:purpose` and create if missing (CLI sync semantics).
+   * Empty API names are treated as {@link DefaultPurposeSubCategoryType.Other} when matching.
+   */
+  async writeProcessingPurpose(input: ProcessingPurposeWriteInput): Promise<{
+    /** Written processing purpose */
+    processingPurpose: DataPurpose;
+    /** True when a new subcategory was created */
+    created: boolean;
+  }> {
+    if (input.id) {
+      const processingPurpose = await this.updateProcessingPurpose({
+        id: input.id,
+        name: input.name,
+        purpose: input.purpose,
+        description: input.description,
+      });
+      return { processingPurpose, created: false };
+    }
+
+    if (!input.name || !input.purpose) {
+      throw new Error('writeProcessingPurpose requires `id`, or both `name` and `purpose`');
+    }
+
+    const wantedName = normalizeSubCategoryName(input.name);
+    const existing = await this.listProcessingPurposes({ all: true });
+    const match = existing.nodes.find(
+      (p) => normalizeSubCategoryName(p.name) === wantedName && p.purpose === input.purpose,
+    );
+    if (match) {
+      const processingPurpose = await this.updateProcessingPurpose({
+        id: match.id,
+        name: input.name,
+        purpose: input.purpose,
+        description: input.description,
+      });
+      return { processingPurpose, created: false };
+    }
+
+    const processingPurpose = await this.createProcessingPurpose({
+      name: input.name,
+      purpose: input.purpose,
+      description: input.description,
+    });
+    return { processingPurpose, created: true };
   }
 
   async listIdentifiers(options?: ListOptions): Promise<PaginatedResponse<Identifier>> {
