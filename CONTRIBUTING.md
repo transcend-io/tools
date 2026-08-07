@@ -305,12 +305,14 @@ OAuth stdio variables:
 - `TRANSCEND_OAUTH_CLIENT_SECRET` — client secret from the OAuth clients admin page
 - `TRANSCEND_OAUTH_REDIRECT_PORT` — localhost callback port; must match registered redirect URI
 - `TRANSCEND_OAUTH_REDIRECT_HOST` — loopback host (default `127.0.0.1`; use `::1` for IPv6)
-- `TRANSCEND_OAUTH_ISSUER` — optional test-only override; production auto-detects region
+- `TRANSCEND_OAUTH_ISSUER` — optional test-only override (requires `ALLOW_TEST_OVERRIDES=1`); production auto-detects region
+- `ALLOW_TEST_OVERRIDES` — set to `1` to enable test-only URL overrides (`TRANSCEND_OAUTH_ISSUER`, `TRANSCEND_DASHBOARD_URL`). Unset or any other value is treated as disabled.
 
 Optional overrides:
 
 - `TRANSCEND_API_URL` — GraphQL backend API base URL (default: `https://api.transcend.io`). Matches the CLI and main monorepo convention.
 - `SOMBRA_URL` — Sombra REST API base URL (default: `https://multi-tenant.sombra.transcend.io`). Matches the CLI / SDK convention.
+- `TRANSCEND_DASHBOARD_URL` — test-only dashboard base URL override (requires `ALLOW_TEST_OVERRIDES=1`)
 
 For local development, define these in **`secret.env`** (copy from `secret.env.example` at the repository root). Do not commit `secret.env`.
 

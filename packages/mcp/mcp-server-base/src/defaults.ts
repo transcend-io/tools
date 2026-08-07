@@ -4,7 +4,8 @@
  * optional sticky override for the Sombra customer ingress; when unset, MCP
  * lazy-resolves `organization.sombra.customerUrl` via GraphQL. OAuth stdio mode
  * probes {@link OAUTH_REGIONAL_ISSUERS} at startup to pick the matching regional
- * API; `TRANSCEND_OAUTH_ISSUER` and `TRANSCEND_DASHBOARD_URL` are test-only overrides.
+ * API; `TRANSCEND_OAUTH_ISSUER` and `TRANSCEND_DASHBOARD_URL` are test-only overrides
+ * gated by `ALLOW_TEST_OVERRIDES=1`.
  */
 
 /** GraphQL backend API URL (`api.transcend.io`, regional split lives here). */
