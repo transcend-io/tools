@@ -4,12 +4,12 @@
 # -----------------------------------------------
 
 # TypeScript
-tsconfig.json @transcend-io/lakitu
-tsconfig.*.json @transcend-io/lakitu
+tsconfig.json @transcend-io/lakitu @transcend-io/zelda
+tsconfig.*.json @transcend-io/lakitu @transcend-io/zelda
 
 # General
-*.config.* @transcend-io/lakitu
-turbo.json @transcend-io/lakitu
+*.config.* @transcend-io/lakitu @transcend-io/zelda
+turbo.json @transcend-io/lakitu @transcend-io/zelda
 
 # -----------------------------------------------
 # Continuous Integration (Defaults)
@@ -22,10 +22,10 @@ turbo.json @transcend-io/lakitu
 # Manifests (Defaults)
 # -----------------------------------------------
 
-.node-version @transcend-io/lakitu
-mise.toml @transcend-io/lakitu
-package.json @transcend-io/lakitu
-pnpm-workspace.yaml @transcend-io/lakitu
+.node-version @transcend-io/lakitu @transcend-io/zelda
+mise.toml @transcend-io/lakitu @transcend-io/zelda
+package.json @transcend-io/lakitu @transcend-io/zelda
+pnpm-workspace.yaml @transcend-io/lakitu @transcend-io/zelda
 
 # -----------------------------------------------
 # Lakitu
@@ -56,3 +56,11 @@ pnpm-workspace.yaml @transcend-io/lakitu
 # /packages/sdk/                    TBD?
 # /packages/type-utils/             TBD?
 # /packages/utils/                  TBD?
+
+# -----------------------------------------------
+# Development-only packages
+# -----------------------------------------------
+
+# Never published. Listed after the defaults above so a manifest or config here
+# belongs to the team whose code it exercises.
+/dev/mcp-server-examples/ @transcend-io/zelda
