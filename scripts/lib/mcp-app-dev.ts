@@ -32,26 +32,17 @@ export const UMBRELLA_PACKAGE = '@transcend-io/mcp';
 export const EXAMPLES_PACKAGE = '@transcend-io/mcp-server-examples';
 
 /**
- * The Inspector release `pnpm mcp:inspect` uses by default.
+ * The Inspector release `pnpm mcp:inspect` runs.
  *
- * v2 is the right default, measured rather than assumed. All three of its clients
- * (web, CLI, TUI) declare `extensions["io.modelcontextprotocol/ui"]` in
- * `initialize`, which is what a spec-correct server requires before it will bind
- * a view to a tool, and its CLI has an `--app-info` probe that reports a tool's
- * app metadata directly. Pinned to the major so security fixes land without a
- * surprise rewrite.
+ * v2 is the floor rather than a preference. All three of its clients (web, CLI,
+ * TUI) declare `extensions["io.modelcontextprotocol/ui"]` in `initialize`, which
+ * is what a spec-correct server requires before it will bind a view to a tool,
+ * and its CLI has an `--app-info` probe that reports a tool's app metadata
+ * directly. Earlier releases declare no capabilities at all, so every view is
+ * withheld and the Apps tab renders empty. Pinned to the major so security fixes
+ * land without a surprise rewrite.
  */
 export const INSPECTOR_V2_SPEC = '@modelcontextprotocol/inspector@2';
-
-/**
- * The v1 Inspector, available behind `--v1`.
- *
- * Kept as an escape hatch, not a default. v1 ships an Apps tab that reads
- * `_meta["ui/resourceUri"]`, but its client declares `capabilities: {}`, so a
- * spec-correct server withholds every view and the tab renders empty. `--v1`
- * therefore also turns on the capability override to compensate.
- */
-export const INSPECTOR_V1_SPEC = '@modelcontextprotocol/inspector@v1-latest';
 
 /** Package the Inspector specs above resolve to. */
 const INSPECTOR_PACKAGE_NAME = '@modelcontextprotocol/inspector';

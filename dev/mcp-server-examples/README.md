@@ -47,8 +47,8 @@ and re-rendering from the result the host pushes back.
 `src/tools/elicitation.ts` is form collection on its own, with no view. It has no
 MCP App variant on purpose: precedence is app, then elicitation, then baseline, so
 a tool offering both resolves to its view on every host worth testing against —
-including the Inspector. Form-only is what keeps the form reachable in the normal
-`pnpm mcp:inspect` loop rather than only under `--v1`.
+including the Inspector. Form-only is what keeps the form reachable in the
+`pnpm mcp:inspect` loop at all.
 
 It covers two things `example_hello_app`'s single optional string does not. First,
 every field shape the spec allows: a length-bounded string, a titled single-select

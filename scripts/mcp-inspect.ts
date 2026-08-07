@@ -11,9 +11,11 @@
  *   pnpm mcp:inspect --examples    # the example server, which the umbrella does not aggregate
  *   pnpm mcp:inspect docs          # one package, which builds faster
  *   pnpm mcp:inspect --http        # serve over Streamable HTTP instead of stdio
- *   pnpm mcp:inspect --v1          # the older Inspector, with the capability override
- *   pnpm mcp:inspect --assume-app  # force the MCP Apps capability on
  *   pnpm mcp:inspect --no-build    # skip the build, when dist is already current
+ *
+ * `TRANSCEND_MCP_ASSUME_CAPABILITIES=MCP_APP pnpm mcp:inspect` forces a capability
+ * on, for a host that ships app support without declaring it. The Inspector
+ * declares its own, so this is only for pointing the loop at something else.
  */
 
 import { parseArgs } from 'node:util';
@@ -24,7 +26,6 @@ import {
   DEV_VIEWS_ENV_VAR,
   discoverMcpPackages,
   ensureInspectorSandboxProxy,
-  INSPECTOR_V1_SPEC,
   INSPECTOR_V2_SPEC,
   inspectorEnvArgs,
   installShutdownHandlers,
@@ -46,9 +47,7 @@ async function main(): Promise<void> {
     options: {
       http: { type: 'boolean', default: false },
       port: { type: 'string' },
-      v1: { type: 'boolean', default: false },
       examples: { type: 'boolean', default: false },
-      'assume-app': { type: 'boolean', default: false },
       'no-build': { type: 'boolean', default: false },
       'no-watch': { type: 'boolean', default: false },
     },
@@ -57,9 +56,8 @@ async function main(): Promise<void> {
   const packages = discoverMcpPackages();
   const target = resolveTarget({ argument: positionals[0], examples: values.examples }, packages);
   const viewPackages = viewPackagesInScope(target, packages);
-  const inspectorSpec = values.v1 ? INSPECTOR_V1_SPEC : INSPECTOR_V2_SPEC;
 
-  logger.log(`Inspecting ${target.name} with ${inspectorSpec}`);
+  logger.log(`Inspecting ${target.name} with ${INSPECTOR_V2_SPEC}`);
   if (target.name === UMBRELLA_PACKAGE) {
     logger.log(
       "Umbrella server selected, so every package's apps are available. Pass a package name " +
@@ -77,11 +75,10 @@ async function main(): Promise<void> {
   installShutdownHandlers();
 
   // Independent of each other, so overlap them: the sandbox check costs an `npx`
-  // resolution that the build's several seconds hides entirely. v1 keeps its
-  // static assets somewhere else and is unaffected.
+  // resolution that the build's several seconds hides entirely.
   await Promise.all([
     values['no-build'] ? Promise.resolve() : buildTarget(target),
-    values.v1 ? Promise.resolve() : ensureInspectorSandboxProxy(inspectorSpec),
+    ensureInspectorSandboxProxy(INSPECTOR_V2_SPEC),
   ]);
 
   // Serving views from disk means a rebuild is picked up by reopening the app in
@@ -90,20 +87,15 @@ async function main(): Promise<void> {
   // because the Inspector does not pass our environment on.
   process.env[DEV_VIEWS_ENV_VAR] = '1';
 
-  // v1 declares no capabilities at all, so without this its Apps tab is empty no
-  // matter how correct the server is. v2 declares the extension properly and
-  // needs nothing, which is why it is the default and this stays opt-in: forcing
-  // the capability on would mask a genuine negotiation failure.
-  if (values.v1 || values['assume-app']) {
-    process.env[ASSUME_CAPABILITIES_ENV_VAR] ??= 'MCP_APP';
-    const forced = process.env[ASSUME_CAPABILITIES_ENV_VAR];
-    // Set but empty is deliberate: it is how you reach a tool's baseline branch,
-    // since v1 declares nothing and the override cannot subtract a capability.
+  // Never set here: the Inspector declares the Apps extension itself, and forcing
+  // a capability on would mask a genuine failure to declare one. Reported when set
+  // by hand, since it changes which variant every tool resolves to.
+  const forcedCapabilities = process.env[ASSUME_CAPABILITIES_ENV_VAR];
+  if (forcedCapabilities !== undefined) {
     logger.log(
-      forced === ''
+      forcedCapabilities === ''
         ? `${ASSUME_CAPABILITIES_ENV_VAR} is set but empty, so capabilities stay exactly as the client declared them.`
-        : `Forcing client capabilities on (${forced}) because ` +
-            `${values.v1 ? 'v1 does not advertise the MCP Apps extension' : '--assume-app was passed'}.`,
+        : `${ASSUME_CAPABILITIES_ENV_VAR} is forcing client capabilities on (${forcedCapabilities}).`,
     );
   }
 
@@ -120,37 +112,27 @@ async function main(): Promise<void> {
       `--port=${port}`,
     ]);
 
-    if (values.v1) {
-      startProcess('inspector', 'npx', ['-y', inspectorSpec]);
-      logger.log(
-        `\nServer listening on ${url}.\n` +
-          'In the Inspector, choose the "Streamable HTTP" transport and paste that URL, ' +
-          'then open the Apps tab.\n',
-      );
-      return;
-    }
-
-    // v2 infers the transport from the target, and a /mcp path means Streamable HTTP.
-    startProcess('inspector', 'npx', ['-y', inspectorSpec, url]);
+    // The Inspector infers the transport from the target, and a /mcp path means
+    // Streamable HTTP.
+    startProcess('inspector', 'npx', ['-y', INSPECTOR_V2_SPEC, url]);
     logger.log(`\nServer listening on ${url}. Open the Apps tab once the Inspector connects.\n`);
     return;
   }
 
   logger.log('\nLaunching the Inspector. Open the Apps tab once it connects.\n');
 
-  // v1 forwards trailing arguments to the server; v2 parses them as its own, so
-  // rely on the server defaulting to stdio there instead of passing a flag.
-  const serverArgs = values.v1 ? [target.cliPath, '--transport=stdio'] : [target.cliPath];
-
-  // The `-e` pairs precede the command because both Inspector versions parse
-  // their own options first and treat the rest as the server to spawn.
+  // No `--transport=stdio`: the Inspector parses trailing arguments as its own, so
+  // rely on the server defaulting to stdio instead of passing a flag it would eat.
+  //
+  // The `-e` pairs precede the command because the Inspector parses its own options
+  // first and treats the rest as the server to spawn.
   startProcess('inspector', 'npx', [
     '-y',
-    inspectorSpec,
+    INSPECTOR_V2_SPEC,
     ...inspectorEnvArgs(),
     'node',
     ...SERVER_NODE_ARGS,
-    ...serverArgs,
+    target.cliPath,
   ]);
 }
 

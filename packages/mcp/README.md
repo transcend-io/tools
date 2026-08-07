@@ -493,7 +493,7 @@ npx -y @modelcontextprotocol/inspector@2 --cli node dev/mcp-server-examples/dist
 # {"hasApp":true,"toolName":"example_hello_app","resourceUri":"ui://transcend-examples/hello",...}
 ```
 
-`--v1` runs the older Inspector instead. v1 ships an Apps tab that reads `_meta["ui/resourceUri"]`, but its client declares `capabilities: {}`, so a spec-correct server withholds every view and the tab renders empty. `--v1` therefore turns on the capability override below to compensate.
+v2 is a floor rather than a preference. Earlier Inspector releases ship an Apps tab that reads `_meta["ui/resourceUri"]`, but their client declares `capabilities: {}`, so a spec-correct server withholds every view and the tab renders empty. Running one against this loop would mean overriding negotiation to compensate, which is the one thing the loop exists to check.
 
 A view's document is read once, when the app's sandbox iframe mounts, and never again while that app is alive — later tool calls arrive as `ui/notifications/tool-result` over the bridge. So after a rebuild the data a view renders updates but its markup does not, until you reopen the app or reload the tab. That is how a real host loads an app rather than an Inspector quirk, so reopening the app is the step that shows a markup edit.
 
@@ -520,14 +520,9 @@ That check is the same one `@modelcontextprotocol/ext-apps` makes server-side in
 
 To exercise a form, call `example_elicitation`. It ships no view, so v2 resolves it to the elicitation variant and renders the request under **Elicitation Request** — no override, no restart, and the same `mode: 'form'` path a production host takes.
 
-Reaching the other branches of a tool that _does_ have a view is harder. The override only ever adds a capability, never removes one, and v2 declares both the Apps extension and `elicitation/create`, so such a tool always resolves to the view there. v1 declares nothing, which makes it the way in; set the override yourself rather than letting `--v1` default it to `MCP_APP`:
+The other branches of a tool that _does_ have a view are not reachable here, and the override cannot get you there: it only ever adds a capability, never removes one, while the Inspector declares both the Apps extension and `elicitation/create`. Such a tool therefore always resolves to its view.
 
-```bash
-TRANSCEND_MCP_ASSUME_CAPABILITIES= pnpm mcp:inspect --v1 --examples            # baseline branch
-TRANSCEND_MCP_ASSUME_CAPABILITIES=ELICITATION pnpm mcp:inspect --v1 --examples # elicitation branch
-```
-
-Each cell costs a restart, and v1 may not render the form even when the server offers it, so treat this as confirming which variant the server chose rather than as a test of the form itself — that is what `example_elicitation` on v2 is for. [`define-tool-with-capabilities.test.ts`](mcp-server-base/tests/define-tool-with-capabilities.test.ts) is the exhaustive check on selection, and cheaper to consult.
+That is a limit of the Inspector rather than a gap in coverage. Variant selection is exhaustively checked in [`define-tool-with-capabilities.test.ts`](mcp-server-base/tests/define-tool-with-capabilities.test.ts), which is both cheaper to consult and more precise than reading a rendered panel. It is also why `example_elicitation` deliberately ships no view: keeping one tool form-only is what makes the form flow reachable in this loop at all.
 
 ## Contributing
 
