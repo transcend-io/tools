@@ -1,10 +1,8 @@
 import { defineUiResource, type UiResourceDefinition } from '@transcend-io/mcp-server-base';
 
-// Built from src/ui/hello/ by this package's `prebuild` and inlined here as a
-// string by tsdown's `.html` text loader. The document is fully self-contained —
-// React, the view's CSS, and the design tokens are all inlined — because hosts
-// render views in a sandboxed iframe with no same-origin server to fetch
-// anything from.
+// Built from src/ui/hello/ by `prebuild`, then inlined as a string by tsdown's
+// `.html` text loader. Self-contained down to React and the tokens, because hosts
+// render views in a sandboxed iframe with nothing to fetch from.
 import HELLO_APP_HTML from '../ui/generated/hello.html';
 
 /** URI hosts fetch to render the hello-world view. */
