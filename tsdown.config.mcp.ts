@@ -6,8 +6,8 @@ import sharedLibraryConfig from './tsdown.config.base.ts';
  * Shared build settings for MCP servers, the only packages that may inline a
  * prebuilt MCP App view.
  *
- * The `.html` loader turns a prebuilt view into a string literal, which is what
- * the reference views in `dev/mcp-server-examples` are served from.
+ * The `.html` loader is what turns a view into the string literal a server serves
+ * over `resources/read`.
  */
 const mcpServerConfig: UserConfig = {
   ...sharedLibraryConfig,
