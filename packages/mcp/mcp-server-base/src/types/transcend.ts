@@ -448,12 +448,47 @@ export interface DataSiloCreateInput {
 }
 
 export interface DataSiloUpdateInput {
+  /** Data silo ID */
   id: string;
+  /** Display title */
   title?: string;
+  /** Description */
   description?: string;
+  /** Notification email for DSR automation */
   notifyEmailAddress?: string;
+  /** Webhook URL for DSR automation */
   notifyWebhookUrl?: string;
+  /** Include identifiers attachment on prompt-a-vendor emails */
   promptAVendorEmailIncludeIdentifiersAttachment?: boolean;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Team names */
+  teamNames?: string[];
+  /** Linked vendor ID */
+  vendorId?: string;
+  /** Processing purpose subcategory IDs (silo-level purpose of processing) */
+  processingPurposeSubCategoryIds?: string[];
+  /**
+   * Data subject IDs to place on the blocklist (subjects that should *not*
+   * apply to this system). Resolve IDs via inventory_list_data_subjects.
+   */
+  dataSubjectBlockListIds?: string[];
+  /** ISO country code */
+  country?: string;
+  /** ISO country subdivision */
+  countrySubDivision?: string;
+  /** Vendor / system website URL */
+  websiteUrl?: string;
+  /** Primary contact name */
+  contactName?: string;
+  /** Primary contact email */
+  contactEmail?: string;
+  /** Free-form notes */
+  notes?: string;
+  /** Business entity titles */
+  businessEntityTitles?: string[];
+  /** Whether the data silo is live for DSR processing */
+  isLive?: boolean;
 }
 
 export interface DataPoint {
@@ -543,6 +578,37 @@ export interface Identifier {
   isVerifiedAtIngest?: boolean;
   selectOptions?: string[];
   prompt?: string;
+}
+
+export interface ProcessingPurposeCreateInput {
+  /** Subcategory display name */
+  name: string;
+  /** Processing purpose enum value */
+  purpose: string;
+  /** Description */
+  description?: string;
+}
+
+export interface ProcessingPurposeUpdateInput {
+  /** Processing purpose subcategory ID */
+  id: string;
+  /** Subcategory display name */
+  name?: string;
+  /** Processing purpose enum value */
+  purpose?: string;
+  /** Description */
+  description?: string;
+}
+
+export interface ProcessingPurposeWriteInput {
+  /** Existing processing purpose subcategory ID (update path when set) */
+  id?: string;
+  /** Subcategory display name (upsert key with purpose when id is omitted) */
+  name?: string;
+  /** Processing purpose enum value (upsert key with name when id is omitted) */
+  purpose?: string;
+  /** Description */
+  description?: string;
 }
 
 export interface VendorCreateInput {
