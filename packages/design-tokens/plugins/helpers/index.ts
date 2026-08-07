@@ -6,7 +6,7 @@ export { generatePrimitiveTs } from './generatePrimitiveTs';
 export { generateSemanticTs } from './generateSemanticTs';
 export { readTokenDir } from './readTokenDir';
 export { serializeObj } from './serializeObj';
-export { valueToCss } from './valueToCss';
+export { valueToCss, isTypographyComposite, typographyToCssObj } from './valueToCss';
 export type { AnnotatedValue, TokenRef } from './serializeObj';
 export type { PrimitiveGroup } from './buildPrimitives';
 export type { TokenFileEntry } from './readTokenDir';
