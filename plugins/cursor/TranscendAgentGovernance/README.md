@@ -55,14 +55,14 @@ First successful authorization auto-registers a **connected agent** for your use
 
 ## Session durability and revoke
 
-| Event | Expected behavior |
-| --- | --- |
-| Access token nears expiry | Cursor refreshes using the refresh token (`offline_access` / delegated refresh). No re-consent prompt. |
-| Cursor restart | Session resumes from the IDE-held tokens; no browser re-auth if the refresh grant is still valid. |
-| Refresh failure / expired absolute lifetime | Fail-closed: Cursor surfaces an auth failure and prompts re-authorization. No silent downgrade to a pasted credential. |
+| Event                                                | Expected behavior                                                                                                                     |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Access token nears expiry                            | Cursor refreshes using the refresh token (`offline_access` / delegated refresh). No re-consent prompt.                                |
+| Cursor restart                                       | Session resumes from the IDE-held tokens; no browser re-auth if the refresh grant is still valid.                                     |
+| Refresh failure / expired absolute lifetime          | Fail-closed: Cursor surfaces an auth failure and prompts re-authorization. No silent downgrade to a pasted credential.                |
 | Admin **revokes credentials** on the connected agent | Subsequent MCP calls fail auth; Cursor should prompt re-authorization. The agent record can remain; reconnecting creates a new grant. |
-| Admin **disconnects** the agent | Credentials revoked and the agent terminated; re-auth may provision a new connected agent depending on platform policy. |
-| Policy-denied tool call | Inline error in chat; the MCP server stays connected. Retry an allowed tool afterward. |
+| Admin **disconnects** the agent                      | Credentials revoked and the agent terminated; re-auth may provision a new connected agent depending on platform policy.               |
+| Policy-denied tool call                              | Inline error in chat; the MCP server stays connected. Retry an allowed tool afterward.                                                |
 
 Token TTLs and refresh windows are owned by the Agent Governance issuer (short-lived access JWT; refresh with rotate-on-use and absolute lifetime). Publishing `myelin_cursor_plugin` is safe: there is **no client secret** in this plugin.
 
