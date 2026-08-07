@@ -10,6 +10,10 @@ export const ListDataPointsSchema = z.object({
       'When set, only return datapoints belonging to this data silo ' +
         '(GraphQL filterBy.dataSilos). Strongly recommended for large inventories.',
     ),
+  text: z
+    .string()
+    .optional()
+    .describe('Free-text search across datapoints (GraphQL filterBy.text)'),
   limit: z.coerce
     .number()
     .min(1)
@@ -32,17 +36,18 @@ export function createInventoryListDataPointsTool(clients: ToolClients) {
     name: 'inventory_list_data_points',
     description:
       'List data points (collections of personal data). Pass `dataSiloId` to scope to one ' +
-      'data system (recommended). Each row includes `dataSiloId`. Paginate with `offset` ' +
-      'until `hasNextPage` is false. For field-level purposes/categories, follow up with ' +
-      'inventory_list_sub_data_points.',
+      'data system (recommended) and/or `text` to search. Each row includes `dataSiloId`. ' +
+      'Paginate with `offset` until `hasNextPage` is false. For field-level purposes/categories, ' +
+      'follow up with inventory_list_sub_data_points.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataPointsSchema,
-    handler: async ({ dataSiloId, limit, offset }) => {
+    handler: async ({ dataSiloId, text, limit, offset }) => {
       const result = await graphql.listDataPoints(dataSiloId, {
         first: limit,
         offset,
+        text,
       });
 
       return createListResult(result.nodes, {

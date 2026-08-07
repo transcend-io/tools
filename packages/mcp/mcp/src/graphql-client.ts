@@ -47,6 +47,7 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   // Inventory
   declare listDataSilos: InstanceType<typeof InventoryMixin>['listDataSilos'];
   declare getDataSilo: InstanceType<typeof InventoryMixin>['getDataSilo'];
+  declare listCatalogs: InstanceType<typeof InventoryMixin>['listCatalogs'];
   declare createDataSilo: InstanceType<typeof InventoryMixin>['createDataSilo'];
   declare updateDataSilo: InstanceType<typeof InventoryMixin>['updateDataSilo'];
   declare listVendors: InstanceType<typeof InventoryMixin>['listVendors'];

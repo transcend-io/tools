@@ -5,6 +5,7 @@ import { getInventoryTools } from '../src/tools.js';
 const EXPECTED_TOOL_NAMES = [
   'inventory_list_data_silos',
   'inventory_get_data_silo',
+  'inventory_list_catalog_integrations',
   'inventory_create_data_silo',
   'inventory_update_data_silo',
   'inventory_list_vendors',
@@ -25,6 +26,7 @@ describe('Inventory Tools', () => {
   let mockGraphql: {
     listDataSilos: ReturnType<typeof vi.fn>;
     getDataSilo: ReturnType<typeof vi.fn>;
+    listCatalogs: ReturnType<typeof vi.fn>;
     createDataSilo: ReturnType<typeof vi.fn>;
     updateDataSilo: ReturnType<typeof vi.fn>;
     listVendors: ReturnType<typeof vi.fn>;
@@ -44,6 +46,7 @@ describe('Inventory Tools', () => {
     mockGraphql = {
       listDataSilos: vi.fn(),
       getDataSilo: vi.fn(),
+      listCatalogs: vi.fn(),
       createDataSilo: vi.fn(),
       updateDataSilo: vi.fn(),
       listVendors: vi.fn(),
@@ -67,9 +70,9 @@ describe('Inventory Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 16 tools with expected names', () => {
+  it('registers exactly 17 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(16);
+    expect(tools).toHaveLength(17);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -169,6 +172,28 @@ describe('Inventory Tools', () => {
       expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
         first: 10,
         offset: 0,
+        text: undefined,
+        titles: undefined,
+      });
+    });
+
+    it('forwards text and titles filters', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+
+      await tool.handler({ text: 'ZEL8168', titles: ['Acme'], limit: 10, offset: 0 });
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'ZEL8168',
+        titles: ['Acme'],
       });
     });
 
@@ -187,6 +212,8 @@ describe('Inventory Tools', () => {
       expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
         first: 100,
         offset: 100,
+        text: undefined,
+        titles: undefined,
       });
     });
 
@@ -216,6 +243,26 @@ describe('Inventory Tools', () => {
       expect(mockGraphql.listDataPoints).toHaveBeenCalledWith('silo-1', {
         first: 25,
         offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter with dataSiloId', async () => {
+      mockGraphql.listDataPoints.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_points')!;
+
+      await tool.handler({ dataSiloId: 'silo-1', text: 'customers', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listDataPoints).toHaveBeenCalledWith('silo-1', {
+        first: 10,
+        offset: 0,
+        text: 'customers',
       });
     });
 
@@ -234,6 +281,112 @@ describe('Inventory Tools', () => {
       expect(mockGraphql.listDataPoints).toHaveBeenCalledWith(undefined, {
         first: 10,
         offset: 0,
+        text: undefined,
+      });
+    });
+  });
+
+  describe('inventory_list_catalog_integrations', () => {
+    it('returns catalog list from graphql mixin', async () => {
+      const nodes = [
+        {
+          integrationName: 'salesforce',
+          title: 'Salesforce',
+          description: 'CRM',
+          hasApiFunctionality: true,
+          hasAvcFunctionality: false,
+          alreadyConnected: 1,
+          integrationCategory: 'SALES_AND_CRM',
+        },
+      ];
+      mockGraphql.listCatalogs.mockResolvedValue({
+        nodes,
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_catalog_integrations')!;
+
+      const result = await tool.handler({ limit: 10, offset: 0 });
+
+      expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
+      expect(mockGraphql.listCatalogs).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter', async () => {
+      mockGraphql.listCatalogs.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_catalog_integrations')!;
+
+      await tool.handler({ text: 'salesforce', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listCatalogs).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'salesforce',
+      });
+    });
+
+    it('forwards pagination first/offset', async () => {
+      mockGraphql.listCatalogs.mockResolvedValue({
+        nodes: [],
+        totalCount: 100,
+        pageInfo: { hasNextPage: true, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_catalog_integrations')!;
+
+      await tool.handler({ limit: 25, offset: 50 });
+
+      expect(mockGraphql.listCatalogs).toHaveBeenCalledWith({
+        first: 25,
+        offset: 50,
+        text: undefined,
+      });
+    });
+  });
+
+  describe('inventory_create_data_silo', () => {
+    it('passes integrationName as catalog name with optional title and description', async () => {
+      mockGraphql.createDataSilo.mockResolvedValue({
+        id: 'silo-1',
+        title: 'My Custom Silo',
+        type: 'server',
+        description: 'Seeded',
+        isLive: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_create_data_silo')!;
+
+      const result = await tool.handler({
+        integrationName: 'server',
+        title: 'My Custom Silo',
+        description: 'Seeded',
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          message: 'Data silo "My Custom Silo" created successfully',
+        },
+      });
+      expect(mockGraphql.createDataSilo).toHaveBeenCalledWith({
+        name: 'server',
+        title: 'My Custom Silo',
+        description: 'Seeded',
       });
     });
   });
@@ -261,7 +414,30 @@ describe('Inventory Tools', () => {
       const result = await tool.handler({ limit: 10, offset: 0 });
 
       expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
-      expect(mockGraphql.listVendors).toHaveBeenCalledWith({ first: 10, offset: 0 });
+      expect(mockGraphql.listVendors).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter', async () => {
+      mockGraphql.listVendors.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_vendors')!;
+
+      await tool.handler({ text: 'Acme', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listVendors).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'Acme',
+      });
     });
   });
 
@@ -409,6 +585,26 @@ describe('Inventory Tools', () => {
       expect(mockGraphql.listProcessingPurposes).toHaveBeenCalledWith({
         first: 10,
         offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter', async () => {
+      mockGraphql.listProcessingPurposes.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_processing_purposes')!;
+
+      await tool.handler({ text: 'Essential', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listProcessingPurposes).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'Essential',
       });
     });
   });

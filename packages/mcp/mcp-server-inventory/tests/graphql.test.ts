@@ -169,9 +169,33 @@ describe('InventoryMixin', () => {
         dataSiloId: 'silo-1',
         title: 'Users',
       });
+      expect(result.nodes[0]).not.toHaveProperty('createdAt');
+      expect(result.nodes[0]).not.toHaveProperty('updatedAt');
     });
 
-    it('omits filterBy when dataSiloId is not provided', async () => {
+    it('combines dataSiloId and text in filterBy', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          dataPoints: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataPoints('silo-1', { first: 10, offset: 0, text: 'users' });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.variables).toMatchObject({
+        first: 10,
+        offset: 0,
+        filterBy: { dataSilos: ['silo-1'], text: 'users' },
+      });
+    });
+
+    it('omits filterBy when dataSiloId and text are not provided', async () => {
       const mockFetch = mockFetchQueue([
         {
           dataPoints: {
@@ -191,7 +215,153 @@ describe('InventoryMixin', () => {
     });
   });
 
+  describe('listDataSilos', () => {
+    it('passes text and titles via filterBy', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          dataSilos: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataSilos({
+        first: 10,
+        offset: 0,
+        text: 'ZEL8168',
+        titles: ['Acme Silo'],
+      });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.query).toContain('filterBy: $filterBy');
+      expect(body.variables).toMatchObject({
+        first: 10,
+        offset: 0,
+        filterBy: { text: 'ZEL8168', titles: ['Acme Silo'] },
+      });
+    });
+  });
+
+  describe('listCatalogs', () => {
+    it('query includes catalogs and CatalogFiltersInput', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          catalogs: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listCatalogs({ first: 10, offset: 0 });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.query).toContain('catalogs(');
+      expect(body.query).toContain('CatalogFiltersInput!');
+      expect(body.query).toContain('integrationName');
+    });
+
+    it('empty search still sends filterBy: {}', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          catalogs: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listCatalogs({ first: 10, offset: 0 });
+
+      expect(lastRequestBody(mockFetch).variables).toMatchObject({
+        filterBy: {},
+      });
+    });
+
+    it('passes text via filterBy.text', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          catalogs: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listCatalogs({ first: 10, offset: 0, text: 'salesforce' });
+
+      expect(lastRequestBody(mockFetch).variables).toMatchObject({
+        filterBy: { text: 'salesforce' },
+      });
+    });
+
+    it('maps integrationName and catalog preview fields', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          catalogs: {
+            nodes: [
+              {
+                integrationName: 'salesforce',
+                title: 'Salesforce',
+                description: 'CRM platform',
+                hasApiFunctionality: true,
+                hasAvcFunctionality: false,
+                alreadyConnected: 2,
+                integrationCategory: 'SALES_AND_CRM',
+              },
+            ],
+            totalCount: 1,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.listCatalogs({ first: 10, offset: 0 });
+
+      expect(result.nodes[0]).toEqual({
+        integrationName: 'salesforce',
+        title: 'Salesforce',
+        description: 'CRM platform',
+        hasApiFunctionality: true,
+        hasAvcFunctionality: false,
+        alreadyConnected: 2,
+        integrationCategory: 'SALES_AND_CRM',
+      });
+    });
+  });
+
   describe('listVendors', () => {
+    it('passes text via filterBy', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          vendors: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listVendors({ first: 10, offset: 0, text: 'Acme' });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.query).toContain('filterBy: $filterBy');
+      expect(body.variables).toMatchObject({
+        filterBy: { text: 'Acme' },
+      });
+    });
+
     it('maps contact, DPA, website, and createdAt fields', async () => {
       const mockFetch = mockFetchQueue([
         {
@@ -359,6 +529,27 @@ describe('InventoryMixin', () => {
         DefaultPurposeSubCategoryType.Other,
         'Retention',
       ]);
+    });
+
+    it('passes text via filterBy', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          processingPurposeSubCategories: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listProcessingPurposes({ first: 50, offset: 0, text: 'Essential' });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.query).toContain('filterBy: $filterBy');
+      expect(body.variables).toMatchObject({
+        filterBy: { text: 'Essential' },
+      });
     });
   });
 

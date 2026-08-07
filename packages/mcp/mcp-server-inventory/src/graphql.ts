@@ -1,6 +1,7 @@
 import {
   TranscendGraphQLBase,
   type BusinessEntity,
+  type CatalogIntegration,
   type DataCategory,
   type DataPoint,
   type DataPointUpdateOrCreateInput,
@@ -319,15 +320,35 @@ function mapVendorPreview<
     address: node.address ?? undefined,
     headquarterCountry: node.headquarterCountry ?? undefined,
     headquarterSubDivision: node.headquarterSubDivision ?? undefined,
-    createdAt: node.createdAt ?? new Date().toISOString(),
+    createdAt: node.createdAt ?? undefined,
   };
 }
 
+/** Build a GraphQL filterBy object, omitting empty/undefined keys. */
+function buildFilterBy(parts: Record<string, unknown>): Record<string, unknown> | undefined {
+  const filterBy: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parts)) {
+    if (value === undefined || value === null || value === '') continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    filterBy[key] = value;
+  }
+  return Object.keys(filterBy).length > 0 ? filterBy : undefined;
+}
+
 export class InventoryMixin extends TranscendGraphQLBase {
-  async listDataSilos(options?: ListOptions): Promise<PaginatedResponse<DataSilo>> {
+  async listDataSilos(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+      /** Exact title matches (GraphQL filterBy.titles) */
+      titles?: string[];
+    },
+  ): Promise<PaginatedResponse<DataSilo>> {
+    const { text, titles, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text, titles });
     const query = `
-      query ListDataSilos($first: Int, $offset: Int) {
-        dataSilos(first: $first, offset: $offset) {
+      query ListDataSilos($first: Int, $offset: Int, $filterBy: DataSiloFiltersInput) {
+        dataSilos(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
             id
             title
@@ -340,7 +361,9 @@ export class InventoryMixin extends TranscendGraphQLBase {
         }
       }
     `;
-    return this.listConnection<DataSilo>(query, 'dataSilos', options);
+    return this.listConnection<DataSilo>(query, 'dataSilos', listOptions, {
+      variables: filterBy ? { filterBy } : {},
+    });
   }
 
   async getDataSilo(id: string): Promise<DataSiloDetails> {
@@ -398,6 +421,54 @@ export class InventoryMixin extends TranscendGraphQLBase {
     };
   }
 
+  async listCatalogs(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<CatalogIntegration>> {
+    const { text, ...listOptions } = options ?? {};
+    // CatalogFiltersInput is non-null in schema — always send at least {}.
+    const filterBy = buildFilterBy({ text }) ?? {};
+    const query = `
+      query ListCatalogs($first: Int, $offset: Int, $filterBy: CatalogFiltersInput!) {
+        catalogs(first: $first, offset: $offset, filterBy: $filterBy) {
+          nodes {
+            integrationName
+            title
+            description
+            hasApiFunctionality
+            hasAvcFunctionality
+            alreadyConnected
+            integrationCategory
+          }
+          totalCount
+        }
+      }
+    `;
+    type RawCatalog = {
+      integrationName: string;
+      title: string;
+      description: string | null;
+      hasApiFunctionality: boolean;
+      hasAvcFunctionality: boolean;
+      alreadyConnected: number;
+      integrationCategory: string | null;
+    };
+    return this.listConnection<RawCatalog, CatalogIntegration>(query, 'catalogs', listOptions, {
+      variables: { filterBy },
+      mapNode: (node): CatalogIntegration => ({
+        integrationName: node.integrationName,
+        title: node.title,
+        description: node.description ?? undefined,
+        hasApiFunctionality: node.hasApiFunctionality,
+        hasAvcFunctionality: node.hasAvcFunctionality,
+        alreadyConnected: node.alreadyConnected,
+        integrationCategory: node.integrationCategory ?? undefined,
+      }),
+    });
+  }
+
   async createDataSilo(input: DataSiloCreateInput): Promise<DataSilo> {
     const data = await this.makeRequest(CreateDataSilosDoc, { input: [input as never] });
     const created = data.createDataSilos.dataSilos[0];
@@ -414,10 +485,17 @@ export class InventoryMixin extends TranscendGraphQLBase {
     return mapDataSilo(updated);
   }
 
-  async listVendors(options?: ListOptions): Promise<PaginatedResponse<Vendor>> {
+  async listVendors(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<Vendor>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text });
     const query = `
-      query ListVendors($first: Int, $offset: Int) {
-        vendors(first: $first, offset: $offset) {
+      query ListVendors($first: Int, $offset: Int, $filterBy: VendorsFiltersInput) {
+        vendors(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
             id
             title
@@ -448,9 +526,10 @@ export class InventoryMixin extends TranscendGraphQLBase {
       address: string | null;
       headquarterCountry: string | null;
       headquarterSubDivision: string | null;
-      createdAt: string;
+      createdAt: string | null;
     };
-    return this.listConnection<RawVendor, Vendor>(query, 'vendors', options, {
+    return this.listConnection<RawVendor, Vendor>(query, 'vendors', listOptions, {
+      variables: filterBy ? { filterBy } : {},
       mapNode: mapVendorPreview,
     });
   }
@@ -525,8 +604,16 @@ export class InventoryMixin extends TranscendGraphQLBase {
 
   async listDataPoints(
     dataSiloId?: string,
-    options?: ListOptions,
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
   ): Promise<PaginatedResponse<DataPoint>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({
+      dataSilos: dataSiloId ? [dataSiloId] : undefined,
+      text,
+    });
     const query = `
       query ListDataPoints($first: Int, $offset: Int, $filterBy: DataPointFiltersInput) {
         dataPoints(first: $first, offset: $offset, filterBy: $filterBy) {
@@ -558,11 +645,9 @@ export class InventoryMixin extends TranscendGraphQLBase {
       dataSiloId: dp.dataSiloId,
       title: dp.title?.defaultMessage,
       description: dp.description?.defaultMessage,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     });
-    return this.listConnection<RawDataPoint, DataPoint>(query, 'dataPoints', options, {
-      variables: dataSiloId ? { filterBy: { dataSilos: [dataSiloId] } } : {},
+    return this.listConnection<RawDataPoint, DataPoint>(query, 'dataPoints', listOptions, {
+      variables: filterBy ? { filterBy } : {},
       mapNode: toDataPoint,
     });
   }
@@ -689,10 +774,21 @@ export class InventoryMixin extends TranscendGraphQLBase {
     return data.updateOrCreateDataPoint.dataPoint;
   }
 
-  async listProcessingPurposes(options?: ListOptions): Promise<PaginatedResponse<DataPurpose>> {
+  async listProcessingPurposes(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<DataPurpose>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text });
     const query = `
-      query ListProcessingPurposes($first: Int, $offset: Int) {
-        processingPurposeSubCategories(first: $first, offset: $offset) {
+      query ListProcessingPurposes(
+        $first: Int
+        $offset: Int
+        $filterBy: ProcessingPurposeCategoryFiltersInput
+      ) {
+        processingPurposeSubCategories(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
             id
             name
@@ -712,8 +808,9 @@ export class InventoryMixin extends TranscendGraphQLBase {
     return this.listConnection<RawPurpose, DataPurpose>(
       query,
       'processingPurposeSubCategories',
-      options,
+      listOptions,
       {
+        variables: filterBy ? { filterBy } : {},
         mapNode: mapDataPurpose,
       },
     );

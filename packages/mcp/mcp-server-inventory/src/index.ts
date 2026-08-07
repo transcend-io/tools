@@ -16,6 +16,10 @@ export {
   type ListBusinessEntitiesInput,
 } from './tools/inventory_list_business_entities.js';
 export {
+  ListCatalogIntegrationsSchema,
+  type ListCatalogIntegrationsInput,
+} from './tools/inventory_list_catalog_integrations.js';
+export {
   ListDataPointsSchema,
   type ListDataPointsInput,
 } from './tools/inventory_list_data_points.js';
