@@ -109,6 +109,9 @@ const requiredPublishableDevDependencies = {
   publint: 'catalog:',
 } as const;
 
+/** Baseline for MCP servers, which layer view-specific settings over the shared one. */
+const MCP_TSDOWN_BASELINE = 'tsdown.config.mcp.ts';
+
 const workspacePackages = getWorkspacePackages();
 const publishablePackages = workspacePackages.filter(({ manifest }) => manifest.private !== true);
 const releasedPackages = publishablePackages.filter(
@@ -236,15 +239,23 @@ describe('package conventions', () => {
 
   test.each(workspacePackages)(
     '$directory uses the shared tsdown baseline',
-    ({ depth, tsdownConfig }) => {
+    ({ depth, directory, tsdownConfig }) => {
       const relativeRoot = '../'.repeat(depth);
       expect(tsdownConfig).toContain(
-        `import sharedConfig from '${relativeRoot}tsdown.config.base.ts';`,
+        `import sharedConfig from '${relativeRoot}${tsdownBaselineFor(directory)}';`,
       );
       expect(tsdownConfig).toContain('...sharedConfig');
       expect(tsdownConfig).toContain("'src/index.ts'");
     },
   );
+
+  // Asserted here because the per-package test above only sees which baseline a
+  // package names, so a detached MCP baseline would satisfy all of them.
+  test('the MCP tsdown baseline extends the shared one', () => {
+    expect(readRepoFile(MCP_TSDOWN_BASELINE)).toContain(
+      "import sharedLibraryConfig from './tsdown.config.base.ts';",
+    );
+  });
 
   // Strict resolvers (yarn-berry PnP, pnpm with strict peers) walk the require
   // chain looking for a peer dependency on an ancestor package. If a published
@@ -305,6 +316,16 @@ function getWorkspacePackages(): WorkspacePackage[] {
 
 function sortStrings(values: string[]): string[] {
   return [...values].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Which root tsdown config a package is expected to build on.
+ *
+ * @param directory - Package directory, relative to the repo root
+ * @returns Baseline filename, relative to the repo root
+ */
+function tsdownBaselineFor(directory: string): string {
+  return directory.startsWith('packages/mcp/') ? MCP_TSDOWN_BASELINE : 'tsdown.config.base.ts';
 }
 
 function getUnsatisfiedPeerDependencies(
