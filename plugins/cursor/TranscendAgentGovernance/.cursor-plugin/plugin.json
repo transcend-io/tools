@@ -1,0 +1,20 @@
+{
+  "name": "transcend-agent-governance",
+  "displayName": "Transcend Agent Governance",
+  "version": "0.1.0",
+  "description": "Connect Cursor to Transcend Agent Governance for policy-enforced MCP tool access.",
+  "author": {
+    "name": "Transcend",
+    "email": "support@transcend.io"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "transcend",
+    "agent-governance",
+    "mcp",
+    "cursor",
+    "governance",
+    "policy"
+  ],
+  "logo": "assets/logo.svg"
+}
