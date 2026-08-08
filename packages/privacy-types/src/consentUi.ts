@@ -83,14 +83,13 @@ export const ShadowRootOptions = makeEnum({
 /** Override type */
 export type ShadowRootOptions = (typeof ShadowRootOptions)[keyof typeof ShadowRootOptions];
 
-/** The top-level configuration for the consent UI */
-export const LoadOptions = t.intersection([
+/** Shared load option fields excluding themeConfigMap */
+const SharedLoadOptions = t.intersection([
   t.type({
     regimeVariantMap: t.record(RegimeKey, VariantKey),
     regimeAutoPromptMap: t.record(RegimeKey, t.boolean),
     variantConfigMap: t.record(VariantKey, UIConfiguration),
     variantThemeMap: t.record(VariantKey, ThemeKey),
-    themeConfigMap: t.record(ThemeKey, t.union([ThemeConfiguration, ThemeConfigurationMinimal])),
     autofocus: AutofocusValues,
     uiZIndex: IntegerString,
     // If messageMap is not defined, messages will be fetched from `${messageFolder}/${localeKey}.json`
@@ -110,5 +109,24 @@ export const LoadOptions = t.intersection([
   }),
 ]);
 
+/** The top-level configuration for the consent UI (minimal theme configs) */
+export const LoadOptions = t.intersection([
+  SharedLoadOptions,
+  t.type({
+    themeConfigMap: t.record(ThemeKey, ThemeConfigurationMinimal),
+  }),
+]);
+
 /** Override type */
 export type LoadOptions = t.TypeOf<typeof LoadOptions>;
+
+/** The top-level configuration for the mobile consent UI (full theme configs) */
+export const MobileUiLoadOptions = t.intersection([
+  SharedLoadOptions,
+  t.type({
+    themeConfigMap: t.record(ThemeKey, ThemeConfiguration),
+  }),
+]);
+
+/** Override type */
+export type MobileUiLoadOptions = t.TypeOf<typeof MobileUiLoadOptions>;
