@@ -415,8 +415,6 @@ enum ScopeName {
   executeAuditor
   viewCodeScanning
   manageCodeScanning
-  viewPathfinder
-  managePathfinder
   viewContractScanning
   manageContractScanning
   viewAuditorRuns
@@ -652,16 +650,6 @@ enum DatabaseModelName {
   migrationLock
   ActionItemAttributeValue
   ActionItemCollectionActionItem
-  AgentApplication
-  AgentAppUser
-  ApplicationAppUser
-  ApplicationPrompt
-  AgentAgentFile
-  AgentAgentFunction
-  AgentTeam
-  AgentUser
-  ApplicationTeam
-  ApplicationUser
   ActionItemTeam
   ActionItemUser
   AirgapCookieUser
@@ -754,10 +742,6 @@ enum DatabaseModelName {
   BusinessEntityAttributeValue
   BusinessEntityUser
   DataSubCategoryAttributeValue
-  PathfinderPathfinderPolicy
-  PathfinderLargeLanguageModel
-  PathfinderPolicyDataSubCategory
-  PathfinderApplication
   ProcessingPurposeSubCategoryAttributeValue
   SubjectAction
   TeamScope
@@ -778,7 +762,6 @@ enum DatabaseModelName {
   AirgapBundleTcfStack
   PurposeOrgTcfPurpose
   PurposeOrgTcfSpecialFeature
-  PromptAppUser
   PromptGroupPrompt
   PromptTeam
   PromptUser
@@ -813,22 +796,14 @@ enum DatabaseModelName {
   UserAttributeValue
   TeamAttributeValue
   ScopeAttributeValue
-  AgentAttributeValue
-  ApplicationAttributeValue
   CodePackageAttributeValue
-  PathfinderPolicyAttributeValue
-  PathfinderAttributeValue
   LargeLanguageModelAttributeValue
-  AgentFunctionAttributeValue
   ConsentApplicationAttributeValue
   ConsentServiceAttributeValue
   ConsentSdkAttributeValue
   SoftwareDevelopmentKitAttributeValue
   PullRequestAttributeValue
   RepositoryAttributeValue
-  AgentFileAttributeValue
-  AppUserAttributeValue
-  PathfinderAgent
   LargeLanguageModelRepository
   LargeLanguageModelCodePackage
   PromptCodePackage
@@ -873,11 +848,6 @@ enum DatabaseModelName {
   actionItemCollection
   actionItemSubscription
   actionItemRunLock
-  application
-  appUser
-  agent
-  agentFile
-  agentFunction
   aiSetting
   aiSettingHistory
   attributeKey
@@ -1000,8 +970,6 @@ enum DatabaseModelName {
   prometheusUserUsage
   pullRequest
   largeLanguageModel
-  pathfinder
-  pathfinderPolicy
   processingActivity
   promptPartial
   promptGroup
@@ -1401,7 +1369,6 @@ enum TranscendProduct {
   PRIVACY_CENTER
   ADMINISTRATION
   ASSESSMENTS
-  PATHFINDER
   PREFERENCE_MANAGEMENT
   PROMPT_MANAGER
   CONTRACT_SCANNING
@@ -1667,6 +1634,12 @@ enum SombraKMSCanaryValueType {
 enum OnPremiseSombraCreationMethod {
   REVERSE_TUNNEL
   DIRECT_CONNECTION
+}
+
+enum CustomFunctionPayloadType {
+  DATA_POINT
+  REQUEST_ENRICHER
+  MAESTRO
 }
 
 enum EmailOutboxStatus {
@@ -2098,61 +2071,10 @@ enum AttributeValueOrderField {
   updatedAt
 }
 
-enum AgentOrderField {
-  name
-  createdAt
-  updatedAt
-}
-
-enum AgentFileOrderField {
-  name
-  purpose
-  createdAt
-  updatedAt
-}
-
-enum AgentFunctionOrderField {
-  name
-  createdAt
-  updatedAt
-}
-
-enum ApplicationOrderField {
-  name
-  createdAt
-  updatedAt
-}
-
-enum ApplicationUserOrderField {
-  name
-  coreIdentifier
-  createdAt
-  updatedAt
-}
-
 enum LargeLanguageModelOrderField {
   name
   client
   isTranscendHosted
-  createdAt
-  updatedAt
-}
-
-enum PathfinderOrderField {
-  name
-  url
-  createdAt
-  updatedAt
-}
-
-enum PathfinderPolicyType {
-  REJECT
-  ANONYMIZE
-}
-
-enum PathfinderPolicyOrderField {
-  name
-  type
   createdAt
   updatedAt
 }
@@ -2817,15 +2739,6 @@ enum DropBrokerEnvironment {
   production
 }
 
-enum CppaWireListType {
-  NDZ
-  EMAIL
-  PHONE
-  MAID
-  NVIN
-  CTVID
-}
-
 enum DropListType {
   email
   phone
@@ -2833,6 +2746,22 @@ enum DropListType {
   ctv
   ndz
   name_vin
+}
+
+enum DsrRequestOutcome {
+  CREATED
+  ALREADY_OPEN
+  DROP_RECORDS_LINKED
+  RESTARTED
+}
+
+enum CppaWireListType {
+  NDZ
+  EMAIL
+  PHONE
+  MAID
+  NVIN
+  CTVID
 }
 
 enum DropSubmissionDiscrepancyResult {
@@ -3923,7 +3852,6 @@ enum FeatureDefinitionName {
   LLM_UNSTRUCTURED
   MAX_SYNC_DOMAIN_COUNT
   MOBILE_CONSENT_APPS
-  PATHFINDER
   PREFERENCE_STORE
   PRIVACY_CENTER
   PROMPTS
@@ -4979,9 +4907,6 @@ type Query {
   actionItemSubscriptions(input: QueryActionItemSubscriptionInput!): [ActionItemSubscription!]!
   actions(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ActionFiltersInput, orderBy: [ActionOrder!]): ActionsPayload!
   activities(first: Int, offset: Int = 0, last: Int, filterBy: ActivityFiltersInput!, orderBy: [ActivityOrder!]): ActivitiesPayload!
-  agentFiles(first: Int, offset: Int = 0, last: Int, filterBy: AgentFileFiltersInput, orderBy: [AgentFileOrder!]): AgentFilesPayload!
-  agentFunctions(first: Int, offset: Int = 0, last: Int, filterBy: AgentFunctionFiltersInput, orderBy: [AgentFunctionOrder!]): AgentFunctionsPayload!
-  agents(first: Int, offset: Int = 0, last: Int, filterBy: AgentFiltersInput, orderBy: [AgentOrder!]): AgentsPayload!
   airgapBundleAggregateAnalytics(id: ID!, input: AirgapBundleAggregateAnalyticsInput!): AirgapBundleAggregateAnalyticsResult!
   airgapBundleTimeseriesAnalytics(id: ID!, input: AirgapBundleTimeseriesAnalyticsInput!): AirgapBundleTimeseriesAnalyticsResult!
   airgapBundleVersions(first: Int, offset: Int = 0, last: Int, id: ID!, input: AirgapBundleVersionsInput!): AirgapBundleVersionsPayload!
@@ -4989,8 +4914,6 @@ type Query {
   analyticsData(input: AnalyticsInput!): AnalyticsResult!
   apiKey(id: ID!): ApiKey!
   apiKeys(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ApiKeyFiltersInput, orderBy: [ApiKeyOrder!]): ApiKeysPayload!
-  applications(first: Int, offset: Int = 0, last: Int, filterBy: ApplicationFiltersInput, orderBy: [ApplicationOrder!]): ApplicationsPayload!
-  applicationUsers(first: Int, offset: Int = 0, last: Int, filterBy: ApplicationUserFiltersInput, orderBy: [ApplicationUserOrder!]): ApplicationUsersPayload!
   assessmentEmailSets(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentEmailSetFiltersInput): AssessmentEmailSetsPayload!
   assessmentFormComments(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentFormCommentFiltersInput): AssessmentFormCommentsPayload!
   assessmentForms(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentFormFiltersInput, orderBy: [AssessmentFormRawOrder!]): AssessmentFormsPayload!
@@ -5128,8 +5051,6 @@ type Query {
   orgTcfSpecialFeatures(input: OptionalAirgapBundleInput!, filterBy: OrgTcfSpecialFeatureFilterInput): OrgTcfSpecialFeaturesPayload!
   orgTcfSpecialPurposes(input: AirgapBundleInput!): OrgTcfSpecialPurposesPayload!
   parentOrganizationTeams(first: Int, offset: Int = 0, last: Int, filterBy: ParentTeamFiltersInput, orderBy: [TeamOrder!]): ParentOrganizationTeamsPayload!
-  pathfinderPolicies(first: Int, offset: Int = 0, last: Int, filterBy: PathfinderPolicyFiltersInput, orderBy: [PathfinderPolicyOrder!]): PathfinderPoliciesPayload!
-  pathfinders(first: Int, offset: Int = 0, last: Int, filterBy: PathfinderFiltersInput, orderBy: [PathfinderOrder!]): PathfindersPayload!
   plugins(first: Int, offset: Int = 0, last: Int, filterBy: PluginsFiltersInput): PluginsPayload!
   pluginScans(first: Int, input: PluginScansInput!): PluginScansPayload!
   possibleDataSiloDependencies(first: Int, offset: Int = 0, last: Int, filterBy: PossibleDataSiloDependencyFilterInput!): PossibleDataSiloDependenciesPayload!
@@ -5270,11 +5191,7 @@ type Mutation {
   createActionItemCollection(input: CreateActionItemCollectionInput!): CreateActionItemCollectionPayload!
   createActionItems(input: [CreateActionItemsInput!]!): CreateActionItemsPayload!
   createActionItemSubscriptions(input: CreateActionItemSubscriptionsInput!): CreateActionItemSubscriptionsPayload!
-  createAgent(input: CreateAgentInput!): CreateAgentPayload!
-  createAgentFile(input: CreateAgentFileInput!): CreateAgentFilePayload!
-  createAgentFunction(input: CreateAgentFunctionInput!): CreateAgentFunctionPayload!
   createApiKey(input: ApiKeyInput!): CreateApiKeyPayload!
-  createApplication(input: CreateApplicationInput!): CreateApplicationPayload!
   createAssessmentEmailSet(input: CreateAssessmentEmailSetInput!): CreateAssessmentEmailSetPayload!
   createAssessmentFormComments(input: CreateAssessmentFormCommentsInput!): CreateAssessmentFormCommentsPayload!
   createAssessmentForms(input: CreateAssessmentFormsInput!): CreateAssessmentFormsPayload!
@@ -5328,8 +5245,6 @@ type Mutation {
   createOrUpdatePurposeDataPoints(input: [CreateOrUpdatePurposeDataPointInput!]!): CreateOrUpdatePurposeDataPointsPayload!
   createOrUpdatePurposeDataPointWorkflowMappings(input: [CreateOrUpdatePurposeDataPointWorkflowMappingInput!]!): CreateOrUpdatePurposeDataPointWorkflowMappingsPayload!
   createOrUpdateUserPreference(input: CreateOrUpdatePreferenceInput!): CreateOrUpdateUserPreferencePayload!
-  createPathfinder(input: CreatePathfinderInput!): CreatePathfinderPayload!
-  createPathfinderPolicy(input: CreatePathfinderPolicyInput!): CreatePathfinderPolicyPayload!
   createPrivacyCenterAccessTokens(input: CreatePrivacyCenterAccessTokensInput!): CreatePrivacyCenterAccessTokensPayload!
   createProcessingActivity(input: CreateProcessingActivityInput!): CreateProcessingActivityPayload!
   createProcessingPurposeSubCategory(input: CreateProcessingPurposeCategoryInput!): CreateProcessingPurposeSubCategoryPayload!
@@ -5355,12 +5270,7 @@ type Mutation {
   deleteActionItemCollections(input: DeleteActionItemCollectionsInput!): DeleteActionItemCollectionsPayload!
   deleteActionItems(input: DeleteActionItemsInput!): DeleteActionItemsPayload!
   deleteActionItemSubscription(input: DeleteActionItemSubscriptionInput!): DeleteActionItemSubscriptionPayload!
-  deleteAgentFiles(input: DeleteAgentFilesInput!): DeleteAgentFilesPayload!
-  deleteAgentFunctions(input: DeleteAgentFunctionsInput!): DeleteAgentFunctionsPayload!
-  deleteAgents(input: DeleteAgentsInput!): DeleteAgentsPayload!
   deleteApiKey(id: ID!): DeleteApiKeyPayload!
-  deleteApplications(input: DeleteApplicationsInput!): DeleteApplicationsPayload!
-  deleteApplicationUsers(input: DeleteApplicationUsersInput!): DeleteApplicationUsersPayload!
   deleteAssessmentAnswerFiles(input: DeleteAssessmentAnswerFilesInput!): DeleteAssessmentAnswerFilesPayload!
   deleteAssessmentAnswerFilesToken(input: DeleteAssessmentAnswerFilesTokenInput!): DeleteAssessmentAnswerFilesTokenPayload!
   deleteAssessmentEmailSets(input: DeleteAssessmentEmailSetsInput!): DeleteAssessmentEmailSetsPayload!
@@ -5403,8 +5313,6 @@ type Mutation {
   deleteLegalHolds(input: DeleteLegalHoldsInput!): DeleteLegalHoldsPayload!
   deleteLegalMatters(input: DeleteLegalMattersInput!): DeleteLegalMattersPayload!
   deleteOauthClient(id: String!): DeleteOauthClientPayload!
-  deletePathfinderPolicies(input: DeletePathfinderPoliciesInput!): DeletePathfinderPoliciesPayload!
-  deletePathfinders(input: DeletePathfindersInput!): DeletePathfindersPayload!
   deletePolicies(input: DeletePoliciesInput!): DeletePoliciesPayload!
   deletePreferenceOptionValues(input: DeletePreferenceOptionValuesInput!): DeletePreferenceOptionValuesPayload!
   deletePreferenceTopicOptionValueDataPoints(input: DeletePreferenceTopicOptionValueDataPointsInput!): DeletePreferenceTopicOptionValueDataPointsPayload!
@@ -5528,6 +5436,7 @@ type Mutation {
   revealRootSombraSecret(dhEncrypted: String!): RevealRootSombraSecretPayload!
   revokeComplianceReportTokens(input: RevokeComplianceReportTokensInput!): RevokeComplianceReportTokensPayload!
   revokeRequest(dhEncrypted: String!, id: ID!, lookup: PrivacyCenterLookupInput): RevokeRequestPayload!
+  rocUserRecords(input: RocUserRecordsInput!, dhEncrypted: String!): RocUserRecordsPayload!
   rollbackAirgapBundle(id: ID!, input: RollbackAirgapBundleInput!): RollbackAirgapBundlePayload!
   rotateSombraRootKeys(dhEncrypted: String!): RotateSombraRootKeysPayload!
   runAuditor(input: AuditorRunInput!): RunAuditorPayload!
@@ -5583,12 +5492,8 @@ type Mutation {
   updateAction(input: UpdateActionInput!): UpdateActionPayload!
   updateActionItemCollection(input: UpdateActionItemCollectionInput!): UpdateActionItemCollectionPayload!
   updateActionItems(input: UpdateActionItemsInput!): UpdateActionItemsPayload!
-  updateAgentFiles(input: UpdateAgentFilesInput!): UpdateAgentFilesPayload!
-  updateAgentFunctions(input: UpdateAgentFunctionsInput!): UpdateAgentFunctionsPayload!
-  updateAgents(input: UpdateAgentsInput!): UpdateAgentsPayload!
   updateAiSetting(input: UpdateAiSettingInput!): UpdateAiSettingPayload!
   updateApiKey(input: UpdateApiKeyInput!): UpdateApiKeyPayload!
-  updateApplications(input: UpdateApplicationsInput!): UpdateApplicationsPayload!
   updateAssessmentEmailSet(input: UpdateAssessmentEmailSetInput!): UpdateAssessmentEmailSetPayload!
   updateAssessmentForm(input: UpdateAssessmentFormInput!): UpdateAssessmentFormPayload!
   updateAssessmentFormAssignees(input: UpdateAssessmentFormAssigneesInput!): UpdateAssessmentFormAssigneesPayload!
@@ -5647,7 +5552,6 @@ type Mutation {
   updateMaestroRule(input: UpdateMaestroRuleInput!, dhEncrypted: String): UpdateMaestroRulePayload!
   updateMaestroRuleStatuses(input: UpdateMaestroRuleStatusesInput!): UpdateMaestroRuleStatusesPayload!
   updateOauthClient(input: UpdateOauthClientInput!): UpdateOauthClientPayload!
-  updateOrCreateApplicationUsers(input: UpdateOrCreateApplicationUsersInput!): UpdateOrCreateApplicationUsersPayload!
   updateOrCreateCookies(input: UpdateOrCreateCookiesInput!): UpdateOrCreateCookiesPayload!
   updateOrCreateDataPoint(input: UpdateOrCreateDataPointInput!, dhEncrypted: String): UpdateOrCreateDataPointPayload!
   updateOrCreateWorkflowDataPoint(input: UpdateOrCreateWorkflowDataPointInput!): UpdateOrCreateWorkflowDataPointPayload!
@@ -5655,8 +5559,6 @@ type Mutation {
   updateOrgTCFPurposes(input: UpdateOrgTCFPurposesInput!): UpdateOrgTcfPurposesPayload!
   updateOrgTcfSpecialFeature(input: UpdateTCFSpecialFeatureTrackingPurposesInput!): UpdateOrgTcfSpecialFeaturePayload!
   updatePassword(input: UpdatePasswordInput!): UpdatePasswordPayload!
-  updatePathfinderPolicies(input: UpdatePathfinderPoliciesInput!): UpdatePathfinderPoliciesPayload!
-  updatePathfinders(input: UpdatePathfindersInput!): UpdatePathfindersPayload!
   updatePolicies(input: UpdatePoliciesInput!): UpdatePoliciesPayload!
   updatePrivacyCenter(input: UpdatePrivacyCenterInput!): UpdatePrivacyCenterPayload!
   updatePrivacyCenterFooterLinks(input: UpdatePrivacyCenterFooterLinksInput!): UpdatePrivacyCenterFooterLinksPayload!
@@ -6062,146 +5964,6 @@ type AdminUpsertPreferencesPayload {
   clientMutationId: String
   success: Boolean!
   nodes: [ConsentRecord!]!
-}
-
-type Agent {
-  id: ID!
-  name: String!
-  agentId: String!
-  description: String!
-  instructions: String!
-  updatedAt: Date!
-  codeInterpreterEnabled: Boolean!
-  retrievalEnabled: Boolean!
-  promptRunCount: Int!
-  prompt: PromptPreview
-  codePackage: CodePackagePreview
-  repository: RepositoryPreview
-  creator: UserPreview
-  largeLanguageModel: LargeLanguageModelPreview
-  teams: [TeamPreview!]!
-  owners: [UserPreview!]!
-  applications: [ApplicationPreview!]!
-  pathfinders: [PathfinderPreview!]!
-  applicationUsers: [ApplicationUserPreview!]!
-  agentFunctions: [AgentFunctionPreview!]!
-  agentFiles: [AgentFilePreview!]!
-}
-
-type AgentFile {
-  id: ID!
-  name: String!
-  fileId: String!
-  initialFileName: String
-  createdAt: Date!
-  updatedAt: Date!
-  description: String!
-  fileUploadedAt: Date!
-  size: Int!
-  purpose: PromptFilePurpose!
-  agents: [AgentPreview!]!
-  creator: UserPreview
-}
-
-input AgentFileFiltersInput {
-  ids: [ID!]
-  agentIds: [ID!]
-  purposes: [PromptFilePurpose!]
-  text: String
-  fileIds: [String!]
-  names: [String!]
-  initialFileNames: [String!]
-}
-
-input AgentFileOrder {
-  field: AgentFileOrderField!
-  direction: OrderDirection!
-}
-
-type AgentFilePreview {
-  id: ID!
-  name: String!
-  fileId: String!
-  initialFileName: String
-  createdAt: Date!
-  updatedAt: Date!
-}
-
-type AgentFilesPayload {
-  clientMutationId: String
-  nodes: [AgentFile!]!
-  totalCount: Int!
-}
-
-input AgentFiltersInput {
-  ids: [ID!]
-  promptIds: [ID!]
-  text: String
-  names: [String!]
-  agentIds: [String!]
-  largeLanguageModelIds: [ID!]
-  ownerIds: [ID!]
-  teamIds: [ID!]
-  agentFileIds: [ID!]
-  agentFunctionIds: [ID!]
-}
-
-type AgentFunction {
-  id: ID!
-  name: String!
-  createdAt: Date!
-  updatedAt: Date!
-  description: String!
-  parameters: String!
-  agents: [AgentPreview!]!
-}
-
-input AgentFunctionFiltersInput {
-  ids: [ID!]
-  agentIds: [ID!]
-  text: String
-  name: String
-}
-
-input AgentFunctionInput {
-  name: String!
-  description: String
-  parameters: String!
-}
-
-input AgentFunctionOrder {
-  field: AgentFunctionOrderField!
-  direction: OrderDirection!
-}
-
-type AgentFunctionPreview {
-  id: ID!
-  name: String!
-  createdAt: Date!
-  updatedAt: Date!
-}
-
-type AgentFunctionsPayload {
-  clientMutationId: String
-  nodes: [AgentFunction!]!
-  totalCount: Int!
-}
-
-input AgentOrder {
-  field: AgentOrderField!
-  direction: OrderDirection!
-}
-
-type AgentPreview {
-  id: ID!
-  name: String!
-  agentId: String!
-}
-
-type AgentsPayload {
-  clientMutationId: String
-  nodes: [Agent!]!
-  totalCount: Int!
 }
 
 type AiBaseModelDeveloperEvidenceItemPreview {
@@ -6611,100 +6373,6 @@ type ApiKeyPreview {
 type ApiKeysPayload {
   clientMutationId: String
   nodes: [ApiKey!]!
-  totalCount: Int!
-}
-
-type Application {
-  id: ID!
-  name: String!
-  description: String!
-  createdAt: Date!
-  updatedAt: Date!
-  lastSeenAt: Date
-  prompts: [PromptPreview!]!
-  owners: [UserPreview!]!
-  teams: [TeamPreview!]!
-  pathfinders: [PathfinderPreview!]!
-  agents: [AgentPreview!]!
-  promptRunDataSubCategories: [DataSubCategoryPreview!]!
-  applicationUserCount: Int!
-  promptRunCount: Int!
-}
-
-input ApplicationFiltersInput {
-  ids: [ID!]
-  ownerIds: [ID!]
-  teamIds: [ID!]
-  promptIds: [ID!]
-  pathfinderIds: [ID!]
-  agentIds: [ID!]
-  dataSubCategoryIds: [ID!]
-  appUserIds: [ID!]
-  text: String
-}
-
-input ApplicationOrder {
-  field: ApplicationOrderField!
-  direction: OrderDirection!
-}
-
-type ApplicationPreview {
-  id: ID!
-  name: String!
-  description: String!
-  createdAt: Date!
-  updatedAt: Date!
-  lastSeenAt: Date
-}
-
-type ApplicationsPayload {
-  clientMutationId: String
-  nodes: [Application!]!
-  totalCount: Int!
-}
-
-type ApplicationUser {
-  id: ID!
-  name: String
-  coreIdentifier: String!
-  createdAt: Date!
-  updatedAt: Date!
-  lastSeenAt: Date
-  applications: [ApplicationPreview!]!
-  prompts: [PromptPreview!]!
-  agents: [AgentPreview!]!
-  promptRunDataSubCategories: [DataSubCategoryPreview!]!
-  promptRunCount: Int!
-}
-
-input ApplicationUserFiltersInput {
-  ids: [ID!]
-  promptIds: [ID!]
-  agentIds: [ID!]
-  dataSubCategoryIds: [ID!]
-  applicationIds: [ID!]
-  text: String
-  coreIdentifier: String
-  coreIdentifiers: [String!]
-}
-
-input ApplicationUserOrder {
-  field: ApplicationUserOrderField!
-  direction: OrderDirection!
-}
-
-type ApplicationUserPreview {
-  id: ID!
-  name: String
-  coreIdentifier: String!
-  createdAt: Date!
-  updatedAt: Date!
-  lastSeenAt: Date
-}
-
-type ApplicationUsersPayload {
-  clientMutationId: String
-  nodes: [ApplicationUser!]!
   totalCount: Int!
 }
 
@@ -8511,6 +8179,7 @@ input CatalogFiltersInput {
   plugins: [PluginType!]
   categories: [IntegrationCategory!]
   requestActions: [RequestAction!]
+  excludeIntegrationNames: [String!]
 }
 
 input CatalogInput {
@@ -9582,7 +9251,7 @@ input ConsentUiVariantConfigInput {
 input ConsentUiVariantFilterInput {
   id: ID
   text: String
-  status: UiVariantStatus
+  status: [UiVariantStatus!]
   locales: [String!]
   userId: ID
   themeId: ID
@@ -9955,111 +9624,9 @@ input CreateActionItemSubscriptionsInput {
   subscriptions: [ActionItemSubscriptionInput!]!
 }
 
-type CreateAgentPayload {
-  clientMutationId: String
-  agent: Agent!
-}
-
-type CreateAgentFilePayload {
-  clientMutationId: String
-  agentFile: AgentFile!
-}
-
-input CreateAgentFileInput {
-  name: String!
-  description: String
-  fileUploadedAt: Date!
-  fileId: String!
-  initialFileName: String
-  size: Int!
-  purpose: PromptFilePurpose!
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
-  applicationId: ID
-  applicationName: String
-  codePackageId: ID
-  codePackageName: String
-  repositoryId: ID
-  repositoryName: String
-  runByEmployeeEmail: String
-  applicationUserCoreIdentifier: String
-  applicationUserName: String
-  pathfinderId: ID
-  pathfinderName: String
-}
-
-type CreateAgentFunctionPayload {
-  clientMutationId: String
-  agentFunction: AgentFunction!
-}
-
-input CreateAgentFunctionInput {
-  name: String!
-  description: String
-  parameters: String!
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
-}
-
-input CreateAgentInput {
-  name: String!
-  agentId: String!
-  instructions: String!
-  description: String
-  codeInterpreterEnabled: Boolean!
-  retrievalEnabled: Boolean!
-  promptId: ID
-  promptTitle: String
-  largeLanguageModelId: ID
-  largeLanguageModelName: String
-  largeLanguageModelClient: LargeLanguageModelClient
-  ownerIds: [ID!]
-  ownerEmails: [String!]
-  teamIds: [ID!]
-  teamNames: [String!]
-  fileIds: [String!]
-  agentFileIds: [ID!]
-  agentFunctionIds: [ID!]
-  agentFunctions: [AgentFunctionInput!]
-  applicationId: ID
-  applicationName: String
-  codePackageId: ID
-  codePackageName: String
-  repositoryId: ID
-  repositoryName: String
-  runByEmployeeEmail: String
-  applicationUserCoreIdentifier: String
-  applicationUserName: String
-  pathfinderId: ID
-  pathfinderName: String
-}
-
 type CreateApiKeyPayload {
   clientMutationId: String
   apiKey: CreatedApiKey!
-}
-
-type CreateApplicationPayload {
-  clientMutationId: String
-  application: Application!
-}
-
-input CreateApplicationInput {
-  name: String!
-  description: String
-  ownerIds: [ID!]
-  ownerEmails: [String!]
-  teamIds: [ID!]
-  teamNames: [String!]
-  pathfinderIds: [ID!]
-  pathfinderNames: [String!]
-  promptIds: [ID!]
-  promptTitles: [String!]
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
 }
 
 type CreateAssessmentEmailSetPayload {
@@ -10824,41 +10391,6 @@ type CreateOrUpdateUserPreferencePayload {
   preference: PreferenceRaw!
 }
 
-type CreatePathfinderPayload {
-  clientMutationId: String
-  pathfinder: Pathfinder!
-}
-
-input CreatePathfinderInput {
-  name: String!
-  url: String
-  applicationIds: [ID!]
-  applicationNames: [String!]
-  pathfinderPolicyIds: [ID!]
-  pathfinderPolicyNames: [String!]
-  largeLanguageModelIds: [ID!]
-  largeLanguageModelInputs: [LargeLanguageModelInput!]
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
-}
-
-type CreatePathfinderPolicyPayload {
-  clientMutationId: String
-  pathfinderPolicy: PathfinderPolicy!
-}
-
-input CreatePathfinderPolicyInput {
-  name: String!
-  type: PathfinderPolicyType!
-  description: String
-  dataSubCategoryIds: [ID!]
-  dataSubCategoryInputs: [DataSubCategoryInput!]
-  response: String
-  pathfinderIds: [ID!]
-  pathfinderNames: [String!]
-}
-
 input CreatePrivacyCenterAccessTokenInput {
   coreIdentifier: String
   email: String!
@@ -10968,13 +10500,7 @@ input CreatePromptThreadInput {
   slackTeamId: String
   slackChannelId: String
   slackChannelName: String
-  applicationId: ID
-  applicationName: String
   runByEmployeeEmail: String
-  applicationUserCoreIdentifier: String
-  applicationUserName: String
-  pathfinderId: ID
-  pathfinderName: String
 }
 
 type CreatePullRequestPayload {
@@ -11676,7 +11202,8 @@ interface DatamapDataSiloInterface {
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
   dependentDataSilos: [DataSiloPreview!]!
-  dependedOnDataSilos: [DataSiloPreview!]!
+  dependedOnDataSilos: [DataSiloDependencyPreview!]!
+  dependedOnDataSilosPerWorkflow: [DependedOnDataSilosPerWorkflow!]!
   apiKeys: [ApiKeyPreview!]!
   businessEntities: [BusinessEntityPreview!]!
   allowDsrProcessingStartTime: String
@@ -11731,6 +11258,7 @@ input DataPointFiltersInput {
   showSuggestedSqlQueries: Boolean
   teamIds: [ID!]
   enabledActions: [RequestAction!]
+  actionIds: [ID!]
   categories: [DataCategoryType!]
   subCategoryIds: [ID!]
   dataCollectionIds: [ID!]
@@ -12021,7 +11549,8 @@ type DataSilo implements DatamapDataSiloInterface {
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
   dependentDataSilos: [DataSiloPreview!]!
-  dependedOnDataSilos: [DataSiloPreview!]!
+  dependedOnDataSilos: [DataSiloDependencyPreview!]!
+  dependedOnDataSilosPerWorkflow: [DependedOnDataSilosPerWorkflow!]!
   apiKeys: [ApiKeyPreview!]!
   businessEntities: [BusinessEntityPreview!]!
   allowDsrProcessingStartTime: String
@@ -12119,7 +11648,8 @@ type DataSiloBulkPreview implements DatamapDataSiloInterface {
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
   dependentDataSilos: [DataSiloPreview!]!
-  dependedOnDataSilos: [DataSiloPreview!]!
+  dependedOnDataSilos: [DataSiloDependencyPreview!]!
+  dependedOnDataSilosPerWorkflow: [DependedOnDataSilosPerWorkflow!]!
   apiKeys: [ApiKeyPreview!]!
   businessEntities: [BusinessEntityPreview!]!
   allowDsrProcessingStartTime: String
@@ -12168,6 +11698,16 @@ type DataSilosByCountry {
 input DataSiloCountsByCountryInput {
   forceRefetch: Boolean
   pluginTypes: [String!]
+}
+
+type DataSiloDependencyPreview {
+  id: ID!
+  title: String!
+  type: String!
+  outerType: String
+  connectionState: DataSiloConnectionState!
+  isLive: Boolean!
+  catalog: CatalogPreview!
 }
 
 input DataSiloFiltersInput {
@@ -12586,76 +12126,9 @@ input DeleteActionItemSubscriptionInput {
   ids: [ID!]
 }
 
-type DeleteAgentFilesPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeleteAgentFilesInput {
-  ids: [ID!]
-  fileIds: [String!]
-  applicationId: ID
-  applicationName: String
-  codePackageId: ID
-  codePackageName: String
-  repositoryId: ID
-  repositoryName: String
-  applicationUserCoreIdentifier: String
-  applicationUserName: String
-  pathfinderId: ID
-  pathfinderName: String
-}
-
-type DeleteAgentFunctionsPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeleteAgentFunctionsInput {
-  ids: [ID!]!
-}
-
-type DeleteAgentsPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeleteAgentsInput {
-  ids: [ID!]
-  agentIds: [String!]
-  applicationId: ID
-  applicationName: String
-  codePackageId: ID
-  codePackageName: String
-  repositoryId: ID
-  repositoryName: String
-  applicationUserCoreIdentifier: String
-  applicationUserName: String
-  pathfinderId: ID
-  pathfinderName: String
-}
-
 type DeleteApiKeyPayload {
   clientMutationId: String
   success: Boolean!
-}
-
-type DeleteApplicationsPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeleteApplicationsInput {
-  ids: [ID!]!
-}
-
-type DeleteApplicationUsersPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeleteApplicationUsersInput {
-  ids: [ID!]!
 }
 
 type DeleteAssessmentAnswerFilesPayload {
@@ -13026,24 +12499,6 @@ type DeleteOauthClientPayload {
   success: Boolean!
 }
 
-type DeletePathfinderPoliciesPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeletePathfinderPoliciesInput {
-  ids: [ID!]!
-}
-
-type DeletePathfindersPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeletePathfindersInput {
-  ids: [ID!]!
-}
-
 type DeletePoliciesPayload {
   clientMutationId: String
   success: Boolean!
@@ -13318,6 +12773,11 @@ input DemoInput {
   pathname: String
   dataSubjects: Int
   name: String
+}
+
+type DependedOnDataSilosPerWorkflow {
+  workflowConfigId: ID!
+  dependedOnDataSilos: [DataSiloDependencyPreview!]!
 }
 
 type DeployCloudfrontPayload {
@@ -13692,10 +13152,14 @@ type DropRunSummary {
   deadlineAt: Date!
   submittedAt: Date
   totalRecords: Int!
+  recordsMaterializedAt: Date
   recordsMaterializationStatus: DropRunRecordsMaterializationStatus!
   matchedRows: Int!
+  dsrRecordsCount: Int!
   requestsCount: Int!
   pendingRecordsCount: Int!
+  declaredRecordsCount: Int!
+  unresolvedRecordsCount: Int!
   artifacts: [DropArtifact!]!
 }
 
@@ -13849,8 +13313,6 @@ input EmployeeRequestInput {
   idempotencyKey: String
   subjectType: String!
   type: RequestAction!
-  dropRecords: [DropRecordRefInput!]
-  dropRunId: ID
 }
 
 type EmployeeReSignEncryptedCekContextsPayload {
@@ -15714,92 +15176,6 @@ input ParentTeamFiltersInput {
   text: String
 }
 
-type Pathfinder {
-  id: ID!
-  name: String!
-  url: String
-  createdAt: Date!
-  updatedAt: Date!
-  lastSeenAt: Date
-  promptRunCount: Int!
-  applications: [ApplicationPreview!]!
-  agents: [AgentPreview!]!
-  pathfinderPolicies: [PathfinderPolicyPreview!]!
-  largeLanguageModels: [LargeLanguageModelPreview!]!
-}
-
-input PathfinderFiltersInput {
-  ids: [ID!]
-  applicationIds: [ID!]
-  pathfinderPolicyIds: [ID!]
-  largeLanguageModelIds: [ID!]
-  text: String
-  names: [String!]
-}
-
-input PathfinderOrder {
-  field: PathfinderOrderField!
-  direction: OrderDirection!
-}
-
-type PathfinderPoliciesPayload {
-  clientMutationId: String
-  nodes: [PathfinderPolicy!]!
-  totalCount: Int!
-}
-
-type PathfinderPolicy {
-  id: ID!
-  name: String!
-  description: String!
-  createdAt: Date!
-  updatedAt: Date!
-  type: PathfinderPolicyType!
-  response: String
-  dataSubCategories: [DataSubCategoryPreview!]!
-  pathfinders: [PathfinderPreview!]!
-}
-
-input PathfinderPolicyFiltersInput {
-  ids: [ID!]
-  pathfinderIds: [ID!]
-  dataSubCategoryIds: [ID!]
-  text: String
-  name: String
-  names: [String!]
-}
-
-input PathfinderPolicyOrder {
-  field: PathfinderPolicyOrderField!
-  direction: OrderDirection!
-}
-
-type PathfinderPolicyPreview {
-  id: ID!
-  name: String!
-  description: String!
-  createdAt: Date!
-  updatedAt: Date!
-  type: PathfinderPolicyType!
-  response: String
-  dataSubCategories: [DataSubCategoryPreview!]!
-}
-
-type PathfinderPreview {
-  id: ID!
-  name: String!
-  url: String
-  createdAt: Date!
-  updatedAt: Date!
-  lastSeenAt: Date
-}
-
-type PathfindersPayload {
-  clientMutationId: String
-  nodes: [Pathfinder!]!
-  totalCount: Int!
-}
-
 type PlaceRequestOnHoldPayload {
   clientMutationId: String
   request: Request!
@@ -16598,7 +15974,6 @@ type Prompt {
   teams: [TeamPreview!]!
   owners: [UserPreview!]!
   promptGroups: [PromptGroupPreview!]!
-  agents: [AgentPreview!]!
   largeLanguageModels: [LargeLanguageModelPreview!]!
   attributeValues: [AttributeValue!]!
 }
@@ -16743,10 +16118,6 @@ type PromptRun {
   promptRunMessages: [PromptRunMessage!]!
   prompt: PromptPreview
   promptGroup: PromptGroupPreview
-  agent: AgentPreview
-  application: ApplicationPreview
-  pathfinder: PathfinderPreview
-  applicationUser: ApplicationUserPreview
   codePackage: CodePackagePreview
   repository: RepositoryPreview
   promptThread: PromptThreadPreview
@@ -16771,9 +16142,6 @@ input PromptRunFiltersInput {
   largeLanguageModelIds: [ID!]
   userIds: [ID!]
   contractScanIds: [ID!]
-  pathfinderIds: [ID!]
-  applicationIds: [ID!]
-  appUserIds: [ID!]
   dataSubCategoryIds: [ID!]
   apiKeyIds: [ID!]
   teamIds: [ID!]
@@ -16866,18 +16234,12 @@ type PromptThread {
   messageCount: Int!
   user: UserPreview
   apiKey: ApiKeyPreview
-  application: ApplicationPreview
-  pathfinder: PathfinderPreview
-  applicationUser: ApplicationUserPreview
 }
 
 input PromptThreadFiltersInput {
   ids: [ID!]
   creatorIds: [ID!]
   apiKeyIds: [ID!]
-  applicationUsersIds: [ID!]
-  pathfinderIds: [ID!]
-  applicationIds: [ID!]
   text: String
   threadIds: [String!]
   slackMessageTs: [String!]
@@ -17382,21 +16744,12 @@ input ReportPromptRunInput {
   promptTitle: String
   promptGroupId: ID
   promptGroupTitle: String
-  applicationId: ID
-  applicationName: String
-  applicationUserCoreIdentifier: String
   promptThreadId: ID
   threadId: String
   slackMessageTs: String
   slackTeamId: String
   slackChannelId: String
   slackChannelName: String
-  applicationUserName: String
-  agentId: ID
-  agentName: String
-  agentRemoteId: String
-  pathfinderId: ID
-  pathfinderName: String
   codePackageId: ID
   codePackageName: String
   repositoryId: ID
@@ -17513,6 +16866,7 @@ type Request implements RequestInterface {
   origin: RequestOrigin!
   dropRecordCount: Int!
   link: String!
+  outcome: DsrRequestOutcome
   steps: RequestSteps!
   parentId: ID @deprecated(reason: "Child/parent requests are no longer supported")
   openChildRequestId: ID @deprecated(reason: "Child/parent requests are no longer supported")
@@ -18425,6 +17779,51 @@ type RiskMatrixRow {
   title: String!
 }
 
+type RocPreferenceSchema {
+  topic: String!
+  choice: PreferenceChoiceSchema
+}
+
+type RocPurposeSchema {
+  purpose: String!
+  consent: Boolean
+  preferences: [RocPreferenceSchema!]
+  timestamp: String!
+}
+
+type RocRawConsentRecordSchema {
+  timestamp: String!
+  confirmed: Boolean
+  purposes: [RocPurposeSchema!]!
+  partition: String
+  identifiers: [PreferenceStoreIdentifierSchema!]
+  metadata: String
+}
+
+type RocUserRecordDiffSchema {
+  added: [PurposeSchema!]!
+  removed: [PurposeSchema!]!
+  updated: [PurposeSchema!]!
+}
+
+type RocUserRecordsPayload {
+  clientMutationId: String
+  nodes: [RocUserRecordSchema!]!
+  decryptionContext: DecryptionContext!
+}
+
+type RocUserRecordSchema {
+  preferencesAtCurrentTime: [PurposeSchema!]!
+  changeFromPrevState: RocUserRecordDiffSchema
+  rawRequest: RocRawConsentRecordSchema
+}
+
+input RocUserRecordsInput {
+  partition: String!
+  limit: Int
+  includeRawRequest: Boolean
+}
+
 type Role {
   id: ID!
   organization: OrganizationForRole!
@@ -18625,6 +18024,7 @@ input RunCustomFunctionInput {
   sombraId: ID
   payload: String!
   isCustomFunctionTestRun: Boolean
+  payloadType: CustomFunctionPayloadType
 }
 
 type SaaSCategoriesPayload {
@@ -20808,90 +20208,6 @@ input UpdateActionItemsRollupInput {
   isAggregate: Boolean
 }
 
-input UpdateAgentFileInput {
-  id: ID!
-  name: String
-  initialFileName: String
-  description: String
-  fileUploadedAt: Date
-  fileId: String
-  size: Int
-  purpose: PromptFilePurpose
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
-}
-
-type UpdateAgentFilesPayload {
-  clientMutationId: String
-  agentFiles: [AgentFile!]!
-}
-
-input UpdateAgentFilesInput {
-  agentFiles: [UpdateAgentFileInput!]!
-}
-
-input UpdateAgentFunctionInput {
-  id: ID!
-  name: String
-  description: String
-  parameters: String
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
-}
-
-type UpdateAgentFunctionsPayload {
-  clientMutationId: String
-  agentFunctions: [AgentFunction!]!
-}
-
-input UpdateAgentFunctionsInput {
-  agentFunctions: [UpdateAgentFunctionInput!]!
-}
-
-input UpdateAgentInput {
-  id: ID
-  agentId: String
-  name: String
-  description: String
-  instructions: String
-  codeInterpreterEnabled: Boolean
-  promptId: ID
-  promptTitle: String
-  largeLanguageModelId: ID
-  largeLanguageModelName: String
-  largeLanguageModelClient: LargeLanguageModelClient
-  retrievalEnabled: Boolean
-  ownerIds: [ID!]
-  ownerEmails: [String!]
-  teamIds: [ID!]
-  teamNames: [String!]
-  agentFileIds: [ID!]
-  fileIds: [String!]
-  agentFunctionIds: [ID!]
-  agentFunctions: [AgentFunctionInput!]
-  applicationId: ID
-  applicationName: String
-  codePackageId: ID
-  codePackageName: String
-  repositoryId: ID
-  repositoryName: String
-  applicationUserCoreIdentifier: String
-  applicationUserName: String
-  pathfinderName: String
-  pathfinderId: ID
-}
-
-type UpdateAgentsPayload {
-  clientMutationId: String
-  agents: [Agent!]!
-}
-
-input UpdateAgentsInput {
-  agents: [UpdateAgentInput!]!
-}
-
 input UpdateAirgapPrefixSuffixScriptInput {
   id: ID!
   prefixScript: String
@@ -20919,38 +20235,6 @@ input UpdateApiKeyInput {
   scopes: [ScopeName!]
   dataSilos: [ID!]
   isMcp: Boolean
-}
-
-input UpdateApplicationInput {
-  id: ID!
-  name: String
-  description: String
-  teamIds: [ID!]
-  teamNames: [String!]
-  ownerIds: [ID!]
-  ownerEmails: [String!]
-  pathfinderIds: [ID!]
-  pathfinderNames: [String!]
-  promptIds: [ID!]
-  promptTitles: [String!]
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
-}
-
-type UpdateApplicationsPayload {
-  clientMutationId: String
-  applications: [Application!]!
-}
-
-input UpdateApplicationsInput {
-  applications: [UpdateApplicationInput!]!
-}
-
-input UpdateApplicationUserInput {
-  id: ID
-  name: String
-  coreIdentifier: String
 }
 
 type UpdateAssessmentEmailSetPayload {
@@ -21973,15 +21257,6 @@ input UpdateOauthClientInput {
   isMcp: Boolean
 }
 
-type UpdateOrCreateApplicationUsersPayload {
-  clientMutationId: String
-  applicationUsers: [ApplicationUser!]!
-}
-
-input UpdateOrCreateApplicationUsersInput {
-  applicationUsers: [UpdateApplicationUserInput!]!
-}
-
 input UpdateOrCreateCookieInput {
   name: String!
   trackingPurposes: [String!]
@@ -22100,51 +21375,6 @@ type UpdatePasswordPayload {
 input UpdatePasswordInput {
   newPassword: String!
   password: String!
-}
-
-input UpdatePathfinderInput {
-  id: ID!
-  name: String
-  url: String
-  applicationIds: [ID!]
-  applicationNames: [String!]
-  pathfinderPolicyIds: [ID!]
-  pathfinderPolicyNames: [String!]
-  largeLanguageModelIds: [ID!]
-  largeLanguageModelInputs: [LargeLanguageModelInput!]
-  agentIds: [ID!]
-  agentNames: [String!]
-  agentRemoteIds: [String!]
-}
-
-type UpdatePathfinderPoliciesPayload {
-  clientMutationId: String
-  pathfinderPolicies: [PathfinderPolicy!]!
-}
-
-input UpdatePathfinderPoliciesInput {
-  pathfinderPolicies: [UpdatePathfinderPolicyInput!]!
-}
-
-input UpdatePathfinderPolicyInput {
-  id: ID!
-  name: String
-  type: PathfinderPolicyType
-  description: String
-  response: String
-  dataSubCategoryIds: [ID!]
-  dataSubCategoryInputs: [DataSubCategoryInput!]
-  pathfinderIds: [ID!]
-  pathfinderNames: [String!]
-}
-
-type UpdatePathfindersPayload {
-  clientMutationId: String
-  pathfinders: [Pathfinder!]!
-}
-
-input UpdatePathfindersInput {
-  pathfinders: [UpdatePathfinderInput!]!
 }
 
 input UpdatePlaintextContextInput {
