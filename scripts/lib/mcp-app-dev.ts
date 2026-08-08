@@ -33,13 +33,11 @@ export const EXAMPLES_PACKAGE = '@transcend-io/mcp-server-examples';
 /**
  * The Inspector release `pnpm mcp:inspect` runs.
  *
- * v2 is a floor rather than a preference: its clients declare
- * `extensions["io.modelcontextprotocol/ui"]`, which a spec-correct server requires
- * before binding a view to a tool, while earlier releases declare nothing at all
- * and every view is withheld. Pinned to the major so security fixes land without a
- * surprise rewrite.
+ * Pinned to the major because {@link restoreSandboxProxy} reaches into the install's
+ * `clients/web/static` layout, and because a client that stopped declaring
+ * `extensions["io.modelcontextprotocol/ui"]` would silently withhold every view.
  */
-export const INSPECTOR_V2_SPEC = '@modelcontextprotocol/inspector@2';
+export const INSPECTOR_SPEC = '@modelcontextprotocol/inspector@2';
 
 /** Package the spec above resolves to. */
 const INSPECTOR_PACKAGE_NAME = '@modelcontextprotocol/inspector';

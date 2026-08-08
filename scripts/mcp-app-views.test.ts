@@ -58,9 +58,9 @@ describe('MCP app view convention', () => {
     expect(stale).toEqual([]);
   });
 
-  test('a view directory without exactly one *View.tsx is rejected', () => {
+  test('a view directory holding files but not exactly one *View.tsx is rejected', () => {
     for (const [files, expected] of [
-      [[], '0 files matching *View.tsx'],
+      [['helpers.ts'], '0 files matching *View.tsx'],
       [['HelloView.tsx', 'DetailView.tsx'], '2 files matching *View.tsx'],
     ] as const) {
       const root = fakePackageWithViewFiles([...files]);
@@ -69,6 +69,17 @@ describe('MCP app view convention', () => {
       } finally {
         rmSync(root, { recursive: true, force: true });
       }
+    }
+  });
+
+  test('an empty view directory is what a deleted view leaves behind, so it is skipped', () => {
+    // The generator discovers views before writing anything, so erroring here is
+    // what made re-scaffolding a deleted view fail on a leftover directory.
+    const root = fakePackageWithViewFiles([]);
+    try {
+      expect(discoverMcpAppViews(root)).toEqual([]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
   });
 

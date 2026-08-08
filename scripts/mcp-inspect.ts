@@ -21,7 +21,7 @@ import {
   DEV_VIEWS_ENV_VAR,
   discoverMcpPackages,
   ensureInspectorSandboxProxy,
-  INSPECTOR_V2_SPEC,
+  INSPECTOR_SPEC,
   inspectorEnvArgs,
   installShutdownHandlers,
   loadSecretEnv,
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
   const target = resolveTarget({ argument: positionals[0], examples: values.examples }, packages);
   const viewPackages = viewPackagesInScope(target, packages);
 
-  logger.log(`Inspecting ${target.name} with ${INSPECTOR_V2_SPEC}`);
+  logger.log(`Inspecting ${target.name} with ${INSPECTOR_SPEC}`);
   if (target.name === UMBRELLA_PACKAGE) {
     logger.log(
       "Umbrella server selected, so every package's apps are available. Pass a package name " +
@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   installShutdownHandlers();
 
   // Overlapped because the sandbox check costs an `npx` resolution the build hides.
-  await Promise.all([buildTarget(target), ensureInspectorSandboxProxy(INSPECTOR_V2_SPEC)]);
+  await Promise.all([buildTarget(target), ensureInspectorSandboxProxy(INSPECTOR_SPEC)]);
 
   // Set here for the server we spawn under `--http`; a stdio server is handed it
   // explicitly below, because the Inspector does not pass our environment on.
@@ -100,7 +100,7 @@ async function main(): Promise<void> {
     ]);
 
     // The Inspector infers the transport, and a /mcp path means Streamable HTTP.
-    startProcess('inspector', 'npx', ['-y', INSPECTOR_V2_SPEC, url]);
+    startProcess('inspector', 'npx', ['-y', INSPECTOR_SPEC, url]);
     logger.log(`\nServer listening on ${url}. Open the Apps tab once the Inspector connects.\n`);
     return;
   }
@@ -112,7 +112,7 @@ async function main(): Promise<void> {
   // the Inspector takes its own options first and the rest as the server to spawn.
   startProcess('inspector', 'npx', [
     '-y',
-    INSPECTOR_V2_SPEC,
+    INSPECTOR_SPEC,
     ...inspectorEnvArgs(),
     'node',
     ...SERVER_NODE_ARGS,
