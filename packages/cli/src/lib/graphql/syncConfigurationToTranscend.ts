@@ -23,9 +23,6 @@ import {
   syncPrivacyCenter,
   syncProcessingActivities,
   syncProcessingPurposes,
-  syncPromptGroups,
-  syncPromptPartials,
-  syncPrompts,
   syncConsentWorkflowTriggers,
   syncWorkflowConfigs,
   syncPreferenceOptionValues,
@@ -106,9 +103,6 @@ export async function syncConfigurationToTranscend(
     'consent-manager': consentManager,
     'data-silos': dataSilos,
     'data-flows': dataFlows,
-    prompts,
-    'prompt-groups': promptGroups,
-    'prompt-partials': promptPartials,
     vendors,
     'data-categories': dataCategories,
     'processing-activities': processingActivities,
@@ -233,20 +227,6 @@ export async function syncConfigurationToTranscend(
       recordError('consent-manager', (err as Error).message);
       activeLogger.error(colors.red(`Failed to sync consent manager! - ${(err as Error).message}`));
     }
-  }
-
-  // Sync prompts
-  if (prompts) {
-    const promptsSuccess = await syncPrompts(client, prompts, { logger });
-    encounteredError = encounteredError || !promptsSuccess;
-  }
-  if (promptPartials) {
-    const promptsSuccess = await syncPromptPartials(client, promptPartials, { logger });
-    encounteredError = encounteredError || !promptsSuccess;
-  }
-  if (promptGroups) {
-    const promptsSuccess = await syncPromptGroups(client, promptGroups, { logger });
-    encounteredError = encounteredError || !promptsSuccess;
   }
 
   if (teams) {
