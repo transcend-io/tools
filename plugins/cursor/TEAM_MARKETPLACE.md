@@ -14,7 +14,7 @@ This is the dogfood / design-partner path while the public Cursor Marketplace re
 
 | Item                                 | State                                                                                                                                                       |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Plugin stack in `transcend-io/tools` | Landing via stacked PRs (scaffold → MCP → skills → OAuth); Team Marketplace import should track **`main` after merge**                                      |
+| Plugin stack in `transcend-io/tools` | Single consolidated PR onto **`main`**; Team Marketplace import should track **`main` after merge**                                                         |
 | Partnership / listing questions      | [LINK-7701](https://linear.app/transcend/issue/LINK-7701) is **Blocked** — confirm whether any Cursor partnership constraint affects Team Marketplace usage |
 | This registration                    | **Requires a Transcend Cursor team admin** — engineering cannot finish the dashboard import without that role                                               |
 

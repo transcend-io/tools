@@ -5,8 +5,8 @@ description: >-
   or approval holds. Use when a governed tool call fails with deny, forbidden,
   unauthorized-for-this-action, require_approval, or similar policy language —
   or when the user asks why a tool was blocked and what to tell an admin.
-  Do not use for generic network outages, missing servers, or expired login
-  tokens (use verify-governed-connection for those).
+  Do not use for generic network outages, missing servers, or expired OAuth
+  sessions (use verify-governed-connection for those).
 ---
 
 # Troubleshoot a policy denial
@@ -22,15 +22,16 @@ Use this skill when MCP tool output or Cursor UI messaging indicates:
 - A structured reason or policy message attached to a failed tool call
 - The user asks "why was this blocked?" or "what should I tell my admin?"
 
-Do **not** treat every MCP failure as a denial. If tools never appear, auth fails at connect time, or errors mention expired credentials / connection refused, switch to **verify-governed-connection**.
+Do **not** treat every MCP failure as a denial. If tools never appear, auth fails at connect time, or errors mention expired OAuth / refresh failure / connection refused, switch to **verify-governed-connection**.
 
 ## Distinguish denial vs connection failure
 
-| Signal                                                                          | Likely cause                   | What to tell the user                                                   |
-| ------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------- |
-| Tools list loads; one specific call fails with deny / policy / approval wording | Policy (or approval hold)      | Expected under governance; admin/policy change or approval needed       |
-| Tools list empty; server shows disconnected / auth error / 401 at session start | Connection or credential       | Fix install variables / credential; not a per-tool policy deny          |
-| Intermittent transport errors, timeouts with no policy text                     | Network / gateway availability | Retry later or check gateway health with admin; not a bypass invitation |
+| Signal                                                                          | Likely cause                   | What to tell the user                                                                 |
+| ------------------------------------------------------------------------------- | ------------------------------ | ------------------------------------------------------------------------------------- |
+| Tools list loads; one specific call fails with deny / policy / approval wording | Policy (or approval hold)      | Expected under governance; admin/policy change or approval needed                     |
+| Tools list empty; server shows disconnected / auth error / 401 at session start | Connection or OAuth session    | Re-run Connect (browser re-auth); check `GATEWAY_BASE_URL` / `TENANT_ID` — not a deny |
+| Connected after OAuth but tools list stays empty                                | No MCP servers assigned yet    | Fail-closed auto-register; ask admin to assign MCP servers / policy                   |
+| Intermittent transport errors, timeouts with no policy text                     | Network / gateway availability | Retry later or check gateway health with admin; not a bypass invitation               |
 
 If unsure, prefer: "This looks like a **policy decision**; if tools otherwise work, ask your administrator to review policy for this tool and action." Avoid diagnosing internal service names.
 
@@ -58,7 +59,7 @@ Give the user a short handoff they can paste to an admin:
 Never suggest or perform:
 
 - Adding a second, **ungoverned** MCP server for the same tools
-- Using a different API key, personal token, or "dev" credential to skip the policy gateway
+- Pasting a Bearer token / API key into plugin variables, or using a personal / "dev" token to skip the policy gateway
 - Replaying the denied call with altered arguments solely to evade policy wording
 - Disabling the Transcend Agent Governance plugin to "get unblocked"
 
