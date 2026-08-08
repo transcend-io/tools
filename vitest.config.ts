@@ -32,6 +32,7 @@ export default defineConfig({
     },
   ],
   test: {
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.worktrees/**'],
     coverage: {
       exclude: ['**/*.test.ts', '**/dist/**'],
       provider: 'v8',

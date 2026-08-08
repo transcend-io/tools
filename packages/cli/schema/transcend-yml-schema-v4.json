@@ -132,8 +132,6 @@
                     "manageCodeScanning",
                     "viewPathfinder",
                     "managePathfinder",
-                    "viewContractScanning",
-                    "manageContractScanning",
                     "viewAuditorRuns",
                     "viewAuditEvents",
                     "manageActionItemCollections",

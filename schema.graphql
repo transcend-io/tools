@@ -417,8 +417,6 @@ enum ScopeName {
   manageCodeScanning
   viewPathfinder
   managePathfinder
-  viewContractScanning
-  manageContractScanning
   viewAuditorRuns
   viewAuditEvents
   manageActionItemCollections
@@ -690,8 +688,6 @@ enum DatabaseModelName {
   AirgapDataFlowAttributeValue
   AirgapDataFlowPurpose
   AirgapCookiePurpose
-  ContractScanContract
-  ContractScanPrompt
   DataSiloPlugin
   DataSiloUser
   OrganizationSombra
@@ -915,7 +911,6 @@ enum DatabaseModelName {
   codePackage
   communication
   contract
-  contractScan
   cloudfront
   customFunction
   customFunctionVersion
@@ -1404,7 +1399,6 @@ enum TranscendProduct {
   PATHFINDER
   PREFERENCE_MANAGEMENT
   PROMPT_MANAGER
-  CONTRACT_SCANNING
   WEB_AUDITOR
   SOMBRA
   SILO_DISCOVERY
@@ -1417,7 +1411,6 @@ enum TranscendProduct {
 
 enum PromptRunProductArea {
   assessments
-  contractScanning
   promptManager
   unstructuredDiscovery
   dataInventory
@@ -2188,18 +2181,6 @@ enum PromptThreadOrderField {
 }
 
 enum ContractOrderField {
-  name
-  createdAt
-  updatedAt
-}
-
-enum ContractScanStatus {
-  ERROR
-  IN_PROGRESS
-  DONE
-}
-
-enum ContractScanOrderField {
   name
   createdAt
   updatedAt
@@ -3909,7 +3890,6 @@ enum FeatureDefinitionName {
   ASSESSMENTS_MAX_FILE_SIZE
   AUDITOR_MONTHLY_USAGE_LIMIT
   CONSENT_WORKFLOWS
-  CONTRACT_SCANNING
   CUSTOM_DOMAIN_UI
   DATA_LINEAGE
   DATA_BROKER_DROP
@@ -5053,7 +5033,6 @@ type Query {
   consentWorkflowTriggers(first: Int, offset: Int = 0, last: Int, filterBy: ConsentWorkflowTriggersFilterInput): ConsentWorkflowTriggersPayload!
   contentClassificationDataPoints(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ContentClassificationDataPointsFiltersInput, orderBy: [ContentClassificationDataPointOrder!]): ContentClassificationDataPointsPayload!
   contracts(first: Int, offset: Int = 0, last: Int, filterBy: ContractFiltersInput, orderBy: [ContractOrder!]): ContractsPayload!
-  contractScans(first: Int, offset: Int = 0, last: Int, filterBy: ContractScanFiltersInput, orderBy: [ContractScanOrder!]): ContractScansPayload!
   cookies(first: Int, offset: Int = 0, last: Int, input: AirgapBundleInput!, filterBy: CookiesFiltersInput, orderBy: [CookieOrder!], useMaster: Boolean, isExportCsv: Boolean): CookiesPayload!
   cookieStats(input: AirgapBundleInput!): CookieStatsPayload!
   currentDnsRecords(input: CurrentDnsRecordsInput!): CurrentDnsRecordsPayload!
@@ -5297,7 +5276,6 @@ type Mutation {
   createConsentUiTheme(input: CreateConsentUiThemeInput!): CreateConsentUiThemePayload!
   createConsentUiVariant(input: CreateConsentUiVariantInput!): CreateConsentUiVariantPayload!
   createContract(input: CreateContractInput!): CreateContractPayload!
-  createContractScan(input: CreateContractScanInput!): CreateContractScanPayload!
   createCopiedComplianceReport(useMaster: Boolean, isExportCsv: Boolean, input: CreateCopiedComplianceReportInput!): CreateCopiedComplianceReportPayload!
   createCustomFunction(input: CreateCustomFunctionInput!, dhEncrypted: String): CreateCustomFunctionPayload!
   createDataCollection(input: NewDataCollectionInput!): CreateDataCollectionPayload!
@@ -5388,7 +5366,6 @@ type Mutation {
   deleteConsentUiVariants(input: DeleteConsentUiVariantsInput!): DeleteConsentUiVariantsPayload!
   deleteConsentWorkflowTriggers(input: DeleteConsentWorkflowTriggersInput!): DeleteConsentWorkflowTriggersPayload!
   deleteContracts(input: DeleteContractsInput!): DeleteContractsPayload!
-  deleteContractScans(input: DeleteContractScansInput!): DeleteContractScansPayload!
   deleteCookies(input: DeleteCookiesInput!): DeleteCookiesPayload!
   deleteDataFlows(input: DeleteDataFlowsInput!): DeleteDataFlowsPayload!
   deleteDataPoints(input: DeleteDataPointsInput!): DeleteDataPointsPayload!
@@ -5620,7 +5597,6 @@ type Mutation {
   updateConsentUiTheme(input: UpdateConsentUiThemeInput!): UpdateConsentUiThemePayload!
   updateConsentUiVariant(input: UpdateConsentUiVariantInput!): UpdateConsentUiVariantPayload!
   updateContracts(input: UpdateContractsInput!): UpdateContractsPayload!
-  updateContractScans(input: UpdateContractScansInput!): UpdateContractScansPayload!
   updateCustomFunction(input: UpdateCustomFunctionInput!, dhEncrypted: String): UpdateCustomFunctionPayload!
   updateDataFlows(input: UpdateDataFlowsInput!): UpdateDataFlowsPayload!
   updateDataPointLevel(input: UpdateDataPointLevelInput!): UpdateDataPointLevelPayload!
@@ -9737,7 +9713,6 @@ type Contract {
   uploader: UserPreview
   apiKey: ApiKeyPreview
   lastEditor: UserPreview
-  contractScanCount: Int!
 }
 
 input ContractFiltersInput {
@@ -9766,48 +9741,6 @@ type ContractPreview {
 type ContractsPayload {
   clientMutationId: String
   nodes: [Contract!]!
-  totalCount: Int!
-}
-
-type ContractScan {
-  id: ID!
-  name: String!
-  createdAt: Date!
-  updatedAt: Date!
-  status: ContractScanStatus!
-  user: UserPreview
-  contractCount: Int!
-  createdPromptRunCount: Int!
-  prompts: [PromptPreview!]!
-  contracts: [ContractPreview!]!
-  completedPromptRunCount: Int!
-  errorPromptRunCount: Int!
-}
-
-input ContractScanFiltersInput {
-  ids: [ID!]
-  statuses: [ContractScanStatus!]
-  userIds: [ID!]
-  contractIds: [ID!]
-  promptIds: [ID!]
-  text: String
-}
-
-input ContractScanOrder {
-  field: ContractScanOrderField!
-  direction: OrderDirection!
-}
-
-type ContractScanPreview {
-  id: ID!
-  name: String!
-  createdAt: Date!
-  updatedAt: Date!
-}
-
-type ContractScansPayload {
-  clientMutationId: String
-  nodes: [ContractScan!]!
   totalCount: Int!
 }
 
@@ -10386,17 +10319,6 @@ input CreateContractInput {
   name: String!
   description: String
   content: String!
-}
-
-type CreateContractScanPayload {
-  clientMutationId: String
-  contractScan: ContractScan!
-}
-
-input CreateContractScanInput {
-  name: String!
-  promptIds: [ID!]
-  contractIds: [ID!]
 }
 
 type CreateCopiedComplianceReportPayload {
@@ -12891,15 +12813,6 @@ input DeleteConsentWorkflowTriggersInput {
 type DeleteContractsPayload {
   clientMutationId: String
   success: Boolean!
-}
-
-type DeleteContractScansPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input DeleteContractScansInput {
-  ids: [ID!]!
 }
 
 input DeleteContractsInput {
@@ -16752,7 +16665,6 @@ type PromptRun {
   promptThread: PromptThreadPreview
   user: UserPreview
   apiKey: ApiKeyPreview
-  contractScan: ContractScanPreview
   contract: ContractPreview
   largeLanguageModel: LargeLanguageModelPreview!
   attributeValues: [AttributeValue!]!
@@ -16770,7 +16682,6 @@ input PromptRunFiltersInput {
   promptGroupIds: [ID!]
   largeLanguageModelIds: [ID!]
   userIds: [ID!]
-  contractScanIds: [ID!]
   pathfinderIds: [ID!]
   applicationIds: [ID!]
   appUserIds: [ID!]
@@ -21418,20 +21329,6 @@ input UpdateContractInput {
 type UpdateContractsPayload {
   clientMutationId: String
   contracts: [Contract!]!
-}
-
-input UpdateContractScanInput {
-  id: ID!
-  name: String
-}
-
-type UpdateContractScansPayload {
-  clientMutationId: String
-  contractScans: [ContractScan!]!
-}
-
-input UpdateContractScansInput {
-  contractScans: [UpdateContractScanInput!]!
 }
 
 input UpdateContractsInput {

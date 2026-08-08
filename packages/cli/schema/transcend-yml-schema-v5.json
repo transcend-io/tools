@@ -153,8 +153,7 @@
                     "ADMINISTRATION_SETTINGS",
                     "ASSESSMENTS",
                     "PATHFINDER",
-                    "PROMPT_MANAGEMENT",
-                    "CONTRACT_SCANNING"
+                    "PROMPT_MANAGEMENT"
                   ]
                 }
               }
@@ -301,8 +300,6 @@
                     "manageCodeScanning",
                     "viewPathfinder",
                     "managePathfinder",
-                    "viewContractScanning",
-                    "manageContractScanning",
                     "viewAuditorRuns",
                     "viewAuditEvents",
                     "manageActionItemCollections",
