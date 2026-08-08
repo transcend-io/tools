@@ -1,0 +1,29 @@
+{
+  "name": "transcend-agent-governance",
+  "displayName": "Transcend Agent Governance",
+  "version": "0.3.0",
+  "description": "Connect Cursor to Transcend Agent Governance for policy-enforced MCP tool access via browser sign-in.",
+  "author": {
+    "name": "Transcend",
+    "email": "support@transcend.io"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["transcend", "agent-governance", "mcp", "cursor", "governance", "policy", "oauth"],
+  "logo": "assets/logo.svg",
+  "variables": {
+    "type": "object",
+    "properties": {
+      "GATEWAY_BASE_URL": {
+        "type": "string",
+        "title": "Gateway base URL",
+        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Copy it from the Connect Cursor panel in the Agent Governance dashboard. Do not append /mcp/... — the plugin adds that."
+      },
+      "TENANT_ID": {
+        "type": "string",
+        "title": "Tenant ID",
+        "description": "Your Agent Governance tenant (organization) identifier. Shown in the Connect Cursor panel next to the gateway URL."
+      }
+    },
+    "required": ["GATEWAY_BASE_URL", "TENANT_ID"]
+  }
+}

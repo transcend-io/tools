@@ -1,0 +1,18 @@
+{
+  "name": "transcend-plugins",
+  "owner": {
+    "name": "Transcend",
+    "email": "support@transcend.io"
+  },
+  "metadata": {
+    "description": "Official Transcend Cursor plugins",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "transcend-agent-governance",
+      "source": "./plugins/cursor/TranscendAgentGovernance",
+      "description": "Governed MCP access for Cursor via Transcend Agent Governance"
+    }
+  ]
+}
