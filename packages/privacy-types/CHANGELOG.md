@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.13.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
 ## 5.12.0
 
 ### Minor Changes
