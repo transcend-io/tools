@@ -1,5 +1,18 @@
 # @transcend-io/cli
 
+## 10.25.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
+### Patch Changes
+
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/privacy-types@5.13.0
+  - @transcend-io/sdk@1.9.0
+  - @transcend-io/airgap.js-types@14.2.29
+
 ## 10.24.1
 
 ### Patch Changes

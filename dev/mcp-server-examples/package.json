@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-examples",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Reference MCP App views and capability-aware tools. Development only, never published.",
   "license": "Apache-2.0",
