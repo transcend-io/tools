@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.14.0
+
+### Minor Changes
+
+- 8deab38: Remove `PromptGroup` and `PromptRun` from `AttributeSupportedResourceType`. Attributes remain supported on `Prompt`. Regenerate CLI transcend.yml JSON schemas to match.
+
 ## 5.13.0
 
 ### Minor Changes
