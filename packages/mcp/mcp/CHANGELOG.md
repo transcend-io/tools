@@ -1,5 +1,18 @@
 # @transcend-io/mcp
 
+## 0.9.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.5.8
+- @transcend-io/mcp-server-assessment@0.5.8
+- @transcend-io/mcp-server-consent@0.6.8
+- @transcend-io/mcp-server-discovery@0.5.8
+- @transcend-io/mcp-server-dsr@0.5.8
+- @transcend-io/mcp-server-inventory@0.5.8
+- @transcend-io/mcp-server-preferences@0.5.8
+- @transcend-io/mcp-server-workflows@0.5.8
+
 ## 0.9.1
 
 ### Patch Changes
