@@ -2,4 +2,4 @@
 "@transcend-io/privacy-types": minor
 ---
 
-Remove `Prompt`, `PromptGroup`, and `PromptRun` from `AttributeSupportedResourceType`. Attributes are no longer supported on prompt inventory resources.
+Remove `PromptGroup` and `PromptRun` from `AttributeSupportedResourceType`. Attributes remain supported on `Prompt`.

@@ -38,6 +38,8 @@ export enum AttributeSupportedResourceType {
   ProcessingActivity = 'processingActivity',
   /** Processing purpose table */
   ProcessingPurposeSubCategory = 'processingPurposeSubCategory',
+  /** Prompt table */
+  Prompt = 'prompt',
   /** Requests table */
   Request = 'request',
   /** ScannedObject table */
