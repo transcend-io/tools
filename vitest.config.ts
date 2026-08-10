@@ -23,19 +23,26 @@ export default defineConfig({
   },
   plugins: [
     {
-      name: 'svg-text-loader',
+      // Mirrors the `loader` entries in tsdown.config.base.ts so tests resolve
+      // these imports the same way the published bundles do.
+      name: 'text-asset-loader',
       load(id) {
-        if (id.endsWith('.svg')) {
+        if (id.endsWith('.svg') || id.endsWith('.html')) {
           return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`;
         }
       },
     },
   ],
   test: {
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.worktrees/**'],
     coverage: {
       exclude: ['**/*.test.ts', '**/dist/**'],
       provider: 'v8',
       reporter: ['text', 'lcov'],
+    },
+    // Opt MCP test-only URL overrides on for the suite; production/runtime stays off unless set.
+    env: {
+      ALLOW_TEST_OVERRIDES: '1',
     },
     environment: 'node',
     globals: true,

@@ -2,12 +2,13 @@ import { getRequestAuth } from '../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../auth.js';
 import {
   MCP_CALLER_HEADER,
+  MCP_CLIENT_NAME_HEADER,
   SOMBRA_AUTHORIZATION_HEADER,
   TOOLCALL_ID_HEADER,
   TRANSCEND_VERSION_HEADER,
   TRANSCEND_VERSION_HEADER_VALUE,
 } from '../http-header-names.js';
-import { resolveMcpCallerAttribution } from '../mcp-caller-context.js';
+import { resolveMcpCallerAttribution, resolveMcpClientName } from '../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
@@ -172,6 +173,7 @@ export class TranscendRestClient {
 
     const toolCallId = getToolCallIdHeader();
     const mcpCaller = resolveMcpCallerAttribution();
+    const mcpClientName = resolveMcpClientName();
     const headers: Record<string, string> = {
       ...authHeaders(effectiveAuth),
       ...this.sombraAuthHeaders(),
@@ -182,6 +184,7 @@ export class TranscendRestClient {
       'User-Agent': TRANSCEND_MCP_USER_AGENT,
       ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
       ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
+      ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
     };
 
     const controller = new AbortController();
@@ -304,6 +307,7 @@ export class TranscendRestClient {
     const url = `${baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
     const toolCallId = getToolCallIdHeader();
     const mcpCaller = resolveMcpCallerAttribution();
+    const mcpClientName = resolveMcpClientName();
     const response = await fetch(url, {
       headers: {
         ...authHeaders(effectiveAuth),
@@ -312,6 +316,7 @@ export class TranscendRestClient {
         'User-Agent': TRANSCEND_MCP_USER_AGENT,
         ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
         ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
+        ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
       },
     });
     if (!response.ok) {

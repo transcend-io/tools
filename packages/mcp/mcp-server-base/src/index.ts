@@ -5,10 +5,12 @@ export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
 export {
   MCP_CALLER_HEADER,
+  MCP_CLIENT_NAME_HEADER,
   extractMcpCallerFromHeaders,
   getRequestMcpCaller,
   requestMcpCallerContext,
   resolveMcpCallerAttribution,
+  resolveMcpClientName,
 } from './mcp-caller-context.js';
 
 export {
@@ -92,6 +94,9 @@ export type {
   UiResourceDefinition,
   UiResourcePermissions,
 } from './tools/ui-resource.js';
+
+export { DEV_VIEWS_ENV_VAR, devViewsEnabled, viewHtml } from './tools/dev-view-html.js';
+export type { ViewHtmlOptions } from './tools/dev-view-html.js';
 
 export {
   assertElicitFormSchema,

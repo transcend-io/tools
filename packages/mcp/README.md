@@ -333,31 +333,43 @@ For a server with no views, nothing: the `resources` capability is only declared
 
 For a server with views, `resources/list` and `resources/read` are registered, tools carry a `_meta.ui.resourceUri` binding, and `resources/read` returns the HTML with the `text/html;profile=mcp-app` MIME type. The binding is emitted regardless of host support, since the spec's degradation path is that hosts without the extension ignore it and show the text result.
 
+See [`dev/mcp-server-examples`](../../dev/mcp-server-examples/README.md) for two worked examples: `example_hello_app`, which uses all three paths, and `example_elicitation`, which is form collection alone — every field shape the spec allows, and a separate outcome for each way a request can end. They live in `dev/` rather than beside a published package because each view inlines hundreds of kilobytes, and a `private` package cannot carry them into a tarball.
+
 ### Usage attribution
 
-Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host detected at `initialize`, which gives stdio sessions attribution they previously had no way to send. The resolved host and capability set are also logged once per session.
+Outbound Transcend requests carry two orthogonal headers:
 
-## Environment variables
+- `x-transcend-mcp-caller` — recognized-host identity. This is the dimension usage dashboards group by, and the one Transcend matches by exact equality, so it has to stay a closed set. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the value is the session's `McpHostClient` from `initialize`, including `unknown` when the host is unrecognized. That keeps the dashboard's denominator honest: unrecognized traffic is an `unknown` slice, not a missing tag.
+- `x-transcend-mcp-client-name` — discovery. A sanitized `clientInfo.name` from `initialize`, sent whenever a usable name exists, independent of how caller resolved. Restricted to an ASCII allowlist so a client-controlled string cannot break outbound `fetch` (header values are ByteStrings).
 
-All servers share the same environment variables:
+When a name shows up often enough in the discovery view, promote it: add a member to `McpHostClient`, a pattern in `HOST_PATTERNS`, and expect its dashboard series to split from `unknown` (and from the raw discovery label) at that point. The resolved host and capability set are also logged once per session.
 
-| Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                                                                       |
-| ------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients); enables OAuth stdio mode when set            |
-| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                                                                    |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
-| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
-| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
-| `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                        |
-| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                  |
-| `SOMBRA_URL`                    | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
-| `TRANSCEND_DASHBOARD_URL`       | No                     | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards                                 |
-| `TRANSCEND_HTTP_PORT`           | No                     | `3000`                                     | HTTP listen port                                                                                                                                  |
-| `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                                | HTTP listen host                                                                                                                                  |
-| `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                                          | Comma-separated allowed CORS origins                                                                                                              |
-| `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                                  | Idle session timeout (ms)                                                                                                                         |
+## Scaffolding a tool, an app, or a form
 
-**Monorepo:** store these in root **`secret.env`** (from [`secret.env.example`](../../secret.env.example)); load with `source` or [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh). See [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers).
+One command writes any of the three, taking the kind, the package, and a kebab-case name:
+
+```bash
+pnpm mcp:new tool        docs      fetch-usage     # src/tools/docs_fetch_usage.ts
+pnpm mcp:new app         inventory usage-chart     # a view, its ui:// resource, and the tool that opens it
+pnpm mcp:new elicitation consent   confirm-optout  # a tool that collects its arguments through a form
+```
+
+| Kind          | Writes                                                                       | Touches the manifest      |
+| ------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| `tool`        | one `defineTool`, no variants                                                | no                        |
+| `app`         | the component, the `ui://` resource, and a `defineToolWithCapabilities` tool | on a package's first view |
+| `elicitation` | one tool whose elicitation variant collects what the agent left out          | no                        |
+
+Only `app` needs package-level wiring, which is why it is the only kind that edits a `package.json`: a tool that renders as text needs none of React, Vite, or Tailwind, and a command that added them anyway would put a browser toolchain into packages that ship no view.
+
+The name is kebab-case for every kind because it has to serve as a directory name, a `*View.tsx` component name, the last segment of a `ui://` uri, and a tool name on the wire; `usage-chart` in the `docs` package becomes the tool `docs_usage_chart`, or `docs_usage_chart_app` for the `app` kind. The suffix is what lets one name carry both: a tool and the view that renders its result are separate registrations, and `example_hello_app` is spelled the same way. The generated file is left **unregistered** in all three cases, and the command prints the import and array entry to paste into `src/tools/index.ts`.
+
+The prefix is the package's own, which is not always its directory's short name — `mcp-server-examples` ships `example_*` and `mcp-server-assessment` ships `assessments_*` — so the two exceptions are listed in `scripts/lib/mcp-new/shared.ts` rather than derived. The `ui://` uri and `pnpm mcp:inspect` still take the directory's short name, matching what those packages already serve.
+
+Two things the templates deliberately do rather than stub:
+
+- The `elicitation` kind emits a **valid** form — one required field, a real prompt — because `assertElicitFormSchema` and the empty-message check run at construction. A placeholder schema would produce a package that throws on boot.
+- The `app` kind emits the MCP App variant **only**. To serve a form as well, generate one with `pnpm mcp:new elicitation` and move its variant across; `example_hello_app` is the worked example of a single tool serving all three paths.
 
 ## Building MCP App views
 
@@ -367,7 +379,19 @@ A view is a React component that runs inside the host's sandboxed iframe. It rea
 
 Views are React apps built by Vite into a single self-contained HTML document. That single-file constraint is not a style preference: `resources/read` returns one string, and the host renders it in a sandboxed iframe with no same-origin server, so anything left as a separate file or CDN URL cannot be fetched. Inlining everything also means a view needs no CSP `resourceDomains` at all.
 
-A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory. Prefix a directory with `_` to hold shared code that is not a view.
+To add a view, run the generator and fill in the three files it writes:
+
+```bash
+pnpm mcp:new app inventory usage-chart
+```
+
+That is `src/ui/usage-chart/UsageChartView.tsx`, the component; `src/apps/usage-chart.ts`, which binds the built document to a `ui://` resource; and `src/tools/usage_chart_app.ts`, the `defineToolWithCapabilities` tool that opens it with the resource already bound. On a package with no views yet it also adds `tsconfig.ui.json`, the gitignore entry, three scripts, and the browser-side devDependencies, then installs them.
+
+The one step it leaves alone is adding the generated factory to the array `src/tools/index.ts` returns. That line is where a tool's name and description become public API on a published package, so it stays a person's decision; the command prints the two lines to paste.
+
+See [Scaffolding a tool, an app, or a form](#scaffolding-a-tool-an-app-or-a-form) for the other two kinds.
+
+A view is discovered by convention rather than declared: **a directory under `src/ui/` holding exactly one `*View.tsx`, which exports the name its filename promises.** `HelloView.tsx` must export `HelloView`. Zero or several matching files is an error naming the directory, and `scripts/mcp-app-views.test.ts` catches a mismatch before a build does. Prefix a directory with `_` to hold shared code that is not a view.
 
 Two files that a view needs are **synthesized during the build and exist nowhere on disk**, served by `synthesizeMcpAppViews` in the repo-root `vite.config.base.ts` from ids inside the view's own directory:
 
@@ -417,13 +441,14 @@ export function HelloView() {
 }
 ```
 
-`useMcpApp` wraps `@modelcontextprotocol/ext-apps` with this repo's conventions: it connects to the host, applies the host's style variables to the document so the shared theme can pick them up, keeps `theme` in sync, and unwraps the `createToolResult` envelope into typed `data`. `callTool` invokes a tool on the originating server and folds the response back into `data`, so a refresh re-renders the view.
+`useMcpApp` wraps `@modelcontextprotocol/ext-apps` with this repo's conventions: it connects to the host, applies the host's style variables to the document so the shared theme can pick them up, keeps `theme` in sync, and unwraps the `createToolResult` envelope into typed `data`. `callTool` invokes a tool on the originating server — this is how `appOnlyTools` are reached — and folds the response back into `data`, so a refresh re-renders the view.
 
 Import view code only from `@transcend-io/mcp-server-base/ui`, never the package root. That subpath exists so browser code cannot reach the root barrel, which pulls in `node:async_hooks`, GraphQL clients, and OAuth.
 
 A few constraints worth knowing before adding a view:
 
 - **A package has no Vite config of its own.** `scripts/build-mcp-views.ts` discovers the package's views and runs one Vite build per view, because the single-file plugin collapses a whole bundle into one document — so a config naming a single entry could not express a package with two views, and would have silently emitted both into one document. The script also passes `configFile: false`, since Vitest auto-loads a `vite.config.ts` when a package has no test config and would otherwise replace the shared root config.
+- **The built document is generated into `src/ui/generated/` and gitignored**, then inlined as a string by tsdown's `.html` text loader. Because a test reads the document off disk, `test` for a view-building package depends on `build` in `turbo.json`. Typecheck does not: the `declare module '*.html'` in `types/html.d.ts` is a wildcard, which TypeScript resolves without the file existing.
 - **Views are checked by a second tsconfig.** `tsconfig.json` excludes `src/ui`, since browser code needs bundler module resolution — `@modelcontextprotocol/ext-apps` re-exports its React entry with extensionless specifiers that `NodeNext` refuses to resolve.
 - **Expect a few hundred kilobytes per view.** React, the Apps SDK, and its Zod dependency are all inlined. That is fine for a locally served resource, but it is not a budget for many small views.
 
@@ -461,6 +486,82 @@ The namespaces available, all of which are host-aware:
 Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
 
 The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
+
+### Developing and debugging a view
+
+`pnpm mcp:inspect [pkg]` is the loop. It builds the target, starts a watcher that rebuilds a view on save, and opens the official MCP Inspector against it: a real `initialize` handshake, real `_meta.ui` binding, a real sandboxed iframe, and real `tools/call` traffic from inside the view. A simulated host is faster to iterate against but can only ever agree with itself, and the failures that matter here are the ones a real host produces.
+
+It defaults to the umbrella server when no package is given, so every app across every published package is listed. Passing a package (`inventory`, or the full name) narrows the build, which is noticeably faster. Credentials are not needed for view work, but the umbrella starts without them, so any tool that calls the Transcend API fails at call time — that is expected, not a bug.
+
+Add `--examples` to serve [`dev/mcp-server-examples`](../../dev/mcp-server-examples/README.md) instead. The umbrella does not aggregate it — a published package depending on a development-only one is exactly what keeping the reference views out of `packages/` prevents — so `--examples` is how you reach them, and it is the fastest way to check a host's render path against a view that needs no credentials.
+
+The command uses Inspector v2, which was chosen by measurement rather than recency. All three of its clients declare `extensions["io.modelcontextprotocol/ui"]`, and its CLI has a scriptable probe:
+
+```bash
+npx -y @modelcontextprotocol/inspector@2 --cli node dev/mcp-server-examples/dist/cli.mjs \
+  --method tools/list --app-info
+# {"hasApp":true,"toolName":"example_hello_app","resourceUri":"ui://transcend-examples/hello",...}
+```
+
+v2 is a floor rather than a preference. Earlier Inspector releases ship an Apps tab that reads `_meta["ui/resourceUri"]`, but their client declares `capabilities: {}`, so a spec-correct server withholds every view and the tab renders empty. Running one against this loop would mean overriding negotiation to compensate, which is the one thing the loop exists to check.
+
+A view's document is read once, when the app's sandbox iframe mounts, and never again while that app is alive — later tool calls arrive as `ui/notifications/tool-result` over the bridge. So after a rebuild the data a view renders updates but its markup does not, until you reopen the app or reload the tab. That is how a real host loads an app rather than an Inspector quirk, so reopening the app is the step that shows a markup edit.
+
+Two things must be true for that reopen to show new markup, and both are handled for you. The server has to read the view from disk rather than the copy inlined at build time, and it has to actually receive `TRANSCEND_MCP_DEV_VIEWS` — which exporting it cannot achieve, because the Inspector spawns a stdio server with an allowlisted environment (`HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM`, `USER`) plus only what its `-e KEY=VALUE` flag supplied. `pnpm mcp:inspect` passes the flag. The same allowlist drops API credentials, and we deliberately leave them out rather than exposing them in a command line every local process can read, so use `--http` when a tool needs to reach the Transcend API: there we spawn the server ourselves and it inherits the environment normally.
+
+One workaround runs before launch. v2's published tarball omits `clients/web/static/sandbox_proxy.html`, the document that hosts the app's iframe, so opening an app renders `Sandbox not loaded: ENOENT ...` inside the app frame — a missing file that looks like a broken view. `pnpm mcp:inspect` restores it from a vendored copy of upstream's file and logs a line when it does. It is a workaround for [inspector#1859](https://github.com/modelcontextprotocol/inspector/issues/1859), tracked by a `TODO` in [`scripts/lib/mcp-app-dev.ts`](../../scripts/lib/mcp-app-dev.ts) to delete once a release ships the file; an install that already has the document is left alone. Because the Inspector reads it once at startup, an instance that was already running when the file appeared keeps serving the error — restart it.
+
+#### When a view does not appear, check the capability gate first
+
+This is the failure that looks exactly like a broken view. A tool's `_meta.ui` is only attached when the client declared the MCP Apps extension:
+
+```typescript
+// mcp-server-base/src/capabilities/derive.ts
+function supportsMcpApps(capabilities: ClientCapabilities | undefined): boolean {
+  const settings = capabilities?.extensions?.[MCP_UI_EXTENSION_ID];
+  if (!settings) return false;
+  // ...then the view's MIME type must be one the host accepts
+}
+```
+
+That check is the same one `@modelcontextprotocol/ext-apps` makes server-side in `getUiCapability`, so the strictness is the spec's, not ours. A host that does not advertise gets no view and falls back to the text result, which is the intended degradation — but during development it is indistinguishable from a bug. Confirm what the host declared before looking anywhere else, and use `TRANSCEND_MCP_ASSUME_CAPABILITIES=MCP_APP` to force the issue for a host that ships app support without declaring it.
+
+#### Seeing the other branches of a tool
+
+To exercise a form, call `example_elicitation`. It ships no view, so v2 resolves it to the elicitation variant and renders the request under **Elicitation Request** — no override, no restart, and the same `mode: 'form'` path a production host takes.
+
+The other branches of a tool that _does_ have a view are not reachable here, and the override cannot get you there: it only ever adds a capability, never removes one, while the Inspector declares both the Apps extension and `elicitation/create`. Such a tool therefore always resolves to its view.
+
+That is a limit of the Inspector rather than a gap in coverage. Variant selection is exhaustively checked in [`define-tool-with-capabilities.test.ts`](mcp-server-base/tests/define-tool-with-capabilities.test.ts), which is both cheaper to consult and more precise than reading a rendered panel. It is also why `example_elicitation` deliberately ships no view: keeping one tool form-only is what makes the form flow reachable in this loop at all.
+
+## Environment variables
+
+All servers share the same environment variables:
+
+| Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                                                                       |
+| ------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients); enables OAuth stdio mode when set            |
+| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                                                                    |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
+| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
+| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
+| `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                        |
+| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                  |
+| `SOMBRA_URL`                    | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
+| `TRANSCEND_DASHBOARD_URL`       | No                     | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards                                 |
+| `TRANSCEND_HTTP_PORT`           | No                     | `3000`                                     | HTTP listen port                                                                                                                                  |
+| `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                                | HTTP listen host                                                                                                                                  |
+| `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                                          | Comma-separated allowed CORS origins                                                                                                              |
+| `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                                  | Idle session timeout (ms)                                                                                                                         |
+
+Two more exist for local view development only, both set automatically by `pnpm mcp:inspect`:
+
+| Variable                            | Description                                                                                                                                                                                                       |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_MCP_DEV_VIEWS`           | Read each view's built HTML from disk on every `resources/read` instead of using the copy inlined at build time, so a view rebuild needs no restart                                                               |
+| `TRANSCEND_MCP_ASSUME_CAPABILITIES` | Comma-separated capabilities to force on regardless of what the client declared. Never set in production: it claims a host can render a view when it may not, turning a graceful text fallback into a blank panel |
+
+**Monorepo:** store these in root **`secret.env`** (from [`secret.env.example`](../../secret.env.example)); load with `source` or [`scripts/mcp-run.sh`](../../scripts/mcp-run.sh). See [CONTRIBUTING.md](../../CONTRIBUTING.md#mcp-servers).
 
 ## Contributing
 
