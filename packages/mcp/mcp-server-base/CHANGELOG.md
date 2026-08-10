@@ -1,5 +1,58 @@
 # @transcend-io/mcp-server-base
 
+## 0.13.0
+
+### Minor Changes
+
+- e127dfc: Split MCP usage attribution into two outbound headers: `x-transcend-mcp-caller` stays an `McpHostClient` value (including `unknown` when unrecognized), and `x-transcend-mcp-client-name` carries a sanitized `clientInfo.name` for discovering hosts not yet in the enum.
+
+  An explicitly forwarded caller header still wins, since a caller proxying on a user's behalf knows its own identity best. The discovery header is sent whenever a usable name exists, independent of caller. Sanitization uses an ASCII allowlist so client-controlled names cannot break outbound `fetch`.
+
+- f3ce7dc: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 4bc21f7: Gate test-only URL overrides behind `ALLOW_TEST_OVERRIDES=1` instead of `NODE_ENV=test` / Vitest detection. Unset or any other value disables the overrides. The Vitest suite sets the flag via `vitest.config.ts`.
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
+## 0.12.0
+
+### Minor Changes
+
+- 1b93859: Negotiate client capabilities from the `initialize` handshake, so a tool can adapt to what the connected host is actually able to render.
+
+  Servers now derive the host's capabilities and identity once per connection (`deriveClientCapabilities`, `whatIsTheClient`) and expose them to handlers through an `AsyncLocalStorage` session context, reachable with `getMcpSession()` and `hasCapability()` without threading a server through every call signature. `requestElicitation` asks the host for a form and returns `undefined` when it cannot show one, rather than letting the SDK's own capability check throw and fail the tool call.
+
+  Only elicitation and MCP Apps are detected, being the only capabilities a tool can act on differently. Sampling and roots are deliberately excluded: roots is inert for API-backed servers, our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
+
+  Nothing changes on the wire yet. Handshakes stay byte-identical, and no tool behaves differently until per-capability variants land.
+
+- 1b93859: Add a browser-only `@transcend-io/mcp-server-base/ui` subpath exporting `useMcpApp`, the React hook a view uses to connect to its host, read the payload the tool sent, and call tools back.
+
+  The separate subpath is load-bearing rather than cosmetic: the package root reaches into `node:async_hooks`, GraphQL clients, and OAuth, none of which can run in a sandboxed iframe. Importing only from `/ui` in view code keeps that graph unreachable. React and `@modelcontextprotocol/ext-apps` are optional peer dependencies, so packages that ship no view install nothing new.
+
+- c166809: Publish `@transcend-io/mcp-server-base/ui/theme.css`, the Tailwind theme MCP App views are styled with.
+
+  Stock Tailwind is deliberately absent — the default theme is never imported, so `bg-red-500` does not exist and every utility resolves to a host value, a Transcend design token, or a literal fallback. Surfaces, typography, radii, and shadows follow the style variables the host sends at handshake time, so a view looks native in light or dark Claude; brand and status colors come from `@transcend-io/design-tokens` so it still reads as ours; spacing stays on Tailwind's scale, which the MCP Apps spec omits on purpose because layouts break when it shifts underneath them.
+
+  The theme also replaces Tailwind's Preflight, because a view lives in an iframe the host measures: the body has to stay transparent and nothing may trap content in its own scroller. `tailwindcss` and `@transcend-io/design-tokens` are optional peer dependencies, so packages that ship no view install nothing new.
+
+- 1b93859: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- 1b93859: Fall back to the host detected at `initialize` when setting `x-transcend-mcp-caller` on outbound Transcend requests, so stdio sessions carry usage attribution they previously had no way to send.
+
+  An explicitly forwarded header still takes precedence, since a caller proxying on a user's behalf knows its own identity better than we can infer it. Nothing is sent when the host could not be identified, rather than guessing.
+
 ## 0.11.0
 
 ### Minor Changes

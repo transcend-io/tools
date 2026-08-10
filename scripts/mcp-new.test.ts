@@ -4,13 +4,14 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import type { McpPackage } from './lib/mcp-app-dev.ts';
+import { repoRoot, type McpPackage } from './lib/mcp-app-dev.ts';
 import { scaffoldApp } from './lib/mcp-new/app.ts';
 import { scaffoldElicitation } from './lib/mcp-new/elicitation.ts';
 import {
   ARTIFACT_KINDS,
   deriveNames,
   isArtifactKind,
+  pathToRepoRoot,
   validateArtifactName,
 } from './lib/mcp-new/shared.ts';
 import { scaffoldTool } from './lib/mcp-new/tool.ts';
@@ -30,18 +31,21 @@ afterEach(() => {
  * package is what lets these tests assert on the manifest without editing a
  * package someone ships.
  */
-function fakePackage(scripts: Record<string, string> = {}): McpPackage {
+function fakePackage(
+  scripts: Record<string, string> = {},
+  dirName = 'mcp-server-docs',
+): McpPackage {
   const dir = mkdtempSync(join(tmpdir(), 'mcp-new-'));
   fixtures.push(dir);
   writeFileSync(
     join(dir, 'package.json'),
-    `${JSON.stringify({ name: '@transcend-io/mcp-server-docs', scripts }, null, 2)}\n`,
+    `${JSON.stringify({ name: `@transcend-io/${dirName}`, scripts }, null, 2)}\n`,
   );
   mkdirSync(join(dir, 'src', 'tools'), { recursive: true });
 
   return {
-    name: '@transcend-io/mcp-server-docs',
-    dirName: 'mcp-server-docs',
+    name: `@transcend-io/${dirName}`,
+    dirName,
     dir,
     cliPath: join(dir, 'dist', 'cli.mjs'),
     hasCli: true,
@@ -96,6 +100,34 @@ describe('artifact names', () => {
   test('an unknown kind is rejected rather than guessed at', () => {
     expect(isArtifactKind('view')).toBe(false);
   });
+
+  test.for([
+    ['mcp-server-examples', 'example_usage_chart'],
+    ['mcp-server-assessment', 'assessments_usage_chart'],
+  ] as const)('prefixes a tool as %s already spells it', ([dirName, toolName]) => {
+    // Both disagree with their directory, in opposite directions, so a derived
+    // prefix would sit a generated tool next to differently named siblings.
+    expect(deriveNames(fakePackage({}, dirName), 'usage-chart').toolName).toBe(toolName);
+  });
+
+  test('leaves the short name alone, which uris and mcp:inspect resolve by', () => {
+    // `ui://transcend-examples/…` is what the package already serves, even though
+    // its tools are `example_*`.
+    expect(deriveNames(fakePackage({}, 'mcp-server-examples'), 'usage-chart').shortName).toBe(
+      'examples',
+    );
+  });
+});
+
+describe('path to the repo root', () => {
+  test.for([
+    [join('packages', 'mcp', 'mcp-server-docs'), '../../..'],
+    [join('dev', 'mcp-server-examples'), '../..'],
+  ] as const)('resolves from %s', ([packagePath, expected]) => {
+    // Hardcoding either depth writes a generated script that resolves outside the
+    // repo from packages at the other one.
+    expect(pathToRepoRoot(join(repoRoot, packagePath))).toBe(expected);
+  });
 });
 
 describe('app kind', () => {
@@ -116,7 +148,9 @@ describe('app kind', () => {
     expect(resource).toContain(
       "export const USAGE_CHART_APP_URI = 'ui://transcend-docs/usage-chart'",
     );
-    expect(tool).toContain("name: 'docs_usage_chart'");
+    // Suffixed, so registering this beside `pnpm mcp:new tool docs usage-chart`
+    // does not put two tools on the wire under one name.
+    expect(tool).toContain("name: 'docs_usage_chart_app'");
     expect(tool).toContain('[McpClientCapability.McpApp]');
     expect(result).toMatchObject({
       factory: 'createUsageChartAppTool',
@@ -157,10 +191,22 @@ describe('app kind', () => {
       tailwindcss: 'catalog:',
       vite: 'catalog:',
     });
-    expect(readFileSync(join(pkg.dir, 'tsconfig.ui.json'), 'utf8')).toContain(
-      'tsconfig.ui.base.json',
-    );
     expect(readFileSync(join(pkg.dir, '.gitignore'), 'utf8')).toContain('src/ui/generated/');
+  });
+
+  test('points the script and the tsconfig at the repo root from where the package is', () => {
+    const pkg = fakePackage({ build: 'tsdown' });
+    scaffoldApp(pkg, deriveNames(pkg, 'usage-chart'));
+
+    // Both are relative paths out of the package, so a fixed number of `..`
+    // segments is only right for packages at one depth.
+    const toRepoRoot = pathToRepoRoot(pkg.dir);
+    expect(readManifest(pkg).scripts?.['build:ui']).toBe(
+      `node ${toRepoRoot}/scripts/build-mcp-views.ts`,
+    );
+    expect(readFileSync(join(pkg.dir, 'tsconfig.ui.json'), 'utf8')).toContain(
+      `"extends": "${toRepoRoot}/tsconfig.ui.base.json"`,
+    );
   });
 
   test('reports no manifest change on a package that already has the wiring', () => {
@@ -211,6 +257,9 @@ describe('elicitation kind', () => {
     expect(tool).toMatch(/const FORM_MESSAGE = '[^']+'/);
     expect(tool).toContain("REQUIRED_FIELDS = ['value']");
     expect(tool).toContain('[McpClientCapability.Elicitation]');
+    // Held to the required mask, so a host accepting an empty form is reported
+    // rather than echoed back as an answer.
+    expect(tool).toContain('FormAnswerSchema.safeParse(');
     expect(result).toMatchObject({
       factory: 'createConfirmOptoutTool',
       manifestChanged: false,
@@ -269,6 +318,6 @@ describe('every kind', () => {
     // a person's decision — but the epilogue has to make it a paste.
     expect(result.factory).toMatch(/^create[A-Z]/);
     expect(result.toolModule).toMatch(/^\.\/[a-z_]+\.js$/);
-    expect(result.steps.length).toBeGreaterThan(0);
+    expect(result.step).not.toBe('');
   });
 });

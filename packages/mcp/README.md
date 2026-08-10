@@ -337,7 +337,12 @@ See [`dev/mcp-server-examples`](../../dev/mcp-server-examples/README.md) for two
 
 ### Usage attribution
 
-Outbound Transcend requests carry `x-transcend-mcp-caller`. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the header falls back to the host detected at `initialize`, which gives stdio sessions attribution they previously had no way to send. The resolved host and capability set are also logged once per session.
+Outbound Transcend requests carry two orthogonal headers:
+
+- `x-transcend-mcp-caller` — recognized-host identity. This is the dimension usage dashboards group by, and the one Transcend matches by exact equality, so it has to stay a closed set. An explicitly forwarded header always wins, since a caller proxying on a user's behalf knows its own identity best. Otherwise the value is the session's `McpHostClient` from `initialize`, including `unknown` when the host is unrecognized. That keeps the dashboard's denominator honest: unrecognized traffic is an `unknown` slice, not a missing tag.
+- `x-transcend-mcp-client-name` — discovery. A sanitized `clientInfo.name` from `initialize`, sent whenever a usable name exists, independent of how caller resolved. Restricted to an ASCII allowlist so a client-controlled string cannot break outbound `fetch` (header values are ByteStrings).
+
+When a name shows up often enough in the discovery view, promote it: add a member to `McpHostClient`, a pattern in `HOST_PATTERNS`, and expect its dashboard series to split from `unknown` (and from the raw discovery label) at that point. The resolved host and capability set are also logged once per session.
 
 ## Scaffolding a tool, an app, or a form
 
@@ -357,7 +362,9 @@ pnpm mcp:new elicitation consent   confirm-optout  # a tool that collects its ar
 
 Only `app` needs package-level wiring, which is why it is the only kind that edits a `package.json`: a tool that renders as text needs none of React, Vite, or Tailwind, and a command that added them anyway would put a browser toolchain into packages that ship no view.
 
-The name is kebab-case for every kind because it has to serve as a directory name, a `*View.tsx` component name, the last segment of a `ui://` uri, and a tool name on the wire; `usage-chart` in the `docs` package becomes the tool `docs_usage_chart`. The generated file is left **unregistered** in all three cases, and the command prints the import and array entry to paste into `src/tools/index.ts`.
+The name is kebab-case for every kind because it has to serve as a directory name, a `*View.tsx` component name, the last segment of a `ui://` uri, and a tool name on the wire; `usage-chart` in the `docs` package becomes the tool `docs_usage_chart`, or `docs_usage_chart_app` for the `app` kind. The suffix is what lets one name carry both: a tool and the view that renders its result are separate registrations, and `example_hello_app` is spelled the same way. The generated file is left **unregistered** in all three cases, and the command prints the import and array entry to paste into `src/tools/index.ts`.
+
+The prefix is the package's own, which is not always its directory's short name — `mcp-server-examples` ships `example_*` and `mcp-server-assessment` ships `assessments_*` — so the two exceptions are listed in `scripts/lib/mcp-new/shared.ts` rather than derived. The `ui://` uri and `pnpm mcp:inspect` still take the directory's short name, matching what those packages already serve.
 
 Two things the templates deliberately do rather than stub:
 
@@ -441,7 +448,7 @@ Import view code only from `@transcend-io/mcp-server-base/ui`, never the package
 A few constraints worth knowing before adding a view:
 
 - **A package has no Vite config of its own.** `scripts/build-mcp-views.ts` discovers the package's views and runs one Vite build per view, because the single-file plugin collapses a whole bundle into one document — so a config naming a single entry could not express a package with two views, and would have silently emitted both into one document. The script also passes `configFile: false`, since Vitest auto-loads a `vite.config.ts` when a package has no test config and would otherwise replace the shared root config.
-- **The built document is generated into `src/ui/generated/` and gitignored**, then inlined as a string by tsdown's `.html` text loader. Because a source file imports it, `typecheck` and `test` for view-building packages depend on `build` in `turbo.json`, as do the same tasks for their dependents.
+- **The built document is generated into `src/ui/generated/` and gitignored**, then inlined as a string by tsdown's `.html` text loader. Because a test reads the document off disk, `test` for a view-building package depends on `build` in `turbo.json`. Typecheck does not: the `declare module '*.html'` in `types/html.d.ts` is a wildcard, which TypeScript resolves without the file existing.
 - **Views are checked by a second tsconfig.** `tsconfig.json` excludes `src/ui`, since browser code needs bundler module resolution — `@modelcontextprotocol/ext-apps` re-exports its React entry with extensionless specifiers that `NodeNext` refuses to resolve.
 - **Expect a few hundred kilobytes per view.** React, the Apps SDK, and its Zod dependency are all inlined. That is fine for a locally served resource, but it is not a budget for many small views.
 
@@ -476,7 +483,7 @@ The namespaces available, all of which are host-aware:
 | `text-sm`, `text-md`, `text-heading-sm`, `text-heading-md` | Font sizes, each carrying its line height                                                                                                      |
 | `rounded-*`, `shadow-sm`, `font-*`                         | `sm`, `md`, `lg`, `full`                                                                                                                       |
 
-Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that. `scripts/mcp-app-styling.test.ts` enforces the distinction, since Tailwind has no config switch for it.
+Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
 
 The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
 
@@ -496,7 +503,7 @@ npx -y @modelcontextprotocol/inspector@2 --cli node dev/mcp-server-examples/dist
 # {"hasApp":true,"toolName":"example_hello_app","resourceUri":"ui://transcend-examples/hello",...}
 ```
 
-`--v1` runs the older Inspector instead. v1 ships an Apps tab that reads `_meta["ui/resourceUri"]`, but its client declares `capabilities: {}`, so a spec-correct server withholds every view and the tab renders empty. `--v1` therefore turns on the capability override below to compensate.
+v2 is a floor rather than a preference. Earlier Inspector releases ship an Apps tab that reads `_meta["ui/resourceUri"]`, but their client declares `capabilities: {}`, so a spec-correct server withholds every view and the tab renders empty. Running one against this loop would mean overriding negotiation to compensate, which is the one thing the loop exists to check.
 
 A view's document is read once, when the app's sandbox iframe mounts, and never again while that app is alive — later tool calls arrive as `ui/notifications/tool-result` over the bridge. So after a rebuild the data a view renders updates but its markup does not, until you reopen the app or reload the tab. That is how a real host loads an app rather than an Inspector quirk, so reopening the app is the step that shows a markup edit.
 
@@ -523,14 +530,9 @@ That check is the same one `@modelcontextprotocol/ext-apps` makes server-side in
 
 To exercise a form, call `example_elicitation`. It ships no view, so v2 resolves it to the elicitation variant and renders the request under **Elicitation Request** — no override, no restart, and the same `mode: 'form'` path a production host takes.
 
-Reaching the other branches of a tool that _does_ have a view is harder. The override only ever adds a capability, never removes one, and v2 declares both the Apps extension and `elicitation/create`, so such a tool always resolves to the view there. v1 declares nothing, which makes it the way in; set the override yourself rather than letting `--v1` default it to `MCP_APP`:
+The other branches of a tool that _does_ have a view are not reachable here, and the override cannot get you there: it only ever adds a capability, never removes one, while the Inspector declares both the Apps extension and `elicitation/create`. Such a tool therefore always resolves to its view.
 
-```bash
-TRANSCEND_MCP_ASSUME_CAPABILITIES= pnpm mcp:inspect --v1 --examples            # baseline branch
-TRANSCEND_MCP_ASSUME_CAPABILITIES=ELICITATION pnpm mcp:inspect --v1 --examples # elicitation branch
-```
-
-Each cell costs a restart, and v1 may not render the form even when the server offers it, so treat this as confirming which variant the server chose rather than as a test of the form itself — that is what `example_elicitation` on v2 is for. [`define-tool-with-capabilities.test.ts`](mcp-server-base/tests/define-tool-with-capabilities.test.ts) is the exhaustive check on selection, and cheaper to consult.
+That is a limit of the Inspector rather than a gap in coverage. Variant selection is exhaustively checked in [`define-tool-with-capabilities.test.ts`](mcp-server-base/tests/define-tool-with-capabilities.test.ts), which is both cheaper to consult and more precise than reading a rendered panel. It is also why `example_elicitation` deliberately ships no view: keeping one tool form-only is what makes the form flow reachable in this loop at all.
 
 ## Environment variables
 

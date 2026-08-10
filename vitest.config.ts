@@ -34,10 +34,15 @@ export default defineConfig({
     },
   ],
   test: {
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.worktrees/**'],
     coverage: {
       exclude: ['**/*.test.ts', '**/dist/**'],
       provider: 'v8',
       reporter: ['text', 'lcov'],
+    },
+    // Opt MCP test-only URL overrides on for the suite; production/runtime stays off unless set.
+    env: {
+      ALLOW_TEST_OVERRIDES: '1',
     },
     environment: 'node',
     globals: true,

@@ -7,8 +7,10 @@
     "tsconfig.base.json",
     "tsconfig.ui.base.json",
     "tsdown.config.base.ts",
+    "tsdown.config.mcp.ts",
     "vite.config.base.ts",
     "vitest.config.ts",
+    "vitest.config.mcp.ts",
     "types/**",
     "assets/**",
     "oxlint.json",
@@ -112,10 +114,6 @@
       "dependsOn": ["^build", "//#codegen"],
       "outputs": ["dist/**", "src/ui/generated/**"]
     },
-    "@transcend-io/mcp-server-examples#typecheck": {
-      "dependsOn": ["build"],
-      "outputs": []
-    },
     "@transcend-io/mcp-server-examples#test": {
       "dependsOn": ["build"],
       "outputs": []
@@ -123,10 +121,6 @@
     "@transcend-io/mcp-server-consent#build": {
       "dependsOn": ["^build", "//#codegen"],
       "outputs": ["dist/**", "src/ui/generated/**"]
-    },
-    "@transcend-io/mcp-server-consent#typecheck": {
-      "dependsOn": ["build"],
-      "outputs": []
     },
     "@transcend-io/mcp-server-consent#test": {
       "dependsOn": ["build"],

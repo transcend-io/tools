@@ -40,10 +40,6 @@ export enum AttributeSupportedResourceType {
   ProcessingPurposeSubCategory = 'processingPurposeSubCategory',
   /** Prompt table */
   Prompt = 'prompt',
-  /** PromptGroup table */
-  PromptGroup = 'promptGroup',
-  /** PromptRun table */
-  PromptRun = 'promptRun',
   /** Requests table */
   Request = 'request',
   /** ScannedObject table */

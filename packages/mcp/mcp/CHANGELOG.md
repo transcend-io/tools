@@ -1,5 +1,69 @@
 # @transcend-io/mcp
 
+## 0.9.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.5.8
+- @transcend-io/mcp-server-assessment@0.5.8
+- @transcend-io/mcp-server-consent@0.6.8
+- @transcend-io/mcp-server-discovery@0.5.8
+- @transcend-io/mcp-server-dsr@0.5.8
+- @transcend-io/mcp-server-inventory@0.5.8
+- @transcend-io/mcp-server-preferences@0.5.8
+- @transcend-io/mcp-server-workflows@0.5.8
+
+## 0.9.1
+
+### Patch Changes
+
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
+- Updated dependencies [4bc21f7]
+- Updated dependencies [e127dfc]
+- Updated dependencies [f3ce7dc]
+- Updated dependencies [6d2b56d]
+  - @transcend-io/mcp-server-base@0.13.0
+  - @transcend-io/mcp-server-admin@0.5.7
+  - @transcend-io/mcp-server-assessment@0.5.7
+  - @transcend-io/mcp-server-consent@0.6.7
+  - @transcend-io/mcp-server-discovery@0.5.7
+  - @transcend-io/mcp-server-docs@0.3.10
+  - @transcend-io/mcp-server-dsr@0.5.7
+  - @transcend-io/mcp-server-inventory@0.5.7
+  - @transcend-io/mcp-server-preferences@0.5.7
+  - @transcend-io/mcp-server-workflows@0.5.7
+
+## 0.9.0
+
+### Minor Changes
+
+- 1b93859: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- Updated dependencies [1b93859]
+- Updated dependencies [1b93859]
+- Updated dependencies [1b93859]
+- Updated dependencies [c166809]
+- Updated dependencies [1b93859]
+  - @transcend-io/mcp-server-base@0.12.0
+  - @transcend-io/mcp-server-admin@0.5.6
+  - @transcend-io/mcp-server-assessment@0.5.6
+  - @transcend-io/mcp-server-consent@0.6.6
+  - @transcend-io/mcp-server-discovery@0.5.6
+  - @transcend-io/mcp-server-docs@0.3.9
+  - @transcend-io/mcp-server-dsr@0.5.6
+  - @transcend-io/mcp-server-inventory@0.5.6
+  - @transcend-io/mcp-server-preferences@0.5.6
+  - @transcend-io/mcp-server-workflows@0.5.6
+
 ## 0.8.3
 
 ### Patch Changes

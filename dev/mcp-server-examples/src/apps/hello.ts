@@ -4,11 +4,9 @@ import {
   type UiResourceDefinition,
 } from '@transcend-io/mcp-server-base';
 
-// Built from src/ui/hello/ by this package's `prebuild` and inlined here as a
-// string by tsdown's `.html` text loader. The document is fully self-contained —
-// React, the view's CSS, and the design tokens are all inlined — because hosts
-// render views in a sandboxed iframe with no same-origin server to fetch
-// anything from.
+// Built from src/ui/hello/ by `prebuild`, then inlined as a string by tsdown's
+// `.html` text loader. Self-contained down to React and the tokens, because hosts
+// render views in a sandboxed iframe with nothing to fetch from.
 import HELLO_APP_HTML from '../ui/generated/hello.html';
 
 /** URI hosts fetch to render the hello-world view. */
@@ -20,8 +18,8 @@ export const HELLO_APP_RESOURCE: UiResourceDefinition = defineUiResource({
   name: 'Transcend MCP App hello world',
   description:
     'Minimal interactive view that confirms a host can fetch, sandbox, and render a ui:// resource.',
-  // Reads from disk instead when TRANSCEND_MCP_DEV_VIEWS is set, so `pnpm mcp:inspect`
-  // picks up a view rebuild without restarting the server.
+  // Reads from disk instead when TRANSCEND_MCP_DEV_VIEWS is set, so a rebuild needs
+  // no restart.
   html: viewHtml({
     bundled: HELLO_APP_HTML,
     moduleUrl: import.meta.url,

@@ -1,18 +1,14 @@
 /**
  * Scaffolds a tool that collects its arguments through a host-rendered form.
  *
- * The form schema this writes is deliberately valid rather than a placeholder.
- * `assertElicitFormSchema` runs at construction, so an empty `properties` or an
- * empty `elicitMessage` would produce a package that throws on boot — a generator
- * emitting code that cannot run is worse than one emitting nothing. One required
- * string field is the smallest thing that is both real and obviously meant to be
- * replaced.
+ * The form it writes is valid rather than a placeholder: `assertElicitFormSchema`
+ * runs at construction, so an empty `properties` or `elicitMessage` would produce
+ * a package that throws on boot. One required string field is the smallest thing
+ * that is both real and obviously meant to be replaced.
  *
- * Modeled on `dev/mcp-server-examples/src/tools/elicitation.ts`, which is the same
- * shape with every legal field type and is worth reading before extending the form.
- * No MCP App variant, on purpose: precedence is app, then elicitation, then
- * baseline, so a tool offering both resolves to its view on every host that
- * supports one and the form is never exercised.
+ * No MCP App variant, on purpose: precedence is app, then elicitation, so a tool
+ * offering both never exercises its form. `example_elicitation` is the same shape
+ * with every legal field type.
  */
 
 import { join } from 'node:path';
@@ -60,10 +56,9 @@ const REQUIRED_FIELDS = ['value'] as const;
 /**
  * Fields the host collects when it supports elicitation.
  *
- * The spec restricts this to a flat object of primitives: no nested objects, and
- * the one legal \`array\` is a multi-select of titled \`anyOf\` items. Nesting fails
- * in \`assertElicitFormSchema\` at construction rather than when a host refuses the
- * request mid-conversation. See \`example_elicitation\` for every allowed shape.
+ * The spec allows a flat object of primitives only, plus one \`array\` of titled
+ * \`anyOf\` items as a multi-select. Nesting fails in \`assertElicitFormSchema\` at
+ * construction. See \`example_elicitation\` for every allowed shape.
  */
 const FORM_SCHEMA: ElicitFormSchema = {
   type: 'object',
@@ -82,9 +77,8 @@ const FORM_SCHEMA: ElicitFormSchema = {
 /**
  * Arguments the tool accepts, mirroring {@link FORM_SCHEMA}.
  *
- * Every field is optional here even though the form requires one: an agent may
- * supply it directly, and the point of the variant is to ask only for what is
- * missing.
+ * Optional even though the form requires them: an agent may supply a field
+ * directly, and the variant exists to ask only for what is missing.
  */
 export const ${schema} = z.object({
   value: z
@@ -93,6 +87,17 @@ export const ${schema} = z.object({
     .describe('TODO: what this argument sets. Collected through a form when omitted.'),
 });
 export type ${input} = z.infer<typeof ${schema}>;
+
+/**
+ * The same fields, held to what the form insisted on.
+ *
+ * A host accepting without a required field is not an answer, so it belongs in
+ * \`malformed\` rather than echoing as though the form had been filled in. The mask
+ * is typed from {@link REQUIRED_FIELDS} so the two cannot drift.
+ */
+const FormAnswerSchema = ${schema}.required({
+  value: true,
+} satisfies { [Field in (typeof REQUIRED_FIELDS)[number]]: true });
 
 /** Why a response holds the values it holds. */
 export type FormOutcome =
@@ -112,16 +117,15 @@ export type FormOutcome =
 /**
  * Builds the response, reporting how the values were obtained alongside them.
  *
- * Always a successful result, including when the user declined. The tool did what
- * it was asked to; an outcome the agent can read is what lets it explain itself
- * rather than retry a refusal as though it were a transient error.
+ * Always a successful result, including a decline: the tool did what it was asked
+ * to, and a readable outcome keeps the agent from retrying a refusal as an error.
  */
 function ${payload}(
   /** How the values below were obtained */
   outcome: FormOutcome,
   /** Values from the agent, the form, or both */
   fields: ${input},
-  /** Field paths a host answered with the wrong type */
+  /** Field paths a host answered with the wrong type, or left out entirely */
   invalidFields?: string[],
 ): unknown {
   return createToolResult(true, {
@@ -156,9 +160,8 @@ export function ${factory}(_clients?: ToolClients) {
         elicitMessage: FORM_MESSAGE,
         elicitSchema: FORM_SCHEMA,
         handler: async (args) => {
-          // Interrupt only for what is actually missing. Re-prompting for an
-          // argument the agent already chose costs the user a dialog and changes
-          // nothing about the answer.
+          // Interrupt only for what is missing; re-prompting for an argument the
+          // agent already chose costs a dialog and changes nothing.
           if (REQUIRED_FIELDS.every((field) => args[field] !== undefined)) {
             return ${payload}('not-asked', args);
           }
@@ -169,16 +172,15 @@ export function ${factory}(_clients?: ToolClients) {
           // hosts that declared elicitation.
           if (!answer) return ${payload}('unavailable', args);
 
-          // Declining and cancelling are kept apart on purpose. A decline is an
-          // answer — the user does not want this — so a caller should not ask
-          // again. A cancel is the absence of one, which it reasonably might.
+          // Kept apart on purpose: a decline is an answer, so a caller should not
+          // ask again, while a cancel is the absence of one and reasonably might.
           if (answer.action === 'decline') return ${payload}('declined', {});
           if (answer.action === 'cancel') return ${payload}('cancelled', {});
 
-          // Parsed rather than trusted: \`requestedSchema\` states what a host
-          // should collect and nothing enforces that what comes back matches, so
-          // a wrong type here would otherwise surface further down as a puzzle.
-          const parsed = ${schema}.safeParse(answer.content ?? {});
+          // Nothing enforces that a host answers with the shape \`requestedSchema\`
+          // asked for, so a wrong type or missing field would otherwise surface as
+          // a puzzling result further down.
+          const parsed = FormAnswerSchema.safeParse(answer.content ?? {});
           if (!parsed.success) {
             return ${payload}(
               'malformed',
@@ -214,7 +216,7 @@ export function scaffoldElicitation(pkg: McpPackage, names: ArtifactNames): Scaf
   return {
     factory,
     toolModule: `./${snakeCase}.js`,
-    steps: ['Replace the TODOs, starting with the form fields and the prompt above them.'],
+    step: 'Replace the TODOs, starting with the form fields and the prompt above them.',
     notes: [
       `Then: pnpm mcp:inspect ${shortName} to see the form. The Inspector supports elicitation, so the variant is exercised by default.`,
     ],

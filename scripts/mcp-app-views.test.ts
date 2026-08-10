@@ -11,9 +11,9 @@ import { readRepoFile, repoRoot } from './lib/repo-files.ts';
 /**
  * Every view across every MCP package.
  *
- * Discovery itself is the first assertion: it throws on a directory that does not
- * hold exactly one `*View.tsx`, so a malformed view fails here at module load
- * rather than mid-build with a message about a module that does not exist.
+ * Discovery is the first assertion: it throws on a directory that does not hold
+ * exactly one `*View.tsx`, so a malformed view fails at module load rather than
+ * mid-build.
  */
 const views = discoverMcpPackages().flatMap((pkg) =>
   pkg.views.map((view) => ({ ...view, packageName: pkg.name })),
@@ -30,8 +30,7 @@ function fakePackageWithViewFiles(files: string[]): string {
 
 describe('MCP app view convention', () => {
   test('there are views to check', () => {
-    // Without this, every case below passes vacuously the moment discovery
-    // changes shape and finds nothing.
+    // Otherwise every case below passes vacuously if discovery ever finds nothing.
     expect(views.map((view) => `${view.packageName}/${view.name}`)).toContain(
       '@transcend-io/mcp-server-examples/hello',
     );
@@ -40,8 +39,8 @@ describe('MCP app view convention', () => {
   test.for(views)('$packageName/$name exports the component its filename promises', (view) => {
     const source = readRepoFile(relative(repoRoot, view.componentPath));
 
-    // The synthesized entry imports this exact name, so a mismatch is what turns
-    // a rename into a build failure about a file nobody wrote.
+    // The synthesized entry imports this exact name, so a rename becomes a build
+    // failure about a file nobody wrote.
     expect(
       new RegExp(String.raw`^export (?:function|const|class) ${view.componentName}\b`, 'm').test(
         source,
@@ -51,8 +50,8 @@ describe('MCP app view convention', () => {
   });
 
   test.for(views)('$packageName/$name has no hand-written entry or stylesheet', (view) => {
-    // Both are synthesized during the build. A leftover copy on disk is dead
-    // code that looks authoritative.
+    // Both are synthesized during the build; a leftover copy is dead code that
+    // looks authoritative.
     const stale = ['main.tsx', 'mcp-app-entry.tsx', 'mcp-app-theme.css'].filter((file) =>
       existsSync(join(view.directory, file)),
     );
@@ -74,9 +73,8 @@ describe('MCP app view convention', () => {
   });
 
   test('an empty view directory is what a deleted view leaves behind, so it is skipped', () => {
-    // Not merely tolerated for its own sake: the generator discovers views before
-    // writing anything, so erroring here is what made re-scaffolding a deleted
-    // view fail on a directory git could not have removed.
+    // The generator discovers views before writing anything, so erroring here is
+    // what made re-scaffolding a deleted view fail on a leftover directory.
     const root = fakePackageWithViewFiles([]);
     try {
       expect(discoverMcpAppViews(root)).toEqual([]);
@@ -96,10 +94,8 @@ describe('MCP app view convention', () => {
       const [view] = discoverMcpAppViews(root);
       expect(view?.name).toBe('ok');
 
-      // Every view has to carry the shared directories, because Tailwind
-      // generates utilities per document by scanning files. A shared component
-      // left unscanned still bundles and still renders — just unstyled, which is
-      // the kind of break that looks like a CSS bug rather than a missing source.
+      // Tailwind generates utilities per document by scanning files, so a shared
+      // component left unscanned still renders — just unstyled.
       expect(view?.sharedDirectories).toEqual([join(root, 'src', 'ui', '_shared')]);
     } finally {
       rmSync(root, { recursive: true, force: true });

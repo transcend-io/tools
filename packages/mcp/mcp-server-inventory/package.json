@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-inventory",
-  "version": "0.5.5",
+  "version": "0.5.8",
   "description": "Transcend MCP Server — Data Inventory tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-inventory",
   "license": "Apache-2.0",
@@ -31,7 +31,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run",
+    "test": "vitest run --config ../../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"

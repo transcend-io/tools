@@ -1,5 +1,37 @@
 # @transcend-io/cli
 
+## 10.25.1
+
+### Patch Changes
+
+- 8deab38: Remove `PromptGroup` and `PromptRun` from `AttributeSupportedResourceType`. Attributes remain supported on `Prompt`. Regenerate CLI transcend.yml JSON schemas to match.
+- Updated dependencies [8deab38]
+  - @transcend-io/privacy-types@5.14.0
+  - @transcend-io/airgap.js-types@14.2.30
+  - @transcend-io/sdk@1.9.1
+
+## 10.25.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
+### Patch Changes
+
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/privacy-types@5.13.0
+  - @transcend-io/sdk@1.9.0
+  - @transcend-io/airgap.js-types@14.2.29
+
+## 10.24.1
+
+### Patch Changes
+
+- Updated dependencies [188ba6f]
+  - @transcend-io/privacy-types@5.12.0
+  - @transcend-io/airgap.js-types@14.2.28
+  - @transcend-io/sdk@1.8.1
+
 ## 10.24.0
 
 ### Minor Changes

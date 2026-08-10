@@ -10,6 +10,9 @@ export const TRANSCEND_ACTIVE_ORG_ID_HEADER = 'x-transcend-active-organization-i
 /** MCP client identity for inbound HTTP and outbound API attribution */
 export const MCP_CALLER_HEADER = 'x-transcend-mcp-caller';
 
+/** Raw client-reported name, for discovering hosts not yet in `McpHostClient` */
+export const MCP_CLIENT_NAME_HEADER = 'x-transcend-mcp-client-name';
+
 /** Transcend REST API dated version */
 export const TRANSCEND_VERSION_HEADER = 'X-Transcend-Version';
 

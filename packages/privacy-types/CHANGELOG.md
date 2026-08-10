@@ -1,5 +1,23 @@
 # @transcend-io/privacy-types
 
+## 5.14.0
+
+### Minor Changes
+
+- 8deab38: Remove `PromptGroup` and `PromptRun` from `AttributeSupportedResourceType`. Attributes remain supported on `Prompt`. Regenerate CLI transcend.yml JSON schemas to match.
+
+## 5.13.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
+## 5.12.0
+
+### Minor Changes
+
+- 188ba6f: Add WAL-10304 bulk DSR submission symbols: `DSR_BULK_SUBMISSION_REJECTED_MESSAGE`. Also add `DsrErrorCode.IdentifierValidationFailed`, `DsrErrorCode.UnsupportedIdentifierName`, and `DsrErrorCode.MissingRequiredEmail` with their `DSR_ERROR_MESSAGE` builders.
+
 ## 5.11.0
 
 ### Minor Changes

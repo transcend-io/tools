@@ -109,6 +109,10 @@ const requiredPublishableDevDependencies = {
   publint: 'catalog:',
 } as const;
 
+/** Baselines for MCP servers, which layer view-specific settings over the shared ones. */
+const MCP_TSDOWN_BASELINE = 'tsdown.config.mcp.ts';
+const MCP_VITEST_BASELINE = 'vitest.config.mcp.ts';
+
 const workspacePackages = getWorkspacePackages();
 const publishablePackages = workspacePackages.filter(({ manifest }) => manifest.private !== true);
 const releasedPackages = publishablePackages.filter(
@@ -166,7 +170,7 @@ describe('package conventions', () => {
       expect(exportDot?.types).toBe('./dist/index.d.mts');
       expect(exportDot?.default).toBe('./dist/index.mjs');
       expect(manifest.scripts?.build).toBe(requiredPackageScripts.build);
-      expect(manifest.scripts?.test).toBe(requiredPackageScripts.test);
+      expect(manifest.scripts?.test).toBe(testScriptFor(directory));
       expect(manifest.scripts?.typecheck).toBe(requiredPackageScripts.typecheck);
       expect(manifest.scripts?.['check:exports']).toBe(requiredPackageScripts['check:exports']);
       expect(manifest.devDependencies?.['@arethetypeswrong/cli']).toBe(
@@ -236,15 +240,23 @@ describe('package conventions', () => {
 
   test.each(workspacePackages)(
     '$directory uses the shared tsdown baseline',
-    ({ depth, tsdownConfig }) => {
+    ({ depth, directory, tsdownConfig }) => {
       const relativeRoot = '../'.repeat(depth);
       expect(tsdownConfig).toContain(
-        `import sharedConfig from '${relativeRoot}tsdown.config.base.ts';`,
+        `import sharedConfig from '${relativeRoot}${tsdownBaselineFor(directory)}';`,
       );
       expect(tsdownConfig).toContain('...sharedConfig');
       expect(tsdownConfig).toContain("'src/index.ts'");
     },
   );
+
+  // The per-package test above only sees which baseline a package names, so a
+  // detached MCP baseline would satisfy all of them.
+  test('the MCP tsdown baseline extends the shared one', () => {
+    expect(readRepoFile(MCP_TSDOWN_BASELINE)).toContain(
+      "import sharedLibraryConfig from './tsdown.config.base.ts';",
+    );
+  });
 
   // Strict resolvers (yarn-berry PnP, pnpm with strict peers) walk the require
   // chain looking for a peer dependency on an ancestor package. If a published
@@ -271,6 +283,26 @@ describe('package conventions', () => {
       );
     },
   );
+
+  test('every package that builds a view tests on the MCP vitest baseline', () => {
+    const viewPackages = getAllWorkspaceDirectories().filter(buildsMcpAppView);
+
+    // Scanned across the workspace rather than `workspacePackages`, since the
+    // examples server lives in `dev/*`.
+    expect(viewPackages.length).toBeGreaterThan(0);
+
+    const actual = Object.fromEntries(
+      viewPackages.map((directory) => [
+        directory,
+        readJsonFile<PackageManifest>(`${directory}/package.json`).scripts?.test,
+      ]),
+    );
+    const expected = Object.fromEntries(
+      viewPackages.map((directory) => [directory, testScriptFor(directory)]),
+    );
+
+    expect(actual).toEqual(expected);
+  });
 });
 
 function getWorkspacePackages(): WorkspacePackage[] {
@@ -305,6 +337,72 @@ function getWorkspacePackages(): WorkspacePackage[] {
 
 function sortStrings(values: string[]): string[] {
   return [...values].sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Whether a package is an MCP server, and so builds and tests on the MCP baselines.
+ *
+ * @param directory - Package directory, relative to the repo root
+ * @returns Whether the MCP baselines apply
+ */
+function isMcpPackage(directory: string): boolean {
+  return directory.startsWith('packages/mcp/');
+}
+
+/**
+ * Which root tsdown config a package is expected to build on.
+ *
+ * @param directory - Package directory, relative to the repo root
+ * @returns Baseline filename, relative to the repo root
+ */
+function tsdownBaselineFor(directory: string): string {
+  return isMcpPackage(directory) ? MCP_TSDOWN_BASELINE : 'tsdown.config.base.ts';
+}
+
+/**
+ * The `test` script a package is expected to declare.
+ *
+ * MCP servers point vitest at the MCP baseline, which teaches it to load a
+ * prebuilt view as a string. Asserted here because a server gaining its first view
+ * would otherwise fail late, complaining of invalid JS syntax in an HTML file.
+ *
+ * @param directory - Package directory, relative to the repo root
+ * @returns Expected `test` script
+ */
+function testScriptFor(directory: string): string {
+  if (!isMcpPackage(directory) && !buildsMcpAppView(directory)) {
+    return requiredPackageScripts.test;
+  }
+  const relativeRoot = '../'.repeat(directory.split('/').length);
+  return `${requiredPackageScripts.test} --config ${relativeRoot}${MCP_VITEST_BASELINE}`;
+}
+
+/**
+ * Whether a package builds an MCP App view, and so imports one from `src`.
+ *
+ * @param directory - Package directory, relative to the repo root
+ * @returns Whether the package has a view to load
+ */
+function buildsMcpAppView(directory: string): boolean {
+  const manifest = readJsonFile<PackageManifest>(`${directory}/package.json`);
+  return manifest.scripts?.['build:ui'] !== undefined;
+}
+
+/**
+ * Every workspace package, including the `dev/*` tooling the publishable
+ * conventions skip.
+ *
+ * @returns Package directories, relative to the repo root
+ */
+function getAllWorkspaceDirectories(): string[] {
+  return ['packages', 'packages/mcp', 'dev']
+    .flatMap((root) =>
+      readdirSync(join(repoRoot, root), { withFileTypes: true })
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => `${root}/${entry.name}`),
+    )
+    .filter((directory) => fileExists(`${directory}/package.json`))
+    .sort((a, b) => a.localeCompare(b));
 }
 
 function getUnsatisfiedPeerDependencies(

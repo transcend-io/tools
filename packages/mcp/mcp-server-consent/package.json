@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-consent",
-  "version": "0.6.5",
+  "version": "0.6.8",
   "description": "Transcend MCP Server — Consent Management tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-consent",
   "license": "Apache-2.0",
@@ -33,7 +33,7 @@
     "prebuild": "node ../../../scripts/build-mcp-views.ts",
     "build": "tsdown",
     "build:ui": "node ../../../scripts/build-mcp-views.ts",
-    "test": "vitest run",
+    "test": "vitest run --config ../../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
