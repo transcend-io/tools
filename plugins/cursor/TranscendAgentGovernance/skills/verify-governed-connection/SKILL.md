@@ -35,10 +35,12 @@ There is **no** credential / Bearer / API-key plugin variable. Do **not** tell u
 Work through these in order. Prefer Cursor's MCP / plugin UI and the tools Cursor already exposes — do not invent hostnames or internal service names.
 
 1. **Plugin installed and enabled**  
-   Confirm **Transcend Agent Governance** is installed. Confirm plugin variables `GATEWAY_BASE_URL` and `TENANT_ID` are set in **Plugins → Configure** (or the install prompt) — not pasted into chat. Do not ask for a third "credential" variable; it does not exist.
+   Confirm **Transcend Agent Governance** is installed. Confirm plugin variables `GATEWAY_BASE_URL` and `TENANT_ID` are set in **Plugins → Configure** (or the install prompt) — not pasted into chat. Do not ask for a third "credential" variable; it does not exist. `GATEWAY_BASE_URL` must be **scheme + host only** (no `/mcp/...` path). If it looks like a full Meta MCP URL (`…/mcp/{tenant}/agent`), that is a misconfiguration — fix it before re-auth.
 
 2. **Gateway connection / Connect**  
    Check whether the governed MCP server shows as connected. If it is disconnected or never authenticated, open **Settings → Tools & MCP**, find **transcend-agent-governance**, and choose **Connect** / authenticate so the browser OAuth flow can run. Treat this as a connection / auth problem first (URL, network, OAuth), not a policy denial.
+
+   **Doubled-path auth loop:** If token exchange appears to succeed and Cursor then loops 401 / `needsAuth` (UI stuck on “Exchanging token…”), `GATEWAY_BASE_URL` almost certainly included `/mcp/...`. Correct it to scheme+host only, clear auth for this server, then reconnect.
 
 3. **List available tools**  
    Use Cursor's MCP tool listing (or ask the agent tooling surface which MCP tools are registered for this server). Note the tool names you see.
@@ -65,8 +67,8 @@ Be concrete and short:
 
 - Connected or not; whether browser OAuth completed
 - How many / which tools are visible (names only)
-- Whether the failure looks like **needs re-auth (Connect)**, **misconfigured gateway URL/tenant**, **connected but no MCP servers assigned yet**, or **healthy connection with a policy deny**
-- Next step: fix `GATEWAY_BASE_URL` / `TENANT_ID`, re-run Connect, ask admin to assign MCP servers / policy, or open a policy/approval conversation
+- Whether the failure looks like **needs re-auth (Connect)**, **misconfigured gateway URL/tenant** (including doubled Meta MCP path), **connected but no MCP servers assigned yet**, or **healthy connection with a policy deny**
+- Next step: fix `GATEWAY_BASE_URL` (scheme+host only) / `TENANT_ID`, clear auth and re-run Connect, ask admin to assign MCP servers / policy, or open a policy/approval conversation
 
 ## Forbidden workarounds
 

@@ -105,6 +105,7 @@ If you must use a static Bearer credential (automation, demos without OAuth, or 
 ## Troubleshooting
 
 - **Browser never opens / Connect stuck:** confirm Cursor remote MCP OAuth is available in your build; confirm `GATEWAY_BASE_URL` has no trailing path and points at the MCP gateway host (not the dashboard origin).
+- **Token exchange succeeds, then 401 / `needsAuth` loop (“Exchanging token…”):** `GATEWAY_BASE_URL` was almost certainly set to the **full Meta MCP bundle URL** (`…/mcp/{tenant}/agent`) instead of scheme + host only. The plugin appends `/mcp/{TENANT_ID}/agent`, so Cursor calls a doubled path. Fix: set `GATEWAY_BASE_URL` to scheme+host only (for example `https://mcp.dev.myelin-internal.com`), clear auth for **transcend-agent-governance**, then reconnect.
 - **Discovery / authorize errors:** the gateway must advertise Protected Resource Metadata and the issuer must advertise Authorization Server Metadata (including PKCE S256). Ask your admin whether delegated OAuth is enabled for the environment.
 - **Redirect URI mismatch:** the platform public client allowlists `http://localhost:8787/callback` (host must be `localhost`, not `127.0.0.1`), plus Cursor deep-link and web callbacks.
 - **Tools missing after sign-in:** the auto-registered agent starts with **no** MCP servers. An administrator must assign servers / policy.
