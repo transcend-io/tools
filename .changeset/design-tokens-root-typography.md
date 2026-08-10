@@ -1,18 +1,8 @@
 ---
-'@transcend-io/design-tokens': major
+'@transcend-io/design-tokens': minor
 ---
 
-Add semantic typography tokens and keep rest-state color groups on named `default` leaves (no draft DTCG `$root`).
-
-### Breaking
-
-Rest-state values for stateful color groups live under an explicit `.default` segment again. Terrazzo compile still adds `toString()` on those groups and short CSS aliases (`--foo` → `var(--foo-default)`), so interpolations and common CSS vars stay ergonomic without adopting preview-draft `$root`:
-
-- `background.default` / `background.neutral` rest values → `….default`
-- `background.{brand,success,warning,danger}.bold` rest values → `….bold.default`
-- `link.visited` rest value → `link.visited.default`
-
-CSS custom properties follow the same shape: rest state is `--background-brand-bold-default` with alias `--background-brand-bold`. Named category leaves like `--text-default` are unchanged.
+Add semantic typography tokens and export raw DTCG JSON for custom token pipelines.
 
 ### Added
 
