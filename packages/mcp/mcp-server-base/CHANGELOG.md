@@ -1,5 +1,17 @@
 # @transcend-io/mcp-server-base
 
+## 0.14.0
+
+### Minor Changes
+
+- f6ca084: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 66e641e: Address MCP app configuration review follow-ups: hoist the client capability report in `buildMcpServer`, and name the HTML doctype check used by UI resources.
+
 ## 0.13.0
 
 ### Minor Changes
