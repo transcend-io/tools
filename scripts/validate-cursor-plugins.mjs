@@ -45,6 +45,12 @@ const allowedVariableSchemaKeys = new Set([
 /** Hostnames / product-internal strings that must not appear in committed plugin config. */
 const forbiddenHostnamePatterns = [/myelin-internal\.com/i, /\.myelin\./i, /mcp\.dev\.myelin/i];
 
+/**
+ * Exact strings allowed as plugin variable defaults / descriptions even when they
+ * match forbiddenHostnamePatterns (published Dev dogfood gateway only).
+ */
+const allowedGatewayDefaultLiterals = new Set(['https://mcp.dev.myelin-internal.com']);
+
 const secretLiteralPatterns = [
   /\bmylk_[A-Za-z0-9_-]{8,}\b/,
   /\bmylo_[A-Za-z0-9_-]{8,}\b/,
@@ -141,6 +147,11 @@ async function validateReferencedPath(pluginDir, fieldName, pathValue, pluginNam
  */
 function rejectSecretsAndInternalHosts(value, context) {
   if (typeof value !== 'string') {
+    return;
+  }
+
+  // Allow the published Dev dogfood gateway as a variable default only.
+  if (allowedGatewayDefaultLiterals.has(value)) {
     return;
   }
 

@@ -1,7 +1,7 @@
 {
   "name": "transcend-agent-governance",
   "displayName": "Transcend Agent Governance",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Connect Cursor to Transcend Agent Governance for policy-enforced MCP tool access via browser sign-in.",
   "author": {
     "name": "Transcend",
@@ -16,7 +16,8 @@
       "GATEWAY_BASE_URL": {
         "type": "string",
         "title": "Gateway base URL",
-        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Copy it from the Connect Cursor panel in the Agent Governance dashboard. Do not append /mcp/... — the plugin adds that."
+        "description": "HTTPS base URL of your organization's Agent Governance MCP gateway (scheme + host only; no path). Defaults to the Transcend Dev gateway (https://mcp.dev.myelin-internal.com). Override only for local or non-Dev environments. Do not append /mcp/... — the plugin adds that.",
+        "default": "https://mcp.dev.myelin-internal.com"
       },
       "TENANT_ID": {
         "type": "string",
