@@ -104,6 +104,11 @@
           "$value": "{palette.pink.900}",
           "$description": "Pink text on subtle background"
         }
+      },
+      "gray": {
+        "bold": {
+          "$value": "{palette.gray.900}"
+        }
       }
     }
   },
@@ -208,7 +213,7 @@
         "$description": "Orange label or badge border"
       },
       "yellow": {
-        "$value": "{palette.yellow.300}",
+        "$value": "{palette.yellow.500}",
         "$description": "Yellow label or badge border"
       },
       "lime": {
@@ -230,6 +235,9 @@
       "pink": {
         "$value": "{palette.pink.300}",
         "$description": "Pink label or badge border"
+      },
+      "gray": {
+        "$value": "{palette.gray.500}"
       }
     }
   },
@@ -474,6 +482,17 @@
           "$value": "{palette.pink.500}",
           "$description": "Pink accent surface — filled badges, banners, toasts"
         }
+      },
+      "gray": {
+        "subtlest": {
+          "$value": "{palette.gray.200}"
+        },
+        "subtle": {
+          "$value": "{palette.gray.300}"
+        },
+        "bold": {
+          "$value": "{palette.gray.500}"
+        }
       }
     }
   },
@@ -504,6 +523,10 @@
     },
     "pink": {
       "$value": "{palette.pink.400}",
+      "$description": "Pink data series — charts, graphs, visualizations"
+    },
+    "gray": {
+      "$value": "{palette.gray.400}",
       "$description": "Pink data series — charts, graphs, visualizations"
     }
   }
