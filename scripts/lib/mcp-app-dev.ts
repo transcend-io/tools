@@ -51,13 +51,13 @@ const SANDBOX_PROXY_PATH = join('clients', 'web', 'static', 'sandbox_proxy.html'
 /** Our copy of the document, kept byte-identical to upstream's. */
 const VENDORED_SANDBOX_PROXY = join(scriptsLibDir, 'inspector-sandbox-proxy.html');
 
-/** What {@link restoreSandboxProxy} did, for logging and tests. */
+/** Outcome of {@link restoreSandboxProxy}. */
 export enum SandboxProxyOutcome {
-  /** The proxy document was already present in the install */
+  /** Already present */
   Present = 'present',
-  /** The vendored proxy document was written into the install */
+  /** Vendored copy written */
   Written = 'written',
-  /** The directory did not look like an Inspector install */
+  /** Not an Inspector install */
   Unrecognized = 'unrecognized',
 }
 

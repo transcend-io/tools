@@ -140,12 +140,7 @@ export function defineUiResource(config: UiResourceDefinition): UiResourceDefini
   return config;
 }
 
-/**
- * Leading whitespace, then a case-insensitive `<!DOCTYPE html` opener.
- *
- * Hosts load UI resources as standalone documents, so a fragment without a
- * doctype is rejected here rather than rendered as a blank iframe.
- */
+/** Matches a leading HTML5 doctype (case-insensitive, optional leading whitespace). */
 const HTML5_DOCTYPE_PREFIX = /^\s*<!doctype html/i;
 
 /**

@@ -169,13 +169,8 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   );
 
   /**
-   * Capabilities are fixed for a connection's lifetime, so derive once and reuse.
-   * Held at this scope so request handlers read the same report without calling a
-   * resolver each time. `runMcpHttp` builds a fresh Server per session and stdio
-   * has exactly one, so a single closed-over value stays correct per client.
-   *
-   * Populated in `oninitialized` (and lazily below if a handler races ahead of
-   * that callback). Pre-handshake reads keep {@link EMPTY_CAPABILITY_REPORT}.
+   * Capabilities are fixed for a connection's lifetime. Derived once in
+   * `oninitialized` (or lazily if a handler races ahead) and reused by handlers.
    */
   let client: ClientCapabilityReport = EMPTY_CAPABILITY_REPORT;
   let clientResolved = false;
@@ -186,7 +181,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     const clientInfo = server.getClientVersion();
     const clientCapabilities = server.getClientCapabilities();
     if (!clientInfo && !clientCapabilities) {
-      // Pre-handshake: do not cache, a real report is coming.
+      // Pre-handshake: do not cache.
       return;
     }
 
