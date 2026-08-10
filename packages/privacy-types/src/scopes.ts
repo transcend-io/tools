@@ -79,8 +79,6 @@ export enum ScopeName {
   ExecuteAuditor = 'executeAuditor',
   ViewCodeScanning = 'viewCodeScanning',
   ManageCodeScanning = 'manageCodeScanning',
-  ViewContractScanning = 'viewContractScanning',
-  ManageContractScanning = 'manageContractScanning',
   ViewAuditorRuns = 'viewAuditorRuns',
   ViewAuditEvents = 'viewAuditEvents',
   ManageActionItemCollections = 'manageActionItemCollections',
@@ -131,7 +129,6 @@ export enum TranscendProduct {
   Assessments = 'ASSESSMENTS',
   PreferenceManagement = 'PREFERENCE_MANAGEMENT',
   PromptManagement = 'PROMPT_MANAGER',
-  ContractScanning = 'CONTRACT_SCANNING',
   WebAuditor = 'WEB_AUDITOR',
   Sombra = 'SOMBRA',
   SiloDiscovery = 'SILO_DISCOVERY',
@@ -195,7 +192,6 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
       TranscendProduct.Assessments,
       TranscendProduct.PromptManagement,
       TranscendProduct.WebAuditor,
-      TranscendProduct.ContractScanning,
     ],
   },
   [ScopeName.ManageAccessControl]: {
@@ -356,7 +352,6 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
       TranscendProduct.Assessments,
       TranscendProduct.PromptManagement,
       TranscendProduct.WebAuditor,
-      TranscendProduct.ContractScanning,
     ],
   },
   [ScopeName.ViewLegalHold]: {
@@ -820,20 +815,6 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     description: 'Manage and edit the assigned assessments.',
     type: ScopeType.Modify,
     products: [TranscendProduct.Assessments, TranscendProduct.DataInventory],
-  },
-  [ScopeName.ViewContractScanning]: {
-    title: 'View Contract Scanning',
-    dependencies: [ScopeName.ViewGlobalAttributes],
-    description: 'View the contract scanning side menu - including setting and contracts.',
-    type: ScopeType.View,
-    products: [TranscendProduct.ContractScanning],
-  },
-  [ScopeName.ManageContractScanning]: {
-    title: 'Manage Contract Scanning',
-    dependencies: [ScopeName.ViewContractScanning],
-    description: 'Upload and manage contracts under the contract scanning side menu',
-    type: ScopeType.Modify,
-    products: [TranscendProduct.ContractScanning],
   },
   [ScopeName.ViewPrompts]: {
     title: 'View Prompts',

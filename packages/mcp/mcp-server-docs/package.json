@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-docs",
-  "version": "0.3.9",
+  "version": "0.3.10",
   "description": "Transcend MCP Server — Documentation lookup tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-docs",
   "license": "Apache-2.0",
@@ -31,7 +31,7 @@
   },
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run",
+    "test": "vitest run --config ../../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"

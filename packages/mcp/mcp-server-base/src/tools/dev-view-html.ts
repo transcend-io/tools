@@ -9,9 +9,8 @@ import { assertHtmlDocument } from './ui-resource.js';
  * Environment variable that makes views read their built HTML from disk on every
  * `resources/read` instead of using the copy inlined at build time.
  *
- * Set by `pnpm mcp:inspect`. A view rebuild is then picked up
- * by re-reading the resource, with no server restart and no host reconnect,
- * which is the difference between a two-second loop and a twenty-second one.
+ * Set by `pnpm mcp:inspect`. A view rebuild then reaches the host by re-reading the
+ * resource, with no server restart and no reconnect.
  */
 export const DEV_VIEWS_ENV_VAR = 'TRANSCEND_MCP_DEV_VIEWS';
 
@@ -27,10 +26,9 @@ export function devViewsEnabled(): boolean {
  * Locates the package a module belongs to by walking up to the nearest
  * `package.json`.
  *
- * A view's built HTML lives at a path relative to its package root, but the
- * module asking for it runs from `src` under Vitest and from `dist` once built,
- * so neither location can anchor the lookup on its own. tsdown emits no
- * `package.json` into `dist`, so the first one found is always the real root.
+ * The calling module runs from `src` under Vitest and from `dist` once built, so
+ * neither can anchor the lookup. tsdown emits no `package.json` into `dist`, so the
+ * first one found is always the real root.
  */
 function findPackageRoot(moduleUrl: string): string {
   let directory = dirname(fileURLToPath(moduleUrl));
@@ -62,10 +60,10 @@ export interface ViewHtmlOptions {
 /**
  * Chooses how a view's HTML reaches the host.
  *
- * Returns the inlined string normally, so production behaves exactly as if this
- * indirection did not exist and `defineUiResource` still validates the document
- * at construction. Under {@link DEV_VIEWS_ENV_VAR} it returns a factory that
- * re-reads the built file on each request instead.
+ * Returns the inlined string normally, so production behaves as if this indirection
+ * did not exist and `defineUiResource` still validates at construction. Under
+ * {@link DEV_VIEWS_ENV_VAR} it returns a factory that re-reads the built file per
+ * request instead.
  *
  * @param options - The bundled document plus which view it belongs to
  * @returns A value suitable for `UiResourceDefinition.html`
@@ -100,9 +98,8 @@ export function viewHtml({
           'Run the view build for this package, or unset the variable to serve the inlined copy.',
       );
     }
-    // The build normally runs before the document is validated; reading from
-    // disk skips that, so a half-written file would otherwise reach the host as
-    // a blank iframe.
+    // Reading from disk skips the construction-time check, so a half-written file
+    // would otherwise reach the host as a blank iframe.
     assertHtmlDocument(builtPath, html);
     return html;
   };

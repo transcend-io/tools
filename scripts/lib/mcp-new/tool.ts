@@ -1,11 +1,9 @@
 /**
  * Scaffolds a plain tool: one file, `defineTool`, no capability variants.
  *
- * The shape follows `packages/mcp/mcp-server-docs/src/tools/docs_fetch.ts`, which
- * is what an ordinary tool in this repo looks like — a described Zod schema, a
- * handler, and a `createToolResult` envelope. Deliberately touches no manifest and
- * runs no install: a tool that renders as text needs none of the browser-side
- * dependencies a view does.
+ * The shape follows `packages/mcp/mcp-server-docs/src/tools/docs_fetch.ts`. Touches
+ * no manifest and runs no install: a tool that renders as text needs none of the
+ * browser-side dependencies a view does.
  */
 
 import { join } from 'node:path';
@@ -42,18 +40,16 @@ export type ${schema.replace(/Schema$/, 'Input')} = z.infer<typeof ${schema}>;
  * \`src/tools/index.ts\`, which is the point at which the name and description
  * below become public API.
  *
- * Takes \`ToolClients\` so it can reach Transcend. Drop the underscore and destructure
- * what it needs — the GraphQL and REST clients are on that argument — or delete the
- * parameter entirely for a tool that calls nothing.
+ * \`ToolClients\` carries the GraphQL and REST clients. Drop the underscore to use
+ * them, or the parameter entirely for a tool that calls nothing.
  */
 export function ${factory}(_clients?: ToolClients) {
   return defineTool({
     name: '${toolName}',
     description: 'TODO: what this returns, and when the model should call it.',
     category: 'TODO',
-    // Both describe the same promise from different angles: \`readOnly\` gates
-    // whether the tool is offered in a read-only session, the annotations are
-    // hints a host may show. Flip all three together for a mutating tool.
+    // \`readOnly\` gates whether the tool is offered in a read-only session; the
+    // annotations are hints a host may show. Flip them together for a mutating tool.
     readOnly: true,
     requireAuth: false,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -81,7 +77,7 @@ export function scaffoldTool(pkg: McpPackage, names: ArtifactNames): ScaffoldRes
   return {
     factory,
     toolModule: `./${snakeCase}.js`,
-    steps: ['Replace the TODOs, starting with the tool name and description.'],
+    step: 'Replace the TODOs, starting with the tool name and description.',
     notes: [
       `Then: pnpm --filter ${pkg.name} test to check it, and pnpm mcp:inspect ${names.shortName} to call it.`,
     ],

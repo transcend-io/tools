@@ -53,7 +53,8 @@ describe('assumedCapabilitiesFromEnv', () => {
 });
 
 describe('deriveClientCapabilities with assumed capabilities', () => {
-  // The exact shape the v1 Inspector sends: an Apps tab, but nothing declared.
+  // The shape that makes the override necessary: a host with an Apps tab that
+  // declares no capabilities at all.
   const inspectorSource = {
     capabilities: {},
     clientInfo: { name: 'inspector', version: '1.0.1' },

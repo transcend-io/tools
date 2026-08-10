@@ -2,17 +2,14 @@
  * Scaffolds an MCP App: a view, the resource that serves it, and the tool that
  * opens it.
  *
- * A view is three files: the component, the Node-side module that binds the built
- * document to a `ui://` resource, and the tool that opens it. Everything
- * mechanical — the entry that mounts React, the stylesheet that generates the
- * utilities, the Vite config — is synthesized at build time by
+ * Everything mechanical — the entry that mounts React, the stylesheet that
+ * generates the utilities, the Vite config — is synthesized at build time by
  * `vite.config.base.ts`, which is what keeps these templates short enough not to
  * drift from what the build expects.
  *
- * This is the only kind that needs package-level wiring, and the only one that
- * touches a manifest: `tsconfig.ui.json`, the gitignore entry for the built
- * documents, three scripts, and the browser-side devDependencies, each added only
- * when it is missing.
+ * The only kind that touches a manifest: `tsconfig.ui.json`, the gitignore entry
+ * for the built documents, three scripts, and the browser-side devDependencies,
+ * each added only when it is missing.
  */
 
 import { spawnSync } from 'node:child_process';
@@ -20,46 +17,42 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import { logger } from '../../logger.ts';
-import type { McpPackage } from '../mcp-app-dev.ts';
+import { repoRoot, type McpPackage } from '../mcp-app-dev.ts';
 import {
   insertBeside,
-  repoRoot,
+  pathToRepoRoot,
   writeNew,
   type ArtifactNames,
   type ScaffoldResult,
 } from './shared.ts';
 
 /** Scripts a package needs to build and check its views, and where to put them. */
-const VIEW_SCRIPTS: {
+function viewScripts(toRepoRoot: string): {
   /** Script name */
   name: string;
   /** Existing script to sit next to, so the result reads in a sensible order */
   anchor: { before: string } | { after: string };
   /** Script body */
   value: string;
-}[] = [
-  {
-    name: 'prebuild',
-    anchor: { before: 'build' },
-    value: 'node ../../../scripts/build-mcp-views.ts',
-  },
-  {
-    name: 'build:ui',
-    anchor: { after: 'build' },
-    value: 'node ../../../scripts/build-mcp-views.ts',
-  },
-  {
-    name: 'typecheck:ui',
-    anchor: { after: 'typecheck' },
-    value: 'tsc -p tsconfig.ui.json --noEmit',
-  },
-];
+}[] {
+  const buildViews = `node ${toRepoRoot}/scripts/build-mcp-views.ts`;
+
+  return [
+    { name: 'prebuild', anchor: { before: 'build' }, value: buildViews },
+    { name: 'build:ui', anchor: { after: 'build' }, value: buildViews },
+    {
+      name: 'typecheck:ui',
+      anchor: { after: 'typecheck' },
+      value: 'tsc -p tsconfig.ui.json --noEmit',
+    },
+  ];
+}
 
 /**
- * devDependencies a view needs.
+ * devDependencies a view needs, matching what `dev/mcp-server-examples` declares.
  *
- * React and its types because the component is a React component; `vite` and
- * `tailwindcss` because the view build runs them from the package directory; and
+ * React and its types because the component is a React component, `vite` and
+ * `tailwindcss` because the view build runs them from the package directory, and
  * `@transcend-io/design-tokens` because the shared theme resolves the tokens
  * through it.
  */
@@ -87,9 +80,8 @@ interface ${componentName}Data {
  * TODO: describe what this view shows and why it is a view rather than text.
  *
  * Styled with utilities from \`@transcend-io/mcp-server-base/ui/theme.css\`, so
- * every color and size resolves to a host value or a Transcend token. There is no
- * stock Tailwind palette to reach for by accident, and arbitrary values for color
- * or length are rejected by \`scripts/mcp-app-styling.test.ts\`.
+ * every color and size resolves to a host value or a Transcend token. Arbitrary
+ * values for color or length opt a view back out of the host's theme.
  */
 export function ${componentName}() {
   const { data, isConnected, connectionError } = useMcpApp<${componentName}Data>({
@@ -133,9 +125,8 @@ function resourceSource(view: string, constant: string, uri: string): string {
 } from '@transcend-io/mcp-server-base';
 
 // Built from src/ui/${view}/ by this package's \`prebuild\` and inlined here as a
-// string by tsdown's \`.html\` text loader. The document is fully self-contained
-// because hosts render views in a sandboxed iframe with no same-origin server to
-// fetch anything from.
+// string by tsdown's \`.html\` text loader. Self-contained, because hosts render a
+// view in a sandboxed iframe with no server to fetch anything from.
 import ${constant}_HTML from '../ui/generated/${view}.html';
 
 /** URI hosts fetch to render the ${view} view. */
@@ -200,10 +191,7 @@ export const ${schema} = z.object({
 });
 export type ${schema.replace(/Schema$/, 'Input')} = z.infer<typeof ${schema}>;
 
-/**
- * Payload shared by both variants, so the text a host without MCP Apps shows
- * describes the same result the view renders.
- */
+/** Shared by both variants, so a host without MCP Apps describes the same result. */
 function ${payload}(message: string | undefined): unknown {
   return createToolResult(true, {
     message: message ?? 'TODO: return the data this view renders.',
@@ -255,7 +243,7 @@ function wirePackageManifest(pkg: McpPackage): boolean {
   const devDependencies = (manifest.devDependencies ??= {});
   let changed = false;
 
-  for (const { name, anchor, value } of VIEW_SCRIPTS) {
+  for (const { name, anchor, value } of viewScripts(pathToRepoRoot(pkg.dir))) {
     if (scripts[name] !== undefined) continue;
     insertBeside(scripts, anchor, name, value);
     changed = true;
@@ -281,9 +269,8 @@ function wirePackageManifest(pkg: McpPackage): boolean {
  * Installs the devDependencies just added to the manifest.
  *
  * Done rather than left as an instruction because skipping it does not fail where
- * you would look for it: the view build's entry point is synthesized, so an
- * uninstalled React surfaces as a resolver error naming a file that exists
- * nowhere on disk.
+ * you would look: the view build's entry point is synthesized, so an uninstalled
+ * React surfaces as a resolver error naming a file that is nowhere on disk.
  */
 export function installDevDependencies(): void {
   logger.log('\nInstalling the devDependencies just added...');
@@ -305,7 +292,7 @@ function wirePackageFiles(pkg: McpPackage): void {
       `${JSON.stringify(
         {
           $schema: 'https://json.schemastore.org/tsconfig',
-          extends: '../../../tsconfig.ui.base.json',
+          extends: `${pathToRepoRoot(pkg.dir)}/tsconfig.ui.base.json`,
           include: ['src/ui/**/*.ts', 'src/ui/**/*.tsx'],
           exclude: ['src/ui/generated/**'],
         },
@@ -333,6 +320,10 @@ export function scaffoldApp(pkg: McpPackage, names: ArtifactNames): ScaffoldResu
   const constant = `${constantCase}_APP`;
   const factory = `create${pascalCase}AppTool`;
   const hadViews = pkg.views.length > 0;
+  // Suffixed to match the file this writes, and because the `tool` kind claims the
+  // unsuffixed name for the same argument — two tools that registered together
+  // would collide on the wire, which `writeNew` cannot see across two filenames.
+  const appToolName = `${toolName}_app`;
 
   writeNew(
     join(pkg.dir, 'src', 'ui', kebabCase, `${componentName}.tsx`),
@@ -349,7 +340,7 @@ export function scaffoldApp(pkg: McpPackage, names: ArtifactNames): ScaffoldResu
       factory,
       payload: `${camelCase}Payload`,
       schema: `${pascalCase}AppSchema`,
-      toolName,
+      toolName: appToolName,
       view: kebabCase,
     }),
   );
@@ -367,7 +358,7 @@ export function scaffoldApp(pkg: McpPackage, names: ArtifactNames): ScaffoldResu
   return {
     factory,
     toolModule: `./${snakeCase}_app.js`,
-    steps: ['Replace the TODOs in all three files, starting with the tool name.'],
+    step: 'Replace the TODOs in all three files, starting with the tool name.',
     notes,
     manifestChanged,
   };

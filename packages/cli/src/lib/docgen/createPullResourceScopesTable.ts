@@ -109,18 +109,6 @@ const RESOURCE_DOCUMENTATION: Record<
 (https://app.transcend.io/consent-manager/developer-settings/advanced-settings)',
     ],
   },
-  [TranscendPullResource.Prompts]: {
-    description: 'The Transcend AI prompts',
-    markdownLinks: ['[Prompt Manager -> Browse](https://app.transcend.io/prompts/browse)'],
-  },
-  [TranscendPullResource.PromptPartials]: {
-    description: 'The Transcend AI prompt partials',
-    markdownLinks: ['[Prompt Manager -> Partials](https://app.transcend.io/prompts/partials)'],
-  },
-  [TranscendPullResource.PromptGroups]: {
-    description: 'The Transcend AI prompt groups',
-    markdownLinks: ['[Prompt Manager -> Groups](https://app.transcend.io/prompts/groups)'],
-  },
   [TranscendPullResource.Vendors]: {
     description: 'The vendors in the Data Inventory.',
     markdownLinks: [

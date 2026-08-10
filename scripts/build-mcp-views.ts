@@ -36,14 +36,12 @@ const REQUIRED_VIEW_DEPENDENCIES = [
 /**
  * Fails early when a package declares views but has not installed what they need.
  *
- * Worth the check because the entry point and stylesheet are synthesized at build
- * time, so the resolver error names a file that exists nowhere on disk and never
- * mentions the install. That is a confusing first minute for anyone who has just
- * run `pnpm mcp:new app`, or who has checked out a branch where a package gained
- * its first view.
+ * Worth the check because the entry point and stylesheet are synthesized, so the
+ * resolver error names a file that is nowhere on disk and never mentions the
+ * install — the state a branch that gained its first view is checked out in.
  *
- * pnpm links every declared dependency into the package's own `node_modules`, so
- * a missing symlink there means the dependency is genuinely not installed.
+ * pnpm links every declared dependency into the package's own `node_modules`, so a
+ * missing symlink there means the dependency is genuinely not installed.
  */
 function assertViewDependenciesInstalled(packageDir: string): void {
   const missing = REQUIRED_VIEW_DEPENDENCIES.filter(

@@ -472,53 +472,6 @@ export const ProcessingPurposeInput = t.intersection([
 export type ProcessingPurposeInput = t.TypeOf<typeof ProcessingPurposeInput>;
 
 /**
- * Prompt definition inputs
- */
-export const PromptInput = t.type({
-  /** The title of the prompt. */
-  title: t.string,
-  /** The content of the prompt. */
-  content: t.string,
-});
-
-/**
- * Type override
- */
-export type PromptInput = t.TypeOf<typeof PromptInput>;
-
-/**
- * Prompt partial definition inputs
- */
-export const PromptPartialInput = t.type({
-  /** The title of the prompt partial. */
-  title: t.string,
-  /** The content of the prompt partial. */
-  content: t.string,
-});
-
-/**
- * Type override
- */
-export type PromptPartialInput = t.TypeOf<typeof PromptPartialInput>;
-
-/**
- * Prompt partial definition inputs
- */
-export const PromptGroupInput = t.type({
-  /** The title of the prompt group. */
-  title: t.string,
-  /** The description of the prompt group. */
-  description: t.string,
-  /** The titles of the prompts included. */
-  prompts: t.array(t.string),
-});
-
-/**
- * Type override
- */
-export type PromptGroupInput = t.TypeOf<typeof PromptGroupInput>;
-
-/**
  * Annotate specific fields within a datapoint. These are often database table columns.
  * Fields can also be a JSON object or separate file.
  */
@@ -2076,18 +2029,6 @@ export const TranscendInput = t.partial({
    * Consent manager definition
    */
   'consent-manager': ConsentManagerInput,
-  /**
-   * Prompt definitions
-   */
-  prompts: t.array(PromptInput),
-  /**
-   * Prompt partial definitions
-   */
-  'prompt-partials': t.array(PromptPartialInput),
-  /**
-   * Prompt group definitions
-   */
-  'prompt-groups': t.array(PromptGroupInput),
   /**
    * The privacy center configuration
    */
