@@ -1,17 +1,14 @@
 {
-  "name": "@transcend-io/mcp-server-consent",
-  "version": "0.6.8",
-  "description": "Transcend MCP Server — Consent Management tools.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-consent",
+  "name": "@transcend-io/mcp-app-ui",
+  "version": "0.1.0",
+  "description": "Presentational React components for Transcend MCP App views.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-app-ui",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/mcp/mcp-server-consent"
-  },
-  "bin": {
-    "transcend-mcp-consent": "./dist/cli.mjs"
+    "directory": "packages/mcp/mcp-app-ui"
   },
   "files": [
     "dist"
@@ -30,37 +27,25 @@
     "access": "public"
   },
   "scripts": {
-    "prebuild": "node ../../../scripts/build-mcp-views.ts",
     "build": "tsdown",
-    "build:ui": "node ../../../scripts/build-mcp-views.ts",
     "test": "vitest run --config ../../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "catalog:",
-    "@transcend-io/mcp-server-base": "workspace:*",
-    "@transcend-io/privacy-types": "workspace:*",
-    "@transcend-io/sdk": "workspace:*",
-    "zod": "catalog:"
-  },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
-    "@transcend-io/design-tokens": "workspace:*",
-    "@transcend-io/mcp-app-ui": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
-    "@types/react-dom": "catalog:",
     "publint": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:",
-    "tailwindcss": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:",
+    "vite-plugin-svgr": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:"
   },
   "engines": {
     "node": ">=22.12.0"

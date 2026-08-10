@@ -1,3 +1,5 @@
+import { Button } from '@transcend-io/mcp-app-ui';
+
 /** Props for {@link TriageActions}. */
 export interface TriageActionsProps {
   /** Whether an act call is in flight */
@@ -14,22 +16,12 @@ export interface TriageActionsProps {
 export function TriageActions({ disabled, onApprove, onJunk }: TriageActionsProps) {
   return (
     <div className="grid grid-cols-2 gap-3">
-      <button
-        type="button"
-        className="rounded-md bg-success px-4 py-3 text-sm font-semibold text-content-inverse transition-opacity hover:not-disabled:opacity-90 disabled:cursor-default disabled:opacity-60"
-        disabled={disabled}
-        onClick={onApprove}
-      >
+      <Button variant="success" disabled={disabled} onClick={onApprove}>
         ✓ Approve
-      </button>
-      <button
-        type="button"
-        className="rounded-md bg-danger px-4 py-3 text-sm font-semibold text-content-inverse transition-opacity hover:not-disabled:opacity-90 disabled:cursor-default disabled:opacity-60"
-        disabled={disabled}
-        onClick={onJunk}
-      >
+      </Button>
+      <Button variant="danger" disabled={disabled} onClick={onJunk}>
         🗑 Junk
-      </button>
+      </Button>
     </div>
   );
 }

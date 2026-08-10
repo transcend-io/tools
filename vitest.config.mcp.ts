@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 import { mergeConfig, type Plugin, type ViteUserConfig } from 'vitest/config';
+import svgr from 'vite-plugin-svgr';
 
 import sharedConfig from './vitest.config.ts';
 
@@ -43,5 +44,7 @@ function mcpAppViewLoader(): Plugin {
  * takes objects only, and the root config is one.
  */
 export default mergeConfig(sharedConfig as ViteUserConfig, {
-  plugins: [mcpAppViewLoader()],
+  // `svgr` first so `*.svg?react` (mcp-app-ui icons) become components before the
+  // shared text-asset loader would otherwise claim bare `.svg` ids.
+  plugins: [svgr(), mcpAppViewLoader()],
 });

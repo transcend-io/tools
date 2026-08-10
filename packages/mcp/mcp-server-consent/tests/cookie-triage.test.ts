@@ -182,6 +182,17 @@ describe('cookie triage queue selection', () => {
       serviceKey: 'mixpanel',
     }),
   );
+  const amplitude = enrichItem(
+    rawNode({
+      id: 'cookie-b',
+      identifier: 'cookie-b',
+      purposeName: 'Analytics',
+      purposeSlug: 'Analytics',
+      purposeId: 'p1',
+      serviceTitle: 'Amplitude',
+      serviceKey: 'amplitude',
+    }),
+  );
   const hotjarFlow = enrichItem(
     rawNode({
       id: 'df-1',
@@ -207,17 +218,43 @@ describe('cookie triage queue selection', () => {
     },
   };
 
+  const multiCookieQueue: TriageQueue = {
+    slices: [
+      { reviewType: 'cookie', items: attachBulkGroups([mixpanel, amplitude]) },
+      { reviewType: 'data_flow', items: attachBulkGroups([hotjarFlow]) },
+    ],
+    options: {
+      purposes: [{ label: 'Analytics', value: 'Analytics', id: 'p1' }],
+      services: collectServiceOptions([mixpanel, amplitude, hotjarFlow]),
+    },
+  };
+
   it('prefers cookies before data flows', () => {
     const card = selectCurrentCard(queue);
     expect(card.reviewType).toBe('cookie');
     expect(card.item?.id).toBe('cookie-a');
+    expect(card.index).toBe(1);
     expect(card.total).toBe(1);
+  });
+
+  it('advances index on skip without shrinking total', () => {
+    const first = selectCurrentCard(multiCookieQueue);
+    expect(first.item?.id).toBe('cookie-a');
+    expect(first.index).toBe(1);
+    expect(first.total).toBe(2);
+
+    const second = selectCurrentCard(multiCookieQueue, ['cookie-a']);
+    expect(second.item?.id).toBe('cookie-b');
+    expect(second.index).toBe(2);
+    expect(second.total).toBe(2);
   });
 
   it('skips to data flows when cookies are skipped', () => {
     const card = selectCurrentCard(queue, ['cookie-a']);
     expect(card.reviewType).toBe('data_flow');
     expect(card.item?.id).toBe('df-1');
+    expect(card.index).toBe(1);
+    expect(card.total).toBe(1);
   });
 
   it('returns an empty-queue payload when everything is skipped', () => {

@@ -102,6 +102,10 @@ function findViewFiles(): string[] {
       } catch {
         // Most MCP packages ship no views.
       }
+      // Cross-package presentational UI lives at `src/`, not under `src/ui/`.
+      if (entry.name === 'mcp-app-ui') {
+        walk(join(root, entry.name, 'src'));
+      }
     }
   }
 

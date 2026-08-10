@@ -1,3 +1,5 @@
+import { Button, ProgressBar } from '@transcend-io/mcp-app-ui';
+
 import type { CookieTriageReviewType } from './types.js';
 
 /** Props for {@link TriageProgress}. */
@@ -33,18 +35,11 @@ export function TriageProgress({
         <p className="text-sm font-medium text-content-subtle uppercase">
           {kindLabel} {index} OF {total}
         </p>
-        <button
-          type="button"
-          className="text-sm font-medium text-brand-text transition-colors hover:not-disabled:underline disabled:cursor-default disabled:opacity-60"
-          disabled={disabled}
-          onClick={onSkip}
-        >
+        <Button variant="link" disabled={disabled} onClick={onSkip}>
           Skip →
-        </button>
+        </Button>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-surface-sunken" aria-hidden="true">
-        <div className="h-full rounded-full bg-brand" style={{ width: `${progressPercent}%` }} />
-      </div>
+      <ProgressBar value={progressPercent} />
     </div>
   );
 }

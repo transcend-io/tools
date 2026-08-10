@@ -24,12 +24,19 @@ export default defineConfig({
   plugins: [
     {
       // Mirrors the `loader` entries in tsdown.config.base.ts so tests resolve
-      // these imports the same way the published bundles do.
+      // these imports the same way the published bundles do. `enforce: 'pre'`
+      // and stripping Vite's `?import` suffix are required — otherwise the
+      // default asset plugin wins and `.svg` becomes a data URI. Skip `?react`
+      // (SVGR) and `?url`.
       name: 'text-asset-loader',
+      enforce: 'pre',
       load(id) {
-        if (id.endsWith('.svg') || id.endsWith('.html')) {
-          return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`;
+        const filePath = id.split(/[?#]/, 1)[0] ?? id;
+        if (id.includes('?url') || id.includes('?react')) return undefined;
+        if (filePath.endsWith('.svg') || filePath.endsWith('.html')) {
+          return `export default ${JSON.stringify(readFileSync(filePath, 'utf8'))}`;
         }
+        return undefined;
       },
     },
   ],

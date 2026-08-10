@@ -91,9 +91,9 @@ export interface CookieTriageItem {
 export interface CookieTriageViewData {
   /** Whether this card is reviewing a cookie or a data flow */
   reviewType?: CookieTriageReviewType;
-  /** 1-based index of the current item in the queue */
+  /** 1-based position of the current item in the review-type backlog */
   index?: number;
-  /** Total items in the current triage queue (after skips) */
+  /** Size of the current review-type backlog, including session skips */
   total?: number;
   /** Item currently under review */
   item?: CookieTriageItem;

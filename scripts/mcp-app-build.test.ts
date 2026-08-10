@@ -9,6 +9,7 @@ import {
   discoverMcpAppViews,
   inlineIntoSingleHtml,
   MCP_APP_OUT_DIR,
+  MCP_APP_UI_SRC_DIR,
   synthesizeMcpAppViews,
   type McpAppView,
 } from '../vite.config.base.ts';
@@ -226,6 +227,13 @@ describe('synthesizeMcpAppViews', () => {
     expect(css).toContain("@source './**/*.{ts,tsx}';");
     expect(css).toContain("@source '../_shared/**/*.{ts,tsx}';");
     expect(css).toContain("@source '../_icons/**/*.{ts,tsx}';");
+    // Cross-package presentational components live outside `src/ui/_*`, so the
+    // synthesized stylesheet always claims their source tree too.
+    const mcpAppUiSource = path
+      .relative(view.directory, MCP_APP_UI_SRC_DIR)
+      .split(path.sep)
+      .join('/');
+    expect(css).toContain(`@source '${mcpAppUiSource}/**/*.{ts,tsx}';`);
   });
 
   test('the entry resolves its stylesheet as a sibling that exists nowhere on disk', () => {

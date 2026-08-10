@@ -1,9 +1,10 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import tailwindcss from '@tailwindcss/vite';
 import type { Plugin, UserConfig } from 'vite';
+import svgr from 'vite-plugin-svgr';
 
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -24,6 +25,17 @@ const VIEWS_DIR = path.join('src', 'ui');
  * inlines these documents as strings. Gitignored.
  */
 export const MCP_APP_OUT_DIR = path.join('src', 'ui', 'generated');
+
+/**
+ * Source tree for `@transcend-io/mcp-app-ui`.
+ *
+ * Every view's synthesized stylesheet `@source`s this path so Tailwind generates
+ * utilities for shared presentational components. Scanning `dist` would miss
+ * class names after minify and would put that package's build on the critical
+ * path; scanning source matches how Vite resolves the package via
+ * `@transcend-io/source`.
+ */
+export const MCP_APP_UI_SRC_DIR = path.join(repoRoot, 'packages', 'mcp', 'mcp-app-ui', 'src');
 
 /**
  * Names {@link synthesizeMcpAppViews} serves from inside each view directory.
@@ -177,10 +189,12 @@ function synthesizedStylesheet(view: McpAppView): string {
   // `source(none)` in the theme means utilities are only generated for files a
   // stylesheet explicitly claims. This one claims the view's own directory, which
   // is why the id has to sit inside it, plus any shared directories — a component
-  // under `_shared` would otherwise be bundled and render unstyled.
+  // under `_shared` would otherwise be bundled and render unstyled — and the
+  // cross-package `@transcend-io/mcp-app-ui` source tree for the same reason.
   const sources = [
     `./**/*.${SOURCE_EXTENSIONS}`,
     ...view.sharedDirectories.map((directory) => globFrom(view.directory, directory)),
+    globFrom(view.directory, MCP_APP_UI_SRC_DIR),
   ];
 
   return [
@@ -246,6 +260,31 @@ export function synthesizeMcpAppViews(views: readonly McpAppView[]): Plugin {
     },
     load(id) {
       return sources.get(splitQuery(id)[0])?.();
+    },
+  };
+}
+
+/**
+ * Imports bare `.svg` files as raw markup strings, matching tsdown's text loader.
+ *
+ * Vite's default turns SVGs into (inlined) URLs, which is useless when you need
+ * the markup as a string. Pass `?url` for a URL, or `?react` for an SVGR
+ * component (handled by `vite-plugin-svgr` instead of this plugin).
+ */
+function mcpAppSvgAsText(): Plugin {
+  return {
+    name: 'transcend:mcp-app-svg-as-text',
+    enforce: 'pre',
+    load(id) {
+      const [filePath, query] = splitQuery(id);
+      if (
+        !filePath.endsWith('.svg') ||
+        query.includes('url') ||
+        query.includes('react')
+      ) {
+        return undefined;
+      }
+      return `export default ${JSON.stringify(readFileSync(filePath, 'utf8'))};`;
     },
   };
 }
@@ -478,6 +517,8 @@ export function defineMcpAppView({
       reportCompressedSize: false,
     },
     plugins: [
+      svgr(),
+      mcpAppSvgAsText(),
       synthesizeMcpAppViews([view]),
       tailwindcss(),
       inlineIntoSingleHtml({ fileName: view.fileName, title }),

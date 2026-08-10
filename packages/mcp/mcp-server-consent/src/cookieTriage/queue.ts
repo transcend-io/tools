@@ -191,19 +191,20 @@ export function selectCurrentCard(
   const skipped = new Set(skippedIds);
 
   for (const slice of queue.slices) {
-    const remaining = slice.items.filter((item) => !skipped.has(item.id));
-    if (remaining.length === 0) {
+    const nextIdx = slice.items.findIndex((item) => !skipped.has(item.id));
+    if (nextIdx === -1) {
       continue;
     }
 
+    const remaining = slice.items.filter((item) => !skipped.has(item.id));
     const item = remaining[0]!;
     // Recompute bulk group against remaining siblings only.
     const withBulk = attachBulkGroups(remaining).find((candidate) => candidate.id === item.id)!;
 
     return {
       reviewType: slice.reviewType,
-      index: 1,
-      total: remaining.length,
+      index: nextIdx + 1,
+      total: slice.items.length,
       item: withBulk,
       options: queue.options,
       skippedIds,

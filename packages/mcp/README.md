@@ -235,19 +235,20 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 ## Packages
 
-| Package                                               | Binary                      | Tools | Description                                      |
-| ----------------------------------------------------- | --------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    73 | Unified server — all tools in one process        |
-| [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys             |
-| [`mcp-server-assessment`](./mcp-server-assessment/)   | `transcend-mcp-assessment`  |    14 | Privacy assessments, templates, groups           |
-| [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    14 | Consent management, analytics, cookie triage     |
-| [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)   |
-| [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     6 | Data discovery, classification, NER              |
-| [`mcp-server-docs`](./mcp-server-docs/)               | `transcend-mcp-docs`        |     2 | Transcend documentation lookup (list + fetch)    |
-| [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    12 | Data subject requests (submit, track, respond)   |
-| [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    10 | Data inventory, silos, vendors, data points      |
-| [`mcp-server-preferences`](./mcp-server-preferences/) | `transcend-mcp-preferences` |     6 | Privacy preference store (query, upsert, delete) |
-| [`mcp-server-workflows`](./mcp-server-workflows/)     | `transcend-mcp-workflows`   |     3 | Workflow & email-template configuration          |
+| Package                                               | Binary                      | Tools | Description                                       |
+| ----------------------------------------------------- | --------------------------- | ----: | ------------------------------------------------- |
+| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    73 | Unified server — all tools in one process         |
+| [`mcp-app-ui`](./mcp-app-ui/)                         | —                           |     — | Presentational React components for MCP App views |
+| [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys              |
+| [`mcp-server-assessment`](./mcp-server-assessment/)   | `transcend-mcp-assessment`  |    14 | Privacy assessments, templates, groups            |
+| [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    14 | Consent management, analytics, cookie triage      |
+| [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)    |
+| [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     6 | Data discovery, classification, NER               |
+| [`mcp-server-docs`](./mcp-server-docs/)               | `transcend-mcp-docs`        |     2 | Transcend documentation lookup (list + fetch)     |
+| [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    12 | Data subject requests (submit, track, respond)    |
+| [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    10 | Data inventory, silos, vendors, data points       |
+| [`mcp-server-preferences`](./mcp-server-preferences/) | `transcend-mcp-preferences` |     6 | Privacy preference store (query, upsert, delete)  |
+| [`mcp-server-workflows`](./mcp-server-workflows/)     | `transcend-mcp-workflows`   |     3 | Workflow & email-template configuration           |
 
 See each package's README for full tool lists, detailed environment variable docs, and client configuration examples.
 
@@ -406,7 +407,7 @@ A view is one _entry_ component, not one file. Break it up freely:
 
 ```
 src/ui/
-  _shared/                       shared across views; `_` means "not a view"
+  _shared/                       shared across views in this package; `_` means "not a view"
     Badge.tsx
   cookie-triage/
     CookieTriageView.tsx         the entry — the only *View.tsx here
@@ -422,11 +423,13 @@ src/ui/
 Two rules, both enforced rather than trusted:
 
 - **Only the entry may end in `View.tsx`.** Discovery looks for exactly one match at the top level of the view directory, so a sibling named `ConfirmModalView.tsx` fails the build by name. Nesting is unaffected — `table/TriageTableView.tsx` would be fine, since the search is not recursive — but the simplest habit is to reserve the suffix for the entry.
-- **Shared components go in a `_`-prefixed directory under `src/ui/`.** Tailwind generates utilities per document by scanning files, so the synthesized stylesheet sources every `_` directory in addition to the view's own. Putting a shared component anywhere else outside the view directory bundles it correctly and then renders it unstyled, which reads as a CSS bug rather than a missing `@source`. The cost of sourcing them is that shared components' utilities appear in every view's document, which is why `_shared` is for genuinely shared UI rather than a dumping ground.
+- **Same-package shared components go in a `_`-prefixed directory under `src/ui/`.** Tailwind generates utilities per document by scanning files, so the synthesized stylesheet sources every `_` directory in addition to the view's own. Putting a shared component anywhere else outside the view directory bundles it correctly and then renders it unstyled, which reads as a CSS bug rather than a missing `@source`. The cost of sourcing them is that shared components' utilities appear in every view's document, which is why `_shared` is for genuinely shared UI rather than a dumping ground.
+- **Cross-package presentational components live in `@transcend-io/mcp-app-ui`.** Import `Button`, `Card`, `StatusCard`, `ProgressBar`, named icons (`CheckIcon`, `TrashIcon`, …), and future primitives from there. They are props-in / JSX-out — no `useMcpApp`, no MCP SDK, no tool calls. The view build always `@source`s that package's `src/`, so their utilities are generated even when a view has no local `_shared` directory. Domain layout and copy stay in the server package until a second view would duplicate them.
 
 ```tsx
 // src/ui/hello/HelloView.tsx
 import { useMcpApp } from '@transcend-io/mcp-server-base/ui';
+import { Button, Card } from '@transcend-io/mcp-app-ui';
 
 export function HelloView() {
   const { data, theme, callTool, isCallingTool } = useMcpApp<{ greeting: string }>({
@@ -434,16 +437,22 @@ export function HelloView() {
   });
 
   return (
-    <button onClick={() => void callTool('my_tool_refresh', {})} disabled={isCallingTool}>
-      {data?.greeting} ({theme})
-    </button>
+    <Card>
+      <Button
+        variant="brand"
+        onClick={() => void callTool('my_tool_refresh', {})}
+        disabled={isCallingTool}
+      >
+        {data?.greeting} ({theme})
+      </Button>
+    </Card>
   );
 }
 ```
 
 `useMcpApp` wraps `@modelcontextprotocol/ext-apps` with this repo's conventions: it connects to the host, applies the host's style variables to the document so the shared theme can pick them up, keeps `theme` in sync, and unwraps the `createToolResult` envelope into typed `data`. `callTool` invokes a tool on the originating server — this is how `appOnlyTools` are reached — and folds the response back into `data`, so a refresh re-renders the view.
 
-Import view code only from `@transcend-io/mcp-server-base/ui`, never the package root. That subpath exists so browser code cannot reach the root barrel, which pulls in `node:async_hooks`, GraphQL clients, and OAuth.
+Import host wiring only from `@transcend-io/mcp-server-base/ui`, never the package root. That subpath exists so browser code cannot reach the root barrel, which pulls in `node:async_hooks`, GraphQL clients, and OAuth. Import presentational components from `@transcend-io/mcp-app-ui`.
 
 A few constraints worth knowing before adding a view:
 
