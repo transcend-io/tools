@@ -51,8 +51,15 @@ const SANDBOX_PROXY_PATH = join('clients', 'web', 'static', 'sandbox_proxy.html'
 /** Our copy of the document, kept byte-identical to upstream's. */
 const VENDORED_SANDBOX_PROXY = join(scriptsLibDir, 'inspector-sandbox-proxy.html');
 
-/** What {@link restoreSandboxProxy} did, for logging and tests. */
-export type SandboxProxyOutcome = 'present' | 'written' | 'unrecognized';
+/** Outcome of {@link restoreSandboxProxy}. */
+export enum SandboxProxyOutcome {
+  /** Already present */
+  Present = 'present',
+  /** Vendored copy written */
+  Written = 'written',
+  /** Not an Inspector install */
+  Unrecognized = 'unrecognized',
+}
 
 /**
  * Writes the sandbox proxy document into an Inspector install that is missing it.
@@ -89,14 +96,16 @@ export type SandboxProxyOutcome = 'present' | 'written' | 'unrecognized';
 export function restoreSandboxProxy(installDir: string): SandboxProxyOutcome {
   // Absent `clients/web` this is not the layout the fix was written against, so
   // creating directories would be guessing at someone else's package.
-  if (!existsSync(join(installDir, 'clients', 'web'))) return 'unrecognized';
+  if (!existsSync(join(installDir, 'clients', 'web'))) {
+    return SandboxProxyOutcome.Unrecognized;
+  }
 
   const target = join(installDir, SANDBOX_PROXY_PATH);
-  if (existsSync(target)) return 'present';
+  if (existsSync(target)) return SandboxProxyOutcome.Present;
 
   mkdirSync(dirname(target), { recursive: true });
   copyFileSync(VENDORED_SANDBOX_PROXY, target);
-  return 'written';
+  return SandboxProxyOutcome.Written;
 }
 
 /**
@@ -182,12 +191,12 @@ export async function ensureInspectorSandboxProxy(spec: string): Promise<void> {
     }
 
     const outcome = restoreSandboxProxy(installDir);
-    if (outcome === 'written') {
+    if (outcome === SandboxProxyOutcome.Written) {
       logger.log(
         `Restored the missing app sandbox document in ${spec} ` +
           '(upstream inspector issue 1859); the Apps tab would render an ENOENT without it.',
       );
-    } else if (outcome === 'unrecognized') {
+    } else if (outcome === SandboxProxyOutcome.Unrecognized) {
       logger.log(
         `The ${spec} install has an unfamiliar layout, so its app sandbox document was left alone.`,
       );
