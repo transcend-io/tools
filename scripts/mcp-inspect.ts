@@ -11,6 +11,10 @@
  *   pnpm mcp:inspect --examples    # the example server, which the umbrella does not aggregate
  *   pnpm mcp:inspect docs          # one package, which builds faster
  *   pnpm mcp:inspect --http        # serve over Streamable HTTP instead of stdio
+ *
+ * Stdio launches the server via scripts/mcp-run.sh so root secret.env (API key
+ * or OAuth) is available for real API calls. HTTP mode inherits the same file
+ * through loadSecretEnv().
  */
 
 import { parseArgs } from 'node:util';
@@ -25,6 +29,7 @@ import {
   inspectorEnvArgs,
   installShutdownHandlers,
   loadSecretEnv,
+  MCP_RUN_SCRIPT,
   resolveTarget,
   SERVER_NODE_ARGS,
   startProcess,
@@ -110,11 +115,14 @@ async function main(): Promise<void> {
   // No `--transport=stdio`, because the Inspector would parse it as its own; the
   // server defaults to stdio anyway. Same reason the `-e` pairs precede the command:
   // the Inspector takes its own options first and the rest as the server to spawn.
+  // mcp-run.sh sources secret.env then execs node — same path as Cursor — so
+  // credentials reach the server without putting them on Inspector `-e` args.
   startProcess('inspector', 'npx', [
     '-y',
     INSPECTOR_SPEC,
     ...inspectorEnvArgs(),
-    'node',
+    'bash',
+    MCP_RUN_SCRIPT,
     ...SERVER_NODE_ARGS,
     target.cliPath,
   ]);
