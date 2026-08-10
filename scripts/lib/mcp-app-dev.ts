@@ -61,14 +61,17 @@ const SANDBOX_PROXY_PATH = join('clients', 'web', 'static', 'sandbox_proxy.html'
 const VENDORED_SANDBOX_PROXY = join(scriptsLibDir, 'inspector-sandbox-proxy.html');
 
 /** Outcome of {@link restoreSandboxProxy}. */
-export enum SandboxProxyOutcome {
+export const SandboxProxyOutcome = {
   /** Already present */
-  Present = 'present',
+  Present: 'present',
   /** Vendored copy written */
-  Written = 'written',
+  Written: 'written',
   /** Not an Inspector install */
-  Unrecognized = 'unrecognized',
-}
+  Unrecognized: 'unrecognized',
+} as const;
+
+/** Union of {@link SandboxProxyOutcome} values. */
+export type SandboxProxyOutcome = (typeof SandboxProxyOutcome)[keyof typeof SandboxProxyOutcome];
 
 /**
  * Writes the sandbox proxy document into an Inspector install that is missing it.
