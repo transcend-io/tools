@@ -141,6 +141,14 @@ export function defineUiResource(config: UiResourceDefinition): UiResourceDefini
 }
 
 /**
+ * Leading whitespace, then a case-insensitive `<!DOCTYPE html` opener.
+ *
+ * Hosts load UI resources as standalone documents, so a fragment without a
+ * doctype is rejected here rather than rendered as a blank iframe.
+ */
+const HTML5_DOCTYPE_PREFIX = /^\s*<!doctype html/i;
+
+/**
  * Rejects markup a host would render as a blank panel.
  *
  * Exported for the dev view loader, which reads documents from disk after
@@ -150,7 +158,7 @@ export function assertHtmlDocument(uri: string, html: string): void {
   if (html.trim() === '') {
     throw new Error(`UI resource "${uri}" has empty HTML; hosts would render a blank iframe.`);
   }
-  if (!/^\s*<!doctype html/i.test(html)) {
+  if (!HTML5_DOCTYPE_PREFIX.test(html)) {
     throw new Error(
       `UI resource "${uri}" must be a complete HTML5 document starting with ` +
         '<!DOCTYPE html>. Hosts render the content as a standalone document, so an ' +

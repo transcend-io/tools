@@ -170,29 +170,37 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   /**
    * Capabilities are fixed for a connection's lifetime, so derive once and reuse.
-   * `runMcpHttp` builds a fresh Server per session and stdio has exactly one, so
-   * caching on this closure stays correct per client.
+   * Held at this scope so request handlers read the same report without calling a
+   * resolver each time. `runMcpHttp` builds a fresh Server per session and stdio
+   * has exactly one, so a single closed-over value stays correct per client.
+   *
+   * Populated in `oninitialized` (and lazily below if a handler races ahead of
+   * that callback). Pre-handshake reads keep {@link EMPTY_CAPABILITY_REPORT}.
    */
-  let cachedClient: ClientCapabilityReport | undefined;
-  const currentClient = (): ClientCapabilityReport => {
-    if (!cachedClient) {
-      const clientInfo = server.getClientVersion();
-      if (!clientInfo && !server.getClientCapabilities()) {
-        // Pre-handshake: do not cache, a real report is coming.
-        return EMPTY_CAPABILITY_REPORT;
-      }
-      cachedClient = deriveClientCapabilities({
-        capabilities: server.getClientCapabilities(),
-        clientInfo,
-        callerHeader: getRequestMcpCaller(),
-        assumeCapabilities: assumed.capabilities,
-      });
+  let client: ClientCapabilityReport = EMPTY_CAPABILITY_REPORT;
+  let clientResolved = false;
+
+  const resolveClient = (): void => {
+    if (clientResolved) return;
+
+    const clientInfo = server.getClientVersion();
+    const clientCapabilities = server.getClientCapabilities();
+    if (!clientInfo && !clientCapabilities) {
+      // Pre-handshake: do not cache, a real report is coming.
+      return;
     }
-    return cachedClient;
+
+    client = deriveClientCapabilities({
+      capabilities: clientCapabilities,
+      clientInfo,
+      callerHeader: getRequestMcpCaller(),
+      assumeCapabilities: assumed.capabilities,
+    });
+    clientResolved = true;
   };
 
   server.oninitialized = () => {
-    const client = currentClient();
+    resolveClient();
     logger.info('MCP client connected', {
       host: client.host,
       clientName: client.clientInfo?.name,
@@ -225,7 +233,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   };
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    const client = currentClient();
+    resolveClient();
     logger.debug('Listing MCP tools', { host: client.host });
 
     const toolList = await mcpSessionContext.run({ client, server }, async () =>
@@ -287,7 +295,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    const client = currentClient();
+    resolveClient();
     logger.info(`Executing tool: ${name}`, { args: Object.keys(args || {}), host: client.host });
 
     try {
