@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
-import { mergeConfig, type Plugin, type ViteUserConfig } from 'vitest/config';
 import svgr from 'vite-plugin-svgr';
+import { mergeConfig, type Plugin, type ViteUserConfig } from 'vitest/config';
 
 import sharedConfig from './vitest.config.ts';
 

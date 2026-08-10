@@ -277,11 +277,7 @@ function mcpAppSvgAsText(): Plugin {
     enforce: 'pre',
     load(id) {
       const [filePath, query] = splitQuery(id);
-      if (
-        !filePath.endsWith('.svg') ||
-        query.includes('url') ||
-        query.includes('react')
-      ) {
+      if (!filePath.endsWith('.svg') || query.includes('url') || query.includes('react')) {
         return undefined;
       }
       return `export default ${JSON.stringify(readFileSync(filePath, 'utf8'))};`;

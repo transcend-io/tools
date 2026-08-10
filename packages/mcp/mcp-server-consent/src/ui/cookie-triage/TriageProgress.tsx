@@ -39,7 +39,7 @@ export function TriageProgress({
           Skip →
         </Button>
       </div>
-      <ProgressBar value={progressPercent} />
+      <ProgressBar totalSteps={total} currentStep={index} />
     </div>
   );
 }
