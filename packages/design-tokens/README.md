@@ -11,7 +11,7 @@ import { color, palette, typography } from '@transcend-io/design-tokens';
 import type { ColorMode, SemanticColors } from '@transcend-io/design-tokens';
 
 color.light.text.default;
-color.light.background.brand.bold; // rest state via toString() → $root
+color.light.background.brand.bold; // rest state via toString() → .default
 typography.light.display.lg.fontSize;
 ```
 
@@ -22,7 +22,7 @@ CSS custom properties on `:root`:
 
 .button {
   color: var(--text); /* alias of --text-default */
-  background: var(--background-brand-bold); /* rest state ($root flattened to parent id) */
+  background: var(--background-brand-bold); /* alias of --background-brand-bold-default */
   font-size: var(--display-lg-font-size);
 }
 ```

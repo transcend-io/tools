@@ -24,10 +24,10 @@ describe('@transcend-io/design-tokens', () => {
     expect(colors.text).toBeDefined();
   });
 
-  test('rest-state groups expose $root and stringify to it', () => {
+  test('rest-state groups expose default and stringify to it', () => {
     const bold = color.light.background.brand.bold;
-    expect(bold.$root).toMatch(/^#/i);
-    expect(String(bold)).toBe(bold.$root);
+    expect(bold.default).toMatch(/^#/i);
+    expect(String(bold)).toBe(bold.default);
     expect(bold.hovered).toMatch(/^#/i);
   });
 
@@ -51,10 +51,11 @@ describe('@transcend-io/design-tokens', () => {
     expect(css).toContain('--palette-gray-500:');
     expect(css).toContain('--text-default: var(--palette-gray-900)');
     expect(css).toContain('--text: var(--text-default)');
-    // DTCG $root flattens onto the parent ID — rest state is the short name.
-    expect(css).toContain('--background-brand-bold:');
+    // Rest state is a named `default` leaf with a short CSS alias.
+    expect(css).toContain('--background-brand-bold-default:');
+    expect(css).toContain('--background-brand-bold: var(--background-brand-bold-default)');
     expect(css).toContain('--background-brand-bold-hovered:');
-    expect(css).not.toContain('--background-brand-bold-default:');
+    expect(css).not.toContain('--background-brand-bold-$root');
     expect(css).not.toContain('[data-theme="dark"]');
     expect(css).not.toContain('prefers-color-scheme');
   });

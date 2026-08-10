@@ -113,14 +113,14 @@ export function serializeObj(
     return `${jsdoc}${pad}${safeKey(key)}: ${serializeObj(val, indent + 1)},`;
   });
 
-  // When a group has a leaf `$root` child, add a toString() method so the
-  // group auto-resolves in template-literal interpolations (e.g. styled-components).
-  // This lets consumers write `theme.color.background.default` instead of
-  // `theme.color.background.default.$root`.
-  const rootEntry = entries.find(([key]) => key === '$root');
-  if (rootEntry && isLeaf(rootEntry[1]) && entries.length > 1) {
-    const rootExpr = serializeObj(rootEntry[1], indent + 1);
-    lines.push(`${pad}toString() { return ${rootExpr}; },`);
+  // When a group has a leaf `default` child (rest state) plus siblings, add a
+  // toString() method so the group auto-resolves in template-literal
+  // interpolations (e.g. styled-components). Consumers can write
+  // `theme.color.background.brand.bold` instead of `….bold.default`.
+  const defaultEntry = entries.find(([key]) => key === 'default');
+  if (defaultEntry && isLeaf(defaultEntry[1]) && entries.length > 1) {
+    const defaultExpr = serializeObj(defaultEntry[1], indent + 1);
+    lines.push(`${pad}toString() { return ${defaultExpr}; },`);
   }
 
   return `{\n${lines.join('\n')}\n${closePad}}`;

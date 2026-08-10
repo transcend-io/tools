@@ -122,7 +122,7 @@
       "$description": "Hyperlink, pressed or selected state"
     },
     "visited": {
-      "$root": {
+      "default": {
         "$value": "{palette.gray.700}",
         "$description": "Visited hyperlink, rest state"
       },
@@ -243,7 +243,7 @@
   },
   "background": {
     "default": {
-      "$root": {
+      "default": {
         "$value": "{palette.white}",
         "$description": "Interactive surface, rest state"
       },
@@ -257,7 +257,7 @@
       }
     },
     "neutral": {
-      "$root": {
+      "default": {
         "$value": "{palette.gray.100}",
         "$description": "Neutral surface, rest state — form elements, nav bars, inputs, secondary buttons, code blocks, skeleton loaders"
       },
@@ -280,7 +280,7 @@
         "$description": "Lightest brand tint — subtle label or badge background"
       },
       "bold": {
-        "$root": {
+        "default": {
           "$value": "{palette.indigo.500}",
           "$description": "Brand surface — primary buttons, CTAs"
         },
@@ -304,7 +304,7 @@
         "$description": "Light success tint — success label or badge background with slightly more emphasis"
       },
       "bold": {
-        "$root": {
+        "default": {
           "$value": "{palette.green.500}",
           "$description": "Success surface — banners, toasts, filled badges"
         },
@@ -324,7 +324,7 @@
     },
     "warning": {
       "bold": {
-        "$root": {
+        "default": {
           "$value": "{palette.gold.500}",
           "$description": "Warning surface — banners, toasts, filled badges"
         },
@@ -352,7 +352,7 @@
         "$description": "Lightest danger tint — subtle danger label or badge background"
       },
       "bold": {
-        "$root": {
+        "default": {
           "$value": "{palette.red.500}",
           "$description": "Danger surface — banners, toasts, filled badges, destructive buttons"
         },

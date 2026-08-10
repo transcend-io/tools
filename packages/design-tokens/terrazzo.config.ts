@@ -4,22 +4,15 @@ import css from '@terrazzo/plugin-css';
 import tsCodegen from './plugins/ts-codegen.ts';
 
 /**
- * For rest-state suffixes, also emit a shorter alias:
- * - `--foo-default: …` → `--foo: var(--foo-default)` (named default leaves)
- * - `--foo-$root: …` → `--foo: var(--foo-$root)` (DTCG `$root` tokens)
+ * For rest-state `default` leaves, also emit a shorter alias:
+ * `--foo-default: …` → `--foo: var(--foo-default)`
  */
 function withRestStateAliases(contents: string): string {
-  return contents
-    .replace(
-      /(^|\n)([ \t]*)(--([a-z0-9-]+)-default)(\s*:\s*[^;]+;)/g,
-      (_match, lead: string, indent: string, full: string, short: string, rest: string) =>
-        `${lead}${indent}${full}${rest}\n${indent}--${short}: var(${full});`,
-    )
-    .replace(
-      /(^|\n)([ \t]*)(--([a-z0-9-]+)-\$root)(\s*:\s*[^;]+;)/g,
-      (_match, lead: string, indent: string, full: string, short: string, rest: string) =>
-        `${lead}${indent}${full}${rest}\n${indent}--${short}: var(${full});`,
-    );
+  return contents.replace(
+    /(^|\n)([ \t]*)(--([a-z0-9-]+)-default)(\s*:\s*[^;]+;)/g,
+    (_match, lead: string, indent: string, full: string, short: string, rest: string) =>
+      `${lead}${indent}${full}${rest}\n${indent}--${short}: var(${full});`,
+  );
 }
 
 export default defineConfig({

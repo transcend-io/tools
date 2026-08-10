@@ -2,18 +2,17 @@
 '@transcend-io/design-tokens': major
 ---
 
-Adopt DTCG `$root` for stateful color groups and add semantic typography tokens.
+Add semantic typography tokens and keep rest-state color groups on named `default` leaves (no draft DTCG `$root`).
 
 ### Breaking
 
-Rest-state leaves that used a nested `.default` segment are gone. Terrazzo flattens `$root` onto the parent ID, so the rest value lives at the shorter path (and still stringifies via `toString()` for styled-components):
+Rest-state values for stateful color groups live under an explicit `.default` segment again. Terrazzo compile still adds `toString()` on those groups and short CSS aliases (`--foo` → `var(--foo-default)`), so interpolations and common CSS vars stay ergonomic without adopting preview-draft `$root`:
 
-- `background.default.default` → `background.default`
-- `background.neutral.default` → `background.neutral`
-- `background.{brand,success,warning,danger}.bold.default` → `background.*.bold`
-- `link.visited.default` → `link.visited`
+- `background.default` / `background.neutral` rest values → `….default`
+- `background.{brand,success,warning,danger}.bold` rest values → `….bold.default`
+- `link.visited` rest value → `link.visited.default`
 
-CSS custom properties follow the same shape: `--background-brand-bold-default` is now `--background-brand-bold` (states remain `--background-brand-bold-hovered`, etc.). Named category leaves like `--text-default` are unchanged.
+CSS custom properties follow the same shape: rest state is `--background-brand-bold-default` with alias `--background-brand-bold`. Named category leaves like `--text-default` are unchanged.
 
 ### Added
 

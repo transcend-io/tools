@@ -60,11 +60,10 @@ function resolveLeaf(
  * the serializer can render them as live TS expressions (preserving the
  * IntelliSense link back to the primitive); all others resolve to CSS.
  *
- * Terrazzo flattens DTCG `$root` tokens onto the parent ID (e.g. the rest
- * value of `background.brand.bold` is ID `background.brand.bold`, with
- * states as `background.brand.bold.hovered`). When an ID is both a token and
- * a prefix of other tokens, the value is stored under a `$root` child so the
- * group can hold siblings and `toString()` can resolve to the rest value.
+ * Stateful groups use a named `default` leaf for the rest value (e.g.
+ * `background.brand.bold.default` alongside `….hovered` / `….pressed`). The
+ * serializer adds `toString()` on those groups so interpolations still resolve
+ * to the rest state without relying on draft DTCG `$root`.
  */
 export function buildSemanticObj(
   /** Flat map of dot-separated token IDs to resolved DTCG token objects. */
@@ -81,8 +80,7 @@ export function buildSemanticObj(
   for (const id of ids) {
     const token = tokens[id]!;
     const leaf = resolveLeaf(token, referenceablePrefixes);
-    const isGroupRoot = ids.some((other) => other.startsWith(`${id}.`));
-    const path = isGroupRoot ? [...id.split('.'), '$root'] : id.split('.');
+    const path = id.split('.');
 
     if (typeof leaf === 'object' && leaf !== null && !('__ref' in leaf)) {
       // Typography composites can't carry AnnotatedValue wrappers; descriptions
