@@ -13,6 +13,15 @@ const scriptsLibDir = dirname(fileURLToPath(import.meta.url));
 export const repoRoot = resolve(scriptsLibDir, '..', '..');
 
 /**
+ * Wrapper that sources root `secret.env` then `exec`s `node`.
+ *
+ * Used by Cursor (`.cursor/mcp.json`) and by `pnpm mcp:inspect` stdio so the
+ * Inspector-spawned server gets credentials without putting them on `-e`
+ * (which would expose them in process args).
+ */
+export const MCP_RUN_SCRIPT = join(repoRoot, 'scripts', 'mcp-run.sh');
+
+/**
  * Directories searched for MCP servers, in the order they are listed.
  *
  * `dev` is here because the example server lives outside `packages/`: its views
@@ -33,13 +42,11 @@ export const EXAMPLES_PACKAGE = '@transcend-io/mcp-server-examples';
 /**
  * The Inspector release `pnpm mcp:inspect` runs.
  *
- * v2 is a floor rather than a preference: its clients declare
- * `extensions["io.modelcontextprotocol/ui"]`, which a spec-correct server requires
- * before binding a view to a tool, while earlier releases declare nothing at all
- * and every view is withheld. Pinned to the major so security fixes land without a
- * surprise rewrite.
+ * Pinned to the major because {@link restoreSandboxProxy} reaches into the install's
+ * `clients/web/static` layout, and because a client that stopped declaring
+ * `extensions["io.modelcontextprotocol/ui"]` would silently withhold every view.
  */
-export const INSPECTOR_V2_SPEC = '@modelcontextprotocol/inspector@2';
+export const INSPECTOR_SPEC = '@modelcontextprotocol/inspector@2';
 
 /** Package the spec above resolves to. */
 const INSPECTOR_PACKAGE_NAME = '@modelcontextprotocol/inspector';
@@ -53,8 +60,18 @@ const SANDBOX_PROXY_PATH = join('clients', 'web', 'static', 'sandbox_proxy.html'
 /** Our copy of the document, kept byte-identical to upstream's. */
 const VENDORED_SANDBOX_PROXY = join(scriptsLibDir, 'inspector-sandbox-proxy.html');
 
-/** What {@link restoreSandboxProxy} did, for logging and tests. */
-export type SandboxProxyOutcome = 'present' | 'written' | 'unrecognized';
+/** Outcome of {@link restoreSandboxProxy}. */
+export const SandboxProxyOutcome = {
+  /** Already present */
+  Present: 'present',
+  /** Vendored copy written */
+  Written: 'written',
+  /** Not an Inspector install */
+  Unrecognized: 'unrecognized',
+} as const;
+
+/** Union of {@link SandboxProxyOutcome} values. */
+export type SandboxProxyOutcome = (typeof SandboxProxyOutcome)[keyof typeof SandboxProxyOutcome];
 
 /**
  * Writes the sandbox proxy document into an Inspector install that is missing it.
@@ -91,14 +108,16 @@ export type SandboxProxyOutcome = 'present' | 'written' | 'unrecognized';
 export function restoreSandboxProxy(installDir: string): SandboxProxyOutcome {
   // Absent `clients/web` this is not the layout the fix was written against, so
   // creating directories would be guessing at someone else's package.
-  if (!existsSync(join(installDir, 'clients', 'web'))) return 'unrecognized';
+  if (!existsSync(join(installDir, 'clients', 'web'))) {
+    return SandboxProxyOutcome.Unrecognized;
+  }
 
   const target = join(installDir, SANDBOX_PROXY_PATH);
-  if (existsSync(target)) return 'present';
+  if (existsSync(target)) return SandboxProxyOutcome.Present;
 
   mkdirSync(dirname(target), { recursive: true });
   copyFileSync(VENDORED_SANDBOX_PROXY, target);
-  return 'written';
+  return SandboxProxyOutcome.Written;
 }
 
 /**
@@ -184,12 +203,12 @@ export async function ensureInspectorSandboxProxy(spec: string): Promise<void> {
     }
 
     const outcome = restoreSandboxProxy(installDir);
-    if (outcome === 'written') {
+    if (outcome === SandboxProxyOutcome.Written) {
       logger.log(
         `Restored the missing app sandbox document in ${spec} ` +
           '(upstream inspector issue 1859); the Apps tab would render an ENOENT without it.',
       );
-    } else if (outcome === 'unrecognized') {
+    } else if (outcome === SandboxProxyOutcome.Unrecognized) {
       logger.log(
         `The ${spec} install has an unfamiliar layout, so its app sandbox document was left alone.`,
       );
@@ -232,8 +251,10 @@ export const SERVER_NODE_ARGS = ['--enable-source-maps'] as const;
  * build time while the watcher reports success on every save.
  *
  * Credentials are deliberately absent, since arguments are readable by anyone on
- * the machine (`ps -o command`). Use `--http` when a tool needs the Transcend API,
- * where we spawn the server ourselves and it inherits the environment.
+ * the machine (`ps -o command`). Stdio Inspector launches go through
+ * {@link MCP_RUN_SCRIPT}, which sources `secret.env` into the server process.
+ * Under `--http` we spawn the server ourselves and it inherits the environment
+ * from {@link loadSecretEnv}.
  *
  * @param env - Environment to read, defaulting to this process's
  * @returns Inspector arguments, as `-e KEY=VALUE` pairs
@@ -416,8 +437,9 @@ export function viewPackagesInScope(target: McpPackage, packages: McpPackage[]):
  * Loads `secret.env` into `process.env` when present.
  *
  * Spawned processes inherit it, covering the `--http` server and every view
- * watcher. A stdio server spawned by the Inspector does not, for the reason
- * {@link inspectorEnvArgs} explains.
+ * watcher. A stdio server spawned by the Inspector still needs
+ * {@link MCP_RUN_SCRIPT}: the Inspector does not forward our environment (see
+ * {@link inspectorEnvArgs}).
  */
 export function loadSecretEnv(): void {
   const secretEnv = join(repoRoot, 'secret.env');

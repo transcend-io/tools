@@ -32,10 +32,7 @@ import {
   fetchAllEnrichers,
   fetchAllIdentifiers,
   fetchAllMessages,
-  fetchAllPromptGroups,
-  fetchAllPromptPartials,
   fetchAllProcessingActivities,
-  fetchAllPrompts,
   fetchAllPurposesAndPreferences,
   fetchAllConsentWorkflowTriggers,
   fetchAllPreferenceOptionValues,
@@ -70,12 +67,9 @@ import {
   IdentifierInput,
   BusinessEntityInput,
   EnricherInput,
-  PromptGroupInput,
   DataFlowInput,
-  PromptPartialInput,
   DataSubjectInput,
   CookieInput,
-  PromptInput,
   DatapointInput,
   FieldInput,
   ProcessingPurposeInput,
@@ -176,9 +170,6 @@ export async function pullTranscendConfiguration(
     consentManagerExperiences,
     consentVariants,
     consentThemes,
-    prompts,
-    promptPartials,
-    promptGroups,
     vendors,
     dataCategories,
     processingPurposes,
@@ -294,16 +285,6 @@ export async function pullTranscendConfiguration(
     // Fetch consent manager consent themes
     resources.includes(TranscendPullResource.ConsentManager)
       ? fetchConsentThemes(client, { logger })
-      : [],
-    // Fetch prompts
-    resources.includes(TranscendPullResource.Prompts) ? fetchAllPrompts(client, { logger }) : [],
-    // Fetch promptPartials
-    resources.includes(TranscendPullResource.PromptPartials)
-      ? fetchAllPromptPartials(client, { logger })
-      : [],
-    // Fetch promptGroups
-    resources.includes(TranscendPullResource.PromptGroups)
-      ? fetchAllPromptGroups(client, { logger })
       : [],
     // Fetch vendors
     resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client, { logger }) : [],
@@ -820,37 +801,6 @@ export async function pullTranscendConfiguration(
         plaintextContext,
         containsSensitiveData,
         status,
-      }),
-    );
-  }
-
-  // Save prompts
-  if (prompts.length > 0 && resources.includes(TranscendPullResource.Prompts)) {
-    result.prompts = prompts.map(
-      ({ title, content }): PromptInput => ({
-        title,
-        content,
-      }),
-    );
-  }
-
-  // Save promptPartials
-  if (promptPartials.length > 0 && resources.includes(TranscendPullResource.PromptPartials)) {
-    result['prompt-partials'] = promptPartials.map(
-      ({ title, content }): PromptPartialInput => ({
-        title,
-        content,
-      }),
-    );
-  }
-
-  // Save promptGroups
-  if (promptGroups.length > 0 && resources.includes(TranscendPullResource.PromptGroups)) {
-    result['prompt-groups'] = promptGroups.map(
-      ({ title, description, prompts }): PromptGroupInput => ({
-        title,
-        description,
-        prompts: prompts.map(({ title }) => title),
       }),
     );
   }

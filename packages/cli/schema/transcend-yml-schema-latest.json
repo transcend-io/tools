@@ -149,7 +149,6 @@
                   "ASSESSMENTS",
                   "PREFERENCE_MANAGEMENT",
                   "PROMPT_MANAGER",
-                  "CONTRACT_SCANNING",
                   "WEB_AUDITOR",
                   "SOMBRA",
                   "SILO_DISCOVERY",
@@ -303,8 +302,6 @@
                     "executeAuditor",
                     "viewCodeScanning",
                     "manageCodeScanning",
-                    "viewContractScanning",
-                    "manageContractScanning",
                     "viewAuditorRuns",
                     "viewAuditEvents",
                     "manageActionItemCollections",
@@ -5930,8 +5927,6 @@
                     "processingActivity",
                     "processingPurposeSubCategory",
                     "prompt",
-                    "promptGroup",
-                    "promptRun",
                     "request",
                     "scannedObject",
                     "scannedObjectPath",
@@ -40654,57 +40649,6 @@
         }
       }
     },
-    "prompts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "content"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "prompt-partials": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "content"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "prompt-groups": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "description", "prompts"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "prompts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
     "privacy-center": {
       "type": "object",
       "properties": {
@@ -43216,8 +43160,6 @@
                         "processingActivity",
                         "processingPurposeSubCategory",
                         "prompt",
-                        "promptGroup",
-                        "promptRun",
                         "request",
                         "scannedObject",
                         "scannedObjectPath",
@@ -43260,8 +43202,6 @@
                         "processingActivity",
                         "processingPurposeSubCategory",
                         "prompt",
-                        "promptGroup",
-                        "promptRun",
                         "request",
                         "scannedObject",
                         "scannedObjectPath",

@@ -1,3 +1,11 @@
 {
-  "excludeEntrypoints": ["tokens.css"]
+  "excludeEntrypoints": [
+    "tokens.css",
+    "tokens",
+    "tokens/tokens.resolver.json",
+    "tokens/primitive/palette.tokens.json",
+    "tokens/semantic/color.tokens.json",
+    "tokens/semantic/color-dark.tokens.json",
+    "tokens/semantic/typography.tokens.json"
+  ]
 }

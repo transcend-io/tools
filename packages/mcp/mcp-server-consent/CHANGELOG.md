@@ -1,5 +1,41 @@
 # @transcend-io/mcp-server-consent
 
+## 0.6.9
+
+### Patch Changes
+
+- Updated dependencies [f6ca084]
+- Updated dependencies [2cc726f]
+- Updated dependencies [66e641e]
+  - @transcend-io/mcp-server-base@0.14.0
+  - @transcend-io/privacy-types@5.15.0
+  - @transcend-io/sdk@1.9.2
+
+## 0.6.8
+
+### Patch Changes
+
+- Updated dependencies [8deab38]
+  - @transcend-io/privacy-types@5.14.0
+  - @transcend-io/sdk@1.9.1
+
+## 0.6.7
+
+### Patch Changes
+
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
+- Updated dependencies [4bc21f7]
+- Updated dependencies [e127dfc]
+- Updated dependencies [f3ce7dc]
+- Updated dependencies [6d2b56d]
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/mcp-server-base@0.13.0
+  - @transcend-io/privacy-types@5.13.0
+  - @transcend-io/sdk@1.9.0
+
 ## 0.6.6
 
 ### Patch Changes

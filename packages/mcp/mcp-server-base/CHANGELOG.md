@@ -1,5 +1,36 @@
 # @transcend-io/mcp-server-base
 
+## 0.14.0
+
+### Minor Changes
+
+- f6ca084: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 66e641e: Address MCP app configuration review follow-ups: hoist the client capability report in `buildMcpServer`, and name the HTML doctype check used by UI resources.
+
+## 0.13.0
+
+### Minor Changes
+
+- e127dfc: Split MCP usage attribution into two outbound headers: `x-transcend-mcp-caller` stays an `McpHostClient` value (including `unknown` when unrecognized), and `x-transcend-mcp-client-name` carries a sanitized `clientInfo.name` for discovering hosts not yet in the enum.
+
+  An explicitly forwarded caller header still wins, since a caller proxying on a user's behalf knows its own identity best. The discovery header is sent whenever a usable name exists, independent of caller. Sanitization uses an ASCII allowlist so client-controlled names cannot break outbound `fetch`.
+
+- f3ce7dc: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 4bc21f7: Gate test-only URL overrides behind `ALLOW_TEST_OVERRIDES=1` instead of `NODE_ENV=test` / Vitest detection. Unset or any other value disables the overrides. The Vitest suite sets the flag via `vitest.config.ts`.
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
 ## 0.12.0
 
 ### Minor Changes

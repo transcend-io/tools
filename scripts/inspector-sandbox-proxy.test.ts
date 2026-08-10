@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { restoreSandboxProxy } from './lib/mcp-app-dev.ts';
+import { restoreSandboxProxy, SandboxProxyOutcome } from './lib/mcp-app-dev.ts';
 
 const VENDORED_PROXY = fileURLToPath(
   new URL('./lib/inspector-sandbox-proxy.html', import.meta.url),
@@ -35,7 +35,7 @@ describe('restoreSandboxProxy', () => {
   it('writes the proxy document when the published package omitted it', () => {
     const installDir = fakeInstall();
 
-    expect(restoreSandboxProxy(installDir)).toBe('written');
+    expect(restoreSandboxProxy(installDir)).toBe(SandboxProxyOutcome.Written);
     expect(readFileSync(join(installDir, PROXY_PATH), 'utf8')).toBe(
       readFileSync(VENDORED_PROXY, 'utf8'),
     );
@@ -49,14 +49,14 @@ describe('restoreSandboxProxy', () => {
     mkdirSync(join(installDir, 'clients', 'web', 'static'), { recursive: true });
     writeFileSync(target, '<!doctype html><p>upstream</p>');
 
-    expect(restoreSandboxProxy(installDir)).toBe('present');
+    expect(restoreSandboxProxy(installDir)).toBe(SandboxProxyOutcome.Present);
     expect(readFileSync(target, 'utf8')).toBe('<!doctype html><p>upstream</p>');
   });
 
   it('creates nothing when the directory is not an Inspector install', () => {
     const installDir = fakeInstall({ withWebClient: false });
 
-    expect(restoreSandboxProxy(installDir)).toBe('unrecognized');
+    expect(restoreSandboxProxy(installDir)).toBe(SandboxProxyOutcome.Unrecognized);
     expect(existsSync(join(installDir, 'clients'))).toBe(false);
   });
 });

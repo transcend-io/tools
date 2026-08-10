@@ -29,8 +29,8 @@ describe('inspectorEnvArgs', () => {
   });
 
   it('never carries credentials into the command line', () => {
-    // Arguments are readable by anyone on the machine. `--http` is the path for a
-    // server that needs the API.
+    // Arguments are readable by anyone on the machine, so secrets stay out of
+    // them; stdio uses mcp-run.sh (secret.env) and `--http` inherits env.
     expect(inspectorEnvArgs({ TRANSCEND_API_KEY: 'secret', [DEV_VIEWS_ENV_VAR]: '1' })).toEqual([
       '-e',
       `${DEV_VIEWS_ENV_VAR}=1`,

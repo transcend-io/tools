@@ -1,5 +1,23 @@
 # @transcend-io/privacy-types
 
+## 5.15.0
+
+### Minor Changes
+
+- 2cc726f: Split `LoadOptions.themeConfigMap` so it accepts only `ThemeConfigurationMinimal` values, and add `MobileUiLoadOptions` with `themeConfigMap` mapped to full `ThemeConfiguration` values.
+
+## 5.14.0
+
+### Minor Changes
+
+- 8deab38: Remove `PromptGroup` and `PromptRun` from `AttributeSupportedResourceType`. Attributes remain supported on `Prompt`. Regenerate CLI transcend.yml JSON schemas to match.
+
+## 5.13.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
 ## 5.12.0
 
 ### Minor Changes

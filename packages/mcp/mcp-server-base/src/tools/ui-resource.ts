@@ -140,6 +140,9 @@ export function defineUiResource(config: UiResourceDefinition): UiResourceDefini
   return config;
 }
 
+/** Matches a leading HTML5 doctype (case-insensitive, optional leading whitespace). */
+const HTML5_DOCTYPE_PREFIX = /^\s*<!doctype html/i;
+
 /**
  * Rejects markup a host would render as a blank panel.
  *
@@ -150,7 +153,7 @@ export function assertHtmlDocument(uri: string, html: string): void {
   if (html.trim() === '') {
     throw new Error(`UI resource "${uri}" has empty HTML; hosts would render a blank iframe.`);
   }
-  if (!/^\s*<!doctype html/i.test(html)) {
+  if (!HTML5_DOCTYPE_PREFIX.test(html)) {
     throw new Error(
       `UI resource "${uri}" must be a complete HTML5 document starting with ` +
         '<!DOCTYPE html>. Hosts render the content as a standalone document, so an ' +
