@@ -58,7 +58,6 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       'For multi-select, provide an array of answer option values.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Creates assessment, prefills answers, assigns reviewers',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: PrefillSchema,
     handler: async ({

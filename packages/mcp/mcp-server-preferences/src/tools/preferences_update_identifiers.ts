@@ -23,7 +23,6 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     description: 'Update existing identifiers for a user (e.g., when email changes)',
     category: 'Preference Management',
     readOnly: false,
-    confirmationHint: 'Updates identifiers for the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: UpdateIdentifiersSchema,

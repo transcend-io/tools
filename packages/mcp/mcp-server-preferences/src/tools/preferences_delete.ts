@@ -15,7 +15,6 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
     description: 'Delete consent preferences for specified users',
     category: 'Preference Management',
     readOnly: false,
-    confirmationHint: 'Deletes preference data for the identifiers',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: DeletePreferencesSchema,

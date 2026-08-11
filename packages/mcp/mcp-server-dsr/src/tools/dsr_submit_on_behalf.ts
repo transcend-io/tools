@@ -24,7 +24,6 @@ export function createDsrSubmitOnBehalfTool(clients: ToolClients) {
       'Submit a Data Subject Request as an admin on behalf of a data subject (admin-dashboard flow). Use dsr_submit when the data subject is submitting their own.',
     category: 'DSR Automation',
     readOnly: false,
-    confirmationHint: 'Creates a new data subject request on behalf of a data subject',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: submitDsrOnBehalfSchema,
     handler: async ({ type, email, subjectType, coreIdentifier, locale, isSilent }) => {

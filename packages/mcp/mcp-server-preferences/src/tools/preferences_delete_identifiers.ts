@@ -16,7 +16,6 @@ export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {
     description: 'Delete specific identifiers from a user preference record',
     category: 'Preference Management',
     readOnly: false,
-    confirmationHint: 'Deletes identifiers from the user preference record',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: DeleteIdentifiersSchema,

@@ -30,7 +30,6 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients) {
       'Use inventory_update_data_silo afterward for vendor, purposes, owners, and other metadata.',
     category: 'Data Inventory',
     readOnly: false,
-    confirmationHint: 'Creates a new data silo in the inventory',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateDataSiloSchema,
     handler: async ({ integrationName, title, description }) => {
