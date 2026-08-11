@@ -5,13 +5,20 @@ import { getInventoryTools } from '../src/tools.js';
 const EXPECTED_TOOL_NAMES = [
   'inventory_list_data_silos',
   'inventory_get_data_silo',
+  'inventory_list_catalog_integrations',
   'inventory_create_data_silo',
   'inventory_update_data_silo',
   'inventory_list_vendors',
+  'inventory_write_vendor',
   'inventory_list_data_points',
+  'inventory_update_or_create_data_point',
   'inventory_list_sub_data_points',
   'inventory_list_identifiers',
   'inventory_list_categories',
+  'inventory_list_processing_purposes',
+  'inventory_write_processing_purpose',
+  'inventory_list_business_entities',
+  'inventory_list_data_subjects',
   'inventory_analyze',
 ] as const;
 
@@ -19,26 +26,40 @@ describe('Inventory Tools', () => {
   let mockGraphql: {
     listDataSilos: ReturnType<typeof vi.fn>;
     getDataSilo: ReturnType<typeof vi.fn>;
+    listCatalogs: ReturnType<typeof vi.fn>;
     createDataSilo: ReturnType<typeof vi.fn>;
     updateDataSilo: ReturnType<typeof vi.fn>;
     listVendors: ReturnType<typeof vi.fn>;
+    writeVendor: ReturnType<typeof vi.fn>;
     listDataPoints: ReturnType<typeof vi.fn>;
+    updateOrCreateDataPoint: ReturnType<typeof vi.fn>;
     listSubDataPoints: ReturnType<typeof vi.fn>;
     listIdentifiers: ReturnType<typeof vi.fn>;
     listDataCategories: ReturnType<typeof vi.fn>;
+    listProcessingPurposes: ReturnType<typeof vi.fn>;
+    writeProcessingPurpose: ReturnType<typeof vi.fn>;
+    listBusinessEntities: ReturnType<typeof vi.fn>;
+    listDataSubjects: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     mockGraphql = {
       listDataSilos: vi.fn(),
       getDataSilo: vi.fn(),
+      listCatalogs: vi.fn(),
       createDataSilo: vi.fn(),
       updateDataSilo: vi.fn(),
       listVendors: vi.fn(),
+      writeVendor: vi.fn(),
       listDataPoints: vi.fn(),
+      updateOrCreateDataPoint: vi.fn(),
       listSubDataPoints: vi.fn(),
       listIdentifiers: vi.fn(),
       listDataCategories: vi.fn(),
+      listProcessingPurposes: vi.fn(),
+      writeProcessingPurpose: vi.fn(),
+      listBusinessEntities: vi.fn(),
+      listDataSubjects: vi.fn(),
     };
   });
 
@@ -49,9 +70,9 @@ describe('Inventory Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 10 tools with expected names', () => {
+  it('registers exactly 17 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(10);
+    expect(tools).toHaveLength(17);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -65,13 +86,17 @@ describe('Inventory Tools', () => {
       expect((result as any).error.issues[0].path).toEqual(['dataSiloId']);
     });
 
-    it('returns data silo on success', async () => {
+    it('returns enriched data silo details on success', async () => {
       const detail = {
         id: 'silo-1',
         title: 'Salesforce',
         type: 'api' as const,
         isLive: true,
         createdAt: '2024-01-01T00:00:00.000Z',
+        notes: 'note',
+        vendor: { id: 'v-1', title: 'Acme' },
+        processingPurposeSubCategories: [{ id: 'pp-1', name: 'Other', purpose: 'ESSENTIAL' }],
+        subjects: [{ id: 'sub-1', type: 'customer', title: 'Customer' }],
       };
       mockGraphql.getDataSilo.mockResolvedValue(detail);
 
@@ -82,6 +107,45 @@ describe('Inventory Tools', () => {
 
       expect(result).toMatchObject({ success: true, data: detail });
       expect(mockGraphql.getDataSilo).toHaveBeenCalledWith('silo-1');
+    });
+  });
+
+  describe('inventory_update_data_silo', () => {
+    it('forwards extended Data Systems fields', async () => {
+      mockGraphql.updateDataSilo.mockResolvedValue({
+        id: 'silo-1',
+        title: 'Salesforce',
+        type: 'api',
+        isLive: true,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_update_data_silo')!;
+
+      await tool.handler({
+        dataSiloId: 'silo-1',
+        title: 'Salesforce',
+        ownerEmails: ['a@example.com'],
+        vendorId: 'v-1',
+        processingPurposeSubCategoryIds: ['pp-1'],
+        dataSubjectBlockListIds: ['sub-1'],
+        businessEntityTitles: ['Acme Corp'],
+        notes: 'updated',
+      });
+
+      expect(mockGraphql.updateDataSilo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'silo-1',
+          title: 'Salesforce',
+          ownerEmails: ['a@example.com'],
+          vendorId: 'v-1',
+          processingPurposeSubCategoryIds: ['pp-1'],
+          dataSubjectBlockListIds: ['sub-1'],
+          businessEntityTitles: ['Acme Corp'],
+          notes: 'updated',
+        }),
+      );
     });
   });
 
@@ -108,6 +172,28 @@ describe('Inventory Tools', () => {
       expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
         first: 10,
         offset: 0,
+        text: undefined,
+        titles: undefined,
+      });
+    });
+
+    it('forwards text and titles filters', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+
+      await tool.handler({ text: 'ZEL8168', titles: ['Acme'], limit: 10, offset: 0 });
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'ZEL8168',
+        titles: ['Acme'],
       });
     });
 
@@ -126,6 +212,8 @@ describe('Inventory Tools', () => {
       expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
         first: 100,
         offset: 100,
+        text: undefined,
+        titles: undefined,
       });
     });
 
@@ -136,6 +224,489 @@ describe('Inventory Tools', () => {
       const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
+    });
+  });
+
+  describe('inventory_list_data_points', () => {
+    it('forwards dataSiloId when provided', async () => {
+      mockGraphql.listDataPoints.mockResolvedValue({
+        nodes: [{ id: 'dp-1', name: 'users', dataSiloId: 'silo-1' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_points')!;
+
+      await tool.handler({ dataSiloId: 'silo-1', limit: 25, offset: 0 });
+
+      expect(mockGraphql.listDataPoints).toHaveBeenCalledWith('silo-1', {
+        first: 25,
+        offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter with dataSiloId', async () => {
+      mockGraphql.listDataPoints.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_points')!;
+
+      await tool.handler({ dataSiloId: 'silo-1', text: 'customers', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listDataPoints).toHaveBeenCalledWith('silo-1', {
+        first: 10,
+        offset: 0,
+        text: 'customers',
+      });
+    });
+
+    it('passes undefined dataSiloId when omitted', async () => {
+      mockGraphql.listDataPoints.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_points')!;
+
+      await tool.handler({ limit: 10, offset: 0 });
+
+      expect(mockGraphql.listDataPoints).toHaveBeenCalledWith(undefined, {
+        first: 10,
+        offset: 0,
+        text: undefined,
+      });
+    });
+  });
+
+  describe('inventory_list_catalog_integrations', () => {
+    it('returns catalog list from graphql mixin', async () => {
+      const nodes = [
+        {
+          integrationName: 'salesforce',
+          title: 'Salesforce',
+          description: 'CRM',
+          hasApiFunctionality: true,
+          hasAvcFunctionality: false,
+          alreadyConnected: 1,
+          integrationCategory: 'SALES_AND_CRM',
+        },
+      ];
+      mockGraphql.listCatalogs.mockResolvedValue({
+        nodes,
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_catalog_integrations')!;
+
+      const result = await tool.handler({ limit: 10, offset: 0 });
+
+      expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
+      expect(mockGraphql.listCatalogs).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter', async () => {
+      mockGraphql.listCatalogs.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_catalog_integrations')!;
+
+      await tool.handler({ text: 'salesforce', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listCatalogs).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'salesforce',
+      });
+    });
+
+    it('forwards pagination first/offset', async () => {
+      mockGraphql.listCatalogs.mockResolvedValue({
+        nodes: [],
+        totalCount: 100,
+        pageInfo: { hasNextPage: true, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_catalog_integrations')!;
+
+      await tool.handler({ limit: 25, offset: 50 });
+
+      expect(mockGraphql.listCatalogs).toHaveBeenCalledWith({
+        first: 25,
+        offset: 50,
+        text: undefined,
+      });
+    });
+  });
+
+  describe('inventory_create_data_silo', () => {
+    it('passes integrationName as catalog name with optional title and description', async () => {
+      mockGraphql.createDataSilo.mockResolvedValue({
+        id: 'silo-1',
+        title: 'My Custom Silo',
+        type: 'server',
+        description: 'Seeded',
+        isLive: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_create_data_silo')!;
+
+      const result = await tool.handler({
+        integrationName: 'server',
+        title: 'My Custom Silo',
+        description: 'Seeded',
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          message: 'Data silo "My Custom Silo" created successfully',
+        },
+      });
+      expect(mockGraphql.createDataSilo).toHaveBeenCalledWith({
+        name: 'server',
+        title: 'My Custom Silo',
+        description: 'Seeded',
+      });
+    });
+  });
+
+  describe('inventory_list_vendors', () => {
+    it('returns vendor list from graphql mixin', async () => {
+      const nodes = [
+        {
+          id: 'v-1',
+          title: 'Acme',
+          contactEmail: 'pat@example.com',
+          websiteUrl: 'https://acme.example',
+          createdAt: '2024-01-01T00:00:00.000Z',
+        },
+      ];
+      mockGraphql.listVendors.mockResolvedValue({
+        nodes,
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_vendors')!;
+
+      const result = await tool.handler({ limit: 10, offset: 0 });
+
+      expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
+      expect(mockGraphql.listVendors).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter', async () => {
+      mockGraphql.listVendors.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_vendors')!;
+
+      await tool.handler({ text: 'Acme', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listVendors).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'Acme',
+      });
+    });
+  });
+
+  describe('inventory_list_sub_data_points', () => {
+    it('returns fields including purposes and categories', async () => {
+      const nodes = [
+        {
+          id: 'sdp-1',
+          name: 'email',
+          purposes: [{ id: 'pp-1', name: 'Other', purpose: 'ESSENTIAL' }],
+          categories: [{ id: 'c-1', name: 'Email', category: 'CONTACT' }],
+        },
+      ];
+      mockGraphql.listSubDataPoints.mockResolvedValue({
+        nodes,
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_sub_data_points')!;
+
+      const result = await tool.handler({ dataPointId: 'dp-1', limit: 10, offset: 0 });
+
+      expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
+      expect(mockGraphql.listSubDataPoints).toHaveBeenCalledWith('dp-1', {
+        first: 10,
+        offset: 0,
+      });
+    });
+  });
+
+  describe('inventory_list_business_entities', () => {
+    it('returns list on success', async () => {
+      const nodes = [{ id: 'be-1', title: 'Acme Corp' }];
+      mockGraphql.listBusinessEntities.mockResolvedValue({
+        nodes,
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_business_entities')!;
+
+      const result = await tool.handler({ limit: 10, offset: 0 });
+
+      expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
+      expect(mockGraphql.listBusinessEntities).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+      });
+    });
+  });
+
+  describe('inventory_list_data_subjects', () => {
+    it('returns full subject list', async () => {
+      const nodes = [{ id: 'sub-1', type: 'CUSTOMER', title: 'Customer', active: true }];
+      mockGraphql.listDataSubjects.mockResolvedValue({
+        nodes,
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_subjects')!;
+
+      const result = await tool.handler({});
+
+      expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
+      expect(mockGraphql.listDataSubjects).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('inventory_update_or_create_data_point', () => {
+    it('creates/updates a datapoint with field purposes', async () => {
+      mockGraphql.updateOrCreateDataPoint.mockResolvedValue({ id: 'dp-1', name: 'users' });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_update_or_create_data_point')!;
+
+      const result = await tool.handler({
+        dataSiloId: 'silo-1',
+        name: 'users',
+        subDataPoints: [
+          {
+            name: 'email',
+            purposes: [{ purpose: 'ESSENTIAL', name: 'Other' }],
+          },
+        ],
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { dataPoint: { id: 'dp-1', name: 'users' } },
+      });
+      expect(mockGraphql.updateOrCreateDataPoint).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dataSiloId: 'silo-1',
+          name: 'users',
+          subDataPoints: [
+            expect.objectContaining({
+              name: 'email',
+              purposes: [{ purpose: 'ESSENTIAL', name: 'Other' }],
+            }),
+          ],
+        }),
+      );
+    });
+
+    it('zodSchema rejects invalid purpose enums', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_update_or_create_data_point')!;
+
+      const result = tool.zodSchema.safeParse({
+        dataSiloId: 'silo-1',
+        name: 'users',
+        subDataPoints: [{ name: 'email', purposes: [{ purpose: 'NOT_A_PURPOSE' }] }],
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('inventory_list_processing_purposes', () => {
+    it('returns list on success', async () => {
+      const nodes = [
+        { id: 'pp-1', name: 'Other', purpose: 'ESSENTIAL', description: 'Essential processing' },
+      ];
+      mockGraphql.listProcessingPurposes.mockResolvedValue({
+        nodes,
+        totalCount: 1,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_processing_purposes')!;
+
+      const result = await tool.handler({ limit: 10, offset: 0 });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        count: 1,
+        totalCount: 1,
+      });
+      expect(mockGraphql.listProcessingPurposes).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: undefined,
+      });
+    });
+
+    it('forwards text filter', async () => {
+      mockGraphql.listProcessingPurposes.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_processing_purposes')!;
+
+      await tool.handler({ text: 'Essential', limit: 10, offset: 0 });
+
+      expect(mockGraphql.listProcessingPurposes).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: 'Essential',
+      });
+    });
+  });
+
+  describe('inventory_write_processing_purpose', () => {
+    it('upserts by name and purpose', async () => {
+      const processingPurpose = {
+        id: 'pp-1',
+        name: 'Other',
+        purpose: 'ESSENTIAL',
+        description: 'Essential',
+      };
+      mockGraphql.writeProcessingPurpose.mockResolvedValue({
+        processingPurpose,
+        created: true,
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_processing_purpose')!;
+
+      const result = await tool.handler({ name: 'Other', purpose: 'ESSENTIAL' });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { processingPurpose, created: true },
+      });
+      expect(mockGraphql.writeProcessingPurpose).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Other', purpose: 'ESSENTIAL' }),
+      );
+    });
+
+    it('updates by id', async () => {
+      const processingPurpose = {
+        id: 'pp-1',
+        name: 'Other',
+        purpose: 'ESSENTIAL',
+        description: 'Updated',
+      };
+      mockGraphql.writeProcessingPurpose.mockResolvedValue({
+        processingPurpose,
+        created: false,
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_processing_purpose')!;
+
+      await tool.handler({ id: 'pp-1', description: 'Updated' });
+
+      expect(mockGraphql.writeProcessingPurpose).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'pp-1', description: 'Updated' }),
+      );
+    });
+
+    it('zodSchema rejects when neither id nor name+purpose provided', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_processing_purpose')!;
+
+      const result = tool.zodSchema.safeParse({ description: 'only description' });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('inventory_write_vendor', () => {
+    it('upserts a vendor by title', async () => {
+      const vendor = {
+        id: 'v-1',
+        title: 'Acme',
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      mockGraphql.writeVendor.mockResolvedValue({ vendor, created: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_vendor')!;
+
+      const result = await tool.handler({ title: 'Acme' });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { vendor, created: true },
+      });
+      expect(mockGraphql.writeVendor).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Acme', id: undefined }),
+      );
+    });
+
+    it('updates by vendorId', async () => {
+      const vendor = {
+        id: 'v-1',
+        title: 'Acme',
+        description: 'Updated',
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      mockGraphql.writeVendor.mockResolvedValue({ vendor, created: false });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_vendor')!;
+
+      await tool.handler({ vendorId: 'v-1', description: 'Updated' });
+
+      expect(mockGraphql.writeVendor).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'v-1', description: 'Updated' }),
+      );
     });
   });
 

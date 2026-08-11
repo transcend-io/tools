@@ -22,7 +22,6 @@ export function createWorkflowsUpdateConfigTool(clients: ToolClients) {
       'is not editable through this tool.',
     category: 'Workflows',
     readOnly: false,
-    confirmationHint: 'Updates the workflow configuration',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateWorkflowConfigSchema,
     handler: async ({ workflowConfigId, title, subtitle, description }) => {

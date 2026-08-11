@@ -13,6 +13,12 @@ export const MCP_CALLER_HEADER = 'x-transcend-mcp-caller';
 /** Raw client-reported name, for discovering hosts not yet in `McpHostClient` */
 export const MCP_CLIENT_NAME_HEADER = 'x-transcend-mcp-client-name';
 
+/**
+ * `@transcend-io/mcp-server-base` package version on outbound Transcend requests.
+ * Safe to group by on dashboards: the value is ours, not client-controlled.
+ */
+export const MCP_VERSION_HEADER = 'x-transcend-mcp-version';
+
 /** Transcend REST API dated version */
 export const TRANSCEND_VERSION_HEADER = 'X-Transcend-Version';
 

@@ -20,7 +20,6 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
       'Submit an assessment form for review. Optionally specify which sections to submit. This transitions the assessment toward the IN_REVIEW status. The response includes a `url` field pointing at the assessment-group page where reviewers can find the submitted form — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Submits assessment for review — cannot be undone',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: SubmitResponseSchema,
     handler: async ({ assessmentId, assessmentSectionIds }) => {

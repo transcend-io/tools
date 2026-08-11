@@ -1,20 +1,84 @@
 import {
   TranscendGraphQLBase,
+  type BusinessEntity,
+  type CatalogIntegration,
   type DataCategory,
   type DataPoint,
+  type DataPointUpdateOrCreateInput,
+  type DataPurpose,
   type DataSilo,
   type DataSiloCreateInput,
   type DataSiloDetails,
   type DataSiloType,
   type DataSiloUpdateInput,
+  type DataSubject,
   type Identifier,
   type ListOptions,
   type PaginatedResponse,
   type SubDataPoint,
   type Vendor,
+  type ProcessingPurposeCreateInput,
+  type ProcessingPurposeUpdateInput,
+  type ProcessingPurposeWriteInput,
+  type VendorCreateInput,
+  type VendorUpdateInput,
+  type VendorWriteInput,
 } from '@transcend-io/mcp-server-base';
+import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 
 import { graphql } from './__generated__/gql.js';
+
+/**
+ * Normalize empty / whitespace subcategory names to
+ * {@link DefaultPurposeSubCategoryType.Other} so read keys match write-tool defaults.
+ */
+function normalizeSubCategoryName(name: string | null | undefined): string {
+  return name && name.trim() ? name : DefaultPurposeSubCategoryType.Other;
+}
+
+function mapDataPurpose(node: {
+  id: string;
+  name: string;
+  purpose: string;
+  description?: string | null;
+}): DataPurpose {
+  return {
+    id: node.id,
+    name: normalizeSubCategoryName(node.name),
+    purpose: node.purpose,
+    description: node.description ?? undefined,
+  };
+}
+
+function mapDataCategory(node: {
+  id?: string | null;
+  name: string | null;
+  category: string;
+  description?: string | null;
+}): DataCategory {
+  return {
+    id: node.id ?? '',
+    name: normalizeSubCategoryName(node.name),
+    category: node.category,
+    description: node.description ?? undefined,
+  };
+}
+
+function mapDataSubject(node: {
+  id: string;
+  type: string;
+  active?: boolean | null;
+  title?: { defaultMessage: string } | string | null;
+}): DataSubject {
+  const title =
+    typeof node.title === 'string' ? node.title : (node.title?.defaultMessage ?? undefined);
+  return {
+    id: node.id,
+    type: node.type,
+    title,
+    active: node.active ?? undefined,
+  };
+}
 
 // The single-fetch operations (get/create/update) use the typed `graphql()`
 // tag so drift fails at compile time. The `list*` methods below intentionally
@@ -33,6 +97,55 @@ const GetDataSiloDoc = graphql(/* GraphQL */ `
       outerType
       createdAt
       connectionState
+      notes
+      contactName
+      contactEmail
+      websiteUrl
+      country
+      countrySubDivision
+      vendor {
+        id
+        title
+        description
+        contactName
+        contactEmail
+        websiteUrl
+        dataProcessingAgreementLink
+      }
+      processingPurposeSubCategories {
+        id
+        name
+        purpose
+        description
+      }
+      owners {
+        id
+        email
+        name
+      }
+      teams {
+        id
+        name
+      }
+      businessEntities {
+        id
+        title
+        description
+      }
+      subjects {
+        id
+        type
+        title {
+          defaultMessage
+        }
+      }
+      subjectBlocklist {
+        id
+        type
+        title {
+          defaultMessage
+        }
+      }
       identifiers {
         id
         name
@@ -76,6 +189,89 @@ const UpdateDataSilosDoc = graphql(/* GraphQL */ `
   }
 `);
 
+const UpdateOrCreateDataPointDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateOrCreateDataPoint($input: UpdateOrCreateDataPointInput!) {
+    updateOrCreateDataPoint(input: $input) {
+      dataPoint {
+        id
+        name
+      }
+    }
+  }
+`);
+
+const CreateProcessingPurposeSubCategoryDoc = graphql(/* GraphQL */ `
+  mutation InventoryCreateProcessingPurposeSubCategory(
+    $input: CreateProcessingPurposeCategoryInput!
+  ) {
+    createProcessingPurposeSubCategory(input: $input) {
+      processingPurposeSubCategory {
+        id
+        name
+        purpose
+        description
+      }
+    }
+  }
+`);
+
+const UpdateProcessingPurposeSubCategoriesDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateProcessingPurposeSubCategories(
+    $input: UpdateProcessingPurposeSubCategoriesInput!
+  ) {
+    updateProcessingPurposeSubCategories(input: $input) {
+      processingPurposeSubCategories {
+        id
+        name
+        purpose
+        description
+      }
+    }
+  }
+`);
+
+const CreateVendorDoc = graphql(/* GraphQL */ `
+  mutation InventoryCreateVendor($input: CreateVendorInput!) {
+    createVendor(input: $input) {
+      vendor {
+        id
+        title
+        description
+        dataProcessingAgreementLink
+        contactName
+        contactEmail
+        contactPhone
+        websiteUrl
+        address
+        headquarterCountry
+        headquarterSubDivision
+        createdAt
+      }
+    }
+  }
+`);
+
+const UpdateVendorsDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateVendors($input: UpdateVendorsInput!) {
+    updateVendors(input: $input) {
+      vendors {
+        id
+        title
+        description
+        dataProcessingAgreementLink
+        contactName
+        contactEmail
+        contactPhone
+        websiteUrl
+        address
+        headquarterCountry
+        headquarterSubDivision
+        createdAt
+      }
+    }
+  }
+`);
+
 function mapDataSilo<
   T extends {
     id: string;
@@ -96,11 +292,63 @@ function mapDataSilo<
   };
 }
 
+function mapVendorPreview<
+  T extends {
+    id: string;
+    title: string;
+    description?: string | null;
+    dataProcessingAgreementLink?: string | null;
+    contactName?: string | null;
+    contactEmail?: string | null;
+    contactPhone?: string | null;
+    websiteUrl?: string | null;
+    address?: string | null;
+    headquarterCountry?: string | null;
+    headquarterSubDivision?: string | null;
+    createdAt?: string | null;
+  },
+>(node: T): Vendor {
+  return {
+    id: node.id,
+    title: node.title,
+    description: node.description ?? undefined,
+    dataProcessingAgreementLink: node.dataProcessingAgreementLink ?? undefined,
+    contactName: node.contactName ?? undefined,
+    contactEmail: node.contactEmail ?? undefined,
+    contactPhone: node.contactPhone ?? undefined,
+    websiteUrl: node.websiteUrl ?? undefined,
+    address: node.address ?? undefined,
+    headquarterCountry: node.headquarterCountry ?? undefined,
+    headquarterSubDivision: node.headquarterSubDivision ?? undefined,
+    createdAt: node.createdAt ?? undefined,
+  };
+}
+
+/** Build a GraphQL filterBy object, omitting empty/undefined keys. */
+function buildFilterBy(parts: Record<string, unknown>): Record<string, unknown> | undefined {
+  const filterBy: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parts)) {
+    if (value === undefined || value === null || value === '') continue;
+    if (Array.isArray(value) && value.length === 0) continue;
+    filterBy[key] = value;
+  }
+  return Object.keys(filterBy).length > 0 ? filterBy : undefined;
+}
+
 export class InventoryMixin extends TranscendGraphQLBase {
-  async listDataSilos(options?: ListOptions): Promise<PaginatedResponse<DataSilo>> {
+  async listDataSilos(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+      /** Exact title matches (GraphQL filterBy.titles) */
+      titles?: string[];
+    },
+  ): Promise<PaginatedResponse<DataSilo>> {
+    const { text, titles, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text, titles });
     const query = `
-      query ListDataSilos($first: Int, $offset: Int) {
-        dataSilos(first: $first, offset: $offset) {
+      query ListDataSilos($first: Int, $offset: Int, $filterBy: DataSiloFiltersInput) {
+        dataSilos(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
             id
             title
@@ -113,7 +361,9 @@ export class InventoryMixin extends TranscendGraphQLBase {
         }
       }
     `;
-    return this.listConnection<DataSilo>(query, 'dataSilos', options);
+    return this.listConnection<DataSilo>(query, 'dataSilos', listOptions, {
+      variables: filterBy ? { filterBy } : {},
+    });
   }
 
   async getDataSilo(id: string): Promise<DataSiloDetails> {
@@ -128,6 +378,40 @@ export class InventoryMixin extends TranscendGraphQLBase {
       isLive: silo.isLive,
       outerType: silo.outerType ?? undefined,
       createdAt: silo.createdAt,
+      notes: silo.notes ?? undefined,
+      contactName: silo.contactName ?? undefined,
+      contactEmail: silo.contactEmail ?? undefined,
+      websiteUrl: silo.websiteUrl ?? undefined,
+      country: silo.country ?? undefined,
+      countrySubDivision: silo.countrySubDivision ?? undefined,
+      vendor: silo.vendor
+        ? {
+            id: silo.vendor.id,
+            title: silo.vendor.title,
+            description: silo.vendor.description ?? undefined,
+            contactName: silo.vendor.contactName ?? undefined,
+            contactEmail: silo.vendor.contactEmail ?? undefined,
+            websiteUrl: silo.vendor.websiteUrl ?? undefined,
+            dataProcessingAgreementLink: silo.vendor.dataProcessingAgreementLink ?? undefined,
+          }
+        : undefined,
+      processingPurposeSubCategories: silo.processingPurposeSubCategories?.map(mapDataPurpose),
+      owners: silo.owners?.map((owner) => ({
+        id: owner.id,
+        email: owner.email,
+        name: owner.name ?? undefined,
+      })),
+      teams: silo.teams?.map((team) => ({
+        id: team.id,
+        name: team.name,
+      })),
+      businessEntities: silo.businessEntities?.map((entity) => ({
+        id: entity.id,
+        title: entity.title,
+        description: entity.description ?? undefined,
+      })),
+      subjects: silo.subjects?.map(mapDataSubject),
+      subjectBlocklist: silo.subjectBlocklist?.map(mapDataSubject),
       identifiers: silo.identifiers?.map((idf) => ({
         id: idf.id,
         name: idf.name,
@@ -135,6 +419,54 @@ export class InventoryMixin extends TranscendGraphQLBase {
         isRequiredInForm: idf.isRequiredInForm ?? undefined,
       })),
     };
+  }
+
+  async listCatalogs(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<CatalogIntegration>> {
+    const { text, ...listOptions } = options ?? {};
+    // CatalogFiltersInput is non-null in schema — always send at least {}.
+    const filterBy = buildFilterBy({ text }) ?? {};
+    const query = `
+      query ListCatalogs($first: Int, $offset: Int, $filterBy: CatalogFiltersInput!) {
+        catalogs(first: $first, offset: $offset, filterBy: $filterBy) {
+          nodes {
+            integrationName
+            title
+            description
+            hasApiFunctionality
+            hasAvcFunctionality
+            alreadyConnected
+            integrationCategory
+          }
+          totalCount
+        }
+      }
+    `;
+    type RawCatalog = {
+      integrationName: string;
+      title: string;
+      description: string | null;
+      hasApiFunctionality: boolean;
+      hasAvcFunctionality: boolean;
+      alreadyConnected: number;
+      integrationCategory: string | null;
+    };
+    return this.listConnection<RawCatalog, CatalogIntegration>(query, 'catalogs', listOptions, {
+      variables: { filterBy },
+      mapNode: (node): CatalogIntegration => ({
+        integrationName: node.integrationName,
+        title: node.title,
+        description: node.description ?? undefined,
+        hasApiFunctionality: node.hasApiFunctionality,
+        hasAvcFunctionality: node.hasAvcFunctionality,
+        alreadyConnected: node.alreadyConnected,
+        integrationCategory: node.integrationCategory ?? undefined,
+      }),
+    });
   }
 
   async createDataSilo(input: DataSiloCreateInput): Promise<DataSilo> {
@@ -153,31 +485,142 @@ export class InventoryMixin extends TranscendGraphQLBase {
     return mapDataSilo(updated);
   }
 
-  async listVendors(options?: ListOptions): Promise<PaginatedResponse<Vendor>> {
+  async listVendors(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<Vendor>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text });
     const query = `
-      query ListVendors($first: Int, $offset: Int) {
-        vendors(first: $first, offset: $offset) {
+      query ListVendors($first: Int, $offset: Int, $filterBy: VendorsFiltersInput) {
+        vendors(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
             id
             title
+            description
+            dataProcessingAgreementLink
+            contactName
+            contactEmail
+            contactPhone
+            websiteUrl
+            address
+            headquarterCountry
+            headquarterSubDivision
+            createdAt
           }
           totalCount
         }
       }
     `;
-    return this.listConnection<Vendor>(query, 'vendors', options);
+    type RawVendor = {
+      id: string;
+      title: string;
+      description: string | null;
+      dataProcessingAgreementLink: string | null;
+      contactName: string | null;
+      contactEmail: string | null;
+      contactPhone: string | null;
+      websiteUrl: string | null;
+      address: string | null;
+      headquarterCountry: string | null;
+      headquarterSubDivision: string | null;
+      createdAt: string | null;
+    };
+    return this.listConnection<RawVendor, Vendor>(query, 'vendors', listOptions, {
+      variables: filterBy ? { filterBy } : {},
+      mapNode: mapVendorPreview,
+    });
+  }
+
+  async createVendor(input: VendorCreateInput): Promise<Vendor> {
+    const data = await this.makeRequest(CreateVendorDoc, { input: input as never });
+    return mapVendorPreview(data.createVendor.vendor);
+  }
+
+  async updateVendor(input: VendorUpdateInput): Promise<Vendor> {
+    const data = await this.makeRequest(UpdateVendorsDoc, {
+      input: { vendors: [input as never] },
+    });
+    const updated = data.updateVendors.vendors[0];
+    if (!updated) throw new Error('updateVendors returned an empty array');
+    return mapVendorPreview(updated);
+  }
+
+  /**
+   * Upsert a vendor: update by id when provided, otherwise look up by title
+   * and create if missing (CLI sync semantics).
+   */
+  async writeVendor(input: VendorWriteInput): Promise<{
+    /** Written vendor */
+    vendor: Vendor;
+    /** True when a new vendor was created */
+    created: boolean;
+  }> {
+    const fields = {
+      title: input.title,
+      description: input.description,
+      dataProcessingAgreementLink: input.dataProcessingAgreementLink,
+      contactName: input.contactName,
+      contactEmail: input.contactEmail,
+      contactPhone: input.contactPhone,
+      websiteUrl: input.websiteUrl,
+      address: input.address,
+      headquarterCountry: input.headquarterCountry,
+      headquarterSubDivision: input.headquarterSubDivision,
+    };
+
+    if (input.id) {
+      const vendor = await this.updateVendor({ id: input.id, ...fields });
+      return { vendor, created: false };
+    }
+
+    if (!input.title) {
+      throw new Error('writeVendor requires `id` or `title`');
+    }
+
+    const existing = await this.listVendors({ all: true });
+    const match = existing.nodes.find((v) => v.title === input.title);
+    if (match) {
+      const vendor = await this.updateVendor({ id: match.id, ...fields });
+      return { vendor, created: false };
+    }
+
+    const vendor = await this.createVendor({
+      title: input.title,
+      description: input.description ?? '',
+      dataProcessingAgreementLink: input.dataProcessingAgreementLink,
+      contactName: input.contactName,
+      contactEmail: input.contactEmail,
+      contactPhone: input.contactPhone,
+      websiteUrl: input.websiteUrl,
+      address: input.address,
+      headquarterCountry: input.headquarterCountry,
+      headquarterSubDivision: input.headquarterSubDivision,
+    });
+    return { vendor, created: true };
   }
 
   async listDataPoints(
-    _dataSiloId?: string,
-    options?: ListOptions,
+    dataSiloId?: string,
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
   ): Promise<PaginatedResponse<DataPoint>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({
+      dataSilos: dataSiloId ? [dataSiloId] : undefined,
+      text,
+    });
     const query = `
-      query ListDataPoints($first: Int, $offset: Int) {
-        dataPoints(first: $first, offset: $offset) {
+      query ListDataPoints($first: Int, $offset: Int, $filterBy: DataPointFiltersInput) {
+        dataPoints(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
             id
             name
+            dataSiloId
             title {
               defaultMessage
             }
@@ -192,18 +635,19 @@ export class InventoryMixin extends TranscendGraphQLBase {
     type RawDataPoint = {
       id: string;
       name: string;
+      dataSiloId: string;
       title: { defaultMessage: string };
       description: { defaultMessage: string } | null;
     };
     const toDataPoint = (dp: RawDataPoint): DataPoint => ({
       id: dp.id,
       name: dp.name,
+      dataSiloId: dp.dataSiloId,
       title: dp.title?.defaultMessage,
       description: dp.description?.defaultMessage,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     });
-    return this.listConnection<RawDataPoint, DataPoint>(query, 'dataPoints', options, {
+    return this.listConnection<RawDataPoint, DataPoint>(query, 'dataPoints', listOptions, {
+      variables: filterBy ? { filterBy } : {},
       mapNode: toDataPoint,
     });
   }
@@ -220,14 +664,223 @@ export class InventoryMixin extends TranscendGraphQLBase {
             name
             description
             accessRequestVisibilityEnabled
+            categories {
+              id
+              name
+              category
+            }
+            purposes {
+              id
+              name
+              purpose
+              description
+            }
           }
           totalCount
         }
       }
     `;
-    return this.listConnection<SubDataPoint>(query, 'subDataPoints', options, {
+    type RawSubDataPoint = {
+      id: string;
+      name: string;
+      description: string | null;
+      accessRequestVisibilityEnabled: boolean;
+      categories: { id: string; name: string | null; category: string }[];
+      purposes: {
+        id: string;
+        name: string;
+        purpose: string;
+        description: string;
+      }[];
+    };
+    return this.listConnection<RawSubDataPoint, SubDataPoint>(query, 'subDataPoints', options, {
       variables: { filterBy: { dataPoints: [dataPointId] } },
+      mapNode: (node): SubDataPoint => ({
+        id: node.id,
+        name: node.name,
+        description: node.description ?? undefined,
+        accessRequestVisibilityEnabled: node.accessRequestVisibilityEnabled,
+        categories: node.categories.map(mapDataCategory),
+        purposes: node.purposes.map(mapDataPurpose),
+      }),
     });
+  }
+
+  async listBusinessEntities(options?: ListOptions): Promise<PaginatedResponse<BusinessEntity>> {
+    const query = `
+      query ListBusinessEntities($first: Int, $offset: Int) {
+        businessEntities(first: $first, offset: $offset) {
+          nodes {
+            id
+            title
+            description
+          }
+          totalCount
+        }
+      }
+    `;
+    type RawEntity = {
+      id: string;
+      title: string;
+      description: string | null;
+    };
+    return this.listConnection<RawEntity, BusinessEntity>(query, 'businessEntities', options, {
+      mapNode: (node): BusinessEntity => ({
+        id: node.id,
+        title: node.title,
+        description: node.description ?? undefined,
+      }),
+    });
+  }
+
+  /**
+   * List org data subject types. Not offset-paginated at the GraphQL layer —
+   * returns the full `internalSubjects` set in one request.
+   */
+  async listDataSubjects(): Promise<PaginatedResponse<DataSubject>> {
+    const query = `
+      query ListDataSubjects {
+        internalSubjects {
+          id
+          type
+          active
+          title {
+            defaultMessage
+          }
+        }
+      }
+    `;
+    type RawSubject = {
+      id: string;
+      type: string;
+      active: boolean;
+      title: { defaultMessage: string } | null;
+    };
+    const data = await this.makeRequest<{ internalSubjects: RawSubject[] }>(query);
+    const nodes = data.internalSubjects.map(mapDataSubject);
+    return {
+      nodes,
+      totalCount: nodes.length,
+      pageInfo: { hasNextPage: false, hasPreviousPage: false },
+    };
+  }
+
+  async updateOrCreateDataPoint(
+    input: DataPointUpdateOrCreateInput,
+  ): Promise<{ id: string; name: string }> {
+    const data = await this.makeRequest(UpdateOrCreateDataPointDoc, {
+      input: input as never,
+    });
+    return data.updateOrCreateDataPoint.dataPoint;
+  }
+
+  async listProcessingPurposes(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<DataPurpose>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text });
+    const query = `
+      query ListProcessingPurposes(
+        $first: Int
+        $offset: Int
+        $filterBy: ProcessingPurposeCategoryFiltersInput
+      ) {
+        processingPurposeSubCategories(first: $first, offset: $offset, filterBy: $filterBy) {
+          nodes {
+            id
+            name
+            purpose
+            description
+          }
+          totalCount
+        }
+      }
+    `;
+    type RawPurpose = {
+      id: string;
+      name: string;
+      purpose: string;
+      description: string;
+    };
+    return this.listConnection<RawPurpose, DataPurpose>(
+      query,
+      'processingPurposeSubCategories',
+      listOptions,
+      {
+        variables: filterBy ? { filterBy } : {},
+        mapNode: mapDataPurpose,
+      },
+    );
+  }
+
+  async createProcessingPurpose(input: ProcessingPurposeCreateInput): Promise<DataPurpose> {
+    const data = await this.makeRequest(CreateProcessingPurposeSubCategoryDoc, {
+      input: input as never,
+    });
+    const created = data.createProcessingPurposeSubCategory.processingPurposeSubCategory;
+    return mapDataPurpose(created);
+  }
+
+  async updateProcessingPurpose(input: ProcessingPurposeUpdateInput): Promise<DataPurpose> {
+    const data = await this.makeRequest(UpdateProcessingPurposeSubCategoriesDoc, {
+      input: { processingPurposeSubCategories: [input as never] },
+    });
+    const updated = data.updateProcessingPurposeSubCategories.processingPurposeSubCategories[0];
+    if (!updated) {
+      throw new Error('updateProcessingPurposeSubCategories returned an empty array');
+    }
+    return mapDataPurpose(updated);
+  }
+
+  /**
+   * Upsert a processing purpose subcategory: update by id when provided,
+   * otherwise look up by `name:purpose` and create if missing (CLI sync semantics).
+   * Empty API names are treated as {@link DefaultPurposeSubCategoryType.Other} when matching.
+   */
+  async writeProcessingPurpose(input: ProcessingPurposeWriteInput): Promise<{
+    /** Written processing purpose */
+    processingPurpose: DataPurpose;
+    /** True when a new subcategory was created */
+    created: boolean;
+  }> {
+    if (input.id) {
+      const processingPurpose = await this.updateProcessingPurpose({
+        id: input.id,
+        name: input.name,
+        purpose: input.purpose,
+        description: input.description,
+      });
+      return { processingPurpose, created: false };
+    }
+
+    if (!input.name || !input.purpose) {
+      throw new Error('writeProcessingPurpose requires `id`, or both `name` and `purpose`');
+    }
+
+    const wantedName = normalizeSubCategoryName(input.name);
+    const existing = await this.listProcessingPurposes({ all: true });
+    const match = existing.nodes.find(
+      (p) => normalizeSubCategoryName(p.name) === wantedName && p.purpose === input.purpose,
+    );
+    if (match) {
+      const processingPurpose = await this.updateProcessingPurpose({
+        id: match.id,
+        name: input.name,
+        purpose: input.purpose,
+        description: input.description,
+      });
+      return { processingPurpose, created: false };
+    }
+
+    const processingPurpose = await this.createProcessingPurpose({
+      name: input.name,
+      purpose: input.purpose,
+      description: input.description,
+    });
+    return { processingPurpose, created: true };
   }
 
   async listIdentifiers(options?: ListOptions): Promise<PaginatedResponse<Identifier>> {

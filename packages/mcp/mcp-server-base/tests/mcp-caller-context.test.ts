@@ -2,6 +2,7 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import type { Implementation } from '@modelcontextprotocol/sdk/types.js';
 import { describe, it, expect } from 'vitest';
 
+import packageJson from '../package.json' with { type: 'json' };
 import { McpClientCapability, McpHostClient } from '../src/capabilities/types.js';
 import {
   MCP_CALLER_HEADER,
@@ -9,6 +10,7 @@ import {
   requestMcpCallerContext,
   resolveMcpCallerAttribution,
   resolveMcpClientName,
+  resolveMcpPackageVersion,
   sanitizeMcpClientName,
 } from '../src/mcp-caller-context.js';
 import { mcpSessionContext } from '../src/mcp-session-context.js';
@@ -154,5 +156,12 @@ describe('resolveMcpClientName', () => {
 
   it('returns undefined outside a request', () => {
     expect(resolveMcpClientName()).toBeUndefined();
+  });
+});
+
+describe('resolveMcpPackageVersion', () => {
+  it('returns this package version from the manifest', () => {
+    expect(resolveMcpPackageVersion()).toBe(packageJson.version);
+    expect(resolveMcpPackageVersion()).toMatch(/^\d+\.\d+\.\d+/);
   });
 });

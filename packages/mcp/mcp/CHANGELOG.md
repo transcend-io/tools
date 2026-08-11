@@ -1,5 +1,73 @@
 # @transcend-io/mcp
 
+## 0.10.0
+
+### Minor Changes
+
+- 2faaff6: Add `inventory_update_or_create_data_point` for field-level purpose of processing assignments (ZEL-8168).
+- 5b239dc: Improve inventory MCP DX: split data-silo create into catalog `integrationName` + optional display `title`/`description`, add `text` (and silo `titles`) list filters, and stop fabricating datapoint timestamps.
+- 5b239dc: Add `inventory_list_catalog_integrations` so agents can search the Transcend catalog for valid `integrationName` values before creating a data silo.
+- 6293072: Add processing purpose list/write MCP tools and expand `inventory_update_data_silo` for Data Systems fields (ZEL-8168 stack).
+- daffc18: Enrich inventory MCP read tools with silo vendor/purposes/owners metadata, datapoint filtering, vendor field detail, and subcategory normalization; add `inventory_list_business_entities` and `inventory_list_data_subjects` (ZEL-8168 stack PR1).
+- dc9ab41: Add `inventory_write_vendor` MCP tool to create/update vendors in Data Inventory (ZEL-8168 stack).
+
+### Patch Changes
+
+- 5b239dc: Tool copy changes
+- 5b239dc: Small type adjustment to Datapoint
+- Updated dependencies [2faaff6]
+- Updated dependencies [5b239dc]
+- Updated dependencies [5b239dc]
+- Updated dependencies [6293072]
+- Updated dependencies [daffc18]
+- Updated dependencies [dc9ab41]
+- Updated dependencies [5b239dc]
+- Updated dependencies [97fa941]
+- Updated dependencies [5b239dc]
+- Updated dependencies [80d9f9e]
+  - @transcend-io/mcp-server-inventory@0.6.0
+  - @transcend-io/mcp-server-base@1.1.0
+  - @transcend-io/mcp-server-admin@0.5.11
+  - @transcend-io/mcp-server-assessment@0.5.11
+  - @transcend-io/mcp-server-consent@0.6.11
+  - @transcend-io/mcp-server-dsr@0.5.11
+  - @transcend-io/mcp-server-preferences@0.5.11
+  - @transcend-io/mcp-server-workflows@0.5.11
+  - @transcend-io/mcp-server-discovery@0.5.11
+  - @transcend-io/mcp-server-docs@0.3.13
+
+## 0.9.4
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@1.0.0
+- @transcend-io/mcp-server-admin@0.5.10
+- @transcend-io/mcp-server-assessment@0.5.10
+- @transcend-io/mcp-server-consent@0.6.10
+- @transcend-io/mcp-server-discovery@0.5.10
+- @transcend-io/mcp-server-docs@0.3.12
+- @transcend-io/mcp-server-dsr@0.5.10
+- @transcend-io/mcp-server-inventory@0.5.10
+- @transcend-io/mcp-server-preferences@0.5.10
+- @transcend-io/mcp-server-workflows@0.5.10
+
+## 0.9.3
+
+### Patch Changes
+
+- Updated dependencies [f6ca084]
+- Updated dependencies [66e641e]
+  - @transcend-io/mcp-server-base@0.14.0
+  - @transcend-io/mcp-server-admin@0.5.9
+  - @transcend-io/mcp-server-assessment@0.5.9
+  - @transcend-io/mcp-server-consent@0.6.9
+  - @transcend-io/mcp-server-discovery@0.5.9
+  - @transcend-io/mcp-server-docs@0.3.11
+  - @transcend-io/mcp-server-dsr@0.5.9
+  - @transcend-io/mcp-server-inventory@0.5.9
+  - @transcend-io/mcp-server-preferences@0.5.9
+  - @transcend-io/mcp-server-workflows@0.5.9
+
 ## 0.9.2
 
 ### Patch Changes

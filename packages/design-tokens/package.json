@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/design-tokens",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Centralized design token primitives and semantics for Transcend frontends.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/design-tokens",
   "license": "Apache-2.0",
@@ -11,7 +11,8 @@
     "directory": "packages/design-tokens"
   },
   "files": [
-    "dist"
+    "dist",
+    "tokens"
   ],
   "type": "module",
   "sideEffects": [
@@ -27,7 +28,13 @@
     "./tokens.css": {
       "@transcend-io/source": "./src/tokens.css",
       "default": "./dist/tokens.css"
-    }
+    },
+    "./tokens": "./tokens/tokens.resolver.json",
+    "./tokens/tokens.resolver.json": "./tokens/tokens.resolver.json",
+    "./tokens/primitive/palette.tokens.json": "./tokens/primitive/palette.tokens.json",
+    "./tokens/semantic/color.tokens.json": "./tokens/semantic/color.tokens.json",
+    "./tokens/semantic/color-dark.tokens.json": "./tokens/semantic/color-dark.tokens.json",
+    "./tokens/semantic/typography.tokens.json": "./tokens/semantic/typography.tokens.json"
   },
   "publishConfig": {
     "access": "public"

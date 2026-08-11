@@ -1,5 +1,41 @@
 # @transcend-io/mcp-server-base
 
+## 1.1.0
+
+### Minor Changes
+
+- 97fa941: Send `@transcend-io/mcp-server-base`'s own package version on outbound Transcend requests as `x-transcend-mcp-version`, so rollout dashboards can tell which clients have upgraded rather than inferring age from missing attribution headers.
+
+### Patch Changes
+
+- 2faaff6: Add `inventory_update_or_create_data_point` for field-level purpose of processing assignments (ZEL-8168).
+- 5b239dc: Improve inventory MCP DX: split data-silo create into catalog `integrationName` + optional display `title`/`description`, add `text` (and silo `titles`) list filters, and stop fabricating datapoint timestamps.
+- 5b239dc: Add `inventory_list_catalog_integrations` so agents can search the Transcend catalog for valid `integrationName` values before creating a data silo.
+- 6293072: Add processing purpose list/write MCP tools and expand `inventory_update_data_silo` for Data Systems fields (ZEL-8168 stack).
+- daffc18: Enrich inventory MCP read tools with silo vendor/purposes/owners metadata, datapoint filtering, vendor field detail, and subcategory normalization; add `inventory_list_business_entities` and `inventory_list_data_subjects` (ZEL-8168 stack PR1).
+- dc9ab41: Add `inventory_write_vendor` MCP tool to create/update vendors in Data Inventory (ZEL-8168 stack).
+- 5b239dc: Tool copy changes
+- 5b239dc: Small type adjustment to Datapoint
+
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [77ef86f]
+  - @transcend-io/design-tokens@1.2.0
+
+## 0.14.0
+
+### Minor Changes
+
+- f6ca084: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 66e641e: Address MCP app configuration review follow-ups: hoist the client capability report in `buildMcpServer`, and name the HTML doctype check used by UI resources.
+
 ## 0.13.0
 
 ### Minor Changes
