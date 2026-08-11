@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-inventory
 
+## 0.5.10
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@1.0.0
+
 ## 0.5.9
 
 ### Patch Changes
