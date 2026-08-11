@@ -38,6 +38,11 @@ export const DsrErrorCode = makeEnum({
   UnsupportedIdentifierName: 'UNSUPPORTED_IDENTIFIER_NAME',
   /** This request has no email, which is required outside silent mode. */
   MissingRequiredEmail: 'MISSING_REQUIRED_EMAIL',
+  /**
+   * One or more `dataSiloIds` on this request are not connected to the
+   * workflow config. `dataSiloIds` may only narrow the workflow's connected set.
+   */
+  DataSiloNotInWorkflow: 'DATA_SILO_NOT_IN_WORKFLOW',
 });
 
 /** Type override */

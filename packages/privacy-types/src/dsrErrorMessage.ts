@@ -41,6 +41,14 @@ export interface UnknownDropRecordsMessageInput {
   dropListType: DropListType;
 }
 
+/** Inputs for the {@link DsrErrorCode.DataSiloNotInWorkflow} message builder. */
+export interface DataSiloNotInWorkflowMessageInput {
+  /** Workflow config the submission targeted */
+  workflowConfigId: string;
+  /** dataSiloIds that are not connected to that workflow config */
+  dataSiloIds: readonly string[];
+}
+
 /** Canonical message builder for each {@link DsrErrorCode}. */
 export type DsrErrorMessageMap = {
   [DsrErrorCode.InvalidWorkflowConfigId]: () => string;
@@ -58,6 +66,7 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) => string;
   [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
   [DsrErrorCode.MissingRequiredEmail]: () => string;
+  [DsrErrorCode.DataSiloNotInWorkflow]: (input: DataSiloNotInWorkflowMessageInput) => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -125,4 +134,11 @@ export const DSR_ERROR_MESSAGE = {
     `The organization does not support identifiers with name: "${name}" at time of request submission.`,
   [DsrErrorCode.MissingRequiredEmail]: () =>
     'At least one email must be provided before a request can be created when not in silent mode',
+  [DsrErrorCode.DataSiloNotInWorkflow]: ({
+    workflowConfigId,
+    dataSiloIds,
+  }: DataSiloNotInWorkflowMessageInput) =>
+    `The following dataSiloIds are not connected to the workflow config ` +
+    `"${workflowConfigId}": ${dataSiloIds.join(', ')}. ` +
+    `dataSiloIds may only narrow the workflow's connected data silos.`,
 } as const satisfies DsrErrorMessageMap;
