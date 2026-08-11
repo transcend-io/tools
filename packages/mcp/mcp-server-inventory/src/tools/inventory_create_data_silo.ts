@@ -26,10 +26,8 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_create_data_silo',
     description:
-      'Create a new data silo (data system or integration). Requires a catalog `integrationName` ' +
-      '(e.g. "server", "salesforce"). Discover valid names with inventory_list_catalog_integrations. ' +
-      'Optionally set a display `title` and `description` on create; use inventory_update_data_silo ' +
-      'afterward for vendor, purposes, owners, and other metadata.',
+      'Create a new data silo (data system or integration). ' +
+      'Use inventory_update_data_silo afterward for vendor, purposes, owners, and other metadata.',
     category: 'Data Inventory',
     readOnly: false,
     confirmationHint: 'Creates a new data silo in the inventory',

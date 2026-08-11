@@ -32,8 +32,7 @@ export function createInventoryListProcessingPurposesTool(clients: ToolClients) 
       'List processing purpose subcategories from the Processing Purposes table in Data Inventory. ' +
       `Empty subcategory names are normalized to "${DefaultPurposeSubCategoryType.Other}" to match write-tool defaults. ` +
       'Use these IDs when assigning silo-level purposes via inventory_update_data_silo, or match ' +
-      '`purpose`/`name` pairs when assigning field-level purposes via inventory_update_or_create_data_point. ' +
-      'Pass `text` to search. Paginate with `offset` until `hasNextPage` is false.',
+      '`purpose`/`name` pairs when assigning field-level purposes via inventory_update_or_create_data_point.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
