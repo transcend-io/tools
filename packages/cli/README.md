@@ -202,18 +202,7 @@ data-silos:
 
 When an erasure request runs, `deletion-dependencies` holds off deleting from a data silo until the data silos it lists have finished deleting.
 
-Use a list of titles when there are no per-workflow overrides:
-
-```yaml
-data-silos:
-  - title: Salesforce
-    integrationName: server
-    deletion-dependencies:
-      - Identity Service
-      - CRM Warehouse
-```
-
-Once any override is present, use a list of objects for the whole field (global deps as `{ titles }`, overrides as `{ workflow, titles }` or `{ workflow, reset-to-global: true }`). Mixing titles and objects in the same list is not allowed:
+Use a list of objects: `{ titles }` for the global configuration, and `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for each per-workflow override. Mixing titles and objects in the same list is not allowed:
 
 ```yaml
 data-silos:
@@ -234,6 +223,17 @@ data-silos:
       # Removes a previously configured override so the workflow uses the global configuration again
       - workflow: Legacy Erasure
         reset-to-global: true
+```
+
+**Legacy:** a bare list of titles is still accepted for global-only configuration:
+
+```yaml
+data-silos:
+  - title: Salesforce
+    integrationName: server
+    deletion-dependencies:
+      - Identity Service
+      - CRM Warehouse
 ```
 
 `workflow` is the internal name of an erasure workflow, which you can find under [DSR Automation -> Workflows](https://app.transcend.io/privacy-requests/workflows). Overrides are only supported on erasure workflows, and the data silo and everything it depends on must already be part of that workflow.

@@ -1308,7 +1308,7 @@ export type IntlMessageInput = t.TypeOf<typeof IntlMessageInput>;
  * An empty `titles` list scoped to a workflow is an explicit override, meaning
  * that workflow runs the data silo with no dependencies at all.
  */
-export const DeletionDependencyGroup = t.intersection([
+export const DeletionDependency = t.intersection([
   t.type({
     /**
      * The titles of the data silos that must be deleted from first. This list can contain
@@ -1327,7 +1327,7 @@ export const DeletionDependencyGroup = t.intersection([
 ]);
 
 /** Type override */
-export type DeletionDependencyGroup = t.TypeOf<typeof DeletionDependencyGroup>;
+export type DeletionDependency = t.TypeOf<typeof DeletionDependency>;
 
 /**
  * Removes a workflow's deletion dependency override so that the workflow falls back
@@ -1345,24 +1345,23 @@ export type DeletionDependencyReset = t.TypeOf<typeof DeletionDependencyReset>;
 
 /**
  * A single object entry in a data silo's `deletion-dependencies` list.
- * Used when the list includes any per-workflow override; global dependencies
- * are written as `{ titles: [...] }` in that form.
+ * Global dependencies are written as `{ titles: [...] }`; per-workflow overrides
+ * include a `workflow` key.
  */
-export const DeletionDependencyObject = t.union([DeletionDependencyGroup, DeletionDependencyReset]);
+export const DeletionDependencyInput = t.union([DeletionDependency, DeletionDependencyReset]);
 
 /** Type override */
-export type DeletionDependencyObject = t.TypeOf<typeof DeletionDependencyObject>;
+export type DeletionDependencyInput = t.TypeOf<typeof DeletionDependencyInput>;
 
 /**
  * The `deletion-dependencies` field for a data silo.
  *
- * Use a list of titles when there are no per-workflow overrides. Once any
- * override is present, use a list of objects instead (global deps as
- * `{ titles: [...] }`, overrides as `{ workflow, titles }` or
- * `{ workflow, reset-to-global: true }`). Mixing strings and objects in the
- * same list is not allowed.
+ * Prefer a list of objects: `{ titles: [...] }` for the global configuration and
+ * `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for each override.
+ * A bare list of titles is still accepted for global-only configuration. Mixing
+ * titles and objects in the same list is not allowed.
  */
-export const DeletionDependencies = t.union([t.array(t.string), t.array(DeletionDependencyObject)]);
+export const DeletionDependencies = t.union([t.array(t.string), t.array(DeletionDependencyInput)]);
 
 /** Type override */
 export type DeletionDependencies = t.TypeOf<typeof DeletionDependencies>;
@@ -1417,10 +1416,10 @@ export const DataSiloInput = t.intersection([
      * until all of the following data silos were deleted first. This list can contain other internal
      * systems defined in this file, as well as any of the SaaS tools connected in your Transcend instance.
      *
-     * A list of titles sets the global configuration only. To include per-workflow overrides,
-     * use a list of objects instead: `{ titles: [...] }` for the global configuration and
+     * Prefer a list of objects: `{ titles: [...] }` for the global configuration and
      * `{ workflow, titles }` (or `{ workflow, reset-to-global: true }`) for each override.
-     * Workflows that are not listed keep whatever configuration they already have.
+     * A bare list of titles is still accepted for global-only configuration. Workflows that
+     * are not listed keep whatever configuration they already have.
      */
     'deletion-dependencies': DeletionDependencies,
     /**

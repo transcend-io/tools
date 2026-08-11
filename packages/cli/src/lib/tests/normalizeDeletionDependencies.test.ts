@@ -1,6 +1,6 @@
 import { expect, describe, it } from 'vitest';
 
-import type { DeletionDependencyObject } from '../../codecs.js';
+import type { DeletionDependencyInput } from '../../codecs.js';
 import { normalizeDeletionDependencies } from '../graphql/normalizeDeletionDependencies.js';
 
 describe('normalizeDeletionDependencies', () => {
@@ -19,22 +19,13 @@ describe('normalizeDeletionDependencies', () => {
     ).to.deep.equal([{ titles: ['Identity Service', 'CRM Warehouse'] }]);
   });
 
-  it('merges multiple global object entries into one', () => {
-    expect(
+  it('rejects multiple global object entries', () => {
+    expect(() =>
       normalizeDeletionDependencies(
         [{ titles: ['Identity Service'] }, { titles: ['CRM Warehouse'] }],
         'Salesforce',
       ),
-    ).to.deep.equal([{ titles: ['Identity Service', 'CRM Warehouse'] }]);
-  });
-
-  it('deduplicates global titles across object entries', () => {
-    expect(
-      normalizeDeletionDependencies(
-        [{ titles: ['Identity Service'] }, { titles: ['Identity Service', 'CRM Warehouse'] }],
-        'Salesforce',
-      ),
-    ).to.deep.equal([{ titles: ['Identity Service', 'CRM Warehouse'] }]);
+    ).to.throw('multiple global deletion-dependencies entries');
   });
 
   it('scopes entries with a workflow to that workflow', () => {
@@ -111,7 +102,7 @@ describe('normalizeDeletionDependencies', () => {
             workflow: 'GDPR Erasure',
             'reset-to-global': true,
             titles: ['Identity Service'],
-          } as DeletionDependencyObject,
+          } as DeletionDependencyInput,
         ],
         'Salesforce',
       ),

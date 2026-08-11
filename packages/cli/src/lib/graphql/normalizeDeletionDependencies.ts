@@ -1,15 +1,15 @@
 import type { DependedOnDataSiloInput } from '@transcend-io/sdk';
 import { uniq } from 'lodash-es';
 
-import type { DeletionDependencies, DeletionDependencyObject } from '../../codecs.js';
+import type { DeletionDependencies, DeletionDependencyInput } from '../../codecs.js';
 
 /**
  * Convert the `deletion-dependencies` entries for a single data silo into the
  * `dependedOnDataSilos` input accepted by the `updateDataSilos` mutation.
  *
  * A list of titles becomes a single global entry. A list of objects may declare
- * the global configuration (`{ titles }`) and/or per-workflow overrides; workflows
- * that are absent from the list are left untouched.
+ * at most one global configuration (`{ titles }`) plus per-workflow overrides;
+ * workflows that are absent from the list are left untouched.
  *
  * @param dependencies - The `deletion-dependencies` entries from transcend.yml
  * @param dataSiloTitle - Title of the data silo being synced, used in error messages
@@ -28,8 +28,7 @@ export function normalizeDeletionDependencies(
     return [{ titles: uniq(dependencies as string[]) }];
   }
 
-  const globalTitles: string[] = [];
-  let hasGlobalEntry = false;
+  let globalTitles: string[] | undefined;
   const workflowOverrides: DependedOnDataSiloInput[] = [];
   const seenWorkflows = new Set<string>();
 
@@ -54,7 +53,7 @@ export function normalizeDeletionDependencies(
     workflowOverrides.push({ workflowConfigInternalName: workflow, ...override });
   };
 
-  (dependencies as DeletionDependencyObject[]).forEach((dependency) => {
+  (dependencies as DeletionDependencyInput[]).forEach((dependency) => {
     // io-ts codecs allow extra properties, so this combination decodes cleanly
     // even though the two halves contradict each other
     if ('reset-to-global' in dependency && 'titles' in dependency) {
@@ -76,11 +75,17 @@ export function normalizeDeletionDependencies(
       return;
     }
 
-    hasGlobalEntry = true;
-    globalTitles.push(...dependency.titles);
+    if (globalTitles !== undefined) {
+      throw new Error(
+        `Data silo "${dataSiloTitle}" has multiple global deletion-dependencies entries. ` +
+          'Combine them into a single `{ titles: [...] }` entry.',
+      );
+    }
+    globalTitles = dependency.titles;
   });
 
-  // The API rejects duplicate titles, which are easy to introduce across multiple
-  // global `{ titles }` entries
-  return [...(hasGlobalEntry ? [{ titles: uniq(globalTitles) }] : []), ...workflowOverrides];
+  return [
+    ...(globalTitles !== undefined ? [{ titles: uniq(globalTitles) }] : []),
+    ...workflowOverrides,
+  ];
 }

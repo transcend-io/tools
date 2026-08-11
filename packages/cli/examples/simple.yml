@@ -89,9 +89,9 @@ data-silos:
     # until all of the following data silos were deleted first. This list can contain other internal
     # systems defined in this file, as well as any of the SaaS tools connected in your Transcend instance.
     #
-    # A list of titles sets the global configuration only. Once any per-workflow override is
-    # present, use objects for the whole list: `{ titles: [...] }` for global, and
+    # Prefer a list of objects: `{ titles: [...] }` for global, and
     # `{ workflow, titles }` (or `{ workflow, reset-to-global: true }`) for each override.
+    # A bare list of titles is still accepted for global-only configuration.
     # Workflows that are not listed keep whatever configuration they already have.
     deletion-dependencies:
       - titles:
