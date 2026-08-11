@@ -1,9 +1,14 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
-import { MCP_CALLER_HEADER, MCP_CLIENT_NAME_HEADER } from './http-header-names.js';
+import {
+  MCP_CALLER_HEADER,
+  MCP_CLIENT_NAME_HEADER,
+  MCP_VERSION_HEADER,
+} from './http-header-names.js';
 import { getMcpSession } from './mcp-session-context.js';
 
-export { MCP_CALLER_HEADER, MCP_CLIENT_NAME_HEADER };
+export { MCP_CALLER_HEADER, MCP_CLIENT_NAME_HEADER, MCP_VERSION_HEADER };
+export { resolveMcpPackageVersion } from './mcp-package-version.js';
 
 /**
  * Cap on inferred labels from raw `clientInfo.name`, so a pathological host
