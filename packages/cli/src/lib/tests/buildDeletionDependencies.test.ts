@@ -56,7 +56,7 @@ describe('buildDeletionDependenciesInput', () => {
     ).to.deep.equal({ 'deletion-dependencies': ['Identity Service'] });
   });
 
-  it('writes workflow overrides keyed by internal name', () => {
+  it('writes workflow overrides as a full object list', () => {
     expect(
       buildDeletionDependenciesInput(
         {
@@ -73,7 +73,7 @@ describe('buildDeletionDependenciesInput', () => {
       ),
     ).to.deep.equal({
       'deletion-dependencies': [
-        'Identity Service',
+        { titles: ['Identity Service'] },
         { workflow: 'GDPR Erasure', titles: ['Identity Service', 'CRM Warehouse'] },
       ],
     });
@@ -92,7 +92,30 @@ describe('buildDeletionDependenciesInput', () => {
         workflowConfigsById,
       ),
     ).to.deep.equal({
-      'deletion-dependencies': ['Identity Service', { workflow: 'GDPR Erasure', titles: [] }],
+      'deletion-dependencies': [
+        { titles: ['Identity Service'] },
+        { workflow: 'GDPR Erasure', titles: [] },
+      ],
+    });
+  });
+
+  it('omits the global object when only workflow overrides are present', () => {
+    expect(
+      buildDeletionDependenciesInput(
+        {
+          title: 'Salesforce',
+          dependentDataSilos: [],
+          dependedOnDataSilosPerWorkflow: [
+            {
+              workflowConfigId: GDPR_ERASURE.id,
+              dependedOnDataSilos: [{ title: 'Identity Service' }],
+            },
+          ],
+        },
+        workflowConfigsById,
+      ),
+    ).to.deep.equal({
+      'deletion-dependencies': [{ workflow: 'GDPR Erasure', titles: ['Identity Service'] }],
     });
   });
 
@@ -116,6 +139,27 @@ describe('buildDeletionDependenciesInput', () => {
     ).to.deep.equal({});
     expect(warn).toHaveBeenCalledOnce();
     expect(warn.mock.calls[0][0]).to.include('Unnamed Erasure');
+  });
+
+  it('keeps global titles as strings when every override is skipped', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    expect(
+      buildDeletionDependenciesInput(
+        {
+          title: 'Salesforce',
+          dependentDataSilos: [{ title: 'Identity Service' }],
+          dependedOnDataSilosPerWorkflow: [
+            {
+              workflowConfigId: UNNAMED_WORKFLOW.id,
+              dependedOnDataSilos: [{ title: 'CRM Warehouse' }],
+            },
+          ],
+        },
+        workflowConfigsById,
+      ),
+    ).to.deep.equal({ 'deletion-dependencies': ['Identity Service'] });
+    expect(warn).toHaveBeenCalledOnce();
   });
 
   it('skips overrides on workflows that were not fetched', () => {

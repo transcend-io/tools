@@ -1,15 +1,19 @@
 import type { DataSiloEnriched, WorkflowConfigNode } from '@transcend-io/sdk';
 import colors from 'colors';
 
-import type { DataSiloInput, DeletionDependencyInput } from '../../codecs.js';
+import type {
+  DataSiloInput,
+  DeletionDependencies,
+  DeletionDependencyObject,
+} from '../../codecs.js';
 import { logger } from '../../logger.js';
 
 /**
  * Build the `deletion-dependencies` entries for a data silo being pulled into transcend.yml.
  *
- * Global dependencies keep the string shorthand so that existing configurations round-trip
- * unchanged. Each workflow that overrides the global configuration is emitted as its own
- * entry, including overrides with no dependencies at all.
+ * With no per-workflow overrides, global dependencies stay as a list of titles so existing
+ * configurations round-trip unchanged. Once any override is present, the whole field is a
+ * list of objects (`{ titles }` for global, `{ workflow, titles }` for each override).
  *
  * @param dataSilo - The data silo being pulled
  * @param workflowConfigsById - The organization's erasure workflows, keyed by ID
@@ -24,8 +28,10 @@ export function buildDeletionDependenciesInput(
 ): Pick<DataSiloInput, 'deletion-dependencies'> {
   const { title, dependentDataSilos, dependedOnDataSilosPerWorkflow } = dataSilo;
 
+  const globalTitles = dependentDataSilos.map(({ title }) => title);
+
   const overrides = dependedOnDataSilosPerWorkflow.flatMap(
-    ({ workflowConfigId, dependedOnDataSilos }): DeletionDependencyInput[] => {
+    ({ workflowConfigId, dependedOnDataSilos }): DeletionDependencyObject[] => {
       const workflowConfig = workflowConfigsById[workflowConfigId];
 
       // transcend.yml references workflows by internal name, so an override on a workflow
@@ -50,7 +56,14 @@ export function buildDeletionDependenciesInput(
     },
   );
 
-  const dependencies = [...dependentDataSilos.map(({ title }) => title), ...overrides];
+  if (overrides.length === 0) {
+    return globalTitles.length > 0 ? { 'deletion-dependencies': globalTitles } : {};
+  }
 
-  return dependencies.length > 0 ? { 'deletion-dependencies': dependencies } : {};
+  const dependencies: DeletionDependencies = [
+    ...(globalTitles.length > 0 ? [{ titles: globalTitles }] : []),
+    ...overrides,
+  ];
+
+  return { 'deletion-dependencies': dependencies };
 }
