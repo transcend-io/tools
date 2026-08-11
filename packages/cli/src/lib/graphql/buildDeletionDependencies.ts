@@ -26,7 +26,7 @@ export function buildDeletionDependenciesInput(
 
   const globalTitles = dependentDataSilos.map(({ title }) => title);
 
-  const overrides = dependedOnDataSilosPerWorkflow.flatMap(
+  const workflowOverrides = dependedOnDataSilosPerWorkflow.flatMap(
     ({ workflowConfigId, dependedOnDataSilos }): DeletionDependencyInput[] => {
       const workflowConfig = workflowConfigsById[workflowConfigId];
 
@@ -52,14 +52,21 @@ export function buildDeletionDependenciesInput(
     },
   );
 
-  if (overrides.length === 0) {
-    return globalTitles.length > 0 ? { 'deletion-dependencies': globalTitles } : {};
+  // If there are no global or workflow dependencies, return an empty object
+  if (globalTitles.length === 0 && workflowOverrides.length === 0) {
+    return {};
   }
 
-  const dependencies: DeletionDependencies = [
-    ...(globalTitles.length > 0 ? [{ titles: globalTitles }] : []),
-    ...overrides,
-  ];
+  // If there are no workflow overrides, return the global titles as string[], to keep legacy behavior
+  if (workflowOverrides.length === 0) {
+    return { 'deletion-dependencies': globalTitles };
+  }
 
-  return { 'deletion-dependencies': dependencies };
+  // If there are workflow overrides, return a list of objects
+  return {
+    'deletion-dependencies': [
+      ...(globalTitles.length > 0 ? [{ titles: globalTitles }] : []),
+      ...workflowOverrides,
+    ],
+  };
 }
