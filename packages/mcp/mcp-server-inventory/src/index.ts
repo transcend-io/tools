@@ -37,3 +37,4 @@ export {
   UpdateDataSiloSchema,
   type UpdateDataSiloInput,
 } from './tools/inventory_update_data_silo.js';
+export { WriteVendorSchema, type WriteVendorInput } from './tools/inventory_write_vendor.js';

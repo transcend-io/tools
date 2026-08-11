@@ -8,6 +8,7 @@ const EXPECTED_TOOL_NAMES = [
   'inventory_create_data_silo',
   'inventory_update_data_silo',
   'inventory_list_vendors',
+  'inventory_write_vendor',
   'inventory_list_data_points',
   'inventory_list_sub_data_points',
   'inventory_list_identifiers',
@@ -24,6 +25,7 @@ describe('Inventory Tools', () => {
     createDataSilo: ReturnType<typeof vi.fn>;
     updateDataSilo: ReturnType<typeof vi.fn>;
     listVendors: ReturnType<typeof vi.fn>;
+    writeVendor: ReturnType<typeof vi.fn>;
     listDataPoints: ReturnType<typeof vi.fn>;
     listSubDataPoints: ReturnType<typeof vi.fn>;
     listIdentifiers: ReturnType<typeof vi.fn>;
@@ -39,6 +41,7 @@ describe('Inventory Tools', () => {
       createDataSilo: vi.fn(),
       updateDataSilo: vi.fn(),
       listVendors: vi.fn(),
+      writeVendor: vi.fn(),
       listDataPoints: vi.fn(),
       listSubDataPoints: vi.fn(),
       listIdentifiers: vi.fn(),
@@ -55,9 +58,9 @@ describe('Inventory Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 12 tools with expected names', () => {
+  it('registers exactly 13 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(12);
+    expect(tools).toHaveLength(13);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -281,6 +284,49 @@ describe('Inventory Tools', () => {
 
       expect(result).toMatchObject({ success: true, data: nodes, count: 1 });
       expect(mockGraphql.listDataSubjects).toHaveBeenCalledWith();
+    });
+  });
+
+  describe('inventory_write_vendor', () => {
+    it('upserts a vendor by title', async () => {
+      const vendor = {
+        id: 'v-1',
+        title: 'Acme',
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      mockGraphql.writeVendor.mockResolvedValue({ vendor, created: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_vendor')!;
+
+      const result = await tool.handler({ title: 'Acme' });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { vendor, created: true },
+      });
+      expect(mockGraphql.writeVendor).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Acme', id: undefined }),
+      );
+    });
+
+    it('updates by vendorId', async () => {
+      const vendor = {
+        id: 'v-1',
+        title: 'Acme',
+        description: 'Updated',
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      mockGraphql.writeVendor.mockResolvedValue({ vendor, created: false });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_vendor')!;
+
+      await tool.handler({ vendorId: 'v-1', description: 'Updated' });
+
+      expect(mockGraphql.writeVendor).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'v-1', description: 'Updated' }),
+      );
     });
   });
 
