@@ -169,8 +169,6 @@ describe('InventoryMixin', () => {
         dataSiloId: 'silo-1',
         title: 'Users',
       });
-      expect(result.nodes[0]).not.toHaveProperty('createdAt');
-      expect(result.nodes[0]).not.toHaveProperty('updatedAt');
     });
 
     it('combines dataSiloId and text in filterBy', async () => {

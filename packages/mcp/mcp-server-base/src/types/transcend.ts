@@ -515,16 +515,6 @@ export interface DataPoint {
   subDataPoints?: SubDataPoint[];
   /** Assigned data categories */
   categories?: DataCategory[];
-  /**
-   * Created timestamp (ISO 8601). Not exposed on GraphQL `DataPoint` today;
-   * omitted from inventory list responses.
-   */
-  createdAt?: string;
-  /**
-   * Updated timestamp (ISO 8601). Not exposed on GraphQL `DataPoint` today;
-   * omitted from inventory list responses.
-   */
-  updatedAt?: string;
 }
 
 export interface SubDataPoint {
