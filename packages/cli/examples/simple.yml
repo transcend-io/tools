@@ -89,12 +89,13 @@ data-silos:
     # until all of the following data silos were deleted first. This list can contain other internal
     # systems defined in this file, as well as any of the SaaS tools connected in your Transcend instance.
     #
-    # Entries without a `workflow` apply to every erasure workflow. Add a `workflow` (the internal
-    # name of an erasure workflow) to override that global configuration for a single workflow.
-    # Workflows that are not listed here keep whatever configuration they already have -- use
-    # `reset-to-global: true` to remove an override.
+    # A list of titles sets the global configuration only. Once any per-workflow override is
+    # present, use objects for the whole list: `{ titles: [...] }` for global, and
+    # `{ workflow, titles }` (or `{ workflow, reset-to-global: true }`) for each override.
+    # Workflows that are not listed keep whatever configuration they already have.
     deletion-dependencies:
-      - Identity Service
+      - titles:
+          - Identity Service
       - workflow: GDPR Erasure
         titles:
           - Identity Service

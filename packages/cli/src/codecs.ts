@@ -1344,17 +1344,28 @@ export const DeletionDependencyReset = t.type({
 export type DeletionDependencyReset = t.TypeOf<typeof DeletionDependencyReset>;
 
 /**
- * A single entry in a data silo's `deletion-dependencies` list. A bare string is
- * shorthand for a global dependency on the data silo with that title.
+ * A single object entry in a data silo's `deletion-dependencies` list.
+ * Used when the list includes any per-workflow override; global dependencies
+ * are written as `{ titles: [...] }` in that form.
  */
-export const DeletionDependencyInput = t.union([
-  t.string,
-  DeletionDependencyGroup,
-  DeletionDependencyReset,
-]);
+export const DeletionDependencyObject = t.union([DeletionDependencyGroup, DeletionDependencyReset]);
 
 /** Type override */
-export type DeletionDependencyInput = t.TypeOf<typeof DeletionDependencyInput>;
+export type DeletionDependencyObject = t.TypeOf<typeof DeletionDependencyObject>;
+
+/**
+ * The `deletion-dependencies` field for a data silo.
+ *
+ * Use a list of titles when there are no per-workflow overrides. Once any
+ * override is present, use a list of objects instead (global deps as
+ * `{ titles: [...] }`, overrides as `{ workflow, titles }` or
+ * `{ workflow, reset-to-global: true }`). Mixing strings and objects in the
+ * same list is not allowed.
+ */
+export const DeletionDependencies = t.union([t.array(t.string), t.array(DeletionDependencyObject)]);
+
+/** Type override */
+export type DeletionDependencies = t.TypeOf<typeof DeletionDependencies>;
 
 /**
  * Input to define a data silo
@@ -1406,11 +1417,12 @@ export const DataSiloInput = t.intersection([
      * until all of the following data silos were deleted first. This list can contain other internal
      * systems defined in this file, as well as any of the SaaS tools connected in your Transcend instance.
      *
-     * Entries without a `workflow` define the global configuration, and entries with a `workflow`
-     * override the global configuration for that DSR workflow only. Workflows that are not listed
-     * here keep whatever configuration they already have.
+     * A list of titles sets the global configuration only. To include per-workflow overrides,
+     * use a list of objects instead: `{ titles: [...] }` for the global configuration and
+     * `{ workflow, titles }` (or `{ workflow, reset-to-global: true }`) for each override.
+     * Workflows that are not listed keep whatever configuration they already have.
      */
-    'deletion-dependencies': t.array(DeletionDependencyInput),
+    'deletion-dependencies': DeletionDependencies,
     /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this data silo

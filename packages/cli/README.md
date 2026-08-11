@@ -169,7 +169,8 @@ data-silos:
       - email
       - userId
     deletion-dependencies:
-      - Identity Service
+      - titles:
+          - Identity Service
       - workflow: GDPR Erasure
         titles:
           - Identity Service
@@ -199,16 +200,27 @@ data-silos:
 
 ### Deletion dependencies
 
-When an erasure request runs, `deletion-dependencies` holds off deleting from a data silo until the data silos it lists have finished deleting. Entries take one of these forms:
+When an erasure request runs, `deletion-dependencies` holds off deleting from a data silo until the data silos it lists have finished deleting.
+
+Use a list of titles when there are no per-workflow overrides:
 
 ```yaml
 data-silos:
   - title: Salesforce
     integrationName: server
     deletion-dependencies:
-      # A data silo title is shorthand for a global dependency
       - Identity Service
-      # The same global dependency, written out in full
+      - CRM Warehouse
+```
+
+Once any override is present, use a list of objects for the whole field (global deps as `{ titles }`, overrides as `{ workflow, titles }` or `{ workflow, reset-to-global: true }`). Mixing titles and objects in the same list is not allowed:
+
+```yaml
+data-silos:
+  - title: Salesforce
+    integrationName: server
+    deletion-dependencies:
+      # Global configuration
       - titles:
           - Identity Service
       # Overrides the global configuration for the "GDPR Erasure" workflow only

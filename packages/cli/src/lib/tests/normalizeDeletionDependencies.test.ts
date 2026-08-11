@@ -1,28 +1,37 @@
 import { expect, describe, it } from 'vitest';
 
-import type { DeletionDependencyInput } from '../../codecs.js';
+import type { DeletionDependencyObject } from '../../codecs.js';
 import { normalizeDeletionDependencies } from '../graphql/normalizeDeletionDependencies.js';
 
 describe('normalizeDeletionDependencies', () => {
-  it('converts the string shorthand into a single global entry', () => {
+  it('converts the string list into a single global entry', () => {
     expect(
       normalizeDeletionDependencies(['Identity Service', 'CRM Warehouse'], 'Salesforce'),
     ).to.deep.equal([{ titles: ['Identity Service', 'CRM Warehouse'] }]);
   });
 
-  it('merges the string shorthand and the object form into one global entry', () => {
+  it('deduplicates titles in the string list', () => {
     expect(
       normalizeDeletionDependencies(
-        ['Identity Service', { titles: ['CRM Warehouse'] }],
+        ['Identity Service', 'Identity Service', 'CRM Warehouse'],
         'Salesforce',
       ),
     ).to.deep.equal([{ titles: ['Identity Service', 'CRM Warehouse'] }]);
   });
 
-  it('deduplicates global titles', () => {
+  it('merges multiple global object entries into one', () => {
     expect(
       normalizeDeletionDependencies(
-        ['Identity Service', { titles: ['Identity Service', 'CRM Warehouse'] }],
+        [{ titles: ['Identity Service'] }, { titles: ['CRM Warehouse'] }],
+        'Salesforce',
+      ),
+    ).to.deep.equal([{ titles: ['Identity Service', 'CRM Warehouse'] }]);
+  });
+
+  it('deduplicates global titles across object entries', () => {
+    expect(
+      normalizeDeletionDependencies(
+        [{ titles: ['Identity Service'] }, { titles: ['Identity Service', 'CRM Warehouse'] }],
         'Salesforce',
       ),
     ).to.deep.equal([{ titles: ['Identity Service', 'CRM Warehouse'] }]);
@@ -32,7 +41,7 @@ describe('normalizeDeletionDependencies', () => {
     expect(
       normalizeDeletionDependencies(
         [
-          'Identity Service',
+          { titles: ['Identity Service'] },
           { workflow: 'GDPR Erasure', titles: ['Identity Service', 'CRM Warehouse'] },
           { workflow: 'CCPA Delete', titles: ['Identity Service'] },
         ],
@@ -102,7 +111,7 @@ describe('normalizeDeletionDependencies', () => {
             workflow: 'GDPR Erasure',
             'reset-to-global': true,
             titles: ['Identity Service'],
-          } as DeletionDependencyInput,
+          } as DeletionDependencyObject,
         ],
         'Salesforce',
       ),
