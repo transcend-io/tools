@@ -1,19 +1,15 @@
 import type { DataSiloEnriched, WorkflowConfigNode } from '@transcend-io/sdk';
 import colors from 'colors';
 
-import type {
-  DataSiloInput,
-  DeletionDependencies,
-  DeletionDependencyObject,
-} from '../../codecs.js';
+import type { DataSiloInput, DeletionDependencies, DeletionDependencyInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 
 /**
  * Build the `deletion-dependencies` entries for a data silo being pulled into transcend.yml.
  *
  * With no per-workflow overrides, global dependencies stay as a list of titles so existing
- * configurations round-trip unchanged. Once any override is present, the whole field is a
- * list of objects (`{ titles }` for global, `{ workflow, titles }` for each override).
+ * configurations round-trip unchanged. When overrides exist, the whole field is a list of
+ * objects (`{ titles }` for global, `{ workflow, titles }` for each override).
  *
  * @param dataSilo - The data silo being pulled
  * @param workflowConfigsById - The organization's erasure workflows, keyed by ID
@@ -31,7 +27,7 @@ export function buildDeletionDependenciesInput(
   const globalTitles = dependentDataSilos.map(({ title }) => title);
 
   const overrides = dependedOnDataSilosPerWorkflow.flatMap(
-    ({ workflowConfigId, dependedOnDataSilos }): DeletionDependencyObject[] => {
+    ({ workflowConfigId, dependedOnDataSilos }): DeletionDependencyInput[] => {
       const workflowConfig = workflowConfigsById[workflowConfigId];
 
       // transcend.yml references workflows by internal name, so an override on a workflow
