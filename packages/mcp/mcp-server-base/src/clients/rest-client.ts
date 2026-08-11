@@ -3,12 +3,17 @@ import { type AuthCredentials, authHeaders } from '../auth.js';
 import {
   MCP_CALLER_HEADER,
   MCP_CLIENT_NAME_HEADER,
+  MCP_VERSION_HEADER,
   SOMBRA_AUTHORIZATION_HEADER,
   TOOLCALL_ID_HEADER,
   TRANSCEND_VERSION_HEADER,
   TRANSCEND_VERSION_HEADER_VALUE,
 } from '../http-header-names.js';
-import { resolveMcpCallerAttribution, resolveMcpClientName } from '../mcp-caller-context.js';
+import {
+  resolveMcpCallerAttribution,
+  resolveMcpClientName,
+  resolveMcpPackageVersion,
+} from '../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
@@ -174,6 +179,7 @@ export class TranscendRestClient {
     const toolCallId = getToolCallIdHeader();
     const mcpCaller = resolveMcpCallerAttribution();
     const mcpClientName = resolveMcpClientName();
+    const mcpPackageVersion = resolveMcpPackageVersion();
     const headers: Record<string, string> = {
       ...authHeaders(effectiveAuth),
       ...this.sombraAuthHeaders(),
@@ -185,6 +191,7 @@ export class TranscendRestClient {
       ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
       ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
       ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
+      ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
     };
 
     const controller = new AbortController();
@@ -308,6 +315,7 @@ export class TranscendRestClient {
     const toolCallId = getToolCallIdHeader();
     const mcpCaller = resolveMcpCallerAttribution();
     const mcpClientName = resolveMcpClientName();
+    const mcpPackageVersion = resolveMcpPackageVersion();
     const response = await fetch(url, {
       headers: {
         ...authHeaders(effectiveAuth),
@@ -317,6 +325,7 @@ export class TranscendRestClient {
         ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
         ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
         ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
+        ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
       },
     });
     if (!response.ok) {
