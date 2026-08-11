@@ -17,7 +17,6 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
       'Enrich a Data Subject Request with additional identifiers during preflight processing',
     category: 'DSR Automation',
     readOnly: false,
-    confirmationHint: 'Adds identifiers to the DSR during preflight',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     requireSombra: true,
     zodSchema: enrichIdentifiersSchema,

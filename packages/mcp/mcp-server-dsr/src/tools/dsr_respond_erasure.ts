@@ -18,7 +18,6 @@ export function createDsrRespondErasureTool(clients: ToolClients) {
     description: 'Confirm that data erasure has been completed for a data silo',
     category: 'DSR Automation',
     readOnly: false,
-    confirmationHint: 'Confirms erasure completion for the data silo',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: respondErasureSchema,

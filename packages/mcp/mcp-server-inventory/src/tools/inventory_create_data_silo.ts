@@ -19,7 +19,6 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients) {
       'Create a new data silo (data system or integration). The name must match an integration name from the Transcend catalog.',
     category: 'Data Inventory',
     readOnly: false,
-    confirmationHint: 'Creates a new data silo in the inventory',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateDataSiloSchema,
     handler: async ({ title }) => {

@@ -21,7 +21,6 @@ export function createConsentSetPreferencesTool(clients: ToolClients) {
     description: 'Set consent preferences for a user (client-side sync)',
     category: 'Consent Management',
     readOnly: false,
-    confirmationHint: 'Updates consent preferences for the user',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: SetPreferencesSchema,

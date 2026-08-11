@@ -35,7 +35,6 @@ export function createAdminCreateApiKeyTool(clients: ToolClients) {
       scopeSummary,
     category: 'Admin',
     readOnly: false,
-    confirmationHint: 'Creates a new API key with the specified scopes',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CreateApiKeySchema,
     handler: async ({ title, scopes, dataSilos }) => {
