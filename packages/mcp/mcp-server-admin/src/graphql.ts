@@ -145,9 +145,11 @@ export class AdminMixin extends TranscendGraphQLBase {
   async listUsers(
     options?: ListOptions & { filterBy?: { text?: string } },
   ): Promise<PaginatedResponse<User>> {
+    // Omit filterBy when unset. Sending `null` crashes the users resolver
+    // (`Cannot read properties of null (reading 'ids')`).
     const data = await this.makeRequest(ListUsersDoc, {
       first: Math.min(options?.first ?? 50, 100),
-      filterBy: options?.filterBy ?? null,
+      ...(options?.filterBy ? { filterBy: options.filterBy } : {}),
     });
     return {
       nodes: data.users.nodes.map((node) => ({
