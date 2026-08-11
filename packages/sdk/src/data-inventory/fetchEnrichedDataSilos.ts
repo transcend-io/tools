@@ -46,10 +46,23 @@ export interface DataSiloEnriched {
     /** True if identifier is wired */
     isConnected: boolean;
   }[];
-  /** Dependent data silos */
+  /** Dependent data silos that apply to every erasure workflow */
   dependentDataSilos: {
     /** Title of silo */
     title: string;
+  }[];
+  /**
+   * Dependent data silos for the erasure workflows that override the global configuration.
+   * An entry with an empty list is a workflow that runs this data silo with no dependencies.
+   */
+  dependedOnDataSilosPerWorkflow: {
+    /** ID of the workflow config the override applies to */
+    workflowConfigId: string;
+    /** Silos depended on within that workflow */
+    dependedOnDataSilos: {
+      /** Title of silo */
+      title: string;
+    }[];
   }[];
   /** Silo owners */
   owners: {

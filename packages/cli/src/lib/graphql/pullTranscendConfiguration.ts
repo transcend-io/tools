@@ -95,6 +95,7 @@ import {
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
+import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
@@ -1507,6 +1508,20 @@ export async function pullTranscendConfiguration(
   // Save data silos
   if (dataSilos.length > 0 && resources.includes(TranscendPullResource.DataSilos)) {
     const indexedDataSubjects = keyBy(dataSubjects, 'type');
+    // Per-workflow deletion dependencies come back keyed by ID, but transcend.yml
+    // references workflows by internal name
+    const hasWorkflowScopedDependencies = dataSilos.some(
+      ([{ dependedOnDataSilosPerWorkflow }]) => dependedOnDataSilosPerWorkflow.length > 0,
+    );
+    const workflowConfigsById = hasWorkflowScopedDependencies
+      ? keyBy(
+          await fetchAllWorkflowConfigs(client, {
+            workflowConfigType: WorkflowConfigType.DSR,
+            logger,
+          }),
+          'id',
+        )
+      : {};
     result['data-silos'] = dataSilos.map(
       ([
         {
@@ -1519,6 +1534,7 @@ export async function pullTranscendConfiguration(
           notifyEmailAddress,
           identifiers,
           dependentDataSilos,
+          dependedOnDataSilosPerWorkflow,
           owners,
           country,
           countrySubDivision,
@@ -1548,11 +1564,10 @@ export async function pullTranscendConfiguration(
         'identity-keys': identifiers
           .filter(({ isConnected }) => isConnected)
           .map(({ name }) => name),
-        ...(dependentDataSilos.length > 0
-          ? {
-              'deletion-dependencies': dependentDataSilos.map(({ title }) => title),
-            }
-          : {}),
+        ...buildDeletionDependenciesInput(
+          { title, dependentDataSilos, dependedOnDataSilosPerWorkflow },
+          workflowConfigsById,
+        ),
         ...(owners.length > 0 ? { owners: owners.map(({ email }) => email) } : {}),
         ...(teams.length > 0 ? { teams: teams.map(({ name }) => name) } : {}),
         ...(discoveredBy.length > 0
