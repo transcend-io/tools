@@ -10,6 +10,7 @@ A command line interface that allows you to programatically interact with the Tr
 - [Changelog](#changelog)
 - [Installation](#installation)
 - [transcend.yml](#transcendyml)
+  - [Deletion dependencies](#deletion-dependencies)
 - [Usage](#usage)
   - [`transcend request approve`](#transcend-request-approve)
   - [`transcend request upload`](#transcend-request-upload)
@@ -169,6 +170,10 @@ data-silos:
       - userId
     deletion-dependencies:
       - Identity Service
+      - workflow: GDPR Erasure
+        titles:
+          - Identity Service
+          - CRM Warehouse
     owners:
       - alice@transcend.io
     datapoints:
@@ -191,6 +196,39 @@ data-silos:
             title: Email
             description: The email address of the user
 ```
+
+### Deletion dependencies
+
+When an erasure request runs, `deletion-dependencies` holds off deleting from a data silo until the data silos it lists have finished deleting. Entries take one of these forms:
+
+```yaml
+data-silos:
+  - title: Salesforce
+    integrationName: server
+    deletion-dependencies:
+      # A data silo title is shorthand for a global dependency
+      - Identity Service
+      # The same global dependency, written out in full
+      - titles:
+          - Identity Service
+      # Overrides the global configuration for the "GDPR Erasure" workflow only
+      - workflow: GDPR Erasure
+        titles:
+          - Identity Service
+          - CRM Warehouse
+      # Runs with no dependencies at all in the "CCPA Delete" workflow
+      - workflow: CCPA Delete
+        titles: []
+      # Removes a previously configured override so the workflow uses the global configuration again
+      - workflow: Legacy Erasure
+        reset-to-global: true
+```
+
+`workflow` is the internal name of an erasure workflow, which you can find under [DSR Automation -> Workflows](https://app.transcend.io/privacy-requests/workflows). Overrides are only supported on erasure workflows, and the data silo and everything it depends on must already be part of that workflow.
+
+A workflow that is not listed keeps whatever configuration it already has, so pushing a config that only lists global dependencies never removes existing overrides. Use `reset-to-global: true` to remove one.
+
+Omitting `deletion-dependencies` entirely clears the global configuration, matching how the rest of `transcend.yml` treats omitted fields.
 
 ## Usage
 

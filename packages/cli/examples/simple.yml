@@ -88,8 +88,20 @@ data-silos:
     # When a data erasure request is being performed, this data silo should not be deleted from
     # until all of the following data silos were deleted first. This list can contain other internal
     # systems defined in this file, as well as any of the SaaS tools connected in your Transcend instance.
+    #
+    # Entries without a `workflow` apply to every erasure workflow. Add a `workflow` (the internal
+    # name of an erasure workflow) to override that global configuration for a single workflow.
+    # Workflows that are not listed here keep whatever configuration they already have -- use
+    # `reset-to-global: true` to remove an override.
     deletion-dependencies:
       - Identity Service
+      - workflow: GDPR Erasure
+        titles:
+          - Identity Service
+          - Analytics Service
+      # This workflow deletes from the data silo without waiting on anything
+      - workflow: CCPA Delete
+        titles: []
     # The email addresses of the employees within your company that are the go-to individuals
     # for managing this data silo
     owners:

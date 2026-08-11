@@ -1302,6 +1302,61 @@ export const IntlMessageInput = t.intersection([
 export type IntlMessageInput = t.TypeOf<typeof IntlMessageInput>;
 
 /**
+ * A set of deletion dependencies, either global (when `workflow` is omitted)
+ * or scoped to a single DSR workflow.
+ *
+ * An empty `titles` list scoped to a workflow is an explicit override, meaning
+ * that workflow runs the data silo with no dependencies at all.
+ */
+export const DeletionDependencyGroup = t.intersection([
+  t.type({
+    /**
+     * The titles of the data silos that must be deleted from first. This list can contain
+     * other internal systems defined in this file, as well as any of the SaaS tools connected
+     * in your Transcend instance.
+     */
+    titles: t.array(t.string),
+  }),
+  t.partial({
+    /**
+     * The internal name of the DSR workflow that these dependencies override the global
+     * configuration for. Omit to declare the global configuration.
+     */
+    workflow: t.string,
+  }),
+]);
+
+/** Type override */
+export type DeletionDependencyGroup = t.TypeOf<typeof DeletionDependencyGroup>;
+
+/**
+ * Removes a workflow's deletion dependency override so that the workflow falls back
+ * to the global configuration.
+ */
+export const DeletionDependencyReset = t.type({
+  /** The internal name of the DSR workflow to remove the override from */
+  workflow: t.string,
+  /** Must be `true`; declares that the override should be removed */
+  'reset-to-global': t.literal(true),
+});
+
+/** Type override */
+export type DeletionDependencyReset = t.TypeOf<typeof DeletionDependencyReset>;
+
+/**
+ * A single entry in a data silo's `deletion-dependencies` list. A bare string is
+ * shorthand for a global dependency on the data silo with that title.
+ */
+export const DeletionDependencyInput = t.union([
+  t.string,
+  DeletionDependencyGroup,
+  DeletionDependencyReset,
+]);
+
+/** Type override */
+export type DeletionDependencyInput = t.TypeOf<typeof DeletionDependencyInput>;
+
+/**
  * Input to define a data silo
  *
  * Define the data silos in your data map. A data silo can be a database,
@@ -1350,8 +1405,12 @@ export const DataSiloInput = t.intersection([
      * When a data erasure request is being performed, this data silo should not be deleted from
      * until all of the following data silos were deleted first. This list can contain other internal
      * systems defined in this file, as well as any of the SaaS tools connected in your Transcend instance.
+     *
+     * Entries without a `workflow` define the global configuration, and entries with a `workflow`
+     * override the global configuration for that DSR workflow only. Workflows that are not listed
+     * here keep whatever configuration they already have.
      */
-    'deletion-dependencies': t.array(t.string),
+    'deletion-dependencies': t.array(DeletionDependencyInput),
     /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this data silo

@@ -31,6 +31,7 @@ import {
   syncTeams,
   syncTemplate,
   syncVendors,
+  type DependedOnDataSiloInput,
   type Identifier,
 } from '@transcend-io/sdk';
 import { map, type Logger, type SyncError, type SyncResult } from '@transcend-io/utils';
@@ -42,6 +43,7 @@ import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
+import { normalizeDeletionDependencies } from './normalizeDeletionDependencies.js';
 import { syncDataSilos } from './syncDataSilos.js';
 
 const CONCURRENCY = 10;
@@ -527,7 +529,7 @@ export async function syncConfigurationToTranscend(
   }
 
   // Store dependency updates
-  const dependencyUpdates: [string, string[]][] = [];
+  const dependencyUpdates: [string, DependedOnDataSiloInput[]][] = [];
   // Sync data silos
   if (dataSilos) {
     const { success, dataSiloTitleToId } = await syncDataSilos(dataSilos, client, {
@@ -537,11 +539,17 @@ export async function syncConfigurationToTranscend(
     });
     dataSilos?.forEach((dataSilo) => {
       // Queue up dependency update
-      if (dataSilo['deletion-dependencies']) {
-        dependencyUpdates.push([
-          dataSiloTitleToId[dataSilo.title],
-          dataSilo['deletion-dependencies'],
-        ]);
+      const dependencies = dataSilo['deletion-dependencies'];
+      if (dependencies) {
+        try {
+          dependencyUpdates.push([
+            dataSiloTitleToId[dataSilo.title],
+            normalizeDeletionDependencies(dependencies, dataSilo.title),
+          ]);
+        } catch (err) {
+          recordError('data-silos', (err as Error).message, dataSilo.title);
+          activeLogger.error(colors.red((err as Error).message));
+        }
       }
     });
     encounteredError = encounteredError || !success;
@@ -549,7 +557,11 @@ export async function syncConfigurationToTranscend(
 
   // Dependencies updated at the end after all data silos are created
   if (dependencyUpdates.length > 0) {
-    await syncDataSiloDependencies(client, { input: dependencyUpdates, logger });
+    const dependenciesSuccess = await syncDataSiloDependencies(client, {
+      input: dependencyUpdates,
+      logger,
+    });
+    encounteredError = encounteredError || !dependenciesSuccess;
   }
 
   // Update processing activities
