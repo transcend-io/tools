@@ -12,10 +12,18 @@ export {
   type ListCategoriesInput,
 } from './tools/inventory_list_categories.js';
 export {
+  ListBusinessEntitiesSchema,
+  type ListBusinessEntitiesInput,
+} from './tools/inventory_list_business_entities.js';
+export {
   ListDataPointsSchema,
   type ListDataPointsInput,
 } from './tools/inventory_list_data_points.js';
 export { ListDataSilosSchema, type ListDataSilosInput } from './tools/inventory_list_data_silos.js';
+export {
+  ListDataSubjectsSchema,
+  type ListDataSubjectsInput,
+} from './tools/inventory_list_data_subjects.js';
 export {
   ListIdentifiersSchema,
   type ListIdentifiersInput,
