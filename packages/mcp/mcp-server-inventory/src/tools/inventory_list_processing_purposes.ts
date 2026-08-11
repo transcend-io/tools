@@ -4,6 +4,10 @@ import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 import type { InventoryMixin } from '../graphql.js';
 
 export const ListProcessingPurposesSchema = z.object({
+  text: z
+    .string()
+    .optional()
+    .describe('Free-text search across processing purposes (GraphQL filterBy.text)'),
   limit: z.coerce
     .number()
     .min(1)
@@ -28,16 +32,16 @@ export function createInventoryListProcessingPurposesTool(clients: ToolClients) 
       'List processing purpose subcategories from the Processing Purposes table in Data Inventory. ' +
       `Empty subcategory names are normalized to "${DefaultPurposeSubCategoryType.Other}" to match write-tool defaults. ` +
       'Use these IDs when assigning silo-level purposes via inventory_update_data_silo, or match ' +
-      '`purpose`/`name` pairs when assigning field-level purposes via inventory_update_or_create_data_point. ' +
-      'Paginate with `offset` until `hasNextPage` is false.',
+      '`purpose`/`name` pairs when assigning field-level purposes via inventory_update_or_create_data_point.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListProcessingPurposesSchema,
-    handler: async ({ limit, offset }) => {
+    handler: async ({ text, limit, offset }) => {
       const result = await graphql.listProcessingPurposes({
         first: limit,
         offset,
+        text,
       });
 
       return createListResult(result.nodes, {

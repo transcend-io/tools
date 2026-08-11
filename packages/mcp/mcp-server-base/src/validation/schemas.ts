@@ -3,9 +3,9 @@ import { z } from 'zod';
 export const EmptySchema = z.object({});
 
 /**
- * Cursor (Relay-style) pagination input. Use this for any GraphQL `Connection`
- * field exposed as an MCP tool. The shape mirrors GraphQL's `first`/`after`
- * args one-to-one, with copy tuned for LLM callers.
+ * Cursor (Relay-style) pagination input. Prefer this whenever the GraphQL field
+ * supports `first`/`after` cursors. The shape mirrors GraphQL Connection args
+ * one-to-one, with copy tuned for LLM callers.
  */
 export const CursorPaginationSchema = z.object({
   first: z.coerce
@@ -17,20 +17,23 @@ export const CursorPaginationSchema = z.object({
     .default(50)
     .describe(
       'Maximum number of results to return per page (1-100, default 50). ' +
-        'Use the smallest value that satisfies the user request to keep responses fast.',
+        'Use the smallest value that satisfies the user request to keep responses fast. ' +
+        'Paginate with `after` until pageInfo.hasNextPage is false.',
     ),
   after: z
     .string()
     .optional()
     .describe(
       "Opaque cursor from a previous response's pageInfo.endCursor. " +
-        'Pass this to fetch the next page; omit for the first page.',
+        'Pass this to fetch the next page; omit for the first page. ' +
+        'Prefer cursor pagination (`after`) over offset when this arg is available.',
     ),
 });
 
 /**
- * Offset/limit pagination input. Use this for GraphQL queries that expose
- * an offset arg instead of a Relay-style cursor (e.g. legacy admin lists).
+ * Offset/limit pagination input. Use only when the GraphQL query exposes an
+ * offset arg and does not support Relay-style cursors; prefer
+ * {@link CursorPaginationSchema} when available.
  */
 export const OffsetPaginationSchema = z.object({
   first: z.coerce
@@ -47,7 +50,10 @@ export const OffsetPaginationSchema = z.object({
     .min(0)
     .optional()
     .default(0)
-    .describe('Zero-based index of the first result to return.'),
+    .describe(
+      'Zero-based index of the first result to return. Prefer cursor pagination ' +
+        '(`after`) when the tool exposes it instead of offset.',
+    ),
 });
 
 /**

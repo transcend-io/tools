@@ -4,6 +4,7 @@ import { createInventoryAnalyzeTool } from './inventory_analyze.js';
 import { createInventoryCreateDataSiloTool } from './inventory_create_data_silo.js';
 import { createInventoryGetDataSiloTool } from './inventory_get_data_silo.js';
 import { createInventoryListBusinessEntitiesTool } from './inventory_list_business_entities.js';
+import { createInventoryListCatalogIntegrationsTool } from './inventory_list_catalog_integrations.js';
 import { createInventoryListCategoriesTool } from './inventory_list_categories.js';
 import { createInventoryListDataPointsTool } from './inventory_list_data_points.js';
 import { createInventoryListDataSilosTool } from './inventory_list_data_silos.js';
@@ -21,6 +22,7 @@ export function getInventoryTools(clients: ToolClients): ToolDefinition[] {
   return [
     createInventoryListDataSilosTool(clients),
     createInventoryGetDataSiloTool(clients),
+    createInventoryListCatalogIntegrationsTool(clients),
     createInventoryCreateDataSiloTool(clients),
     createInventoryUpdateDataSiloTool(clients),
     createInventoryListVendorsTool(clients),
