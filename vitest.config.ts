@@ -53,5 +53,7 @@ export default defineConfig({
     },
     environment: 'node',
     globals: true,
+    // Packages like mcp-app-ui must declare a test script but may not have suites yet.
+    passWithNoTests: true,
   },
 });
