@@ -81,6 +81,14 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.UnsupportedIdentifierName]('custom-username')).toBe(
       'The organization does not support identifiers with name: "custom-username" at time of request submission.',
     );
+    expect(
+      DSR_ERROR_MESSAGE[DsrErrorCode.DataSiloNotInWorkflow]({
+        workflowConfigId: 'wf-123',
+        dataSiloIds: ['silo-a', 'silo-b'],
+      }),
+    ).toBe(
+      'The following dataSiloIds are not connected to the workflow config "wf-123": silo-a, silo-b. dataSiloIds may only narrow the workflow\'s connected data silos.',
+    );
   });
 
   it('renders UnknownDropRecords with truncation at MAX_UNKNOWN_DROP_RECORDS_IN_ERROR', () => {
