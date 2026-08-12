@@ -41,8 +41,6 @@ export interface ToolDefinition {
   category: string;
   /** Whether this tool only reads data */
   readOnly: boolean;
-  /** Message shown to user before execution */
-  confirmationHint?: string;
   /** MCP tool annotations */
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */
@@ -100,8 +98,6 @@ export function defineTool<T>(config: {
   category: string;
   /** Whether this tool only reads data */
   readOnly: boolean;
-  /** Message shown to user before execution */
-  confirmationHint?: string;
   /** MCP tool annotations */
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */

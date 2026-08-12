@@ -44,7 +44,6 @@ export function createInventoryWriteVendorTool(clients: ToolClients) {
       'to upsert by title (creates when missing). Mirrors CLI inventory vendor sync.',
     category: 'Data Inventory',
     readOnly: false,
-    confirmationHint: 'Creates or updates a vendor in the inventory',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteVendorSchema,
     handler: async (input) => {
