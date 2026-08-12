@@ -138,7 +138,7 @@ describe('DSR Tools', () => {
       const result = await tool.handler({
         requestId: 'req-1',
         status: ['ERROR'],
-        limit: 10,
+        first: 10,
         offset: 0,
       });
 

@@ -9,6 +9,11 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import { graphql } from './__generated__/gql.js';
+import type {
+  RequestDataSiloFiltersInput,
+  RequestDataSiloStatus,
+  VisualRequestDataSiloStatus,
+} from './__generated__/graphql.js';
 
 const ListRequestsDoc = graphql(/* GraphQL */ `
   query DsrListRequests($first: Int, $after: String) {
@@ -205,19 +210,15 @@ export class DSRMixin extends TranscendGraphQLBase {
   ): Promise<PaginatedResponse<RequestDataSilo>> {
     const offset = options.offset ?? 0;
     const first = Math.min(options.first ?? 50, 100);
-    const filterBy: {
-      requestId: string;
-      status?: string[];
-      visualStatus?: string;
-      text?: string;
-    } = {
+    const filterBy: RequestDataSiloFiltersInput = {
       requestId: options.requestId,
     };
     if (options.status?.length) {
-      filterBy.status = options.status;
+      // Tool inputs are free-form strings; GraphQL validates the enum on the server.
+      filterBy.status = options.status as RequestDataSiloStatus[];
     }
     if (options.visualStatus) {
-      filterBy.visualStatus = options.visualStatus;
+      filterBy.visualStatus = options.visualStatus as VisualRequestDataSiloStatus;
     }
     if (options.text) {
       filterBy.text = options.text;
@@ -226,7 +227,7 @@ export class DSRMixin extends TranscendGraphQLBase {
     const data = await this.makeRequest(ListRequestDataSilosDoc, {
       first,
       offset,
-      filterBy: filterBy as never,
+      filterBy,
     });
     const connection = data.requestDataSilos;
     const nodes: RequestDataSilo[] = connection.nodes.map((node) => ({

@@ -140,8 +140,6 @@ export interface RequestDataSilo {
   details?: string;
   /** Admin dashboard deep link */
   link?: string;
-  /** When the job completed */
-  completedAt?: string;
 }
 
 export interface RequestFile {
