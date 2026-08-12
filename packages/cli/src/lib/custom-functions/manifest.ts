@@ -45,6 +45,18 @@ export const CustomFunctionManifestEntry = t.intersection([
     'allow-third-party-imports': t.boolean,
     /** Environment variables to expose to the function */
     env: t.record(t.string, t.string),
+    /**
+     * Path to a JSON file (relative to the manifest) holding the test payload
+     * to run the function with before pushing. When set, the function is
+     * test-run after signing and only pushed/promoted when the test passes.
+     */
+    'test-payload': t.string,
+    /**
+     * Which export to invoke when test-running a DSR function:
+     * `DATA_POINT` invokes the default export, `REQUEST_ENRICHER` invokes the
+     * `enricher` export. Defaults to DATA_POINT. Ignored for GENERAL functions.
+     */
+    'test-payload-type': t.union([t.literal('DATA_POINT'), t.literal('REQUEST_ENRICHER')]),
   }),
 ]);
 
@@ -74,6 +86,10 @@ export type CustomFunctionsManifest = t.TypeOf<typeof CustomFunctionsManifest>;
 export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
   /** Env variable name holding the internal key of the function's Sombra gateway */
   sombraAuthEnv?: string;
+  /** Parsed JSON test payload to run the function with before pushing */
+  testPayload?: object;
+  /** Which export to invoke when test-running a DSR function */
+  testPayloadType?: 'DATA_POINT' | 'REQUEST_ENRICHER';
 };
 
 export function readCustomFunctionsManifest(
@@ -119,6 +135,24 @@ export function readCustomFunctionsManifest(
     if (!existsSync(codePath)) {
       throw new Error(`Code file for custom function "${entry.name}" does not exist: ${codePath}`);
     }
+    let testPayload: object | undefined;
+    if (entry['test-payload'] !== undefined) {
+      const testPayloadPath = resolve(manifestDir, entry['test-payload']);
+      if (!existsSync(testPayloadPath)) {
+        throw new Error(
+          `Test payload file for custom function "${entry.name}" does not exist: ${testPayloadPath}`,
+        );
+      }
+      const rawPayload = readFileSync(testPayloadPath, 'utf-8');
+      try {
+        testPayload = JSON.parse(rawPayload);
+      } catch (err) {
+        throw new Error(
+          `Test payload file for custom function "${entry.name}" is not valid JSON ` +
+            `(${testPayloadPath}): ${(err as Error).message}`,
+        );
+      }
+    }
     return {
       name: entry.name,
       code: readFileSync(codePath, 'utf-8'),
@@ -136,6 +170,10 @@ export function readCustomFunctionsManifest(
         ? { allowThirdPartyImports: entry['allow-third-party-imports'] }
         : {}),
       ...(entry.env !== undefined ? { env: entry.env } : {}),
+      ...(testPayload !== undefined ? { testPayload } : {}),
+      ...(entry['test-payload-type'] !== undefined
+        ? { testPayloadType: entry['test-payload-type'] }
+        : {}),
     };
   });
 }

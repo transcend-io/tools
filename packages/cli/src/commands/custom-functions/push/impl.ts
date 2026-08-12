@@ -32,6 +32,7 @@ export interface CustomFunctionsPushCommandFlags {
   dryRun: boolean;
   promote: boolean;
   force: boolean;
+  skipTests: boolean;
   updateManifest: boolean;
   sombraId?: string;
 }
@@ -47,6 +48,7 @@ export async function push(
     dryRun,
     promote,
     force,
+    skipTests,
     updateManifest,
     sombraId,
   }: CustomFunctionsPushCommandFlags,
@@ -169,6 +171,16 @@ export async function push(
         promote,
         dryRun,
         force,
+        // Test the freshly signed code before pushing; a failing test rejects
+        // the function. Dry runs never sign, so nothing is tested either.
+        ...(!skipTests && input.testPayload !== undefined
+          ? {
+              testPayload: input.testPayload,
+              ...(input.testPayloadType !== undefined
+                ? { testPayloadType: input.testPayloadType }
+                : {}),
+            }
+          : {}),
         logger,
       });
       results.push({ name: input.name, result });
@@ -200,6 +212,37 @@ export async function push(
             colors.cyan(`[dry run] Would push a new revision to "${input.name}"${changes}`),
           );
           break;
+        case 'test-failed': {
+          const execution = result.testResult?.result;
+          logger.error(
+            colors.red(
+              `Rejected "${input.name}" — test run failed${
+                execution?.error
+                  ? `: ${execution.error.message}`
+                  : ` (exit code ${execution?.exitCode})`
+              }`,
+            ),
+          );
+          (execution?.logs ?? []).forEach(({ file: logFile, message }) => {
+            logger.error(colors.red(`  [${logFile}] ${message}`));
+          });
+          break;
+        }
+      }
+
+      // Anything that reached the push path without a test payload was
+      // promoted untested — call it out so payloads get added over time
+      if (
+        !skipTests &&
+        input.testPayload === undefined &&
+        (result.outcome === 'created' || result.outcome === 'updated')
+      ) {
+        logger.warn(
+          colors.yellow(
+            `Custom function "${input.name}" was pushed without a test run — add a ` +
+              'test-payload to its manifest entry to enable test-before-promote.',
+          ),
+        );
       }
     } catch (err) {
       results.push({ name: input.name, error: err as Error });
@@ -229,15 +272,18 @@ export async function push(
   const count = (outcome: CustomFunctionSyncResult['outcome']): number =>
     results.filter(({ result }) => result?.outcome === outcome).length;
   const failures = results.filter(({ error }) => error !== undefined);
+  const rejected = count('test-failed');
   logger.info(
     colors.magenta(
       `Custom function sync complete: ${count('created') + count('would-create')} created, ${
         count('updated') + count('would-update')
-      } updated, ${count('skipped')} skipped, ${failures.length} failed${dryRun ? ' (dry run)' : ''}`,
+      } updated, ${count('skipped')} skipped, ${rejected} rejected (test failed), ${
+        failures.length
+      } failed${dryRun ? ' (dry run)' : ''}`,
     ),
   );
 
-  if (failures.length > 0) {
+  if (failures.length > 0 || rejected > 0) {
     this.process.exit(1);
   }
 }

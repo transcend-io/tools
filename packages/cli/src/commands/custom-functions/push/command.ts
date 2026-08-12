@@ -50,6 +50,12 @@ export const pushCommand = buildCommand({
           'Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.',
         default: false,
       },
+      skipTests: {
+        kind: 'boolean',
+        brief:
+          'Skip test runs entirely, pushing functions without executing their test-payload files. Tests also do not run on --dryRun (nothing is signed on dry runs).',
+        default: false,
+      },
       updateManifest: {
         kind: 'boolean',
         brief:
@@ -72,9 +78,12 @@ export const pushCommand = buildCommand({
 Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
 
 1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
-2. Creates any custom functions that do not exist yet
-3. Pushes a new code revision for any function whose code or context changed
-4. Promotes new revisions to active (unless --promote=false)
+2. Test-runs the freshly signed code with the entry's test-payload JSON file, when one is defined (unless --skipTests)
+3. Creates any custom functions that do not exist yet
+4. Pushes a new code revision for any function whose code or context changed
+5. Promotes new revisions to active (unless --promote=false)
+
+Functions whose test run fails are rejected — the failure reason and the function's execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without a test-payload push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
 
 Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.`,
   },

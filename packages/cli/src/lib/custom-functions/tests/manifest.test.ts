@@ -64,6 +64,65 @@ describe('readCustomFunctionsManifest', () => {
     expect(configs[1]!.sombraAuthEnv).toBeUndefined();
   });
 
+  it('loads and parses test payload files relative to the manifest', () => {
+    const filePath = writeFixture(`functions:
+  - name: With Test
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/with-test.json
+    test-payload-type: REQUEST_ENRICHER
+  - name: Without Test
+    code: ./functions/b.ts
+`);
+    const dir = join(filePath, '..');
+    mkdirSync(join(dir, 'test-payloads'), { recursive: true });
+    writeFileSync(
+      join(dir, 'test-payloads', 'with-test.json'),
+      JSON.stringify({ lead: { email: 'test@example.com' } }),
+    );
+
+    const configs = readCustomFunctionsManifest(filePath);
+    expect(configs[0]).toMatchObject({
+      testPayload: { lead: { email: 'test@example.com' } },
+      testPayloadType: 'REQUEST_ENRICHER',
+    });
+    expect(configs[1]!.testPayload).toBeUndefined();
+    expect(configs[1]!.testPayloadType).toBeUndefined();
+  });
+
+  it('rejects a missing test payload file', () => {
+    const filePath = writeFixture(`functions:
+  - name: With Test
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/nope.json
+`);
+    expect(() => readCustomFunctionsManifest(filePath)).toThrow(
+      /Test payload file for custom function "With Test" does not exist/,
+    );
+  });
+
+  it('rejects a test payload file with invalid JSON', () => {
+    const filePath = writeFixture(`functions:
+  - name: With Test
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/bad.json
+`);
+    const dir = join(filePath, '..');
+    mkdirSync(join(dir, 'test-payloads'), { recursive: true });
+    writeFileSync(join(dir, 'test-payloads', 'bad.json'), '{ not json');
+    expect(() => readCustomFunctionsManifest(filePath)).toThrow(
+      /Test payload file for custom function "With Test" is not valid JSON/,
+    );
+  });
+
+  it('rejects an invalid test-payload-type', () => {
+    const filePath = writeFixture(`functions:
+  - name: With Test
+    code: ./functions/a.ts
+    test-payload-type: MAESTRO
+`);
+    expect(() => readCustomFunctionsManifest(filePath)).toThrow();
+  });
+
   it('rejects duplicate names without ids', () => {
     const filePath = writeFixture(`functions:
   - name: Same Name
