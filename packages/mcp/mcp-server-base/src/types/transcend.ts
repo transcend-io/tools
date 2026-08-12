@@ -85,6 +85,10 @@ export interface Request {
   completedAt?: string;
   daysRemaining?: number;
   link?: string;
+  /** Users assigned to this request (request owners / approval assignees) */
+  owners?: InventoryUserPreview[];
+  /** Teams assigned to this request */
+  teams?: InventoryTeamPreview[];
 }
 
 export interface RequestDetails extends Request {
@@ -105,11 +109,37 @@ export interface RequestIdentifier {
   isVerified: boolean;
 }
 
-export interface RequestDataSilo {
+/** Nested data silo preview on a request–data-silo job, including owners */
+export interface RequestDataSiloDataSilo {
+  /** Data silo ID */
   id: string;
-  dataSilo: DataSilo;
+  /** Display title */
+  title: string;
+  /** Integration / silo type */
+  type: string;
+  /** Catalog outer type when present */
+  outerType?: string;
+  /** Whether the silo is live */
+  isLive?: boolean;
+  /** Individual system owners */
+  owners?: InventoryUserPreview[];
+  /** Owner teams */
+  teams?: InventoryTeamPreview[];
+}
+
+export interface RequestDataSilo {
+  /** Request–data-silo job ID */
+  id: string;
+  /** Nested data silo (system) with owners when selected */
+  dataSilo: RequestDataSiloDataSilo;
+  /** Visual status of the job (e.g. ERROR, RESOLVED, WAITING) */
   status: string;
-  completedAt?: string;
+  /** Error message when the job failed */
+  error?: string;
+  /** Operator notes on this job */
+  details?: string;
+  /** Admin dashboard deep link */
+  link?: string;
 }
 
 export interface RequestFile {

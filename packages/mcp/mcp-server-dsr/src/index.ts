@@ -18,4 +18,9 @@ export {
 export { respondAccessSchema, type RespondAccessInput } from './tools/dsr_respond_access.js';
 export { respondErasureSchema, type RespondErasureInput } from './tools/dsr_respond_erasure.js';
 export { listIdentifiersSchema, type ListIdentifiersInput } from './tools/dsr_list_identifiers.js';
+export {
+  listRequestDataSilosSchema,
+  type ListRequestDataSilosInput,
+} from './tools/dsr_list_request_data_silos.js';
 export { analyzeDsrSchema, type AnalyzeDsrInput } from './tools/dsr_analyze.js';
+export type { ListRequestDataSilosOptions } from './graphql.js';
