@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-preferences
 
+## 0.5.14
+
+### Patch Changes
+
+- Updated dependencies [26fadc4]
+  - @transcend-io/mcp-server-base@1.1.1
+
 ## 0.5.13
 
 ### Patch Changes

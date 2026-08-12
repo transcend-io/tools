@@ -16,7 +16,6 @@ export function createDsrCancelTool(clients: ToolClients) {
     description: 'Cancel a Data Subject Request',
     category: 'DSR Automation',
     readOnly: false,
-    confirmationHint: 'Cancels the specified request permanently',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: cancelDsrSchema,
     handler: async ({ requestId, reason }) => {

@@ -92,6 +92,30 @@ describe('DSR_ERROR_MESSAGE', () => {
     ).toBe(
       'The following dataSiloIds are not connected to the workflow config "wf-123": silo-a, silo-b. dataSiloIds may only narrow the workflow\'s connected data silos.',
     );
+    expect(
+      DSR_ERROR_MESSAGE[DsrErrorCode.TypeNotMatchingWorkflow]({
+        workflowConfigId: 'wf-123',
+        providedType: 'ERASURE',
+        workflowType: 'ACCESS',
+      }),
+    ).toBe(
+      'The provided type "ERASURE" does not match the request action "ACCESS" of workflow config "wf-123". Omit type to derive it from the workflow config.',
+    );
+    expect(
+      DSR_ERROR_MESSAGE[DsrErrorCode.SubjectTypeNotMatchingWorkflow]({
+        workflowConfigId: 'wf-123',
+        providedSubjectType: 'employee',
+        workflowSubjectType: 'customer',
+      }),
+    ).toBe(
+      'The provided subjectType "employee" does not match the data subject type "customer" of workflow config "wf-123". Omit subjectType to derive it from the workflow config.',
+    );
+    expect(
+      DSR_ERROR_MESSAGE[DsrErrorCode.RegionNotInWorkflow]({
+        region: 'GB',
+        supportedRegions: ['US', 'CA'],
+      }),
+    ).toBe('Region "GB" is not eligible for this workflow. Supported regions: US, CA.');
   });
 
   it('renders UnknownDropRecords with truncation at MAX_UNKNOWN_DROP_RECORDS_IN_ERROR', () => {
