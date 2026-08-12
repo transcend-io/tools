@@ -7,20 +7,20 @@ It wraps the [`transcend custom-functions push`](https://github.com/transcend-io
 ## Prerequisites
 
 1. A Transcend API key with the **Manage Data Map** scope, stored as a repository secret (e.g. `TRANSCEND_API_KEY`).
-2. A manifest file in your repository (default: `./transcend-functions.yml`) mapping custom function names to TypeScript source files:
+2. Your Sombra internal key, stored as a repository secret (e.g. `SOMBRA_INTERNAL_KEY`). It is used for all functions unless a manifest entry points at its own key via `sombra-auth-env`.
+3. A manifest file in your repository (default: `./transcend-functions.yml`) mapping custom function names to TypeScript source files:
 
 ```yaml
 # transcend-functions.yml
 functions:
-  - name: Score Lead
-    code: ./functions/score-lead.ts
-    description: Scores an inbound lead against the CRM
-    test-payload: ./test-payloads/score-lead.json
-    allowed-hosts:
-      - api.example.com
+  - name: Update Preferences
+    code: ./functions/update-preferences.ts
+    description: Sync preference changes from an external system into the Preference Store
+    test-payload: ./test-payloads/update-preferences.json
     timeout-ms: 30000
     env:
-      CRM_API_KEY: <<parameters.crmApiKey>>
+      TRANSCEND_API_KEY: <<parameters.transcendApiKey>>
+      TRANSCEND_PARTITION: <<parameters.transcendPartition>>
   - name: DSR Lookup
     code: ./functions/dsr-lookup.ts
     type: DSR
@@ -29,12 +29,15 @@ functions:
     # writes the assigned ID back here.
     data-silo-id: 5a4b0f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     test-payload: ./test-payloads/dsr-lookup.json
-    test-payload-type: REQUEST_ENRICHER
+    allowed-hosts:
+      - warehouse.internal.example.com
+    env:
+      WAREHOUSE_API_KEY: <<parameters.warehouseApiKey>>
 ```
 
-3. Optionally, a `test-payloads/` folder with a JSON payload per function you want tested before promotion (see [Test-before-promote](#test-before-promote)).
+4. Optionally, a `test-payloads/` folder with a JSON payload per function you want tested before promotion (see [Test-before-promote](#test-before-promote)).
 
-See the [CLI documentation](https://github.com/transcend-io/tools/tree/main/packages/cli#transcend-custom-functions-push) for the full manifest schema.
+See the [CLI documentation](https://github.com/transcend-io/tools/tree/main/packages/cli#transcend-custom-functions-push) for the full manifest schema, and [examples/](./examples/) for the complete function sources — a GENERAL function syncing preference changes into the Preference Store, and a DSR function fulfilling access/erasure requests (with an `enricher` export), adapted from [these use cases](https://docs.transcend.io/docs/articles/rules-automation/webhook-user-guide#usecases).
 
 ### How entries are matched to existing functions
 
@@ -72,6 +75,7 @@ jobs:
         uses: transcend-io/tools/github-action@main
         with:
           api-key: ${{ secrets.TRANSCEND_API_KEY }}
+          sombra-auth: ${{ secrets.SOMBRA_INTERNAL_KEY }}
           dry-run: 'true'
 
       # Push and promote on merge to main
@@ -80,7 +84,8 @@ jobs:
         uses: transcend-io/tools/github-action@main
         with:
           api-key: ${{ secrets.TRANSCEND_API_KEY }}
-          variables: crmApiKey:${{ secrets.CRM_API_KEY }}
+          sombra-auth: ${{ secrets.SOMBRA_INTERNAL_KEY }}
+          variables: transcendApiKey:${{ secrets.TRANSCEND_PREFERENCES_API_KEY }},transcendPartition:${{ secrets.TRANSCEND_PARTITION }},warehouseApiKey:${{ secrets.WAREHOUSE_API_KEY }}
 ```
 
 ## Inputs
@@ -88,8 +93,8 @@ jobs:
 | Input             | Required | Default                     | Description                                                                                                                    |
 | ----------------- | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `api-key`         | Yes      | —                           | Transcend API key with the **Manage Data Map** scope.                                                                          |
-| `sombra-auth`     | No       | —                           | Sombra internal key, needed for additional authentication when self-hosting Sombra.                                            |
-| `transcend-url`   | No       | `https://api.transcend.io`  | Transcend backend URL. Use `https://api.us.transcend.io` for US hosting.                                                       |
+| `sombra-auth`     | Yes      | —                           | Sombra internal key. Used for all functions unless a manifest entry provides its own key via `sombra-auth-env`.                |
+| `transcend-url`   | No       | `https://api.transcend.io`  | Transcend backend URL.                                                                                                         |
 | `file`            | No       | `./transcend-functions.yml` | Path to the manifest file.                                                                                                     |
 | `variables`       | No       | `''`                        | Comma-separated `key:value` pairs templated into `<<parameters.key>>` placeholders in the manifest. Use for secret env values. |
 | `dry-run`         | No       | `false`                     | Report what would change without pushing anything.                                                                             |
@@ -102,7 +107,7 @@ jobs:
 
 ## Multiple Sombra gateways
 
-Functions in one manifest may belong to different Sombra gateways — set `sombra-id` per manifest entry and each function is signed against its own gateway. When self-hosted gateways use different internal keys, `sombra-auth` alone is not enough: set `sombra-auth-env` on the manifest entry to the name of an environment variable holding that gateway's key, and export the variable on the action step (composite action steps inherit the step's `env:`):
+Functions in one manifest may belong to different Sombra gateways — set `sombra-id` per manifest entry and each function is signed against its own gateway. The `sombra-auth` input is the default internal key for every function; when gateways use different internal keys, set `sombra-auth-env` on the manifest entry to the name of an environment variable holding that gateway's key, and export the variable on the action step (composite action steps inherit the step's `env:`):
 
 ```yaml
 - name: Push custom functions
@@ -132,9 +137,11 @@ Manifest entries with a `test-payload` file are tested before anything is pushed
 ```
 transcend-functions.yml
 functions/
-  score-lead.ts
+  update-preferences.ts
+  dsr-lookup.ts
 test-payloads/
-  score-lead.json
+  update-preferences.json
+  dsr-lookup.json
 ```
 
 On a push, each changed or new function is signed against your Sombra gateway, then the signed code is executed on that gateway with the payload as a test run (nothing is persisted). Functions whose test passes (no error, exit code ≤ 0) are pushed and promoted; functions whose test fails are **rejected** — the failure reason and the run's execution logs are printed to the workflow log, nothing is pushed for that function, and the job fails.
@@ -152,7 +159,7 @@ Test runs require backend support for pre-signed code JWTs on the `runCustomFunc
 
 ## How it works
 
-1. The action signs each function's code and context directly against your Sombra gateway's customer ingress over TLS, authenticated by your API key (plus the Sombra internal key when self-hosting). Code and env values never reach Transcend's backend in plaintext — only the signed JWTs are saved via the API.
+1. The action signs each function's code and context directly against your Sombra gateway's customer ingress over TLS, authenticated by your API key and Sombra internal key. Code and env values never reach Transcend's backend in plaintext — only the signed JWTs are saved via the API.
 2. New DSR functions without a `data-silo-id` get their DSR integration (data silo) created automatically; a failing test rolls it back.
 3. Functions with a `test-payload` are test-run on your Sombra gateway with the freshly signed code; failures are rejected and fail the job.
 4. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).

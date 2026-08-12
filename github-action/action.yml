@@ -16,14 +16,12 @@ inputs:
     required: true
   sombra-auth:
     description: >-
-      Sombra internal key, needed for additional authentication when
-      self-hosting Sombra. Store this as a GitHub Actions secret.
-    required: false
-    default: ''
+      Sombra internal key, used to authenticate against your Sombra gateway.
+      Applies to all functions unless a manifest entry provides its own key
+      via `sombra-auth-env`. Store this as a GitHub Actions secret.
+    required: true
   transcend-url:
-    description: >-
-      URL of the Transcend backend. Use https://api.us.transcend.io for US
-      hosting.
+    description: 'URL of the Transcend backend.'
     required: false
     default: 'https://api.transcend.io'
   file:

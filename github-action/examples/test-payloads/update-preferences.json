@@ -1,0 +1,7 @@
+{
+  "identifier": "jane.doe@example.com",
+  "source": "snowflake",
+  "purpose": "Marketing",
+  "enabled": true,
+  "preferences": [{ "topic": "ContactMethod", "value": ["Email"] }]
+}
