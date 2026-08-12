@@ -13,7 +13,10 @@ export function createDsrListTool(clients: ToolClients) {
   return defineTool({
     name: 'dsr_list',
     description:
-      'List all Data Subject Requests. Use cursor pagination to retrieve all results (max 100 per page). Note: Server-side date filtering is not available - filter results client-side if needed.',
+      'List Data Subject Requests with assigned owners and teams. Use cursor pagination to retrieve ' +
+      'all results (max 100 per page). Note: Server-side date filtering is not available — filter ' +
+      'results client-side if needed. For per-system failures and system owners, use ' +
+      'dsr_list_request_data_silos on a specific request.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

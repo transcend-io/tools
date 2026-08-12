@@ -102,8 +102,9 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-- `dsr_list` — List data subject requests
-- `dsr_get_details` — Get request details
+- `dsr_list` — List data subject requests (includes assigned owners and teams)
+- `dsr_get_details` — Get request details (includes assigned owners and teams)
+- `dsr_list_request_data_silos` — List connected systems for a request (status, errors, system owners)
 - `dsr_submit` — Submit a new DSR
 - `dsr_submit_on_behalf` — Submit a DSR as an admin on behalf of a data subject
 - `dsr_cancel` — Cancel a request

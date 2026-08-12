@@ -12,7 +12,10 @@ export function createDsrGetDetailsTool(clients: ToolClients) {
 
   return defineTool({
     name: 'dsr_get_details',
-    description: 'Get detailed information about a specific Data Subject Request',
+    description:
+      'Get detailed information about a specific Data Subject Request, including assigned request ' +
+      'owners (individual assignees) and teams. For connected system status, failures, and system ' +
+      'owners, use dsr_list_request_data_silos.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
