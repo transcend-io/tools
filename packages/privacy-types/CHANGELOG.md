@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.16.0
+
+### Minor Changes
+
+- 3aab830: Add `DsrErrorCode.DataSiloNotInWorkflow` for bulk DSR submissions that name `dataSiloIds` outside the workflow config's connected set.
+
 ## 5.15.0
 
 ### Minor Changes
