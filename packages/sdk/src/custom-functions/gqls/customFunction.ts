@@ -74,6 +74,27 @@ export const UPDATE_STANDALONE_CUSTOM_FUNCTION = gql`
   }
 `;
 
+export const RUN_CUSTOM_FUNCTION = gql`
+  mutation TranscendCliRunCustomFunction($input: RunCustomFunctionInput!) {
+    runCustomFunction(input: $input) {
+      result {
+        exitCode
+        error {
+          message
+          stack
+        }
+        logs {
+          message
+          file
+        }
+        profile {
+          timeMs
+        }
+      }
+    }
+  }
+`;
+
 export const PROMOTE_CUSTOM_FUNCTION_VERSION = gql`
   mutation TranscendCliPromoteCustomFunctionVersion($input: PromoteCustomFunctionVersionInput!) {
     promoteCustomFunctionVersion(input: $input) {

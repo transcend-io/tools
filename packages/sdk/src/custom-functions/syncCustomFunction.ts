@@ -10,6 +10,11 @@ import {
   PROMOTE_CUSTOM_FUNCTION_VERSION,
   UPDATE_STANDALONE_CUSTOM_FUNCTION,
 } from './gqls/index.js';
+import {
+  runCustomFunctionTest,
+  type CustomFunctionTestPayloadType,
+  type CustomFunctionTestRunResult,
+} from './runCustomFunctionTest.js';
 import { signCustomFunctionCode } from './signCustomFunctionCode.js';
 
 /**
@@ -54,6 +59,8 @@ export type CustomFunctionSyncOutcome =
   | 'updated'
   /** No changes detected; nothing was pushed */
   | 'skipped'
+  /** The test run failed; nothing was pushed */
+  | 'test-failed'
   /** Dry run: a new custom function would be created */
   | 'would-create'
   /** Dry run: a new revision would be pushed */
@@ -73,6 +80,8 @@ export interface CustomFunctionSyncResult {
   changedFields: string[];
   /** Whether the pushed revision was promoted to active */
   promoted: boolean;
+  /** The test-run result, when a test payload was provided and the code was tested */
+  testResult?: CustomFunctionTestRunResult;
 }
 
 /**
@@ -211,6 +220,15 @@ export async function syncCustomFunction(
     dryRun?: boolean;
     /** When true, push a new revision even if no changes were detected */
     force?: boolean;
+    /**
+     * JSON test payload to run the freshly signed code with before pushing.
+     * When set, the code is tested via the `runCustomFunction` mutation and
+     * the push is rejected (outcome `test-failed`) if the test fails.
+     * Skipped on dry runs (nothing is signed).
+     */
+    testPayload?: object;
+    /** Which export to invoke for DSR test runs. Defaults to DATA_POINT */
+    testPayloadType?: CustomFunctionTestPayloadType;
     /** Logger instance */
     logger?: Logger;
   },
@@ -223,6 +241,8 @@ export async function syncCustomFunction(
     promote = true,
     dryRun = false,
     force = false,
+    testPayload,
+    testPayloadType,
     logger = NOOP_LOGGER,
   } = options;
   const type: CustomFunctionType = input.type ?? 'GENERAL';
@@ -276,6 +296,36 @@ export async function syncCustomFunction(
     { customFunctionId: existing?.id },
   );
 
+  // Test the freshly signed code before pushing anything. A failing test
+  // rejects the push so a broken revision never reaches (or is promoted on)
+  // the function.
+  let testResult: CustomFunctionTestRunResult | undefined;
+  if (testPayload !== undefined) {
+    logger.info(`Testing custom function "${input.name}" before push...`);
+    testResult = await runCustomFunctionTest(client, {
+      type,
+      signedCodeJwt,
+      signedCodeContextJwt,
+      payload: testPayload,
+      // GENERAL runs on the function's gateway; DSR derives the gateway from
+      // the payload's `extras.dataSilo.id`
+      ...(type === 'GENERAL' && effectiveSombraId !== undefined
+        ? { sombraId: effectiveSombraId }
+        : {}),
+      ...(type === 'DSR' && testPayloadType !== undefined ? { payloadType: testPayloadType } : {}),
+      logger,
+    });
+    if (!testResult.passed) {
+      return {
+        outcome: 'test-failed',
+        ...(existing ? { customFunctionId: existing.id } : {}),
+        changedFields,
+        promoted: false,
+        testResult,
+      };
+    }
+  }
+
   // Create fresh
   if (!existing) {
     const {
@@ -325,6 +375,7 @@ export async function syncCustomFunction(
       ...(version ? { versionNumber: version.versionNumber } : {}),
       changedFields,
       promoted: promote,
+      ...(testResult ? { testResult } : {}),
     };
   }
 
@@ -385,5 +436,6 @@ export async function syncCustomFunction(
     versionNumber: draft.versionNumber,
     changedFields,
     promoted: promote,
+    ...(testResult ? { testResult } : {}),
   };
 }
