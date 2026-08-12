@@ -45,6 +45,17 @@ export const DsrErrorCode = makeEnum({
    * workflow config. `dataSiloIds` may only narrow the workflow's connected set.
    */
   DataSiloNotInWorkflow: 'DATA_SILO_NOT_IN_WORKFLOW',
+  /**
+   * The `type` asserted on this request does not match the workflow config's
+   * request action. `type` is optional; omit it to derive from the workflow.
+   */
+  TypeNotMatchingWorkflow: 'TYPE_NOT_MATCHING_WORKFLOW',
+  /**
+   * The `subjectType` asserted on this request does not match the workflow
+   * config's data subject type. `subjectType` is optional; omit it to derive
+   * from the workflow.
+   */
+  SubjectTypeNotMatchingWorkflow: 'SUBJECT_TYPE_NOT_MATCHING_WORKFLOW',
 });
 
 /** Type override */
