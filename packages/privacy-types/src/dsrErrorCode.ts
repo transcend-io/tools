@@ -56,6 +56,12 @@ export const DsrErrorCode = makeEnum({
    * from the workflow.
    */
   SubjectTypeNotMatchingWorkflow: 'SUBJECT_TYPE_NOT_MATCHING_WORKFLOW',
+  /**
+   * The request region is not eligible for the workflow config's regionList.
+   * The supplied country or subdivision must match an entry in regionList when
+   * the workflow collects regions and regionList is non-empty.
+   */
+  RegionNotInWorkflow: 'REGION_NOT_IN_WORKFLOW',
 });
 
 /** Type override */
