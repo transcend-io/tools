@@ -27,10 +27,13 @@ jobs:
       - name: Bootstrap
         uses: ./.github/commands/bootstrap
 
+      # No CHANGESET_BASE_SHA override: `github.event.pull_request.base.sha` is
+      # frozen at PR-creation time, so on long-lived PRs it drags every commit
+      # merged to the base branch since then into the diff. The script's
+      # `origin/${GITHUB_BASE_REF}` fallback diffs three-dot from the current
+      # merge base instead, which only sees the PR's own changes.
       - if: github.event_name == 'pull_request'
         name: Check changeset
-        env:
-          CHANGESET_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: pnpm check:changeset
 
       - name: Check package consistency
