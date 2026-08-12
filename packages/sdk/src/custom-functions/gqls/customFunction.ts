@@ -10,6 +10,7 @@ export const CUSTOM_FUNCTIONS = gql`
         type
         lifecycleState
         sombraId
+        dataSiloId
         signedCodeJwt
         signedCodeContextJwt
         hasPendingDraft
@@ -70,6 +71,25 @@ export const UPDATE_STANDALONE_CUSTOM_FUNCTION = gql`
         }
       }
       success
+    }
+  }
+`;
+
+export const CREATE_CUSTOM_FUNCTION_DATA_SILO = gql`
+  mutation TranscendCliCreateCustomFunctionDataSilo($input: [CreateDataSilosInput!]!) {
+    createDataSilos(input: $input) {
+      dataSilos {
+        id
+        title
+      }
+    }
+  }
+`;
+
+export const DELETE_DATA_SILOS = gql`
+  mutation TranscendCliDeleteDataSilos($input: DeleteDataSilosInput!) {
+    deleteDataSilos(input: $input) {
+      clientMutationId
     }
   }
 `;
