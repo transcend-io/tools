@@ -49,6 +49,8 @@ export interface CustomFunction {
   lifecycleState: CustomFunctionLifecycleState;
   /** ID of the Sombra gateway the function belongs to (signs its code and runs it) */
   sombraId?: string | null;
+  /** ID of the data silo (DSR integration) the function is linked to, for DSR functions */
+  dataSiloId?: string | null;
   /** Signed code JWT of the preferred (draft if pending, else active) version */
   signedCodeJwt: string;
   /** Signed code context JWT of the preferred version */
