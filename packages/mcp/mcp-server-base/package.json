@@ -46,6 +46,7 @@
   "dependencies": {
     "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
+    "@transcend-io/type-utils": "workspace:*",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "graphql": "catalog:",
