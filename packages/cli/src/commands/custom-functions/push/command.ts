@@ -78,10 +78,11 @@ export const pushCommand = buildCommand({
 Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
 
 1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
-2. Test-runs the freshly signed code with the entry's test-payload JSON file, when one is defined (unless --skipTests)
-3. Creates any custom functions that do not exist yet
-4. Pushes a new code revision for any function whose code or context changed
-5. Promotes new revisions to active (unless --promote=false)
+2. Creates the DSR integration (data silo) for any new DSR function that does not specify a data-silo-id
+3. Test-runs the freshly signed code with the entry's test-payload JSON file, when one is defined (unless --skipTests). A failing test rolls back any integration created in step 2
+4. Creates any custom functions that do not exist yet (linking new DSR functions to their integration)
+5. Pushes a new code revision for any function whose code or context changed
+6. Promotes new revisions to active (unless --promote=false)
 
 Functions whose test run fails are rejected — the failure reason and the function's execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without a test-payload push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
 

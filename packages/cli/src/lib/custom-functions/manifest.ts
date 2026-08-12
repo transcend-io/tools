@@ -5,7 +5,7 @@ import type { CustomFunctionConfigInput } from '@transcend-io/sdk';
 import { decodeCodec, type ObjByString } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 import yaml from 'js-yaml';
-import { isMap, isSeq, parseDocument } from 'yaml';
+import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 
 import { replaceVariablesInYaml } from '../readTranscendYaml.js';
 
@@ -179,21 +179,34 @@ export function readCustomFunctionsManifest(
 }
 
 /**
- * Write custom function IDs back into a manifest file, so future pushes match
- * by ID instead of by (potentially non-unique) name.
+ * The IDs assigned to a manifest entry during a push, to write back into the
+ * manifest file.
+ */
+export interface CustomFunctionManifestIds {
+  /** Custom function ID */
+  id?: string;
+  /** Data silo (DSR integration) ID, for DSR functions */
+  dataSiloId?: string;
+}
+
+/**
+ * Write custom function and data silo IDs back into a manifest file, so
+ * future pushes match by ID instead of by (potentially non-unique) name and
+ * DSR entries keep pointing at their integration.
  *
  * The raw file text is edited via a comment- and formatting-preserving YAML
  * document, so comments and un-substituted `<<parameters.x>>` placeholders
- * survive untouched. Only entries that are missing an `id` are modified.
+ * survive untouched. Only entries that are missing the respective key are
+ * modified.
  *
  * @param filePath - Path to the manifest YAML file
- * @param idsByIndex - Custom function ID for each manifest entry, by array
- *   index (undefined entries are left unchanged)
+ * @param idsByIndex - IDs for each manifest entry, by array index (undefined
+ *   entries are left unchanged)
  * @returns The number of entries that were updated
  */
 export function writeCustomFunctionIdsToManifest(
   filePath: string,
-  idsByIndex: (string | undefined)[],
+  idsByIndex: (CustomFunctionManifestIds | undefined)[],
 ): number {
   const document = parseDocument(readFileSync(filePath, 'utf-8'));
   const functions = document.get('functions');
@@ -203,13 +216,25 @@ export function writeCustomFunctionIdsToManifest(
 
   let updated = 0;
   functions.items.forEach((item, index) => {
-    const id = idsByIndex[index];
-    if (!id || !isMap(item) || item.has('id')) {
+    const ids = idsByIndex[index];
+    if (!ids || !isMap(item)) {
       return;
     }
-    // Place `id` first so it reads as the entry's key
-    item.items.unshift(document.createPair('id', id));
-    updated += 1;
+    let changed = false;
+    if (ids.id && !item.has('id')) {
+      // Place `id` first so it reads as the entry's key
+      item.items.unshift(document.createPair('id', ids.id));
+      changed = true;
+    }
+    if (ids.dataSiloId && !item.has('data-silo-id')) {
+      // Place `data-silo-id` right after `id` (or first when there is no id)
+      const idIndex = item.items.findIndex((pair) => isScalar(pair.key) && pair.key.value === 'id');
+      item.items.splice(idIndex + 1, 0, document.createPair('data-silo-id', ids.dataSiloId));
+      changed = true;
+    }
+    if (changed) {
+      updated += 1;
+    }
   });
 
   if (updated > 0) {

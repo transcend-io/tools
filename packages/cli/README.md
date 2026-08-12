@@ -2442,10 +2442,11 @@ Sync custom function source code from your repository to Transcend.
 Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
 
 1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
-2. Test-runs the freshly signed code with the entry's test-payload JSON file, when one is defined (unless --skipTests)
-3. Creates any custom functions that do not exist yet
-4. Pushes a new code revision for any function whose code or context changed
-5. Promotes new revisions to active (unless --promote=false)
+2. Creates the DSR integration (data silo) for any new DSR function that does not specify a data-silo-id
+3. Test-runs the freshly signed code with the entry's test-payload JSON file, when one is defined (unless --skipTests). A failing test rolls back any integration created in step 2
+4. Creates any custom functions that do not exist yet (linking new DSR functions to their integration)
+5. Pushes a new code revision for any function whose code or context changed
+6. Promotes new revisions to active (unless --promote=false)
 
 Functions whose test run fails are rejected — the failure reason and the function's execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without a test-payload push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
 
@@ -2496,8 +2497,8 @@ functions:
 | `code`                      | Yes      | Path to the TypeScript source file, relative to the manifest.                                                                                                                                                                                                         |
 | `id`                        | No       | Custom function ID. When set, it becomes the sync key (allowing renames and disambiguating non-unique names). Find IDs via `transcend custom-functions list`, or let `--updateManifest` fill them in after a push.                                                    |
 | `description`               | No       | Description shown in the Transcend dashboard.                                                                                                                                                                                                                         |
-| `type`                      | No       | `GENERAL` (default) or `DSR`. DSR functions require `data-silo-id`.                                                                                                                                                                                                   |
-| `data-silo-id`              | DSR only | The data silo the DSR function is attached to.                                                                                                                                                                                                                        |
+| `type`                      | No       | `GENERAL` (default) or `DSR`.                                                                                                                                                                                                                                         |
+| `data-silo-id`              | DSR only | The data silo (DSR integration) the DSR function is attached to. When omitted for a **new** DSR function, the integration is created automatically (see below) and `--updateManifest` writes the assigned ID back.                                                    |
 | `sombra-id`                 | No       | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or `--sombraId`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway. |
 | `sombra-auth-env`           | No       | Name of the environment variable holding the internal key of the function's Sombra gateway (e.g. `SOMBRA_EU_INTERNAL_KEY`). The key itself never lives in the manifest — it is read from the environment at push time. Overrides `--sombraAuth` for this entry.       |
 | `test-payload`              | No       | Path to a JSON file (relative to the manifest) with the payload to test-run the function with before pushing. When set, the freshly signed code is executed on your Sombra gateway as a test run, and the push is rejected if the run errors or exits non-zero.       |
@@ -2534,14 +2535,25 @@ Each entry is resolved against the custom functions in your organization in this
 
 Within the manifest itself, duplicate `id`s are always rejected, and duplicate `name`s are only allowed when every entry sharing the name has an `id`.
 
-Because ID matching is strictly safer, prefer pinning IDs once functions exist: run `transcend custom-functions push --updateManifest` after the first push and the assigned IDs are written back into the manifest automatically (comments and `<<parameters.x>>` placeholders are preserved).
+Because ID matching is strictly safer, prefer pinning IDs once functions exist: run `transcend custom-functions push --updateManifest` after the first push and the assigned IDs are written back into the manifest automatically (comments and `<<parameters.x>>` placeholders are preserved). For DSR functions, the assigned `data-silo-id` is written back the same way.
+
+#### New DSR functions: the integration is created automatically
+
+A **new** DSR entry (no `id`, no matching function by name) that omits `data-silo-id` gets its DSR integration created as part of the push:
+
+1. A `customFunction`-catalog data silo is created, titled after the function, on the entry's Sombra gateway (`sombra-id`, else `--sombraId`, else the organization's primary Sombra). It starts `NOT_CONFIGURED` with nothing attached.
+2. The signed code is test-run against that silo (when a `test-payload` is set) — DSR test payloads always get `extras.dataSilo` injected from the resolved silo, so payload files never need to hardcode silo IDs.
+3. On a passing test the custom function is created and linked to the silo (which becomes `Connected`). On a failing test the silo is **rolled back** (deleted) and the function is rejected.
+4. With `--updateManifest`, both the custom function `id` and the `data-silo-id` are written back into the manifest.
+
+DSR entries that already pin a `data-silo-id` behave as before — the integration must exist and the function is attached to it.
 
 #### Test-before-promote
 
 Entries with a `test-payload` are tested before anything is pushed:
 
 1. The code and context are signed against the function's Sombra gateway.
-2. The signed code is executed as a test run with the payload JSON (via the `runCustomFunction` mutation — nothing is persisted). GENERAL functions run on the function's gateway; DSR functions run on the gateway of the data silo referenced by `extras.dataSilo.id` in the payload.
+2. The signed code is executed as a test run with the payload JSON (via the `runCustomFunction` mutation — nothing is persisted). GENERAL functions run on the function's gateway; DSR functions run on the gateway of the function's data silo — `extras.dataSilo` is injected into the payload automatically from the entry's resolved silo, so payload files never need to hardcode silo IDs.
 3. **Pass** (no error, exit code ≤ 0): the revision is pushed and promoted as usual.
 4. **Fail**: the function is rejected — the failure reason and the run's logs are printed, nothing is pushed for that function, and the command exits 1.
 
