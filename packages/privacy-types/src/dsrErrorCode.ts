@@ -32,6 +32,8 @@ export const DsrErrorCode = makeEnum({
   UnknownDropRecords: 'UNKNOWN_DROP_RECORDS',
   /** The DROP run referenced by this request does not exist. */
   DropRunNotFound: 'DROP_RUN_NOT_FOUND',
+  /** The DROP run referenced by this request is in a state that no longer accepts new DROP-linked DSRs. */
+  DropRunNotIntakeEligible: 'DROP_RUN_NOT_INTAKE_ELIGIBLE',
   /** An identifier value on this request failed format or regex validation. */
   IdentifierValidationFailed: 'IDENTIFIER_VALIDATION_FAILED',
   /** This request names an identifier the organization does not have configured. */
