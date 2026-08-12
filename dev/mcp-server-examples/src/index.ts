@@ -8,4 +8,9 @@ export {
   type FormOutcome,
 } from './tools/elicitation.js';
 
+export {
+  ExampleConsequentialSchema,
+  type ExampleConsequentialInput,
+} from './tools/consequential.js';
+
 export { HELLO_APP_RESOURCE, HELLO_APP_URI } from './apps/hello.js';

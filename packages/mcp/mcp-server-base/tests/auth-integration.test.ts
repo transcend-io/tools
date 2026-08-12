@@ -196,6 +196,7 @@ function mcpServerFactory(mockBackendUrl: string): McpHttpServerOptions['createS
       name: 'auth-integration-test',
       version: '0.0.1',
       tools: [makeGraphqlPingTool(graphql)],
+      transport: 'http',
     });
   };
 }

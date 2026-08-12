@@ -22,6 +22,8 @@ import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import { toolCallContext } from '../tool-call-context.js';
+import { ApprovalTokenStore } from '../tools/approval-tokens.js';
+import { ConfirmationPolicy, type ConfirmationGate } from '../tools/confirmation.js';
 import {
   expandToolsForClient,
   isCapabilityAwareTool,
@@ -44,6 +46,8 @@ export interface BuildMcpServerOptions {
   tools: ToolDefinition[];
   /** Optional MCP initialize instructions injected into the client system prompt. */
   instructions?: string;
+  /** Required. Controls whether form-less hosts get an approval token (`stdio`) or are refused (`http`). */
+  transport: 'stdio' | 'http';
 }
 
 /**
@@ -138,6 +142,31 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   logger.info(`Registered ${registered.length} tools`, { toolCount: registered.length });
 
+  // Only stdio has a person at the other end. Over HTTP the caller is another
+  // service, so gated tools are refused outright rather than trusting whatever
+  // that service declared about its ability to ask someone.
+  const gate: ConfirmationGate =
+    options.transport === 'stdio'
+      ? { policy: ConfirmationPolicy.AskOrToken, tokens: new ApprovalTokenStore() }
+      : { policy: ConfirmationPolicy.Refuse };
+
+  const gated = registered.filter((tool) => tool.confirmation).map((tool) => tool.name);
+  if (gated.length > 0) {
+    const detail = { tools: gated, policy: gate.policy };
+    if (gate.policy === ConfirmationPolicy.Refuse) {
+      // Warn rather than inform: these tools are listed and callable but can never
+      // run, which is far easier to diagnose from startup output than from a single
+      // puzzling refusal in the middle of a conversation.
+      logger.warn(
+        `${gated.length} tools require human confirmation, which this transport cannot obtain. ` +
+          'They will refuse every call.',
+        detail,
+      );
+    } else {
+      logger.info(`${gated.length} tools require human confirmation`, detail);
+    }
+  }
+
   // Read once at construction: the value cannot change for a running process,
   // and warning here means it appears in startup output rather than buried in a
   // per-request log.
@@ -207,7 +236,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   /** Tool set for the current client, keyed by name for dispatch. */
   const toolsForClient = (client: ClientCapabilityReport): Map<string, ToolDefinition> => {
     const map = new Map<string, ToolDefinition>();
-    for (const tool of expandToolsForClient(registered, client)) {
+    for (const tool of expandToolsForClient(registered, client, gate)) {
       if (!map.has(tool.name)) map.set(tool.name, tool);
     }
     return map;

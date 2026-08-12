@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
 import type { ElicitRequestFormParams, ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 
 import { McpClientCapability, type ClientCapabilityReport } from './capabilities/types.js';
@@ -54,6 +55,11 @@ export function hasCapability(
  * and fall back to their own behavior. Attempting the request anyway would throw
  * inside the SDK, since `elicitInput` checks the declared capability itself.
  *
+ * Declaring the capability is not a promise to honor the request: this can still
+ * reject if the host errors, never answers within the timeout, or replies with a
+ * shape the SDK validates `requestedSchema` against and refuses. Callers waiting
+ * on a person's answer should catch that and treat it as no answer.
+ *
  * `requestedSchema` is restricted by the spec to a flat object of primitives —
  * no nesting. {@link assertElicitFormSchema} enforces that at tool construction.
  */
@@ -62,10 +68,15 @@ export async function requestElicitation(
   message: string,
   /** Flat, primitives-only JSON Schema describing the fields to collect */
   requestedSchema: ElicitRequestFormParams['requestedSchema'],
+  /**
+   * Overrides for the outbound request. Worth setting `timeout` whenever a person
+   * has to read and answer, since the SDK default is 60s.
+   */
+  options?: RequestOptions,
 ): Promise<ElicitResult | undefined> {
   const session = getMcpSession();
   if (!session || !session.client.capabilities.has(McpClientCapability.Elicitation)) {
     return undefined;
   }
-  return await session.server.elicitInput({ mode: 'form', message, requestedSchema });
+  return await session.server.elicitInput({ mode: 'form', message, requestedSchema }, options);
 }
