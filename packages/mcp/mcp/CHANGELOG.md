@@ -1,5 +1,26 @@
 # @transcend-io/mcp
 
+## 0.10.4
+
+### Patch Changes
+
+- 7d980a1: Expose DSR request assignees and connected-system owners through MCP so Agentic Assist can answer who owns approval bottlenecks and failed systems.
+
+  `dsr_list` and `dsr_get_details` now return each request's assigned owners and teams. A new `dsr_list_request_data_silos` tool lists per-system processing status (including errors) with nested data-silo owners and teams, so bottleneck questions no longer hit a capability gap.
+
+- Updated dependencies [4404c48]
+- Updated dependencies [7d980a1]
+  - @transcend-io/mcp-server-base@1.2.0
+  - @transcend-io/mcp-server-dsr@0.6.0
+  - @transcend-io/mcp-server-admin@0.5.15
+  - @transcend-io/mcp-server-assessment@0.5.15
+  - @transcend-io/mcp-server-consent@0.6.15
+  - @transcend-io/mcp-server-discovery@0.5.15
+  - @transcend-io/mcp-server-docs@0.3.15
+  - @transcend-io/mcp-server-inventory@0.6.4
+  - @transcend-io/mcp-server-preferences@0.5.15
+  - @transcend-io/mcp-server-workflows@0.5.15
+
 ## 0.10.3
 
 ### Patch Changes

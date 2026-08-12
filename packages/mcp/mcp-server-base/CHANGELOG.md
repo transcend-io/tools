@@ -1,5 +1,17 @@
 # @transcend-io/mcp-server-base
 
+## 1.2.0
+
+### Minor Changes
+
+- 4404c48: **@transcend-io/mcp-server-base:** Add an in-memory `ApprovalTokenStore` for the confirmation-gate fallback path. A token is bound to a tool name, a hash of the arguments the caller was asked to approve, and the caller's auth subject; it is single-use, has a short TTL, and is claimed on the second `tools/call` that supplies it. The store is not yet wired into a gate — that arrives with the confirmation-gate PR — so this change ships an internal primitive with no user-visible behavior change.
+
+### Patch Changes
+
+- 7d980a1: Expose DSR request assignees and connected-system owners through MCP so Agentic Assist can answer who owns approval bottlenecks and failed systems.
+
+  `dsr_list` and `dsr_get_details` now return each request's assigned owners and teams. A new `dsr_list_request_data_silos` tool lists per-system processing status (including errors) with nested data-silo owners and teams, so bottleneck questions no longer hit a capability gap.
+
 ## 1.1.1
 
 ### Patch Changes

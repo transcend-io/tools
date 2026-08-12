@@ -1,5 +1,12 @@
 # @transcend-io/privacy-types
 
+## 5.18.0
+
+### Minor Changes
+
+- c198439: Add `DsrErrorCode.RegionNotInWorkflow` for bulk DSR submissions whose region is outside the workflow config's `regionList`.
+- 60f2200: Add `DsrErrorCode.TypeNotMatchingWorkflow` and `DsrErrorCode.SubjectTypeNotMatchingWorkflow` with parameterized `DSR_ERROR_MESSAGE` builders, emitted when a bulk DSR submission asserts a `type` or `subjectType` that does not match the targeted workflow config.
+
 ## 5.17.0
 
 ### Minor Changes
