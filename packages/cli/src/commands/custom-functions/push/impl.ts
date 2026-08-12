@@ -190,6 +190,13 @@ export async function push(
         result.changedFields.length > 0 ? ` [${result.changedFields.join(', ')}]` : '';
       switch (result.outcome) {
         case 'created':
+          if (result.createdDataSilo && result.dataSiloId) {
+            logger.info(
+              colors.green(
+                `Created DSR integration (data silo ${result.dataSiloId}) for "${input.name}"`,
+              ),
+            );
+          }
           logger.info(colors.green(`Created custom function "${input.name}"${suffix}`));
           break;
         case 'updated':
@@ -205,7 +212,15 @@ export async function push(
           logger.info(colors.yellow(`Skipped "${input.name}" — no changes detected`));
           break;
         case 'would-create':
-          logger.info(colors.cyan(`[dry run] Would create custom function "${input.name}"`));
+          logger.info(
+            colors.cyan(
+              `[dry run] Would create custom function "${input.name}"${
+                input.type === 'DSR' && !input.dataSiloId
+                  ? ' and its DSR integration (data silo)'
+                  : ''
+              }`,
+            ),
+          );
           break;
         case 'would-update':
           logger.info(
@@ -226,6 +241,13 @@ export async function push(
           (execution?.logs ?? []).forEach(({ file: logFile, message }) => {
             logger.error(colors.red(`  [${logFile}] ${message}`));
           });
+          if (result.createdDataSilo) {
+            logger.error(
+              colors.red(
+                `  The DSR integration (data silo) created for "${input.name}" was rolled back.`,
+              ),
+            );
+          }
           break;
         }
       }
@@ -253,16 +275,26 @@ export async function push(
   });
 
   // Write assigned IDs back into the manifest so future pushes match by ID
-  // instead of by (potentially non-unique) name
+  // instead of by (potentially non-unique) name, and DSR entries keep
+  // pointing at their (possibly auto-created) integration
   if (updateManifest && !dryRun) {
-    const idsByIndex = configs.map((input, index) =>
-      input.id ? undefined : results[index]?.result?.customFunctionId,
-    );
+    const idsByIndex = configs.map((input, index) => {
+      const result = results[index]?.result;
+      if (!result) {
+        return undefined;
+      }
+      const ids = {
+        ...(!input.id && result.customFunctionId ? { id: result.customFunctionId } : {}),
+        ...(!input.dataSiloId && result.dataSiloId ? { dataSiloId: result.dataSiloId } : {}),
+      };
+      return Object.keys(ids).length > 0 ? ids : undefined;
+    });
     const updatedCount = writeCustomFunctionIdsToManifest(file, idsByIndex);
     if (updatedCount > 0) {
       logger.info(
         colors.green(
-          `Wrote ${updatedCount} custom function id(s) back to "${file}" — commit this change so future pushes match by ID.`,
+          `Wrote assigned id(s) back to ${updatedCount} manifest entr(ies) in "${file}" — ` +
+            'commit this change so future pushes match by ID.',
         ),
       );
     }

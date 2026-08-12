@@ -155,8 +155,8 @@ describe('writeCustomFunctionIdsToManifest', () => {
     const filePath = writeFixture(MANIFEST);
 
     const updated = writeCustomFunctionIdsToManifest(filePath, [
-      'new-id-1',
-      'should-not-overwrite',
+      { id: 'new-id-1' },
+      { id: 'should-not-overwrite' },
       undefined,
     ]);
     expect(updated).toBe(1);
@@ -177,11 +177,47 @@ describe('writeCustomFunctionIdsToManifest', () => {
     expect(configs[0]!.id).toBe('new-id-1');
   });
 
+  it('inserts data-silo-id right after the id', () => {
+    const filePath = writeFixture(MANIFEST);
+
+    const updated = writeCustomFunctionIdsToManifest(filePath, [
+      { id: 'new-id-1', dataSiloId: 'silo-1' },
+      undefined,
+      { dataSiloId: 'silo-3' },
+    ]);
+    expect(updated).toBe(2);
+
+    const contents = readFileSync(filePath, 'utf-8');
+    expect(contents).toContain('- id: new-id-1\n    data-silo-id: silo-1\n    name: Score Lead');
+    // Entry with an existing id gets data-silo-id after it
+    expect(contents).toContain('id: existing-id-3\n    data-silo-id: silo-3');
+
+    const configs = readCustomFunctionsManifest(filePath, { crmApiKey: 'secret' });
+    expect(configs[0]).toMatchObject({ id: 'new-id-1', dataSiloId: 'silo-1' });
+    expect(configs[2]).toMatchObject({ id: 'existing-id-3', dataSiloId: 'silo-3' });
+  });
+
+  it('does not overwrite an existing data-silo-id', () => {
+    const filePath = writeFixture(`functions:
+  - id: cf-1
+    name: DSR Function
+    code: ./functions/a.ts
+    type: DSR
+    data-silo-id: silo-existing
+`);
+    expect(writeCustomFunctionIdsToManifest(filePath, [{ dataSiloId: 'silo-other' }])).toBe(0);
+    const contents = readFileSync(filePath, 'utf-8');
+    expect(contents).toContain('data-silo-id: silo-existing');
+    expect(contents).not.toContain('silo-other');
+  });
+
   it('is a no-op when every entry already has an id', () => {
     const filePath = writeFixture(MANIFEST);
-    writeCustomFunctionIdsToManifest(filePath, ['new-id-1', undefined, undefined]);
+    writeCustomFunctionIdsToManifest(filePath, [{ id: 'new-id-1' }, undefined, undefined]);
     const before = readFileSync(filePath, 'utf-8');
-    expect(writeCustomFunctionIdsToManifest(filePath, ['other-id', 'x', 'y'])).toBe(0);
+    expect(
+      writeCustomFunctionIdsToManifest(filePath, [{ id: 'other-id' }, { id: 'x' }, { id: 'y' }]),
+    ).toBe(0);
     expect(readFileSync(filePath, 'utf-8')).toBe(before);
   });
 });

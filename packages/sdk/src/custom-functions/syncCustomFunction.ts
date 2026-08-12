@@ -4,9 +4,11 @@ import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { diffCustomFunctionCode, type CustomFunctionSignPayload } from './codeSigning.js';
+import { createCustomFunctionDataSilo, deleteDataSilo } from './customFunctionDataSilo.js';
 import type { CustomFunction, CustomFunctionType } from './fetchAllCustomFunctions.js';
 import {
   CREATE_CUSTOM_FUNCTION,
+  ORGANIZATION_SOMBRAS,
   PROMOTE_CUSTOM_FUNCTION_VERSION,
   UPDATE_STANDALONE_CUSTOM_FUNCTION,
 } from './gqls/index.js';
@@ -82,6 +84,14 @@ export interface CustomFunctionSyncResult {
   promoted: boolean;
   /** The test-run result, when a test payload was provided and the code was tested */
   testResult?: CustomFunctionTestRunResult;
+  /** The data silo (DSR integration) the function is linked to, for DSR functions */
+  dataSiloId?: string;
+  /**
+   * Whether a new data silo (DSR integration) was created during this sync.
+   * On a `test-failed` outcome this means the auto-created silo was rolled
+   * back (deleted) — `dataSiloId` is absent in that case.
+   */
+  createdDataSilo?: boolean;
 }
 
 /**
@@ -181,9 +191,84 @@ export function buildCustomFunctionSignPayload(
 }
 
 /**
+ * Inject the resolved data silo into a DSR test payload.
+ *
+ * The backend's unsaved-DSR test path resolves the execution Sombra from
+ * `extras.dataSilo.id`, so the payload must reference the function's actual
+ * data silo — which the payload file cannot know for silos created during
+ * the same push. The silo `id` is always overridden; other `extras.dataSilo`
+ * fields from the payload file are preserved, with `title` defaulted when
+ * missing.
+ *
+ * @param payload - The DSR test payload from the manifest
+ * @param dataSilo - The resolved data silo
+ * @returns The payload with `extras.dataSilo` pointing at the resolved silo
+ */
+export function injectDataSiloIntoDsrTestPayload(
+  payload: object,
+  dataSilo: {
+    /** Data silo ID */
+    id: string;
+    /** Fallback title when the payload does not carry one */
+    title: string;
+  },
+): object {
+  const record = payload as {
+    /** DSR payload extras */
+    extras?: Record<string, unknown>;
+  };
+  const extras = record.extras ?? {};
+  const existingDataSilo = (extras['dataSilo'] ?? {}) as Record<string, unknown>;
+  return {
+    ...record,
+    extras: {
+      ...extras,
+      dataSilo: {
+        title: dataSilo.title,
+        ...existingDataSilo,
+        id: dataSilo.id,
+      },
+    },
+  };
+}
+
+/**
+ * Resolve the organization's primary Sombra gateway ID.
+ *
+ * @param client - GraphQL client authenticated with a Transcend API key
+ * @param logger - Logger instance
+ * @returns The primary Sombra ID
+ */
+async function resolvePrimarySombraId(client: GraphQLClient, logger: Logger): Promise<string> {
+  const { organization } = await makeGraphQLRequest<{
+    /** Organization query response */
+    organization: {
+      /** Primary Sombra gateway */
+      sombra: {
+        /** Sombra ID */
+        id: string;
+      } | null;
+    };
+  }>(client, ORGANIZATION_SOMBRAS, { logger });
+  if (!organization.sombra?.id) {
+    throw new Error(
+      'Could not resolve the primary Sombra gateway of the organization, which is ' +
+        'required to create a DSR custom function integration. Specify a sombra-id ' +
+        'on the manifest entry instead.',
+    );
+  }
+  return organization.sombra.id;
+}
+
+/**
  * Sync a custom function definition (metadata + code revision) to Transcend.
  *
  * - When no custom function with the given name exists, one is created.
+ * - A new DSR function without a `dataSiloId` also gets its DSR integration
+ *   created: a `customFunction`-catalog data silo shell is created first (the
+ *   backend needs it to exist for the test run), the code is tested against
+ *   it, and on a passing test the function is created and linked. A failing
+ *   test rolls the silo back (deletes it).
  * - When one exists and the code/context changed, a new draft revision is
  *   created and (unless `promote` is false) promoted to active.
  * - When nothing changed, the function is skipped (unless `force` is set).
@@ -247,10 +332,6 @@ export async function syncCustomFunction(
   } = options;
   const type: CustomFunctionType = input.type ?? 'GENERAL';
 
-  if (type === 'DSR' && !input.dataSiloId) {
-    throw new Error(`Custom function "${input.name}" is type DSR and requires a dataSiloId.`);
-  }
-
   const existing = resolveExistingCustomFunction(allExisting, input);
   // Validates config-vs-existing gateway mismatches, including on dry runs
   const effectiveSombraId = resolveEffectiveSombraId(input, existing, defaultSombraId);
@@ -271,6 +352,7 @@ export async function syncCustomFunction(
         customFunctionId: existing.id,
         changedFields: [],
         promoted: false,
+        ...(existing.dataSiloId ? { dataSiloId: existing.dataSiloId } : {}),
       };
     }
   }
@@ -296,6 +378,26 @@ export async function syncCustomFunction(
     { customFunctionId: existing?.id },
   );
 
+  // Resolve the data silo (DSR integration) backing a DSR function: the
+  // config's, else the existing function's. A brand-new DSR function without
+  // one gets its integration created here — an inert `customFunction`-catalog
+  // shell that stays NOT_CONFIGURED until the function is linked to it. It
+  // must exist before the test run, because the backend resolves the
+  // execution Sombra from the payload's `extras.dataSilo.id`.
+  let dataSiloId = input.dataSiloId ?? existing?.dataSiloId ?? undefined;
+  let createdDataSilo = false;
+  if (type === 'DSR' && !existing && dataSiloId === undefined) {
+    const siloSombraId = effectiveSombraId ?? (await resolvePrimarySombraId(client, logger));
+    logger.info(`Creating DSR integration (data silo) for custom function "${input.name}"...`);
+    const dataSilo = await createCustomFunctionDataSilo(client, {
+      title: input.name,
+      sombraId: siloSombraId,
+      logger,
+    });
+    dataSiloId = dataSilo.id;
+    createdDataSilo = true;
+  }
+
   // Test the freshly signed code before pushing anything. A failing test
   // rejects the push so a broken revision never reaches (or is promoted on)
   // the function.
@@ -306,9 +408,16 @@ export async function syncCustomFunction(
       type,
       signedCodeJwt,
       signedCodeContextJwt,
-      payload: testPayload,
-      // GENERAL runs on the function's gateway; DSR derives the gateway from
-      // the payload's `extras.dataSilo.id`
+      // DSR payloads must reference the function's actual data silo — the
+      // backend derives the execution gateway from `extras.dataSilo.id`
+      payload:
+        type === 'DSR' && dataSiloId !== undefined
+          ? injectDataSiloIntoDsrTestPayload(testPayload, {
+              id: dataSiloId,
+              title: input.name,
+            })
+          : testPayload,
+      // GENERAL runs on the function's gateway
       ...(type === 'GENERAL' && effectiveSombraId !== undefined
         ? { sombraId: effectiveSombraId }
         : {}),
@@ -316,12 +425,22 @@ export async function syncCustomFunction(
       logger,
     });
     if (!testResult.passed) {
+      // Roll back the integration created for this function — nothing was
+      // linked to it yet, so a failed test leaves no trace behind
+      if (createdDataSilo && dataSiloId !== undefined) {
+        logger.info(
+          `Rolling back DSR integration (data silo ${dataSiloId}) for "${input.name}" — test failed.`,
+        );
+        await deleteDataSilo(client, dataSiloId, { logger });
+        dataSiloId = undefined;
+      }
       return {
         outcome: 'test-failed',
         ...(existing ? { customFunctionId: existing.id } : {}),
         changedFields,
         promoted: false,
         testResult,
+        ...(createdDataSilo ? { createdDataSilo } : {}),
       };
     }
   }
@@ -358,7 +477,7 @@ export async function syncCustomFunction(
         input: {
           type,
           ...(effectiveSombraId !== undefined ? { sombraId: effectiveSombraId } : {}),
-          ...(type === 'DSR' ? { dataSiloId: input.dataSiloId } : {}),
+          ...(type === 'DSR' ? { dataSiloId } : {}),
           name: input.name,
           ...(input.description !== undefined ? { description: input.description } : {}),
           setActive: promote,
@@ -376,6 +495,8 @@ export async function syncCustomFunction(
       changedFields,
       promoted: promote,
       ...(testResult ? { testResult } : {}),
+      ...(dataSiloId !== undefined ? { dataSiloId } : {}),
+      ...(createdDataSilo ? { createdDataSilo } : {}),
     };
   }
 
@@ -437,5 +558,6 @@ export async function syncCustomFunction(
     changedFields,
     promoted: promote,
     ...(testResult ? { testResult } : {}),
+    ...(dataSiloId !== undefined ? { dataSiloId } : {}),
   };
 }
