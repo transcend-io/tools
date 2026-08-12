@@ -69,6 +69,14 @@ export interface SubjectTypeNotMatchingWorkflowMessageInput {
   workflowSubjectType: string;
 }
 
+/** Inputs for the {@link DsrErrorCode.RegionNotInWorkflow} message builder. */
+export interface RegionNotInWorkflowMessageInput {
+  /** Human-readable rejected region (e.g. `GB` or `US/US-CA`) */
+  region: string;
+  /** Workflow regionList entries that are eligible */
+  supportedRegions: readonly string[];
+}
+
 /** Canonical message builder for each {@link DsrErrorCode}. */
 export type DsrErrorMessageMap = {
   [DsrErrorCode.InvalidWorkflowConfigId]: () => string;
@@ -92,6 +100,7 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.SubjectTypeNotMatchingWorkflow]: (
     input: SubjectTypeNotMatchingWorkflowMessageInput,
   ) => string;
+  [DsrErrorCode.RegionNotInWorkflow]: (input: RegionNotInWorkflowMessageInput) => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -184,4 +193,10 @@ export const DSR_ERROR_MESSAGE = {
     `The provided subjectType "${providedSubjectType}" does not match the ` +
     `data subject type "${workflowSubjectType}" of workflow config ` +
     `"${workflowConfigId}". Omit subjectType to derive it from the workflow config.`,
+  [DsrErrorCode.RegionNotInWorkflow]: ({
+    region,
+    supportedRegions,
+  }: RegionNotInWorkflowMessageInput) =>
+    `Region "${region}" is not eligible for this workflow. ` +
+    `Supported regions: ${supportedRegions.join(', ')}.`,
 } as const satisfies DsrErrorMessageMap;

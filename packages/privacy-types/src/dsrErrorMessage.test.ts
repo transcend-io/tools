@@ -110,6 +110,12 @@ describe('DSR_ERROR_MESSAGE', () => {
     ).toBe(
       'The provided subjectType "employee" does not match the data subject type "customer" of workflow config "wf-123". Omit subjectType to derive it from the workflow config.',
     );
+    expect(
+      DSR_ERROR_MESSAGE[DsrErrorCode.RegionNotInWorkflow]({
+        region: 'GB',
+        supportedRegions: ['US', 'CA'],
+      }),
+    ).toBe('Region "GB" is not eligible for this workflow. Supported regions: US, CA.');
   });
 
   it('renders UnknownDropRecords with truncation at MAX_UNKNOWN_DROP_RECORDS_IN_ERROR', () => {
