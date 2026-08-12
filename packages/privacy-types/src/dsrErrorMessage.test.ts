@@ -115,9 +115,7 @@ describe('DSR_ERROR_MESSAGE', () => {
         region: 'GB',
         supportedRegions: ['US', 'CA'],
       }),
-    ).toBe(
-      'Region "GB" is not eligible for this workflow. Supported regions: US, CA.',
-    );
+    ).toBe('Region "GB" is not eligible for this workflow. Supported regions: US, CA.');
   });
 
   it('renders UnknownDropRecords with truncation at MAX_UNKNOWN_DROP_RECORDS_IN_ERROR', () => {
