@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.17.0
+
+### Minor Changes
+
+- 2bc0cb2: Add `DsrErrorCode.DropRunNotIntakeEligible` with its `DSR_ERROR_MESSAGE` builder, emitted when a bulk DSR submission references a DROP run whose state no longer accepts intake.
+
 ## 5.16.0
 
 ### Minor Changes
