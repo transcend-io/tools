@@ -63,6 +63,7 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
+  [DsrErrorCode.DropRunNotIntakeEligible]: (dropRunState: string) => string;
   [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) => string;
   [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
   [DsrErrorCode.MissingRequiredEmail]: () => string;
@@ -121,6 +122,8 @@ export const DSR_ERROR_MESSAGE = {
   },
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,
+  [DsrErrorCode.DropRunNotIntakeEligible]: (dropRunState: string) =>
+    `Cannot submit DROP-linked DSRs while the run is in state ${dropRunState}`,
   /**
    * Fallback canonical message for {@link DsrErrorCode.IdentifierValidationFailed}.
    * Organizations can configure a custom, locale-translated `validationErrorMessage`

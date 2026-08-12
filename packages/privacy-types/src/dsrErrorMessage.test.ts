@@ -69,6 +69,9 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRunNotFound]('run-123')).toBe(
       'Could not find DROP run with id "run-123"',
     );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropRunNotIntakeEligible]('REPORT_SUBMITTED')).toBe(
+      'Cannot submit DROP-linked DSRs while the run is in state REPORT_SUBMITTED',
+    );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.ReceiptTemplateNotFound]('template-456')).toBe(
       'Could not find specified email template ID: template-456',
     );
