@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-examples
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [26fadc4]
+  - @transcend-io/mcp-server-base@1.1.1
+
 ## 0.0.4
 
 ### Patch Changes
