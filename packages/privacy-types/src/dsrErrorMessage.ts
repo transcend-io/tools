@@ -49,6 +49,26 @@ export interface DataSiloNotInWorkflowMessageInput {
   dataSiloIds: readonly string[];
 }
 
+/** Inputs for the {@link DsrErrorCode.TypeNotMatchingWorkflow} message builder. */
+export interface TypeNotMatchingWorkflowMessageInput {
+  /** Workflow config the submission targeted */
+  workflowConfigId: string;
+  /** The request action (`type`) asserted on the input */
+  providedType: string;
+  /** The workflow config's actual request action */
+  workflowType: string;
+}
+
+/** Inputs for the {@link DsrErrorCode.SubjectTypeNotMatchingWorkflow} message builder. */
+export interface SubjectTypeNotMatchingWorkflowMessageInput {
+  /** Workflow config the submission targeted */
+  workflowConfigId: string;
+  /** The data subject type asserted on the input */
+  providedSubjectType: string;
+  /** The workflow config's actual data subject type */
+  workflowSubjectType: string;
+}
+
 /** Canonical message builder for each {@link DsrErrorCode}. */
 export type DsrErrorMessageMap = {
   [DsrErrorCode.InvalidWorkflowConfigId]: () => string;
@@ -68,6 +88,10 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
   [DsrErrorCode.MissingRequiredEmail]: () => string;
   [DsrErrorCode.DataSiloNotInWorkflow]: (input: DataSiloNotInWorkflowMessageInput) => string;
+  [DsrErrorCode.TypeNotMatchingWorkflow]: (input: TypeNotMatchingWorkflowMessageInput) => string;
+  [DsrErrorCode.SubjectTypeNotMatchingWorkflow]: (
+    input: SubjectTypeNotMatchingWorkflowMessageInput,
+  ) => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -144,4 +168,20 @@ export const DSR_ERROR_MESSAGE = {
     `The following dataSiloIds are not connected to the workflow config ` +
     `"${workflowConfigId}": ${dataSiloIds.join(', ')}. ` +
     `dataSiloIds may only narrow the workflow's connected data silos.`,
+  [DsrErrorCode.TypeNotMatchingWorkflow]: ({
+    workflowConfigId,
+    providedType,
+    workflowType,
+  }: TypeNotMatchingWorkflowMessageInput) =>
+    `The provided type "${providedType}" does not match the request action ` +
+    `"${workflowType}" of workflow config "${workflowConfigId}". ` +
+    `Omit type to derive it from the workflow config.`,
+  [DsrErrorCode.SubjectTypeNotMatchingWorkflow]: ({
+    workflowConfigId,
+    providedSubjectType,
+    workflowSubjectType,
+  }: SubjectTypeNotMatchingWorkflowMessageInput) =>
+    `The provided subjectType "${providedSubjectType}" does not match the ` +
+    `data subject type "${workflowSubjectType}" of workflow config ` +
+    `"${workflowConfigId}". Omit subjectType to derive it from the workflow config.`,
 } as const satisfies DsrErrorMessageMap;
