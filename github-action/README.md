@@ -24,6 +24,9 @@ functions:
   - name: DSR Lookup
     code: ./functions/dsr-lookup.ts
     type: DSR
+    # Omit data-silo-id for a new DSR function and its integration (data
+    # silo) is created automatically on a passing test; `update-manifest`
+    # writes the assigned ID back here.
     data-silo-id: 5a4b0f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     test-payload: ./test-payloads/dsr-lookup.json
     test-payload-type: REQUEST_ENRICHER
@@ -36,6 +39,10 @@ See the [CLI documentation](https://github.com/transcend-io/tools/tree/main/pack
 ### How entries are matched to existing functions
 
 Each manifest entry is matched **by `id` first** when one is set — the ID is the sync key, so the function can be freely renamed, and a nonexistent ID fails the push rather than creating a duplicate. Entries without an `id` are matched by exact `name`: one match updates it, zero matches creates it, and multiple functions sharing the name fail the push with an error listing the candidate IDs to pin. Since custom function names are not guaranteed unique, prefer pinning IDs: run the CLI locally once with `--updateManifest` (or enable the `update-manifest` input plus an auto-commit step) and the assigned IDs are written back into the manifest.
+
+### New DSR functions: the integration is created automatically
+
+A new DSR entry that omits `data-silo-id` gets its DSR integration created as part of the push: a `customFunction`-catalog data silo is created on the entry's Sombra gateway (or the organization's primary), the signed code is test-run against it, and on a passing test the function is created and linked. A failing test **rolls the silo back** (deletes it) and fails the workflow. With `update-manifest` enabled, both the function `id` and the `data-silo-id` are written back into the manifest — pair it with an auto-commit step to persist them. DSR test payloads get `extras.dataSilo` injected automatically from the entry's resolved silo, so payload files never hardcode silo IDs.
 
 ## Usage
 
@@ -132,7 +139,7 @@ test-payloads/
 
 On a push, each changed or new function is signed against your Sombra gateway, then the signed code is executed on that gateway with the payload as a test run (nothing is persisted). Functions whose test passes (no error, exit code ≤ 0) are pushed and promoted; functions whose test fails are **rejected** — the failure reason and the run's execution logs are printed to the workflow log, nothing is pushed for that function, and the job fails.
 
-For DSR functions, `test-payload-type` selects which export the test invokes: `DATA_POINT` (default) for the default export, or `REQUEST_ENRICHER` for the `enricher` export.
+For DSR functions, `test-payload-type` selects which export the test invokes: `DATA_POINT` (default) for the default export, or `REQUEST_ENRICHER` for the `enricher` export. DSR payloads get `extras.dataSilo` injected automatically from the entry's data silo (including one created during the same push).
 
 With the [Usage](#usage) workflow above, the full flow is:
 
@@ -146,6 +153,7 @@ Test runs require backend support for pre-signed code JWTs on the `runCustomFunc
 ## How it works
 
 1. The action signs each function's code and context directly against your Sombra gateway's customer ingress over TLS, authenticated by your API key (plus the Sombra internal key when self-hosting). Code and env values never reach Transcend's backend in plaintext — only the signed JWTs are saved via the API.
-2. Functions with a `test-payload` are test-run on your Sombra gateway with the freshly signed code; failures are rejected and fail the job.
-3. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).
-4. The job fails if any function fails to sync or fails its test, so a red check means Transcend is out of sync with your repository.
+2. New DSR functions without a `data-silo-id` get their DSR integration (data silo) created automatically; a failing test rolls it back.
+3. Functions with a `test-payload` are test-run on your Sombra gateway with the freshly signed code; failures are rejected and fail the job.
+4. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).
+5. The job fails if any function fails to sync or fails its test, so a red check means Transcend is out of sync with your repository.

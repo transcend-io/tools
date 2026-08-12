@@ -15,3 +15,13 @@ functions:
       # Filled from --variables=crmApiKey:... / the `variables` action input,
       # so the secret never lives in the repository.
       CRM_API_KEY: <<parameters.crmApiKey>>
+  # A DSR custom function. With no `data-silo-id`, the DSR integration (data
+  # silo) is created automatically on the first push: it is created before the
+  # test run, the function is linked to it when the test passes, and it is
+  # rolled back when the test fails. Enable `update-manifest` to write the
+  # assigned `id` and `data-silo-id` back into this file.
+  # - name: DSR Lookup
+  #   code: ./functions/dsr-lookup.ts
+  #   type: DSR
+  #   test-payload: ./test-payloads/dsr-lookup.json
+  #   test-payload-type: REQUEST_ENRICHER
