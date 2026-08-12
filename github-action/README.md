@@ -1,6 +1,6 @@
 # Transcend Custom Functions Sync Action
 
-A composite GitHub Action that keeps your [Transcend custom functions](https://app.transcend.io/infrastructure/custom-functions) in sync with source code in your own repository. On every push, it creates any missing custom functions and pushes a new code revision to any function whose code or execution context changed — unchanged functions are skipped.
+A composite GitHub Action that keeps your [Transcend custom functions](https://app.transcend.io/infrastructure/custom-functions) in sync with source code in your own repository. On every push, it creates any missing custom functions and pushes a new code revision to any function whose code or execution context changed — unchanged functions are skipped. Functions with a `test-payload` file are test-run on your Sombra gateway before being pushed, and failures fail the workflow with the function's logs.
 
 It wraps the [`transcend custom-functions push`](https://github.com/transcend-io/tools/tree/main/packages/cli#transcend-custom-functions-push) command from `@transcend-io/cli`.
 
@@ -15,6 +15,7 @@ functions:
   - name: Score Lead
     code: ./functions/score-lead.ts
     description: Scores an inbound lead against the CRM
+    test-payload: ./test-payloads/score-lead.json
     allowed-hosts:
       - api.example.com
     timeout-ms: 30000
@@ -24,7 +25,11 @@ functions:
     code: ./functions/dsr-lookup.ts
     type: DSR
     data-silo-id: 5a4b0f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    test-payload: ./test-payloads/dsr-lookup.json
+    test-payload-type: REQUEST_ENRICHER
 ```
+
+3. Optionally, a `test-payloads/` folder with a JSON payload per function you want tested before promotion (see [Test-before-promote](#test-before-promote)).
 
 See the [CLI documentation](https://github.com/transcend-io/tools/tree/main/packages/cli#transcend-custom-functions-push) for the full manifest schema.
 
@@ -83,6 +88,7 @@ jobs:
 | `dry-run`         | No       | `false`                     | Report what would change without pushing anything.                                                                             |
 | `promote`         | No       | `true`                      | Promote new revisions to active. Set to `false` to leave revisions as drafts for review in the dashboard.                      |
 | `force`           | No       | `false`                     | Push a new revision even when no changes are detected (e.g. when only env values rotated).                                     |
+| `skip-tests`      | No       | `false`                     | Skip test runs entirely, pushing functions without executing their manifest `test-payload` files.                              |
 | `update-manifest` | No       | `false`                     | Write assigned custom function IDs back into the manifest after pushing. Pair with an auto-commit step to persist them.        |
 | `sombra-id`       | No       | primary Sombra              | Default Sombra gateway to sign code against, for entries that don't set `sombra-id` in the manifest.                           |
 | `cli-version`     | No       | `latest`                    | Version of `@transcend-io/cli` to use. Pin this for reproducible builds.                                                       |
@@ -112,8 +118,34 @@ functions:
     sombra-auth-env: SOMBRA_EU_INTERNAL_KEY
 ```
 
+## Test-before-promote
+
+Manifest entries with a `test-payload` file are tested before anything is pushed. Associate each function with a payload JSON file — conventionally in a `test-payloads/` folder next to the manifest (see [examples/](./examples/)):
+
+```
+transcend-functions.yml
+functions/
+  score-lead.ts
+test-payloads/
+  score-lead.json
+```
+
+On a push, each changed or new function is signed against your Sombra gateway, then the signed code is executed on that gateway with the payload as a test run (nothing is persisted). Functions whose test passes (no error, exit code ≤ 0) are pushed and promoted; functions whose test fails are **rejected** — the failure reason and the run's execution logs are printed to the workflow log, nothing is pushed for that function, and the job fails.
+
+For DSR functions, `test-payload-type` selects which export the test invokes: `DATA_POINT` (default) for the default export, or `REQUEST_ENRICHER` for the `enricher` export.
+
+With the [Usage](#usage) workflow above, the full flow is:
+
+- **Pull requests** run with `dry-run: 'true'` — changes are reported, nothing is signed, tested, or pushed.
+- **Pushes to main** sign → test → push + promote automatically. A failing test fails the workflow with the function's logs.
+- Entries without a `test-payload` push as before, with a warning in the log.
+- Set `skip-tests: 'true'` to bypass testing entirely.
+
+Test runs require backend support for pre-signed code JWTs on the `runCustomFunction` mutation; on older backends the push fails with an upgrade hint — use `skip-tests` to bypass.
+
 ## How it works
 
 1. The action signs each function's code and context directly against your Sombra gateway's customer ingress over TLS, authenticated by your API key (plus the Sombra internal key when self-hosting). Code and env values never reach Transcend's backend in plaintext — only the signed JWTs are saved via the API.
-2. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).
-3. The job fails if any function fails to sync, so a red check means Transcend is out of sync with your repository.
+2. Functions with a `test-payload` are test-run on your Sombra gateway with the freshly signed code; failures are rejected and fail the job.
+3. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).
+4. The job fails if any function fails to sync or fails its test, so a red check means Transcend is out of sync with your repository.

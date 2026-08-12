@@ -52,6 +52,12 @@ inputs:
       environment variable values changed, which cannot be diffed.
     required: false
     default: 'false'
+  skip-tests:
+    description: >-
+      Skip test runs entirely, pushing functions without executing their
+      manifest test-payload files. Tests also never run on dry runs.
+    required: false
+    default: 'false'
   update-manifest:
     description: >-
       After pushing, write the assigned custom function IDs back into the
@@ -89,6 +95,7 @@ runs:
         INPUT_DRY_RUN: ${{ inputs.dry-run }}
         INPUT_PROMOTE: ${{ inputs.promote }}
         INPUT_FORCE: ${{ inputs.force }}
+        INPUT_SKIP_TESTS: ${{ inputs.skip-tests }}
         INPUT_UPDATE_MANIFEST: ${{ inputs.update-manifest }}
         INPUT_SOMBRA_ID: ${{ inputs.sombra-id }}
         INPUT_CLI_VERSION: ${{ inputs.cli-version }}
@@ -111,6 +118,9 @@ runs:
         fi
         if [[ "${INPUT_FORCE}" == "true" ]]; then
           args+=(--force)
+        fi
+        if [[ "${INPUT_SKIP_TESTS}" == "true" ]]; then
+          args+=(--skipTests)
         fi
         if [[ "${INPUT_UPDATE_MANIFEST}" == "true" ]]; then
           args+=(--updateManifest)

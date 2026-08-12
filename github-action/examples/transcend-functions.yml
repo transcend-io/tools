@@ -4,6 +4,9 @@ functions:
   - name: Score Lead
     code: ./functions/score-lead.ts
     description: Scores an inbound lead against the CRM
+    # Test-run the signed code with this payload before pushing; the function
+    # is rejected (and CI fails) when the test errors or exits non-zero.
+    test-payload: ./test-payloads/score-lead.json
     allowed-hosts:
       - api.example.com
     timeout-ms: 30000
