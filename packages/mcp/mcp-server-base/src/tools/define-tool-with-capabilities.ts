@@ -152,8 +152,6 @@ export function defineToolWithCapabilities<T>(config: {
   category: string;
   /** Whether this tool only reads data */
   readOnly: boolean;
-  /** Message shown to user before execution */
-  confirmationHint?: string;
   /** MCP tool annotations */
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */

@@ -39,7 +39,6 @@ export function createInventoryWriteProcessingPurposeTool(clients: ToolClients) 
       'The unique key is name + purpose (e.g. "Other:ESSENTIAL").',
     category: 'Data Inventory',
     readOnly: false,
-    confirmationHint: 'Creates or updates a processing purpose subcategory',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: WriteProcessingPurposeSchema,
     handler: async (input) => {
