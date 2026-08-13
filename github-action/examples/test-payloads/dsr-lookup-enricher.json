@@ -1,0 +1,8 @@
+{
+  "type": "ACCESS",
+  "extras": {
+    "profile": {
+      "identifier": "jane.doe@example.com"
+    }
+  }
+}

@@ -33,10 +33,14 @@ functions:
     code: ./functions/dsr-lookup.ts
     type: DSR
     description: Fulfill access and erasure requests against the user warehouse
-    test-payload: ./test-payloads/dsr-lookup.json
-    # DATA_POINT (default) tests the default export; REQUEST_ENRICHER tests
-    # the `enricher` export.
-    test-payload-type: DATA_POINT
+    # DSR functions have two entry points — list one payload per export so
+    # both are tested on every push: DATA_POINT tests the default export,
+    # REQUEST_ENRICHER tests the `enricher` export.
+    test-payloads:
+      - payload: ./test-payloads/dsr-lookup.json
+        payload-type: DATA_POINT
+      - payload: ./test-payloads/dsr-lookup-enricher.json
+        payload-type: REQUEST_ENRICHER
     allowed-hosts:
       - warehouse.internal.example.com
     timeout-ms: 30000
