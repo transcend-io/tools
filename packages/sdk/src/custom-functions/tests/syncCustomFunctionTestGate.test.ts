@@ -1,8 +1,10 @@
+import { CustomFunctionType } from '@transcend-io/privacy-types';
 import type { Got } from 'got';
 import { print, type DocumentNode } from 'graphql';
 import type { GraphQLClient } from 'graphql-request';
 import { describe, expect, it, vi } from 'vitest';
 
+import type { CustomFunction } from '../fetchAllCustomFunctions.js';
 import type { CustomFunctionExecutionResult } from '../runCustomFunctionTest.js';
 import { syncCustomFunction } from '../syncCustomFunction.js';
 
@@ -208,5 +210,131 @@ describe('syncCustomFunction test gating', () => {
     // The primary gateway was never looked up
     const documents = request.mock.calls.map(([document]) => toDocumentString(document));
     expect(documents.some((document) => document.includes('TranscendCliOrganization'))).toBe(false);
+  });
+});
+
+const base64Url = (payload: object): string =>
+  Buffer.from(JSON.stringify(payload)).toString('base64url');
+
+/**
+ * Build an unsigned JWT whose payload decodes like a Sombra-signed one.
+ *
+ * @param payload - The JWT payload
+ * @returns A three-part JWT string (signature is not verified by the diff)
+ */
+const fakeJwt = (payload: object): string =>
+  `${base64Url({ alg: 'HS256', typ: 'JWT' })}.${base64Url(payload)}.sig`;
+
+/**
+ * An existing GENERAL function whose stored JWTs match {@link INPUT} exactly,
+ * so the code/context diff reports no changes.
+ *
+ * @param overrides - Field overrides
+ * @returns The existing custom function
+ */
+const makeExisting = (overrides: Partial<CustomFunction> = {}): CustomFunction =>
+  ({
+    id: 'cf-1',
+    name: INPUT.name,
+    description: 'Old description',
+    type: CustomFunctionType.General,
+    sombraId: null,
+    dataSiloId: null,
+    signedCodeJwt: fakeJwt({ base64Code: Buffer.from(INPUT.code, 'utf-8').toString('base64') }),
+    signedCodeContextJwt: fakeJwt({}),
+    hasPendingDraft: false,
+    ...overrides,
+  }) as CustomFunction;
+
+describe('syncCustomFunction metadata-only updates', () => {
+  it('updates the description in place without signing or pushing a revision', async () => {
+    const sombraPost = vi.fn();
+    const request = vi.fn().mockImplementation((rawDocument: string | DocumentNode) => {
+      const document = toDocumentString(rawDocument);
+      if (document.includes('updateStandaloneCustomFunction')) {
+        return Promise.resolve({
+          updateStandaloneCustomFunction: {
+            customFunction: { id: 'cf-1', draftVersion: null },
+          },
+        });
+      }
+      throw new Error(`Unexpected GraphQL document: ${document}`);
+    });
+    const client = { request } as unknown as GraphQLClient;
+
+    const result = await syncCustomFunction(client, {
+      input: { ...INPUT, description: 'New description' },
+      sombra: { post: sombraPost } as unknown as Got,
+      existing: [makeExisting()],
+      testPayloads: [{ payload: { lead: {} } }],
+    });
+
+    expect(result.outcome).toBe('metadata-updated');
+    expect(result.changedFields).toEqual(['description']);
+    expect(result.promoted).toBe(false);
+
+    // Only the metadata mutation ran — no signing, no test runs, no promote
+    expect(sombraPost).not.toHaveBeenCalled();
+    const updateCall = request.mock.calls.find(([document]) =>
+      toDocumentString(document).includes('updateStandaloneCustomFunction'),
+    );
+    expect(updateCall?.[1].input).toEqual({
+      id: 'cf-1',
+      name: INPUT.name,
+      description: 'New description',
+    });
+  });
+
+  it('detects a rename for id-pinned entries', async () => {
+    const request = vi.fn().mockImplementation((rawDocument: string | DocumentNode) => {
+      const document = toDocumentString(rawDocument);
+      if (document.includes('updateStandaloneCustomFunction')) {
+        return Promise.resolve({
+          updateStandaloneCustomFunction: {
+            customFunction: { id: 'cf-1', draftVersion: null },
+          },
+        });
+      }
+      throw new Error(`Unexpected GraphQL document: ${document}`);
+    });
+    const client = { request } as unknown as GraphQLClient;
+
+    const result = await syncCustomFunction(client, {
+      input: { ...INPUT, id: 'cf-1', name: 'Score lead v2' },
+      sombra: SOMBRA,
+      existing: [makeExisting()],
+    });
+
+    expect(result.outcome).toBe('metadata-updated');
+    expect(result.changedFields).toEqual(['name']);
+  });
+
+  it('still skips when code and metadata are both unchanged', async () => {
+    const request = vi.fn();
+    const client = { request } as unknown as GraphQLClient;
+
+    const result = await syncCustomFunction(client, {
+      input: { ...INPUT, description: 'Old description' },
+      sombra: SOMBRA,
+      existing: [makeExisting()],
+    });
+
+    expect(result.outcome).toBe('skipped');
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it('reports metadata changes on dry runs without mutating anything', async () => {
+    const request = vi.fn();
+    const client = { request } as unknown as GraphQLClient;
+
+    const result = await syncCustomFunction(client, {
+      input: { ...INPUT, description: 'New description' },
+      existing: [makeExisting()],
+      dryRun: true,
+    });
+
+    expect(result.outcome).toBe('would-update');
+    expect(result.changedFields).toEqual(['description']);
+    expect(request).not.toHaveBeenCalled();
   });
 });

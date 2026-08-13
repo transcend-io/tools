@@ -63,6 +63,8 @@ export type CustomFunctionSyncOutcome =
   | 'created'
   /** A new revision was pushed to an existing custom function */
   | 'updated'
+  /** Only metadata (name/description) changed; updated without a new code revision */
+  | 'metadata-updated'
   /** No changes detected; nothing was pushed */
   | 'skipped'
   /** The test run failed; nothing was pushed */
@@ -118,6 +120,9 @@ export interface CustomFunctionSyncResult {
  *   test rolls the silo back (deletes it).
  * - When one exists and the code/context changed, a new draft revision is
  *   created and (unless `promote` is false) promoted to active.
+ * - When only metadata changed (description, or name for id-pinned entries),
+ *   the function record is updated in place — no signing, no test runs, and
+ *   no new code revision.
  * - When nothing changed, the function is skipped (unless `force` is set).
  *
  * Code is signed against the Sombra customer-ingress `/v1/custom/sign` route
@@ -184,6 +189,7 @@ export async function syncCustomFunction(
 
   // Diff against the existing preferred (draft if pending, else active) version
   let changedFields: string[] = [];
+  let metadataOnly = false;
   if (existing) {
     const diff = diffCustomFunctionCode(signPayload, {
       signedCodeJwt: existing.signedCodeJwt,
@@ -191,14 +197,29 @@ export async function syncCustomFunction(
     });
     changedFields = diff.changedFields;
     if (!diff.changed && !force) {
-      logger.info(`No changes detected for custom function "${input.name}" — skipping.`);
-      return {
-        outcome: 'skipped',
-        customFunctionId: existing.id,
-        changedFields: [],
-        promoted: false,
-        ...(existing.dataSiloId ? { dataSiloId: existing.dataSiloId } : {}),
-      };
+      // Code and context are identical — check the plaintext metadata on the
+      // function record. A rename can only surface for id-pinned entries
+      // (name is the sync key otherwise), and a manifest without a
+      // description leaves the existing one unmanaged.
+      const metadataChanges: string[] = [];
+      if (input.name !== existing.name) {
+        metadataChanges.push('name');
+      }
+      if (input.description !== undefined && input.description !== (existing.description ?? '')) {
+        metadataChanges.push('description');
+      }
+      if (metadataChanges.length === 0) {
+        logger.info(`No changes detected for custom function "${input.name}" — skipping.`);
+        return {
+          outcome: 'skipped',
+          customFunctionId: existing.id,
+          changedFields: [],
+          promoted: false,
+          ...(existing.dataSiloId ? { dataSiloId: existing.dataSiloId } : {}),
+        };
+      }
+      metadataOnly = true;
+      changedFields = metadataChanges;
     }
   }
 
@@ -208,6 +229,33 @@ export async function syncCustomFunction(
       ...(existing ? { customFunctionId: existing.id } : {}),
       changedFields,
       promoted: false,
+    };
+  }
+
+  // Metadata-only changes update the function record in place: no signing,
+  // no test runs, no new code revision — the active version keeps running
+  // byte-identical code.
+  if (existing && metadataOnly) {
+    logger.info(
+      `Updating metadata (${changedFields.join(', ')}) for custom function ` +
+        `"${input.name}" — code is unchanged, no new revision.`,
+    );
+    await makeGraphQLRequest(client, UPDATE_STANDALONE_CUSTOM_FUNCTION, {
+      variables: {
+        input: {
+          id: existing.id,
+          name: input.name,
+          ...(input.description !== undefined ? { description: input.description } : {}),
+        },
+      },
+      logger,
+    });
+    return {
+      outcome: 'metadata-updated',
+      customFunctionId: existing.id,
+      changedFields,
+      promoted: false,
+      ...(existing.dataSiloId ? { dataSiloId: existing.dataSiloId } : {}),
     };
   }
 
