@@ -3251,6 +3251,7 @@ enum FormType {
   array
   select
   textArea
+  json
   password
   file
   SelectApiKeys
@@ -3706,19 +3707,6 @@ enum SkipLinkIds {
   navigation
   sidebar
   main
-}
-
-enum ScanDomainPurposeOrderField {
-  domain
-}
-
-enum ScanCookiePurposeOrderField {
-  cookie
-}
-
-enum SitescanStatus {
-  STARTED
-  DONE
 }
 
 enum ActionItemSubscriptionCadence {
@@ -4952,6 +4940,7 @@ type Query {
   customFunctionRunFileLink(input: CustomFunctionRunFileLinkInput!): CustomFunctionRunFileLinkPayload!
   customFunctionRuns(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionRunFilterInput): CustomFunctionRunsPayload!
   customFunctions(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionFilterInput): CustomFunctionsPayload!
+  customFunctionVersions(first: Int, offset: Int = 0, last: Int, filterBy: CustomFunctionVersionsFilterInput!): CustomFunctionVersionsPayload!
   customSyncEndpoints(id: ID!): CustomSyncEndpointsPayload!
   dataCategories(first: Int, offset: Int = 0, last: Int, filterBy: DataCategoryFiltersInput): DataCategoriesPayload!
   dataCollections: [DataCollection!]!
@@ -5051,7 +5040,6 @@ type Query {
   purposeDataPointWorkflowMappings(first: Int, offset: Int = 0, last: Int, filterBy: PurposeDataPointWorkflowMappingsFilterInput): PurposeDataPointWorkflowMappingsPayload!
   purposes(first: Int, offset: Int = 0, last: Int, filterBy: TrackingPurposeFiltersInput, orderBy: [PurposeOrder!], input: TrackingPurposeInput): PurposesPayload!
   queryConsentPreferences(input: MCDConsentLookupInput!): ConsentPreferenceResponseSombra!
-  recommendedCatalogs(input: RecommendedCatalogsInput!): RecommendedCatalogsPayload!
   repositories(first: Int, offset: Int = 0, last: Int, filterBy: RepositoryFiltersInput, orderBy: [RepositoryOrder!]): RepositoriesPayload!
   request(id: ID!): Request!
   requestAttachments(first: Int, last: Int, before: String, after: String, filterBy: RequestAttachmentFiltersInput!, orderBy: [RequestAttachmentOrder!]): RequestAttachmentsPayload!
@@ -5077,10 +5065,6 @@ type Query {
   saaSCategories(first: Int, offset: Int = 0, last: Int, filterBy: SaaSCategoryFiltersInput, orderBy: [SaaSCategoryOrder!]): SaaSCategoriesPayload!
   saaSCategoryNames(filterBy: SaaSCategoryNamesFiltersInput): SaaSCategoryNamesPayload!
   savingsConfiguration: SavingsConfigurationPreview!
-  scanColor: ScanColor
-  scanCookiePurposes(first: Int, offset: Int = 0, last: Int, filterBy: ScanCookiePurposeFiltersInput, orderBy: [ScanCookiePurposeOrder!]): ScanCookiePurposesPayload!
-  scanDomainPurposes(first: Int, offset: Int = 0, last: Int, filterBy: ScanDomainPurposeFiltersInput, orderBy: [ScanDomainPurposeOrder!]): ScanDomainPurposesPayload!
-  scannedCatalogs(first: Int, offset: Int = 0, last: Int): ScannedCatalogsPayload!
   scannedObjectFileTypes(filterBy: ScannedObjectFileTypesFiltersInput!): ScannedObjectFileTypesPayload!
   scannedObjectHierarchy(first: Int, offset: Int = 0, last: Int, filterBy: ScannedObjectHierarchyFiltersInput!): ScannedObjectHierarchyPayload!
   scannedObjectHierarchyPath(filterBy: ScannedObjectHierarchyPathFiltersInput): ScannedObjectHierarchyPathPayload!
@@ -5091,7 +5075,6 @@ type Query {
   signupCode(input: SignupCodeInput!): SignupCode!
   siloDiscoveryMetrics: SiloDiscoveryMetrics!
   siloDiscoveryResults(first: Int, offset: Int = 0, last: Int, filterBy: SiloDiscoveryResultFiltersInput, orderBy: [SiloDiscoveryResultOrder!]): SiloDiscoveryResultsPayload!
-  sitescan: Sitescan
   slackWorkspaceMetadata: SlackWorkspaceMetadata!
   softwareDevelopmentKits(first: Int, offset: Int = 0, last: Int, filterBy: SoftwareDevelopmentKitFiltersInput, orderBy: [SoftwareDevelopmentKitOrder!]): SoftwareDevelopmentKitsPayload!
   sombraApiKeys(filterBy: SombraApiKeysFilterInput, id: ID): [SombraApiKeyEntry!]!
@@ -5326,7 +5309,6 @@ type Mutation {
   generateDataSiloSqlStatements(input: GenerateSqlInput!): GenerateDataSiloSqlStatementsPayload!
   generateParentPrivacyCenterLoginToken(lookup: PrivacyCenterLookupInput, dhEncrypted: String!): GenerateParentPrivacyCenterLoginTokenPayload!
   importOneTrustAssessmentForms(input: ImportOnetrustAssessmentsInput!): ImportOneTrustAssessmentFormsPayload!
-  initiateSitescan: InitiateSitescanPayload!
   invalidateUserEmail(input: TokenInput!): InvalidateUserEmailPayload!
   issueSombraApiKey(id: ID!): IssueSombraApiKeyPayload!
   isUserAuthenticated(dhEncrypted: String!, publicKey: String!): IsUserAuthenticatedPayload!
@@ -5346,6 +5328,7 @@ type Mutation {
   markDropStarterDownloaded(input: MarkDropStarterDownloadedInput!): MarkDropStarterDownloadedPayload!
   materializeDropRun(id: ID!): MaterializeDropRunPayload!
   notifyAdditionalTime(input: AdditionalTimeInput!): NotifyAdditionalTimePayload!
+  notifyAdditionalTimes(input: NotifyAdditionalTimesInput!): NotifyAdditionalTimesPayload!
   oauthLink(input: OAuthLinkInput!): OauthLinkPayload!
   oauthRevoke(input: OAuthRevokeInput!): OauthRevokePayload!
   oauthToken(input: OAuthTokenInput!): OauthTokenPayload!
@@ -5423,9 +5406,6 @@ type Mutation {
   skipRequestEnricher(id: ID!): SkipRequestEnricherPayload!
   sombraDataSubjectLogin(dhEncrypted: String!, lookup: PrivacyCenterLookupInput): SombraDataSubjectLoginPayload!
   sombraSingleTenantConfigSync(input: SombraSingleTenantConfigSyncInput!): SombraSingleTenantConfigSyncPayload!
-  storeColors(input: StoreColorsInput!): StoreColorsPayload!
-  storeCookiePurposeResults(input: CreateScanCookiePurposesInput!): StoreCookiePurposeResultsPayload!
-  storeDomainPurposeResults(input: CreateScanDomainPurposesInput!): StoreDomainPurposeResultsPayload!
   submitAssessmentFormForReview(input: SubmitAssessmentFormForReviewInput!): SubmitAssessmentFormForReviewPayload!
   submitAssessmentFormForReviewToken(input: TokenInput!): SubmitAssessmentFormForReviewTokenPayload!
   syncTcfVendorsFromTelemetry(input: SyncTcfVendorsFromTelemetryInput!): SyncTcfVendorsFromTelemetryPayload!
@@ -5535,7 +5515,6 @@ type Mutation {
   updateSavingsConfiguration(input: UpdateSavingsConfigurationInput!): UpdateSavingsConfigurationPayload!
   updateScope(input: UpdateScopeInput!): UpdateScopePayload!
   updateSensitiveCategories(input: UpdateSensitiveCategoriesInput!): UpdateSensitiveCategoriesPayload!
-  updateSitescan(input: UpdateSitescanInput!): UpdateSitescanPayload!
   updateSoftwareDevelopmentKits(input: UpdateSoftwareDevelopmentKitsInput!): UpdateSoftwareDevelopmentKitsPayload!
   updateSombra(id: ID!, input: UpdateSombraInput!): UpdateSombraPayload!
   updateSombraJWTConfig(input: UpdateSombraJWTConfigInput!, dhEncrypted: String!): UpdateSombraJwtConfigPayload!
@@ -8065,6 +8044,7 @@ input CancelRequestsInput {
   requestIds: [ID!]!
   template: String
   subject: String
+  isSilent: Boolean
 }
 
 type CatalogPayload {
@@ -8099,7 +8079,7 @@ type Catalog implements CatalogPreviewInterface {
   formConfigs: [FormConfig!]!
   pluginFormConfigs: PluginFormConfiguration
   recipients: [SaaSCategoryBase!]!
-  isSuggested: Boolean!
+  isSuggested: Boolean! @deprecated(reason: "Sitescanner recommendations removed; field always resolves to false")
   hasUspApiSupport: Boolean
   minimumSombraVersion: String!
   isComplete: Boolean!
@@ -9247,6 +9227,11 @@ type ConsentWorkflowActionPreview {
   type: RequestAction!
 }
 
+type ConsentWorkflowConfigPreview {
+  id: ID!
+  internalName: String!
+}
+
 input ConsentWorkflowSettingsInput {
   attributes: [AttributeInput!]
   dataSiloIds: [ID!]
@@ -9283,6 +9268,7 @@ type ConsentWorkflowTrigger {
   dataSilos: [DataSiloPreview!]!
   dataPoints: [DataPointPreviewWithDataSilo!]!
   workflowConfigId: ID
+  workflowConfig: ConsentWorkflowConfigPreview
 }
 
 input ConsentWorkflowTriggerPurposeInput {
@@ -10441,18 +10427,6 @@ input CreateRiskMatrixRowInput {
   title: String!
 }
 
-input CreateScanCookiePurposesInput {
-  url: String!
-  organizationId: ID!
-  results: [SitescannerCookieInput!]!
-}
-
-input CreateScanDomainPurposesInput {
-  url: String!
-  organizationId: ID!
-  results: [SitescannerResponseInput!]!
-}
-
 type CreateSensitiveCategoryPayload {
   clientMutationId: String
   sensitiveCategory: SensitiveCategory!
@@ -10750,6 +10724,17 @@ type CustomFunctionVersionPreview {
   lastModifiedAt: Date!
   signedCodeJwt: String!
   successfulTestRun: Boolean!
+  author: UserPreview
+}
+
+type CustomFunctionVersionsPayload {
+  clientMutationId: String
+  nodes: [CustomFunctionVersionPreview!]!
+  totalCount: Int!
+}
+
+input CustomFunctionVersionsFilterInput {
+  customFunctionId: ID!
 }
 
 type CustomHeader {
@@ -12937,6 +12922,7 @@ input DropRunRequestFiltersInput {
   requestIds: [ID!]
   dropRunIds: [ID!]
   text: String
+  cppaStatusCodes: [Int!]
   outstandingOnly: Boolean
 }
 
@@ -13656,6 +13642,14 @@ type FormItem {
   parseNewlines: Boolean
   isMulti: Boolean
   authenticationMethods: [AuthenticationMethod!]
+  jsonSchema: String
+  examples: [FormItemJsonExample!]
+  example: String
+}
+
+type FormItemJsonExample {
+  title: String
+  value: String!
 }
 
 type FormRule {
@@ -13966,11 +13960,6 @@ type InaccurateAiFeatureReportPreview {
   reportedByUserId: ID
   reason: String
   createdAt: Date!
-}
-
-type InitiateSitescanPayload {
-  clientMutationId: String
-  success: Boolean!
 }
 
 type InspectLookupProcessesPayload {
@@ -14600,6 +14589,18 @@ input NonAdminPurposeInput {
 type NotifyAdditionalTimePayload {
   clientMutationId: String
   success: Boolean!
+}
+
+type NotifyAdditionalTimesPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input NotifyAdditionalTimesInput {
+  requestIds: [ID!]!
+  template: String
+  subject: String
+  additionalTime: Int!
 }
 
 type OauthClient implements OauthClientInterface {
@@ -16181,15 +16182,6 @@ type RecommendationPreview {
   confidence: Float
   classificationMethod: UnstructuredClassificationMethod
   status: UnstructuredSubDataPointRecommendationStatus
-}
-
-type RecommendedCatalogsPayload {
-  clientMutationId: String
-  catalogs: [Catalog!]!
-}
-
-input RecommendedCatalogsInput {
-  limit: Int
 }
 
 type ReconnectDataSiloPayload {
@@ -17798,58 +17790,6 @@ type Scan {
   scanResult: ScanResult
 }
 
-type ScanColor {
-  id: ID!
-  organizationId: ID!
-  colors: [String!]!
-}
-
-type ScanCookiePurpose {
-  id: ID!
-  cookie: String!
-  purposeGuesses: [Purpose!]!
-  catalog: Catalog
-}
-
-input ScanCookiePurposeFiltersInput {
-  text: String
-  purposes: [Purpose!]
-}
-
-input ScanCookiePurposeOrder {
-  field: ScanCookiePurposeOrderField!
-  direction: OrderDirection!
-}
-
-type ScanCookiePurposesPayload {
-  clientMutationId: String
-  nodes: [ScanCookiePurpose!]!
-  totalCount: Int!
-}
-
-type ScanDomainPurpose {
-  id: ID!
-  domain: String!
-  purposeGuess: Purpose!
-  catalog: Catalog
-}
-
-input ScanDomainPurposeFiltersInput {
-  text: String
-  purpose: [Purpose!]
-}
-
-input ScanDomainPurposeOrder {
-  field: ScanDomainPurposeOrderField!
-  direction: OrderDirection!
-}
-
-type ScanDomainPurposesPayload {
-  clientMutationId: String
-  nodes: [ScanDomainPurpose!]!
-  totalCount: Int!
-}
-
 type ScanKey {
   id: String!
   startEpoch: String!
@@ -17858,12 +17798,6 @@ type ScanKey {
 input ScanKeyInput {
   id: String!
   startEpoch: String!
-}
-
-type ScannedCatalogsPayload {
-  clientMutationId: String
-  nodes: [Catalog!]!
-  totalCount: Int!
 }
 
 type ScannedObjectFileTypesPayload {
@@ -18575,22 +18509,6 @@ type SimpleTCFPurpose {
   name: String!
 }
 
-type Sitescan {
-  status: SitescanStatus!
-}
-
-input SitescannerCookieInput {
-  cookie: String!
-  purposeGuesses: [Purpose!]!
-  name: String
-}
-
-input SitescannerResponseInput {
-  domain: String!
-  purposeGuess: Purpose!
-  name: String
-}
-
 type SkipRequestEnricherPayload {
   clientMutationId: String
   requestEnricher: RequestEnricher!
@@ -18918,27 +18836,6 @@ interface StepInterface {
   icon: String!
   status: StepStatus
   time: Date
-}
-
-type StoreColorsPayload {
-  clientMutationId: String
-  success: Boolean!
-}
-
-input StoreColorsInput {
-  url: String!
-  organizationId: ID!
-  colors: [String!]!
-}
-
-type StoreCookiePurposeResultsPayload {
-  clientMutationId: String
-  scanCookiePurposes: [ScanCookiePurpose!]!
-}
-
-type StoreDomainPurposeResultsPayload {
-  clientMutationId: String
-  scanDomainPurposes: [ScanDomainPurpose!]!
 }
 
 type SubDataPoint {
@@ -21449,16 +21346,6 @@ input UpdateSensitiveCategoryInput {
   color: String
 }
 
-type UpdateSitescanPayload {
-  clientMutationId: String
-  sitescan: Sitescan!
-}
-
-input UpdateSitescanInput {
-  status: SitescanStatus!
-  organizationId: ID!
-}
-
 input UpdateSoftwareDevelopmentKitInput {
   id: ID!
   name: String
@@ -21782,6 +21669,7 @@ input UpdateWorkflowConfigInput {
   completedSteps: [WorkflowCompletedStepInput!]
   regionList: [String!]
   expiryTime: [ExpiryTimeInput!]
+  postCompileStatus: PostCompileStatus
   attributeKeyIds: [ID!]
   internalName: String
 }
@@ -22076,6 +21964,7 @@ type WorkflowConfig {
   completedSteps: [WorkflowCompletedStep!]
   regionList: [String!]
   expiryTime: [ExpiryTime!]
+  postCompileStatus: PostCompileStatus
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   internalName: String!
   unresolvedRequiredIdentifierCount: Int
