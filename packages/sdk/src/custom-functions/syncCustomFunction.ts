@@ -313,9 +313,7 @@ export async function syncCustomFunction(
           'will be created promoted despite promote being disabled.',
       );
     }
-    const {
-      createCustomFunction: { customFunction },
-    } = await makeGraphQLRequest<{
+    let response: {
       /** Mutation response */
       createCustomFunction: {
         /** The created custom function */
@@ -338,21 +336,36 @@ export async function syncCustomFunction(
           } | null;
         };
       };
-    }>(client, CREATE_CUSTOM_FUNCTION, {
-      variables: {
-        input: {
-          type,
-          ...(createSombraId !== undefined ? { sombraId: createSombraId } : {}),
-          ...(type === CustomFunctionType.Dsr ? { dataSiloId } : {}),
-          name: input.name,
-          ...(input.description !== undefined ? { description: input.description } : {}),
-          ...(type === CustomFunctionType.General ? { setActive: promote } : {}),
-          signedCodeJwt,
-          signedCodeContextJwt,
+    };
+    try {
+      response = await makeGraphQLRequest<typeof response>(client, CREATE_CUSTOM_FUNCTION, {
+        variables: {
+          input: {
+            type,
+            ...(createSombraId !== undefined ? { sombraId: createSombraId } : {}),
+            ...(type === CustomFunctionType.Dsr ? { dataSiloId } : {}),
+            name: input.name,
+            ...(input.description !== undefined ? { description: input.description } : {}),
+            ...(type === CustomFunctionType.General ? { setActive: promote } : {}),
+            signedCodeJwt,
+            signedCodeContextJwt,
+          },
         },
-      },
-      logger,
-    });
+        logger,
+      });
+    } catch (err) {
+      // Roll back the integration created for this function — nothing was
+      // linked to it yet, so a failed create must not strand an orphaned silo
+      if (createdDataSilo && dataSiloId !== undefined) {
+        logger.warn(
+          `Rolling back DSR integration (data silo ${dataSiloId}) for ` +
+            `"${input.name}" — creating the custom function failed.`,
+        );
+        await deleteDataSilo(client, dataSiloId, { logger });
+      }
+      throw err;
+    }
+    const { customFunction } = response.createCustomFunction;
     const version = customFunction.activeVersion ?? customFunction.draftVersion;
     return {
       outcome: 'created',

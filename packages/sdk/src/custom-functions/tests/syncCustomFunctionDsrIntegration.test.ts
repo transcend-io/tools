@@ -227,6 +227,40 @@ describe('syncCustomFunction DSR integration auto-create', () => {
     expect(documents.some((d) => d.includes('createCustomFunction'))).toBe(false);
   });
 
+  it('rolls back the created silo when creating the function fails', async () => {
+    const { client, request } = makeClientStub(PASSING_RESULT);
+    request.mockImplementation((rawDocument: string | DocumentNode) => {
+      const document = typeof rawDocument === 'string' ? rawDocument : print(rawDocument);
+      if (document.includes('runCustomFunction')) {
+        return Promise.resolve({ runCustomFunction: { result: PASSING_RESULT } });
+      }
+      if (document.includes('createDataSilos')) {
+        return Promise.resolve({
+          createDataSilos: { dataSilos: [{ id: 'silo-new', title: 'DSR Lookup' }] },
+        });
+      }
+      if (document.includes('deleteDataSilos')) {
+        return Promise.resolve({ deleteDataSilos: { clientMutationId: null } });
+      }
+      if (document.includes('createCustomFunction')) {
+        return Promise.reject(new Error('Client error: nope'));
+      }
+      throw new Error(`Unexpected GraphQL document: ${document}`);
+    });
+
+    await expect(
+      syncCustomFunction(client, {
+        input: { ...DSR_INPUT, sombraId: 'sombra-eu' },
+        sombra: SOMBRA,
+        existing: [],
+        testPayloads: [{ payload: TEST_PAYLOAD }],
+      }),
+    ).rejects.toThrow('Client error: nope');
+
+    const deleteVariables = callVariables(request, 'deleteDataSilos');
+    expect(deleteVariables?.input).toEqual({ ids: ['silo-new'] });
+  });
+
   it('falls back to the primary Sombra when no gateway is pinned', async () => {
     const { client, request } = makeClientStub(PASSING_RESULT);
 
