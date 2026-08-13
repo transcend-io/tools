@@ -65,8 +65,8 @@ export async function resolvePrimarySombraId(
   if (!organization.sombra?.id) {
     throw new Error(
       'Could not resolve the primary Sombra gateway of the organization, which is ' +
-        'required to create a DSR custom function integration. Specify a sombra-id ' +
-        'on the manifest entry instead.',
+        'required to create a custom function. Specify a sombra-id on the manifest ' +
+        'entry instead.',
     );
   }
   return organization.sombra.id;
