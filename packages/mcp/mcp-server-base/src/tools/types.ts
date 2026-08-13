@@ -1,4 +1,4 @@
-import { type z } from 'zod';
+import { z } from 'zod';
 
 import type { TranscendGraphQLBase } from '../clients/graphql/base.js';
 import type { TranscendRestClient } from '../clients/rest-client.js';
@@ -31,6 +31,15 @@ export interface ToolUiBinding {
   resource: UiResourceDefinition;
 }
 
+/**
+ * Human confirmation gate. Presence opts the tool in; `hint` is the prose shown
+ * to the user before approving.
+ */
+export interface ToolConfirmation {
+  /** What the action does and what it costs to get wrong. */
+  hint: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ToolDefinition {
   /** Unique tool name */
@@ -41,6 +50,8 @@ export interface ToolDefinition {
   category: string;
   /** Whether this tool only reads data */
   readOnly: boolean;
+  /** When set, requires human approval before the handler runs. */
+  confirmation?: ToolConfirmation;
   /** MCP tool annotations */
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */
@@ -98,6 +109,8 @@ export function defineTool<T>(config: {
   category: string;
   /** Whether this tool only reads data */
   readOnly: boolean;
+  /** When set, requires human approval before the handler runs. */
+  confirmation?: ToolConfirmation;
   /** MCP tool annotations */
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */
@@ -140,7 +153,66 @@ export function defineTool<T>(config: {
         'what each field is and what valid values look like.',
     );
   }
+  if (config.confirmation) {
+    assertConfirmableSchema(config.name, config.zodSchema);
+    assertConfirmableAnnotations(config.name, config.annotations);
+    if (config.confirmation.hint.trim() === '') {
+      throw new Error(
+        `Tool "${config.name}" requires confirmation but its hint is empty. That hint is the ` +
+          'only prose the user reads before approving.',
+      );
+    }
+    if (config.ui) {
+      throw new Error(confirmationViewError(config.name, 'an MCP App view'));
+    }
+  }
   return config;
+}
+
+/** Gated tools must use a z.object schema so `approvalToken` can be added. */
+export function assertConfirmableSchema(
+  toolName: string,
+  schema: z.ZodType<unknown>,
+): asserts schema is z.ZodObject<z.ZodRawShape> {
+  if (!(schema instanceof z.ZodObject)) {
+    throw new Error(
+      `Tool "${toolName}" requires confirmation but its zodSchema is not a z.object(). ` +
+        'The confirmation gate adds an optional approvalToken field, which needs an ' +
+        'object schema to extend.',
+    );
+  }
+}
+
+/** Gated tools must be annotated as mutating and destructive. */
+export function assertConfirmableAnnotations(toolName: string, annotations: ToolAnnotations): void {
+  if (annotations.readOnlyHint) {
+    throw new Error(
+      `Tool "${toolName}" declares confirmation but annotates readOnlyHint: true. ` +
+        'Confirmation gates a mutation, and a read-only tool has nothing to approve.',
+    );
+  }
+  if (!annotations.destructiveHint) {
+    throw new Error(
+      `Tool "${toolName}" declares confirmation but annotates destructiveHint: false. ` +
+        'Hosts use destructiveHint to decide how to prompt for a tool call, so it has to ' +
+        'agree with the gate.',
+    );
+  }
+}
+
+/**
+ * Confirmation and MCP App views conflict: the gate runs before the handler,
+ * but a view only renders after it returns.
+ */
+export function confirmationViewError(toolName: string, attachedVia: string): string {
+  return (
+    `Tool "${toolName}" declares confirmation and ${attachedVia}. The confirmation gate ` +
+    'is server-enforced and runs before the handler, but an MCP App view only renders ' +
+    'once the handler has returned — so on an MCP Apps host the gate cannot be what asks ' +
+    'the user. Either drop the view, or drop confirmation and build approval into the ' +
+    'view: have the handler return the pending action without performing it, and put the ' +
+    'mutation in an appOnlyTool the view calls once the user clicks.'
+  );
 }
 
 /**

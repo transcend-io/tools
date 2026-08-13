@@ -76,11 +76,24 @@ describe('requestElicitation', () => {
       expect(result).toEqual({ action: 'accept', content: { name: 'Katherine' } });
     });
 
-    expect(elicitInput).toHaveBeenCalledWith({
-      mode: 'form',
-      message: 'Who should this greeting be addressed to?',
-      requestedSchema: SCHEMA,
+    expect(elicitInput).toHaveBeenCalledWith(
+      {
+        mode: 'form',
+        message: 'Who should this greeting be addressed to?',
+        requestedSchema: SCHEMA,
+      },
+      undefined,
+    );
+  });
+
+  it('forwards request options, so a caller can outlast the SDK 60s default', async () => {
+    const { session, elicitInput } = sessionWith([McpClientCapability.Elicitation]);
+
+    await mcpSessionContext.run(session, async () => {
+      await requestElicitation('Who?', SCHEMA, { timeout: 600_000 });
     });
+
+    expect(elicitInput).toHaveBeenCalledWith(expect.anything(), { timeout: 600_000 });
   });
 
   it('passes a declined form back to the caller rather than treating it as an answer', async () => {

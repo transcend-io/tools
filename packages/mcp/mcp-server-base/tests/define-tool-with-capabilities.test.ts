@@ -5,6 +5,7 @@ import {
   McpHostClient,
   type ClientCapabilityReport,
 } from '../src/capabilities/types.js';
+import { ConfirmationPolicy, type ConfirmationGate } from '../src/tools/confirmation.js';
 import {
   assertElicitFormSchema,
   defineToolWithCapabilities,
@@ -239,13 +240,22 @@ describe('resolveToolVariant', () => {
 });
 
 describe('expandToolsForClient', () => {
+  // No tool here opts into confirmation, so the policy is immaterial to these
+  // cases — but the argument is required rather than defaulted, so that a new
+  // serving path cannot pick one without meaning to.
+  const GATE: ConfirmationGate = { policy: ConfirmationPolicy.Refuse };
+
   it('emits only the baseline for a host with no capabilities', () => {
-    const expanded = expandToolsForClient([buildTool()], reportFor());
+    const expanded = expandToolsForClient([buildTool()], reportFor(), GATE);
     expect(expanded.map((tool) => tool.name)).toEqual(['test_greet']);
   });
 
   it('emits app-only companions alongside the MCP App variant', () => {
-    const expanded = expandToolsForClient([buildTool()], reportFor(McpClientCapability.McpApp));
+    const expanded = expandToolsForClient(
+      [buildTool()],
+      reportFor(McpClientCapability.McpApp),
+      GATE,
+    );
     expect(expanded.map((tool) => tool.name)).toEqual(['test_greet', 'test_greet_refresh']);
 
     const companion = expanded.find((tool) => tool.name === 'test_greet_refresh')!;
@@ -282,9 +292,11 @@ describe('expandToolsForClient', () => {
       },
     });
 
-    const companion = expandToolsForClient([tool], reportFor(McpClientCapability.McpApp)).find(
-      (candidate) => candidate.name === 'test_leaky_refresh',
-    )!;
+    const companion = expandToolsForClient(
+      [tool],
+      reportFor(McpClientCapability.McpApp),
+      GATE,
+    ).find((candidate) => candidate.name === 'test_leaky_refresh')!;
     expect(companion.visibility).toEqual(['app']);
   });
 
@@ -292,6 +304,7 @@ describe('expandToolsForClient', () => {
     const expanded = expandToolsForClient(
       [buildTool()],
       reportFor(McpClientCapability.Elicitation, McpClientCapability.McpApp),
+      GATE,
     );
     expect(expanded.map((tool) => tool.name)).toEqual([
       'test_greet',
@@ -309,6 +322,7 @@ describe('expandToolsForClient', () => {
     const expanded = expandToolsForClient(
       [buildTool()],
       reportFor(McpClientCapability.Elicitation),
+      GATE,
     );
     expect(expanded.map((tool) => tool.name)).toEqual(['test_greet']);
   });

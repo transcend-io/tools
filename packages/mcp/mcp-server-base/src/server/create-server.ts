@@ -118,6 +118,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
             version: options.version,
             tools,
             instructions: options.instructions,
+            transport: 'http',
           });
         },
       },
@@ -138,6 +139,7 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
     version: options.version,
     tools,
     instructions: options.instructions,
+    transport: 'stdio',
   });
 
   logger.info(`Starting ${options.name} v${options.version}...`, { toolCount: tools.length });

@@ -63,7 +63,12 @@ describe('HTTP Transport', () => {
         name: 'test-server',
         version: '0.0.1',
         createServer: (_auth) =>
-          buildMcpServer({ name: 'test-server', version: '0.0.1', tools: [echoTool] }),
+          buildMcpServer({
+            name: 'test-server',
+            version: '0.0.1',
+            tools: [echoTool],
+            transport: 'http',
+          }),
       },
       testConfig(0),
     );
@@ -428,6 +433,7 @@ describe('HTTP Transport', () => {
               name: 'sidecar-test',
               version: '0.0.1',
               tools: [authCaptureTool],
+              transport: 'http',
             }),
         },
         testConfig(0),

@@ -76,11 +76,33 @@ export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation
 export type {
   ToolAnnotations,
   ToolClients,
+  ToolConfirmation,
   ToolDefinition,
   ToolUiBinding,
   ToolVisibility,
 } from './tools/types.js';
-export { DEFAULT_TOOL_VISIBILITY, defineTool, isVisibleToModel } from './tools/types.js';
+export {
+  assertConfirmableAnnotations,
+  assertConfirmableSchema,
+  DEFAULT_TOOL_VISIBILITY,
+  defineTool,
+  isVisibleToModel,
+} from './tools/types.js';
+
+export { describeArgs } from './tools/describe-args.js';
+export type { ConfirmationSummary } from './tools/describe-args.js';
+
+export {
+  APPROVAL_TOKEN_ARG,
+  CONFIRMATION_TIMEOUT_MS,
+  ConfirmationCode,
+  ConfirmationPolicy,
+  renderConfirmationPrompt,
+  withConfirmation,
+} from './tools/confirmation.js';
+export type { ConfirmationGate } from './tools/confirmation.js';
+
+export { APPROVAL_TOKEN_TTL_MS, ApprovalTokenStore } from './tools/approval-tokens.js';
 
 export {
   MCP_APP_MIME_TYPE,
