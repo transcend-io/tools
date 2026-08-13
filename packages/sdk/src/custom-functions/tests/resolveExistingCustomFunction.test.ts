@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CustomFunction } from '../fetchAllCustomFunctions.js';
-import { resolveEffectiveSombraId, resolveExistingCustomFunction } from '../syncCustomFunction.js';
+import { resolveEffectiveSombraId } from '../resolveEffectiveSombraId.js';
+import { resolveExistingCustomFunction } from '../resolveExistingCustomFunction.js';
 
 /**
  * Build a minimal custom function node for resolution tests

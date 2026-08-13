@@ -10,6 +10,7 @@ export * from './consentUiInventory.js';
 export * from './consentUi.js';
 export * from './consentUiTheme.js';
 export * from './consentUiConfiguration.js';
+export * from './customFunction.js';
 export * from './database.js';
 export * from './datapoint.js';
 export * from './dsrErrorCode.js';

@@ -1,17 +1,9 @@
+import type { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import type { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import type { CustomFunctionType } from './fetchAllCustomFunctions.js';
 import { RUN_CUSTOM_FUNCTION } from './gqls/index.js';
-
-/**
- * Which export Sombra invokes when test-running a DSR custom function.
- * `DATA_POINT` invokes the `default` export, `REQUEST_ENRICHER` invokes the
- * `enricher` export. GENERAL functions are always run as Maestro payloads and
- * ignore this setting.
- */
-export type CustomFunctionTestPayloadType = 'DATA_POINT' | 'REQUEST_ENRICHER';
 
 /**
  * A log line emitted while executing a custom function.
@@ -112,8 +104,12 @@ export async function runCustomFunctionTest(
     payload: object;
     /** Dedicated Sombra gateway ID (GENERAL only; DSR derives it from the payload's data silo) */
     sombraId?: string;
-    /** Which export to invoke for DSR functions. Defaults to DATA_POINT */
-    payloadType?: CustomFunctionTestPayloadType;
+    /**
+     * Which export to invoke for DSR functions (`DATA_POINT` → `default`,
+     * `REQUEST_ENRICHER` → `enricher`). Defaults to DATA_POINT. GENERAL
+     * functions are always run as Maestro payloads and ignore this setting
+     */
+    payloadType?: CustomFunctionPayloadType;
     /** Logger instance */
     logger?: Logger;
   },
