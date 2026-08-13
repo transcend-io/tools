@@ -139,6 +139,13 @@ export type {
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
 
+export type {
+  PromptArgument,
+  PromptDefinition,
+  PromptMessage,
+  PromptMessageContent,
+} from './prompts/types.js';
+
 export { createMCPServer } from './server/create-server.js';
 export type { MCPServerOptions } from './server/create-server.js';
 

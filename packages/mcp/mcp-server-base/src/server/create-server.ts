@@ -4,6 +4,7 @@ import type { AuthCredentials } from '../auth.js';
 import { SimpleLogger, TranscendGraphQLBase } from '../clients/graphql/base.js';
 import { resolveStdioStartupAuth } from '../oauth/resolve-stdio-auth.js';
 import { configureOAuthScopes } from '../oauth/scopes.js';
+import type { PromptDefinition } from '../prompts/types.js';
 import type { ToolClients, ToolDefinition } from '../tools/types.js';
 import { buildMcpServer } from './build-server.js';
 import { parseTransportArgs } from './parse-args.js';
@@ -51,6 +52,8 @@ export interface MCPServerOptions {
   oauthScopes: readonly string[];
   /** Factory that returns tool definitions given API clients */
   getTools: (clients: ToolClients) => ToolDefinition[];
+  /** Optional factory that returns prompt definitions (workflow templates) */
+  getPrompts?: (clients: ToolClients) => PromptDefinition[];
   /**
    * Optional custom client factory. Receives a {@link CreateClientsArgs}
    * object so new fields can be added without breaking call sites.
@@ -113,10 +116,12 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
             options.createClients,
           );
           const tools = options.getTools(clients);
+          const prompts = options.getPrompts?.(clients) ?? [];
           return buildMcpServer({
             name: options.name,
             version: options.version,
             tools,
+            prompts,
             instructions: options.instructions,
             transport: 'http',
           });
@@ -134,15 +139,20 @@ export async function createMCPServer(options: MCPServerOptions): Promise<void> 
     options.createClients,
   );
   const tools = options.getTools(clients);
+  const prompts = options.getPrompts?.(clients) ?? [];
   const server = buildMcpServer({
     name: options.name,
     version: options.version,
     tools,
+    prompts,
     instructions: options.instructions,
     transport: 'stdio',
   });
 
-  logger.info(`Starting ${options.name} v${options.version}...`, { toolCount: tools.length });
+  logger.info(`Starting ${options.name} v${options.version}...`, {
+    toolCount: tools.length,
+    promptCount: prompts.length,
+  });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
