@@ -502,11 +502,11 @@
       "$description": "Orange data series — charts, graphs, visualizations"
     },
     "yellow": {
-      "$value": "{palette.yellow.400}",
+      "$value": "{palette.yellow.600}",
       "$description": "Yellow data series — charts, graphs, visualizations"
     },
     "lime": {
-      "$value": "{palette.lime.400}",
+      "$value": "{palette.lime.600}",
       "$description": "Lime data series — charts, graphs, visualizations"
     },
     "teal": {
