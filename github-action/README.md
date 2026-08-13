@@ -52,6 +52,33 @@ Each manifest entry is matched **by `id` first** when one is set — the ID is t
 
 A new DSR entry that omits `data-silo-id` gets its DSR integration created as part of the push: a `customFunction`-catalog data silo is created on the entry's Sombra gateway (or the organization's primary), the signed code is test-run against it, and on a passing test the function is created and linked. A failing test **rolls the silo back** (deletes it) and fails the workflow. With `update-manifest` enabled, both the function `id` and the `data-silo-id` are written back into the manifest — pair it with an auto-commit step to persist them. DSR test payloads get `extras.dataSilo` injected automatically from the entry's resolved silo, so payload files never hardcode silo IDs.
 
+## Writing custom functions
+
+Every custom function export is invoked with a **single argument**: an object with `payload` and `environment` properties. There is no wrapper around them — destructure both at the top level:
+
+```typescript
+export default async function myFunction({
+  payload,
+  environment,
+}: {
+  /** The invocation payload (free-form JSON for GENERAL, webhook shape for DSR) */
+  payload: MyPayload;
+  /** Key/value strings from the manifest entry's `env` block */
+  environment: { [key: string]: string };
+}): Promise<MyResult> {
+  // ...
+}
+```
+
+- **`environment`** — the manifest entry's `env` block, with `<<parameters.x>>` placeholders already resolved from the action's `variables` input. All values are strings.
+- **`payload`** — what the function was invoked with:
+  - **GENERAL functions** receive the free-form JSON the caller (e.g. a Maestro rule, or your test-payload file) provides.
+  - **DSR functions** receive the [webhook notification shape](https://docs.transcend.io/docs/articles/rules-automation/webhook-user-guide) — the data subject's identifier is at `payload.extras.profile.identifier` for data-point invocations and `payload.requestIdentifier.value` for enricher invocations.
+
+DSR functions expose up to two entry points: the **default export** handles data-point operations (access/erasure), and an optional **`enricher` export** resolves additional identifiers before the request fans out.
+
+The function's resolved return value is its output; throwing an error (or exiting non-zero) fails the run. Only destructure the properties you use — see [examples/functions/](./examples/functions/) for complete reference implementations.
+
 ## Usage
 
 ```yaml
