@@ -186,15 +186,17 @@ describe('syncCustomFunction DSR integration auto-create', () => {
     });
     expect(runVariables.input.payloadType).toBe('REQUEST_ENRICHER');
 
-    // Function created linked to the new silo. No sombraId is sent even for a
-    // pinned gateway — the backend rejects it for DSR functions, whose data
-    // silo dictates the gateway
+    // Function created linked to the new silo. Neither sombraId nor setActive
+    // is sent — the backend rejects both for DSR functions (the data silo
+    // dictates the gateway, and DSR functions are always created active)
     const createCfVariables = callVariables(request, 'createCustomFunction') as {
       /** Mutation input */
-      input: { dataSiloId: string; sombraId?: string };
+      input: { dataSiloId: string; sombraId?: string; setActive?: boolean };
     };
     expect(createCfVariables.input.dataSiloId).toBe('silo-new');
     expect(createCfVariables.input.sombraId).toBeUndefined();
+    expect(createCfVariables.input.setActive).toBeUndefined();
+    expect(result.promoted).toBe(true);
 
     // Order: silo created before the test ran
     const documents = request.mock.calls.map(([document]) => document as string);
