@@ -39,6 +39,8 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend consent upload-data-flows-from-csv`](#transcend-consent-upload-data-flows-from-csv)
   - [`transcend consent upload-preferences`](#transcend-consent-upload-preferences)
   - [`transcend consent delete-preference-records`](#transcend-consent-delete-preference-records)
+  - [`transcend custom-functions push`](#transcend-custom-functions-push)
+  - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
   - [`transcend inventory push`](#transcend-inventory-push)
   - [`transcend inventory scan-packages`](#transcend-inventory-scan-packages)
@@ -2425,6 +2427,217 @@ transcend consent delete-preference-records \
   --maxItemsInChunk=5 \
   --receiptDirectory=./receipts \
   --timestamp=2025-08-26T00:00:00.000Z
+```
+
+### `transcend custom-functions push`
+
+```txt
+USAGE
+  transcend custom-functions push (--auth value) [--sombraAuth value] [--transcendUrl value] [--file value] [--variables value] [--dryRun] [--promote] [--force] [--skipTests] [--updateManifest] [--sombraId value]
+  transcend custom-functions push --help
+
+Sync custom function source code from your repository to Transcend.
+
+Given a manifest file mapping custom function names to TypeScript source files (plus execution context like allowed hosts, timeout, and environment variables), this command:
+
+1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
+2. Creates the DSR integration (data silo) for any new DSR function that does not specify a data-silo-id
+3. Test-runs the freshly signed code with each of the entry's test payloads, when defined (unless --skipTests) — DSR functions can cover both their default (DATA_POINT) and enricher (REQUEST_ENRICHER) exports. Any failing payload rolls back any integration created in step 2
+4. Creates any custom functions that do not exist yet (linking new DSR functions to their integration)
+5. Pushes a new code revision for any function whose code or context changed
+6. Promotes new revisions to active (unless --promote=false)
+
+Metadata-only changes (description, or name for entries pinned by id) are updated in place without signing, testing, or pushing a new code revision. Environment variable values are encrypted at sign time and cannot be diffed — pass --force to re-push when only env values changed.
+
+Functions with any failing test run are rejected — every failing payload's reason and execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without test payloads push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
+
+Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.
+
+Function code is invoked with a single argument of shape { payload, environment } — payload is the invocation JSON (free-form for GENERAL functions, the webhook notification shape for DSR functions) and environment is the manifest entry's env block. DSR functions may also export an enricher entry point.
+
+FLAGS
+      --auth                  The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "Manage Data Map"
+     [--sombraAuth]           The Sombra internal key, use for additional authentication when self-hosting Sombra
+     [--transcendUrl]         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                [default = https://api.transcend.io]
+     [--file]                 Path to the custom functions manifest YAML file                                                                                                                                                                   [default = ./transcend-functions.yml]
+     [--variables]            The variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                               [default = ""]
+     [--dryRun]               When true, report what would change without pushing anything                                                                                                                                                      [default = false]
+     [--promote/--noPromote]  When true, promote new revisions to active. Set to false to leave new revisions as drafts for review in the dashboard.                                                                                            [default = true]
+     [--force]                Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.                                                                              [default = false]
+     [--skipTests]            Skip test runs entirely, pushing functions without executing their test-payload files. Tests also do not run on --dryRun (nothing is signed on dry runs).                                                         [default = false]
+     [--updateManifest]       After pushing, write the assigned custom function IDs back into the manifest file so future pushes match by ID instead of by name. Comments and <<parameters.x>> placeholders are preserved.                      [default = false]
+     [--sombraId]             Default Sombra gateway for functions whose manifest entry (or existing function) does not pin one. Each function is signed against the gateway it belongs to. Defaults to the primary Sombra of the organization.
+  -h  --help                  Print help information and exit
+```
+
+#### Manifest file
+
+The manifest maps custom function names to source files in your repository:
+
+```yaml
+# transcend-functions.yml
+functions:
+  - name: Score Lead
+    code: ./functions/score-lead.ts
+    description: Scores an inbound lead against the CRM
+    test-payload: ./test-payloads/score-lead.json
+    allowed-hosts:
+      - api.example.com
+    timeout-ms: 30000
+    env:
+      CRM_API_KEY: <<parameters.crmApiKey>>
+  - name: DSR Lookup
+    code: ./functions/dsr-lookup.ts
+    type: DSR
+    data-silo-id: 5a4b0f9c-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    # DSR functions have two entry points — test both on every push
+    test-payloads:
+      - payload: ./test-payloads/dsr-lookup-access.json
+        payload-type: DATA_POINT
+      - payload: ./test-payloads/dsr-lookup-enricher.json
+        payload-type: REQUEST_ENRICHER
+```
+
+| Field                       | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                   |
+| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                      | Yes      | Display name of the function. Used as the sync key when no `id` is set — renaming an id-less entry creates a new function.                                                                                                                                                                                                                                                                                    |
+| `code`                      | Yes      | Path to the TypeScript source file, relative to the manifest.                                                                                                                                                                                                                                                                                                                                                 |
+| `id`                        | No       | Custom function ID. When set, it becomes the sync key (allowing renames and disambiguating non-unique names). Find IDs via `transcend custom-functions list`, or let `--updateManifest` fill them in after a push.                                                                                                                                                                                            |
+| `description`               | No       | Description shown in the Transcend dashboard.                                                                                                                                                                                                                                                                                                                                                                 |
+| `type`                      | No       | `GENERAL` (default) or `DSR`.                                                                                                                                                                                                                                                                                                                                                                                 |
+| `data-silo-id`              | DSR only | The data silo (DSR integration) the DSR function is attached to. When omitted for a **new** DSR function, the integration is created automatically (see below) and `--updateManifest` writes the assigned ID back.                                                                                                                                                                                            |
+| `sombra-id`                 | No       | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or `--sombraId`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway.                                                                                                                                         |
+| `sombra-auth-env`           | No       | Name of the environment variable holding the internal key of the function's Sombra gateway (e.g. `SOMBRA_EU_INTERNAL_KEY`). The key itself never lives in the manifest — it is read from the environment at push time. Overrides `--sombraAuth` for this entry.                                                                                                                                               |
+| `test-payloads`             | No       | List of test payloads to run the function with before pushing. Each item has a `payload` (path to a JSON file, relative to the manifest) and an optional `payload-type`. Every payload runs and all must pass, or the push is rejected. DSR functions should list one payload per export they implement: `DATA_POINT` (default) invokes the default export, `REQUEST_ENRICHER` invokes the `enricher` export. |
+| `test-payload`              | No       | Shorthand for a single-item `test-payloads` list: path to one JSON payload file. Pair with `test-payload-type` for DSR functions. Mutually exclusive with `test-payloads`.                                                                                                                                                                                                                                    |
+| `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                                                                                                                                                                                                              |
+| `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                                                                                                                                                                                                            |
+| `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                                                                                                                                                                                                                          |
+| `env`                       | No       | Environment variables exposed to the function. Use `<<parameters.name>>` placeholders with the `--variables` flag to avoid committing secrets.                                                                                                                                                                                                                                                                |
+
+Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use `--force` to push a new revision.
+
+Functions may belong to different Sombra gateways within one manifest; the command connects to each distinct gateway as needed. `--sombraAuth` provides the default internal key; when self-hosted gateways use _different_ internal keys, set `sombra-auth-env` per entry to the name of the environment variable holding that gateway's key:
+
+```yaml
+functions:
+  - name: US Function
+    code: ./functions/us.ts
+    # primary gateway, authenticated by --sombraAuth (if self-hosted)
+  - name: EU Function
+    code: ./functions/eu.ts
+    sombra-id: 8c0b1f2a-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    sombra-auth-env: SOMBRA_EU_INTERNAL_KEY
+```
+
+#### How manifest entries are matched to existing functions
+
+Each entry is resolved against the custom functions in your organization in this order:
+
+1. **By `id`, when set.** The ID is the sync key: the matched function is updated, and `name` may be changed freely (it just renames the function). If no function with that ID exists, the push **fails** for that entry — a stale or mistyped ID never silently creates a duplicate. Remove the `id` to create a new function instead.
+2. **By exact `name`, when no `id` is set.**
+   - Exactly one function with that name → it is updated.
+   - No function with that name → a new one is created.
+   - **More than one** function with that name → the push fails with an error listing the candidate IDs. Add the right `id` to the entry to disambiguate, or grab IDs from `transcend custom-functions list`.
+
+Within the manifest itself, duplicate `id`s are always rejected, and duplicate `name`s are only allowed when every entry sharing the name has an `id`.
+
+Because ID matching is strictly safer, prefer pinning IDs once functions exist: run `transcend custom-functions push --updateManifest` after the first push and the assigned IDs are written back into the manifest automatically (comments and `<<parameters.x>>` placeholders are preserved). For DSR functions, the assigned `data-silo-id` is written back the same way.
+
+#### New DSR functions: the integration is created automatically
+
+A **new** DSR entry (no `id`, no matching function by name) that omits `data-silo-id` gets its DSR integration created as part of the push:
+
+1. A `customFunction`-catalog data silo is created, titled after the function, on the entry's Sombra gateway (`sombra-id`, else `--sombraId`, else the organization's primary Sombra). It starts `NOT_CONFIGURED` with nothing attached.
+2. The signed code is test-run against that silo (when test payloads are set) — DSR test payloads always get `extras.dataSilo` injected from the resolved silo, so payload files never need to hardcode silo IDs.
+3. On a passing test the custom function is created and linked to the silo (which becomes `Connected`). On a failing test the silo is **rolled back** (deleted) and the function is rejected.
+4. With `--updateManifest`, both the custom function `id` and the `data-silo-id` are written back into the manifest.
+
+DSR entries that already pin a `data-silo-id` behave as before — the integration must exist and the function is attached to it.
+
+#### Test-before-promote
+
+Entries with test payloads (`test-payloads`, or the single-payload `test-payload` shorthand) are tested before anything is pushed:
+
+1. The code and context are signed against the function's Sombra gateway.
+2. The signed code is executed as a test run with each payload JSON (via the `runCustomFunction` mutation — nothing is persisted). GENERAL functions run on the function's gateway; DSR functions run on the gateway of the function's data silo — `extras.dataSilo` is injected into every payload automatically from the entry's resolved silo, so payload files never need to hardcode silo IDs.
+3. **All payloads pass** (no error, exit code ≤ 0): the revision is pushed and promoted as usual.
+4. **Any payload fails**: the function is rejected — every failing payload's reason and logs are printed (all payloads run, so one push reports every failing case), nothing is pushed for that function, and the command exits 1.
+
+DSR functions have two entry points — the default export (`DATA_POINT`) and the `enricher` export (`REQUEST_ENRICHER`) — so list one payload per export the function implements; a warning is printed when a DSR entry only covers one. Entries without test payloads push as before, with a warning. `--skipTests` bypasses testing entirely, and `--dryRun` never tests (nothing is signed on dry runs). Test runs require backend support for pre-signed code JWTs on the `runCustomFunction` mutation; on older backends the push fails with an upgrade hint — use `--skipTests` to bypass.
+
+#### Examples
+
+**Push all custom functions defined in ./transcend-functions.yml**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY"
+```
+
+**Preview changes without pushing anything**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --dryRun
+```
+
+**Use a manifest at a custom path with templated secrets**
+
+```sh
+transcend custom-functions push \
+  --auth="$TRANSCEND_API_KEY" \
+  --file=./transcend/functions.yml \
+  --variables=crmApiKey:example-secret-value
+```
+
+**Push new revisions as drafts for review instead of promoting them**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --promote=false
+```
+
+**Record the assigned custom function IDs in the manifest so future pushes match by ID**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --updateManifest
+```
+
+**Force a new revision even when no code changes are detected (e.g. env value rotation)**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --force
+```
+
+**Push without running test payloads**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --skipTests
+```
+
+**With Sombra authentication, needed when self-hosting Sombra**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --sombraAuth="$SOMBRA_INTERNAL_KEY"
+```
+
+**Specifying the backend URL, needed for US hosted backend infrastructure**
+
+```sh
+transcend custom-functions push --auth="$TRANSCEND_API_KEY" --transcendUrl=https://api.us.transcend.io
+```
+
+### `transcend custom-functions list`
+
+```txt
+USAGE
+  transcend custom-functions list (--auth value) [--transcendUrl value]
+  transcend custom-functions list --help
+
+List all custom functions in the organization along with their lifecycle state, active version, and any pending draft version.
+
+FLAGS
+      --auth           The Transcend API key. Defaults to the TRANSCEND_API_KEY environment variable when set, so --auth may be omitted if it is exported. Requires scopes: "View Data Map"
+     [--transcendUrl]  URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported. [default = https://api.transcend.io]
+  -h  --help           Print help information and exit
 ```
 
 ### `transcend inventory pull`

@@ -3,6 +3,7 @@ import { buildApplication, buildRouteMap, text_en } from '@stricli/core';
 
 import { adminRoutes } from './commands/admin/routes.js';
 import { consentRoutes } from './commands/consent/routes.js';
+import { customFunctionsRoutes } from './commands/custom-functions/routes.js';
 import { inventoryRoutes } from './commands/inventory/routes.js';
 import { migrationRoutes } from './commands/migration/routes.js';
 import { formatCliException } from './commands/policy/helpers/policyEngineCliError.js';
@@ -14,6 +15,7 @@ const routes = buildRouteMap({
   routes: {
     request: requestRoutes,
     consent: consentRoutes,
+    'custom-functions': customFunctionsRoutes,
     inventory: inventoryRoutes,
     admin: adminRoutes,
     migration: migrationRoutes,
