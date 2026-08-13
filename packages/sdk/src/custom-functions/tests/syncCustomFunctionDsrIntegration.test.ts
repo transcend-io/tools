@@ -108,7 +108,7 @@ function callVariables(
 }
 
 describe('injectDataSiloIntoDsrTestPayload', () => {
-  it('overrides the silo id, preserves other extras, defaults the title', () => {
+  it('overrides the silo id, preserves other extras, defaults required codec fields', () => {
     const payload = {
       type: 'ACCESS',
       extras: {
@@ -126,20 +126,26 @@ describe('injectDataSiloIntoDsrTestPayload', () => {
     expect(injected.extras.dataSilo).toEqual({
       id: 'silo-new',
       title: 'DSR Lookup',
+      description: '',
       link: 'https://keep.me',
     });
     expect(injected.extras.profile).toEqual({ identifier: 'x' });
   });
 
-  it('keeps a title already present in the payload', () => {
+  it('keeps title, description, and link already present in the payload', () => {
     const injected = injectDataSiloIntoDsrTestPayload(
-      { extras: { dataSilo: { title: 'Custom Title' } } },
+      { extras: { dataSilo: { title: 'Custom Title', description: 'Mine', link: 'https://a' } } },
       { id: 'silo-new', title: 'Fallback' },
     ) as {
       /** Injected extras */
       extras: { dataSilo: Record<string, unknown> };
     };
-    expect(injected.extras.dataSilo).toEqual({ id: 'silo-new', title: 'Custom Title' });
+    expect(injected.extras.dataSilo).toEqual({
+      id: 'silo-new',
+      title: 'Custom Title',
+      description: 'Mine',
+      link: 'https://a',
+    });
   });
 });
 
@@ -172,7 +178,12 @@ describe('syncCustomFunction DSR integration auto-create', () => {
     const decodedPayload = JSON.parse(
       Buffer.from(runVariables.input.payload, 'base64').toString('utf-8'),
     );
-    expect(decodedPayload.extras.dataSilo).toEqual({ id: 'silo-new', title: 'DSR Lookup' });
+    expect(decodedPayload.extras.dataSilo).toEqual({
+      id: 'silo-new',
+      title: 'DSR Lookup',
+      description: '',
+      link: '',
+    });
     expect(runVariables.input.payloadType).toBe('REQUEST_ENRICHER');
 
     // Function created linked to the new silo. No sombraId is sent even for a
