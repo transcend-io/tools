@@ -84,6 +84,8 @@ Given a manifest file mapping custom function names to TypeScript source files (
 5. Pushes a new code revision for any function whose code or context changed
 6. Promotes new revisions to active (unless --promote=false)
 
+Metadata-only changes (description, or name for entries pinned by id) are updated in place without signing, testing, or pushing a new code revision. Environment variable values are encrypted at sign time and cannot be diffed — pass --force to re-push when only env values changed.
+
 Functions with any failing test run are rejected — every failing payload's reason and execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without test payloads push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
 
 Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.
