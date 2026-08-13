@@ -306,6 +306,13 @@ export async function syncCustomFunction(
       type === CustomFunctionType.General
         ? (effectiveSombraId ?? (await resolvePrimarySombraId(client, logger)))
         : undefined;
+    // DSR functions are always created active — the backend rejects setActive
+    if (type === CustomFunctionType.Dsr && !promote) {
+      logger.warn(
+        `DSR custom functions are always created active — "${input.name}" ` +
+          'will be created promoted despite promote being disabled.',
+      );
+    }
     const {
       createCustomFunction: { customFunction },
     } = await makeGraphQLRequest<{
@@ -339,7 +346,7 @@ export async function syncCustomFunction(
           ...(type === CustomFunctionType.Dsr ? { dataSiloId } : {}),
           name: input.name,
           ...(input.description !== undefined ? { description: input.description } : {}),
-          setActive: promote,
+          ...(type === CustomFunctionType.General ? { setActive: promote } : {}),
           signedCodeJwt,
           signedCodeContextJwt,
         },
@@ -352,7 +359,7 @@ export async function syncCustomFunction(
       customFunctionId: customFunction.id,
       ...(version ? { versionNumber: version.versionNumber } : {}),
       changedFields,
-      promoted: promote,
+      promoted: type === CustomFunctionType.Dsr ? true : promote,
       ...(testResults ? { testResults } : {}),
       ...(dataSiloId !== undefined ? { dataSiloId } : {}),
       ...(createdDataSilo ? { createdDataSilo } : {}),
