@@ -201,8 +201,20 @@ export async function push(
             ),
           );
           break;
+        case 'metadata-updated':
+          logger.info(
+            colors.green(
+              `Updated metadata for "${input.name}"${changes} — code unchanged, no new revision`,
+            ),
+          );
+          break;
         case 'skipped':
-          logger.info(colors.yellow(`Skipped "${input.name}" — no changes detected`));
+          logger.info(
+            colors.yellow(
+              `Skipped "${input.name}" — no changes detected ` +
+                '(env variable values cannot be diffed; use --force if only values changed)',
+            ),
+          );
           break;
         case 'would-create':
           logger.info(
@@ -342,9 +354,11 @@ export async function push(
     colors.magenta(
       `Custom function sync complete: ${count('created') + count('would-create')} created, ${
         count('updated') + count('would-update')
-      } updated, ${count('skipped')} skipped, ${rejected} rejected (test failed), ${
-        failures.length
-      } failed${dryRun ? ' (dry run)' : ''}`,
+      } updated, ${count('metadata-updated')} metadata-only, ${count(
+        'skipped',
+      )} skipped, ${rejected} rejected (test failed), ${failures.length} failed${
+        dryRun ? ' (dry run)' : ''
+      }`,
     ),
   );
 
