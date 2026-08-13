@@ -1,8 +1,27 @@
 {
   "type": "ACCESS",
+  "isTest": true,
+  "dataSubject": { "type": "customer" },
   "extras": {
+    "request": {
+      "id": "b8f6f855-4c12-4c92-9e0e-6f3f6b1a9d21",
+      "link": "https://app.transcend.io/privacy-requests/incoming-requests/b8f6f855-4c12-4c92-9e0e-6f3f6b1a9d21",
+      "details": "Test run from CI",
+      "createdAt": "2026-01-01T00:00:00.000Z",
+      "locale": "en",
+      "origin": "PRIVACY_CENTER",
+      "attributes": []
+    },
+    "organization": {
+      "id": "7d9c8b6a-5e4f-4321-9876-0a1b2c3d4e5f",
+      "name": "Example Organization",
+      "uri": "example-org"
+    },
     "profile": {
-      "identifier": "jane.doe@example.com"
+      "id": "3c2b1a09-8f7e-4d6c-b5a4-392817065544",
+      "RequestDataSiloId": "9e8d7c6b-5a49-4382-b716-055443322110",
+      "identifier": "jane.doe@example.com",
+      "type": "email"
     }
   }
 }

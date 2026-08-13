@@ -20,9 +20,16 @@
 interface DsrPayload {
   /** The request action (ACCESS, ERASURE, ...) */
   type: string;
+  /** The identifier under enrichment (enricher invocations only) */
+  requestIdentifier?: {
+    /** Identifier value (e.g. the email address) */
+    value?: string;
+    /** Identifier name (e.g. email) */
+    name?: string;
+  };
   /** Request context */
   extras: {
-    /** The data subject profile */
+    /** The data subject profile (data-point invocations only) */
     profile?: {
       /** The identifier of the data subject (e.g. email) */
       identifier?: string;
@@ -48,11 +55,14 @@ interface FunctionArgs {
 /**
  * Resolve the data subject's identifier from the payload.
  *
+ * Data-point invocations carry it in `extras.profile.identifier`; enricher
+ * invocations carry it in the top-level `requestIdentifier.value`.
+ *
  * @param payload - The DSR payload
  * @returns The identifier
  */
 function requireIdentifier(payload: DsrPayload): string {
-  const identifier = payload.extras?.profile?.identifier;
+  const identifier = payload.extras?.profile?.identifier ?? payload.requestIdentifier?.value;
   if (!identifier) {
     throw new Error('Could not resolve the data subject identifier from the payload');
   }

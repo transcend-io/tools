@@ -154,6 +154,8 @@ On a push, each changed or new function is signed against your Sombra gateway, t
 
 DSR functions have two entry points, so list one payload per export under `test-payloads`: `payload-type: DATA_POINT` (default) invokes the default export, `payload-type: REQUEST_ENRICHER` invokes the `enricher` export. A warning is printed when a DSR entry only covers one export. Single-payload entries can use the `test-payload` (+ `test-payload-type`) shorthand instead. DSR payloads get `extras.dataSilo` injected automatically from the entry's data silo (including one created during the same push).
 
+DSR test payloads must match the same [webhook notification shape](https://docs.transcend.io/docs/articles/rules-automation/webhook-user-guide) Transcend sends to real webhook integrations — top-level `type`, `isTest`, and `dataSubject`, plus `extras.request` / `extras.organization` and the export-specific fields (`extras.profile` for `DATA_POINT`, `extras.enricher` / `extras.identifier` / `extras.requestEnricherId` for `REQUEST_ENRICHER`). Start from [examples/test-payloads/dsr-lookup.json](./examples/test-payloads/dsr-lookup.json) and [examples/test-payloads/dsr-lookup-enricher.json](./examples/test-payloads/dsr-lookup-enricher.json); placeholder UUIDs are fine everywhere except `extras.dataSilo`, which is injected for you. GENERAL (Maestro) payloads are free-form JSON.
+
 With the [Usage](#usage) workflow above, the full flow is:
 
 - **Pull requests** run with `dry-run: 'true'` — changes are reported, nothing is signed, tested, or pushed.
