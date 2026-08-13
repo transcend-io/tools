@@ -86,6 +86,8 @@ Given a manifest file mapping custom function names to TypeScript source files (
 
 Functions with any failing test run are rejected — every failing payload's reason and execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without test payloads push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
 
-Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.`,
+Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.
+
+Function code is invoked with a single argument of shape { payload, environment } — payload is the invocation JSON (free-form for GENERAL functions, the webhook notification shape for DSR functions) and environment is the manifest entry's env block. DSR functions may also export an enricher entry point.`,
   },
 });
