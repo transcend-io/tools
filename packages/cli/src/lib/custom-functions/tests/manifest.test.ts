@@ -81,12 +81,60 @@ describe('readCustomFunctionsManifest', () => {
     );
 
     const configs = readCustomFunctionsManifest(filePath);
-    expect(configs[0]).toMatchObject({
-      testPayload: { lead: { email: 'test@example.com' } },
-      testPayloadType: 'REQUEST_ENRICHER',
-    });
-    expect(configs[1]!.testPayload).toBeUndefined();
-    expect(configs[1]!.testPayloadType).toBeUndefined();
+    expect(configs[0]!.testPayloads).toEqual([
+      {
+        payload: { lead: { email: 'test@example.com' } },
+        payloadType: 'REQUEST_ENRICHER',
+      },
+    ]);
+    expect(configs[1]!.testPayloads).toBeUndefined();
+  });
+
+  it('loads a test-payloads list with per-payload types', () => {
+    const filePath = writeFixture(`functions:
+  - name: DSR Function
+    code: ./functions/a.ts
+    type: DSR
+    test-payloads:
+      - payload: ./test-payloads/access.json
+        payload-type: DATA_POINT
+      - payload: ./test-payloads/enrich.json
+        payload-type: REQUEST_ENRICHER
+`);
+    const dir = join(filePath, '..');
+    mkdirSync(join(dir, 'test-payloads'), { recursive: true });
+    writeFileSync(join(dir, 'test-payloads', 'access.json'), JSON.stringify({ type: 'ACCESS' }));
+    writeFileSync(join(dir, 'test-payloads', 'enrich.json'), JSON.stringify({ type: 'ENRICH' }));
+
+    const configs = readCustomFunctionsManifest(filePath);
+    expect(configs[0]!.testPayloads).toEqual([
+      { payload: { type: 'ACCESS' }, payloadType: 'DATA_POINT' },
+      { payload: { type: 'ENRICH' }, payloadType: 'REQUEST_ENRICHER' },
+    ]);
+  });
+
+  it('rejects an entry that sets both test-payload and test-payloads', () => {
+    const filePath = writeFixture(`functions:
+  - name: Conflicted
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/a.json
+    test-payloads:
+      - payload: ./test-payloads/a.json
+`);
+    expect(() => readCustomFunctionsManifest(filePath)).toThrow(
+      /sets both test-payload and test-payloads/,
+    );
+  });
+
+  it('rejects test-payload-type without test-payload', () => {
+    const filePath = writeFixture(`functions:
+  - name: Typed Without Payload
+    code: ./functions/a.ts
+    test-payload-type: REQUEST_ENRICHER
+`);
+    expect(() => readCustomFunctionsManifest(filePath)).toThrow(
+      /sets test-payload-type without test-payload/,
+    );
   });
 
   it('rejects a missing test payload file', () => {

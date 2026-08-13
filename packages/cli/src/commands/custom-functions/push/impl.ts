@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 
-import { CustomFunctionType } from '@transcend-io/privacy-types';
+import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
@@ -168,15 +168,11 @@ export async function push(
         promote,
         dryRun,
         force,
-        // Test the freshly signed code before pushing; a failing test rejects
-        // the function. Dry runs never sign, so nothing is tested either.
-        ...(!skipTests && input.testPayload !== undefined
-          ? {
-              testPayload: input.testPayload,
-              ...(input.testPayloadType !== undefined
-                ? { testPayloadType: input.testPayloadType }
-                : {}),
-            }
+        // Test the freshly signed code before pushing; every payload must
+        // pass or the function is rejected. Dry runs never sign, so nothing
+        // is tested either.
+        ...(!skipTests && input.testPayloads !== undefined
+          ? { testPayloads: input.testPayloads }
           : {}),
         logger,
       });
@@ -225,18 +221,28 @@ export async function push(
           );
           break;
         case 'test-failed': {
-          const execution = result.testResult?.result;
+          const failed = (result.testResults ?? []).filter(({ passed }) => !passed);
           logger.error(
             colors.red(
-              `Rejected "${input.name}" — test run failed${
-                execution?.error
-                  ? `: ${execution.error.message}`
-                  : ` (exit code ${execution?.exitCode})`
-              }`,
+              `Rejected "${input.name}" — ${failed.length} of ${
+                result.testResults?.length ?? 0
+              } test run(s) failed`,
             ),
           );
-          (execution?.logs ?? []).forEach(({ file: logFile, message }) => {
-            logger.error(colors.red(`  [${logFile}] ${message}`));
+          failed.forEach(({ payloadType, result: execution }) => {
+            const label = payloadType ? `[${payloadType}] ` : '';
+            logger.error(
+              colors.red(
+                `  ${label}${
+                  execution.error
+                    ? execution.error.message
+                    : `failed with exit code ${execution.exitCode}`
+                }`,
+              ),
+            );
+            execution.logs.forEach(({ file: logFile, message }) => {
+              logger.error(colors.red(`    [${logFile}] ${message}`));
+            });
           });
           if (result.createdDataSilo) {
             logger.error(
@@ -253,7 +259,7 @@ export async function push(
       // promoted untested — call it out so payloads get added over time
       if (
         !skipTests &&
-        input.testPayload === undefined &&
+        (input.testPayloads === undefined || input.testPayloads.length === 0) &&
         (result.outcome === 'created' || result.outcome === 'updated')
       ) {
         logger.warn(
@@ -262,6 +268,36 @@ export async function push(
               'test-payload to its manifest entry to enable test-before-promote.',
           ),
         );
+      }
+
+      // DSR functions have two entry points (default export = DATA_POINT,
+      // enricher export = REQUEST_ENRICHER); nudge toward covering both
+      if (
+        !skipTests &&
+        input.type === CustomFunctionType.Dsr &&
+        input.testPayloads !== undefined &&
+        input.testPayloads.length > 0 &&
+        (result.outcome === 'created' || result.outcome === 'updated')
+      ) {
+        const coveredTypes = new Set(
+          input.testPayloads.map(
+            ({ payloadType }) => payloadType ?? CustomFunctionPayloadType.DataPoint,
+          ),
+        );
+        if (coveredTypes.size === 1) {
+          const [covered] = coveredTypes;
+          const uncovered =
+            covered === CustomFunctionPayloadType.DataPoint
+              ? CustomFunctionPayloadType.RequestEnricher
+              : CustomFunctionPayloadType.DataPoint;
+          logger.warn(
+            colors.yellow(
+              `DSR custom function "${input.name}" only tests its ${covered} export — if it ` +
+                `also implements the ${uncovered} export, add a test payload with ` +
+                `payload-type: ${uncovered} so both entry points are tested on every push.`,
+            ),
+          );
+        }
       }
     } catch (err) {
       results.push({ name: input.name, error: err as Error });

@@ -90,13 +90,15 @@ describe('syncCustomFunction test gating', () => {
       input: INPUT,
       sombra: SOMBRA,
       existing: [],
-      testPayload: { lead: {} },
+      testPayloads: [{ payload: { lead: {} } }],
     });
 
     expect(result.outcome).toBe('test-failed');
     expect(result.promoted).toBe(false);
-    expect(result.testResult?.passed).toBe(false);
-    expect(result.testResult?.result.error?.message).toBe('Cannot read properties of undefined');
+    expect(result.testResults?.[0]?.passed).toBe(false);
+    expect(result.testResults?.[0]?.result.error?.message).toBe(
+      'Cannot read properties of undefined',
+    );
     // No create/update mutation was sent
     const documents = request.mock.calls.map(([document]) => toDocumentString(document));
     expect(documents.some((document) => document.includes('createCustomFunction'))).toBe(false);
@@ -109,11 +111,11 @@ describe('syncCustomFunction test gating', () => {
       input: { ...INPUT, sombraId: 'sombra-1' },
       sombra: SOMBRA,
       existing: [],
-      testPayload: { lead: {} },
+      testPayloads: [{ payload: { lead: {} } }],
     });
 
     expect(result.outcome).toBe('created');
-    expect(result.testResult?.passed).toBe(true);
+    expect(result.testResults?.[0]?.passed).toBe(true);
 
     // The test run used the freshly signed JWTs and the function's gateway
     const runCall = request.mock.calls.find(([document]) =>
@@ -136,9 +138,39 @@ describe('syncCustomFunction test gating', () => {
     });
 
     expect(result.outcome).toBe('created');
-    expect(result.testResult).toBeUndefined();
+    expect(result.testResults).toBeUndefined();
     const documents = request.mock.calls.map(([document]) => toDocumentString(document));
     expect(documents.some((document) => document.includes('runCustomFunction'))).toBe(false);
+  });
+
+  it('runs every payload and reports all results when one fails', async () => {
+    const runResults = [PASSING_RESULT, FAILING_RESULT];
+    let runCount = 0;
+    const request = vi.fn().mockImplementation((rawDocument: string | DocumentNode) => {
+      const document = typeof rawDocument === 'string' ? rawDocument : print(rawDocument);
+      if (document.includes('runCustomFunction')) {
+        runCount += 1;
+        return Promise.resolve({ runCustomFunction: { result: runResults[runCount - 1] } });
+      }
+      throw new Error(`Unexpected GraphQL document: ${document}`);
+    });
+    const client = { request } as unknown as GraphQLClient;
+
+    const result = await syncCustomFunction(client, {
+      input: { ...INPUT, sombraId: 'sombra-1' },
+      sombra: SOMBRA,
+      existing: [],
+      testPayloads: [{ payload: { case: 1 } }, { payload: { case: 2 } }],
+    });
+
+    // Both payloads ran even though only the second failed, so one CI run
+    // reports every failing case
+    expect(runCount).toBe(2);
+    expect(result.outcome).toBe('test-failed');
+    expect(result.testResults?.map(({ passed }) => passed)).toEqual([true, false]);
+    // Nothing was pushed
+    const documents = request.mock.calls.map(([document]) => toDocumentString(document));
+    expect(documents.some((document) => document.includes('createCustomFunction'))).toBe(false);
   });
 
   it('falls back to the primary Sombra when creating a GENERAL function without a gateway', async () => {
