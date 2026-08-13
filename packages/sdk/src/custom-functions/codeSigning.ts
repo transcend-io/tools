@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+
 /**
  * The execution context for a custom function's code.
  */
@@ -31,19 +33,11 @@ export interface CustomFunctionSignPayload {
  * authenticated GraphQL API, decoding without verification is safe for the
  * purposes of change detection.
  *
- * @param jwt - The JWT string
+ * @param token - The JWT string
  * @returns The decoded payload object, or undefined if the JWT is malformed
  */
-export function decodeJwtPayload<T extends object>(jwt: string): T | undefined {
-  const segments = jwt.split('.');
-  if (segments.length !== 3 || !segments[1]) {
-    return undefined;
-  }
-  try {
-    return JSON.parse(Buffer.from(segments[1], 'base64url').toString('utf-8')) as T;
-  } catch {
-    return undefined;
-  }
+export function decodeJwtPayload<T extends object>(token: string): T | undefined {
+  return (jwt.decode(token, { json: true }) as T | null) ?? undefined;
 }
 
 /**

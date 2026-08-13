@@ -1,20 +1,23 @@
+import { CustomFunctionType, type CustomFunctionPayloadType } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
-import { diffCustomFunctionCode, type CustomFunctionSignPayload } from './codeSigning.js';
+import { buildCustomFunctionSignPayload } from './buildCustomFunctionSignPayload.js';
+import { diffCustomFunctionCode } from './codeSigning.js';
 import { createCustomFunctionDataSilo, deleteDataSilo } from './customFunctionDataSilo.js';
-import type { CustomFunction, CustomFunctionType } from './fetchAllCustomFunctions.js';
+import type { CustomFunction } from './fetchAllCustomFunctions.js';
 import {
   CREATE_CUSTOM_FUNCTION,
-  ORGANIZATION_SOMBRAS,
   PROMOTE_CUSTOM_FUNCTION_VERSION,
   UPDATE_STANDALONE_CUSTOM_FUNCTION,
 } from './gqls/index.js';
+import { injectDataSiloIntoDsrTestPayload } from './injectDataSiloIntoDsrTestPayload.js';
+import { resolveEffectiveSombraId, resolvePrimarySombraId } from './resolveEffectiveSombraId.js';
+import { resolveExistingCustomFunction } from './resolveExistingCustomFunction.js';
 import {
   runCustomFunctionTest,
-  type CustomFunctionTestPayloadType,
   type CustomFunctionTestRunResult,
 } from './runCustomFunctionTest.js';
 import { signCustomFunctionCode } from './signCustomFunctionCode.js';
@@ -95,172 +98,6 @@ export interface CustomFunctionSyncResult {
 }
 
 /**
- * Resolve which existing custom function a config refers to.
- *
- * When the config has an `id`, it must match an existing function. Otherwise
- * the function is matched by exact name; an ambiguous name (multiple existing
- * functions with the same name) is an error that the caller should resolve by
- * adding an `id` to the config.
- *
- * @param existing - All existing custom functions in the organization
- * @param input - The custom function config
- * @returns The matching custom function, or undefined when it should be created
- */
-export function resolveExistingCustomFunction(
-  existing: CustomFunction[],
-  input: Pick<CustomFunctionConfigInput, 'id' | 'name'>,
-): CustomFunction | undefined {
-  if (input.id) {
-    const match = existing.find(({ id }) => id === input.id);
-    if (!match) {
-      throw new Error(
-        `Custom function "${input.name}" specifies id "${input.id}" but no custom function ` +
-          'with that ID exists in the organization. Remove the id to create a new function, ' +
-          'or fix the ID.',
-      );
-    }
-    return match;
-  }
-
-  const matches = existing.filter(({ name }) => name === input.name);
-  if (matches.length > 1) {
-    throw new Error(
-      `Multiple custom functions are named "${input.name}" ` +
-        `(ids: ${matches.map(({ id }) => id).join(', ')}). ` +
-        'Add an `id` field to this manifest entry to disambiguate which one to update.',
-    );
-  }
-  return matches[0];
-}
-
-/**
- * Resolve which Sombra gateway a custom function's code must be signed
- * against.
- *
- * Each custom function belongs to a single gateway, whose keys sign the code
- * and encrypt the env values — signing against any other gateway would
- * produce JWTs that fail verification at execution time. The gateway is
- * resolved as: the config's `sombraId`, else the existing function's
- * gateway, else the caller's default (e.g. a CLI flag), else `undefined`
- * meaning the organization's primary Sombra.
- *
- * A config that pins a different gateway than the existing function is an
- * error — the gateway of an existing function cannot be changed by a push.
- *
- * @param input - The custom function config
- * @param existing - The matching existing custom function, when there is one
- * @param defaultSombraId - Fallback gateway ID when neither the config nor the existing function specify one
- * @returns The Sombra gateway ID to sign against, or undefined for the primary gateway
- */
-export function resolveEffectiveSombraId(
-  input: Pick<CustomFunctionConfigInput, 'name' | 'sombraId'>,
-  existing: Pick<CustomFunction, 'id' | 'sombraId'> | undefined,
-  defaultSombraId?: string,
-): string | undefined {
-  if (input.sombraId && existing?.sombraId && input.sombraId !== existing.sombraId) {
-    throw new Error(
-      `Custom function "${input.name}" specifies sombra-id "${input.sombraId}" but the ` +
-        `existing function (id: ${existing.id}) belongs to Sombra gateway "${existing.sombraId}". ` +
-        'A push cannot move a custom function between gateways — fix the sombra-id in the ' +
-        'manifest, or remove it to keep the existing gateway.',
-    );
-  }
-  return input.sombraId ?? existing?.sombraId ?? defaultSombraId;
-}
-
-/**
- * Build the sign payload for a custom function config.
- *
- * @param input - The custom function config
- * @returns The plaintext sign payload
- */
-export function buildCustomFunctionSignPayload(
-  input: CustomFunctionConfigInput,
-): CustomFunctionSignPayload {
-  return {
-    code: input.code,
-    context: {
-      userDefinedEnv: input.env ?? {},
-      allowedHosts: input.allowedHosts ?? [],
-      ...(input.allowThirdPartyImports !== undefined
-        ? { allowThirdPartyImports: input.allowThirdPartyImports }
-        : {}),
-      ...(input.timeoutMs !== undefined ? { timeoutMs: input.timeoutMs } : {}),
-    },
-  };
-}
-
-/**
- * Inject the resolved data silo into a DSR test payload.
- *
- * The backend's unsaved-DSR test path resolves the execution Sombra from
- * `extras.dataSilo.id`, so the payload must reference the function's actual
- * data silo — which the payload file cannot know for silos created during
- * the same push. The silo `id` is always overridden; other `extras.dataSilo`
- * fields from the payload file are preserved, with `title` defaulted when
- * missing.
- *
- * @param payload - The DSR test payload from the manifest
- * @param dataSilo - The resolved data silo
- * @returns The payload with `extras.dataSilo` pointing at the resolved silo
- */
-export function injectDataSiloIntoDsrTestPayload(
-  payload: object,
-  dataSilo: {
-    /** Data silo ID */
-    id: string;
-    /** Fallback title when the payload does not carry one */
-    title: string;
-  },
-): object {
-  const record = payload as {
-    /** DSR payload extras */
-    extras?: Record<string, unknown>;
-  };
-  const extras = record.extras ?? {};
-  const existingDataSilo = (extras['dataSilo'] ?? {}) as Record<string, unknown>;
-  return {
-    ...record,
-    extras: {
-      ...extras,
-      dataSilo: {
-        title: dataSilo.title,
-        ...existingDataSilo,
-        id: dataSilo.id,
-      },
-    },
-  };
-}
-
-/**
- * Resolve the organization's primary Sombra gateway ID.
- *
- * @param client - GraphQL client authenticated with a Transcend API key
- * @param logger - Logger instance
- * @returns The primary Sombra ID
- */
-async function resolvePrimarySombraId(client: GraphQLClient, logger: Logger): Promise<string> {
-  const { organization } = await makeGraphQLRequest<{
-    /** Organization query response */
-    organization: {
-      /** Primary Sombra gateway */
-      sombra: {
-        /** Sombra ID */
-        id: string;
-      } | null;
-    };
-  }>(client, ORGANIZATION_SOMBRAS, { logger });
-  if (!organization.sombra?.id) {
-    throw new Error(
-      'Could not resolve the primary Sombra gateway of the organization, which is ' +
-        'required to create a DSR custom function integration. Specify a sombra-id ' +
-        'on the manifest entry instead.',
-    );
-  }
-  return organization.sombra.id;
-}
-
-/**
  * Sync a custom function definition (metadata + code revision) to Transcend.
  *
  * - When no custom function with the given name exists, one is created.
@@ -313,7 +150,7 @@ export async function syncCustomFunction(
      */
     testPayload?: object;
     /** Which export to invoke for DSR test runs. Defaults to DATA_POINT */
-    testPayloadType?: CustomFunctionTestPayloadType;
+    testPayloadType?: CustomFunctionPayloadType;
     /** Logger instance */
     logger?: Logger;
   },
@@ -330,7 +167,7 @@ export async function syncCustomFunction(
     testPayloadType,
     logger = NOOP_LOGGER,
   } = options;
-  const type: CustomFunctionType = input.type ?? 'GENERAL';
+  const type: CustomFunctionType = input.type ?? CustomFunctionType.General;
 
   const existing = resolveExistingCustomFunction(allExisting, input);
   // Validates config-vs-existing gateway mismatches, including on dry runs
@@ -386,7 +223,7 @@ export async function syncCustomFunction(
   // execution Sombra from the payload's `extras.dataSilo.id`.
   let dataSiloId = input.dataSiloId ?? existing?.dataSiloId ?? undefined;
   let createdDataSilo = false;
-  if (type === 'DSR' && !existing && dataSiloId === undefined) {
+  if (type === CustomFunctionType.Dsr && !existing && dataSiloId === undefined) {
     const siloSombraId = effectiveSombraId ?? (await resolvePrimarySombraId(client, logger));
     logger.info(`Creating DSR integration (data silo) for custom function "${input.name}"...`);
     const dataSilo = await createCustomFunctionDataSilo(client, {
@@ -411,17 +248,19 @@ export async function syncCustomFunction(
       // DSR payloads must reference the function's actual data silo — the
       // backend derives the execution gateway from `extras.dataSilo.id`
       payload:
-        type === 'DSR' && dataSiloId !== undefined
+        type === CustomFunctionType.Dsr && dataSiloId !== undefined
           ? injectDataSiloIntoDsrTestPayload(testPayload, {
               id: dataSiloId,
               title: input.name,
             })
           : testPayload,
       // GENERAL runs on the function's gateway
-      ...(type === 'GENERAL' && effectiveSombraId !== undefined
+      ...(type === CustomFunctionType.General && effectiveSombraId !== undefined
         ? { sombraId: effectiveSombraId }
         : {}),
-      ...(type === 'DSR' && testPayloadType !== undefined ? { payloadType: testPayloadType } : {}),
+      ...(type === CustomFunctionType.Dsr && testPayloadType !== undefined
+        ? { payloadType: testPayloadType }
+        : {}),
       logger,
     });
     if (!testResult.passed) {
@@ -477,7 +316,7 @@ export async function syncCustomFunction(
         input: {
           type,
           ...(effectiveSombraId !== undefined ? { sombraId: effectiveSombraId } : {}),
-          ...(type === 'DSR' ? { dataSiloId } : {}),
+          ...(type === CustomFunctionType.Dsr ? { dataSiloId } : {}),
           name: input.name,
           ...(input.description !== undefined ? { description: input.description } : {}),
           setActive: promote,
