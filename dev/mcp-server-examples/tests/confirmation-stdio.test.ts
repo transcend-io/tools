@@ -66,7 +66,7 @@ describeIfBuilt('confirmation gate over stdio (host that shows forms)', () => {
 
   beforeAll(async () => {
     prompts = [];
-    answer = { action: 'accept', content: { decision: 'confirm' } };
+    answer = { action: 'accept', content: { confirmed: true } };
 
     client = new Client(
       { name: 'cursor', version: '1.0.0' },
@@ -86,7 +86,7 @@ describeIfBuilt('confirmation gate over stdio (host that shows forms)', () => {
 
   it('asks before running, and names what will be affected', async () => {
     prompts = [];
-    answer = { action: 'accept', content: { decision: 'confirm' } };
+    answer = { action: 'accept', content: { confirmed: true } };
     const result = await call(client, ARGS);
 
     expect(prompts).toHaveLength(1);
