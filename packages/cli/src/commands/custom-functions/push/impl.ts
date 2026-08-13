@@ -1,12 +1,12 @@
 import { existsSync } from 'node:fs';
 
+import { CustomFunctionType } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
   fetchAllCustomFunctions,
   resolveEffectiveSombraId,
   resolveExistingCustomFunction,
-  resolveSombraCustomerUrl,
   syncCustomFunction,
   type CustomFunctionSyncResult,
 } from '@transcend-io/sdk';
@@ -109,13 +109,10 @@ export async function push(
         } to sign code...`,
       ),
     );
-    const sombraUrl = gatewaySombraId
-      ? await resolveSombraCustomerUrl(client, gatewaySombraId, { logger })
-      : undefined;
     const sombra = await createSombraGotInstance(transcendUrl, apiKey, {
       logger,
       sombraApiKey,
-      sombraUrl,
+      ...(gatewaySombraId ? { sombraId: gatewaySombraId } : {}),
     });
     sombraByGateway.set(key, sombra);
     return sombra;
@@ -215,7 +212,7 @@ export async function push(
           logger.info(
             colors.cyan(
               `[dry run] Would create custom function "${input.name}"${
-                input.type === 'DSR' && !input.dataSiloId
+                input.type === CustomFunctionType.Dsr && !input.dataSiloId
                   ? ' and its DSR integration (data silo)'
                   : ''
               }`,

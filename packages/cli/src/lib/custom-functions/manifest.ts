@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
+import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import type { CustomFunctionConfigInput } from '@transcend-io/sdk';
 import { decodeCodec, type ObjByString } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
@@ -25,7 +26,7 @@ export const CustomFunctionManifestEntry = t.intersection([
     /** Description shown in the Transcend dashboard */
     description: t.string,
     /** Custom function type. Defaults to GENERAL */
-    type: t.union([t.literal('DSR'), t.literal('GENERAL')]),
+    type: t.union([t.literal(CustomFunctionType.Dsr), t.literal(CustomFunctionType.General)]),
     /** Data silo ID to attach to (required for DSR functions) */
     'data-silo-id': t.string,
     /** The Sombra gateway the function belongs to */
@@ -56,7 +57,10 @@ export const CustomFunctionManifestEntry = t.intersection([
      * `DATA_POINT` invokes the default export, `REQUEST_ENRICHER` invokes the
      * `enricher` export. Defaults to DATA_POINT. Ignored for GENERAL functions.
      */
-    'test-payload-type': t.union([t.literal('DATA_POINT'), t.literal('REQUEST_ENRICHER')]),
+    'test-payload-type': t.union([
+      t.literal(CustomFunctionPayloadType.DataPoint),
+      t.literal(CustomFunctionPayloadType.RequestEnricher),
+    ]),
   }),
 ]);
 
@@ -89,7 +93,7 @@ export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
   /** Parsed JSON test payload to run the function with before pushing */
   testPayload?: object;
   /** Which export to invoke when test-running a DSR function */
-  testPayloadType?: 'DATA_POINT' | 'REQUEST_ENRICHER';
+  testPayloadType?: Exclude<CustomFunctionPayloadType, typeof CustomFunctionPayloadType.Maestro>;
 };
 
 export function readCustomFunctionsManifest(
