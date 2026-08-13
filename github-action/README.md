@@ -198,4 +198,6 @@ Test runs require backend support for pre-signed code JWTs on the `runCustomFunc
 2. New DSR functions without a `data-silo-id` get their DSR integration (data silo) created automatically; a failing test rolls it back.
 3. Functions with test payloads are test-run on your Sombra gateway with the freshly signed code (every payload must pass — DSR functions can cover both their default and enricher exports); failures are rejected and fail the job.
 4. Changed functions get a new draft revision which is promoted to active (unless `promote: 'false'`).
-5. The job fails if any function fails to sync or fails its test, so a red check means Transcend is out of sync with your repository.
+5. Metadata-only changes (`description`, or `name` for entries pinned by `id`) update the function record in place — no signing, no test runs, and no new code revision.
+6. Environment variable **values** are encrypted at sign time and cannot be diffed, so a value-only rotation looks like "no changes" — set `force: 'true'` for that push to re-sign and push anyway.
+7. The job fails if any function fails to sync or fails its test, so a red check means Transcend is out of sync with your repository.
