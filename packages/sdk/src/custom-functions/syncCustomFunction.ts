@@ -1,4 +1,4 @@
-import { CustomFunctionType, type CustomFunctionPayloadType } from '@transcend-io/privacy-types';
+import { CustomFunctionType } from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import type { Got } from 'got';
 import { GraphQLClient } from 'graphql-request';
@@ -18,6 +18,7 @@ import { resolveEffectiveSombraId, resolvePrimarySombraId } from './resolveEffec
 import { resolveExistingCustomFunction } from './resolveExistingCustomFunction.js';
 import {
   runCustomFunctionTest,
+  type CustomFunctionTestPayload,
   type CustomFunctionTestRunResult,
 } from './runCustomFunctionTest.js';
 import { signCustomFunctionCode } from './signCustomFunctionCode.js';
@@ -72,6 +73,15 @@ export type CustomFunctionSyncOutcome =
   | 'would-update';
 
 /**
+ * The result of running one test payload during a sync, tagged with the
+ * export the payload invoked.
+ */
+export interface CustomFunctionSyncTestResult extends CustomFunctionTestRunResult {
+  /** Which export the payload invoked (DSR functions; DATA_POINT when omitted) */
+  payloadType?: CustomFunctionTestPayload['payloadType'];
+}
+
+/**
  * The result of syncing a single custom function.
  */
 export interface CustomFunctionSyncResult {
@@ -85,8 +95,8 @@ export interface CustomFunctionSyncResult {
   changedFields: string[];
   /** Whether the pushed revision was promoted to active */
   promoted: boolean;
-  /** The test-run result, when a test payload was provided and the code was tested */
-  testResult?: CustomFunctionTestRunResult;
+  /** The test-run results (one per payload), when the code was tested */
+  testResults?: CustomFunctionSyncTestResult[];
   /** The data silo (DSR integration) the function is linked to, for DSR functions */
   dataSiloId?: string;
   /**
@@ -143,14 +153,13 @@ export async function syncCustomFunction(
     /** When true, push a new revision even if no changes were detected */
     force?: boolean;
     /**
-     * JSON test payload to run the freshly signed code with before pushing.
-     * When set, the code is tested via the `runCustomFunction` mutation and
-     * the push is rejected (outcome `test-failed`) if the test fails.
-     * Skipped on dry runs (nothing is signed).
+     * JSON test payloads to run the freshly signed code with before pushing.
+     * Every payload is run via the `runCustomFunction` mutation (DSR
+     * functions can cover both the default and enricher exports via
+     * `payloadType`) and all must pass — any failure rejects the push
+     * (outcome `test-failed`). Skipped on dry runs (nothing is signed).
      */
-    testPayload?: object;
-    /** Which export to invoke for DSR test runs. Defaults to DATA_POINT */
-    testPayloadType?: CustomFunctionPayloadType;
+    testPayloads?: CustomFunctionTestPayload[];
     /** Logger instance */
     logger?: Logger;
   },
@@ -163,8 +172,7 @@ export async function syncCustomFunction(
     promote = true,
     dryRun = false,
     force = false,
-    testPayload,
-    testPayloadType,
+    testPayloads,
     logger = NOOP_LOGGER,
   } = options;
   const type: CustomFunctionType = input.type ?? CustomFunctionType.General;
@@ -235,35 +243,41 @@ export async function syncCustomFunction(
     createdDataSilo = true;
   }
 
-  // Test the freshly signed code before pushing anything. A failing test
-  // rejects the push so a broken revision never reaches (or is promoted on)
-  // the function.
-  let testResult: CustomFunctionTestRunResult | undefined;
-  if (testPayload !== undefined) {
-    logger.info(`Testing custom function "${input.name}" before push...`);
-    testResult = await runCustomFunctionTest(client, {
-      type,
-      signedCodeJwt,
-      signedCodeContextJwt,
-      // DSR payloads must reference the function's actual data silo — the
-      // backend derives the execution gateway from `extras.dataSilo.id`
-      payload:
-        type === CustomFunctionType.Dsr && dataSiloId !== undefined
-          ? injectDataSiloIntoDsrTestPayload(testPayload, {
-              id: dataSiloId,
-              title: input.name,
-            })
-          : testPayload,
-      // GENERAL runs on the function's gateway
-      ...(type === CustomFunctionType.General && effectiveSombraId !== undefined
-        ? { sombraId: effectiveSombraId }
-        : {}),
-      ...(type === CustomFunctionType.Dsr && testPayloadType !== undefined
-        ? { payloadType: testPayloadType }
-        : {}),
-      logger,
-    });
-    if (!testResult.passed) {
+  // Test the freshly signed code before pushing anything. Every payload runs
+  // (so one CI run reports every failing export) and all must pass — any
+  // failure rejects the push so a broken revision never reaches (or is
+  // promoted on) the function.
+  let testResults: CustomFunctionSyncTestResult[] | undefined;
+  if (testPayloads !== undefined && testPayloads.length > 0) {
+    logger.info(
+      `Testing custom function "${input.name}" before push ` +
+        `(${testPayloads.length} payload${testPayloads.length === 1 ? '' : 's'})...`,
+    );
+    testResults = [];
+    for (const { payload, payloadType } of testPayloads) {
+      const run: CustomFunctionTestRunResult = await runCustomFunctionTest(client, {
+        type,
+        signedCodeJwt,
+        signedCodeContextJwt,
+        // DSR payloads must reference the function's actual data silo — the
+        // backend derives the execution gateway from `extras.dataSilo.id`
+        payload:
+          type === CustomFunctionType.Dsr && dataSiloId !== undefined
+            ? injectDataSiloIntoDsrTestPayload(payload, {
+                id: dataSiloId,
+                title: input.name,
+              })
+            : payload,
+        // GENERAL runs on the function's gateway
+        ...(type === CustomFunctionType.General && effectiveSombraId !== undefined
+          ? { sombraId: effectiveSombraId }
+          : {}),
+        ...(type === CustomFunctionType.Dsr && payloadType !== undefined ? { payloadType } : {}),
+        logger,
+      });
+      testResults.push({ ...run, ...(payloadType !== undefined ? { payloadType } : {}) });
+    }
+    if (testResults.some(({ passed }) => !passed)) {
       // Roll back the integration created for this function — nothing was
       // linked to it yet, so a failed test leaves no trace behind
       if (createdDataSilo && dataSiloId !== undefined) {
@@ -278,7 +292,7 @@ export async function syncCustomFunction(
         ...(existing ? { customFunctionId: existing.id } : {}),
         changedFields,
         promoted: false,
-        testResult,
+        testResults,
         ...(createdDataSilo ? { createdDataSilo } : {}),
       };
     }
@@ -339,7 +353,7 @@ export async function syncCustomFunction(
       ...(version ? { versionNumber: version.versionNumber } : {}),
       changedFields,
       promoted: promote,
-      ...(testResult ? { testResult } : {}),
+      ...(testResults ? { testResults } : {}),
       ...(dataSiloId !== undefined ? { dataSiloId } : {}),
       ...(createdDataSilo ? { createdDataSilo } : {}),
     };
@@ -402,7 +416,7 @@ export async function syncCustomFunction(
     versionNumber: draft.versionNumber,
     changedFields,
     promoted: promote,
-    ...(testResult ? { testResult } : {}),
+    ...(testResults ? { testResults } : {}),
     ...(dataSiloId !== undefined ? { dataSiloId } : {}),
   };
 }

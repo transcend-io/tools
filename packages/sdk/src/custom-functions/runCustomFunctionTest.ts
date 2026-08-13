@@ -54,6 +54,20 @@ export interface CustomFunctionTestRunResult {
 }
 
 /**
+ * A single test payload to run a custom function with before pushing.
+ */
+export interface CustomFunctionTestPayload {
+  /** The JSON test payload */
+  payload: object;
+  /**
+   * Which export the payload invokes for DSR functions (`DATA_POINT` →
+   * `default`, `REQUEST_ENRICHER` → `enricher`). Defaults to DATA_POINT.
+   * GENERAL functions are always run as Maestro payloads and ignore this
+   */
+  payloadType?: CustomFunctionPayloadType;
+}
+
+/**
  * Whether an execution result counts as a passing test.
  *
  * Mirrors the Admin Dashboard's function editor: a run passes when it

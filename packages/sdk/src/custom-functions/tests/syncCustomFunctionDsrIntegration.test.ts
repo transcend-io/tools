@@ -151,8 +151,7 @@ describe('syncCustomFunction DSR integration auto-create', () => {
       input: { ...DSR_INPUT, sombraId: 'sombra-eu' },
       sombra: SOMBRA,
       existing: [],
-      testPayload: TEST_PAYLOAD,
-      testPayloadType: 'REQUEST_ENRICHER',
+      testPayloads: [{ payload: TEST_PAYLOAD, payloadType: 'REQUEST_ENRICHER' }],
     });
 
     expect(result.outcome).toBe('created');
@@ -200,7 +199,7 @@ describe('syncCustomFunction DSR integration auto-create', () => {
       input: { ...DSR_INPUT, sombraId: 'sombra-eu' },
       sombra: SOMBRA,
       existing: [],
-      testPayload: TEST_PAYLOAD,
+      testPayloads: [{ payload: TEST_PAYLOAD }],
     });
 
     expect(result.outcome).toBe('test-failed');
@@ -222,13 +221,55 @@ describe('syncCustomFunction DSR integration auto-create', () => {
       input: DSR_INPUT,
       sombra: SOMBRA,
       existing: [],
-      testPayload: TEST_PAYLOAD,
+      testPayloads: [{ payload: TEST_PAYLOAD }],
     });
 
     const createSiloVariables = callVariables(request, 'createDataSilos');
     expect(createSiloVariables?.input).toEqual([
       { name: 'customFunction', title: 'DSR Lookup', sombraId: 'sombra-primary' },
     ]);
+  });
+
+  it('tests both exports in one push and tags each result with its payload type', async () => {
+    const { client, request } = makeClientStub(PASSING_RESULT);
+
+    const result = await syncCustomFunction(client, {
+      input: { ...DSR_INPUT, sombraId: 'sombra-eu' },
+      sombra: SOMBRA,
+      existing: [],
+      testPayloads: [
+        { payload: TEST_PAYLOAD, payloadType: 'DATA_POINT' },
+        { payload: TEST_PAYLOAD, payloadType: 'REQUEST_ENRICHER' },
+      ],
+    });
+
+    expect(result.outcome).toBe('created');
+    expect(result.testResults?.map(({ payloadType, passed }) => ({ payloadType, passed }))).toEqual(
+      [
+        { payloadType: 'DATA_POINT', passed: true },
+        { payloadType: 'REQUEST_ENRICHER', passed: true },
+      ],
+    );
+
+    // Each run was invoked with its own payloadType and the injected silo
+    const runCalls = request.mock.calls.filter(([document]) =>
+      (typeof document === 'string' ? document : print(document as DocumentNode)).includes(
+        'runCustomFunction',
+      ),
+    );
+    expect(runCalls).toHaveLength(2);
+    const payloadTypes = runCalls.map(
+      (call) => (call[1] as { input: { payloadType: string } }).input.payloadType,
+    );
+    expect(payloadTypes).toEqual(['DATA_POINT', 'REQUEST_ENRICHER']);
+    runCalls.forEach((call) => {
+      const decoded = JSON.parse(
+        Buffer.from((call[1] as { input: { payload: string } }).input.payload, 'base64').toString(
+          'utf-8',
+        ),
+      );
+      expect(decoded.extras.dataSilo.id).toBe('silo-new');
+    });
   });
 
   it('does not create a silo when the entry pins a data-silo-id, but still injects it', async () => {
@@ -238,7 +279,7 @@ describe('syncCustomFunction DSR integration auto-create', () => {
       input: { ...DSR_INPUT, dataSiloId: 'silo-existing' },
       sombra: SOMBRA,
       existing: [],
-      testPayload: TEST_PAYLOAD,
+      testPayloads: [{ payload: TEST_PAYLOAD }],
     });
 
     expect(result.outcome).toBe('created');
