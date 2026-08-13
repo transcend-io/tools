@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { McpClientCapability } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
-import { hasCapability, requestElicitation } from '../mcp-session-context.js';
+import { getMcpSession, hasCapability, requestElicitation } from '../mcp-session-context.js';
 import { ApprovalTokenOutcome, ApprovalTokenStore } from './approval-tokens.js';
 import { describeArgs, type ConfirmationSummary } from './describe-args.js';
 import { createToolResult } from './helpers.js';
@@ -23,8 +23,16 @@ export const APPROVAL_TOKEN_ARG = 'approvalToken';
  */
 export const CONFIRMATION_TIMEOUT_MS = 10 * 60 * 1000;
 
-const DECISION_FIELD = 'decision';
-const DECISION_CONFIRM = 'confirm';
+/**
+ * Field name for the yes/no confirmation.
+ *
+ * A boolean rather than a titled `oneOf` select. Asked as a select, Cursor
+ * answered `accept` with a value matching neither option's `const`, so the SDK
+ * rejected the answer before the gate could read it and a rendered, answered
+ * form still reached us as "nobody was asked". A checkbox is the narrowest
+ * shape a host can get wrong.
+ */
+const DECISION_FIELD = 'confirmed';
 
 const logger = new SimpleLogger();
 
@@ -81,15 +89,12 @@ const DECISION_SCHEMA: ElicitRequestFormParams['requestedSchema'] = {
   type: 'object',
   properties: {
     [DECISION_FIELD]: {
-      type: 'string',
-      title: 'Confirm this action',
+      type: 'boolean',
+      title: 'Run this action',
       description:
-        'Choose "Yes, run it" to carry out the action described above, or "No, stop" to ' +
-        'cancel without changing anything.',
-      oneOf: [
-        { const: DECISION_CONFIRM, title: 'Yes, run it' },
-        { const: 'cancel', title: 'No, stop' },
-      ],
+        'Turn this on to carry out the action described above, or leave it off and ' +
+        'submit to cancel without changing anything.',
+      default: false,
     },
   },
   required: [DECISION_FIELD],
@@ -192,10 +197,15 @@ async function askForConfirmation(
       timeout: CONFIRMATION_TIMEOUT_MS,
     });
   } catch (error) {
-    // Worth a warning rather than silence: the host declared it could ask and
-    // then did not, so the fallback below is covering for a host-side problem
-    // someone may need to fix.
-    logger.warn(`Host failed to show the confirmation form for ${toolName}`, error);
+    // A warning rather than silence: the host said it could ask and then did not,
+    // so the token fallback below is covering for a host-side problem someone may
+    // need to fix.
+    const session = getMcpSession();
+    logger.warn(`Host failed to show the confirmation form for ${toolName}`, {
+      error: error instanceof Error ? error.message : String(error),
+      host: session?.client.host,
+      clientName: session?.client.clientInfo?.name,
+    });
     return { outcome: 'unasked' };
   }
 
@@ -214,8 +224,8 @@ async function askForConfirmation(
     };
   }
 
-  const decision = (answer.content as Record<string, unknown> | undefined)?.[DECISION_FIELD];
-  if (decision !== DECISION_CONFIRM) {
+  const confirmed = (answer.content as Record<string, unknown> | undefined)?.[DECISION_FIELD];
+  if (confirmed !== true) {
     return {
       outcome: 'refused',
       result: refused(ConfirmationCode.Declined, 'did not confirm the action'),

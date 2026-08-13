@@ -106,9 +106,7 @@ async function callAs(
     ? vi.fn().mockRejectedValue(options.elicitError)
     : vi
         .fn()
-        .mockResolvedValue(
-          options.answer ?? { action: 'accept', content: { decision: 'confirm' } },
-        );
+        .mockResolvedValue(options.answer ?? { action: 'accept', content: { confirmed: true } });
 
   const session: McpSession = {
     client: {
@@ -192,8 +190,8 @@ describe('withConfirmation on a host that can show a form', () => {
     // host to answer with the shape it was asked for.
     const answers: Record<string, string | number | boolean | string[]>[] = [
       {},
-      { decision: 'cancel' },
-      { decision: true },
+      { confirmed: false },
+      { confirmed: 'yes' },
     ];
     for (const content of answers) {
       const { result, mutate } = await callAs({
@@ -334,7 +332,7 @@ describe('a refusing connection does not consult the host', () => {
   it('ignores a declared elicitation capability entirely', async () => {
     const { result, mutate, elicitInput } = await callAs({
       capabilities: ELICITATION,
-      answer: { action: 'accept', content: { decision: 'confirm' } },
+      answer: { action: 'accept', content: { confirmed: true } },
       gate: REFUSING,
     });
 
@@ -574,7 +572,7 @@ describe('the token fallback appears only where nothing else can ask', () => {
         server: {
           elicitInput: vi
             .fn()
-            .mockResolvedValue({ action: 'accept', content: { decision: 'confirm' } }),
+            .mockResolvedValue({ action: 'accept', content: { confirmed: true } }),
         } as unknown as Server,
       },
       async () => resolved.handler({ requestId: 'req-1' }),
@@ -647,7 +645,7 @@ describe('the gate against a real SDK server', () => {
     // service, and its own claim about rendering forms must not be what decides
     // whether a destructive action runs.
     const { payload, isError, mutate, asked } = await callOverTransport(
-      async () => ({ action: 'accept', content: { decision: 'confirm' } }),
+      async () => ({ action: 'accept', content: { confirmed: true } }),
       'http',
     );
 
@@ -660,16 +658,30 @@ describe('the gate against a real SDK server', () => {
   it('runs the mutation on a well-formed confirmation', async () => {
     const { payload, mutate } = await callOverTransport(async () => ({
       action: 'accept',
-      content: { decision: 'confirm' },
+      content: { confirmed: true },
     }));
 
     expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
     expect(payload.success).not.toBe(false);
   });
 
+  it('reports a decline as a refusal, with no way to replay it', async () => {
+    // A decline is a person's answer, so it must not hand back a token: an agent
+    // holding one could land the action anyway after being told no.
+    const { payload, isError, mutate, asked } = await callOverTransport(async () => ({
+      action: 'decline',
+    }));
+
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(mutate).not.toHaveBeenCalled();
+    expect(isError).toBe(false);
+    expect(payload.code).toBe(ConfirmationCode.Declined);
+    expect(payload.details?.approvalToken).toBeUndefined();
+  });
+
   const REJECTED = [
-    { name: 'omits the decision', content: {} },
-    { name: 'answers with the wrong type', content: { decision: true } },
+    { name: 'omits the confirmation', content: {} },
+    { name: 'answers with the wrong type', content: { confirmed: 'yes' } },
   ];
 
   it.each(REJECTED)('falls back to a token when the host $name', async (scenario) => {
