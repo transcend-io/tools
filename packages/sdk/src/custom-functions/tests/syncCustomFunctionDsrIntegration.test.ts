@@ -1,9 +1,11 @@
 import type { Got } from 'got';
+import { print, type DocumentNode } from 'graphql';
 import type { GraphQLClient } from 'graphql-request';
 import { describe, expect, it, vi } from 'vitest';
 
+import { injectDataSiloIntoDsrTestPayload } from '../injectDataSiloIntoDsrTestPayload.js';
 import type { CustomFunctionExecutionResult } from '../runCustomFunctionTest.js';
-import { injectDataSiloIntoDsrTestPayload, syncCustomFunction } from '../syncCustomFunction.js';
+import { syncCustomFunction } from '../syncCustomFunction.js';
 
 const JWTS = { signedCodeJwt: 'a.b.c', signedCodeContextJwt: 'd.e.f' };
 
@@ -50,7 +52,8 @@ function makeClientStub(testResult: CustomFunctionExecutionResult): {
   /** Spy on request */
   request: ReturnType<typeof vi.fn>;
 } {
-  const request = vi.fn().mockImplementation((document: string) => {
+  const request = vi.fn().mockImplementation((rawDocument: string | DocumentNode) => {
+    const document = typeof rawDocument === 'string' ? rawDocument : print(rawDocument);
     if (document.includes('runCustomFunction')) {
       return Promise.resolve({ runCustomFunction: { result: testResult } });
     }
@@ -62,7 +65,7 @@ function makeClientStub(testResult: CustomFunctionExecutionResult): {
     if (document.includes('deleteDataSilos')) {
       return Promise.resolve({ deleteDataSilos: { clientMutationId: null } });
     }
-    if (document.includes('TranscendCliOrganizationSombras')) {
+    if (document.includes('TranscendCliOrganization')) {
       return Promise.resolve({
         organization: {
           sombra: { id: 'sombra-primary', customerUrl: 'https://sombra.example' },
@@ -98,7 +101,9 @@ function callVariables(
   request: ReturnType<typeof vi.fn>,
   match: string,
 ): Record<string, unknown> | undefined {
-  const call = request.mock.calls.find(([document]) => (document as string).includes(match));
+  const call = request.mock.calls.find(([document]) =>
+    (typeof document === 'string' ? document : print(document as DocumentNode)).includes(match),
+  );
   return call?.[1] as Record<string, unknown> | undefined;
 }
 
@@ -263,7 +268,9 @@ describe('syncCustomFunction DSR integration auto-create', () => {
     expect(result.dataSiloId).toBe('silo-new');
     expect(result.createdDataSilo).toBe(true);
 
-    const documents = request.mock.calls.map(([document]) => document as string);
+    const documents = request.mock.calls.map(([document]) =>
+      typeof document === 'string' ? document : print(document as DocumentNode),
+    );
     expect(documents.some((d) => d.includes('runCustomFunction'))).toBe(false);
   });
 });

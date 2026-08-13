@@ -1,23 +1,13 @@
+import type {
+  CustomFunctionLifecycleState,
+  CustomFunctionType,
+  CustomFunctionVersionLifecycleState,
+} from '@transcend-io/privacy-types';
 import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { makeGraphQLRequest, NOOP_LOGGER } from '../api/makeGraphQLRequest.js';
 import { CUSTOM_FUNCTIONS } from './gqls/index.js';
-
-/**
- * The product-facing type of a custom function.
- */
-export type CustomFunctionType = 'DSR' | 'GENERAL';
-
-/**
- * The lifecycle state of a custom function.
- */
-export type CustomFunctionLifecycleState = 'INACTIVE' | 'ACTIVE' | 'ARCHIVED';
-
-/**
- * The lifecycle state of a custom function version.
- */
-export type CustomFunctionVersionLifecycleState = 'ACTIVE' | 'DRAFT' | 'INACTIVE';
 
 /**
  * Preview of a custom function version.
