@@ -176,12 +176,15 @@ describe('syncCustomFunction DSR integration auto-create', () => {
     expect(decodedPayload.extras.dataSilo).toEqual({ id: 'silo-new', title: 'DSR Lookup' });
     expect(runVariables.input.payloadType).toBe('REQUEST_ENRICHER');
 
-    // Function created linked to the new silo
+    // Function created linked to the new silo. No sombraId is sent even for a
+    // pinned gateway — the backend rejects it for DSR functions, whose data
+    // silo dictates the gateway
     const createCfVariables = callVariables(request, 'createCustomFunction') as {
       /** Mutation input */
-      input: { dataSiloId: string };
+      input: { dataSiloId: string; sombraId?: string };
     };
     expect(createCfVariables.input.dataSiloId).toBe('silo-new');
+    expect(createCfVariables.input.sombraId).toBeUndefined();
 
     // Order: silo created before the test ran
     const documents = request.mock.calls.map(([document]) => document as string);

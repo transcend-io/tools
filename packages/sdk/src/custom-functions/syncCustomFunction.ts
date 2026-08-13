@@ -286,6 +286,12 @@ export async function syncCustomFunction(
 
   // Create fresh
   if (!existing) {
+    // The backend requires an explicit gateway for GENERAL functions (and
+    // rejects one for DSR functions, whose data silo dictates the gateway)
+    const createSombraId =
+      type === CustomFunctionType.General
+        ? (effectiveSombraId ?? (await resolvePrimarySombraId(client, logger)))
+        : undefined;
     const {
       createCustomFunction: { customFunction },
     } = await makeGraphQLRequest<{
@@ -315,7 +321,7 @@ export async function syncCustomFunction(
       variables: {
         input: {
           type,
-          ...(effectiveSombraId !== undefined ? { sombraId: effectiveSombraId } : {}),
+          ...(createSombraId !== undefined ? { sombraId: createSombraId } : {}),
           ...(type === CustomFunctionType.Dsr ? { dataSiloId } : {}),
           name: input.name,
           ...(input.description !== undefined ? { description: input.description } : {}),
