@@ -79,12 +79,12 @@ Given a manifest file mapping custom function names to TypeScript source files (
 
 1. Signs each function's code and context against your Sombra gateway's customer ingress (pass --sombraAuth when self-hosting Sombra)
 2. Creates the DSR integration (data silo) for any new DSR function that does not specify a data-silo-id
-3. Test-runs the freshly signed code with the entry's test-payload JSON file, when one is defined (unless --skipTests). A failing test rolls back any integration created in step 2
+3. Test-runs the freshly signed code with each of the entry's test payloads, when defined (unless --skipTests) — DSR functions can cover both their default (DATA_POINT) and enricher (REQUEST_ENRICHER) exports. Any failing payload rolls back any integration created in step 2
 4. Creates any custom functions that do not exist yet (linking new DSR functions to their integration)
 5. Pushes a new code revision for any function whose code or context changed
 6. Promotes new revisions to active (unless --promote=false)
 
-Functions whose test run fails are rejected — the failure reason and the function's execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without a test-payload push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
+Functions with any failing test run are rejected — every failing payload's reason and execution logs are printed, nothing is pushed for that function, and the command exits 1. Functions without test payloads push as before, with a warning. Test runs require backend support for pre-signed code JWTs on the runCustomFunction mutation.
 
 Functions whose code and context are unchanged are skipped, so this command is safe to run on every CI push.`,
   },
