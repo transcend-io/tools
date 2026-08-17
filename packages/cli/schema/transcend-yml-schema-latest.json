@@ -326,7 +326,9 @@
                     "manageRules",
                     "viewAssignedRules",
                     "manageAssignedRules",
-                    "executeRules"
+                    "executeRules",
+                    "viewCustomFunction",
+                    "manageCustomFunction"
                   ]
                 }
               }

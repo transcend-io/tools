@@ -105,6 +105,9 @@ export enum ScopeName {
   ViewAssignedRules = 'viewAssignedRules',
   ManageAssignedRules = 'manageAssignedRules',
   ExecuteRules = 'executeRules',
+  // Custom Functions — dedicated scopes (LINK-7162); endpoints migrate in LINK-7163
+  ViewCustomFunction = 'viewCustomFunction',
+  ManageCustomFunction = 'manageCustomFunction',
 }
 
 /**
@@ -1002,6 +1005,32 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     description: 'Trigger rule execution and view the outputs.',
     type: ScopeType.Modify,
     products: [TranscendProduct.RulesAutomation],
+  },
+  [ScopeName.ViewCustomFunction]: {
+    title: 'View Custom Functions',
+    dependencies: [],
+    description: 'View Custom Functions, their versions, and run history.',
+    type: ScopeType.View,
+    products: [
+      TranscendProduct.DsrAutomation,
+      TranscendProduct.DataInventory,
+      TranscendProduct.StructuredDiscovery,
+      TranscendProduct.SiloDiscovery,
+      TranscendProduct.UnstructuredDiscovery,
+    ],
+  },
+  [ScopeName.ManageCustomFunction]: {
+    title: 'Manage Custom Functions',
+    dependencies: [ScopeName.ViewCustomFunction],
+    description: 'Create, update, archive, promote, and run Custom Functions and their versions.',
+    type: ScopeType.Modify,
+    products: [
+      TranscendProduct.DsrAutomation,
+      TranscendProduct.DataInventory,
+      TranscendProduct.StructuredDiscovery,
+      TranscendProduct.SiloDiscovery,
+      TranscendProduct.UnstructuredDiscovery,
+    ],
   },
 };
 
