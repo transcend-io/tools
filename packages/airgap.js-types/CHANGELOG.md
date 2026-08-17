@@ -1,5 +1,12 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.36
+
+### Patch Changes
+
+- Updated dependencies [9637490]
+  - @transcend-io/privacy-types@5.20.0
+
 ## 14.2.35
 
 ### Patch Changes
