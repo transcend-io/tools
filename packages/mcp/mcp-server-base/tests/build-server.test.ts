@@ -444,11 +444,116 @@ describe('buildMcpServer without UI resources', () => {
     const capabilities = await initializeAndGetServerCapabilities(baseUrl, 'no-ui-test');
     expect(capabilities.tools).toBeDefined();
     expect(capabilities.resources).toBeUndefined();
+    expect(capabilities.prompts).toBeUndefined();
   });
 
   it('rejects resources/list, since the handler was never registered', async () => {
     const sessionId = await initSession(baseUrl);
     await expect(rpc(baseUrl, sessionId, 'resources/list')).rejects.toThrow();
+  });
+
+  it('rejects prompts/list, since the handler was never registered', async () => {
+    const sessionId = await initSession(baseUrl);
+    await expect(rpc(baseUrl, sessionId, 'prompts/list')).rejects.toThrow();
+  });
+});
+
+describe('buildMcpServer prompts', () => {
+  let httpServer: McpHttpServer;
+  let baseUrl: string;
+
+  beforeAll(async () => {
+    httpServer = await runMcpHttp(
+      {
+        name: 'prompt-test',
+        version: '0.0.1',
+        createServer: () =>
+          buildMcpServer({
+            name: 'prompt-test',
+            version: '0.0.1',
+            tools: [publicTool],
+            prompts: [
+              {
+                name: 'hello-prompt',
+                description: 'A greeting workflow template',
+                arguments: [
+                  {
+                    name: 'name',
+                    description: 'Who to greet',
+                    required: false,
+                  },
+                ],
+                handler: (args) => [
+                  {
+                    role: 'user',
+                    content: {
+                      type: 'text',
+                      text: `Say hello to ${args.name || 'world'}`,
+                    },
+                  },
+                  {
+                    role: 'assistant',
+                    content: {
+                      type: 'text',
+                      text: `Hello, ${args.name || 'world'}!`,
+                    },
+                  },
+                ],
+              },
+            ],
+            transport: 'http',
+          }),
+      },
+      testConfig(0),
+    );
+    const addr = httpServer.httpServer.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${addr.port}`;
+  });
+
+  afterAll(async () => {
+    await httpServer.shutdown();
+  });
+
+  it('advertises the prompts capability when prompts are registered', async () => {
+    const capabilities = await initializeAndGetServerCapabilities(baseUrl, 'prompt-test');
+    expect(capabilities.prompts).toBeDefined();
+  });
+
+  it('lists registered prompts', async () => {
+    const sessionId = await initSession(baseUrl);
+    const result = await rpc<{
+      prompts: { name: string; description?: string; arguments?: unknown[] }[];
+    }>(baseUrl, sessionId, 'prompts/list');
+
+    expect(result.prompts).toHaveLength(1);
+    expect(result.prompts[0]).toMatchObject({
+      name: 'hello-prompt',
+      description: 'A greeting workflow template',
+    });
+  });
+
+  it('returns rendered messages from prompts/get', async () => {
+    const sessionId = await initSession(baseUrl);
+    const result = await rpc<{
+      description?: string;
+      messages: { role: string; content: { type: string; text: string } }[];
+    }>(baseUrl, sessionId, 'prompts/get', {
+      name: 'hello-prompt',
+      arguments: { name: 'Ada' },
+    });
+
+    expect(result.description).toBe('A greeting workflow template');
+    expect(result.messages).toEqual([
+      { role: 'user', content: { type: 'text', text: 'Say hello to Ada' } },
+      { role: 'assistant', content: { type: 'text', text: 'Hello, Ada!' } },
+    ]);
+  });
+
+  it('reports a helpful error for an unknown prompt name', async () => {
+    const sessionId = await initSession(baseUrl);
+    await expect(
+      rpc(baseUrl, sessionId, 'prompts/get', { name: 'missing-prompt' }),
+    ).rejects.toThrow(/Unknown prompt/);
   });
 });
 

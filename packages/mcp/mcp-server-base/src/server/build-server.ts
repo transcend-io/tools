@@ -4,6 +4,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import {
   CallToolRequestSchema,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
@@ -21,6 +23,7 @@ import { SimpleLogger } from '../clients/graphql/base.js';
 import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
+import type { PromptDefinition } from '../prompts/types.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { ApprovalTokenStore } from '../tools/approval-tokens.js';
 import { ConfirmationPolicy, type ConfirmationGate } from '../tools/confirmation.js';
@@ -44,6 +47,8 @@ export interface BuildMcpServerOptions {
   version: string;
   /** Pre-constructed tool definitions */
   tools: ToolDefinition[];
+  /** Optional prompt templates (workflow guidance) registered with prompts/list and prompts/get */
+  prompts?: PromptDefinition[];
   /** Optional MCP initialize instructions injected into the client system prompt. */
   instructions?: string;
   /** Required. Controls whether form-less hosts get an approval token (`stdio`) or are refused (`http`). */
@@ -140,7 +145,19 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   const uiResources = collectUiResources(registered, logger);
 
+  const promptMap = new Map<string, PromptDefinition>();
+  for (const prompt of options.prompts ?? []) {
+    if (promptMap.has(prompt.name)) {
+      logger.warn(`Duplicate prompt name "${prompt.name}" — skipping`);
+      continue;
+    }
+    promptMap.set(prompt.name, prompt);
+  }
+
   logger.info(`Registered ${registered.length} tools`, { toolCount: registered.length });
+  if (promptMap.size > 0) {
+    logger.info(`Registered ${promptMap.size} prompts`, { promptCount: promptMap.size });
+  }
 
   // Only stdio has a person at the other end. Over HTTP the caller is another
   // service, so gated tools are refused outright rather than trusting whatever
@@ -192,6 +209,9 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         // Only advertise resources when there is something to serve, so servers
         // with no views negotiate exactly as they did before MCP Apps existed.
         ...(uiResources.size > 0 && { resources: {} }),
+        // Same for prompts: omit the capability when empty so hosts without
+        // prompts continue to negotiate as before.
+        ...(promptMap.size > 0 && { prompts: {} }),
       },
       ...(options.instructions ? { instructions: options.instructions } : {}),
     },
@@ -314,6 +334,33 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
           },
         ],
       };
+    });
+  }
+
+  if (promptMap.size > 0) {
+    server.setRequestHandler(ListPromptsRequestSchema, async () => {
+      logger.debug('Listing MCP prompts');
+      return {
+        prompts: [...promptMap.values()].map((prompt) => ({
+          name: prompt.name,
+          description: prompt.description,
+          ...(prompt.arguments && { arguments: prompt.arguments }),
+        })),
+      };
+    });
+
+    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+      logger.info(`Getting prompt: ${name}`);
+      const prompt = promptMap.get(name);
+      if (!prompt) {
+        throw new Error(
+          `Unknown prompt "${name}". This server serves ${promptMap.size} prompt(s): ` +
+            `${[...promptMap.keys()].join(', ')}.`,
+        );
+      }
+      const messages = await prompt.handler(args ?? {});
+      return { description: prompt.description, messages };
     });
   }
 
