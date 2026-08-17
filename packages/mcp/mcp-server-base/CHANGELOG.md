@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 1.4.0
+
+### Minor Changes
+
+- c8df618: Add MCP prompts support to mcp-server-base (`prompts/list` and `prompts/get`), and ship three consent workflow prompts (`consent-triage`, `consent-research-tracker`, `consent-inspect-site`) on the consent and umbrella servers.
+
 ## 1.3.1
 
 ### Patch Changes
