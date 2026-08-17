@@ -28098,10 +28098,57 @@
                 }
               },
               "deletion-dependencies": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": ["titles"],
+                              "properties": {
+                                "titles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "workflow": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": ["workflow", "reset-to-global"],
+                          "properties": {
+                            "workflow": {
+                              "type": "string"
+                            },
+                            "reset-to-global": {
+                              "const": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               "owners": {
                 "type": "array",
