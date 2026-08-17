@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-base
 
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [99a0110]
+  - @transcend-io/design-tokens@1.2.1
+
 ## 1.3.0
 
 ### Minor Changes

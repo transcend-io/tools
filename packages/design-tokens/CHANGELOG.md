@@ -1,5 +1,11 @@
 # @transcend-io/design-tokens
 
+## 1.2.1
+
+### Patch Changes
+
+- 99a0110: Update chart yellow and lime semantic colors to darker palette steps (`yellow.600`, `lime.600`) from the latest Figma DTCG export.
+
 ## 1.2.0
 
 ### Minor Changes
