@@ -58,6 +58,8 @@ export interface DataSiloEnriched {
   dependedOnDataSilosPerWorkflow: {
     /** ID of the workflow config the override applies to */
     workflowConfigId: string;
+    /** Internal name of the workflow config; used as the transcend.yml workflow key */
+    workflowInternalName: string;
     /** Silos depended on within that workflow */
     dependedOnDataSilos: {
       /** Title of silo */

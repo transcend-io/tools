@@ -84,6 +84,7 @@ export const DATA_SILOS_ENRICHED = gql`
         }
         dependedOnDataSilosPerWorkflow {
           workflowConfigId
+          workflowInternalName
           dependedOnDataSilos {
             title
           }

@@ -1508,20 +1508,6 @@ export async function pullTranscendConfiguration(
   // Save data silos
   if (dataSilos.length > 0 && resources.includes(TranscendPullResource.DataSilos)) {
     const indexedDataSubjects = keyBy(dataSubjects, 'type');
-    // Per-workflow deletion dependencies come back keyed by ID, but transcend.yml
-    // references workflows by internal name
-    const hasWorkflowScopedDependencies = dataSilos.some(
-      ([{ dependedOnDataSilosPerWorkflow }]) => dependedOnDataSilosPerWorkflow.length > 0,
-    );
-    const workflowConfigsById = hasWorkflowScopedDependencies
-      ? keyBy(
-          await fetchAllWorkflowConfigs(client, {
-            workflowConfigType: WorkflowConfigType.DSR,
-            logger,
-          }),
-          'id',
-        )
-      : {};
     result['data-silos'] = dataSilos.map(
       ([
         {
@@ -1564,10 +1550,10 @@ export async function pullTranscendConfiguration(
         'identity-keys': identifiers
           .filter(({ isConnected }) => isConnected)
           .map(({ name }) => name),
-        ...buildDeletionDependenciesInput(
-          { title, dependentDataSilos, dependedOnDataSilosPerWorkflow },
-          workflowConfigsById,
-        ),
+        ...buildDeletionDependenciesInput({
+          dependentDataSilos,
+          dependedOnDataSilosPerWorkflow,
+        }),
         ...(owners.length > 0 ? { owners: owners.map(({ email }) => email) } : {}),
         ...(teams.length > 0 ? { teams: teams.map(({ name }) => name) } : {}),
         ...(discoveredBy.length > 0
