@@ -67,6 +67,14 @@ export interface CookieTriageOptions {
   services: string[];
 }
 
+/** Active organization identity for the triage session. */
+export interface CookieTriageOrganization {
+  /** Organization UUID */
+  id: string;
+  /** Display name */
+  name: string;
+}
+
 /** Single cookie or data flow in the triage queue. */
 export interface CookieTriageItem {
   /** Mutation key: cookie name, or data-flow UUID */
@@ -93,14 +101,32 @@ export interface CookieTriageViewData {
   reviewType?: CookieTriageReviewType;
   /** 1-based position of the current item in the review-type backlog */
   index?: number;
-  /** Size of the current review-type backlog, including session skips */
+  /** Size of the current review-type backlog */
   total?: number;
   /** Item currently under review */
   item?: CookieTriageItem;
   /** Classification dropdown options */
   options?: CookieTriageOptions;
-  /** Ids the user has skipped this session */
-  skippedIds?: string[];
+  /** Active organization for this session */
+  organization?: CookieTriageOrganization;
+  /** Forward cookie cursor from the previous card */
+  after?: string;
+  /** Peek watermark createdAt */
+  headCreatedAt?: string;
+  /** Peek watermark GraphQL cookie id */
+  headId?: string;
+  /** Cards shown so far this session */
+  sessionIndex?: number;
+  /** Data-flow fallback skip count */
+  dataFlowSkipCount?: number;
+  /** Whether the current cookie card came from peek */
+  fromPeek?: boolean;
+  /** endCursor from the fetch that produced the current cookie card */
+  cardEndCursor?: string;
+  /** GraphQL cookie UUID for the current card */
+  cardCookieId?: string;
+  /** createdAt of the current cookie card */
+  cardCreatedAt?: string;
 }
 
 /** Draft classification edits held in the view before an act call. */

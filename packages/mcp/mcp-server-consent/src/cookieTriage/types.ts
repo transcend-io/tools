@@ -67,6 +67,45 @@ export interface CookieTriageOptions {
   services: string[];
 }
 
+/** Active organization identity for the triage session. */
+export interface CookieTriageOrganization {
+  /** Organization UUID */
+  id: string;
+  /** Display name */
+  name: string;
+}
+
+/**
+ * Cursor / watermark session state round-tripped between the UI and act tool.
+ * Skip advances these fields; ids are not retained.
+ */
+export interface CookieTriageSession {
+  /** Forward cookie cursor (`pageInfo.endCursor` from the last forward fetch) */
+  after?: string;
+  /** Peek watermark createdAt (ISO); peek wins when strictly newer */
+  headCreatedAt?: string;
+  /** Peek watermark GraphQL cookie id (tie-break with createdAt) */
+  headId?: string;
+  /** 1-based count of cards shown this session */
+  sessionIndex?: number;
+  /**
+   * How many data-flow items to skip from the start of the DF fallback page.
+   * Used only when the cookie queue is empty.
+   */
+  dataFlowSkipCount?: number;
+  /**
+   * When true, the current cookie card came from the peek fetch.
+   * Skip raises the watermark but does not move `after`.
+   */
+  fromPeek?: boolean;
+  /** endCursor from the fetch that produced the current cookie card */
+  cardEndCursor?: string;
+  /** GraphQL cookie UUID for the current card (watermark / tie-break) */
+  cardCookieId?: string;
+  /** createdAt of the current cookie card */
+  cardCreatedAt?: string;
+}
+
 /** Single cookie or data flow in the triage queue. */
 export interface CookieTriageItem {
   /** Mutation key: cookie name, or data-flow UUID */
@@ -88,7 +127,7 @@ export interface CookieTriageItem {
 }
 
 /** Payload shape returned by `consent_cookie_triage` and its act companion. */
-export interface CookieTriageViewData {
+export interface CookieTriageViewData extends CookieTriageSession {
   /** Whether this card is reviewing a cookie or a data flow */
   reviewType?: CookieTriageReviewType;
   /** 1-based position of the current item in the review-type backlog */
@@ -99,8 +138,8 @@ export interface CookieTriageViewData {
   item?: CookieTriageItem;
   /** Classification dropdown options */
   options?: CookieTriageOptions;
-  /** Ids the user has skipped this session */
-  skippedIds?: string[];
+  /** Active organization for this session */
+  organization?: CookieTriageOrganization;
 }
 
 /**
@@ -128,4 +167,8 @@ export interface CookieTriageRawNode {
   serviceTitle?: string;
   /** Service integration name, if classified */
   serviceKey?: string;
+  /** GraphQL node UUID (cookies); used for peek watermark tie-break */
+  cookieId?: string;
+  /** ISO createdAt for peek watermark */
+  createdAt?: string;
 }

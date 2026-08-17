@@ -9,15 +9,37 @@ import {
 
 import { COOKIE_TRIAGE_APP_RESOURCE } from '../apps/cookie-triage.js';
 import { mutateTriageItems } from '../cookieTriage/mutate.js';
-import { buildQueue, selectCurrentCard, summarizeCard } from '../cookieTriage/queue.js';
-import type { CookieTriageReviewType, CookieTriageViewData } from '../cookieTriage/types.js';
+import { loadTriageCard, sessionAfterSkipCookie, summarizeCard } from '../cookieTriage/queue.js';
+import type {
+  CookieTriageReviewType,
+  CookieTriageSession,
+  CookieTriageViewData,
+} from '../cookieTriage/types.js';
 
-export const CookieTriageAppSchema = z.object({
-  skippedIds: z
-    .array(z.string())
+const SessionFieldsSchema = {
+  after: z.string().optional().describe('Forward cookie cursor from the previous card.'),
+  headCreatedAt: z
+    .string()
     .optional()
-    .describe('Ids previously skipped this session (usually omitted on first open).'),
-});
+    .describe('Peek watermark createdAt; peek wins when a cookie is strictly newer.'),
+  headId: z.string().optional().describe('Peek watermark GraphQL cookie id (tie-break).'),
+  sessionIndex: z.number().int().min(0).optional().describe('Cards shown so far this session.'),
+  dataFlowSkipCount: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe('Data-flow fallback: how many items to skip from the start of the DF page.'),
+  fromPeek: z.boolean().optional().describe('Whether the current cookie card came from peek.'),
+  cardEndCursor: z
+    .string()
+    .optional()
+    .describe('endCursor from the fetch that produced the current cookie card.'),
+  cardCookieId: z.string().optional().describe('GraphQL cookie UUID for the current card.'),
+  cardCreatedAt: z.string().optional().describe('createdAt of the current cookie card.'),
+};
+
+export const CookieTriageAppSchema = z.object(SessionFieldsSchema);
 export type CookieTriageAppInput = z.infer<typeof CookieTriageAppSchema>;
 
 export const CookieTriageActSchema = z.object({
@@ -38,39 +60,58 @@ export const CookieTriageActSchema = z.object({
     .array(z.string())
     .optional()
     .describe('Sibling mutation ids to approve with approve_siblings.'),
-  skippedIds: z.array(z.string()).optional().describe('Ids previously skipped this session.'),
+  ...SessionFieldsSchema,
 });
 export type CookieTriageActInput = z.infer<typeof CookieTriageActSchema>;
 
 /**
- * Loads the live triage queue and returns the current review card payload.
+ * Picks session cursor fields from tool args.
+ *
+ * @param args - App or act input
+ * @returns Session subset
+ */
+function sessionFromArgs(args: CookieTriageSession): CookieTriageSession {
+  return {
+    after: args.after,
+    headCreatedAt: args.headCreatedAt,
+    headId: args.headId,
+    sessionIndex: args.sessionIndex,
+    dataFlowSkipCount: args.dataFlowSkipCount,
+    fromPeek: args.fromPeek,
+    cardEndCursor: args.cardEndCursor,
+    cardCookieId: args.cardCookieId,
+    cardCreatedAt: args.cardCreatedAt,
+  };
+}
+
+/**
+ * Loads the live triage card for the given session.
  *
  * @param clients - Tool clients
- * @param skippedIds - Ids skipped this session
- * @returns Unwrapped view data (still wrapped by createToolResult by callers)
+ * @param session - Cursor / watermark session
+ * @returns Unwrapped view data
  */
 async function loadCard(
   clients: ToolClients,
-  skippedIds: string[] = [],
+  session: CookieTriageSession = {},
 ): Promise<CookieTriageViewData> {
-  const queue = await buildQueue(clients);
-  return selectCurrentCard(queue, skippedIds);
+  return loadTriageCard(clients, session);
 }
 
 /**
  * Builds the createToolResult envelope for a triage card.
  *
  * @param clients - Tool clients
- * @param skippedIds - Ids skipped this session
+ * @param session - Cursor / watermark session
  * @param asTextSummary - When true, return a compact text-oriented summary
  * @returns Tool result envelope
  */
 async function cookieTriagePayload(
   clients: ToolClients,
-  skippedIds: string[] = [],
+  session: CookieTriageSession = {},
   asTextSummary = false,
 ): Promise<unknown> {
-  const data = await loadCard(clients, skippedIds);
+  const data = await loadCard(clients, session);
   return createToolResult(true, asTextSummary ? summarizeCard(data) : data);
 }
 
@@ -112,15 +153,18 @@ function createCookieTriageActTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: CookieTriageActSchema,
     handler: async (args) => {
-      const skippedIds = [...(args.skippedIds ?? [])];
+      const session = sessionFromArgs(args);
       const reviewType = args.reviewType as CookieTriageReviewType;
       const classification = classificationFromAct(args);
 
       if (args.action === 'skip') {
-        if (!skippedIds.includes(args.id)) {
-          skippedIds.push(args.id);
+        if (reviewType === 'cookie') {
+          return cookieTriagePayload(clients, sessionAfterSkipCookie(session));
         }
-        return cookieTriagePayload(clients, skippedIds);
+        return cookieTriagePayload(clients, {
+          ...session,
+          dataFlowSkipCount: (session.dataFlowSkipCount ?? 0) + 1,
+        });
       }
 
       if (args.action === 'approve' || args.action === 'junk') {
@@ -129,7 +173,17 @@ function createCookieTriageActTool(clients: ToolClients) {
           [{ id: args.id, reviewType, ...classification }],
           args.action,
         );
-        return cookieTriagePayload(clients, skippedIds);
+        // Approve/junk removes the item remotely; keep cookie cursors as on the card.
+        return cookieTriagePayload(clients, {
+          after: session.after,
+          headCreatedAt: session.headCreatedAt,
+          headId: session.headId,
+          sessionIndex: session.sessionIndex,
+          dataFlowSkipCount:
+            reviewType === 'data_flow'
+              ? (session.dataFlowSkipCount ?? 0)
+              : session.dataFlowSkipCount,
+        });
       }
 
       // approve_siblings — current item plus high-confidence siblings
@@ -139,7 +193,13 @@ function createCookieTriageActTool(clients: ToolClients) {
         ids.map((id) => ({ id, reviewType, ...classification })),
         'approve',
       );
-      return cookieTriagePayload(clients, skippedIds);
+      return cookieTriagePayload(clients, {
+        after: session.after,
+        headCreatedAt: session.headCreatedAt,
+        headId: session.headId,
+        sessionIndex: session.sessionIndex,
+        dataFlowSkipCount: session.dataFlowSkipCount,
+      });
     },
   });
 }
@@ -163,11 +223,11 @@ export function createCookieTriageAppTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: CookieTriageAppSchema,
-    handler: async ({ skippedIds }) => cookieTriagePayload(clients, skippedIds ?? [], true),
+    handler: async (args) => cookieTriagePayload(clients, sessionFromArgs(args), true),
     variants: {
       [McpClientCapability.McpApp]: {
         resource: COOKIE_TRIAGE_APP_RESOURCE,
-        handler: async ({ skippedIds }) => cookieTriagePayload(clients, skippedIds ?? []),
+        handler: async (args) => cookieTriagePayload(clients, sessionFromArgs(args)),
         appOnlyTools: [createCookieTriageActTool(clients)],
       },
     },

@@ -98,6 +98,18 @@ export interface TranscendUpdateCookieInputGql {
 
 // ---- COOKIES query ----
 
+/** Relay-style page info for cookie cursor pagination */
+export interface TranscendCookiesPageInfoGql {
+  /** Whether another page exists after `endCursor` */
+  hasNextPage: boolean;
+  /** Whether a previous page exists before `startCursor` */
+  hasPreviousPage: boolean;
+  /** Cursor of the last node in this page (pass as `after`) */
+  endCursor: string | null;
+  /** Cursor of the first node in this page (pass as `before`) */
+  startCursor: string | null;
+}
+
 /** Full response from the COOKIES query */
 export interface TranscendCliCookiesResponse {
   /** Cookies result */
@@ -106,6 +118,8 @@ export interface TranscendCliCookiesResponse {
     nodes: TranscendCookieGql[];
     /** Total count of matching cookies */
     totalCount: number;
+    /** Cursor page info when using `after` / `before` (also present for offset pages) */
+    pageInfo?: TranscendCookiesPageInfoGql;
   };
 }
 
@@ -115,7 +129,9 @@ export const COOKIES = gql`
   query TranscendCliCookies(
     $input: AirgapBundleInput!
     $first: Int!
-    $offset: Int!
+    $offset: Int
+    $after: String
+    $before: String
     $filterBy: CookiesFiltersInput
     $orderBy: [CookieOrder!]
   ) {
@@ -123,11 +139,19 @@ export const COOKIES = gql`
       input: $input
       first: $first
       offset: $offset
+      after: $after
+      before: $before
       filterBy: $filterBy
       orderBy: $orderBy
       useMaster: false
     ) {
       totalCount
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        endCursor
+        startCursor
+      }
       nodes {
         id
         name

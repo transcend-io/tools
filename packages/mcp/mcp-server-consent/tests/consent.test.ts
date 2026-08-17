@@ -57,12 +57,19 @@ describe('Consent Tools', () => {
   });
 
   describe('consent_cookie_triage', () => {
-    it('accepts an empty input object and optional skippedIds', () => {
+    it('accepts an empty input object and optional session cursors', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'consent_cookie_triage')!;
 
       expect(tool.zodSchema.safeParse({}).success).toBe(true);
-      expect(tool.zodSchema.safeParse({ skippedIds: ['a'] }).success).toBe(true);
+      expect(
+        tool.zodSchema.safeParse({
+          after: 'cursor-1',
+          headCreatedAt: '2024-01-01T00:00:00.000Z',
+          headId: 'uuid-a',
+          sessionIndex: 2,
+        }).success,
+      ).toBe(true);
     });
   });
 
