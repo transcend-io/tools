@@ -122,9 +122,7 @@ async function callAs(
   const mutate = vi.fn(options.mutate ?? (async () => ({ cancelled: true })));
   const elicitInput = options.elicitError
     ? vi.fn().mockRejectedValue(options.elicitError)
-    : vi
-        .fn()
-        .mockResolvedValue(options.answer ?? { action: 'accept', content: { confirmed: true } });
+    : vi.fn().mockResolvedValue(options.answer ?? { action: 'accept', content: {} });
 
   const session: McpSession = {
     client: {
@@ -206,22 +204,22 @@ describe('withConfirmation on a host that can show a form', () => {
     expect((result as Refusal).code).toBe(ConfirmationCode.Cancelled);
   });
 
-  it('does not mutate when the host accepts without choosing to proceed', async () => {
-    // Submitting the dialog is not the same as saying yes, and nothing forces a
-    // host to answer with the shape it was asked for.
+  it('mutates on accept whatever the host puts in content', async () => {
+    // Accepting is the yes. The form requests no fields, so a host is free to
+    // answer with nothing, or with fields it invented, without that reading as a
+    // refusal — which is how a real approval twice came back as one.
     const answers: Record<string, string | number | boolean | string[]>[] = [
       {},
       { confirmed: false },
       { confirmed: 'yes' },
     ];
     for (const content of answers) {
-      const { result, mutate } = await callAs({
+      const { mutate } = await callAs({
         capabilities: ELICITATION,
         answer: { action: 'accept', content },
       });
 
-      expect(mutate, JSON.stringify(content)).not.toHaveBeenCalled();
-      expect((result as Refusal).code).toBe(ConfirmationCode.Declined);
+      expect(mutate, JSON.stringify(content)).toHaveBeenCalledTimes(1);
     }
   });
 
@@ -353,7 +351,7 @@ describe('a refusing connection does not consult the host', () => {
   it('ignores a declared elicitation capability entirely', async () => {
     const { result, mutate, elicitInput } = await callAs({
       capabilities: ELICITATION,
-      answer: { action: 'accept', content: { confirmed: true } },
+      answer: { action: 'accept', content: {} },
       gate: REFUSING,
     });
 
@@ -702,9 +700,7 @@ describe('the token fallback appears only where nothing else can ask', () => {
       {
         client,
         server: {
-          elicitInput: vi
-            .fn()
-            .mockResolvedValue({ action: 'accept', content: { confirmed: true } }),
+          elicitInput: vi.fn().mockResolvedValue({ action: 'accept', content: {} }),
         } as unknown as Server,
       },
       async () => resolved.handler({ requestId: 'req-1' }),
@@ -823,7 +819,7 @@ describe('the gate against a real SDK server', () => {
 
   it('asks over http when the client can render a form', async () => {
     const { payload, listed, mutate, asked } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'http',
     );
 
@@ -837,7 +833,7 @@ describe('the gate against a real SDK server', () => {
     // Listing it would have the agent plan around a tool that refuses every call, which
     // is how a triage run ends in the model explaining a dead end instead of working.
     const { listed } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'http',
       false,
     );
@@ -849,7 +845,7 @@ describe('the gate against a real SDK server', () => {
     // Withholding is for the model's benefit, not a boundary: a name from a cached
     // list or a guess still reaches `tools/call`.
     const { payload, isError, mutate } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'http',
       false,
     );
@@ -863,7 +859,7 @@ describe('the gate against a real SDK server', () => {
   it('keeps offering the tool over stdio to a form-less client', async () => {
     // The token route needs nothing from the host, so there is nothing to withhold.
     const { listed, payload } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'stdio',
       false,
     );
@@ -887,7 +883,7 @@ describe('the gate against a real SDK server', () => {
   it('runs the mutation on a well-formed confirmation', async () => {
     const { payload, mutate } = await callOverTransport(async () => ({
       action: 'accept',
-      content: { confirmed: true },
+      content: {},
     }));
 
     expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
@@ -908,23 +904,24 @@ describe('the gate against a real SDK server', () => {
     expect(payload.details?.approvalToken).toBeUndefined();
   });
 
-  const REJECTED = [
-    { name: 'omits the confirmation', content: {} },
-    { name: 'answers with the wrong type', content: { confirmed: 'yes' } },
+  const ODD_CONTENT = [
+    { name: 'sends no content at all', content: undefined },
+    { name: 'sends an empty object', content: {} },
+    { name: 'volunteers fields never asked for', content: { confirmed: 'yes' } },
   ];
 
-  it.each(REJECTED)('falls back to a token when the host $name', async (scenario) => {
-    const { payload, isError, mutate } = await callOverTransport(async () => ({
+  // The form requests no fields, so `content` carries nothing the gate needs and
+  // cannot strand the call. Asking for one is what twice turned an approval into
+  // `MCP error -32602`: the SDK validates the answer against the schema it sent,
+  // and a host that got the shape wrong had its yes thrown away.
+  it.each(ODD_CONTENT)('runs the action when the host accepts and $name', async (scenario) => {
+    const { isError, mutate } = await callOverTransport(async () => ({
       action: 'accept',
       content: scenario.content as ElicitResult['content'],
     }));
 
-    // Previously this surfaced as `MCP error -32602`, which tells the agent
-    // nothing it can act on and strands the call with no way to proceed.
-    expect(mutate).not.toHaveBeenCalled();
+    expect(mutate).toHaveBeenCalledTimes(1);
     expect(isError).toBe(false);
-    expect(payload.code).toBe(ConfirmationCode.Required);
-    expect(payload.details?.approvalToken).toEqual(expect.any(String));
   });
 
   it('falls back to a token when the host fails the request outright', async () => {
@@ -978,7 +975,7 @@ describe('the gate against a real SDK server', () => {
     abandoned.abort();
     await expect(call).rejects.toThrow();
 
-    answer({ action: 'accept', content: { confirmed: true } });
+    answer({ action: 'accept', content: {} });
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(mutate).not.toHaveBeenCalled();

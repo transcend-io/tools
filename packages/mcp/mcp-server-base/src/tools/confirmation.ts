@@ -23,17 +23,6 @@ export const APPROVAL_TOKEN_ARG = 'approvalToken';
  */
 export const CONFIRMATION_TIMEOUT_MS = 10 * 60 * 1000;
 
-/**
- * Field name for the yes/no confirmation.
- *
- * A boolean rather than a titled `oneOf` select. Asked as a select, Cursor
- * answered `accept` with a value matching neither option's `const`, so the SDK
- * rejected the answer before the gate could read it and a rendered, answered
- * form still reached us as "nobody was asked". A checkbox is the narrowest
- * shape a host can get wrong.
- */
-const DECISION_FIELD = 'confirmed';
-
 const logger = new SimpleLogger();
 
 /** Why a gated call did not run, or what the caller must do next. */
@@ -122,19 +111,21 @@ export function canObtainApproval(
   }
 }
 
-const DECISION_SCHEMA: ElicitRequestFormParams['requestedSchema'] = {
+/**
+ * No fields: the decision is the host's own accept and decline buttons, read off
+ * `ElicitResult.action`.
+ *
+ * Asking for a field on top of them cost us twice. As a titled select, Cursor
+ * answered with a value matching neither option's `const`; as a checkbox, a host
+ * that answers `true` as a string would fare no better, because the SDK validates
+ * the answer against the schema it sent and a rejected answer reaches the gate as
+ * "nobody was asked" — a rendered, approved form reported as a refusal. Requesting
+ * nothing leaves no shape to get wrong, and spares the user a second gesture after
+ * the button they already pressed.
+ */
+const NO_FIELDS: ElicitRequestFormParams['requestedSchema'] = {
   type: 'object',
-  properties: {
-    [DECISION_FIELD]: {
-      type: 'boolean',
-      title: 'Run this action',
-      description:
-        'Turn this on to carry out the action described above, or leave it off and ' +
-        'submit to cancel without changing anything.',
-      default: false,
-    },
-  },
-  required: [DECISION_FIELD],
+  properties: {},
 };
 
 /** What came of trying to put the question to a person. */
@@ -246,7 +237,7 @@ async function askForConfirmation(
 
   let answer: ElicitResult | undefined;
   try {
-    answer = await requestElicitation(prompt, DECISION_SCHEMA, {
+    answer = await requestElicitation(prompt, NO_FIELDS, {
       timeout: CONFIRMATION_TIMEOUT_MS,
     });
   } catch (error) {
@@ -283,14 +274,8 @@ async function askForConfirmation(
     };
   }
 
-  const confirmed = (answer.content as Record<string, unknown> | undefined)?.[DECISION_FIELD];
-  if (confirmed !== true) {
-    return {
-      outcome: 'refused',
-      result: refused(ConfirmationCode.Declined, 'did not confirm the action'),
-    };
-  }
-
+  // Whatever the host put in `content` is ignored: the two refusals above are the
+  // only ways to say no, so an accept is the approval.
   return { outcome: 'confirmed' };
 }
 
