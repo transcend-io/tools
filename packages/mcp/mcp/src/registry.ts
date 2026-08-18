@@ -2,6 +2,7 @@ import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-sc
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
+  canObtainApproval,
   ConfirmationPolicy,
   createErrorResult,
   EMPTY_CAPABILITY_REPORT,
@@ -104,8 +105,13 @@ export class ToolRegistry {
     };
     _meta?: Record<string, unknown>;
   }> {
+    // Nothing here can obtain approval, so a gated tool would only be described
+    // and then refuse. `executeTool` still refuses it either way.
+    const canApprove = canObtainApproval(EMBEDDED_GATE, client);
+
     return expandToolsForClient(Array.from(this.tools.values()), client, EMBEDDED_GATE)
       .filter((tool) => isVisibleToModel(tool))
+      .filter((tool) => canApprove || !tool.confirmation)
       .map((tool) => {
         const resourceUri = tool.ui?.resource.uri;
         return {

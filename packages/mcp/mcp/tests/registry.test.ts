@@ -59,7 +59,12 @@ describe('ToolRegistry', () => {
     });
 
     expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
-    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT);
+
+    // Registering a tool and describing it to an embedder differ now: the embedded
+    // path cannot obtain a confirmation, so gated tools are withheld from the list.
+    // No tool declares one yet, so this holds at zero until the first is gated.
+    const gated = registry.getAllTools().filter((tool) => tool.confirmation).length;
+    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT - gated);
   });
 
   it('getToolList returns well-formed tool descriptors', () => {

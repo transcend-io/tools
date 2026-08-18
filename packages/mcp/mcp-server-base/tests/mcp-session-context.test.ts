@@ -104,3 +104,64 @@ describe('requestElicitation', () => {
     });
   });
 });
+
+describe('binding the form to the call that triggered it', () => {
+  /** A session serving a `tools/call`, as the server builds one. */
+  function boundSession(): { session: McpSession; elicitInput: ReturnType<typeof vi.fn> } {
+    const { session, elicitInput } = sessionWith([McpClientCapability.Elicitation]);
+    return {
+      session: { ...session, request: { id: 42, signal: new AbortController().signal } },
+      elicitInput,
+    };
+  }
+
+  it('addresses the form to the originating call', async () => {
+    // Streamable HTTP routes by this id. Unbound, the form goes to the shared
+    // stream, where it can surface in another user's turn or be dropped silently.
+    const { session, elicitInput } = boundSession();
+
+    await mcpSessionContext.run(session, async () => {
+      await requestElicitation('Who?', SCHEMA);
+    });
+
+    expect(elicitInput.mock.calls[0]![1]).toMatchObject({ relatedRequestId: 42 });
+  });
+
+  it("hands over the call's abort signal", async () => {
+    // So abandoning the call tears the form down: otherwise a yes clicked after the
+    // caller gave up still resolves, and the mutation runs unwitnessed.
+    const { session, elicitInput } = boundSession();
+
+    await mcpSessionContext.run(session, async () => {
+      await requestElicitation('Who?', SCHEMA);
+    });
+
+    expect(elicitInput.mock.calls[0]![1].signal).toBe(session.request!.signal);
+  });
+
+  it('lets the caller override what the binding supplies', async () => {
+    const { session, elicitInput } = boundSession();
+    const ownSignal = new AbortController().signal;
+
+    await mcpSessionContext.run(session, async () => {
+      await requestElicitation('Who?', SCHEMA, { timeout: 600_000, signal: ownSignal });
+    });
+
+    expect(elicitInput.mock.calls[0]![1]).toEqual({
+      relatedRequestId: 42,
+      signal: ownSignal,
+      timeout: 600_000,
+    });
+  });
+
+  it('sends nothing extra when there is no call to bind to', async () => {
+    // `tools/list` and direct handler calls in tests have no request id.
+    const { session, elicitInput } = sessionWith([McpClientCapability.Elicitation]);
+
+    await mcpSessionContext.run(session, async () => {
+      await requestElicitation('Who?', SCHEMA, { timeout: 600_000 });
+    });
+
+    expect(elicitInput.mock.calls[0]![1]).toEqual({ timeout: 600_000 });
+  });
+});
