@@ -95,6 +95,7 @@ import {
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
+import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
@@ -1519,6 +1520,7 @@ export async function pullTranscendConfiguration(
           notifyEmailAddress,
           identifiers,
           dependentDataSilos,
+          dependedOnDataSilosPerWorkflow,
           owners,
           country,
           countrySubDivision,
@@ -1548,11 +1550,10 @@ export async function pullTranscendConfiguration(
         'identity-keys': identifiers
           .filter(({ isConnected }) => isConnected)
           .map(({ name }) => name),
-        ...(dependentDataSilos.length > 0
-          ? {
-              'deletion-dependencies': dependentDataSilos.map(({ title }) => title),
-            }
-          : {}),
+        ...buildDeletionDependenciesInput({
+          dependentDataSilos,
+          dependedOnDataSilosPerWorkflow,
+        }),
         ...(owners.length > 0 ? { owners: owners.map(({ email }) => email) } : {}),
         ...(teams.length > 0 ? { teams: teams.map(({ name }) => name) } : {}),
         ...(discoveredBy.length > 0

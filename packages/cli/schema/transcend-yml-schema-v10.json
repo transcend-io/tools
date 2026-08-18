@@ -34127,7 +34127,7 @@
         },
         "consentPrecedence": {
           "type": "string",
-          "enum": ["user", "signal"]
+          "enum": ["user", "signal", "signals"]
         },
         "unknownRequestPolicy": {
           "type": "string",

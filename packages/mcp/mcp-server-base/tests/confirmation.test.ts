@@ -12,12 +12,17 @@ import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ElicitRequestSchema, type ElicitResult } from '@modelcontextprotocol/sdk/types.js';
 import { describe, expect, it, vi } from 'vitest';
 
-import { McpClientCapability, McpHostClient } from '../src/capabilities/types.js';
+import {
+  McpClientCapability,
+  McpHostClient,
+  type ClientCapabilityReport,
+} from '../src/capabilities/types.js';
 import { mcpSessionContext, type McpSession } from '../src/mcp-session-context.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import { ApprovalTokenStore } from '../src/tools/approval-tokens.js';
 import {
   APPROVAL_TOKEN_ARG,
+  canObtainApproval,
   CONFIRMATION_TIMEOUT_MS,
   ConfirmationCode,
   ConfirmationPolicy,
@@ -46,6 +51,8 @@ interface Refusal {
     summary?: Record<string, unknown>;
     /** Token to replay, present only on the fallback path */
     approvalToken?: string;
+    /** When the token stops being redeemable */
+    expiresAt?: string;
     /** Why a replayed token was refused */
     reason?: string;
   };
@@ -71,11 +78,17 @@ function gatedTool(mutate: (args: unknown) => Promise<unknown>): ToolDefinition 
 
 /** A stdio-shaped gate: ask the user, fall back to a token. */
 function askOrToken(tokens = new ApprovalTokenStore()): ConfirmationGate {
-  return { policy: ConfirmationPolicy.AskOrToken, tokens };
+  return { policy: ConfirmationPolicy.ElicitOrToken, tokens };
 }
 
-/** An HTTP-shaped gate: no approval is obtainable on this connection. */
+/** The embedded gate: no approval is obtainable on this connection at all. */
 const REFUSING: ConfirmationGate = { policy: ConfirmationPolicy.Refuse };
+
+/** An HTTP-shaped gate: the caller's user may be asked, with no token fallback. */
+const ASKING: ConfirmationGate = { policy: ConfirmationPolicy.ElicitOnly };
+
+/** Id of the `tools/call` the simulated session is serving. */
+const CALL_ID = 42;
 
 /** Runs a gated tool the way the server would, against a scripted host. */
 async function callAs(
@@ -92,6 +105,11 @@ async function callAs(
     args?: Record<string, unknown>;
     /** Stand-in for the business handler */
     mutate?: (args: unknown) => Promise<unknown>;
+    /**
+     * Whether the session knows which call it is serving. False stands in for a
+     * context the server cannot address a form to, such as `tools/list`.
+     */
+    bound?: boolean;
   } = {},
 ): Promise<{
   /** Whatever the gated handler returned */
@@ -114,6 +132,9 @@ async function callAs(
       host: McpHostClient.Claude,
     },
     server: { elicitInput } as unknown as Server,
+    ...(options.bound !== false && {
+      request: { id: CALL_ID, signal: new AbortController().signal },
+    }),
   };
 
   const gated = withConfirmation(gatedTool(mutate), options.gate ?? askOrToken());
@@ -139,7 +160,7 @@ describe('withConfirmation on a host that can show a form', () => {
     // on screen and leaves the user believing they approved something.
     const { elicitInput } = await callAs({ capabilities: ELICITATION });
 
-    expect(elicitInput.mock.calls[0]![1]).toEqual({ timeout: CONFIRMATION_TIMEOUT_MS });
+    expect(elicitInput.mock.calls[0]![1]).toMatchObject({ timeout: CONFIRMATION_TIMEOUT_MS });
     expect(CONFIRMATION_TIMEOUT_MS).toBeGreaterThan(60_000);
   });
 
@@ -348,6 +369,117 @@ describe('a refusing connection does not consult the host', () => {
 
     expect((result as Refusal).error).toMatch(/dashboard/i);
     expect((result as Refusal).error).not.toMatch(/try again|retry/i);
+  });
+});
+
+describe('a connection that may ask but has no token fallback', () => {
+  // The HTTP deployment: its caller can put the form to a user, so refusing outright
+  // would make every gated tool dead weight. What it must not get is the token, since
+  // the only thing there to carry one back is the agent being gated.
+  it('runs the mutation once the user confirms', async () => {
+    const { result, mutate, elicitInput } = await callAs({
+      capabilities: ELICITATION,
+      gate: ASKING,
+    });
+
+    expect(elicitInput).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
+    expect(result).toEqual({ cancelled: true });
+  });
+
+  it('binds the form to the call being served', async () => {
+    const { elicitInput } = await callAs({ capabilities: ELICITATION, gate: ASKING });
+
+    expect(elicitInput.mock.calls[0]![1]).toMatchObject({ relatedRequestId: CALL_ID });
+  });
+
+  it('does not mutate when the user declines', async () => {
+    const { result, mutate } = await callAs({
+      capabilities: ELICITATION,
+      answer: { action: 'decline' },
+      gate: ASKING,
+    });
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect((result as Refusal).code).toBe(ConfirmationCode.Declined);
+  });
+
+  it('refuses without a token when the host cannot show a form', async () => {
+    const { result, mutate, elicitInput } = await callAs({ gate: ASKING });
+
+    expect(elicitInput).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
+    const refusal = result as Refusal;
+    expect(refusal.code).toBe(ConfirmationCode.Unavailable);
+    expect(refusal.details?.approvalToken).toBeUndefined();
+  });
+
+  it('refuses without a token when the host fails the request', async () => {
+    const { result, mutate } = await callAs({
+      capabilities: ELICITATION,
+      elicitError: new Error('host refused to render the form'),
+      gate: ASKING,
+    });
+
+    expect(mutate).not.toHaveBeenCalled();
+    const refusal = result as Refusal;
+    expect(refusal.code).toBe(ConfirmationCode.Unavailable);
+    expect(refusal.details?.approvalToken).toBeUndefined();
+  });
+
+  it('will not ask at all when the form cannot be tied to a call', async () => {
+    // An unbound form goes to the shared stream: undelivered it is stored for replay
+    // and never sent, so the call hangs the full ten minutes and refuses anyway, and
+    // delivered it can be answered from a different user's turn.
+    const { result, mutate, elicitInput } = await callAs({
+      capabilities: ELICITATION,
+      gate: ASKING,
+      bound: false,
+    });
+
+    expect(elicitInput).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
+    expect((result as Refusal).code).toBe(ConfirmationCode.Unavailable);
+  });
+
+  it('still asks an unbound stdio host, which has one stream and a fallback', async () => {
+    const { mutate, elicitInput } = await callAs({
+      capabilities: ELICITATION,
+      gate: askOrToken(),
+      bound: false,
+    });
+
+    expect(elicitInput).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
+  });
+
+  it('rejects a smuggled approval token', async () => {
+    const { result, mutate, elicitInput } = await callAs({
+      capabilities: ELICITATION,
+      gate: ASKING,
+      args: { requestId: 'req-1', [APPROVAL_TOKEN_ARG]: 'smuggled' },
+    });
+
+    expect(elicitInput).not.toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
+    expect((result as Refusal).code).toBe(ConfirmationCode.TokenInvalid);
+  });
+
+  it('never advertises approvalToken in its input schema', () => {
+    const gated = withConfirmation(gatedTool(vi.fn()), ASKING);
+
+    expect(gated.zodSchema.parse({ requestId: 'r', approvalToken: 'x' })).toEqual({
+      requestId: 'r',
+    });
+  });
+
+  it('does not tell the user their connection can never ask', async () => {
+    // Distinct from the refusing policy: asking is allowed here and simply did not
+    // work, so claiming it can never ask would send someone debugging the wrong thing.
+    const { result } = await callAs({ gate: ASKING });
+
+    expect((result as Refusal).error).toMatch(/did not show/i);
+    expect((result as Refusal).error).not.toMatch(/no way to ask/i);
   });
 });
 
@@ -587,6 +719,46 @@ describe('the token fallback appears only where nothing else can ask', () => {
   });
 });
 
+describe('canObtainApproval', () => {
+  /** A capability report for a host declaring exactly these capabilities. */
+  function host(...capabilities: McpClientCapability[]): ClientCapabilityReport {
+    return { capabilities: new Set(capabilities), host: McpHostClient.Claude };
+  }
+
+  const CASES = [
+    { gate: 'stdio, form-less host', gateValue: askOrToken(), client: host(), expected: true },
+    {
+      gate: 'stdio, host with forms',
+      gateValue: askOrToken(),
+      client: host(...ELICITATION),
+      expected: true,
+    },
+    {
+      gate: 'http, host with forms',
+      gateValue: ASKING,
+      client: host(...ELICITATION),
+      expected: true,
+    },
+    { gate: 'http, form-less host', gateValue: ASKING, client: host(), expected: false },
+    {
+      gate: 'http, MCP Apps but no forms',
+      gateValue: ASKING,
+      client: host(McpClientCapability.McpApp),
+      expected: false,
+    },
+    {
+      gate: 'embedded, host with forms',
+      gateValue: REFUSING,
+      client: host(...ELICITATION),
+      expected: false,
+    },
+  ];
+
+  it.each(CASES)('$gate → $expected', ({ gateValue, client, expected }) => {
+    expect(canObtainApproval(gateValue, client)).toBe(expected);
+  });
+});
+
 describe('the gate against a real SDK server', () => {
   /**
    * The cases above script `elicitInput` directly, which skips what the SDK does
@@ -598,11 +770,14 @@ describe('the gate against a real SDK server', () => {
   async function callOverTransport(
     respond: () => Promise<ElicitResult>,
     transport: 'stdio' | 'http' = 'stdio',
+    declaresElicitation = true,
   ): Promise<{
     /** Parsed tool result payload */
     payload: Refusal & { success: boolean };
     /** Whether the call came back as a protocol-level error */
     isError: boolean;
+    /** Names the client saw in `tools/list` */
+    listed: string[];
     /** Spy standing in for the business handler */
     mutate: ReturnType<typeof vi.fn>;
     /** Spy wrapping the host's elicitation handler */
@@ -619,13 +794,18 @@ describe('the gate against a real SDK server', () => {
 
     const client = new Client(
       { name: 'cursor', version: '1.0.0' },
-      { capabilities: { elicitation: { form: {} } } },
+      { capabilities: declaresElicitation ? { elicitation: { form: {} } } : {} },
     );
-    client.setRequestHandler(ElicitRequestSchema, asked);
+    // The SDK refuses a handler for a capability the client did not declare, so a
+    // form-less host genuinely has nowhere to render one.
+    if (declaresElicitation) client.setRequestHandler(ElicitRequestSchema, asked);
 
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
     await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
 
+    const listed = (await client.listTools()).tools.map((tool) => tool.name);
+    // Deliberately called whether or not it was listed: nothing stops a client calling
+    // a tool it was never shown, so the gate has to hold on its own.
     const result = await client.callTool({
       name: 'test_cancel',
       arguments: { requestId: 'req-1' },
@@ -635,24 +815,73 @@ describe('the gate against a real SDK server', () => {
     return {
       payload: JSON.parse((result.content as { text: string }[])[0]!.text),
       isError: result.isError === true,
+      listed,
       mutate,
       asked,
     };
   }
 
-  it('refuses over http even when the client says it can ask a person', async () => {
-    // The requirement the HTTP policy exists for: the caller there is another
-    // service, and its own claim about rendering forms must not be what decides
-    // whether a destructive action runs.
-    const { payload, isError, mutate, asked } = await callOverTransport(
+  it('asks over http when the client can render a form', async () => {
+    const { payload, listed, mutate, asked } = await callOverTransport(
       async () => ({ action: 'accept', content: { confirmed: true } }),
       'http',
     );
 
-    expect(asked).not.toHaveBeenCalled();
+    expect(listed).toContain('test_cancel');
+    expect(asked).toHaveBeenCalledTimes(1);
+    expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
+    expect(payload.success).not.toBe(false);
+  });
+
+  it('withholds the tool from an http client that cannot be asked', async () => {
+    // Listing it would have the agent plan around a tool that refuses every call, which
+    // is how a triage run ends in the model explaining a dead end instead of working.
+    const { listed } = await callOverTransport(
+      async () => ({ action: 'accept', content: { confirmed: true } }),
+      'http',
+      false,
+    );
+
+    expect(listed).not.toContain('test_cancel');
+  });
+
+  it('still refuses the withheld tool if it is called anyway', async () => {
+    // Withholding is for the model's benefit, not a boundary: a name from a cached
+    // list or a guess still reaches `tools/call`.
+    const { payload, isError, mutate } = await callOverTransport(
+      async () => ({ action: 'accept', content: { confirmed: true } }),
+      'http',
+      false,
+    );
+
     expect(mutate).not.toHaveBeenCalled();
     expect(isError).toBe(false);
     expect(payload.code).toBe(ConfirmationCode.Unavailable);
+    expect(payload.details?.approvalToken).toBeUndefined();
+  });
+
+  it('keeps offering the tool over stdio to a form-less client', async () => {
+    // The token route needs nothing from the host, so there is nothing to withhold.
+    const { listed, payload } = await callOverTransport(
+      async () => ({ action: 'accept', content: { confirmed: true } }),
+      'stdio',
+      false,
+    );
+
+    expect(listed).toContain('test_cancel');
+    expect(payload.code).toBe(ConfirmationCode.Required);
+  });
+
+  it('does not hand out a token over http when the host fails to ask', async () => {
+    // The agent is on the far side of the transport here, so a token would be
+    // relayed by the very model the gate exists to interpose on.
+    const { payload, mutate } = await callOverTransport(async () => {
+      throw new Error('host refused to render the form');
+    }, 'http');
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect(payload.code).toBe(ConfirmationCode.Unavailable);
+    expect(payload.details?.approvalToken).toBeUndefined();
   });
 
   it('runs the mutation on a well-formed confirmation', async () => {
@@ -706,6 +935,54 @@ describe('the gate against a real SDK server', () => {
     expect(mutate).not.toHaveBeenCalled();
     expect(isError).toBe(false);
     expect(payload.code).toBe(ConfirmationCode.Required);
+  });
+
+  it('does not act on an approval given after the caller gave up', async () => {
+    // The hazard binding closes: a client that gives up at its own tool timeout leaves
+    // the form on screen, and without the call's abort signal a yes clicked afterwards
+    // still resolves, landing the mutation with no visible result.
+    const mutate = vi.fn().mockResolvedValue({ cancelled: true });
+    let answer: (result: ElicitResult) => void = () => {};
+    let onShown: () => void = () => {};
+    const shown = new Promise<void>((resolve) => {
+      onShown = resolve;
+    });
+
+    const server = buildMcpServer({
+      name: 'confirmation-probe',
+      version: '0.0.1',
+      tools: [{ ...gatedTool(mutate), requireAuth: false }],
+      transport: 'http',
+    });
+    const client = new Client(
+      { name: 'cursor', version: '1.0.0' },
+      { capabilities: { elicitation: { form: {} } } },
+    );
+    client.setRequestHandler(ElicitRequestSchema, () => {
+      onShown();
+      return new Promise<ElicitResult>((resolve) => {
+        answer = resolve;
+      });
+    });
+
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await Promise.all([client.connect(clientTransport), server.connect(serverTransport)]);
+
+    const abandoned = new AbortController();
+    const call = client.callTool(
+      { name: 'test_cancel', arguments: { requestId: 'req-1' } },
+      undefined,
+      { signal: abandoned.signal },
+    );
+    await shown;
+    abandoned.abort();
+    await expect(call).rejects.toThrow();
+
+    answer({ action: 'accept', content: { confirmed: true } });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(mutate).not.toHaveBeenCalled();
+    await client.close();
   });
 });
 

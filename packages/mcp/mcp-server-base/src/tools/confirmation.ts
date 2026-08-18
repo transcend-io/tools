@@ -2,7 +2,7 @@ import type { ElicitRequestFormParams, ElicitResult } from '@modelcontextprotoco
 import { makeEnum } from '@transcend-io/type-utils';
 import { z } from 'zod';
 
-import { McpClientCapability } from '../capabilities/types.js';
+import { McpClientCapability, type ClientCapabilityReport } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { getMcpSession, hasCapability, requestElicitation } from '../mcp-session-context.js';
 import { ApprovalTokenOutcome, ApprovalTokenStore } from './approval-tokens.js';
@@ -54,8 +54,10 @@ export type ConfirmationCode = (typeof ConfirmationCode)[keyof typeof Confirmati
 
 /** How a transport is allowed to obtain a human's approval. */
 export const ConfirmationPolicy = makeEnum({
-  /** Ask the host's user, falling back to a replayable approval token */
-  AskOrToken: 'ASK_OR_TOKEN',
+  /** Elicit a decision from the host's user, falling back to a replayable token */
+  ElicitOrToken: 'ELICIT_OR_TOKEN',
+  /** Elicit on the originating call's own stream, with nothing to fall back on */
+  ElicitOnly: 'ELICIT_ONLY',
   /** Never run the action, whatever the host says it can render */
   Refuse: 'REFUSE',
 });
@@ -63,27 +65,62 @@ export const ConfirmationPolicy = makeEnum({
 export type ConfirmationPolicy = (typeof ConfirmationPolicy)[keyof typeof ConfirmationPolicy];
 
 /**
- * How this connection may obtain approval, decided by the transport rather than
- * by the caller.
+ * Which routes to approval this connection has, fixed by its transport.
  *
- * A declared capability is a claim by the party being gated: a client that says
- * it renders forms and then auto-answers has approved on the user's behalf. So
- * where a deployment must not perform gated actions at all — the HTTP sidecar,
- * where the caller is another service rather than a person at a keyboard — the
- * answer has to be {@link ConfirmationPolicy.Refuse}, checked before anything
- * the host declared is consulted.
+ * Settled before anything the host declared is consulted, so a connection with no
+ * route cannot be talked into one. Whether a route reaches a real person is a
+ * separate question — see {@link canObtainApproval}.
  */
 export type ConfirmationGate =
   | {
-      /** Ask the user, or issue an approval token if the host cannot show a form */
-      policy: typeof ConfirmationPolicy.AskOrToken;
+      /** Elicit a decision, or issue a token if the host cannot show a form */
+      policy: typeof ConfirmationPolicy.ElicitOrToken;
       /** Store backing the token fallback */
       tokens: ApprovalTokenStore;
+    }
+  | {
+      /**
+       * Elicit a decision, and refuse if that fails.
+       *
+       * A token here would be relayed by the very model the gate is interposing
+       * on, since the agent lives on the far side of the transport. Requires the
+       * prompt to be bound to its call — see `McpSession.request`.
+       */
+      policy: typeof ConfirmationPolicy.ElicitOnly;
     }
   | {
       /** Refuse every gated call on this connection */
       policy: typeof ConfirmationPolicy.Refuse;
     };
+
+/**
+ * Whether a gated tool could actually be approved on this connection.
+ *
+ * Keeps tools that would refuse every call out of `tools/list`, so an agent does
+ * not plan around one and spend a turn on a refusal it cannot act on. For the
+ * model's benefit only: the gate still runs on every `tools/call` and remains the
+ * boundary, since nothing stops a client calling a tool it was never shown.
+ *
+ * Under {@link ConfirmationPolicy.ElicitOnly} this trusts a capability the caller
+ * declared about itself. A client can answer its own prompt, and nothing
+ * server-side can tell that from a person clicking yes.
+ */
+export function canObtainApproval(
+  /** What this connection is allowed to do to obtain approval */
+  gate: ConfirmationGate,
+  /** Capabilities the connected host declared */
+  client: ClientCapabilityReport,
+): boolean {
+  switch (gate.policy) {
+    // The token route needs nothing from the host, so a form-less one is fine.
+    case ConfirmationPolicy.ElicitOrToken:
+      return true;
+    case ConfirmationPolicy.ElicitOnly:
+      return client.capabilities.has(McpClientCapability.Elicitation);
+    default:
+      return false;
+  }
+}
 
 const DECISION_SCHEMA: ElicitRequestFormParams['requestedSchema'] = {
   type: 'object',
@@ -101,7 +138,7 @@ const DECISION_SCHEMA: ElicitRequestFormParams['requestedSchema'] = {
 };
 
 /** What came of trying to put the question to a person. */
-type Ask =
+type AskOutcome =
   | {
       /** The user chose to proceed */
       outcome: 'confirmed';
@@ -142,7 +179,7 @@ export function withConfirmation(
 
   const mutate = tool.handler;
   const message = tool.confirmation.hint;
-  const tokens = gate.policy === ConfirmationPolicy.AskOrToken ? gate.tokens : undefined;
+  const tokens = gate.policy === ConfirmationPolicy.ElicitOrToken ? gate.tokens : undefined;
 
   return {
     ...tool,
@@ -150,23 +187,28 @@ export function withConfirmation(
     handler: async (raw: Record<string, unknown>) => {
       const { [APPROVAL_TOKEN_ARG]: replayed, ...args } = raw ?? {};
 
+      if (typeof replayed === 'string') {
+        return tokens
+          ? await redeem(tool.name, args, replayed, tokens, mutate)
+          : tokenNotIssued(tool.name);
+      }
+
       // Policy before capability. Asking first would let a client decide whether
       // the restriction applies to it, which is backwards.
-      if (!tokens) {
-        return typeof replayed === 'string'
-          ? tokenNotIssued(tool.name)
-          : refusedByPolicy(tool.name, message);
-      }
+      if (gate.policy === ConfirmationPolicy.Refuse) return refusedByPolicy(tool.name, message);
 
-      if (typeof replayed === 'string') {
-        return await redeem(tool.name, args, replayed, tokens, mutate);
-      }
-
-      const asked = await askForConfirmation(tool.name, message, args);
+      const asked = await askForConfirmation(tool.name, message, args, {
+        // An unbound prompt lands on the connection's shared stream, where it can
+        // surface in the wrong user's turn or go undelivered and silently expire.
+        // stdio has one stream and a token to fall back on, so neither applies.
+        requireBinding: gate.policy === ConfirmationPolicy.ElicitOnly,
+      });
       if (asked.outcome === 'confirmed') return await mutate(args);
       if (asked.outcome === 'refused') return asked.result;
 
-      return mintApproval(tool.name, message, args, tokens);
+      return tokens
+        ? mintApproval(tool.name, message, args, tokens)
+        : refusedUnanswered(tool.name, message);
     },
   };
 }
@@ -186,8 +228,19 @@ async function askForConfirmation(
   message: string,
   /** Arguments of the pending call, recapped for the user */
   args: Record<string, unknown>,
-): Promise<Ask> {
+  options: {
+    /** Whether to give up unless the form can be tied to the originating call */
+    requireBinding: boolean;
+  },
+): Promise<AskOutcome> {
   if (!hasCapability(McpClientCapability.Elicitation)) return { outcome: 'unasked' };
+
+  if (options.requireBinding && getMcpSession()?.request === undefined) {
+    logger.warn(
+      `Not asking for confirmation of ${toolName}: no originating call to bind the form to`,
+    );
+    return { outcome: 'unasked' };
+  }
 
   const prompt = renderConfirmationPrompt(message, describeArgs(args));
 
@@ -197,10 +250,16 @@ async function askForConfirmation(
       timeout: CONFIRMATION_TIMEOUT_MS,
     });
   } catch (error) {
-    // A warning rather than silence: the host said it could ask and then did not,
-    // so the token fallback below is covering for a host-side problem someone may
-    // need to fix.
     const session = getMcpSession();
+    if (session?.request?.signal.aborted === true) {
+      // The caller gave up while the form was open, so nothing is wrong here — but
+      // the answer that never arrived must not be treated as one.
+      logger.debug(`Confirmation of ${toolName} abandoned by the caller`);
+      return { outcome: 'unasked' };
+    }
+    // A warning rather than silence: the host said it could ask and then did not,
+    // so whatever happens below is covering for a host-side problem someone may
+    // need to fix.
     logger.warn(`Host failed to show the confirmation form for ${toolName}`, {
       error: error instanceof Error ? error.message : String(error),
       host: session?.client.host,
@@ -276,6 +335,24 @@ function refusedByPolicy(toolName: string, message: string): unknown {
     `${message} Nothing has run. ${toolName} needs a person to approve it, and this ` +
       'connection has no way to ask one, so it is unavailable here. Ask the user to run it ' +
       'from the Transcend admin dashboard.',
+    { code: ConfirmationCode.Unavailable, retryable: false },
+  );
+}
+
+/**
+ * Refusal after the host was asked and produced no answer.
+ *
+ * Unlike {@link refusedByPolicy} the connection is allowed to ask, so the wording
+ * avoids saying it never can. Not retryable: retrying is not what fixes a host
+ * that cannot render the form.
+ */
+function refusedUnanswered(toolName: string, message: string): unknown {
+  return createToolResult(
+    false,
+    undefined,
+    `${message} Nothing has run. ${toolName} needs a person to approve it, and this ` +
+      'client did not show them a confirmation to approve. Ask the user to run it from the ' +
+      'Transcend admin dashboard.',
     { code: ConfirmationCode.Unavailable, retryable: false },
   );
 }
