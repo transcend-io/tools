@@ -238,12 +238,12 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                                         | Binary                           | Tools | Description                                      |
 | --------------------------------------------------------------- | -------------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |    85 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                                 | `transcend-mcp`                  |    86 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)                       | `transcend-mcp-admin`            |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)             | `transcend-mcp-assessment`       |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-consent`](./mcp-server-consent/)                   | `transcend-mcp-consent`          |    14 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)                         | —                                |     — | Shared infrastructure (not installed directly)   |
-| [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     4 | Custom Function authoring and promotion          |
+| [`mcp-server-custom-functions`](./mcp-server-custom-functions/) | `transcend-mcp-custom-functions` |     5 | Custom Function authoring and test runs          |
 | [`mcp-server-discovery`](./mcp-server-discovery/)               | `transcend-mcp-discovery`        |     6 | Data discovery, classification, NER              |
 | [`mcp-server-docs`](./mcp-server-docs/)                         | `transcend-mcp-docs`             |     2 | Transcend documentation lookup (list + fetch)    |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                           | `transcend-mcp-dsr`              |    12 | Data subject requests (submit, track, respond)   |
