@@ -9,10 +9,12 @@
  */
 
 import {
+  APPROVAL_TOKEN_ARG,
   ApprovalTokenStore,
   ConfirmationPolicy,
   EMPTY_CAPABILITY_REPORT,
   expandToolsForClient,
+  z,
   type ConfirmationGate,
   type ToolClients,
   type ToolDefinition,
@@ -51,12 +53,19 @@ describe('umbrella confirmation wiring', () => {
 
     for (const name of gatedNames) {
       const tool = expanded.find((candidate) => candidate.name === name)!;
-      expect(
-        tool.zodSchema
-          .safeParse({ approvalToken: 'x' })
-          .error?.issues.some((issue) => issue.path[0] === 'approvalToken'),
-        `${name} rejected approvalToken outright`,
-      ).not.toBe(true);
+      const object = tool.zodSchema as z.ZodObject<z.ZodRawShape>;
+
+      expect(Object.keys(object.shape), `${name} was not widened`).toContain(APPROVAL_TOKEN_ARG);
+
+      // The shape is what decides whether the token survives: `build-server` hands
+      // the handler `parseResult.data`, and Zod drops keys it does not know rather
+      // than rejecting them. A tool that advertised the token but stripped it would
+      // re-ask forever, so assert on the parsed output and not on parsing merely
+      // not erroring — every required field it omits would error either way.
+      // `partial()` sidesteps needing valid values for seven different tools.
+      expect(object.partial().parse({ [APPROVAL_TOKEN_ARG]: 'tok' }), name).toEqual({
+        [APPROVAL_TOKEN_ARG]: 'tok',
+      });
     }
   });
 
