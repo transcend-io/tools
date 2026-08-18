@@ -2,7 +2,7 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 73 Transcend tools at once.
+Unified Transcend MCP Server that combines all domain tools into a single server. This is the "everything in one place" option — install this package when you want access to all 83 Transcend tools at once.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
@@ -117,19 +117,20 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 This package composes all domain MCP packages via `ToolRegistry`, which aggregates tools from each domain (`getConsentTools`, `getDSRTools`, etc.) into a single tool namespace. A composed `TranscendGraphQLClient` mixes in all domain GraphQL capabilities so each tool has access to the API surface it needs.
 
-If 73 tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
+If 83 tools is too many for your AI agent, install individual domain packages instead — see the [MCP section of the root README](../../../README.md#mcp-servers).
 
 ## Related packages
 
-| Package                                | Binary                      | Domain                            |
-| -------------------------------------- | --------------------------- | --------------------------------- |
-| `@transcend-io/mcp-server-admin`       | `transcend-mcp-admin`       | Organization, users, API keys     |
-| `@transcend-io/mcp-server-assessment`  | `transcend-mcp-assessment`  | Privacy assessments               |
-| `@transcend-io/mcp-server-consent`     | `transcend-mcp-consent`     | Consent management, cookie triage |
-| `@transcend-io/mcp-server-base`        | —                           | Shared infrastructure             |
-| `@transcend-io/mcp-server-discovery`   | `transcend-mcp-discovery`   | Data discovery, classification    |
-| `@transcend-io/mcp-server-docs`        | `transcend-mcp-docs`        | Documentation lookup              |
-| `@transcend-io/mcp-server-dsr`         | `transcend-mcp-dsr`         | Data subject requests             |
-| `@transcend-io/mcp-server-inventory`   | `transcend-mcp-inventory`   | Data inventory, silos, vendors    |
-| `@transcend-io/mcp-server-preferences` | `transcend-mcp-preferences` | Privacy preferences               |
-| `@transcend-io/mcp-server-workflows`   | `transcend-mcp-workflows`   | Workflow configuration            |
+| Package                                     | Binary                           | Domain                            |
+| ------------------------------------------- | -------------------------------- | --------------------------------- |
+| `@transcend-io/mcp-server-admin`            | `transcend-mcp-admin`            | Organization, users, API keys     |
+| `@transcend-io/mcp-server-assessment`       | `transcend-mcp-assessment`       | Privacy assessments               |
+| `@transcend-io/mcp-server-consent`          | `transcend-mcp-consent`          | Consent management, cookie triage |
+| `@transcend-io/mcp-server-base`             | —                                | Shared infrastructure             |
+| `@transcend-io/mcp-server-custom-functions` | `transcend-mcp-custom-functions` | Custom Function authoring         |
+| `@transcend-io/mcp-server-discovery`        | `transcend-mcp-discovery`        | Data discovery, classification    |
+| `@transcend-io/mcp-server-docs`             | `transcend-mcp-docs`             | Documentation lookup              |
+| `@transcend-io/mcp-server-dsr`              | `transcend-mcp-dsr`              | Data subject requests             |
+| `@transcend-io/mcp-server-inventory`        | `transcend-mcp-inventory`        | Data inventory, silos, vendors    |
+| `@transcend-io/mcp-server-preferences`      | `transcend-mcp-preferences`      | Privacy preferences               |
+| `@transcend-io/mcp-server-workflows`        | `transcend-mcp-workflows`        | Workflow configuration            |

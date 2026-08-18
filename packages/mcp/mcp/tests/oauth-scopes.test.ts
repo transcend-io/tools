@@ -2,6 +2,7 @@ import { ADMIN_OAUTH_SCOPES } from '@transcend-io/mcp-server-admin';
 import { ASSESSMENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-assessment';
 import { OFFLINE_ACCESS_SCOPE } from '@transcend-io/mcp-server-base';
 import { CONSENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-consent';
+import { CUSTOM_FUNCTIONS_OAUTH_SCOPES } from '@transcend-io/mcp-server-custom-functions';
 import { DISCOVERY_OAUTH_SCOPES } from '@transcend-io/mcp-server-discovery';
 import { DSR_OAUTH_SCOPES } from '@transcend-io/mcp-server-dsr';
 import { INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
@@ -20,6 +21,7 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
       ADMIN_OAUTH_SCOPES,
       ASSESSMENT_OAUTH_SCOPES,
       CONSENT_OAUTH_SCOPES,
+      CUSTOM_FUNCTIONS_OAUTH_SCOPES,
       DISCOVERY_OAUTH_SCOPES,
       DSR_OAUTH_SCOPES,
       INVENTORY_OAUTH_SCOPES,
@@ -36,6 +38,8 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewEmployees);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewAssessments);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewConsentManager);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ExecuteRules);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ConnectDataSilos);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewCodeScanning);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewRequests);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewDataMap);

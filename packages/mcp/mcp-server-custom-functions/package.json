@@ -1,17 +1,17 @@
 {
-  "name": "@transcend-io/mcp",
-  "version": "0.13.0",
-  "description": "Transcend MCP Server — unified server with all domain tools.",
-  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp",
+  "name": "@transcend-io/mcp-server-custom-functions",
+  "version": "0.1.0",
+  "description": "Transcend MCP Server — Custom Functions tools.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-custom-functions",
   "license": "Apache-2.0",
   "author": "Transcend Inc.",
   "repository": {
     "type": "git",
     "url": "https://github.com/transcend-io/tools.git",
-    "directory": "packages/mcp/mcp"
+    "directory": "packages/mcp/mcp-server-custom-functions"
   },
   "bin": {
-    "transcend-mcp": "./dist/cli.mjs"
+    "transcend-mcp-custom-functions": "./dist/cli.mjs"
   },
   "files": [
     "dist"
@@ -37,23 +37,15 @@
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
+    "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
-    "@transcend-io/mcp-server-admin": "workspace:*",
-    "@transcend-io/mcp-server-assessment": "workspace:*",
     "@transcend-io/mcp-server-base": "workspace:*",
-    "@transcend-io/mcp-server-consent": "workspace:*",
-    "@transcend-io/mcp-server-custom-functions": "workspace:*",
-    "@transcend-io/mcp-server-discovery": "workspace:*",
-    "@transcend-io/mcp-server-docs": "workspace:*",
-    "@transcend-io/mcp-server-dsr": "workspace:*",
-    "@transcend-io/mcp-server-inventory": "workspace:*",
-    "@transcend-io/mcp-server-preferences": "workspace:*",
-    "@transcend-io/mcp-server-workflows": "workspace:*",
+    "@transcend-io/privacy-types": "workspace:*",
+    "graphql": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
-    "@transcend-io/privacy-types": "workspace:*",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",

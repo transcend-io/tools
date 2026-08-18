@@ -17,6 +17,7 @@ import {
   type TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
@@ -60,6 +61,7 @@ export class ToolRegistry {
     this.registerToolsFromModule(getDocsTools(this.clients));
     this.registerToolsFromModule(getDSRTools(this.clients));
     this.registerToolsFromModule(getConsentTools(this.clients));
+    this.registerToolsFromModule(getCustomFunctionsTools(this.clients));
     this.registerToolsFromModule(getPreferenceTools(this.clients));
     this.registerToolsFromModule(getInventoryTools(this.clients));
     this.registerToolsFromModule(getDiscoveryTools(this.clients));

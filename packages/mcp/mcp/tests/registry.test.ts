@@ -6,6 +6,7 @@ import {
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
@@ -31,6 +32,7 @@ const mockClients: ToolClients = {
 const allTools = [
   ...getDSRTools(mockClients),
   ...getConsentTools(mockClients),
+  ...getCustomFunctionsTools(mockClients),
   ...getPreferenceTools(mockClients),
   ...getInventoryTools(mockClients),
   ...getDiscoveryTools(mockClients),
