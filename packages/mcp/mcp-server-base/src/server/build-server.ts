@@ -26,7 +26,11 @@ import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth
 import type { PromptDefinition } from '../prompts/types.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { ApprovalTokenStore } from '../tools/approval-tokens.js';
-import { ConfirmationPolicy, type ConfirmationGate } from '../tools/confirmation.js';
+import {
+  canObtainApproval,
+  ConfirmationPolicy,
+  type ConfirmationGate,
+} from '../tools/confirmation.js';
 import {
   expandToolsForClient,
   isCapabilityAwareTool,
@@ -53,6 +57,20 @@ export interface BuildMcpServerOptions {
   instructions?: string;
   /** Required. Controls whether form-less hosts get an approval token (`stdio`) or are refused (`http`). */
   transport: 'stdio' | 'http';
+}
+
+/**
+ * Settles how this server may obtain approval, before any client connects.
+ *
+ * stdio has somewhere to hand a token back to, so a host that cannot render a form
+ * still has a route. Over HTTP a token would be relayed by the very model the gate
+ * is interposing on, leaving elicitation as the only one.
+ */
+function resolveConfirmationGate(options: BuildMcpServerOptions): ConfirmationGate {
+  if (options.transport === 'stdio') {
+    return { policy: ConfirmationPolicy.ElicitOrToken, tokens: new ApprovalTokenStore() };
+  }
+  return { policy: ConfirmationPolicy.ElicitOnly };
 }
 
 /**
@@ -159,29 +177,14 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     logger.info(`Registered ${promptMap.size} prompts`, { promptCount: promptMap.size });
   }
 
-  // Only stdio has a person at the other end. Over HTTP the caller is another
-  // service, so gated tools are refused outright rather than trusting whatever
-  // that service declared about its ability to ask someone.
-  const gate: ConfirmationGate =
-    options.transport === 'stdio'
-      ? { policy: ConfirmationPolicy.AskOrToken, tokens: new ApprovalTokenStore() }
-      : { policy: ConfirmationPolicy.Refuse };
+  const gate = resolveConfirmationGate(options);
 
   const gated = registered.filter((tool) => tool.confirmation).map((tool) => tool.name);
   if (gated.length > 0) {
-    const detail = { tools: gated, policy: gate.policy };
-    if (gate.policy === ConfirmationPolicy.Refuse) {
-      // Warn rather than inform: these tools are listed and callable but can never
-      // run, which is far easier to diagnose from startup output than from a single
-      // puzzling refusal in the middle of a conversation.
-      logger.warn(
-        `${gated.length} tools require human confirmation, which this transport cannot obtain. ` +
-          'They will refuse every call.',
-        detail,
-      );
-    } else {
-      logger.info(`${gated.length} tools require human confirmation`, detail);
-    }
+    logger.info(`${gated.length} tools require human confirmation`, {
+      tools: gated,
+      policy: gate.policy,
+    });
   }
 
   // Read once at construction: the value cannot change for a running process,
@@ -280,9 +283,19 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     resolveClient();
     logger.debug('Listing MCP tools', { host: client.host });
 
+    const canApprove = canObtainApproval(gate, client);
+    if (!canApprove && gated.length > 0) {
+      // A tool missing from the list is otherwise hard to account for later.
+      logger.info(
+        `Withholding ${gated.length} tools that need a confirmation this client cannot show`,
+        { tools: gated, host: client.host },
+      );
+    }
+
     const toolList = await mcpSessionContext.run({ client, server }, async () =>
       [...toolsForClient(client).values()]
         .filter((tool) => isVisibleToModel(tool))
+        .filter((tool) => canApprove || !tool.confirmation)
         .map((tool) => {
           const meta = buildToolMeta(tool);
           return {
@@ -364,7 +377,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     });
   }
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;
     resolveClient();
     logger.info(`Executing tool: ${name}`, { args: Object.keys(args || {}), host: client.host });
@@ -400,7 +413,15 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         oauthCredentials = getLazyOAuthCredentials();
       }
 
-      const result = await mcpSessionContext.run({ client, server }, () =>
+      // The id and signal are what let a confirmation form reach whoever made this
+      // call, and be torn down if they give up. See McpSession.request.
+      const session = {
+        client,
+        server,
+        request: { id: extra.requestId, signal: extra.signal },
+      };
+
+      const result = await mcpSessionContext.run(session, () =>
         toolCallContext.run({ toolName: name, correlationId: randomUUID() }, () => {
           const execute = () => tool.handler(parseResult.data);
           if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {

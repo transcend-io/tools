@@ -94,6 +94,7 @@ export type { ConfirmationSummary } from './tools/describe-args.js';
 
 export {
   APPROVAL_TOKEN_ARG,
+  canObtainApproval,
   CONFIRMATION_TIMEOUT_MS,
   ConfirmationCode,
   ConfirmationPolicy,
