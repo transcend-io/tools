@@ -46,7 +46,12 @@ export type { ToolCallContext } from './tool-call-context.js';
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
 export { TranscendRestClient } from './clients/rest-client.js';
-export type { TranscendRestClientOptions } from './clients/rest-client.js';
+export type {
+  CustomFunctionCodeContext,
+  CustomFunctionSource,
+  SignedCustomFunction,
+  TranscendRestClientOptions,
+} from './clients/rest-client.js';
 
 export {
   DEFAULT_DASHBOARD_URL,

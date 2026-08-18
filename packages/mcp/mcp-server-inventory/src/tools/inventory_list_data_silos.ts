@@ -8,6 +8,12 @@ export const ListDataSilosSchema = z.object({
     .optional()
     .describe('Free-text search across data silos (GraphQL filterBy.text)'),
   titles: z.array(z.string()).optional().describe('Exact title matches (GraphQL filterBy.titles)'),
+  customSiloConnectionStrategy: z
+    .enum(['WEBHOOK', 'CUSTOM_FUNCTION'])
+    .optional()
+    .describe(
+      'Filter by connection strategy. Use CUSTOM_FUNCTION to list silos eligible for DSR Custom Functions',
+    ),
   limit: z.coerce
     .number()
     .min(1)
@@ -30,18 +36,21 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
     name: 'inventory_list_data_silos',
     description:
       'List data silos (data systems and integrations) in your organization. ' +
-      'Pass `text` or `titles` to search/filter. Paginate with `offset` (increment by `limit`) ' +
-      'until `hasNextPage` is false; `totalCount` is the full count.',
+      'Pass `text` or `titles` to search/filter, or `customSiloConnectionStrategy=CUSTOM_FUNCTION` ' +
+      'to find silos that can host a DSR Custom Function. Each row includes connectionState and ' +
+      'customSiloConnectionStrategy; call inventory_get_data_silo for sombraId. Paginate with ' +
+      '`offset` (increment by `limit`) until `hasNextPage` is false; `totalCount` is the full count.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataSilosSchema,
-    handler: async ({ text, titles, limit, offset }) => {
+    handler: async ({ text, titles, customSiloConnectionStrategy, limit, offset }) => {
       const result = await graphql.listDataSilos({
         first: limit,
         offset,
         text,
         titles,
+        customSiloConnectionStrategy,
       });
 
       return createListResult(result.nodes, {
