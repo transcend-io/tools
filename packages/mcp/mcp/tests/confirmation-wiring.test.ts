@@ -22,8 +22,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { ToolRegistry, type UmbrellaToolClients } from '../src/registry.js';
 
 /** The gate a stdio session builds for itself. */
-function askOrToken(): ConfirmationGate {
-  return { policy: ConfirmationPolicy.AskOrToken, tokens: new ApprovalTokenStore() };
+function elicitOrToken(): ConfirmationGate {
+  return { policy: ConfirmationPolicy.ElicitOrToken, tokens: new ApprovalTokenStore() };
 }
 
 const stubFn = () => vi.fn();
@@ -47,7 +47,7 @@ describe('umbrella confirmation wiring', () => {
     const tools = umbrellaTools();
     const gatedNames = tools.filter((tool) => tool.confirmation).map((tool) => tool.name);
 
-    const expanded = expandToolsForClient(tools, EMPTY_CAPABILITY_REPORT, askOrToken());
+    const expanded = expandToolsForClient(tools, EMPTY_CAPABILITY_REPORT, elicitOrToken());
 
     for (const name of gatedNames) {
       const tool = expanded.find((candidate) => candidate.name === name)!;
@@ -64,7 +64,7 @@ describe('umbrella confirmation wiring', () => {
     // The symptom that started this: a refusal with no way forward. Over stdio the
     // answer must be CONFIRMATION_REQUIRED with a token, never UNAVAILABLE.
     const tools = umbrellaTools();
-    const gated = expandToolsForClient(tools, EMPTY_CAPABILITY_REPORT, askOrToken()).find(
+    const gated = expandToolsForClient(tools, EMPTY_CAPABILITY_REPORT, elicitOrToken()).find(
       (tool) => tool.name === 'dsr_cancel',
     )!;
 
@@ -78,6 +78,22 @@ describe('umbrella confirmation wiring', () => {
 
     expect(result.code).toBe('CONFIRMATION_REQUIRED');
     expect(result.details?.approvalToken).toEqual(expect.any(String));
+  });
+
+  it('does not describe gated tools to an embedder that could never confirm them', () => {
+    // getToolList is what an embedder shows its model. Listing a tool that
+    // executeTool always refuses would have the model plan around a dead end.
+    const registry = new ToolRegistry(mockClients);
+    const gatedNames = registry
+      .getAllTools()
+      .filter((tool) => tool.confirmation)
+      .map((tool) => tool.name);
+    const described = registry.getToolList().map((tool) => tool.name);
+
+    expect(gatedNames.length).toBeGreaterThan(0);
+    for (const name of gatedNames) {
+      expect(described, name).not.toContain(name);
+    }
   });
 
   it('does not let an embedder call a gated tool straight through', async () => {
