@@ -23,7 +23,15 @@ const SCHEMA_PATH = './schema.graphql';
  *   - base has no GraphQL operations of its own.
  *   - consent/preferences hit REST endpoints, not GraphQL.
  */
-const SERVERS = ['admin', 'assessment', 'discovery', 'dsr', 'inventory', 'workflows'] as const;
+const SERVERS = [
+  'admin',
+  'assessment',
+  'custom-functions',
+  'discovery',
+  'dsr',
+  'inventory',
+  'workflows',
+] as const;
 
 const config: CodegenConfig = {
   schema: SCHEMA_PATH,

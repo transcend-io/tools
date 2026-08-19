@@ -21,6 +21,7 @@ import {
   type ToolDefinition,
 } from '@transcend-io/mcp-server-base';
 import { getConsentTools } from '@transcend-io/mcp-server-consent';
+import { getCustomFunctionsTools } from '@transcend-io/mcp-server-custom-functions';
 import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
@@ -43,6 +44,7 @@ const serverFactories = [
   { name: 'admin', getTools: getAdminTools },
   { name: 'assessment', getTools: getAssessmentTools },
   { name: 'consent', getTools: getConsentTools },
+  { name: 'custom-functions', getTools: getCustomFunctionsTools },
   { name: 'discovery', getTools: getDiscoveryTools },
   { name: 'dsr', getTools: getDSRTools },
   { name: 'inventory', getTools: getInventoryTools },
