@@ -115,9 +115,7 @@ export function createAdminListUsersTool(clients: ToolClients) {
           : {}),
         ...(ids?.length ? { ids } : {}),
         ...(teamIds?.length ? { teamIds } : {}),
-        ...(scopeNames?.length
-          ? { scopeNames: scopeNames as GraphqlScopeName[] }
-          : {}),
+        ...(scopeNames?.length ? { scopeNames: scopeNames as GraphqlScopeName[] } : {}),
         ...(derivedScopeNames?.length
           ? { derivedScopeNames: derivedScopeNames as GraphqlScopeName[] }
           : {}),
