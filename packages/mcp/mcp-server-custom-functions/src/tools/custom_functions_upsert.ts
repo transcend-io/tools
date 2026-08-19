@@ -1,9 +1,28 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { CustomFunctionType } from '@transcend-io/privacy-types';
+import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 
 import type { CustomFunctionsMixin } from '../graphql.js';
+import {
+  executeCustomFunctionTestRun,
+  type CustomFunctionTestRunView,
+} from '../helpers/customFunctionTestRun.js';
 import { customFunctionDashboardUrl, customFunctionNextStep } from '../helpers/nextStep.js';
 import { resolveSombraIdForCreate } from '../helpers/resolveSombraId.js';
+
+const TestPayloadSchema = z.object({
+  payload: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe(
+      'JSON test payload. Omit unless you need a specific body. GENERAL defaults to ' +
+        '{ "message": "hello world!" } (the backend may add coreIdentifier). DSR uses a stub ' +
+        'ACCESS payload and injects the function silo — do not hand-build extras',
+    ),
+  payloadType: z
+    .enum([CustomFunctionPayloadType.DataPoint, CustomFunctionPayloadType.RequestEnricher])
+    .optional()
+    .describe('DSR only. Which export to invoke; defaults to DATA_POINT. Omit for GENERAL'),
+});
 
 export const CustomFunctionsUpsertSchema = z
   .object({
@@ -86,6 +105,14 @@ export const CustomFunctionsUpsertSchema = z
         'Promote the resulting draft after an update. Requires id. Default is false so updates ' +
           'stay as drafts; call custom_functions_promote_version with draftVersion.id when ready',
       ),
+    testPayloads: z
+      .array(TestPayloadSchema)
+      .optional()
+      .describe(
+        'Pre-persist gating only: test-run signed code before saving. All must pass or the write ' +
+          'is skipped and a new DSR silo is rolled back. Passing runs set successfulTestRun on the ' +
+          'saved version (dashboard save-after-test). They do not bind Activity.',
+      ),
   })
   .superRefine((input, context) => {
     if (!input.id && !input.name) {
@@ -120,10 +147,11 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
     name: 'custom_functions_upsert',
     description:
       'Create or update a Custom Function from plaintext TypeScript. Happy path: upsert ' +
-      '(omit sombraId and dataSiloId, pass a unique name) → custom_functions_test_run with { id } ' +
-      'to execute → draft upsert (promote false) → custom_functions_promote_version. Creating a ' +
-      'DSR function without dataSiloId also creates a customFunction data silo. Updates create or ' +
-      'replace a draft.',
+      '(omit sombraId and dataSiloId, pass a unique name, optionally testPayloads to persist ' +
+      'successfulTestRun at save) → custom_functions_test_run with { id } to execute → draft ' +
+      'upsert (promote false) → custom_functions_promote_version. Creating a DSR function ' +
+      'without dataSiloId also creates a customFunction data silo. Updates create or replace a ' +
+      'draft. testPayloads is pre-persist gating only and does not bind Activity.',
     category: 'Custom Functions',
     readOnly: false,
     requireSombra: true,
@@ -144,6 +172,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
       timeoutMs,
       setActive,
       promote,
+      testPayloads,
     }) => {
       let resolvedSombraId = sombraId;
       let resolvedDataSiloId = dataSiloId;
@@ -178,12 +207,51 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           },
         });
 
+        const testResults: (CustomFunctionTestRunView & {
+          /** DSR payload subtype when provided */
+          payloadType?: 'DATA_POINT' | 'REQUEST_ENRICHER';
+        })[] = [];
+        if (testPayloads && testPayloads.length > 0) {
+          for (const testPayload of testPayloads) {
+            const run = await executeCustomFunctionTestRun(graphql, clients.rest, {
+              type,
+              // Pre-persist gating signs fresh code. GraphQL rejects JWTs when id is set.
+              signed,
+              payload: testPayload.payload,
+              payloadType: testPayload.payloadType,
+              sombraId: resolvedSombraId,
+              dataSiloId: resolvedDataSiloId,
+              markSuccessfulTestRun: false,
+            });
+            testResults.push({
+              ...run.result,
+              payloadType: testPayload.payloadType,
+            });
+          }
+          if (testResults.some((run) => !run.passed)) {
+            if (createdDataSiloId) {
+              try {
+                await graphql.deleteDataSilo(createdDataSiloId);
+              } catch {
+                // Ignore rollback failures so the original test failure is surfaced.
+              }
+            }
+            return createToolResult(false, undefined, 'Custom function test run failed', {
+              code: 'TEST_FAILED',
+              retryable: false,
+              details: { testResults },
+            });
+          }
+        }
+
+        const successfulTestRun = testResults.length > 0 && testResults.every((run) => run.passed);
         const customFunction = id
           ? await graphql.updateCustomFunction({
               id,
               versionId,
               name,
               description,
+              successfulTestRun: successfulTestRun || undefined,
               ...signed,
             })
           : await graphql.createCustomFunction({
@@ -194,6 +262,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
               name,
               description,
               setActive: type === 'GENERAL' ? setActive : undefined,
+              successfulTestRun: successfulTestRun || undefined,
               ...signed,
             });
 
@@ -226,6 +295,7 @@ export function createCustomFunctionsUpsertTool(clients: ToolClients) {
           customFunction: result,
           versionLifecycleState: selectedVersion?.lifecycleState,
           dependencyWarnings,
+          testResults: testResults.length > 0 ? testResults : undefined,
           dashboardHint: `Review this function at ${customFunctionDashboardUrl(clients.dashboardUrl, result.id)}.`,
           nextStep,
         });

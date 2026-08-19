@@ -1,7 +1,9 @@
 export { CustomFunctionsMixin } from './graphql.js';
 export type {
+  CustomFunctionExecutionResult,
   CustomFunctionLifecycleState,
   CustomFunctionListResult,
+  CustomFunctionPayloadType,
   CustomFunctionPromotionResult,
   CustomFunctionSummary,
   CustomFunctionType,
@@ -24,6 +26,10 @@ export {
   CustomFunctionsPromoteVersionSchema,
   type CustomFunctionsPromoteVersionInput,
 } from './tools/custom_functions_promote_version.js';
+export {
+  CustomFunctionsTestRunSchema,
+  type CustomFunctionsTestRunInput,
+} from './tools/custom_functions_test_run.js';
 export {
   CustomFunctionsUpsertSchema,
   type CustomFunctionsUpsertInput,
