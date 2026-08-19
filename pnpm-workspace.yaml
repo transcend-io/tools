@@ -49,6 +49,8 @@ minimumReleaseAgeExclude:
   - '@transcend-io/*'
   # Renovate security update: pnpm@10.34.4
   - pnpm@10.34.4
+  # Renovate security update: undici@6.28.0
+  - undici@6.28.0
 
 onlyBuiltDependencies:
   - esbuild
