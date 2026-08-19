@@ -14,6 +14,11 @@ export const DsrErrorCode = makeEnum({
   MissingCoreIdentifier: 'MISSING_CORE_IDENTIFIER',
   /** A restart was requested for a request ID that does not exist. */
   RestartRequestNotFound: 'RESTART_REQUEST_NOT_FOUND',
+  /**
+   * A create was requested with a `requestId` that already exists, and
+   * `isRestart` is not true.
+   */
+  RequestIdAlreadyExists: 'REQUEST_ID_ALREADY_EXISTS',
   /** A restart was requested for a request closed beyond the org's time limit. */
   RestartTimeLimitExceeded: 'RESTART_TIME_LIMIT_EXCEEDED',
   /** The referenced receipt email template does not exist. */

@@ -82,6 +82,7 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.InvalidWorkflowConfigId]: () => string;
   [DsrErrorCode.MissingCoreIdentifier]: () => string;
   [DsrErrorCode.RestartRequestNotFound]: () => string;
+  [DsrErrorCode.RequestIdAlreadyExists]: () => string;
   [DsrErrorCode.RestartTimeLimitExceeded]: (input: RestartTimeLimitExceededMessageInput) => string;
   [DsrErrorCode.ReceiptTemplateNotFound]: (templateId: string) => string;
   [DsrErrorCode.DropIdentifierCoverageMismatch]: () => string;
@@ -122,6 +123,8 @@ export const DSR_ERROR_MESSAGE = {
   [DsrErrorCode.InvalidWorkflowConfigId]: () => 'Invalid workflowConfigId',
   [DsrErrorCode.MissingCoreIdentifier]: () => 'Missing core identifier',
   [DsrErrorCode.RestartRequestNotFound]: () => 'Cannot restart: request not found',
+  [DsrErrorCode.RequestIdAlreadyExists]: () =>
+    'A request with this requestId already exists. Pass isRestart: true to restart it.',
   [DsrErrorCode.RestartTimeLimitExceeded]: ({
     daysSinceLastTransition,
     restartTimeLimitDays,

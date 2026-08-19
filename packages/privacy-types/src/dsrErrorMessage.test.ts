@@ -40,6 +40,9 @@ describe('DSR_ERROR_MESSAGE', () => {
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.RestartRequestNotFound]()).toBe(
       'Cannot restart: request not found',
     );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.RequestIdAlreadyExists]()).toBe(
+      'A request with this requestId already exists. Pass isRestart: true to restart it.',
+    );
     expect(DSR_ERROR_MESSAGE[DsrErrorCode.DropIdentifierCoverageMismatch]()).toBe(
       'Cannot link DROP records to an existing request until every identifier on this submission is already on that request. Submit a new request that includes all required identifiers, or retry with only identifiers already on the existing request.',
     );
