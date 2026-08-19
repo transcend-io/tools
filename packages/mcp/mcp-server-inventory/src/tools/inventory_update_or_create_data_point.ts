@@ -66,7 +66,6 @@ export function createInventoryUpdateOrCreateDataPointTool(clients: ToolClients)
       'Mirrors GraphQL updateOrCreateDataPoint.',
     category: 'Data Inventory',
     readOnly: false,
-    confirmationHint: 'Creates or updates a datapoint and its field purpose assignments',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateOrCreateDataPointSchema,
     handler: async ({

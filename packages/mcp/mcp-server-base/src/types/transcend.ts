@@ -85,6 +85,10 @@ export interface Request {
   completedAt?: string;
   daysRemaining?: number;
   link?: string;
+  /** Users assigned to this request (request owners / approval assignees) */
+  owners?: InventoryUserPreview[];
+  /** Teams assigned to this request */
+  teams?: InventoryTeamPreview[];
 }
 
 export interface RequestDetails extends Request {
@@ -105,11 +109,37 @@ export interface RequestIdentifier {
   isVerified: boolean;
 }
 
-export interface RequestDataSilo {
+/** Nested data silo preview on a request–data-silo job, including owners */
+export interface RequestDataSiloDataSilo {
+  /** Data silo ID */
   id: string;
-  dataSilo: DataSilo;
+  /** Display title */
+  title: string;
+  /** Integration / silo type */
+  type: string;
+  /** Catalog outer type when present */
+  outerType?: string;
+  /** Whether the silo is live */
+  isLive?: boolean;
+  /** Individual system owners */
+  owners?: InventoryUserPreview[];
+  /** Owner teams */
+  teams?: InventoryTeamPreview[];
+}
+
+export interface RequestDataSilo {
+  /** Request–data-silo job ID */
+  id: string;
+  /** Nested data silo (system) with owners when selected */
+  dataSilo: RequestDataSiloDataSilo;
+  /** Visual status of the job (e.g. ERROR, RESOLVED, WAITING) */
   status: string;
-  completedAt?: string;
+  /** Error message when the job failed */
+  error?: string;
+  /** Operator notes on this job */
+  details?: string;
+  /** Admin dashboard deep link */
+  link?: string;
 }
 
 export interface RequestFile {
@@ -439,7 +469,12 @@ export interface DataSiloDetails extends DataSilo {
 }
 
 export interface DataSiloCreateInput {
+  /** Catalog integration name (GraphQL `name`), e.g. "server", "Salesforce" */
   name: string;
+  /** Display title for the data system */
+  title?: string;
+  /** Description for the data system */
+  description?: string;
   pluginId?: string;
   resourceId?: string;
   region?: string;
@@ -510,10 +545,6 @@ export interface DataPoint {
   subDataPoints?: SubDataPoint[];
   /** Assigned data categories */
   categories?: DataCategory[];
-  /** Created timestamp (ISO 8601) */
-  createdAt: string;
-  /** Updated timestamp (ISO 8601) */
-  updatedAt?: string;
 }
 
 export interface SubDataPoint {
@@ -567,6 +598,27 @@ export interface DataCatalog {
   title: string;
   description?: string;
   integrations?: DataSilo[];
+}
+
+/**
+ * Integration catalog entry from GraphQL `catalogs`.
+ * Pass `integrationName` to `inventory_create_data_silo`.
+ */
+export interface CatalogIntegration {
+  /** Catalog slug for createDataSilos (`name`) */
+  integrationName: string;
+  /** Display title */
+  title: string;
+  /** Catalog description */
+  description?: string;
+  /** Whether the integration supports API-based DSRs */
+  hasApiFunctionality: boolean;
+  /** Whether the integration supports Advise Vendor Communications */
+  hasAvcFunctionality: boolean;
+  /** Count of already-connected instances of this integration in the org */
+  alreadyConnected: number;
+  /** High-level integration category enum value, when set */
+  integrationCategory?: string;
 }
 
 export interface Identifier {
@@ -751,8 +803,8 @@ export interface Vendor {
   headquarterSubDivision?: string;
   /** Associated data silos */
   dataSilos?: DataSilo[];
-  /** Created timestamp (ISO 8601) */
-  createdAt: string;
+  /** Created timestamp (ISO 8601) when returned by the API */
+  createdAt?: string;
   /** Updated timestamp (ISO 8601) */
   updatedAt?: string;
 }

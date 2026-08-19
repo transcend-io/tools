@@ -24,3 +24,5 @@ data-silos:
   - title: Analytics Service
     integrationName: database
     disabled: 'dog'
+    deletion-dependencies:
+      - workflow: GDPR Erasure

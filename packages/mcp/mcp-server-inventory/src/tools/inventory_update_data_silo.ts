@@ -42,7 +42,6 @@ export function createInventoryUpdateDataSiloTool(clients: ToolClients) {
       'teams, vendor link, silo-level processing purposes, data subjects, and common metadata.',
     category: 'Data Inventory',
     readOnly: false,
-    confirmationHint: 'Updates the data silo configuration',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateDataSiloSchema,
     handler: async ({ dataSiloId, ...fields }) => {

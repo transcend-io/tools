@@ -18,7 +18,7 @@ catalog:
   '@terrazzo/plugin-css': 2.0.3
   '@types/json-schema': ^7.0.15
   '@types/lodash': 4.14.202
-  '@types/node': ^22.19.15
+  '@types/node': ^24.0.0
   '@types/react': ^19.2.17
   '@types/react-dom': ^19.2.3
   '@types/semver': ^7.7.1
@@ -40,12 +40,17 @@ catalog:
   typescript: ^6.0.0
   vite: ^8.0.16
   vitest: ^4.0.18
+  yaml: ^2.9.0
   zod: ^4.3.6
 
 # Only install npm packages that are at least 3 days old
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@transcend-io/*'
+  # Renovate security update: pnpm@10.34.4
+  - pnpm@10.34.4
+  # Renovate security update: undici@6.28.0
+  - undici@6.28.0
 
 onlyBuiltDependencies:
   - esbuild

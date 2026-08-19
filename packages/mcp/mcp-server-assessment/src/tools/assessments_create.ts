@@ -34,7 +34,6 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
       'Create a new privacy assessment within an assessment group. Assessment groups are linked to templates. You can provide either an assessmentGroupId directly, or a templateId to auto-resolve the first matching group. Use assessments_list_groups to find available groups. The response includes a `url` field with the canonical admin-dashboard link — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Creates a new privacy assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateAssessmentSchema,
     handler: async ({ title, assessmentGroupId, templateId, assigneeIds }) => {

@@ -15,6 +15,7 @@ import {
   SimpleLogger,
   type AuthCredentials,
 } from '@transcend-io/mcp-server-base';
+import { getConsentPrompts } from '@transcend-io/mcp-server-consent';
 
 import packageJson from '../package.json' with { type: 'json' };
 import { TranscendGraphQLClient } from './graphql-client.js';
@@ -28,6 +29,7 @@ const buildServerOptions = {
   name: 'transcend-mcp',
   version: VERSION,
   instructions: UMBRELLA_DOCS_SERVER_INSTRUCTIONS,
+  prompts: getConsentPrompts(),
 } as const;
 
 function createToolRegistry(
@@ -77,6 +79,7 @@ async function main(): Promise<void> {
           return buildMcpServer({
             ...buildServerOptions,
             tools: registry.getAllTools(),
+            transport: 'http',
           });
         },
       },
@@ -114,6 +117,7 @@ async function main(): Promise<void> {
   const server = buildMcpServer({
     ...buildServerOptions,
     tools: toolRegistry.getAllTools(),
+    transport: 'stdio',
   });
 
   logger.info(`Starting Transcend MCP Server v${VERSION}...`, {

@@ -6,7 +6,14 @@ import { type z } from 'zod';
 
 import { McpClientCapability, type ClientCapabilityReport } from '../capabilities/types.js';
 import { collectMissingDescriptions } from '../validation/describe-audit.js';
-import { defineTool, type ToolAnnotations, type ToolDefinition } from './types.js';
+import { withConfirmation, type ConfirmationGate } from './confirmation.js';
+import {
+  confirmationViewError,
+  defineTool,
+  type ToolAnnotations,
+  type ToolConfirmation,
+  type ToolDefinition,
+} from './types.js';
 import type { UiResourceDefinition } from './ui-resource.js';
 
 /**
@@ -152,8 +159,8 @@ export function defineToolWithCapabilities<T>(config: {
   category: string;
   /** Whether this tool only reads data */
   readOnly: boolean;
-  /** Message shown to user before execution */
-  confirmationHint?: string;
+  /** When set, requires human approval on every resolved variant. */
+  confirmation?: ToolConfirmation;
   /** MCP tool annotations */
   annotations: ToolAnnotations;
   /** Zod schema for input validation and JSON Schema derivation */
@@ -187,6 +194,9 @@ export function defineToolWithCapabilities<T>(config: {
 
   const mcpApp = variants[McpClientCapability.McpApp];
   if (mcpApp) {
+    if (config.confirmation) {
+      throw new Error(confirmationViewError(config.name, 'an MCP App variant'));
+    }
     for (const appOnlyTool of mcpApp.appOnlyTools ?? []) {
       const missing = collectMissingDescriptions(appOnlyTool.zodSchema);
       if (missing.length > 0) {
@@ -244,11 +254,17 @@ export function expandToolsForClient(
   tools: readonly ToolDefinition[],
   /** Capabilities of the connected host */
   client: ClientCapabilityReport,
+  /**
+   * How this connection may obtain approval for gated tools. Required, and
+   * deliberately not defaulted: a default would mean every new serving path
+   * silently picked a confirmation policy it never thought about.
+   */
+  gate: ConfirmationGate,
 ): ToolDefinition[] {
   const expanded: ToolDefinition[] = [];
 
   for (const tool of tools) {
-    expanded.push(resolveToolVariant(tool, client));
+    expanded.push(withConfirmation(resolveToolVariant(tool, client), gate));
 
     if (!isCapabilityAwareTool(tool)) continue;
 
@@ -266,13 +282,18 @@ export function expandToolsForClient(
     const elicitation = tool.variants[McpClientCapability.Elicitation];
     if (elicitation && client.capabilities.has(McpClientCapability.Elicitation)) {
       const { variants: _superseded, ui: _noView, ...baseline } = tool;
-      expanded.push({
-        ...baseline,
-        name: `${tool.name}_form`,
-        description: `${tool.description} (form flow, callable by the ${tool.name} view)`,
-        handler: elicitation.handler,
-        visibility: ['app'],
-      });
+      expanded.push(
+        withConfirmation(
+          {
+            ...baseline,
+            name: `${tool.name}_form`,
+            description: `${tool.description} (form flow, callable by the ${tool.name} view)`,
+            handler: elicitation.handler,
+            visibility: ['app'],
+          },
+          gate,
+        ),
+      );
     }
   }
 

@@ -18,7 +18,6 @@ export function createDsrRespondAccessTool(clients: ToolClients) {
     description: 'Respond to an ACCESS request by uploading user data',
     category: 'DSR Automation',
     readOnly: false,
-    confirmationHint: 'Uploads access response data for the DSR',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     requireSombra: true,
     zodSchema: respondAccessSchema,

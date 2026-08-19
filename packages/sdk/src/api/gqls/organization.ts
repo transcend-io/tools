@@ -5,6 +5,11 @@ export const ORGANIZATION: DocumentNode = parse(gql`
   query TranscendCliOrganization {
     organization {
       sombra {
+        id
+        customerUrl
+      }
+      sombras {
+        id
         customerUrl
       }
     }

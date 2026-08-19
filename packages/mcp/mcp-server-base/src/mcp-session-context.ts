@@ -1,7 +1,12 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import type { ElicitRequestFormParams, ElicitResult } from '@modelcontextprotocol/sdk/types.js';
+import type { RequestOptions } from '@modelcontextprotocol/sdk/shared/protocol.js';
+import type {
+  ElicitRequestFormParams,
+  ElicitResult,
+  RequestId,
+} from '@modelcontextprotocol/sdk/types.js';
 
 import { McpClientCapability, type ClientCapabilityReport } from './capabilities/types.js';
 
@@ -17,6 +22,15 @@ export interface McpSession {
   client: ClientCapabilityReport;
   /** MCP server handling this request, for server-initiated requests */
   server: Server;
+  /**
+   * The call this work belongs to; absent on `tools/list` and direct invocations.
+   *
+   * Streamable HTTP gives each `tools/call` its own SSE stream and routes by this id,
+   * so passing it as `relatedRequestId` is what puts a server-initiated request in
+   * front of the caller rather than on the connection's shared stream. The signal
+   * aborts when they cancel or the connection drops.
+   */
+  request?: { id: RequestId; signal: AbortSignal };
 }
 
 /**
@@ -54,18 +68,38 @@ export function hasCapability(
  * and fall back to their own behavior. Attempting the request anyway would throw
  * inside the SDK, since `elicitInput` checks the declared capability itself.
  *
+ * Declaring the capability is not a promise to honor the request: this can still
+ * reject if the host errors, never answers within the timeout, or replies with a
+ * shape the SDK validates `requestedSchema` against and refuses. Callers waiting
+ * on a person's answer should catch that and treat it as no answer.
+ *
  * `requestedSchema` is restricted by the spec to a flat object of primitives —
  * no nesting. {@link assertElicitFormSchema} enforces that at tool construction.
+ *
+ * Bound to the call that triggered it when there is one, so it reaches that
+ * caller (see {@link McpSession.request}) and dies with them if they give up.
  */
 export async function requestElicitation(
   /** Prompt explaining to the user what is being asked and why */
   message: string,
   /** Flat, primitives-only JSON Schema describing the fields to collect */
   requestedSchema: ElicitRequestFormParams['requestedSchema'],
+  /**
+   * Overrides for the outbound request, taking precedence over the binding to
+   * the originating call. Worth setting `timeout` whenever a person has to read
+   * and answer, since the SDK default is 60s.
+   */
+  options?: RequestOptions,
 ): Promise<ElicitResult | undefined> {
   const session = getMcpSession();
   if (!session || !session.client.capabilities.has(McpClientCapability.Elicitation)) {
     return undefined;
   }
-  return await session.server.elicitInput({ mode: 'form', message, requestedSchema });
+
+  const { request } = session;
+  const sendOptions: RequestOptions | undefined = request
+    ? { relatedRequestId: request.id, signal: request.signal, ...options }
+    : options;
+
+  return await session.server.elicitInput({ mode: 'form', message, requestedSchema }, sendOptions);
 }

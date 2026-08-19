@@ -27,7 +27,6 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
     description: 'Batch upsert consent preference records for multiple users',
     category: 'Preference Management',
     readOnly: false,
-    confirmationHint: 'Creates or updates preference records for users',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: UpsertPreferencesSchema,

@@ -8,9 +8,14 @@ import { ToolError, ErrorCode, classifyGraphQLErrors, classifyHttpError } from '
 import {
   MCP_CALLER_HEADER,
   MCP_CLIENT_NAME_HEADER,
+  MCP_VERSION_HEADER,
   TOOLCALL_ID_HEADER,
 } from '../../http-header-names.js';
-import { resolveMcpCallerAttribution, resolveMcpClientName } from '../../mcp-caller-context.js';
+import {
+  resolveMcpCallerAttribution,
+  resolveMcpClientName,
+  resolveMcpPackageVersion,
+} from '../../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../../tool-call-context.js';
 import type { PaginatedResponse, RequestOptions } from '../../types/transcend.js';
 import { TRANSCEND_MCP_USER_AGENT } from '../mcp-user-agent.js';
@@ -207,6 +212,7 @@ export class TranscendGraphQLBase {
         const toolCallId = getToolCallIdHeader();
         const mcpCaller = resolveMcpCallerAttribution();
         const mcpClientName = resolveMcpClientName();
+        const mcpPackageVersion = resolveMcpPackageVersion();
         const response = await fetch(url, {
           method: 'POST',
           headers: {
@@ -217,6 +223,7 @@ export class TranscendGraphQLBase {
             ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
             ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
             ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
+            ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
           },
           body: JSON.stringify({ query: queryString, variables: variables ?? {} }),
           signal: controller.signal,

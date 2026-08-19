@@ -119,6 +119,14 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api).
 
+## Prompts
+
+Workflow templates discoverable via MCP `prompts/list` / `prompts/get`:
+
+- `consent-triage` — End-to-end cookie/data-flow triage (setup, batch, research, push)
+- `consent-research-tracker` — Research methodology for classifying a single tracker
+- `consent-inspect-site` — Live site investigation via browser DevTools / airgap console
+
 ## Related packages
 
 Also available as part of the unified [`@transcend-io/mcp`](../mcp/README.md), which includes all domains. See the [root README](../../../README.md#mcp-servers) for the full list.

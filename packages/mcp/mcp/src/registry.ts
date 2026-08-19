@@ -2,13 +2,17 @@ import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-sc
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
+  canObtainApproval,
+  ConfirmationPolicy,
   createErrorResult,
   EMPTY_CAPABILITY_REPORT,
   expandToolsForClient,
   isVisibleToModel,
   resolveToolVariant,
   SimpleLogger,
+  withConfirmation,
   type ClientCapabilityReport,
+  type ConfirmationGate,
   type ToolDefinition,
   type TranscendRestClient,
 } from '@transcend-io/mcp-server-base';
@@ -30,6 +34,16 @@ export interface UmbrellaToolClients {
   /** Admin-dashboard base URL used to build deep links */
   dashboardUrl: string;
 }
+
+/**
+ * Confirmation policy for callers that drive the registry directly.
+ *
+ * Refuse, because there is no transport here to tell us a person is reachable:
+ * embedders call `executeTool` in-process, with no `elicitation/create` channel
+ * and nowhere to return an approval token to. The serving paths pick their own
+ * policy in `buildMcpServer` from the transport they are on.
+ */
+const EMBEDDED_GATE: ConfirmationGate = { policy: ConfirmationPolicy.Refuse };
 
 export class ToolRegistry {
   private tools: Map<string, ToolDefinition> = new Map();
@@ -91,8 +105,13 @@ export class ToolRegistry {
     };
     _meta?: Record<string, unknown>;
   }> {
-    return expandToolsForClient(Array.from(this.tools.values()), client)
+    // Nothing here can obtain approval, so a gated tool would only be described
+    // and then refuse. `executeTool` still refuses it either way.
+    const canApprove = canObtainApproval(EMBEDDED_GATE, client);
+
+    return expandToolsForClient(Array.from(this.tools.values()), client, EMBEDDED_GATE)
       .filter((tool) => isVisibleToModel(tool))
+      .filter((tool) => canApprove || !tool.confirmation)
       .map((tool) => {
         const resourceUri = tool.ui?.resource.uri;
         return {
@@ -122,8 +141,10 @@ export class ToolRegistry {
       throw new Error(`Unknown tool: ${name}`);
     }
 
-    // Resolve so the handler that runs matches the descriptor getToolList emitted.
-    const tool = resolveToolVariant(registered, client);
+    // Resolve so the handler that runs matches the descriptor getToolList emitted,
+    // and gate it: calling the registered handler directly would walk past the
+    // confirmation a gated tool asked for.
+    const tool = withConfirmation(resolveToolVariant(registered, client), EMBEDDED_GATE);
 
     const parseResult = tool.zodSchema.safeParse(args);
     if (!parseResult.success) {

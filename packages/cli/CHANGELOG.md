@@ -1,5 +1,67 @@
 # @transcend-io/cli
 
+## 10.26.1
+
+### Patch Changes
+
+- 9637490: Add dedicated Custom Function scopes to the AD scope catalog: `ViewCustomFunction` and `ManageCustomFunction` (wire values `viewCustomFunction` / `manageCustomFunction`), titled "View Custom Functions" / "Manage Custom Functions". These let Custom Function access be granted independently of the broader Data Map scopes (LINK-7162). Endpoint mapping onto the new scopes lands in a follow-up (LINK-7163).
+- Updated dependencies [9637490]
+  - @transcend-io/privacy-types@5.20.0
+  - @transcend-io/airgap.js-types@14.2.36
+  - @transcend-io/sdk@2.0.1
+
+## 10.26.0
+
+### Minor Changes
+
+- 2f5271e: Add `transcend custom-functions push` (manifest-driven create/update of custom function code revisions with change detection, draft + promote, and dry-run support) and `transcend custom-functions list`, designed to run from client CI. Code is signed against the Sombra customer ingress (pass `--sombraAuth` when self-hosting Sombra). Manifest entries can pin a custom function `id` (required when names are not unique), and `push --updateManifest` writes assigned IDs back into the manifest while preserving comments and `<<parameters.x>>` placeholders.
+
+  Manifest entries can also define `test-payloads` — a list of JSON payload files, each with an optional `payload-type` so DSR functions cover both their default (`DATA_POINT`) and enricher (`REQUEST_ENRICHER`) exports on every push (`test-payload` remains as single-payload shorthand). The freshly signed code is test-run with every payload via the `runCustomFunction` mutation before pushing; all must pass or the function is rejected with each failing payload's reason and execution logs (exit code 1). A warning is printed when a DSR entry only covers one export. Use `--skipTests` to bypass testing.
+
+  New DSR functions no longer require a `data-silo-id`: the DSR integration (a `customFunction`-catalog data silo) is created automatically before the test run, the function is created and linked on a passing test (the silo is rolled back on failure), and `--updateManifest` writes both the function `id` and the `data-silo-id` back into the manifest. DSR test payloads get `extras.dataSilo` injected from the resolved silo automatically.
+
+  Metadata-only changes (description, or name for id-pinned entries) are updated in place without signing, testing, or pushing a new code revision, reported as "metadata-only" in the sync summary. The skip message now points at `--force` for env value-only rotations, which cannot be diffed.
+
+- 43d6ffe: Support per-workflow deletion dependencies in `transcend.yml`. Use a list of titles for the global configuration only, or a list of objects when any per-workflow override is present (`{ titles }` for global, `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for overrides). Mixing titles and objects in the same list is not allowed.
+
+  `syncDataSiloDependencies` now takes `[dataSiloId, DependedOnDataSiloInput[]][]` instead of `[dataSiloId, string[]][]` and pushes through `dependedOnDataSilos` rather than the deprecated `dependedOnDataSiloTitles`.
+
+### Patch Changes
+
+- Updated dependencies [98eeb1d]
+- Updated dependencies [43d6ffe]
+  - @transcend-io/sdk@2.0.0
+  - @transcend-io/privacy-types@5.19.0
+  - @transcend-io/airgap.js-types@14.2.35
+
+## 10.25.5
+
+### Patch Changes
+
+- Updated dependencies [c198439]
+- Updated dependencies [60f2200]
+  - @transcend-io/privacy-types@5.18.0
+  - @transcend-io/airgap.js-types@14.2.34
+  - @transcend-io/sdk@1.9.5
+
+## 10.25.4
+
+### Patch Changes
+
+- Updated dependencies [2bc0cb2]
+  - @transcend-io/privacy-types@5.17.0
+  - @transcend-io/airgap.js-types@14.2.33
+  - @transcend-io/sdk@1.9.4
+
+## 10.25.3
+
+### Patch Changes
+
+- Updated dependencies [3aab830]
+  - @transcend-io/privacy-types@5.16.0
+  - @transcend-io/airgap.js-types@14.2.32
+  - @transcend-io/sdk@1.9.3
+
 ## 10.25.2
 
 ### Patch Changes

@@ -6,11 +6,13 @@ export { requestAuthContext, getRequestAuth } from './auth-context.js';
 export {
   MCP_CALLER_HEADER,
   MCP_CLIENT_NAME_HEADER,
+  MCP_VERSION_HEADER,
   extractMcpCallerFromHeaders,
   getRequestMcpCaller,
   requestMcpCallerContext,
   resolveMcpCallerAttribution,
   resolveMcpClientName,
+  resolveMcpPackageVersion,
 } from './mcp-caller-context.js';
 
 export {
@@ -74,11 +76,34 @@ export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation
 export type {
   ToolAnnotations,
   ToolClients,
+  ToolConfirmation,
   ToolDefinition,
   ToolUiBinding,
   ToolVisibility,
 } from './tools/types.js';
-export { DEFAULT_TOOL_VISIBILITY, defineTool, isVisibleToModel } from './tools/types.js';
+export {
+  assertConfirmableAnnotations,
+  assertConfirmableSchema,
+  DEFAULT_TOOL_VISIBILITY,
+  defineTool,
+  isVisibleToModel,
+} from './tools/types.js';
+
+export { describeArgs } from './tools/describe-args.js';
+export type { ConfirmationSummary } from './tools/describe-args.js';
+
+export {
+  APPROVAL_TOKEN_ARG,
+  canObtainApproval,
+  CONFIRMATION_TIMEOUT_MS,
+  ConfirmationCode,
+  ConfirmationPolicy,
+  renderConfirmationPrompt,
+  withConfirmation,
+} from './tools/confirmation.js';
+export type { ConfirmationGate } from './tools/confirmation.js';
+
+export { APPROVAL_TOKEN_TTL_MS, ApprovalTokenStore } from './tools/approval-tokens.js';
 
 export {
   MCP_APP_MIME_TYPE,
@@ -114,6 +139,13 @@ export type {
 } from './tools/define-tool-with-capabilities.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
+
+export type {
+  PromptArgument,
+  PromptDefinition,
+  PromptMessage,
+  PromptMessageContent,
+} from './prompts/types.js';
 
 export { createMCPServer } from './server/create-server.js';
 export type { MCPServerOptions } from './server/create-server.js';

@@ -1,5 +1,198 @@
 # @transcend-io/mcp
 
+## 0.13.0
+
+### Minor Changes
+
+- 9032822: **@transcend-io/mcp-server-base:** Renames a `ConfirmationPolicy` member shipped in 1.3.0. `ASK_OR_TOKEN` is now `ELICIT_OR_TOKEN`, and the new `ELICIT_ONLY` joins it. The enum names the mechanism that carries the question everywhere else in the package — `McpClientCapability.Elicitation`, `requestElicitation`, `elicitInput` — and was the one place calling it asking. Nothing in the product needs migrating, since the policy is how a transport tells the gate what it may do rather than anything a caller passes in, but an embedder that referenced `ConfirmationPolicy.AskOrToken` directly must update the name.
+
+  Ask for confirmation over HTTP too, bound to the call that triggered it. This replaces the behavior described in 1.3.0, where the HTTP policy was `REFUSE` and every gated call refused: that made an agent platform read-only for gated tools. `ELICIT_ONLY` asks the user with no approval-token fallback and is what `transport: 'http'` now selects. Under it a form that cannot be bound to a call is not sent at all, and a host that cannot render one gets `CONFIRMATION_UNAVAILABLE` rather than a token, because the agent there sits on the far side of the transport and would be the one relaying it.
+
+  `McpSession` now carries the `tools/call` a handler is serving, its JSON-RPC id and abort signal, and `requestElicitation` passes both to the host. Two things follow. Streamable HTTP routes an outbound message by `relatedRequestId` onto that call's own SSE stream, so the form reaches whoever made the call instead of the connection's shared stream, where it could surface in another user's turn; and if nothing is listening on the shared stream the SDK stores the event for replay and returns, so an undelivered form used to sit until the 10-minute timeout with no error logged anywhere. Binding also means abandoning the call tears the form down, which closes a real hazard: a client that gave up at its own tool timeout left the form on screen, and a yes clicked afterwards still resolved and ran the mutation into a call nobody was listening to.
+
+  `canObtainApproval(gate, client)` reports whether a gated tool could actually be approved on a connection, and `tools/list` now withholds gated tools where it cannot: over HTTP from a client that did not declare form elicitation, and always from the in-process `ToolRegistry`. An agent shown a tool that refuses every call plans around it, calls it, and spends the turn on a refusal it can do nothing about. Withholding is for the model's benefit only — nothing in the protocol stops a client calling a tool it was never shown, so the gate still runs on every `tools/call` and remains the actual boundary.
+
+  The trust assumption is worth stating plainly, since it changed. Over HTTP, whether a person is asked now rests on a capability the caller declared about itself. A client that declares form elicitation and then answers its own prompt has approved on the user's behalf, and nothing server-side can tell that apart from a person clicking yes. What the gate does enforce is that such a client asked at all, that the prompt went to the stream of the call it belongs to, and that no token is ever issued for the model to relay. Deployments fronting MCP with an agent platform should declare `elicitation: { form: {} }` only on paths where a person is actually present for the call, and never synthesize an answer on an unattended one.
+
+  **@transcend-io/mcp:** `ToolRegistry.getToolList` no longer describes gated tools, since `executeTool` on that path can never confirm one.
+
+### Patch Changes
+
+- Updated dependencies [9032822]
+  - @transcend-io/mcp-server-base@1.5.0
+  - @transcend-io/mcp-server-admin@0.5.19
+  - @transcend-io/mcp-server-assessment@0.5.19
+  - @transcend-io/mcp-server-consent@0.7.1
+  - @transcend-io/mcp-server-discovery@0.5.19
+  - @transcend-io/mcp-server-docs@0.3.19
+  - @transcend-io/mcp-server-dsr@0.6.4
+  - @transcend-io/mcp-server-inventory@0.6.8
+  - @transcend-io/mcp-server-preferences@0.5.19
+  - @transcend-io/mcp-server-workflows@0.5.19
+
+## 0.12.0
+
+### Minor Changes
+
+- c8df618: Add MCP prompts support to mcp-server-base (`prompts/list` and `prompts/get`), and ship three consent workflow prompts (`consent-triage`, `consent-research-tracker`, `consent-inspect-site`) on the consent and umbrella servers.
+
+### Patch Changes
+
+- Updated dependencies [c8df618]
+  - @transcend-io/mcp-server-base@1.4.0
+  - @transcend-io/mcp-server-consent@0.7.0
+  - @transcend-io/mcp-server-admin@0.5.18
+  - @transcend-io/mcp-server-assessment@0.5.18
+  - @transcend-io/mcp-server-discovery@0.5.18
+  - @transcend-io/mcp-server-docs@0.3.18
+  - @transcend-io/mcp-server-dsr@0.6.3
+  - @transcend-io/mcp-server-inventory@0.6.7
+  - @transcend-io/mcp-server-preferences@0.5.18
+  - @transcend-io/mcp-server-workflows@0.5.18
+
+## 0.11.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-consent@0.6.17
+- @transcend-io/mcp-server-admin@0.5.17
+- @transcend-io/mcp-server-assessment@0.5.17
+- @transcend-io/mcp-server-discovery@0.5.17
+- @transcend-io/mcp-server-dsr@0.6.2
+- @transcend-io/mcp-server-inventory@0.6.6
+- @transcend-io/mcp-server-preferences@0.5.17
+- @transcend-io/mcp-server-workflows@0.5.17
+- @transcend-io/mcp-server-base@1.3.1
+- @transcend-io/mcp-server-docs@0.3.17
+
+## 0.11.0
+
+### Minor Changes
+
+- c787e9d: **@transcend-io/mcp-server-base:** Add a server-enforced confirmation gate. A tool declaring `confirmation: { hint }` on its `ToolDefinition` no longer reaches its handler until a human agrees. On a host that renders forms the gate asks through `elicitation/create`; on one that cannot it issues a single-use approval token bound to the tool, a hash of the arguments, and the caller's auth subject, which the agent replays after getting the user's agreement.
+
+  How approval may be obtained is decided by the transport, not by the caller. `buildMcpServer` now requires `transport`, and over HTTP the policy is `REFUSE`: the caller there is another service rather than a person at a keyboard, so gated tools refuse every call with `CONFIRMATION_UNAVAILABLE` and point the user at the admin dashboard. The check happens before anything the client declared is consulted, because a declared elicitation capability is a claim by the party being gated — a client that says it renders forms and then answers its own prompt has approved on the user's behalf.
+
+  Declaring the capability is also not a promise to honor the request. A host that errors, never answers within the timeout, or replies with a shape the SDK validates and rejects now falls through to the approval-token fallback rather than surfacing an opaque `MCP error`, and confirmation forms are given 10 minutes rather than the SDK's 60-second default, which used to cancel the request while the dialog was still on the user's screen.
+
+  `expandToolsForClient` requires its gate argument for the same reason `transport` is required: a default would let a new serving path pick a confirmation policy it never considered.
+
+  **@transcend-io/mcp:** `ToolRegistry.executeTool` now applies the gate rather than calling the registered handler directly, so an embedder driving the registry in-process refuses gated tools instead of running them unconfirmed.
+
+### Patch Changes
+
+- Updated dependencies [5819bc1]
+- Updated dependencies [c787e9d]
+  - @transcend-io/mcp-server-base@1.3.0
+  - @transcend-io/mcp-server-admin@0.5.16
+  - @transcend-io/mcp-server-assessment@0.5.16
+  - @transcend-io/mcp-server-consent@0.6.16
+  - @transcend-io/mcp-server-discovery@0.5.16
+  - @transcend-io/mcp-server-docs@0.3.16
+  - @transcend-io/mcp-server-dsr@0.6.1
+  - @transcend-io/mcp-server-inventory@0.6.5
+  - @transcend-io/mcp-server-preferences@0.5.16
+  - @transcend-io/mcp-server-workflows@0.5.16
+
+## 0.10.4
+
+### Patch Changes
+
+- 7d980a1: Expose DSR request assignees and connected-system owners through MCP so Agentic Assist can answer who owns approval bottlenecks and failed systems.
+
+  `dsr_list` and `dsr_get_details` now return each request's assigned owners and teams. A new `dsr_list_request_data_silos` tool lists per-system processing status (including errors) with nested data-silo owners and teams, so bottleneck questions no longer hit a capability gap.
+
+- Updated dependencies [4404c48]
+- Updated dependencies [7d980a1]
+  - @transcend-io/mcp-server-base@1.2.0
+  - @transcend-io/mcp-server-dsr@0.6.0
+  - @transcend-io/mcp-server-admin@0.5.15
+  - @transcend-io/mcp-server-assessment@0.5.15
+  - @transcend-io/mcp-server-consent@0.6.15
+  - @transcend-io/mcp-server-discovery@0.5.15
+  - @transcend-io/mcp-server-docs@0.3.15
+  - @transcend-io/mcp-server-inventory@0.6.4
+  - @transcend-io/mcp-server-preferences@0.5.15
+  - @transcend-io/mcp-server-workflows@0.5.15
+
+## 0.10.3
+
+### Patch Changes
+
+- Updated dependencies [26fadc4]
+  - @transcend-io/mcp-server-base@1.1.1
+  - @transcend-io/mcp-server-consent@0.6.14
+  - @transcend-io/mcp-server-dsr@0.5.14
+  - @transcend-io/mcp-server-inventory@0.6.3
+  - @transcend-io/mcp-server-admin@0.5.14
+  - @transcend-io/mcp-server-assessment@0.5.14
+  - @transcend-io/mcp-server-discovery@0.5.14
+  - @transcend-io/mcp-server-docs@0.3.14
+  - @transcend-io/mcp-server-preferences@0.5.14
+  - @transcend-io/mcp-server-workflows@0.5.14
+
+## 0.10.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.5.13
+- @transcend-io/mcp-server-assessment@0.5.13
+- @transcend-io/mcp-server-consent@0.6.13
+- @transcend-io/mcp-server-discovery@0.5.13
+- @transcend-io/mcp-server-dsr@0.5.13
+- @transcend-io/mcp-server-inventory@0.6.2
+- @transcend-io/mcp-server-preferences@0.5.13
+- @transcend-io/mcp-server-workflows@0.5.13
+
+## 0.10.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.5.12
+- @transcend-io/mcp-server-assessment@0.5.12
+- @transcend-io/mcp-server-consent@0.6.12
+- @transcend-io/mcp-server-discovery@0.5.12
+- @transcend-io/mcp-server-dsr@0.5.12
+- @transcend-io/mcp-server-inventory@0.6.1
+- @transcend-io/mcp-server-preferences@0.5.12
+- @transcend-io/mcp-server-workflows@0.5.12
+
+## 0.10.0
+
+### Minor Changes
+
+- 2faaff6: Add `inventory_update_or_create_data_point` for field-level purpose of processing assignments (ZEL-8168).
+- 5b239dc: Improve inventory MCP DX: split data-silo create into catalog `integrationName` + optional display `title`/`description`, add `text` (and silo `titles`) list filters, and stop fabricating datapoint timestamps.
+- 5b239dc: Add `inventory_list_catalog_integrations` so agents can search the Transcend catalog for valid `integrationName` values before creating a data silo.
+- 6293072: Add processing purpose list/write MCP tools and expand `inventory_update_data_silo` for Data Systems fields (ZEL-8168 stack).
+- daffc18: Enrich inventory MCP read tools with silo vendor/purposes/owners metadata, datapoint filtering, vendor field detail, and subcategory normalization; add `inventory_list_business_entities` and `inventory_list_data_subjects` (ZEL-8168 stack PR1).
+- dc9ab41: Add `inventory_write_vendor` MCP tool to create/update vendors in Data Inventory (ZEL-8168 stack).
+
+### Patch Changes
+
+- 5b239dc: Tool copy changes
+- 5b239dc: Small type adjustment to Datapoint
+- Updated dependencies [2faaff6]
+- Updated dependencies [5b239dc]
+- Updated dependencies [5b239dc]
+- Updated dependencies [6293072]
+- Updated dependencies [daffc18]
+- Updated dependencies [dc9ab41]
+- Updated dependencies [5b239dc]
+- Updated dependencies [97fa941]
+- Updated dependencies [5b239dc]
+- Updated dependencies [80d9f9e]
+  - @transcend-io/mcp-server-inventory@0.6.0
+  - @transcend-io/mcp-server-base@1.1.0
+  - @transcend-io/mcp-server-admin@0.5.11
+  - @transcend-io/mcp-server-assessment@0.5.11
+  - @transcend-io/mcp-server-consent@0.6.11
+  - @transcend-io/mcp-server-dsr@0.5.11
+  - @transcend-io/mcp-server-preferences@0.5.11
+  - @transcend-io/mcp-server-workflows@0.5.11
+  - @transcend-io/mcp-server-discovery@0.5.11
+  - @transcend-io/mcp-server-docs@0.3.13
+
 ## 0.9.4
 
 ### Patch Changes

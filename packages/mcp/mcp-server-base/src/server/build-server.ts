@@ -4,6 +4,8 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import {
   CallToolRequestSchema,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
@@ -21,7 +23,14 @@ import { SimpleLogger } from '../clients/graphql/base.js';
 import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
+import type { PromptDefinition } from '../prompts/types.js';
 import { toolCallContext } from '../tool-call-context.js';
+import { ApprovalTokenStore } from '../tools/approval-tokens.js';
+import {
+  canObtainApproval,
+  ConfirmationPolicy,
+  type ConfirmationGate,
+} from '../tools/confirmation.js';
 import {
   expandToolsForClient,
   isCapabilityAwareTool,
@@ -42,8 +51,26 @@ export interface BuildMcpServerOptions {
   version: string;
   /** Pre-constructed tool definitions */
   tools: ToolDefinition[];
+  /** Optional prompt templates (workflow guidance) registered with prompts/list and prompts/get */
+  prompts?: PromptDefinition[];
   /** Optional MCP initialize instructions injected into the client system prompt. */
   instructions?: string;
+  /** Required. Controls whether form-less hosts get an approval token (`stdio`) or are refused (`http`). */
+  transport: 'stdio' | 'http';
+}
+
+/**
+ * Settles how this server may obtain approval, before any client connects.
+ *
+ * stdio has somewhere to hand a token back to, so a host that cannot render a form
+ * still has a route. Over HTTP a token would be relayed by the very model the gate
+ * is interposing on, leaving elicitation as the only one.
+ */
+function resolveConfirmationGate(options: BuildMcpServerOptions): ConfirmationGate {
+  if (options.transport === 'stdio') {
+    return { policy: ConfirmationPolicy.ElicitOrToken, tokens: new ApprovalTokenStore() };
+  }
+  return { policy: ConfirmationPolicy.ElicitOnly };
 }
 
 /**
@@ -136,7 +163,29 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
 
   const uiResources = collectUiResources(registered, logger);
 
+  const promptMap = new Map<string, PromptDefinition>();
+  for (const prompt of options.prompts ?? []) {
+    if (promptMap.has(prompt.name)) {
+      logger.warn(`Duplicate prompt name "${prompt.name}" — skipping`);
+      continue;
+    }
+    promptMap.set(prompt.name, prompt);
+  }
+
   logger.info(`Registered ${registered.length} tools`, { toolCount: registered.length });
+  if (promptMap.size > 0) {
+    logger.info(`Registered ${promptMap.size} prompts`, { promptCount: promptMap.size });
+  }
+
+  const gate = resolveConfirmationGate(options);
+
+  const gated = registered.filter((tool) => tool.confirmation).map((tool) => tool.name);
+  if (gated.length > 0) {
+    logger.info(`${gated.length} tools require human confirmation`, {
+      tools: gated,
+      policy: gate.policy,
+    });
+  }
 
   // Read once at construction: the value cannot change for a running process,
   // and warning here means it appears in startup output rather than buried in a
@@ -163,6 +212,9 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         // Only advertise resources when there is something to serve, so servers
         // with no views negotiate exactly as they did before MCP Apps existed.
         ...(uiResources.size > 0 && { resources: {} }),
+        // Same for prompts: omit the capability when empty so hosts without
+        // prompts continue to negotiate as before.
+        ...(promptMap.size > 0 && { prompts: {} }),
       },
       ...(options.instructions ? { instructions: options.instructions } : {}),
     },
@@ -207,7 +259,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   /** Tool set for the current client, keyed by name for dispatch. */
   const toolsForClient = (client: ClientCapabilityReport): Map<string, ToolDefinition> => {
     const map = new Map<string, ToolDefinition>();
-    for (const tool of expandToolsForClient(registered, client)) {
+    for (const tool of expandToolsForClient(registered, client, gate)) {
       if (!map.has(tool.name)) map.set(tool.name, tool);
     }
     return map;
@@ -231,9 +283,19 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     resolveClient();
     logger.debug('Listing MCP tools', { host: client.host });
 
+    const canApprove = canObtainApproval(gate, client);
+    if (!canApprove && gated.length > 0) {
+      // A tool missing from the list is otherwise hard to account for later.
+      logger.info(
+        `Withholding ${gated.length} tools that need a confirmation this client cannot show`,
+        { tools: gated, host: client.host },
+      );
+    }
+
     const toolList = await mcpSessionContext.run({ client, server }, async () =>
       [...toolsForClient(client).values()]
         .filter((tool) => isVisibleToModel(tool))
+        .filter((tool) => canApprove || !tool.confirmation)
         .map((tool) => {
           const meta = buildToolMeta(tool);
           return {
@@ -288,7 +350,34 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     });
   }
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  if (promptMap.size > 0) {
+    server.setRequestHandler(ListPromptsRequestSchema, async () => {
+      logger.debug('Listing MCP prompts');
+      return {
+        prompts: [...promptMap.values()].map((prompt) => ({
+          name: prompt.name,
+          description: prompt.description,
+          ...(prompt.arguments && { arguments: prompt.arguments }),
+        })),
+      };
+    });
+
+    server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+      logger.info(`Getting prompt: ${name}`);
+      const prompt = promptMap.get(name);
+      if (!prompt) {
+        throw new Error(
+          `Unknown prompt "${name}". This server serves ${promptMap.size} prompt(s): ` +
+            `${[...promptMap.keys()].join(', ')}.`,
+        );
+      }
+      const messages = await prompt.handler(args ?? {});
+      return { description: prompt.description, messages };
+    });
+  }
+
+  server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
     const { name, arguments: args } = request.params;
     resolveClient();
     logger.info(`Executing tool: ${name}`, { args: Object.keys(args || {}), host: client.host });
@@ -324,7 +413,15 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         oauthCredentials = getLazyOAuthCredentials();
       }
 
-      const result = await mcpSessionContext.run({ client, server }, () =>
+      // The id and signal are what let a confirmation form reach whoever made this
+      // call, and be torn down if they give up. See McpSession.request.
+      const session = {
+        client,
+        server,
+        request: { id: extra.requestId, signal: extra.signal },
+      };
+
+      const result = await mcpSessionContext.run(session, () =>
         toolCallContext.run({ toolName: name, correlationId: randomUUID() }, () => {
           const execute = () => tool.handler(parseResult.data);
           if (toolRequiresAuth && !getRequestAuth() && oauthCredentials) {

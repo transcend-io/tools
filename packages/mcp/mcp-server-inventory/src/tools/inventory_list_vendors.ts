@@ -3,6 +3,7 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { InventoryMixin } from '../graphql.js';
 
 export const ListVendorsSchema = z.object({
+  text: z.string().optional().describe('Free-text search across vendors (GraphQL filterBy.text)'),
   limit: z.coerce
     .number()
     .min(1)
@@ -25,16 +26,17 @@ export function createInventoryListVendorsTool(clients: ToolClients) {
     name: 'inventory_list_vendors',
     description:
       'List vendors (third-party data processors) with contact, website, DPA link, address, ' +
-      'and headquarters fields. Paginate with `offset` until `hasNextPage` is false; ' +
-      '`totalCount` is the full count.',
+      'and headquarters fields. Pass `text` to search. Paginate with `offset` until ' +
+      '`hasNextPage` is false; `totalCount` is the full count.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListVendorsSchema,
-    handler: async ({ limit, offset }) => {
+    handler: async ({ text, limit, offset }) => {
       const result = await graphql.listVendors({
         first: limit,
         offset,
+        text,
       });
 
       return createListResult(result.nodes, {

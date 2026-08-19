@@ -41,6 +41,42 @@ export interface UnknownDropRecordsMessageInput {
   dropListType: DropListType;
 }
 
+/** Inputs for the {@link DsrErrorCode.DataSiloNotInWorkflow} message builder. */
+export interface DataSiloNotInWorkflowMessageInput {
+  /** Workflow config the submission targeted */
+  workflowConfigId: string;
+  /** dataSiloIds that are not connected to that workflow config */
+  dataSiloIds: readonly string[];
+}
+
+/** Inputs for the {@link DsrErrorCode.TypeNotMatchingWorkflow} message builder. */
+export interface TypeNotMatchingWorkflowMessageInput {
+  /** Workflow config the submission targeted */
+  workflowConfigId: string;
+  /** The request action (`type`) asserted on the input */
+  providedType: string;
+  /** The workflow config's actual request action */
+  workflowType: string;
+}
+
+/** Inputs for the {@link DsrErrorCode.SubjectTypeNotMatchingWorkflow} message builder. */
+export interface SubjectTypeNotMatchingWorkflowMessageInput {
+  /** Workflow config the submission targeted */
+  workflowConfigId: string;
+  /** The data subject type asserted on the input */
+  providedSubjectType: string;
+  /** The workflow config's actual data subject type */
+  workflowSubjectType: string;
+}
+
+/** Inputs for the {@link DsrErrorCode.RegionNotInWorkflow} message builder. */
+export interface RegionNotInWorkflowMessageInput {
+  /** Human-readable rejected region (e.g. `GB` or `US/US-CA`) */
+  region: string;
+  /** Workflow regionList entries that are eligible */
+  supportedRegions: readonly string[];
+}
+
 /** Canonical message builder for each {@link DsrErrorCode}. */
 export type DsrErrorMessageMap = {
   [DsrErrorCode.InvalidWorkflowConfigId]: () => string;
@@ -55,9 +91,16 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.MaxDropRecordsPerRequestExceeded]: () => string;
   [DsrErrorCode.UnknownDropRecords]: (records: readonly UnknownDropRecordsMessageInput[]) => string;
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) => string;
+  [DsrErrorCode.DropRunNotIntakeEligible]: (dropRunState: string) => string;
   [DsrErrorCode.IdentifierValidationFailed]: (identifierNames: readonly string[]) => string;
   [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
   [DsrErrorCode.MissingRequiredEmail]: () => string;
+  [DsrErrorCode.DataSiloNotInWorkflow]: (input: DataSiloNotInWorkflowMessageInput) => string;
+  [DsrErrorCode.TypeNotMatchingWorkflow]: (input: TypeNotMatchingWorkflowMessageInput) => string;
+  [DsrErrorCode.SubjectTypeNotMatchingWorkflow]: (
+    input: SubjectTypeNotMatchingWorkflowMessageInput,
+  ) => string;
+  [DsrErrorCode.RegionNotInWorkflow]: (input: RegionNotInWorkflowMessageInput) => string;
 };
 
 type _AssertAllCodesHaveBuilders = DsrErrorCode extends keyof DsrErrorMessageMap
@@ -112,6 +155,8 @@ export const DSR_ERROR_MESSAGE = {
   },
   [DsrErrorCode.DropRunNotFound]: (dropRunId: string) =>
     `Could not find DROP run with id "${dropRunId}"`,
+  [DsrErrorCode.DropRunNotIntakeEligible]: (dropRunState: string) =>
+    `Cannot submit DROP-linked DSRs while the run is in state ${dropRunState}`,
   /**
    * Fallback canonical message for {@link DsrErrorCode.IdentifierValidationFailed}.
    * Organizations can configure a custom, locale-translated `validationErrorMessage`
@@ -125,4 +170,33 @@ export const DSR_ERROR_MESSAGE = {
     `The organization does not support identifiers with name: "${name}" at time of request submission.`,
   [DsrErrorCode.MissingRequiredEmail]: () =>
     'At least one email must be provided before a request can be created when not in silent mode',
+  [DsrErrorCode.DataSiloNotInWorkflow]: ({
+    workflowConfigId,
+    dataSiloIds,
+  }: DataSiloNotInWorkflowMessageInput) =>
+    `The following dataSiloIds are not connected to the workflow config ` +
+    `"${workflowConfigId}": ${dataSiloIds.join(', ')}. ` +
+    `dataSiloIds may only narrow the workflow's connected data silos.`,
+  [DsrErrorCode.TypeNotMatchingWorkflow]: ({
+    workflowConfigId,
+    providedType,
+    workflowType,
+  }: TypeNotMatchingWorkflowMessageInput) =>
+    `The provided type "${providedType}" does not match the request action ` +
+    `"${workflowType}" of workflow config "${workflowConfigId}". ` +
+    `Omit type to derive it from the workflow config.`,
+  [DsrErrorCode.SubjectTypeNotMatchingWorkflow]: ({
+    workflowConfigId,
+    providedSubjectType,
+    workflowSubjectType,
+  }: SubjectTypeNotMatchingWorkflowMessageInput) =>
+    `The provided subjectType "${providedSubjectType}" does not match the ` +
+    `data subject type "${workflowSubjectType}" of workflow config ` +
+    `"${workflowConfigId}". Omit subjectType to derive it from the workflow config.`,
+  [DsrErrorCode.RegionNotInWorkflow]: ({
+    region,
+    supportedRegions,
+  }: RegionNotInWorkflowMessageInput) =>
+    `Region "${region}" is not eligible for this workflow. ` +
+    `Supported regions: ${supportedRegions.join(', ')}.`,
 } as const satisfies DsrErrorMessageMap;

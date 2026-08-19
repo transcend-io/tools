@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-base",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "Shared infrastructure for Transcend MCP Server packages.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-base",
   "license": "Apache-2.0",
@@ -46,6 +46,7 @@
   "dependencies": {
     "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
+    "@transcend-io/type-utils": "workspace:*",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "graphql": "catalog:",
