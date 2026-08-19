@@ -107,6 +107,12 @@ export class TranscendGraphQLClient extends TranscendGraphQLBase {
   declare getSignedCustomFunctionVersion: InstanceType<
     typeof CustomFunctionsMixin
   >['getSignedCustomFunctionVersion'];
+  declare createCustomFunction: InstanceType<typeof CustomFunctionsMixin>['createCustomFunction'];
+  declare updateCustomFunction: InstanceType<typeof CustomFunctionsMixin>['updateCustomFunction'];
+  declare promoteCustomFunctionVersion: InstanceType<
+    typeof CustomFunctionsMixin
+  >['promoteCustomFunctionVersion'];
+  declare listSombras: InstanceType<typeof CustomFunctionsMixin>['listSombras'];
 }
 
 applyMixin(TranscendGraphQLClient, AdminMixin);
