@@ -60,8 +60,7 @@ export function createInventoryWriteDataSiloTool(clients: ToolClients) {
       '`integrationName` to create a new data system (always creates — never upserts by title). ' +
       'When creating, optional metadata fields (owners, vendor, purposes, subjects, etc.) are applied ' +
       'after create in one call. Create-then-patch is not atomic: if the metadata update fails, the ' +
-      'error includes `details.dataSiloId` — retry with `dataSiloId`, do not create again. ' +
-      'Prefer this over inventory_create_data_silo + inventory_update_data_silo.',
+      'error includes `details.dataSiloId` — retry with `dataSiloId`, do not create again.',
     category: 'Data Inventory',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },

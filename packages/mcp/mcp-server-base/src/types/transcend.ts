@@ -406,7 +406,7 @@ export interface InventoryTeamPreview {
 export interface BusinessEntity {
   /** Unique identifier */
   id: string;
-  /** Display title (use with inventory_update_data_silo `businessEntityTitles`) */
+  /** Display title (use with inventory_write_data_silo `businessEntityTitles`) */
   title: string;
   /** Description */
   description?: string;
@@ -414,7 +414,7 @@ export interface BusinessEntity {
 
 /** Data subject row for inventory list / silo blocklist resolution */
 export interface DataSubject {
-  /** Unique identifier (use with inventory_update_data_silo `dataSubjectBlockListIds`) */
+  /** Unique identifier (use with inventory_write_data_silo `dataSubjectBlockListIds`) */
   id: string;
   /** Machine type key (e.g. CUSTOMER, EMPLOYEE) */
   type: string;
@@ -609,7 +609,7 @@ export interface DataCatalog {
 
 /**
  * Integration catalog entry from GraphQL `catalogs`.
- * Pass `integrationName` to `inventory_create_data_silo`.
+ * Pass `integrationName` to `inventory_write_data_silo`.
  */
 export interface CatalogIntegration {
   /** Catalog slug for createDataSilos (`name`) */

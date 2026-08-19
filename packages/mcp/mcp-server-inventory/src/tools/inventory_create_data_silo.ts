@@ -26,11 +26,13 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_create_data_silo',
     description:
-      'Create a new data silo (data system or integration). ' +
-      'Use inventory_update_data_silo afterward for vendor, purposes, owners, and other metadata.',
+      'Legacy alias for creating a data silo. Prefer inventory_write_data_silo, which can also ' +
+      'set owners, vendor, and purposes in the same call.',
     category: 'Data Inventory',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    // Hidden from tools/list so agents use inventory_write_data_silo; still callable.
+    visibility: [],
     zodSchema: CreateDataSiloSchema,
     handler: async ({ integrationName, title, description }) => {
       const result = await graphql.createDataSilo({

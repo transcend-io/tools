@@ -38,11 +38,12 @@ export function createInventoryUpdateDataSiloTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_update_data_silo',
     description:
-      'Update an existing data silo (Data Systems table). Supports title, description, owners, ' +
-      'teams, vendor link, silo-level processing purposes, data subjects, and common metadata.',
+      'Legacy alias for updating a data silo by ID. Prefer inventory_write_data_silo with `dataSiloId`.',
     category: 'Data Inventory',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    // Hidden from tools/list so agents use inventory_write_data_silo; still callable.
+    visibility: [],
     zodSchema: UpdateDataSiloSchema,
     handler: async ({ dataSiloId, ...fields }) => {
       const result = await graphql.updateDataSilo({

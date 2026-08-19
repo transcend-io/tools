@@ -1,3 +1,4 @@
+import { isVisibleToModel } from '@transcend-io/mcp-server-base';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { getInventoryTools } from '../src/tools.js';
@@ -77,6 +78,17 @@ describe('Inventory Tools', () => {
     const tools = getTools();
     expect(tools).toHaveLength(18);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  it('hides create/update data silo from tools/list so agents use write', () => {
+    const tools = getTools();
+    const create = tools.find((t) => t.name === 'inventory_create_data_silo')!;
+    const update = tools.find((t) => t.name === 'inventory_update_data_silo')!;
+    const write = tools.find((t) => t.name === 'inventory_write_data_silo')!;
+
+    expect(isVisibleToModel(create)).toBe(false);
+    expect(isVisibleToModel(update)).toBe(false);
+    expect(isVisibleToModel(write)).toBe(true);
   });
 
   describe('inventory_get_data_silo', () => {
