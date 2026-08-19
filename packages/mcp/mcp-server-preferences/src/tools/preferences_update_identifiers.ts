@@ -23,7 +23,13 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     description: 'Update existing identifiers for a user (e.g., when email changes)',
     category: 'Preference Management',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    confirmation: {
+      hint:
+        'Rewrites identifier values in the preference store, moving the consent history ' +
+        'attached to each old value onto the new one. The old values stop resolving. Check the ' +
+        'old and new values in the call arguments before agreeing.',
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     requireSombra: true,
     zodSchema: UpdateIdentifiersSchema,
     handler: async ({ partition, userId, identifiers }) => {

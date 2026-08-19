@@ -17,7 +17,13 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
       'Enrich a Data Subject Request with additional identifiers during preflight processing',
     category: 'DSR Automation',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    confirmation: {
+      hint:
+        'Adds identifiers to a request already in flight, widening whose data it reaches. An ' +
+        "extra identifier on an erasure can delete the wrong person's records. Check the " +
+        'identifiers in the call arguments before agreeing.',
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: enrichIdentifiersSchema,
     handler: async ({ requestId, identifiers }) => {

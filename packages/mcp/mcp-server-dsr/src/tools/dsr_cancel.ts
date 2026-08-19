@@ -16,6 +16,11 @@ export function createDsrCancelTool(clients: ToolClients) {
     description: 'Cancel a Data Subject Request',
     category: 'DSR Automation',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Permanently cancels this data subject request. It cannot be reopened, and any ' +
+        'processing already underway stops.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: cancelDsrSchema,
     handler: async ({ requestId, reason }) => {

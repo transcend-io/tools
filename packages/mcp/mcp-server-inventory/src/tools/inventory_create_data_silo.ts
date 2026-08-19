@@ -30,7 +30,7 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients) {
       'Use inventory_update_data_silo afterward for vendor, purposes, owners, and other metadata.',
     category: 'Data Inventory',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateDataSiloSchema,
     handler: async ({ integrationName, title, description }) => {
       const result = await graphql.createDataSilo({

@@ -28,7 +28,13 @@ export function createDsrSubmitTool(clients: ToolClients) {
       'Submit a Data Subject Request as the data subject (public DSR API; e.g. Privacy Center flow). Supports ACCESS, ERASURE, RECTIFICATION, etc. coreIdentifier defaults to email. Use dsr_submit_on_behalf when an admin is filing on behalf of a data subject.',
     category: 'DSR Automation',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    confirmation: {
+      hint:
+        'Files a live data subject request. ERASURE and opt-out types start irreversible ' +
+        'deletion across connected systems, and the data subject is emailed unless isSilent ' +
+        'is set. Check the request type and email in the call arguments before agreeing.',
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: submitDsrSchema,
     handler: async ({ type, email, subjectType, coreIdentifier, name, locale, isSilent }) => {

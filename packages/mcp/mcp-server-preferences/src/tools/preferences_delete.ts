@@ -15,6 +15,12 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
     description: 'Delete consent preferences for specified users',
     category: 'Preference Management',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Permanently deletes stored consent preferences for these identifiers. The previous ' +
+        'consent state cannot be recovered, and the people affected fall back to default ' +
+        'consent. Check the identifiers in the call arguments before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: DeletePreferencesSchema,

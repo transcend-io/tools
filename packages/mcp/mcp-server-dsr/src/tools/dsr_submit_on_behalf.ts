@@ -24,7 +24,14 @@ export function createDsrSubmitOnBehalfTool(clients: ToolClients) {
       'Submit a Data Subject Request as an admin on behalf of a data subject (admin-dashboard flow). Use dsr_submit when the data subject is submitting their own.',
     category: 'DSR Automation',
     readOnly: false,
-    annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    confirmation: {
+      hint:
+        "Files a live data subject request as an admin, on someone else's behalf. ERASURE and " +
+        'opt-out types start irreversible deletion across connected systems, and the data ' +
+        'subject is emailed unless isSilent is set. Check the request type and email in the ' +
+        'call arguments before agreeing.',
+    },
+    annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: submitDsrOnBehalfSchema,
     handler: async ({ type, email, subjectType, coreIdentifier, locale, isSilent }) => {
       const result = await graphql.employeeMakeDataSubjectRequest({
