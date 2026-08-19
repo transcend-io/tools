@@ -20,7 +20,7 @@ export type ConsentListRocRecordsInput = z.infer<typeof ConsentListRocRecordsSch
  */
 export function createConsentListRocRecordsTool(_clients?: ToolClients) {
   return defineTool({
-    name: 'consent_consent_list_roc_records',
+    name: 'consent_list_roc_records',
     description: 'TODO: what this returns, and when the model should call it.',
     category: 'TODO',
     // `readOnly` gates whether the tool is offered in a read-only session; the
