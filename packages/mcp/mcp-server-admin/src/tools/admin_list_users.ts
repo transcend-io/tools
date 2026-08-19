@@ -1,6 +1,7 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 import { OrderDirection, ScopeName } from '@transcend-io/privacy-types';
 
+import type { ScopeName as GraphqlScopeName } from '../__generated__/graphql.js';
 import type { AdminMixin } from '../graphql.js';
 
 /** GraphQL UserOrderField values exposed on admin_list_users */
@@ -114,8 +115,12 @@ export function createAdminListUsersTool(clients: ToolClients) {
           : {}),
         ...(ids?.length ? { ids } : {}),
         ...(teamIds?.length ? { teamIds } : {}),
-        ...(scopeNames?.length ? { scopeNames } : {}),
-        ...(derivedScopeNames?.length ? { derivedScopeNames } : {}),
+        ...(scopeNames?.length
+          ? { scopeNames: scopeNames as GraphqlScopeName[] }
+          : {}),
+        ...(derivedScopeNames?.length
+          ? { derivedScopeNames: derivedScopeNames as GraphqlScopeName[] }
+          : {}),
         ...(lastLoggedInAfter ? { lastLoggedInAfter } : {}),
         ...(lastLoggedInBefore ? { lastLoggedInBefore } : {}),
       };
