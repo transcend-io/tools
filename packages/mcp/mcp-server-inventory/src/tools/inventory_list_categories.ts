@@ -3,6 +3,10 @@ import { createListResult, defineTool, z, type ToolClients } from '@transcend-io
 import type { InventoryMixin } from '../graphql.js';
 
 export const ListCategoriesSchema = z.object({
+  text: z
+    .string()
+    .optional()
+    .describe('Free-text search across data categories (GraphQL filterBy.text)'),
   limit: z.coerce
     .number()
     .min(1)
@@ -24,15 +28,19 @@ export function createInventoryListCategoriesTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_list_categories',
     description:
-      'List data categories (PII types) configured in your organization. Paginate with `offset` (increment by `limit`) until `hasNextPage` is false; `totalCount` is the full count.',
+      'List data category subcategories (PII types) from the Data Categories table. ' +
+      'Each row includes `id`, `name`, `category`, and optional `description`. ' +
+      'Paginate with `offset` until `hasNextPage` is false. Use these IDs or name+category ' +
+      'pairs when assigning field-level categories via inventory_update_or_create_data_point.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListCategoriesSchema,
-    handler: async ({ limit, offset }) => {
+    handler: async ({ text, limit, offset }) => {
       const result = await graphql.listDataCategories({
         first: limit,
         offset,
+        text,
       });
 
       return createListResult(result.nodes, {

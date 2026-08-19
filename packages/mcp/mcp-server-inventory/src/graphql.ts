@@ -17,6 +17,9 @@ import {
   type PaginatedResponse,
   type SubDataPoint,
   type Vendor,
+  type DataCategoryCreateInput,
+  type DataCategoryUpdateInput,
+  type DataCategoryWriteInput,
   type ProcessingPurposeCreateInput,
   type ProcessingPurposeUpdateInput,
   type ProcessingPurposeWriteInput,
@@ -55,12 +58,16 @@ function mapDataCategory(node: {
   name: string | null;
   category: string;
   description?: string | null;
+  owners?: { email: string }[];
+  teams?: { name: string }[];
 }): DataCategory {
   return {
     id: node.id ?? '',
     name: normalizeSubCategoryName(node.name),
     category: node.category,
     description: node.description ?? undefined,
+    ownerEmails: node.owners?.map((owner) => owner.email),
+    teamNames: node.teams?.map((team) => team.name),
   };
 }
 
@@ -225,6 +232,44 @@ const UpdateProcessingPurposeSubCategoriesDoc = graphql(/* GraphQL */ `
         name
         purpose
         description
+      }
+    }
+  }
+`);
+
+const CreateDataSubCategoryDoc = graphql(/* GraphQL */ `
+  mutation InventoryCreateDataSubCategory($input: CreateDataInventorySubCategoryInput!) {
+    createDataSubCategory(input: $input) {
+      dataSubCategory {
+        id
+        name
+        category
+        description
+        owners {
+          email
+        }
+        teams {
+          name
+        }
+      }
+    }
+  }
+`);
+
+const UpdateDataSubCategoriesDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateDataSubCategories($input: UpdateDataSubCategoriesInput!) {
+    updateDataSubCategories(input: $input) {
+      dataSubCategories {
+        id
+        name
+        category
+        description
+        owners {
+          email
+        }
+        teams {
+          name
+        }
       }
     }
   }
@@ -900,18 +945,118 @@ export class InventoryMixin extends TranscendGraphQLBase {
     return this.listConnection<Identifier>(query, 'identifiers', options);
   }
 
-  async listDataCategories(options?: ListOptions): Promise<PaginatedResponse<DataCategory>> {
+  async listDataCategories(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<DataCategory>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text });
     const query = `
-      query ListDataCategories($first: Int, $offset: Int) {
-        dataCategories(first: $first, offset: $offset) {
+      query ListDataSubCategories(
+        $first: Int
+        $offset: Int
+        $filterBy: DataSubCategoryFiltersInput
+      ) {
+        dataSubCategories(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
+            id
             name
             category
+            description
+            owners {
+              email
+            }
+            teams {
+              name
+            }
           }
           totalCount
         }
       }
     `;
-    return this.listConnection<DataCategory>(query, 'dataCategories', options);
+    type RawCategory = {
+      id: string;
+      name: string | null;
+      category: string;
+      description: string | null;
+      owners: { email: string }[];
+      teams: { name: string }[];
+    };
+    return this.listConnection<RawCategory, DataCategory>(query, 'dataSubCategories', listOptions, {
+      variables: filterBy ? { filterBy } : {},
+      mapNode: mapDataCategory,
+    });
+  }
+
+  async createDataCategory(input: DataCategoryCreateInput): Promise<DataCategory> {
+    const data = await this.makeRequest(CreateDataSubCategoryDoc, {
+      input: input as never,
+    });
+    const created = data.createDataSubCategory.dataSubCategory;
+    return mapDataCategory(created);
+  }
+
+  async updateDataCategory(input: DataCategoryUpdateInput): Promise<DataCategory> {
+    const data = await this.makeRequest(UpdateDataSubCategoriesDoc, {
+      input: { dataSubCategories: [input as never] },
+    });
+    const updated = data.updateDataSubCategories.dataSubCategories[0];
+    if (!updated) {
+      throw new Error('updateDataSubCategories returned an empty array');
+    }
+    return mapDataCategory(updated);
+  }
+
+  /**
+   * Upsert a data subcategory: update by id when provided,
+   * otherwise look up by `name:category` and create if missing (CLI sync semantics).
+   * Empty API names are treated as {@link DefaultPurposeSubCategoryType.Other} when matching.
+   * Update by id cannot change name or category (GraphQL constraint).
+   */
+  async writeDataCategory(input: DataCategoryWriteInput): Promise<{
+    /** Written data category */
+    category: DataCategory;
+    /** True when a new subcategory was created */
+    created: boolean;
+  }> {
+    const categoryFields = {
+      description: input.description,
+      ownerEmails: input.ownerEmails,
+      teamNames: input.teamNames,
+    };
+
+    if (input.id) {
+      const category = await this.updateDataCategory({
+        id: input.id,
+        ...categoryFields,
+      });
+      return { category, created: false };
+    }
+
+    if (!input.name || !input.category) {
+      throw new Error('writeDataCategory requires `id`, or both `name` and `category`');
+    }
+
+    const wantedName = normalizeSubCategoryName(input.name);
+    const existing = await this.listDataCategories({ all: true });
+    const match = existing.nodes.find(
+      (c) => normalizeSubCategoryName(c.name) === wantedName && c.category === input.category,
+    );
+    if (match) {
+      const category = await this.updateDataCategory({
+        id: match.id,
+        ...categoryFields,
+      });
+      return { category, created: false };
+    }
+
+    const category = await this.createDataCategory({
+      name: input.name,
+      category: input.category,
+      ...categoryFields,
+    });
+    return { category, created: true };
   }
 }

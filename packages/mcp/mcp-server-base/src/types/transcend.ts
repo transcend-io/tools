@@ -573,6 +573,10 @@ export interface DataCategory {
   description?: string;
   /** Optional classification regex */
   regex?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface DataPurpose {
@@ -701,6 +705,45 @@ export interface ProcessingPurposeWriteInput {
   purpose?: string;
   /** Description */
   description?: string;
+}
+
+export interface DataCategoryCreateInput {
+  /** Subcategory display name */
+  name: string;
+  /** Top-level data category type */
+  category: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryUpdateInput {
+  /** Data subcategory ID */
+  id: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryWriteInput {
+  /** Existing data subcategory ID (update path when set) */
+  id?: string;
+  /** Subcategory display name (upsert key with category when id is omitted) */
+  name?: string;
+  /** Top-level data category type (upsert key with name when id is omitted) */
+  category?: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface VendorCreateInput {

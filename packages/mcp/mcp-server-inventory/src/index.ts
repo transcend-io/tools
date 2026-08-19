@@ -49,6 +49,7 @@ export {
   UpdateOrCreateDataPointSchema,
   type UpdateOrCreateDataPointInput,
 } from './tools/inventory_update_or_create_data_point.js';
+export { WriteCategorySchema, type WriteCategoryInput } from './tools/inventory_write_category.js';
 export { WriteVendorSchema, type WriteVendorInput } from './tools/inventory_write_vendor.js';
 export {
   WriteProcessingPurposeSchema,

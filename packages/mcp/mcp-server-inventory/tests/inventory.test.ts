@@ -15,6 +15,7 @@ const EXPECTED_TOOL_NAMES = [
   'inventory_list_sub_data_points',
   'inventory_list_identifiers',
   'inventory_list_categories',
+  'inventory_write_category',
   'inventory_list_processing_purposes',
   'inventory_write_processing_purpose',
   'inventory_list_business_entities',
@@ -36,6 +37,7 @@ describe('Inventory Tools', () => {
     listSubDataPoints: ReturnType<typeof vi.fn>;
     listIdentifiers: ReturnType<typeof vi.fn>;
     listDataCategories: ReturnType<typeof vi.fn>;
+    writeDataCategory: ReturnType<typeof vi.fn>;
     listProcessingPurposes: ReturnType<typeof vi.fn>;
     writeProcessingPurpose: ReturnType<typeof vi.fn>;
     listBusinessEntities: ReturnType<typeof vi.fn>;
@@ -56,6 +58,7 @@ describe('Inventory Tools', () => {
       listSubDataPoints: vi.fn(),
       listIdentifiers: vi.fn(),
       listDataCategories: vi.fn(),
+      writeDataCategory: vi.fn(),
       listProcessingPurposes: vi.fn(),
       writeProcessingPurpose: vi.fn(),
       listBusinessEntities: vi.fn(),
@@ -70,9 +73,9 @@ describe('Inventory Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 17 tools with expected names', () => {
+  it('registers exactly 18 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(17);
+    expect(tools).toHaveLength(18);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -606,6 +609,64 @@ describe('Inventory Tools', () => {
         offset: 0,
         text: 'Essential',
       });
+    });
+  });
+
+  describe('inventory_write_category', () => {
+    it('upserts by name and category', async () => {
+      const category = {
+        id: 'cat-1',
+        name: 'Email',
+        category: 'CONTACT',
+        description: 'Email address',
+      };
+      mockGraphql.writeDataCategory.mockResolvedValue({
+        category,
+        created: true,
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_category')!;
+
+      const result = await tool.handler({ name: 'Email', category: 'CONTACT' });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { category, created: true },
+      });
+      expect(mockGraphql.writeDataCategory).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Email', category: 'CONTACT' }),
+      );
+    });
+
+    it('updates by id', async () => {
+      const category = {
+        id: 'cat-1',
+        name: 'Email',
+        category: 'CONTACT',
+        description: 'Updated',
+      };
+      mockGraphql.writeDataCategory.mockResolvedValue({
+        category,
+        created: false,
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_category')!;
+
+      await tool.handler({ id: 'cat-1', description: 'Updated' });
+
+      expect(mockGraphql.writeDataCategory).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'cat-1', description: 'Updated' }),
+      );
+    });
+
+    it('zodSchema rejects when neither id nor name+category provided', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_category')!;
+
+      const result = tool.zodSchema.safeParse({ description: 'only description' });
+      expect(result.success).toBe(false);
     });
   });
 

@@ -15,6 +15,7 @@ import { createInventoryListSubDataPointsTool } from './inventory_list_sub_data_
 import { createInventoryListVendorsTool } from './inventory_list_vendors.js';
 import { createInventoryUpdateDataSiloTool } from './inventory_update_data_silo.js';
 import { createInventoryUpdateOrCreateDataPointTool } from './inventory_update_or_create_data_point.js';
+import { createInventoryWriteCategoryTool } from './inventory_write_category.js';
 import { createInventoryWriteProcessingPurposeTool } from './inventory_write_processing_purpose.js';
 import { createInventoryWriteVendorTool } from './inventory_write_vendor.js';
 
@@ -32,6 +33,7 @@ export function getInventoryTools(clients: ToolClients): ToolDefinition[] {
     createInventoryListSubDataPointsTool(clients),
     createInventoryListIdentifiersTool(clients),
     createInventoryListCategoriesTool(clients),
+    createInventoryWriteCategoryTool(clients),
     createInventoryListProcessingPurposesTool(clients),
     createInventoryWriteProcessingPurposeTool(clients),
     createInventoryListBusinessEntitiesTool(clients),
