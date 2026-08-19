@@ -248,21 +248,6 @@ export const DataFlowOrderField = makeEnum({
 export type DataFlowOrderField = (typeof DataFlowOrderField)[keyof typeof DataFlowOrderField];
 
 /**
- * Fields by which you can order organization users
- */
-export const UserOrderField = makeEnum({
-  /** Display name */
-  Name: 'name',
-  /** When the user was created */
-  CreatedAt: 'createdAt',
-  /** When the user was last updated */
-  UpdatedAt: 'updatedAt',
-});
-
-/** Type override */
-export type UserOrderField = (typeof UserOrderField)[keyof typeof UserOrderField];
-
-/**
  * Types of data flows
  */
 export const DataFlowType = makeEnum({
