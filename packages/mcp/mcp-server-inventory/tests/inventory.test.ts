@@ -1,4 +1,3 @@
-import { isVisibleToModel } from '@transcend-io/mcp-server-base';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { getInventoryTools } from '../src/tools.js';
@@ -7,8 +6,6 @@ const EXPECTED_TOOL_NAMES = [
   'inventory_list_data_silos',
   'inventory_get_data_silo',
   'inventory_list_catalog_integrations',
-  'inventory_create_data_silo',
-  'inventory_update_data_silo',
   'inventory_write_data_silo',
   'inventory_list_vendors',
   'inventory_write_vendor',
@@ -29,8 +26,6 @@ describe('Inventory Tools', () => {
     listDataSilos: ReturnType<typeof vi.fn>;
     getDataSilo: ReturnType<typeof vi.fn>;
     listCatalogs: ReturnType<typeof vi.fn>;
-    createDataSilo: ReturnType<typeof vi.fn>;
-    updateDataSilo: ReturnType<typeof vi.fn>;
     writeDataSilo: ReturnType<typeof vi.fn>;
     listVendors: ReturnType<typeof vi.fn>;
     writeVendor: ReturnType<typeof vi.fn>;
@@ -50,8 +45,6 @@ describe('Inventory Tools', () => {
       listDataSilos: vi.fn(),
       getDataSilo: vi.fn(),
       listCatalogs: vi.fn(),
-      createDataSilo: vi.fn(),
-      updateDataSilo: vi.fn(),
       writeDataSilo: vi.fn(),
       listVendors: vi.fn(),
       writeVendor: vi.fn(),
@@ -74,21 +67,10 @@ describe('Inventory Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 18 tools with expected names', () => {
+  it('registers exactly 16 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(18);
+    expect(tools).toHaveLength(16);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
-  });
-
-  it('hides create/update data silo from tools/list so agents use write', () => {
-    const tools = getTools();
-    const create = tools.find((t) => t.name === 'inventory_create_data_silo')!;
-    const update = tools.find((t) => t.name === 'inventory_update_data_silo')!;
-    const write = tools.find((t) => t.name === 'inventory_write_data_silo')!;
-
-    expect(isVisibleToModel(create)).toBe(false);
-    expect(isVisibleToModel(update)).toBe(false);
-    expect(isVisibleToModel(write)).toBe(true);
   });
 
   describe('inventory_get_data_silo', () => {
@@ -122,45 +104,6 @@ describe('Inventory Tools', () => {
 
       expect(result).toMatchObject({ success: true, data: detail });
       expect(mockGraphql.getDataSilo).toHaveBeenCalledWith('silo-1');
-    });
-  });
-
-  describe('inventory_update_data_silo', () => {
-    it('forwards extended Data Systems fields', async () => {
-      mockGraphql.updateDataSilo.mockResolvedValue({
-        id: 'silo-1',
-        title: 'Salesforce',
-        type: 'api',
-        isLive: true,
-        createdAt: '2024-01-01T00:00:00.000Z',
-      });
-
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_update_data_silo')!;
-
-      await tool.handler({
-        dataSiloId: 'silo-1',
-        title: 'Salesforce',
-        ownerEmails: ['a@example.com'],
-        vendorId: 'v-1',
-        processingPurposeSubCategoryIds: ['pp-1'],
-        dataSubjectBlockListIds: ['sub-1'],
-        businessEntityTitles: ['Acme Corp'],
-        notes: 'updated',
-      });
-
-      expect(mockGraphql.updateDataSilo).toHaveBeenCalledWith(
-        expect.objectContaining({
-          id: 'silo-1',
-          title: 'Salesforce',
-          ownerEmails: ['a@example.com'],
-          vendorId: 'v-1',
-          processingPurposeSubCategoryIds: ['pp-1'],
-          dataSubjectBlockListIds: ['sub-1'],
-          businessEntityTitles: ['Acme Corp'],
-          notes: 'updated',
-        }),
-      );
     });
   });
 
@@ -210,10 +153,28 @@ describe('Inventory Tools', () => {
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'inventory_write_data_silo')!;
 
-      await tool.handler({ dataSiloId: 'silo-1', notes: 'updated' });
+      await tool.handler({
+        dataSiloId: 'silo-1',
+        title: 'Salesforce',
+        ownerEmails: ['a@example.com'],
+        vendorId: 'v-1',
+        processingPurposeSubCategoryIds: ['pp-1'],
+        dataSubjectBlockListIds: ['sub-1'],
+        businessEntityTitles: ['Acme Corp'],
+        notes: 'updated',
+      });
 
       expect(mockGraphql.writeDataSilo).toHaveBeenCalledWith(
-        expect.objectContaining({ id: 'silo-1', notes: 'updated' }),
+        expect.objectContaining({
+          id: 'silo-1',
+          title: 'Salesforce',
+          ownerEmails: ['a@example.com'],
+          vendorId: 'v-1',
+          processingPurposeSubCategoryIds: ['pp-1'],
+          dataSubjectBlockListIds: ['sub-1'],
+          businessEntityTitles: ['Acme Corp'],
+          notes: 'updated',
+        }),
       );
     });
 
@@ -430,40 +391,6 @@ describe('Inventory Tools', () => {
         first: 25,
         offset: 50,
         text: undefined,
-      });
-    });
-  });
-
-  describe('inventory_create_data_silo', () => {
-    it('passes integrationName as catalog name with optional title and description', async () => {
-      mockGraphql.createDataSilo.mockResolvedValue({
-        id: 'silo-1',
-        title: 'My Custom Silo',
-        type: 'server',
-        description: 'Seeded',
-        isLive: false,
-        createdAt: '2024-01-01T00:00:00.000Z',
-      });
-
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_create_data_silo')!;
-
-      const result = await tool.handler({
-        integrationName: 'server',
-        title: 'My Custom Silo',
-        description: 'Seeded',
-      });
-
-      expect(result).toMatchObject({
-        success: true,
-        data: {
-          message: 'Data silo "My Custom Silo" created successfully',
-        },
-      });
-      expect(mockGraphql.createDataSilo).toHaveBeenCalledWith({
-        name: 'server',
-        title: 'My Custom Silo',
-        description: 'Seeded',
       });
     });
   });
