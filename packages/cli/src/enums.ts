@@ -1,5 +1,3 @@
-import { makeEnum } from '@transcend-io/type-utils';
-
 /** Accepted file formats for exporting resources from OneTrust */
 export enum OneTrustFileFormat {
   Json = 'json',

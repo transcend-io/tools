@@ -671,14 +671,8 @@ async function main() {
 
 function summarizeAndExit() {
   if (errors.length > 0) {
-    console.error('Cursor plugin manifest validation failed:');
-    for (const error of errors) {
-      console.error(`- ${error}`);
-    }
     process.exit(1);
   }
-
-  console.log('Cursor plugin manifest validation passed.');
 }
 
 await main();

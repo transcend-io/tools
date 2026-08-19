@@ -6,6 +6,7 @@ import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
+import { getPolicyTools } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, it, expect, vi } from 'vitest';
@@ -18,6 +19,8 @@ const mockClients: ToolClients = {
   rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({} as ToolClients['graphql'], { get: stubFn }),
   dashboardUrl: 'https://app.transcend.io',
+  transcendApiUrl: 'https://api.transcend.io',
+  auth: { type: 'apiKey', apiKey: 'test-key' },
 };
 
 const allTools = [
@@ -28,7 +31,8 @@ const allTools = [
   ...getDiscoveryTools(mockClients),
   ...getDocsTools(mockClients),
   ...getAssessmentTools(mockClients),
-  ...getWorkflowTools(mockClients),
+  ...getWorkflowTools(mockClients as never),
+  ...getPolicyTools(mockClients as never),
   ...getAdminTools(mockClients),
 ];
 
@@ -88,6 +92,7 @@ describe('MCP Tool Annotations', () => {
       'dsr_enrich_identifiers',
       'dsr_submit',
       'dsr_submit_on_behalf',
+      'policy_set_live',
       'preferences_delete',
       'preferences_delete_identifiers',
       'preferences_update_identifiers',

@@ -22,5 +22,3 @@ models.Project.belongsToMany(models.Event, { through: 'event_project' });
 // UserRole
 models.User.belongsToMany(models.Role, { through: 'user_role' });
 models.Role.belongsToMany(models.User, { through: 'user_role' });
-
-console.log(models);

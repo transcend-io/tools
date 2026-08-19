@@ -132,4 +132,5 @@ If 73 tools is too many for your AI agent, install individual domain packages in
 | `@transcend-io/mcp-server-dsr`         | `transcend-mcp-dsr`         | Data subject requests             |
 | `@transcend-io/mcp-server-inventory`   | `transcend-mcp-inventory`   | Data inventory, silos, vendors    |
 | `@transcend-io/mcp-server-preferences` | `transcend-mcp-preferences` | Privacy preferences               |
+| `@transcend-io/mcp-server-policy`      | `transcend-mcp-policy`      | Policy Engine (Rego bundles)      |
 | `@transcend-io/mcp-server-workflows`   | `transcend-mcp-workflows`   | Workflow configuration            |
