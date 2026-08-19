@@ -1,4 +1,6 @@
 import {
+  ErrorCode,
+  ToolError,
   TranscendGraphQLBase,
   type BusinessEntity,
   type CatalogIntegration,
@@ -490,6 +492,8 @@ export class InventoryMixin extends TranscendGraphQLBase {
    * Create or update a data silo. Update by id when provided; otherwise create by
    * catalog integrationName and optionally patch metadata fields in the same call.
    * Never upserts by title — omitting id always creates a new data system.
+   * If create succeeds but the metadata patch fails, throws {@link ToolError} with
+   * `details.dataSiloId` so the caller can retry as an update instead of recreating.
    */
   async writeDataSilo(input: DataSiloWriteInput): Promise<{
     /** Written data silo */
@@ -567,10 +571,24 @@ export class InventoryMixin extends TranscendGraphQLBase {
     }).some((value) => value !== undefined);
 
     if (hasPostCreateFields) {
-      dataSilo = await this.updateDataSilo({
-        id: dataSilo.id,
-        ...updateFields,
-      });
+      try {
+        dataSilo = await this.updateDataSilo({
+          id: dataSilo.id,
+          ...updateFields,
+        });
+      } catch (error) {
+        const updateError = error instanceof Error ? error.message : String(error);
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          `Data silo created but metadata update failed. Retry with dataSiloId "${dataSilo.id}" instead of integrationName.`,
+          false,
+          {
+            dataSiloId: dataSilo.id,
+            dataSilo,
+            updateError,
+          },
+        );
+      }
     }
 
     return { dataSilo, created: true };

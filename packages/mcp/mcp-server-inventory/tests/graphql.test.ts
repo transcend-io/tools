@@ -1,4 +1,4 @@
-import type { AuthCredentials } from '@transcend-io/mcp-server-base';
+import { ErrorCode, ToolError, type AuthCredentials } from '@transcend-io/mcp-server-base';
 import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,11 +6,27 @@ import { InventoryMixin } from '../src/graphql.js';
 
 const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
 
+function graphqlErrors(message: string) {
+  return { __graphqlErrors: [{ message }] };
+}
+
 function mockFetchQueue(payloads: unknown[]) {
   let call = 0;
   return vi.fn().mockImplementation(async () => {
     const payload = payloads[Math.min(call, payloads.length - 1)];
     call += 1;
+    if (payload && typeof payload === 'object' && '__graphqlErrors' in payload) {
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () => 'OK',
+        json: async () => ({
+          data: null,
+          errors: (payload as { __graphqlErrors: { message: string }[] }).__graphqlErrors,
+        }),
+      };
+    }
     return {
       ok: true,
       status: 200,
@@ -741,6 +757,48 @@ describe('InventoryMixin', () => {
       expect(result.created).toBe(false);
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(lastRequestBody(mockFetch).query).toContain('updateDataSilos');
+    });
+
+    it('throws ToolError with dataSiloId when create succeeds but metadata patch fails', async () => {
+      const createdSilo = {
+        id: 'silo-new',
+        title: 'Salesforce',
+        type: 'api',
+        description: 'CRM',
+        isLive: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      const mockFetch = mockFetchQueue([
+        {
+          createDataSilos: {
+            dataSilos: [createdSilo],
+          },
+        },
+        graphqlErrors('Invalid owner email'),
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      try {
+        await client.writeDataSilo({
+          integrationName: 'salesforce',
+          title: 'Salesforce',
+          ownerEmails: ['not-an-email'],
+        });
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ToolError);
+        const toolError = error as ToolError;
+        expect(toolError.code).toBe(ErrorCode.API_ERROR);
+        expect(toolError.retryable).toBe(false);
+        expect(toolError.message).toContain('Retry with dataSiloId "silo-new"');
+        expect(toolError.details).toMatchObject({
+          dataSiloId: 'silo-new',
+          dataSilo: expect.objectContaining({ id: 'silo-new' }),
+          updateError: expect.stringContaining('Invalid owner email'),
+        });
+      }
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 

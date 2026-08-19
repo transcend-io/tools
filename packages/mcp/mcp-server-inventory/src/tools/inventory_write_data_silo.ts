@@ -59,7 +59,9 @@ export function createInventoryWriteDataSiloTool(clients: ToolClients) {
       'Create or update a data silo (Data Systems table). Pass `dataSiloId` to update by ID, or ' +
       '`integrationName` to create a new data system (always creates — never upserts by title). ' +
       'When creating, optional metadata fields (owners, vendor, purposes, subjects, etc.) are applied ' +
-      'after create in one call. Prefer this over inventory_create_data_silo + inventory_update_data_silo.',
+      'after create in one call. Create-then-patch is not atomic: if the metadata update fails, the ' +
+      'error includes `details.dataSiloId` — retry with `dataSiloId`, do not create again. ' +
+      'Prefer this over inventory_create_data_silo + inventory_update_data_silo.',
     category: 'Data Inventory',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
