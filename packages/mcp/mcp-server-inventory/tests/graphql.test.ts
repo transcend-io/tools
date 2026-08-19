@@ -6,11 +6,27 @@ import { InventoryMixin } from '../src/graphql.js';
 
 const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
 
+function graphqlErrors(message: string) {
+  return { __graphqlErrors: [{ message }] };
+}
+
 function mockFetchQueue(payloads: unknown[]) {
   let call = 0;
   return vi.fn().mockImplementation(async () => {
     const payload = payloads[Math.min(call, payloads.length - 1)];
     call += 1;
+    if (payload && typeof payload === 'object' && '__graphqlErrors' in payload) {
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () => 'OK',
+        json: async () => ({
+          data: null,
+          errors: (payload as { __graphqlErrors: { message: string }[] }).__graphqlErrors,
+        }),
+      };
+    }
     return {
       ok: true,
       status: 200,
@@ -702,14 +718,8 @@ describe('InventoryMixin', () => {
   });
 
   describe('writeDataCategory', () => {
-    it('creates when no name+category match exists', async () => {
+    it('creates without listing when the subcategory is new', async () => {
       const mockFetch = mockFetchQueue([
-        {
-          dataSubCategories: {
-            nodes: [],
-            totalCount: 0,
-          },
-        },
         {
           createDataSubCategory: {
             dataSubCategory: {
@@ -743,7 +753,77 @@ describe('InventoryMixin', () => {
           teamNames: [],
         },
       });
-      expect(requestBodyAt(mockFetch, 1).query).toContain('createDataSubCategory');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('createDataSubCategory');
+    });
+
+    it('updates the existing row when create reports a duplicate subcategory', async () => {
+      const mockFetch = mockFetchQueue([
+        graphqlErrors('Cannot add duplicate subcategory'),
+        {
+          dataSubCategories: {
+            nodes: [
+              {
+                id: 'cat-1',
+                name: 'Email',
+                category: 'CONTACT',
+                description: 'Old',
+                owners: [],
+                teams: [],
+              },
+            ],
+            totalCount: 1,
+          },
+        },
+        {
+          updateDataSubCategories: {
+            dataSubCategories: [
+              {
+                id: 'cat-1',
+                name: 'Email',
+                category: 'CONTACT',
+                description: 'Updated',
+                owners: [],
+                teams: [],
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataCategory({
+        name: 'Email',
+        category: 'CONTACT',
+        description: 'Updated',
+      });
+
+      expect(result.created).toBe(false);
+      expect(result.category).toMatchObject({
+        id: 'cat-1',
+        description: 'Updated',
+      });
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(requestBodyAt(mockFetch, 0).query).toContain('createDataSubCategory');
+      expect(requestBodyAt(mockFetch, 1).variables).toMatchObject({
+        filterBy: { text: 'Email' },
+      });
+      expect(requestBodyAt(mockFetch, 2).query).toContain('updateDataSubCategories');
+    });
+
+    it('rethrows non-duplicate create errors without listing', async () => {
+      const mockFetch = mockFetchQueue([graphqlErrors('Unauthorized')]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await expect(
+        client.writeDataCategory({
+          name: 'Email',
+          category: 'CONTACT',
+        }),
+      ).rejects.toThrow(/Unauthorized/);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
     it('updates by id without listing', async () => {

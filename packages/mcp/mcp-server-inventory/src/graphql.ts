@@ -39,6 +39,12 @@ function normalizeSubCategoryName(name: string | null | undefined): string {
   return name && name.trim() ? name : DefaultPurposeSubCategoryType.Other;
 }
 
+/** GraphQL `createDataSubCategory` uniqueness error for an existing (category, name) pair. */
+function isDuplicateSubCategoryError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /cannot add duplicate subcategory/i.test(message);
+}
+
 function mapDataPurpose(node: {
   id: string;
   name: string;
@@ -1010,8 +1016,8 @@ export class InventoryMixin extends TranscendGraphQLBase {
   }
 
   /**
-   * Upsert a data subcategory: update by id when provided,
-   * otherwise look up by `name:category` and create if missing (CLI sync semantics).
+   * Upsert a data subcategory: update by id when provided, otherwise create and
+   * fall back to update when GraphQL rejects a duplicate `(category, name)`.
    * Empty API names are treated as {@link DefaultPurposeSubCategoryType.Other} when matching.
    * Update by id cannot change name or category (GraphQL constraint).
    */
@@ -1039,24 +1045,34 @@ export class InventoryMixin extends TranscendGraphQLBase {
       throw new Error('writeDataCategory requires `id`, or both `name` and `category`');
     }
 
+    try {
+      const category = await this.createDataCategory({
+        name: input.name,
+        category: input.category,
+        ...categoryFields,
+      });
+      return { category, created: true };
+    } catch (error) {
+      if (!isDuplicateSubCategoryError(error)) {
+        throw error;
+      }
+    }
+
     const wantedName = normalizeSubCategoryName(input.name);
-    const existing = await this.listDataCategories({ all: true });
+    const existing = await this.listDataCategories({ text: wantedName, first: 50 });
     const match = existing.nodes.find(
       (c) => normalizeSubCategoryName(c.name) === wantedName && c.category === input.category,
     );
-    if (match) {
-      const category = await this.updateDataCategory({
-        id: match.id,
-        ...categoryFields,
-      });
-      return { category, created: false };
+    if (!match) {
+      throw new Error(
+        `createDataSubCategory reported a duplicate, but no matching subcategory was found for ${wantedName}:${input.category}`,
+      );
     }
 
-    const category = await this.createDataCategory({
-      name: input.name,
-      category: input.category,
+    const category = await this.updateDataCategory({
+      id: match.id,
       ...categoryFields,
     });
-    return { category, created: true };
+    return { category, created: false };
   }
 }
