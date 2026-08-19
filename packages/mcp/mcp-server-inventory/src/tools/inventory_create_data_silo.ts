@@ -18,6 +18,12 @@ export const CreateDataSiloSchema = z.object({
         '(e.g. "Server Webhook - created at …").',
     ),
   description: z.string().optional().describe('Description for the data system'),
+  sombraId: z
+    .string()
+    .optional()
+    .describe(
+      'Sombra gateway ID. Required when integrationName is customFunction (DSR Custom Function integrations must be pinned to a dedicated Sombra). Reuse sombraId from custom_functions_list or inventory_get_data_silo.',
+    ),
 });
 export type CreateDataSiloInput = z.infer<typeof CreateDataSiloSchema>;
 
@@ -27,16 +33,19 @@ export function createInventoryCreateDataSiloTool(clients: ToolClients) {
     name: 'inventory_create_data_silo',
     description:
       'Create a new data silo (data system or integration). ' +
+      'For a DSR Custom Function integration, pass integrationName "customFunction" and sombraId; ' +
+      'custom_functions_upsert can also create that silo when dataSiloId is omitted. ' +
       'Use inventory_update_data_silo afterward for vendor, purposes, owners, and other metadata.',
     category: 'Data Inventory',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateDataSiloSchema,
-    handler: async ({ integrationName, title, description }) => {
+    handler: async ({ integrationName, title, description, sombraId }) => {
       const result = await graphql.createDataSilo({
         name: integrationName,
         title,
         description,
+        sombraId,
       });
       return createToolResult(true, {
         dataSilo: result,

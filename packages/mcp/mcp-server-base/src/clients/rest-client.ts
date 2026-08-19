@@ -59,6 +59,34 @@ export interface TranscendRestClientOptions {
   logger?: Logger;
 }
 
+/** Runtime context attached to signed custom function code. */
+export interface CustomFunctionCodeContext {
+  /** Plaintext environment variables encrypted into the signed context JWT */
+  userDefinedEnv: Record<string, string>;
+  /** Hosts that the custom function may contact */
+  allowedHosts: string[];
+  /** Whether imports from approved third-party repositories are allowed */
+  allowThirdPartyImports?: boolean;
+  /** Maximum custom function runtime in milliseconds */
+  timeoutMs?: number;
+}
+
+/** Plaintext custom function source accepted by Sombra customer ingress. */
+export interface CustomFunctionSource {
+  /** TypeScript source code */
+  code: string;
+  /** Runtime context to sign alongside the source code */
+  context: CustomFunctionCodeContext;
+}
+
+/** Sombra-signed custom function code and context. */
+export interface SignedCustomFunction {
+  /** Signed code JWT */
+  signedCodeJwt: string;
+  /** Signed code context JWT */
+  signedCodeContextJwt: string;
+}
+
 export class TranscendRestClient {
   private auth: AuthCredentials | null;
   private baseUrl: string | null;
@@ -146,6 +174,16 @@ export class TranscendRestClient {
     return {
       [SOMBRA_AUTHORIZATION_HEADER]: `Bearer ${this.sombraCustomerKey}`,
     };
+  }
+
+  private assertSombraCustomerKey(): void {
+    if (!this.sombraCustomerKey) {
+      throw new Error(
+        'Custom function signing and unwrapping require a Sombra customer-ingress key. ' +
+          'Set SOMBRA_CUSTOMER_KEY and ensure SOMBRA_URL targets the same Sombra gateway ' +
+          'that will execute the custom function.',
+      );
+    }
   }
 
   private async rateLimitWait(): Promise<void> {
@@ -489,6 +527,24 @@ export class TranscendRestClient {
     return this.makeRequest<NERExtractionResult>('/classify/unstructured-text', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  }
+
+  /** Sign plaintext custom function code through Sombra customer ingress. */
+  async signCustomFunction(input: CustomFunctionSource): Promise<SignedCustomFunction> {
+    this.assertSombraCustomerKey();
+    return this.makeRequest<SignedCustomFunction>('/v1/custom/sign', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  }
+
+  /** Unwrap signed custom function code through Sombra customer ingress. */
+  async unwrapCustomFunction(input: SignedCustomFunction): Promise<CustomFunctionSource> {
+    this.assertSombraCustomerKey();
+    return this.makeRequest<CustomFunctionSource>('/v1/custom/unwrap', {
+      method: 'POST',
+      body: JSON.stringify(input),
     });
   }
 

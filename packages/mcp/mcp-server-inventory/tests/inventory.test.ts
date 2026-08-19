@@ -174,6 +174,7 @@ describe('Inventory Tools', () => {
         offset: 0,
         text: undefined,
         titles: undefined,
+        customSiloConnectionStrategy: undefined,
       });
     });
 
@@ -194,6 +195,7 @@ describe('Inventory Tools', () => {
         offset: 0,
         text: 'ZEL8168',
         titles: ['Acme'],
+        customSiloConnectionStrategy: undefined,
       });
     });
 
@@ -214,6 +216,7 @@ describe('Inventory Tools', () => {
         offset: 100,
         text: undefined,
         titles: undefined,
+        customSiloConnectionStrategy: undefined,
       });
     });
 
@@ -224,6 +227,31 @@ describe('Inventory Tools', () => {
       const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
+    });
+
+    it('forwards customSiloConnectionStrategy to list Custom Function silos', async () => {
+      mockGraphql.listDataSilos.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_list_data_silos')!;
+
+      await tool.handler({
+        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
+        limit: 10,
+        offset: 0,
+      });
+
+      expect(mockGraphql.listDataSilos).toHaveBeenCalledWith({
+        first: 10,
+        offset: 0,
+        text: undefined,
+        titles: undefined,
+        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
+      });
     });
   });
 
@@ -387,6 +415,35 @@ describe('Inventory Tools', () => {
         name: 'server',
         title: 'My Custom Silo',
         description: 'Seeded',
+        sombraId: undefined,
+      });
+    });
+
+    it('forwards sombraId for customFunction integrations', async () => {
+      mockGraphql.createDataSilo.mockResolvedValue({
+        id: 'silo-1',
+        title: 'CF Silo',
+        type: 'server',
+        isLive: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+        sombraId: 'sombra-1',
+        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_create_data_silo')!;
+
+      await tool.handler({
+        integrationName: 'customFunction',
+        title: 'CF Silo',
+        sombraId: 'sombra-1',
+      });
+
+      expect(mockGraphql.createDataSilo).toHaveBeenCalledWith({
+        name: 'customFunction',
+        title: 'CF Silo',
+        description: undefined,
+        sombraId: 'sombra-1',
       });
     });
   });
