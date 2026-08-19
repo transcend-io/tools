@@ -111,7 +111,18 @@ describe('Admin Tools', () => {
 
   describe('admin_list_users', () => {
     it('returns list on success', async () => {
-      const nodes = [{ id: 'u1', email: 'a@b.com', name: 'Alice' }];
+      const nodes = [
+        {
+          id: 'u1',
+          email: 'a@b.com',
+          name: 'Alice',
+          isAdmin: false,
+          isInvited: false,
+          isLocked: false,
+          teams: [],
+          scopes: [],
+        },
+      ];
       mockGraphql.listUsers.mockResolvedValue({
         nodes,
         totalCount: 1,
@@ -124,6 +135,32 @@ describe('Admin Tools', () => {
       const result = await tool.handler({});
 
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
+      expect(mockGraphql.listUsers).toHaveBeenCalledWith({
+        first: 50,
+        offset: 0,
+        filterBy: {},
+        orderBy: [{ field: 'name', direction: 'ASC' }],
+      });
+    });
+
+    it('maps text and isAdmin into sparse filterBy', async () => {
+      mockGraphql.listUsers.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'admin_list_users')!;
+
+      await tool.handler({ text: 'ada@', isAdmin: true, limit: 10, offset: 5 });
+
+      expect(mockGraphql.listUsers).toHaveBeenCalledWith({
+        first: 10,
+        offset: 5,
+        filterBy: { text: 'ada@', isAdmin: true },
+        orderBy: [{ field: 'name', direction: 'ASC' }],
+      });
     });
 
     it('throws when client throws', async () => {
