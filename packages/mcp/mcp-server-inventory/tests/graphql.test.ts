@@ -663,6 +663,87 @@ describe('InventoryMixin', () => {
     });
   });
 
+  describe('writeDataSilo', () => {
+    it('creates then patches metadata when integrationName is provided', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          createDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-new',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'CRM',
+                isLive: false,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+        {
+          updateDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-new',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'CRM',
+                isLive: true,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataSilo({
+        integrationName: 'salesforce',
+        title: 'Salesforce',
+        description: 'CRM',
+        ownerEmails: ['a@example.com'],
+        isLive: true,
+      });
+
+      expect(result.created).toBe(true);
+      expect(result.dataSilo.id).toBe('silo-new');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(requestBodyAt(mockFetch, 0).query).toContain('createDataSilos');
+      expect(requestBodyAt(mockFetch, 1).query).toContain('updateDataSilos');
+    });
+
+    it('updates by id without creating', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          updateDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-1',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'Updated',
+                isLive: true,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataSilo({
+        id: 'silo-1',
+        description: 'Updated',
+      });
+
+      expect(result.created).toBe(false);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('updateDataSilos');
+    });
+  });
+
   describe('writeVendor', () => {
     it('updates by id without listing vendors', async () => {
       const mockFetch = mockFetchQueue([

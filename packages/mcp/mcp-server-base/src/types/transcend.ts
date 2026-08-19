@@ -526,6 +526,13 @@ export interface DataSiloUpdateInput {
   isLive?: boolean;
 }
 
+export interface DataSiloWriteInput extends Omit<DataSiloUpdateInput, 'id'> {
+  /** Existing data silo ID (update path when set) */
+  id?: string;
+  /** Catalog integration name (GraphQL `name`) required to create when id is omitted */
+  integrationName?: string;
+}
+
 export interface DataPoint {
   /** Unique identifier */
   id: string;
