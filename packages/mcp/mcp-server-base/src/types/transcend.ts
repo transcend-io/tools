@@ -382,6 +382,12 @@ export interface DataSilo {
   catalog?: DataCatalog;
   createdAt: string;
   updatedAt?: string;
+  /** DSR connection state (CONNECTED, NOT_CONFIGURED, EXPIRED, …) */
+  connectionState?: string;
+  /** WEBHOOK for ordinary custom silos, CUSTOM_FUNCTION for Custom Function integrations */
+  customSiloConnectionStrategy?: string;
+  /** Sombra gateway this silo is pinned to; required for DSR Custom Functions */
+  sombraId?: string;
 }
 
 /** Lightweight owner preview on inventory resources */
@@ -475,6 +481,11 @@ export interface DataSiloCreateInput {
   title?: string;
   /** Description for the data system */
   description?: string;
+  /**
+   * Sombra gateway ID. Required when `name` is `customFunction` (DSR Custom Function
+   * integrations must be pinned to a dedicated Sombra).
+   */
+  sombraId?: string;
   pluginId?: string;
   resourceId?: string;
   region?: string;

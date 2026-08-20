@@ -60,6 +60,8 @@ describe('InventoryMixin', () => {
             outerType: null,
             createdAt: '2024-01-01T00:00:00.000Z',
             connectionState: 'CONNECTED',
+            customSiloConnectionStrategy: 'WEBHOOK',
+            sombraId: 'sombra-1',
             notes: 'note',
             contactName: 'Ada',
             contactEmail: 'ada@example.com',
@@ -111,6 +113,9 @@ describe('InventoryMixin', () => {
       expect(result).toMatchObject({
         id: 'silo-1',
         notes: 'note',
+        connectionState: 'CONNECTED',
+        customSiloConnectionStrategy: 'WEBHOOK',
+        sombraId: 'sombra-1',
         contactName: 'Ada',
         contactEmail: 'ada@example.com',
         websiteUrl: 'https://example.com',
@@ -239,6 +244,31 @@ describe('InventoryMixin', () => {
         first: 10,
         offset: 0,
         filterBy: { text: 'ZEL8168', titles: ['Acme Silo'] },
+      });
+    });
+
+    it('passes customSiloConnectionStrategy via filterBy', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          dataSilos: {
+            nodes: [],
+            totalCount: 0,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await client.listDataSilos({
+        first: 10,
+        offset: 0,
+        customSiloConnectionStrategy: 'CUSTOM_FUNCTION',
+      });
+
+      const body = lastRequestBody(mockFetch);
+      expect(body.query).toContain('customSiloConnectionStrategy');
+      expect(body.variables).toMatchObject({
+        filterBy: { customSiloConnectionStrategy: 'CUSTOM_FUNCTION' },
       });
     });
   });
