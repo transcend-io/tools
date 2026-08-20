@@ -552,43 +552,8 @@ export class InventoryMixin extends TranscendGraphQLBase {
     /** True when a new data silo was created */
     created: boolean;
   }> {
-    const {
-      id,
-      integrationName,
-      title,
-      description,
-      ownerEmails,
-      teamNames,
-      vendorId,
-      processingPurposeSubCategoryIds,
-      dataSubjectBlockListIds,
-      country,
-      countrySubDivision,
-      websiteUrl,
-      contactName,
-      contactEmail,
-      notes,
-      businessEntityTitles,
-      isLive,
-    } = input;
-
-    const updateFields: Omit<DataSiloUpdateInput, 'id'> = {
-      title,
-      description,
-      ownerEmails,
-      teamNames,
-      vendorId,
-      processingPurposeSubCategoryIds,
-      dataSubjectBlockListIds,
-      country,
-      countrySubDivision,
-      websiteUrl,
-      contactName,
-      contactEmail,
-      notes,
-      businessEntityTitles,
-      isLive,
-    };
+    const { id, integrationName, ...updateFields } = input;
+    const { title, description, country, countrySubDivision, ...postCreateFields } = updateFields;
 
     if (id) {
       const dataSilo = await this.updateDataSilo({ id, ...updateFields });
@@ -607,19 +572,10 @@ export class InventoryMixin extends TranscendGraphQLBase {
       countrySubDivision,
     });
 
-    const hasPostCreateFields = Object.values({
-      ownerEmails,
-      teamNames,
-      vendorId,
-      processingPurposeSubCategoryIds,
-      dataSubjectBlockListIds,
-      websiteUrl,
-      contactName,
-      contactEmail,
-      notes,
-      businessEntityTitles,
-      isLive,
-    }).some((value) => value !== undefined);
+    // Only fields that createDataSilo does not accept need a follow-up update.
+    const hasPostCreateFields = Object.values(postCreateFields).some(
+      (value) => value !== undefined,
+    );
 
     if (hasPostCreateFields) {
       try {
