@@ -1,4 +1,4 @@
-import type { AuthCredentials } from '@transcend-io/mcp-server-base';
+import { ErrorCode, ToolError, type AuthCredentials } from '@transcend-io/mcp-server-base';
 import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -676,6 +676,129 @@ describe('InventoryMixin', () => {
       expect(result.created).toBe(false);
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(lastRequestBody(mockFetch).query).toContain('updateProcessingPurposeSubCategories');
+    });
+  });
+
+  describe('writeDataSilo', () => {
+    it('creates then patches metadata when integrationName is provided', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          createDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-new',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'CRM',
+                isLive: false,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+        {
+          updateDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-new',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'CRM',
+                isLive: true,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataSilo({
+        integrationName: 'salesforce',
+        title: 'Salesforce',
+        description: 'CRM',
+        ownerEmails: ['a@example.com'],
+        isLive: true,
+      });
+
+      expect(result.created).toBe(true);
+      expect(result.dataSilo.id).toBe('silo-new');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(requestBodyAt(mockFetch, 0).query).toContain('createDataSilos');
+      expect(requestBodyAt(mockFetch, 1).query).toContain('updateDataSilos');
+    });
+
+    it('updates by id without creating', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          updateDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-1',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'Updated',
+                isLive: true,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataSilo({
+        id: 'silo-1',
+        description: 'Updated',
+      });
+
+      expect(result.created).toBe(false);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('updateDataSilos');
+    });
+
+    it('throws ToolError with dataSiloId when create succeeds but metadata patch fails', async () => {
+      const createdSilo = {
+        id: 'silo-new',
+        title: 'Salesforce',
+        type: 'api',
+        description: 'CRM',
+        isLive: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      const mockFetch = mockFetchQueue([
+        {
+          createDataSilos: {
+            dataSilos: [createdSilo],
+          },
+        },
+        graphqlErrors('Invalid owner email'),
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      try {
+        await client.writeDataSilo({
+          integrationName: 'salesforce',
+          title: 'Salesforce',
+          ownerEmails: ['not-an-email'],
+        });
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ToolError);
+        const toolError = error as ToolError;
+        expect(toolError.code).toBe(ErrorCode.API_ERROR);
+        expect(toolError.retryable).toBe(false);
+        expect(toolError.message).toContain('Retry with dataSiloId "silo-new"');
+        expect(toolError.details).toMatchObject({
+          dataSiloId: 'silo-new',
+          dataSilo: expect.objectContaining({ id: 'silo-new' }),
+          updateError: expect.stringContaining('Invalid owner email'),
+        });
+      }
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
   });
 

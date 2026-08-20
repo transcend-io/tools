@@ -11,7 +11,7 @@ export function createInventoryListDataSubjectsTool(clients: ToolClients) {
     name: 'inventory_list_data_subjects',
     description:
       'List data subject types configured for the organization. Use `id` values with ' +
-      'inventory_update_data_silo `dataSubjectBlockListIds` (IDs of subjects to *block* ' +
+      'inventory_write_data_silo `dataSubjectBlockListIds` (IDs of subjects to *block* ' +
       'from the data system — inverse of an allowlist). Returns the full set (not paginated).',
     category: 'Data Inventory',
     readOnly: true,

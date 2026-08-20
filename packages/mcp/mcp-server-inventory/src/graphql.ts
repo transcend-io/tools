@@ -1,4 +1,6 @@
 import {
+  ErrorCode,
+  ToolError,
   TranscendGraphQLBase,
   type BusinessEntity,
   type CatalogIntegration,
@@ -11,6 +13,7 @@ import {
   type DataSiloDetails,
   type DataSiloType,
   type DataSiloUpdateInput,
+  type DataSiloWriteInput,
   type DataSubject,
   type Identifier,
   type ListOptions,
@@ -534,6 +537,112 @@ export class InventoryMixin extends TranscendGraphQLBase {
     const updated = data.updateDataSilos.dataSilos[0];
     if (!updated) throw new Error('updateDataSilos returned an empty array');
     return mapDataSilo(updated);
+  }
+
+  /**
+   * Create or update a data silo. Update by id when provided; otherwise create by
+   * catalog integrationName and optionally patch metadata fields in the same call.
+   * Never upserts by title — omitting id always creates a new data system.
+   * If create succeeds but the metadata patch fails, throws {@link ToolError} with
+   * `details.dataSiloId` so the caller can retry as an update instead of recreating.
+   */
+  async writeDataSilo(input: DataSiloWriteInput): Promise<{
+    /** Written data silo */
+    dataSilo: DataSilo;
+    /** True when a new data silo was created */
+    created: boolean;
+  }> {
+    const {
+      id,
+      integrationName,
+      title,
+      description,
+      ownerEmails,
+      teamNames,
+      vendorId,
+      processingPurposeSubCategoryIds,
+      dataSubjectBlockListIds,
+      country,
+      countrySubDivision,
+      websiteUrl,
+      contactName,
+      contactEmail,
+      notes,
+      businessEntityTitles,
+      isLive,
+    } = input;
+
+    const updateFields: Omit<DataSiloUpdateInput, 'id'> = {
+      title,
+      description,
+      ownerEmails,
+      teamNames,
+      vendorId,
+      processingPurposeSubCategoryIds,
+      dataSubjectBlockListIds,
+      country,
+      countrySubDivision,
+      websiteUrl,
+      contactName,
+      contactEmail,
+      notes,
+      businessEntityTitles,
+      isLive,
+    };
+
+    if (id) {
+      const dataSilo = await this.updateDataSilo({ id, ...updateFields });
+      return { dataSilo, created: false };
+    }
+
+    if (!integrationName) {
+      throw new Error('writeDataSilo requires `id`, or `integrationName` to create');
+    }
+
+    let dataSilo = await this.createDataSilo({
+      name: integrationName,
+      title,
+      description,
+      country,
+      countrySubDivision,
+    });
+
+    const hasPostCreateFields = Object.values({
+      ownerEmails,
+      teamNames,
+      vendorId,
+      processingPurposeSubCategoryIds,
+      dataSubjectBlockListIds,
+      websiteUrl,
+      contactName,
+      contactEmail,
+      notes,
+      businessEntityTitles,
+      isLive,
+    }).some((value) => value !== undefined);
+
+    if (hasPostCreateFields) {
+      try {
+        dataSilo = await this.updateDataSilo({
+          id: dataSilo.id,
+          ...updateFields,
+        });
+      } catch (error) {
+        const updateError = error instanceof Error ? error.message : String(error);
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          `Data silo created but metadata update failed. Retry with dataSiloId "${dataSilo.id}" instead of integrationName.`,
+          false,
+          {
+            dataSiloId: dataSilo.id,
+            dataSilo,
+            updateError,
+          },
+        );
+      }
+    }
+
+    return { dataSilo, created: true };
   }
 
   async listVendors(
