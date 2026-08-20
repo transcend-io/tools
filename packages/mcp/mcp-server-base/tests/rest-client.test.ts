@@ -149,4 +149,42 @@ describe('TranscendRestClient Sombra host and headers', () => {
       requestId: 'd6e2445a-32d2-4c35-9aa5-9e80cb8e3f89',
     });
   });
+
+  it('submitDSR POSTs subject email and coreIdentifier without dhEncrypted', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 'req-1', status: 'REQUEST_MADE' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    await client.submitDSR({
+      type: 'ACCESS',
+      email: 'person@example.com',
+      subjectType: 'customer',
+      isSilent: true,
+      locale: 'en-US',
+    });
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toBe('https://sombra.example.com/v1/data-subject-request');
+    expect(init.method).toBe('POST');
+    const body = JSON.parse(init.body);
+    expect(body).toEqual({
+      type: 'ACCESS',
+      subject: {
+        email: 'person@example.com',
+        coreIdentifier: 'person@example.com',
+      },
+      subjectType: 'customer',
+      locale: 'en-US',
+      isSilent: true,
+    });
+    expect(body).not.toHaveProperty('dhEncrypted');
+  });
 });

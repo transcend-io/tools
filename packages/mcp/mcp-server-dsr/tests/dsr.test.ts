@@ -14,7 +14,6 @@ const EXPECTED_TOOL_NAMES = [
   'dsr_respond_access',
   'dsr_respond_erasure',
   'dsr_cancel',
-  'dsr_submit_on_behalf',
   'dsr_analyze',
 ] as const;
 
@@ -23,7 +22,6 @@ describe('DSR Tools', () => {
     listRequests: ReturnType<typeof vi.fn>;
     getRequest: ReturnType<typeof vi.fn>;
     listRequestDataSilos: ReturnType<typeof vi.fn>;
-    employeeMakeDataSubjectRequest: ReturnType<typeof vi.fn>;
     cancelRequest: ReturnType<typeof vi.fn>;
   };
 
@@ -42,7 +40,6 @@ describe('DSR Tools', () => {
       listRequests: vi.fn(),
       getRequest: vi.fn(),
       listRequestDataSilos: vi.fn(),
-      employeeMakeDataSubjectRequest: vi.fn(),
       cancelRequest: vi.fn(),
     };
     mockRest = {
@@ -63,10 +60,46 @@ describe('DSR Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 13 tools with expected names', () => {
+  it('registers exactly 12 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(13);
+    expect(tools).toHaveLength(12);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  describe('dsr_submit', () => {
+    it('requires Sombra and calls rest.submitDSR with the subject payload', async () => {
+      mockRest.submitDSR.mockResolvedValue({ id: 'req-1', status: 'REQUEST_MADE' });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_submit')!;
+
+      expect(tool.requireSombra).toBe(true);
+
+      const result = await tool.handler({
+        type: 'ACCESS',
+        email: 'person@example.com',
+        subjectType: 'customer',
+        locale: 'en-US',
+        isSilent: true,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          request: { id: 'req-1', status: 'REQUEST_MADE' },
+          message: 'DSR of type ACCESS submitted successfully',
+        },
+      });
+      expect(mockRest.submitDSR).toHaveBeenCalledWith({
+        type: 'ACCESS',
+        email: 'person@example.com',
+        subjectType: 'customer',
+        coreIdentifier: undefined,
+        name: undefined,
+        locale: 'en-US',
+        isSilent: true,
+      });
+    });
   });
 
   describe('dsr_get_details', () => {
