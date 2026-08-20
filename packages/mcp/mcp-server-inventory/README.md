@@ -109,7 +109,8 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `inventory_list_data_points` — List data points (optional `dataSiloId` and `text` filters)
 - `inventory_update_or_create_data_point` — Create/update a datapoint and field-level purpose assignments
 - `inventory_list_sub_data_points` — List sub-data points (includes purposes and categories)
-- `inventory_list_categories` — List data categories
+- `inventory_list_categories` — List data category subcategories (optional `text` filter; includes ids)
+- `inventory_write_category` — Create or update a data category subcategory (upsert by name+category or id)
 - `inventory_list_processing_purposes` — List processing purpose subcategories (optional `text` filter)
 - `inventory_write_processing_purpose` — Create or update a processing purpose subcategory
 - `inventory_list_identifiers` — List identifiers
