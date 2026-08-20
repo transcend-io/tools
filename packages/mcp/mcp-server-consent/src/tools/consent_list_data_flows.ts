@@ -25,8 +25,7 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .optional()
     .describe(
       'Include items with zero activity. Omit (default) so the NEEDS_REVIEW total matches ' +
-        'consent_get_inventory_stats dataFlows.triageTable.needReviewCount (the Consent Manager ' +
-        'table). Top-level dataFlows.needReviewCount includes hidden CSP rows and may be higher. ' +
+        'consent_get_inventory_stats dataFlows.needReviewCount (the Consent Manager table). ' +
         'Set true for the full triage backlog including never-active flows.',
     ),
   text: z.string().optional().describe('Search text filter'),

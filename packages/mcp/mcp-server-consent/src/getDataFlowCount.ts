@@ -10,22 +10,11 @@ export interface DataFlowCountFilter {
   isJunk?: boolean;
 }
 
-/** Live / needs-review / junk counts for one data-flow slice. */
-export interface DataFlowBucketCounts {
-  /** Approved (LIVE, not junk) items */
-  liveCount: number;
-  /** Items needing review */
-  needReviewCount: number;
-  /** Junked items */
-  junkCount: number;
-}
-
 /**
  * Fetch `dataFlows.totalCount` without paging nodes.
  *
  * Uses `first: 1` so the payload stays small. The list API hides CSP rows
- * (including when `type: CSP` is set), so this count matches the Consent
- * Manager table, not `dataFlowStats`.
+ * (same as the Consent Manager table), so these counts match what users see.
  */
 export async function getDataFlowCount(
   graphql: TranscendGraphQLBase,
@@ -39,12 +28,4 @@ export async function getDataFlowCount(
     filterBy,
   });
   return data.dataFlows.totalCount;
-}
-
-/**
- * Hidden CSP remainder: backend stats include CSP, the list/UI do not.
- * Floors at 0 if the list is ever larger than the rollup.
- */
-export function cspRemainder(statsCount: number, triageCount: number): number {
-  return Math.max(0, statsCount - triageCount);
 }

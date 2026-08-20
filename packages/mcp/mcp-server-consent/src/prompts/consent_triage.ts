@@ -57,13 +57,13 @@ Present the customer's setup:
 |---------|------|-----------------|
 | (from API) | (from API) | (cross-ref with regimes) |
 
-Present triage stats. For data flows, use \`dataFlows.triageTable\` (matches the Consent Manager table). Top-level \`dataFlows.needReviewCount\` includes hidden CSP rows — show \`dataFlows.csp\` as a footnote, not as the backlog.
+Present triage stats from \`consent_get_inventory_stats\` (cookie and data-flow counts match the Consent Manager tables; CSP data flows are omitted like the UI):
 
-| Metric | Cookies | Data Flows (triageTable) |
-|--------|---------|--------------------------|
-| Needs Review | cookies.needReviewCount | dataFlows.triageTable.needReviewCount |
-| Live (Approved) | cookies.liveCount | dataFlows.triageTable.liveCount |
-| Junk | cookies.junkCount | dataFlows.triageTable.junkCount |
+| Metric | Cookies | Data Flows |
+|--------|---------|------------|
+| Needs Review | cookies.needReviewCount | dataFlows.needReviewCount |
+| Live (Approved) | cookies.liveCount | dataFlows.liveCount |
+| Junk | cookies.junkCount | dataFlows.junkCount |
 
 ## Phase 2: Fetch Batch
 

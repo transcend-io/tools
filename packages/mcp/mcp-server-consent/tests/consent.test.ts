@@ -5,7 +5,6 @@ import {
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
-import { cspRemainder } from '../src/getDataFlowCount.js';
 import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
@@ -129,7 +128,7 @@ describe('Consent Tools', () => {
       expect(variables.filterBy).toMatchObject({ type: 'CSP', minOccurrences: 10 });
     });
 
-    it('omits showZeroActivity by default for NEEDS_REVIEW so counts match triageTable', async () => {
+    it('omits showZeroActivity by default for NEEDS_REVIEW so counts match inventory stats', async () => {
       const variables = await runDataFlows({ status: 'NEEDS_REVIEW' });
       expect(variables.filterBy).not.toHaveProperty('showZeroActivity');
     });
@@ -142,16 +141,13 @@ describe('Consent Tools', () => {
   });
 
   describe('consent_get_inventory_stats', () => {
-    it('returns triageTable from list totals and csp as stats minus triageTable', async () => {
+    it('returns UI-matching data-flow counts from list totals (CSP omitted)', async () => {
       mockGraphql.makeRequest
         .mockResolvedValueOnce({
           consentManager: { consentManager: { id: 'bundle-1' } },
         })
         .mockResolvedValueOnce({
           cookieStats: { liveCount: 2, needReviewCount: 8, junkCount: 359 },
-        })
-        .mockResolvedValueOnce({
-          dataFlowStats: { liveCount: 1, needReviewCount: 12, junkCount: 1 },
         })
         .mockResolvedValueOnce({
           dataFlows: { nodes: [], totalCount: 12 },
@@ -171,20 +167,21 @@ describe('Consent Tools', () => {
         data: {
           cookies: { liveCount: 2, needReviewCount: 8, junkCount: 359 },
           dataFlows: {
-            liveCount: 1,
+            liveCount: 0,
             needReviewCount: 12,
             junkCount: 1,
-            triageTable: { liveCount: 0, needReviewCount: 12, junkCount: 1 },
-            csp: { liveCount: 1, needReviewCount: 0, junkCount: 0 },
           },
         },
       });
+      expect((result.data as { dataFlows: Record<string, unknown> }).dataFlows).not.toHaveProperty(
+        'csp',
+      );
 
-      // Bundle resolve + cookie stats + data-flow stats + 3 triage-visible counts
-      expect(mockGraphql.makeRequest).toHaveBeenCalledTimes(6);
+      // Bundle resolve + cookie stats + 3 UI-visible data-flow counts
+      expect(mockGraphql.makeRequest).toHaveBeenCalledTimes(5);
 
       const countFilters = mockGraphql.makeRequest.mock.calls
-        .slice(3)
+        .slice(2)
         .map((call) => call[1].filterBy);
       expect(countFilters).toEqual([
         { status: 'NEEDS_REVIEW' },
@@ -272,15 +269,6 @@ describe('Consent Tools', () => {
         },
       });
     });
-  });
-});
-
-describe('cspRemainder', () => {
-  it('returns stats minus triage and floors at 0', () => {
-    expect(cspRemainder(7, 2)).toBe(5);
-    expect(cspRemainder(1, 0)).toBe(1);
-    expect(cspRemainder(12, 12)).toBe(0);
-    expect(cspRemainder(1, 3)).toBe(0);
   });
 });
 
