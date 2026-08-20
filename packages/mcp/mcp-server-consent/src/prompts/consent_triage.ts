@@ -57,13 +57,13 @@ Present the customer's setup:
 |---------|------|-----------------|
 | (from API) | (from API) | (cross-ref with regimes) |
 
-Present triage stats:
+Present triage stats. For data flows, use \`dataFlows.triageTable\` (matches the Consent Manager table). Top-level \`dataFlows.needReviewCount\` includes hidden CSP rows — show \`dataFlows.csp\` as a footnote, not as the backlog.
 
-| Metric | Cookies | Data Flows |
-|--------|---------|------------|
-| Needs Review | X | Y |
-| Live (Approved) | X | Y |
-| Junk | X | Y |
+| Metric | Cookies | Data Flows (triageTable) |
+|--------|---------|--------------------------|
+| Needs Review | cookies.needReviewCount | dataFlows.triageTable.needReviewCount |
+| Live (Approved) | cookies.liveCount | dataFlows.triageTable.liveCount |
+| Junk | cookies.junkCount | dataFlows.triageTable.junkCount |
 
 ## Phase 2: Fetch Batch
 
@@ -71,12 +71,12 @@ Fetch the next batch of items needing review, sorted by highest traffic:
 
 ${[
   triageType === 'cookies' || triageType === 'both'
-    ? '- `consent_list_cookies { status: "NEEDS_REVIEW", limit: ' +
+    ? '- `consent_list_cookies { status: "NEEDS_REVIEW", first: ' +
       batchSize +
       ', order_field: "occurrences", order_direction: "DESC" }`'
     : '',
   triageType === 'data_flows' || triageType === 'both'
-    ? '- `consent_list_data_flows { status: "NEEDS_REVIEW", limit: ' +
+    ? '- `consent_list_data_flows { status: "NEEDS_REVIEW", first: ' +
       batchSize +
       ', order_field: "occurrences", order_direction: "DESC" }`'
     : '',
