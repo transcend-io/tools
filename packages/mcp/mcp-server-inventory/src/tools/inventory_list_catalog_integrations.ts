@@ -29,7 +29,7 @@ export function createInventoryListCatalogIntegrationsTool(clients: ToolClients)
     name: 'inventory_list_catalog_integrations',
     description:
       'Search the Transcend integration catalog for valid `integrationName` values to pass to ' +
-      'inventory_create_data_silo. Pass `text` to match title or integrationName (e.g. "salesforce"). ' +
+      'inventory_write_data_silo. Pass `text` to match title or integrationName (e.g. "salesforce"). ' +
       'Paginate with `offset` until `hasNextPage` is false; `totalCount` is the full count.',
     category: 'Data Inventory',
     readOnly: true,
