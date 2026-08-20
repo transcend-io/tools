@@ -31,6 +31,20 @@ describe('parseLlmsTxt', () => {
       url: 'https://docs.transcend.io/docs/articles/use-case-guides/regional-experiences.md',
     });
   });
+
+  it('skips list items with an empty title', () => {
+    const raw = `## General
+- [](https://docs.transcend.io/docs/articles/empty.md)
+- [Kept](https://docs.transcend.io/docs/articles/kept.md)
+`;
+    expect(parseLlmsTxt(raw)).toEqual([
+      {
+        section: 'General',
+        title: 'Kept',
+        url: 'https://docs.transcend.io/docs/articles/kept.md',
+      },
+    ]);
+  });
 });
 
 describe('getIndex caching', () => {

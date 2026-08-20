@@ -9,8 +9,35 @@ import { createDocsFetchTool } from '../src/tools/docs_fetch.js';
 import { createDocsListTool } from '../src/tools/docs_list.js';
 import { getDocsTools } from '../src/tools/index.js';
 
-const fixturePath = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/llms.txt');
-const fixtureLlmsTxt = readFileSync(fixturePath, 'utf8');
+const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
+const fixtureLlmsTxt = readFileSync(join(fixturesDir, 'llms.txt'), 'utf8');
+const fixtureLlmsSearch = readFileSync(join(fixturesDir, 'llms-search.txt'), 'utf8');
+
+const DASHBOARD_URL =
+  'https://docs.transcend.io/docs/articles/consent-management/reference/metrics-reporting/consent-dashboard.md';
+const TELEMETRY_URL =
+  'https://docs.transcend.io/docs/articles/consent-management/reference/telemetry-and-data-flows/telemetry.md';
+const REGIONAL_URL =
+  'https://docs.transcend.io/docs/articles/use-case-guides/regional-experiences.md';
+
+function mockDocsFetch(options: {
+  /** llms.txt body */
+  llmsTxt: string;
+  /** Per-article markdown keyed by URL */
+  bodies: Record<string, string>;
+}): void {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input);
+    if (url === LLMS_TXT_URL) {
+      return new Response(options.llmsTxt, { status: 200 });
+    }
+    const body = options.bodies[url];
+    if (body !== undefined) {
+      return new Response(body, { status: 200 });
+    }
+    throw new Error(`Unexpected fetch: ${url}`);
+  });
+}
 
 describe('getDocsTools', () => {
   it('registers list and fetch tools', () => {
@@ -43,7 +70,17 @@ describe('docs_list', () => {
   });
 
   it('filters by section and keyword', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
+    mockDocsFetch({
+      llmsTxt: fixtureLlmsTxt,
+      bodies: {
+        'https://docs.transcend.io/docs/articles/dsr-automation.md':
+          '# DSR Automation\n\nRequests.',
+        'https://docs.transcend.io/docs/articles/consent-management.md':
+          '# Consent Management\n\nConsent banner configuration.',
+        'https://docs.transcend.io/docs/articles/use-case-guides/regional-experiences.md':
+          '# Regional Experiences\n\nGeo targeting.',
+      },
+    });
 
     const tool = createDocsListTool();
     const result = (await tool.handler({ section: 'General', keyword: 'consent' })) as {
@@ -54,6 +91,37 @@ describe('docs_list', () => {
 
     expect(result.count).toBe(1);
     expect(result.data[0]?.title).toBe('Consent Management');
+  });
+
+  it('ranks body matches for session when the title does not contain the term', async () => {
+    mockDocsFetch({
+      llmsTxt: fixtureLlmsSearch,
+      bodies: {
+        [DASHBOARD_URL]:
+          '**Sessions**: a unique sessionStorage context. In most browsers, each tab gets a unique sessionStorage context.',
+        [TELEMETRY_URL]:
+          'A "session" is defined as a unique sessionStorage context. Telemetry includes cumulative unique sessionStorage contexts.',
+        [REGIONAL_URL]: 'Configure regional consent experiences and banner copy.',
+      },
+    });
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ keyword: 'session' })) as {
+      success: boolean;
+      data: Array<{ title: string; snippet: string }>;
+      count: number;
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.count).toBeGreaterThanOrEqual(2);
+    const titles = result.data.map((hit) => hit.title);
+    expect(titles).toContain('Consent Dashboard');
+    expect(titles).toContain('Transcend-Stored Telemetry Data');
+    expect(titles.slice(0, 2)).toEqual(
+      expect.arrayContaining(['Consent Dashboard', 'Transcend-Stored Telemetry Data']),
+    );
+    const dashboard = result.data.find((hit) => hit.title === 'Consent Dashboard');
+    expect(dashboard?.snippet.toLowerCase()).toContain('sessionstorage');
   });
 });
 
