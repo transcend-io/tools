@@ -106,6 +106,7 @@ const SharedLoadOptions = t.intersection([
     // if cssFolder is defined, per-theme CSS will be fetched from `${cssFolder}/${themeKey}.css`
     cssFolder: AbsoluteUrlString,
     hostThemeMap: t.record(URLHostString, ThemeKey),
+    customCssUrlMap: t.record(ThemeKey, AbsoluteUrlString),
   }),
 ]);
 
