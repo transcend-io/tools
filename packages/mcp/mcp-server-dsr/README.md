@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`, `ViewWorkflows`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -99,7 +99,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 | `SOMBRA_URL`                    | No                     | _(lazy GraphQL resolve)_   | Sticky **customer ingress** base URL for DSR create and other Sombra REST tools. When unset, resolves `organization.sombra.customerUrl`           |
 | `SOMBRA_CUSTOMER_KEY`           | No                     | —                          | Optional self-hosted customer-ingress key. Sent as `X-Sombra-Authorization: Bearer …`. Not needed on multi-tenant Transcend-hosted Sombra         |
 
-`dsr_submit` creates requests via customer ingress (`POST /v1/data-subject-request`). Sombra attests the subject server-side—do not set platform HMAC/KMS secrets or compute Diffie-Hellman in the MCP client. For local Sombra, point `SOMBRA_URL` at customer ingress (often port **5046**), not transcend/external ingress.
+`dsr_submit` creates requests via customer ingress (`POST /v1/data-subject-request-bulk`). Pass a published `workflowConfigId`; request type and subject class are derived from that workflow. Sombra attests the subject server-side—do not set platform HMAC/KMS secrets or compute Diffie-Hellman in the MCP client. For local Sombra, point `SOMBRA_URL` at customer ingress (often port **5046**), not transcend/external ingress.
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 

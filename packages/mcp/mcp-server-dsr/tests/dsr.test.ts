@@ -67,8 +67,15 @@ describe('DSR Tools', () => {
   });
 
   describe('dsr_submit', () => {
-    it('requires Sombra and calls rest.submitDSR with the subject payload', async () => {
-      mockRest.submitDSR.mockResolvedValue({ id: 'req-1', status: 'REQUEST_MADE' });
+    it('requires Sombra and calls rest.submitDSR with workflowConfigId payload', async () => {
+      mockRest.submitDSR.mockResolvedValue([
+        {
+          id: 'req-1',
+          status: 'COMPILING',
+          type: 'ACCESS',
+          link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+        },
+      ]);
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'dsr_submit')!;
@@ -76,9 +83,8 @@ describe('DSR Tools', () => {
       expect(tool.requireSombra).toBe(true);
 
       const result = await tool.handler({
-        type: 'ACCESS',
+        workflowConfigId: 'wf-config-1',
         email: 'person@example.com',
-        subjectType: 'customer',
         locale: 'en-US',
         isSilent: true,
       });
@@ -86,16 +92,21 @@ describe('DSR Tools', () => {
       expect(result).toMatchObject({
         success: true,
         data: {
-          request: { id: 'req-1', status: 'REQUEST_MADE' },
-          message: 'DSR of type ACCESS submitted successfully',
+          requests: [
+            {
+              id: 'req-1',
+              status: 'COMPILING',
+              type: 'ACCESS',
+              link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+            },
+          ],
+          message: 'DSR submitted successfully (ACCESS)',
         },
       });
       expect(mockRest.submitDSR).toHaveBeenCalledWith({
-        type: 'ACCESS',
+        workflowConfigId: 'wf-config-1',
         email: 'person@example.com',
-        subjectType: 'customer',
         coreIdentifier: undefined,
-        name: undefined,
         locale: 'en-US',
         isSilent: true,
       });
