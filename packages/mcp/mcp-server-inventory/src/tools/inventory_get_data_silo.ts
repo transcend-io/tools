@@ -15,7 +15,7 @@ export function createInventoryGetDataSiloTool(clients: ToolClients) {
       'Get detailed information about a specific data silo (Data Systems row): vendor link, ' +
       'silo-level processing purposes, owners, teams, business entities, data subjects ' +
       '(allowlist + blocklist), contact/website/notes metadata, and identifiers. ' +
-      'Use before inventory_update_data_silo to avoid overwriting existing assignments. ' +
+      'Use before inventory_write_data_silo to avoid overwriting existing assignments. ' +
       'For datapoints on this silo, call inventory_list_data_points with dataSiloId.',
     category: 'Data Inventory',
     readOnly: true,
