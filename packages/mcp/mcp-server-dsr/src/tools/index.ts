@@ -12,7 +12,6 @@ import { createDsrPollStatusTool } from './dsr_poll_status.js';
 import { createDsrRespondAccessTool } from './dsr_respond_access.js';
 import { createDsrRespondErasureTool } from './dsr_respond_erasure.js';
 import { createDsrSubmitTool } from './dsr_submit.js';
-import { createDsrSubmitOnBehalfTool } from './dsr_submit_on_behalf.js';
 
 export function getDSRTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -27,7 +26,6 @@ export function getDSRTools(clients: ToolClients): ToolDefinition[] {
     createDsrRespondAccessTool(clients),
     createDsrRespondErasureTool(clients),
     createDsrCancelTool(clients),
-    createDsrSubmitOnBehalfTool(clients),
     createDsrAnalyzeTool(clients),
   ];
 }

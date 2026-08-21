@@ -103,21 +103,6 @@ const ListRequestDataSilosDoc = graphql(/* GraphQL */ `
   }
 `);
 
-const EmployeeMakeDataSubjectRequestDoc = graphql(/* GraphQL */ `
-  mutation DsrEmployeeMakeRequest($input: EmployeeRequestInput!) {
-    employeeMakeDataSubjectRequest(input: $input) {
-      clientMutationId
-      request {
-        id
-        type
-        status
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`);
-
 const CancelRequestDoc = graphql(/* GraphQL */ `
   mutation DsrCancel($input: CommunicationInput!) {
     cancelRequest(input: $input) {
@@ -254,32 +239,6 @@ export class DSRMixin extends TranscendGraphQLBase {
         hasPreviousPage: offset > 0,
       },
       totalCount,
-    };
-  }
-
-  async employeeMakeDataSubjectRequest(input: {
-    type: RequestType;
-    email: string;
-    coreIdentifier?: string;
-    locale?: string;
-    isSilent?: boolean;
-    subjectType: string;
-    attributes?: Record<string, unknown>;
-    clientMutationId?: string;
-  }): Promise<{ request: Request; clientMutationId?: string }> {
-    const data = await this.makeRequest(EmployeeMakeDataSubjectRequestDoc, {
-      input: input as never,
-    });
-    const payload = data.employeeMakeDataSubjectRequest;
-    return {
-      request: {
-        id: payload.request.id,
-        type: payload.request.type as RequestType,
-        status: payload.request.status as Request['status'],
-        createdAt: payload.request.createdAt,
-        updatedAt: payload.request.updatedAt,
-      },
-      clientMutationId: payload.clientMutationId ?? undefined,
     };
   }
 

@@ -14,7 +14,6 @@ const EXPECTED_TOOL_NAMES = [
   'dsr_respond_access',
   'dsr_respond_erasure',
   'dsr_cancel',
-  'dsr_submit_on_behalf',
   'dsr_analyze',
 ] as const;
 
@@ -23,7 +22,6 @@ describe('DSR Tools', () => {
     listRequests: ReturnType<typeof vi.fn>;
     getRequest: ReturnType<typeof vi.fn>;
     listRequestDataSilos: ReturnType<typeof vi.fn>;
-    employeeMakeDataSubjectRequest: ReturnType<typeof vi.fn>;
     cancelRequest: ReturnType<typeof vi.fn>;
   };
 
@@ -42,7 +40,6 @@ describe('DSR Tools', () => {
       listRequests: vi.fn(),
       getRequest: vi.fn(),
       listRequestDataSilos: vi.fn(),
-      employeeMakeDataSubjectRequest: vi.fn(),
       cancelRequest: vi.fn(),
     };
     mockRest = {
@@ -63,10 +60,57 @@ describe('DSR Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 13 tools with expected names', () => {
+  it('registers exactly 12 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(13);
+    expect(tools).toHaveLength(12);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  describe('dsr_submit', () => {
+    it('requires Sombra and calls rest.submitDSR with workflowConfigId payload', async () => {
+      mockRest.submitDSR.mockResolvedValue([
+        {
+          id: 'req-1',
+          status: 'COMPILING',
+          type: 'ACCESS',
+          link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+        },
+      ]);
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_submit')!;
+
+      expect(tool.requireSombra).toBe(true);
+
+      const result = await tool.handler({
+        workflowConfigId: 'wf-config-1',
+        email: 'person@example.com',
+        locale: 'en-US',
+        isSilent: true,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          requests: [
+            {
+              id: 'req-1',
+              status: 'COMPILING',
+              type: 'ACCESS',
+              link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+            },
+          ],
+          message: 'DSR submitted successfully (ACCESS)',
+        },
+      });
+      expect(mockRest.submitDSR).toHaveBeenCalledWith({
+        workflowConfigId: 'wf-config-1',
+        email: 'person@example.com',
+        coreIdentifier: undefined,
+        locale: 'en-US',
+        isSilent: true,
+      });
+    });
   });
 
   describe('dsr_get_details', () => {

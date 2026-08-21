@@ -18,6 +18,7 @@ import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
   DSRResponse,
+  DSRCreatedSummary,
   DownloadKey,
   EnrichIdentifiersInput,
   AccessResponseInput,
@@ -268,30 +269,39 @@ export class TranscendRestClient {
     throw lastError || new Error('Request failed after all retries');
   }
 
-  async submitDSR(submission: DSRSubmission): Promise<DSRResponse> {
+  async submitDSR(submission: DSRSubmission): Promise<DSRCreatedSummary[]> {
     const coreIdentifier = submission.coreIdentifier || submission.email;
     const payload = {
-      type: submission.type,
-      subject: {
-        email: submission.email,
-        coreIdentifier,
-        ...(submission.name && { name: submission.name }),
-        ...(submission.phone && { phone: submission.phone }),
-      },
-      ...(submission.subjectType && { subjectType: submission.subjectType }),
-      ...(submission.locale && { locale: submission.locale }),
-      ...(submission.isSilent !== undefined && { isSilent: submission.isSilent }),
-      ...(submission.skipSecondaryLookup !== undefined && {
-        skipSecondaryLookup: submission.skipSecondaryLookup,
-      }),
-      ...(submission.additionalIdentifiers && {
-        additionalIdentifiers: submission.additionalIdentifiers,
-      }),
+      input: [
+        {
+          workflowConfigId: submission.workflowConfigId,
+          attestedAuthContext: {
+            email: submission.email,
+            coreIdentifier,
+          },
+          ...(submission.locale && { locale: submission.locale }),
+          ...(submission.isSilent !== undefined && { isSilent: submission.isSilent }),
+        },
+      ],
     };
-    return this.makeRequest<DSRResponse>('/v1/data-subject-request', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    const response = await this.makeRequest<{ requests: DSRResponse[] }>(
+      '/v1/data-subject-request-bulk',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+    const requests = response.requests ?? [];
+    if (requests.length === 0) {
+      throw new Error('Bulk DSR submission returned no requests');
+    }
+    return requests.map((request) => ({
+      id: request.id,
+      status: request.status,
+      ...(request.type !== undefined && { type: request.type }),
+      ...(request.subjectType !== undefined && { subjectType: request.subjectType }),
+      ...(request.link !== undefined && { link: request.link }),
+    }));
   }
 
   async getDSRStatus(requestId: string): Promise<DSRResponse> {
