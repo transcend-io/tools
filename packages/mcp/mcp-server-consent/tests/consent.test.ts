@@ -132,6 +132,63 @@ describe('Consent Tools', () => {
       const variables = await runDataFlows({ status: 'NEEDS_REVIEW' });
       expect(variables.filterBy).not.toHaveProperty('showZeroActivity');
     });
+
+    it('defaults OffsetPaginationSchema first/offset and forwards first to GraphQL', async () => {
+      const variables = await runDataFlows({ status: 'NEEDS_REVIEW' });
+      expect(variables.first).toBe(50);
+      expect(variables.offset).toBe(0);
+    });
+  });
+
+  describe('consent_get_inventory_stats', () => {
+    it('returns UI-matching data-flow counts from list totals (CSP omitted)', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({
+          consentManager: { consentManager: { id: 'bundle-1' } },
+        })
+        .mockResolvedValueOnce({
+          cookieStats: { liveCount: 2, needReviewCount: 8, junkCount: 359 },
+        })
+        .mockResolvedValueOnce({
+          dataFlows: { nodes: [], totalCount: 12 },
+        })
+        .mockResolvedValueOnce({
+          dataFlows: { nodes: [], totalCount: 0 },
+        })
+        .mockResolvedValueOnce({
+          dataFlows: { nodes: [], totalCount: 1 },
+        });
+
+      const tool = getTools().find((t) => t.name === 'consent_get_inventory_stats')!;
+      const result = await tool.handler({});
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          cookies: { liveCount: 2, needReviewCount: 8, junkCount: 359 },
+          dataFlows: {
+            liveCount: 0,
+            needReviewCount: 12,
+            junkCount: 1,
+          },
+        },
+      });
+      expect((result.data as { dataFlows: Record<string, unknown> }).dataFlows).not.toHaveProperty(
+        'csp',
+      );
+
+      // Bundle resolve + cookie stats + 3 UI-visible data-flow counts
+      expect(mockGraphql.makeRequest).toHaveBeenCalledTimes(5);
+
+      const countFilters = mockGraphql.makeRequest.mock.calls
+        .slice(2)
+        .map((call) => call[1].filterBy);
+      expect(countFilters).toEqual([
+        { status: 'NEEDS_REVIEW' },
+        { status: 'LIVE', isJunk: false },
+        { status: 'LIVE', isJunk: true },
+      ]);
+    });
   });
 
   describe('consent_list_cookies', () => {
@@ -158,6 +215,23 @@ describe('Consent Tools', () => {
       const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
       const result = tool.zodSchema.safeParse({ status: 'LIVE', orderField: 'occurrences' });
       expect(result.success).toBe(true);
+    });
+
+    it('defaults OffsetPaginationSchema first/offset and forwards first to GraphQL', async () => {
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        consentManager: { consentManager: { id: 'bundle-1' } },
+      });
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        cookies: { nodes: [], totalCount: 0 },
+      });
+      const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
+      const parsed = tool.zodSchema.parse({ status: 'LIVE' });
+      expect(parsed.first).toBe(50);
+      expect(parsed.offset).toBe(0);
+      await tool.handler(parsed);
+      const variables = mockGraphql.makeRequest.mock.calls[1][1];
+      expect(variables.first).toBe(50);
+      expect(variables.offset).toBe(0);
     });
   });
 
