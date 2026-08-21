@@ -189,3 +189,44 @@ When binding to `0.0.0.0` (e.g. in Docker), the SDK's DNS rebinding protection i
 ### SSE streams dropping
 
 Ensure your reverse proxy has buffering disabled and a long read timeout for the `/mcp` path. See the nginx configuration above.
+
+## Docs sync (tool counts → README + Sanity)
+
+Package tool counts and OAuth scope titles are generated from code so they cannot drift from `get*Tools()` / `*_OAUTH_SCOPES`.
+
+### Regenerate repo docs
+
+```bash
+pnpm --dir packages/mcp/mcp genfiles
+```
+
+This updates:
+
+- `packages/mcp/README.md` (Packages + OAuth scopes tables, marked regions)
+- `packages/mcp/mcp/README.md` (umbrella tool-total markers)
+- `packages/mcp/mcp/docs/mcp-guide-sync.json` (machine-readable payload for Sanity)
+
+CI fails if these files are stale (`Verify generated MCP docs are up to date` in `.github/workflows/ci.yml`).
+
+### Draft-sync public docs (Sanity)
+
+Creates **drafts only** — never publishes. A human must review and publish in Sanity Studio.
+
+1. Create an Editor API token for project `1ievmmav` / dataset `production`: https://www.sanity.io/manage
+2. Export it locally or store it as the GitHub Actions secret `SANITY_API_TOKEN` on `transcend-io/tools` (required before the **Sync MCP docs to Sanity** workflow will succeed)
+3. Run:
+
+```bash
+export SANITY_API_TOKEN=...   # or omit to be prompted interactively
+pnpm --dir packages/mcp/mcp genfiles
+pnpm --dir packages/mcp/mcp sync:sanity
+# optional: -- --dry-run   (print planned patches only)
+# optional: -- --discover  (print table/prose block keys)
+```
+
+Or trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) after merging genfiles changes.
+
+4. Open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`)
+5. Publish when ready
+
+Scope tables are regenerated in the tools README only; the public MCP Guide scopes section is deferred.

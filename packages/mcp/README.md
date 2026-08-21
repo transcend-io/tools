@@ -47,18 +47,22 @@ On first tool call, the server opens a browser for login. Tokens are session-onl
 
 Each server requests domain-specific OAuth scopes during browser consent (plus `offline_access` for token refresh). The signed-in user must hold these permissions in Transcend; otherwise login succeeds but individual tools may return authorization errors.
 
-| Package                                               | OAuth scopes requested                                                                                                                                                                           |
-| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| [`mcp`](./mcp/) (unified)                             | Union of all domain scopes below                                                                                                                                                                 |
-| [`mcp-server-admin`](./mcp-server-admin/)             | `ViewEmployees`, `ViewApiKeys`, `ManageApiKeys`                                                                                                                                                  |
-| [`mcp-server-assessment`](./mcp-server-assessment/)   | `ViewAssessments`, `ViewAssignedAssessments`, `ManageAssessments`, `ManageAssignedAssessments`                                                                                                   |
-| [`mcp-server-consent`](./mcp-server-consent/)         | `ViewConsentManager`, `ViewAssignedConsentManager`, `ManageConsentManager`, `ManageAssignedConsentManager`, `ViewDataFlow`, `ManageDataFlow`                                                     |
-| [`mcp-server-discovery`](./mcp-server-discovery/)     | `ViewDataMap`, `ViewAssignedIntegrations`, `ViewCodeScanning`, `ManageCodeScanning`, `ViewPrompts`, `ViewPromptRuns`, `ExecutePrompt`                                                            |
-| [`mcp-server-docs`](./mcp-server-docs/)               | _(none — tools fetch public docs URLs only)_                                                                                                                                                     |
-| [`mcp-server-dsr`](./mcp-server-dsr/)                 | `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`                                                 |
-| [`mcp-server-inventory`](./mcp-server-inventory/)     | `ViewDataMap`, `ViewAssignedIntegrations`, `ManageDataMap`, `ManageAssignedIntegrations`, `ViewDataInventory`, `ViewAssignedDataInventory`, `ManageDataInventory`, `ManageAssignedDataInventory` |
-| [`mcp-server-preferences`](./mcp-server-preferences/) | `ViewPrivacyCenter`, `ManagePrivacyCenter`                                                                                                                                                       |
-| [`mcp-server-workflows`](./mcp-server-workflows/)     | `ViewAllActionItems`, `ManageAllActionItems`, `ViewEmailTemplates`                                                                                                                               |
+<!-- MCP_SCOPES_START -->
+
+| Package                                               | OAuth scopes requested                                                                                                                                                                             |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`mcp`](./mcp/) (unified)                             | Union of all domain scopes below                                                                                                                                                                   |
+| [`mcp-server-admin`](./mcp-server-admin/)             | View Employees, View API Keys, Manage API Keys                                                                                                                                                     |
+| [`mcp-server-assessment`](./mcp-server-assessment/)   | View Assessments, View Assigned Assessments, Manage Assessments, Manage Assigned Assessments                                                                                                       |
+| [`mcp-server-consent`](./mcp-server-consent/)         | View Consent Manager, View Assigned Consent Manager, Manage Consent Manager, Manage Assigned Consent Manager, View Data Flows, Manage Data Flows                                                   |
+| [`mcp-server-discovery`](./mcp-server-discovery/)     | View Data Map, View Assigned Integrations, View Code Scanning, Manage Code Scanning, View Prompts, View Prompt Runs, Execute Prompt                                                                |
+| [`mcp-server-docs`](./mcp-server-docs/)               | _(none — tools fetch public docs URLs only)_                                                                                                                                                       |
+| [`mcp-server-dsr`](./mcp-server-dsr/)                 | View Incoming Requests, View Assigned Privacy Requests, Submit New Data Subject Request, Manage Assigned Privacy Requests, View the Request Compilation, Manage Request Compilation                |
+| [`mcp-server-inventory`](./mcp-server-inventory/)     | View Data Map, View Assigned Integrations, Manage Data Map, Manage Assigned Integrations, View Data Inventory, View Assigned Data Inventory, Manage Data Inventory, Manage Assigned Data Inventory |
+| [`mcp-server-preferences`](./mcp-server-preferences/) | View Privacy Center Layout, Manage Privacy Center Layout                                                                                                                                           |
+| [`mcp-server-workflows`](./mcp-server-workflows/)     | View All Action Items, Manage All Action Items, View Email Templates                                                                                                                               |
+
+<!-- MCP_SCOPES_END -->
 
 Canonical scope lists live in each package's `src/scopes.ts`.
 
@@ -79,7 +83,7 @@ There are two ways to consume the MCP tools, and they can be mixed freely.
 
 ### Unified server
 
-Install **`@transcend-io/mcp`** to get every tool (81 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+Install **`@transcend-io/mcp`** to get every tool (<!-- MCP_TOOL_TOTAL_START -->82<!-- MCP_TOOL_TOTAL_END --> across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
 
 **Claude Desktop** (`claude_desktop_config.json`) / **Cursor** (`.cursor/mcp.json`):
 
@@ -235,10 +239,12 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 ## Packages
 
+<!-- MCP_PACKAGES_START -->
+
 | Package                                               | Binary                      | Tools | Description                                      |
 | ----------------------------------------------------- | --------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    81 | Unified server — all tools in one process        |
-| [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys             |
+| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    82 | Unified server — all tools in one process        |
+| [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     9 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)   | `transcend-mcp-assessment`  |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    14 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)   |
@@ -248,6 +254,8 @@ When both cookie and API key headers are present, the session cookie takes prior
 | [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    17 | Data inventory, silos, vendors, data points      |
 | [`mcp-server-preferences`](./mcp-server-preferences/) | `transcend-mcp-preferences` |     6 | Privacy preference store (query, upsert, delete) |
 | [`mcp-server-workflows`](./mcp-server-workflows/)     | `transcend-mcp-workflows`   |     3 | Workflow & email-template configuration          |
+
+<!-- MCP_PACKAGES_END -->
 
 See each package's README for full tool lists, detailed environment variable docs, and client configuration examples.
 

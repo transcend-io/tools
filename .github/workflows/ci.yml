@@ -81,3 +81,8 @@ jobs:
         run: |
           pnpm --dir packages/cli genfiles
           git diff --quiet HEAD || (git diff --raw && echo "Detected git changes after regenerating CLI files" && exit 1)
+
+      - name: Verify generated MCP docs are up to date
+        run: |
+          pnpm --dir packages/mcp/mcp genfiles
+          git diff --quiet HEAD || (git diff --raw && echo "Detected git changes after regenerating MCP docs" && exit 1)

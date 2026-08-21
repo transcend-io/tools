@@ -1,0 +1,49 @@
+name: Sync MCP docs to Sanity
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print planned patches without writing drafts
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04-arm
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      SANITY_API_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Build MCP packages
+        run: pnpm exec turbo run build --filter="@transcend-io/mcp..."
+
+      - name: Regenerate MCP docs
+        run: pnpm --dir packages/mcp/mcp genfiles
+
+      - name: Draft-sync tool counts to Sanity
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            pnpm --dir packages/mcp/mcp sync:sanity -- --dry-run
+          else
+            pnpm --dir packages/mcp/mcp sync:sanity
+          fi
+
+      - name: Summary
+        run: |
+          echo "Sanity drafts updated (not published)." >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Review and publish in Sanity Studio:" >> "$GITHUB_STEP_SUMMARY"
+          echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide" >> "$GITHUB_STEP_SUMMARY"
+          echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-cursor-setup" >> "$GITHUB_STEP_SUMMARY"
