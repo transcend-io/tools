@@ -51,6 +51,8 @@ minimumReleaseAgeExclude:
   - pnpm@10.34.4
   # Renovate security update: undici@6.28.0
   - undici@6.28.0
+  # Renovate security update: js-yaml@4.3.1
+  - js-yaml@4.3.1
 
 onlyBuiltDependencies:
   - esbuild
