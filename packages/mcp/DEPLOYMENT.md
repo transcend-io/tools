@@ -210,23 +210,23 @@ CI fails if these files are stale (`Verify generated MCP docs are up to date` in
 
 ### Draft-sync public docs (Sanity)
 
-Creates **drafts only** — never publishes. A human must review and publish in Sanity Studio.
+By default creates **drafts only**. Pass `--publish` to publish after patching.
 
 1. Create an Editor API token for project `1ievmmav` / dataset `production`: https://www.sanity.io/manage
-2. Export it locally or store it as the GitHub Actions secret `SANITY_API_TOKEN` on `transcend-io/tools` (required before the **Sync MCP docs to Sanity** workflow will succeed)
-3. Run:
+2. Export it locally or store it as the GitHub Actions secret `SANITY_API_TOKEN` on `transcend-io/tools` (required for CI sync)
+3. Run locally:
 
 ```bash
 export SANITY_API_TOKEN=...   # or omit to be prompted interactively
 pnpm --dir packages/mcp/mcp genfiles
 pnpm --dir packages/mcp/mcp sync:sanity
-# optional: -- --dry-run   (print planned patches only)
-# optional: -- --discover  (print table/prose block keys)
+# optional: -- --dry-run    (print planned patches only; cannot combine with --publish)
+# optional: -- --publish    (publish immediately after drafting)
+# optional: -- --discover   (print table/prose block keys)
 ```
 
-Or trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) after merging genfiles changes.
+**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
 
-4. Open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`)
-5. Publish when ready
+4. If you did **not** pass `--publish` locally: open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`), then publish when ready
 
 Scope tables are regenerated in the tools README only; the public MCP Guide scopes section is deferred.

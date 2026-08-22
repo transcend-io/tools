@@ -1,16 +1,19 @@
 /**
  * Draft-sync MCP package tool counts into Sanity docs articles.
  *
- * Updates (draft only — never publishes):
+ * Updates:
  * - MCP Guide package/tools table
  * - MCP Guide "all N tools" prose
  * - Cursor setup "N tools" prose
+ *
+ * By default writes drafts only. Pass `--publish` to publish after patching.
  *
  * Requires SANITY_API_TOKEN (Editor write). See packages/mcp/DEPLOYMENT.md.
  *
  * Usage:
  *   pnpm --dir packages/mcp/mcp sync:sanity
  *   pnpm --dir packages/mcp/mcp sync:sanity -- --dry-run
+ *   pnpm --dir packages/mcp/mcp sync:sanity -- --publish
  *   pnpm --dir packages/mcp/mcp sync:sanity -- --discover
  */
 import { createHash, randomBytes } from 'node:crypto';
@@ -27,7 +30,7 @@ const syncJsonPath = join(packageRoot, 'docs', 'mcp-guide-sync.json');
 
 const SANITY_PROJECT_ID = '1ievmmav';
 const SANITY_DATASET = 'production';
-const SANITY_API_VERSION = '2024-01-01';
+const SANITY_API_VERSION = '2025-02-19';
 
 /** Published article IDs and content keys discovered from the production dataset. */
 const MCP_GUIDE = {
@@ -92,6 +95,7 @@ interface TableBlock {
 const args = new Set(process.argv.slice(2).filter((arg) => arg !== '--'));
 const dryRun = args.has('--dry-run');
 const discoverOnly = args.has('--discover');
+const shouldPublish = args.has('--publish');
 
 function key(seed?: string): string {
   if (seed) {
@@ -381,6 +385,10 @@ function printTableDiff(label: string, beforeRows: string[], afterRows: string[]
 }
 
 async function main(): Promise<void> {
+  if (dryRun && shouldPublish) {
+    throw new Error('Cannot combine --dry-run and --publish');
+  }
+
   const payload = JSON.parse(fs.readFileSync(syncJsonPath, 'utf8')) as SyncPayload;
 
   if (discoverOnly) {
@@ -517,13 +525,32 @@ async function main(): Promise<void> {
     )
     .commit({ visibility: 'sync' });
 
+  if (shouldPublish) {
+    await client.action([
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: guideDraft,
+        publishedId: MCP_GUIDE.articleId,
+      },
+      {
+        actionType: 'sanity.action.document.publish',
+        draftId: cursorDraft,
+        publishedId: CURSOR_SETUP.articleId,
+      },
+    ]);
+    console.log('Published MCP Guide and Cursor setup.');
+    console.log(`  MCP Guide: https://docs.transcend.io/docs/articles/${MCP_GUIDE.finalSlug}`);
+    console.log(`  Cursor setup: https://docs.transcend.io/docs/articles/${CURSOR_SETUP.finalSlug}`);
+    return;
+  }
+
   console.log('Drafts updated. Review and publish in Sanity Studio:');
   console.log(
     `  https://www.sanity.io/manage/project/${SANITY_PROJECT_ID}/dataset/${SANITY_DATASET}`,
   );
   console.log(`  MCP Guide: https://docs.transcend.io/docs/articles/${MCP_GUIDE.finalSlug}`);
   console.log(`  Cursor setup: https://docs.transcend.io/docs/articles/${CURSOR_SETUP.finalSlug}`);
-  console.log('Do not auto-publish — validate nested table marks/markDefs in Studio first.');
+  console.log('Or re-run with --publish to publish immediately after patching.');
 }
 
 main().catch((error: unknown) => {

@@ -7,6 +7,10 @@ on:
         description: Print planned patches without writing drafts
         type: boolean
         default: false
+      publish:
+        description: Publish drafts after patching (ignored when dry_run is true)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -32,18 +36,28 @@ jobs:
       - name: Regenerate MCP docs
         run: pnpm --dir packages/mcp/mcp genfiles
 
-      - name: Draft-sync tool counts to Sanity
+      - name: Sync tool counts to Sanity
         run: |
+          FLAGS=()
           if [ "${{ inputs.dry_run }}" = "true" ]; then
-            pnpm --dir packages/mcp/mcp sync:sanity -- --dry-run
-          else
-            pnpm --dir packages/mcp/mcp sync:sanity
+            FLAGS+=(--dry-run)
           fi
+          if [ "${{ inputs.publish }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            FLAGS+=(--publish)
+          fi
+          pnpm --dir packages/mcp/mcp sync:sanity -- "${FLAGS[@]}"
 
       - name: Summary
         run: |
-          echo "Sanity drafts updated (not published)." >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "Dry run only — no Sanity writes." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ inputs.publish }}" = "true" ]; then
+            echo "Sanity documents patched and published." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Sanity drafts updated (not published)." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Review and publish in Sanity Studio, or re-run with publish=true." >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Review and publish in Sanity Studio:" >> "$GITHUB_STEP_SUMMARY"
           echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide" >> "$GITHUB_STEP_SUMMARY"
           echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-cursor-setup" >> "$GITHUB_STEP_SUMMARY"
