@@ -189,3 +189,44 @@ When binding to `0.0.0.0` (e.g. in Docker), the SDK's DNS rebinding protection i
 ### SSE streams dropping
 
 Ensure your reverse proxy has buffering disabled and a long read timeout for the `/mcp` path. See the nginx configuration above.
+
+## Docs sync (tool counts → README + Sanity)
+
+Package tool counts and OAuth scope titles are generated from code so they cannot drift from `get*Tools()` / `*_OAUTH_SCOPES`.
+
+### Regenerate repo docs
+
+```bash
+pnpm --dir packages/mcp/mcp genfiles
+```
+
+This updates:
+
+- `packages/mcp/README.md` (Packages + OAuth scopes tables, marked regions)
+- `packages/mcp/mcp/README.md` (umbrella tool-total markers)
+- `packages/mcp/mcp/docs/mcp-guide-sync.json` (machine-readable payload for Sanity)
+
+CI fails if these files are stale (`Verify generated MCP docs are up to date` in `.github/workflows/ci.yml`).
+
+### Draft-sync public docs (Sanity)
+
+By default creates **drafts only**. Pass `--publish` to publish after patching.
+
+1. Create an Editor API token for project `1ievmmav` / dataset `production`: https://www.sanity.io/manage
+2. Export it locally or store it as the GitHub Actions secret `SANITY_API_TOKEN` on `transcend-io/tools` (required for CI sync)
+3. Run locally:
+
+```bash
+export SANITY_API_TOKEN=...   # or omit to be prompted interactively
+pnpm --dir packages/mcp/mcp genfiles
+pnpm --dir packages/mcp/mcp sync:sanity
+# optional: -- --dry-run    (print planned patches only; cannot combine with --publish)
+# optional: -- --publish    (publish immediately after drafting)
+# optional: -- --discover   (print table/prose block keys)
+```
+
+**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
+
+4. If you did **not** pass `--publish` locally: open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`), then publish when ready
+
+Scope tables are regenerated in the tools README only; the public MCP Guide scopes section is deferred.
