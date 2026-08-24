@@ -1,0 +1,58 @@
+{
+  "name": "@transcend-io/mcp-server-policy",
+  "version": "0.1.0",
+  "description": "Transcend MCP Server — Policy Engine tools.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-policy",
+  "license": "Apache-2.0",
+  "author": "Transcend Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transcend-io/tools.git",
+    "directory": "packages/mcp/mcp-server-policy"
+  },
+  "bin": {
+    "transcend-mcp-policy": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run --config ../../../vitest.config.mcp.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "catalog:",
+    "@transcend-io/mcp-server-base": "workspace:*",
+    "@transcend-io/privacy-types": "workspace:*",
+    "fast-glob": "^3.2.12",
+    "got": "^15.0.0",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@types/node": "catalog:",
+    "publint": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
