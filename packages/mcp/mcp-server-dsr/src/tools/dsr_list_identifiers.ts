@@ -16,11 +16,7 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
 
   return defineTool({
     name: 'dsr_list_identifiers',
-    description:
-      'List decrypted identifiers attached to a Data Subject Request (for fulfillment and integration). ' +
-      'Paginate with offset (increment by first) until hasNextPage is false. ' +
-      'This endpoint returns a consolidated fulfillment set via Sombra REST; the admin UI may show more rows ' +
-      'per source via GraphQL requestIdentifiers.',
+    description: 'List decrypted identifiers attached to a Data Subject Request.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -31,12 +27,7 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
 
       const hasNextPage = identifiers.length === first;
 
-      return createListResult(identifiers, {
-        hasNextPage,
-        paginationNote: hasNextPage
-          ? 'More results may be available. Increment offset by first to fetch the next page.'
-          : 'No more results.',
-      });
+      return createListResult(identifiers, { hasNextPage });
     },
   });
 }

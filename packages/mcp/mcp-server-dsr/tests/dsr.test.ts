@@ -177,8 +177,6 @@ describe('DSR Tools', () => {
         success: true,
         data: identifiers,
         hasNextPage: true,
-        paginationNote:
-          'More results may be available. Increment offset by first to fetch the next page.',
       });
       expect(mockRest.listRequestIdentifiers).toHaveBeenCalledWith('req-1', {
         first: 2,
@@ -203,7 +201,6 @@ describe('DSR Tools', () => {
       expect(result).toMatchObject({
         success: true,
         hasNextPage: false,
-        paginationNote: 'No more results.',
       });
     });
   });
