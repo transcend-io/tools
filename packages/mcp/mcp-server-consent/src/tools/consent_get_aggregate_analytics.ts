@@ -1,5 +1,8 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
-import { AirgapBundleAnalyticsDimension } from '@transcend-io/privacy-types';
+import {
+  AirgapBundleAnalyticsDimension,
+  AirgapBundleAnalyticsMetric,
+} from '@transcend-io/privacy-types';
 import {
   AIRGAP_BUNDLE_AGGREGATE_ANALYTICS,
   type TranscendCliAirgapBundleAggregateAnalyticsResponse,

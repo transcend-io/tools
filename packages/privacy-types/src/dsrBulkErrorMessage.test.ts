@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { DropListType } from './drop.js';
 import { DSR_BULK_ERROR_MESSAGE, DsrBulkErrorCode, REQUEST_SUBMISSION_LIMIT } from './index.js';
 
 const DSR_BULK_ERROR_MESSAGE_CODES = Object.values(DsrBulkErrorCode);
