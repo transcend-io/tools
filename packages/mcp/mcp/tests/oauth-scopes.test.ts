@@ -5,6 +5,7 @@ import { CONSENT_OAUTH_SCOPES } from '@transcend-io/mcp-server-consent';
 import { DISCOVERY_OAUTH_SCOPES } from '@transcend-io/mcp-server-discovery';
 import { DSR_OAUTH_SCOPES } from '@transcend-io/mcp-server-dsr';
 import { INVENTORY_OAUTH_SCOPES } from '@transcend-io/mcp-server-inventory';
+import { POLICY_OAUTH_SCOPES } from '@transcend-io/mcp-server-policy';
 import { PREFERENCE_OAUTH_SCOPES } from '@transcend-io/mcp-server-preferences';
 import { WORKFLOW_OAUTH_SCOPES } from '@transcend-io/mcp-server-workflows';
 import { ScopeName } from '@transcend-io/privacy-types';
@@ -24,6 +25,7 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
       DSR_OAUTH_SCOPES,
       INVENTORY_OAUTH_SCOPES,
       PREFERENCE_OAUTH_SCOPES,
+      POLICY_OAUTH_SCOPES,
       WORKFLOW_OAUTH_SCOPES,
     ]) {
       for (const scope of scopeList) {
@@ -41,5 +43,6 @@ describe('UMBRELLA_OAUTH_SCOPES', () => {
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewDataMap);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewPrivacyCenter);
     expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ViewAllActionItems);
+    expect(UMBRELLA_OAUTH_SCOPES).toContain(ScopeName.ActivatePolicyEngineBundles);
   });
 });

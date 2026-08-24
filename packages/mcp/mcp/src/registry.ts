@@ -21,12 +21,13 @@ import { getDiscoveryTools } from '@transcend-io/mcp-server-discovery';
 import { getDocsTools } from '@transcend-io/mcp-server-docs';
 import { getDSRTools } from '@transcend-io/mcp-server-dsr';
 import { getInventoryTools } from '@transcend-io/mcp-server-inventory';
+import { getPolicyTools, type PolicyToolClients } from '@transcend-io/mcp-server-policy';
 import { getPreferenceTools } from '@transcend-io/mcp-server-preferences';
 import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 
 import type { TranscendGraphQLClient } from './graphql-client.js';
 
-export interface UmbrellaToolClients {
+export interface UmbrellaToolClients extends PolicyToolClients {
   /** REST client for Sombra API */
   rest: TranscendRestClient;
   /** Composed GraphQL client with all domain mixins */
@@ -65,6 +66,7 @@ export class ToolRegistry {
     this.registerToolsFromModule(getDiscoveryTools(this.clients));
     this.registerToolsFromModule(getAssessmentTools(this.clients));
     this.registerToolsFromModule(getWorkflowTools(this.clients));
+    this.registerToolsFromModule(getPolicyTools(this.clients));
     this.registerToolsFromModule(getAdminTools(this.clients));
   }
 

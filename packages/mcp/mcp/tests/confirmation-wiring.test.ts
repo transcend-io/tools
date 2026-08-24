@@ -34,6 +34,8 @@ const mockClients = {
   rest: new Proxy({} as ToolClients['rest'], { get: stubFn }),
   graphql: new Proxy({}, { get: stubFn }),
   dashboardUrl: 'https://app.transcend.io',
+  transcendApiUrl: 'https://api.transcend.io',
+  auth: { type: 'apiKey', apiKey: 'test-key' },
 } as unknown as UmbrellaToolClients;
 
 function umbrellaTools(): ToolDefinition[] {
