@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-dsr
 
+## 0.8.1
+
+### Patch Changes
+
+- 388ed26: New filters on the dsr_list
+
 ## 0.8.0
 
 ### Minor Changes
