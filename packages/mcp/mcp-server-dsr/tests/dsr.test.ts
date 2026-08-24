@@ -169,6 +169,75 @@ describe('DSR Tools', () => {
       const result = await tool.handler({});
 
       expect(result).toMatchObject({ success: true, data: nodes, totalCount: 1 });
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: undefined,
+        emails: undefined,
+      });
+    });
+
+    it('passes identifierValue to listRequests', async () => {
+      mockGraphql.listRequests.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list')!;
+
+      await tool.handler({ identifierValue: '555-1234' });
+
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: '555-1234',
+        emails: undefined,
+      });
+    });
+
+    it('passes emails to listRequests', async () => {
+      mockGraphql.listRequests.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list')!;
+
+      await tool.handler({ emails: ['a@example.com'] });
+
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: undefined,
+        emails: ['a@example.com'],
+      });
+    });
+
+    it('passes identifierValue and emails together', async () => {
+      mockGraphql.listRequests.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false, hasPreviousPage: false },
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list')!;
+
+      await tool.handler({
+        identifierValue: 'user@example.com',
+        emails: ['primary@example.com'],
+      });
+
+      expect(mockGraphql.listRequests).toHaveBeenCalledWith({
+        first: undefined,
+        after: undefined,
+        identifierValue: 'user@example.com',
+        emails: ['primary@example.com'],
+      });
     });
 
     it('throws when client throws', async () => {
