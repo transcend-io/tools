@@ -540,7 +540,9 @@ async function main(): Promise<void> {
     ]);
     console.log('Published MCP Guide and Cursor setup.');
     console.log(`  MCP Guide: https://docs.transcend.io/docs/articles/${MCP_GUIDE.finalSlug}`);
-    console.log(`  Cursor setup: https://docs.transcend.io/docs/articles/${CURSOR_SETUP.finalSlug}`);
+    console.log(
+      `  Cursor setup: https://docs.transcend.io/docs/articles/${CURSOR_SETUP.finalSlug}`,
+    );
     return;
   }
 
