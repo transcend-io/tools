@@ -25,7 +25,7 @@ export function createInventoryListBusinessEntitiesTool(clients: ToolClients) {
     name: 'inventory_list_business_entities',
     description:
       'List business entities from Data Inventory. Use `title` values with ' +
-      'inventory_update_data_silo `businessEntityTitles`. Paginate with `offset` until ' +
+      'inventory_write_data_silo `businessEntityTitles`. Paginate with `offset` until ' +
       '`hasNextPage` is false.',
     category: 'Data Inventory',
     readOnly: true,

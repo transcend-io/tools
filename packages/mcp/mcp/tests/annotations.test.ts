@@ -162,7 +162,6 @@ describe('MCP Tool Annotations', () => {
       'consent_set_preferences',
       'preferences_upsert',
       'preferences_update_identifiers',
-      'inventory_update_data_silo',
       'inventory_write_vendor',
       'inventory_write_processing_purpose',
       'inventory_update_or_create_data_point',

@@ -1,6 +1,7 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
+  isVisibleToModel,
   TranscendRestClient,
   type AuthCredentials,
   type ToolClients,
@@ -62,11 +63,11 @@ describe('ToolRegistry', () => {
 
     expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
 
-    // Registering a tool and describing it to an embedder differ now: the embedded
-    // path cannot obtain a confirmation, so gated tools are withheld from the list.
-    // No tool declares one yet, so this holds at zero until the first is gated.
+    // Registering a tool and describing it to an embedder differ: gated tools and
+    // tools with visibility omitting `model` stay callable but are withheld from the list.
+    const hidden = registry.getAllTools().filter((tool) => !isVisibleToModel(tool)).length;
     const gated = registry.getAllTools().filter((tool) => tool.confirmation).length;
-    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT - gated);
+    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT - gated - hidden);
   });
 
   it('getToolList returns well-formed tool descriptors', () => {

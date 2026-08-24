@@ -1,4 +1,4 @@
-import type { AuthCredentials } from '@transcend-io/mcp-server-base';
+import { ErrorCode, ToolError, type AuthCredentials } from '@transcend-io/mcp-server-base';
 import { DefaultPurposeSubCategoryType } from '@transcend-io/privacy-types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,11 +6,27 @@ import { InventoryMixin } from '../src/graphql.js';
 
 const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
 
+function graphqlErrors(message: string) {
+  return { __graphqlErrors: [{ message }] };
+}
+
 function mockFetchQueue(payloads: unknown[]) {
   let call = 0;
   return vi.fn().mockImplementation(async () => {
     const payload = payloads[Math.min(call, payloads.length - 1)];
     call += 1;
+    if (payload && typeof payload === 'object' && '__graphqlErrors' in payload) {
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () => 'OK',
+        json: async () => ({
+          data: null,
+          errors: (payload as { __graphqlErrors: { message: string }[] }).__graphqlErrors,
+        }),
+      };
+    }
     return {
       ok: true,
       status: 200,
@@ -660,6 +676,307 @@ describe('InventoryMixin', () => {
       expect(result.created).toBe(false);
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(lastRequestBody(mockFetch).query).toContain('updateProcessingPurposeSubCategories');
+    });
+  });
+
+  describe('writeDataSilo', () => {
+    it('creates then patches metadata when integrationName is provided', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          createDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-new',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'CRM',
+                isLive: false,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+        {
+          updateDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-new',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'CRM',
+                isLive: true,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataSilo({
+        integrationName: 'salesforce',
+        title: 'Salesforce',
+        description: 'CRM',
+        ownerEmails: ['a@example.com'],
+        isLive: true,
+      });
+
+      expect(result.created).toBe(true);
+      expect(result.dataSilo.id).toBe('silo-new');
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(requestBodyAt(mockFetch, 0).query).toContain('createDataSilos');
+      expect(requestBodyAt(mockFetch, 1).query).toContain('updateDataSilos');
+    });
+
+    it('updates by id without creating', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          updateDataSilos: {
+            dataSilos: [
+              {
+                id: 'silo-1',
+                title: 'Salesforce',
+                type: 'api',
+                description: 'Updated',
+                isLive: true,
+                createdAt: '2024-01-01T00:00:00.000Z',
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataSilo({
+        id: 'silo-1',
+        description: 'Updated',
+      });
+
+      expect(result.created).toBe(false);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('updateDataSilos');
+    });
+
+    it('throws ToolError with dataSiloId when create succeeds but metadata patch fails', async () => {
+      const createdSilo = {
+        id: 'silo-new',
+        title: 'Salesforce',
+        type: 'api',
+        description: 'CRM',
+        isLive: false,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      const mockFetch = mockFetchQueue([
+        {
+          createDataSilos: {
+            dataSilos: [createdSilo],
+          },
+        },
+        graphqlErrors('Invalid owner email'),
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      try {
+        await client.writeDataSilo({
+          integrationName: 'salesforce',
+          title: 'Salesforce',
+          ownerEmails: ['not-an-email'],
+        });
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ToolError);
+        const toolError = error as ToolError;
+        expect(toolError.code).toBe(ErrorCode.API_ERROR);
+        expect(toolError.retryable).toBe(false);
+        expect(toolError.message).toContain('Retry with dataSiloId "silo-new"');
+        expect(toolError.details).toMatchObject({
+          dataSiloId: 'silo-new',
+          dataSilo: expect.objectContaining({ id: 'silo-new' }),
+          updateError: expect.stringContaining('Invalid owner email'),
+        });
+      }
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('listDataCategories', () => {
+    it('queries dataSubCategories with optional text filter', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          dataSubCategories: {
+            nodes: [
+              {
+                id: 'cat-1',
+                name: 'Email',
+                category: 'CONTACT',
+                description: 'Email address',
+                owners: [{ email: 'owner@example.com' }],
+                teams: [{ name: 'Privacy' }],
+              },
+            ],
+            totalCount: 1,
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.listDataCategories({ first: 50, offset: 0, text: 'Email' });
+
+      expect(result.nodes[0]).toMatchObject({
+        id: 'cat-1',
+        name: 'Email',
+        category: 'CONTACT',
+        ownerEmails: ['owner@example.com'],
+        teamNames: ['Privacy'],
+      });
+      expect(lastRequestBody(mockFetch).query).toContain('dataSubCategories');
+      expect(lastRequestBody(mockFetch).variables).toMatchObject({
+        filterBy: { text: 'Email' },
+      });
+    });
+  });
+
+  describe('writeDataCategory', () => {
+    it('creates without listing when the subcategory is new', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          createDataSubCategory: {
+            dataSubCategory: {
+              id: 'cat-new',
+              name: 'Email',
+              category: 'CONTACT',
+              description: 'Email address',
+              owners: [],
+              teams: [],
+            },
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataCategory({
+        name: 'Email',
+        category: 'CONTACT',
+        description: 'Email address',
+      });
+
+      expect(result).toEqual({
+        created: true,
+        category: {
+          id: 'cat-new',
+          name: 'Email',
+          category: 'CONTACT',
+          description: 'Email address',
+          ownerEmails: [],
+          teamNames: [],
+        },
+      });
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('createDataSubCategory');
+    });
+
+    it('updates the existing row when create reports a duplicate subcategory', async () => {
+      const mockFetch = mockFetchQueue([
+        graphqlErrors('Cannot add duplicate subcategory'),
+        {
+          dataSubCategories: {
+            nodes: [
+              {
+                id: 'cat-1',
+                name: 'Email',
+                category: 'CONTACT',
+                description: 'Old',
+                owners: [],
+                teams: [],
+              },
+            ],
+            totalCount: 1,
+          },
+        },
+        {
+          updateDataSubCategories: {
+            dataSubCategories: [
+              {
+                id: 'cat-1',
+                name: 'Email',
+                category: 'CONTACT',
+                description: 'Updated',
+                owners: [],
+                teams: [],
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataCategory({
+        name: 'Email',
+        category: 'CONTACT',
+        description: 'Updated',
+      });
+
+      expect(result.created).toBe(false);
+      expect(result.category).toMatchObject({
+        id: 'cat-1',
+        description: 'Updated',
+      });
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(requestBodyAt(mockFetch, 0).query).toContain('createDataSubCategory');
+      expect(requestBodyAt(mockFetch, 1).variables).toMatchObject({
+        filterBy: { text: 'Email' },
+      });
+      expect(requestBodyAt(mockFetch, 2).query).toContain('updateDataSubCategories');
+    });
+
+    it('rethrows non-duplicate create errors without listing', async () => {
+      const mockFetch = mockFetchQueue([graphqlErrors('Unauthorized')]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      await expect(
+        client.writeDataCategory({
+          name: 'Email',
+          category: 'CONTACT',
+        }),
+      ).rejects.toThrow(/Unauthorized/);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it('updates by id without listing', async () => {
+      const mockFetch = mockFetchQueue([
+        {
+          updateDataSubCategories: {
+            dataSubCategories: [
+              {
+                id: 'cat-1',
+                name: 'Email',
+                category: 'CONTACT',
+                description: 'Updated',
+                owners: [],
+                teams: [],
+              },
+            ],
+          },
+        },
+      ]);
+      vi.stubGlobal('fetch', mockFetch);
+
+      const client = new InventoryMixin(API_KEY_AUTH);
+      const result = await client.writeDataCategory({
+        id: 'cat-1',
+        description: 'Updated',
+      });
+
+      expect(result.created).toBe(false);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(lastRequestBody(mockFetch).query).toContain('updateDataSubCategories');
     });
   });
 

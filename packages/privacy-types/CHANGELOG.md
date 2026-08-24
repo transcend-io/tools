@@ -1,5 +1,13 @@
 # @transcend-io/privacy-types
 
+## 5.22.0
+
+### Minor Changes
+
+- 6c6ea93: Add `Signals` (`'signals'`) to `ConsentPrecedenceOption` and deprecate `Signal` (`'signal'`) in favor of the plural value. Regenerate CLI transcend.yml JSON schemas to include the new enum value.
+- 1f72e6a: add customCssUrlMap to UI v2 load options
+- 6a09b61: Add optional `sourceSystem` (non-empty, max 128 chars via `SourceSystemLabel`) and optional per-purpose `timestamp` to `PreferenceStorePurposeResponse`, which flows into `PreferenceStorePurposeUpdate` for PUT `/v1/preferences` and preference query responses (PIK-8191).
+
 ## 5.20.0
 
 ### Minor Changes

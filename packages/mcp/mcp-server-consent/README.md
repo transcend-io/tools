@@ -109,7 +109,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_list_cookies` — List cookies
 - `consent_list_airgap_bundles` — List Airgap bundles
 - `consent_list_regimes` — List consent regimes
-- `consent_get_inventory_stats` — Cookie/data-flow inventory triage counts (live, needs review, junk)
+- `consent_get_inventory_stats` — Cookie/data-flow inventory triage counts (live, needs review, junk). Matches the Consent Manager tables; CSP data flows are omitted like the UI.
 - `consent_get_aggregate_analytics` — Aggregate consent analytics (`airgapBundleAggregateAnalytics`)
 - `consent_get_timeseries_analytics` — Timeseries consent analytics (`airgapBundleTimeseriesAnalytics`)
 - `consent_get_analytics_data` — Consent metrics via `analyticsData` (opt-in/out, signals, sessions)

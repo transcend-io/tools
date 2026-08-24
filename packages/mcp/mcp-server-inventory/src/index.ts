@@ -2,10 +2,6 @@ export { getInventoryTools } from './tools/index.js';
 export { INVENTORY_OAUTH_SCOPES } from './scopes.js';
 export { InventoryMixin } from './graphql.js';
 
-export {
-  CreateDataSiloSchema,
-  type CreateDataSiloInput,
-} from './tools/inventory_create_data_silo.js';
 export { GetDataSiloSchema, type GetDataSiloInput } from './tools/inventory_get_data_silo.js';
 export {
   ListCategoriesSchema,
@@ -42,13 +38,11 @@ export {
 } from './tools/inventory_list_sub_data_points.js';
 export { ListVendorsSchema, type ListVendorsInput } from './tools/inventory_list_vendors.js';
 export {
-  UpdateDataSiloSchema,
-  type UpdateDataSiloInput,
-} from './tools/inventory_update_data_silo.js';
-export {
   UpdateOrCreateDataPointSchema,
   type UpdateOrCreateDataPointInput,
 } from './tools/inventory_update_or_create_data_point.js';
+export { WriteCategorySchema, type WriteCategoryInput } from './tools/inventory_write_category.js';
+export { WriteDataSiloSchema, type WriteDataSiloInput } from './tools/inventory_write_data_silo.js';
 export { WriteVendorSchema, type WriteVendorInput } from './tools/inventory_write_vendor.js';
 export {
   WriteProcessingPurposeSchema,
