@@ -1,19 +1,17 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
-import { RequestAction } from '@transcend-io/privacy-types';
 
 export const submitDsrSchema = z.object({
-  type: z.nativeEnum(RequestAction).describe('Type of DSR request'),
-  email: z.string().describe('Email address of the data subject'),
-  subjectType: z
+  workflowConfigId: z
     .string()
     .describe(
-      'Type of data subject (e.g., customer, employee, prospect). Required by the Transcend API.',
+      'UUID of the published workflow config (Privacy Requests → Workflows, or workflows_list). ' +
+        'Request type and subject class are derived from this config — do not pass type/subjectType.',
     ),
+  email: z.string().describe('Email address of the data subject'),
   coreIdentifier: z
     .string()
     .optional()
     .describe('Core identifier for the data subject (defaults to email if not provided)'),
-  name: z.string().optional().describe('Name of the data subject (optional)'),
   locale: z.string().optional().describe('Locale for communications (e.g., en-US)'),
   isSilent: z.boolean().optional().describe('Whether to suppress email notifications'),
 });
@@ -25,31 +23,38 @@ export function createDsrSubmitTool(clients: ToolClients) {
   return defineTool({
     name: 'dsr_submit',
     description:
-      'Submit a Data Subject Request as the data subject (public DSR API; e.g. Privacy Center flow). Supports ACCESS, ERASURE, RECTIFICATION, etc. coreIdentifier defaults to email. Use dsr_submit_on_behalf when an admin is filing on behalf of a data subject.',
+      'Submit a Data Subject Request via customer-ingress REST bulk create ' +
+      '(`POST /v1/data-subject-request-bulk`). Requires a published workflowConfigId; type and ' +
+      'subjectType are derived from that workflow. Sombra attests the subject from the provided ' +
+      'email/identifiers. coreIdentifier defaults to email. Returns a minimal summary for each ' +
+      'created request. Requires Sombra (SOMBRA_URL or organization customerUrl).',
     category: 'DSR Automation',
     readOnly: false,
     confirmation: {
       hint:
-        'Files a live data subject request. ERASURE and opt-out types start irreversible ' +
-        'deletion across connected systems, and the data subject is emailed unless isSilent ' +
-        'is set. Check the request type and email in the call arguments before agreeing.',
+        'Files a live data subject request against a workflow config. ERASURE and opt-out ' +
+        'workflows start irreversible deletion across connected systems, and the data subject ' +
+        'is emailed unless isSilent is set. Check workflowConfigId and email in the call ' +
+        'arguments before agreeing.',
     },
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: submitDsrSchema,
-    handler: async ({ type, email, subjectType, coreIdentifier, name, locale, isSilent }) => {
-      const result = await rest.submitDSR({
-        type,
+    handler: async ({ workflowConfigId, email, coreIdentifier, locale, isSilent }) => {
+      const requests = await rest.submitDSR({
+        workflowConfigId,
         email,
-        subjectType,
         coreIdentifier,
-        name,
         locale,
         isSilent,
       });
+      const count = requests.length;
       return createToolResult(true, {
-        request: result,
-        message: `DSR of type ${type} submitted successfully`,
+        requests,
+        message:
+          count === 1
+            ? `DSR submitted successfully (${requests[0]?.type ?? 'unknown type'})`
+            : `${count} DSRs submitted successfully`,
       });
     },
   });
