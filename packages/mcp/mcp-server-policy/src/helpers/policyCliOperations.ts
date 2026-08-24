@@ -5,7 +5,10 @@ import type { Got } from 'got';
 import { buildPolicyBundleFormData } from './buildPolicyBundleFormData.js';
 import { defaultPolicyVersionLabel } from './defaultPolicyVersionLabel.js';
 import { policyEngineRequest } from './formatPolicyEngineRequestError.js';
-import { packPolicyBundleTarball } from './packPolicyBundleTarball.js';
+import {
+  packPolicyBundleTarball,
+  packPolicyBundleTarballFromFiles,
+} from './packPolicyBundleTarball.js';
 import { resolveBundle, resolveBundleIdByName } from './resolveBundle.js';
 import { resolvePolicyBundleVersion } from './resolvePolicyBundleVersion.js';
 import type {
@@ -95,10 +98,15 @@ export async function getPolicyBundleVersion(
   );
 }
 
-/** Options for publishing a policy bundle directory. */
+/** Options for publishing a policy bundle from disk or an in-memory file map. */
 export interface PublishPolicyBundleOptions {
-  /** Directory containing manifest.json and .rego files */
-  dir: string;
+  /** Directory containing manifest.json and .rego files (mutually exclusive with files) */
+  dir?: string;
+  /**
+   * Relative path → file contents (same shape as policy_help templateFiles.files).
+   * Mutually exclusive with dir.
+   */
+  files?: Record<string, string>;
   /** Tenant-unique bundle name */
   bundleName: string;
   /** Optional version label */
@@ -110,22 +118,30 @@ export interface PublishPolicyBundleOptions {
 /**
  * Uploads an inert policy bundle version (mirrors `transcend policy publish --yes --json`).
  *
- * Uses {@link packPolicyBundleTarball} without a local `opa` binary; the monolith
- * validates Rego on upload.
+ * Uses {@link packPolicyBundleTarball} / {@link packPolicyBundleTarballFromFiles} without a
+ * local `opa` binary; the monolith validates Rego on upload.
  *
  * @param client - Policy Engine REST client
- * @param options - Publish options
+ * @param options - Publish options (`dir` or `files`, not both)
  * @returns Created bundle + version or new version on existing bundle
  */
 export async function publishPolicyBundle(
   client: Got,
   options: PublishPolicyBundleOptions,
 ): Promise<CreatePolicyBundleResponse | CreatePolicyBundleVersionResponse> {
+  const hasDir = Boolean(options.dir);
+  const hasFiles = options.files !== undefined;
+  if (hasDir === hasFiles) {
+    throw new Error('Provide exactly one of dir or files.');
+  }
+
   const versionLabel = options.version ?? defaultPolicyVersionLabel(options.bundleName);
   let bundlePath: string | undefined;
 
   try {
-    bundlePath = await packPolicyBundleTarball(options.dir);
+    bundlePath = hasFiles
+      ? await packPolicyBundleTarballFromFiles(options.files!)
+      : await packPolicyBundleTarball(options.dir!);
     const existingBundleId = await resolveBundleIdByName(client, options.bundleName);
 
     if (existingBundleId) {

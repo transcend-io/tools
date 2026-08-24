@@ -8,7 +8,7 @@ export const PolicyHelpSchema = z.object({
     .string()
     .optional()
     .describe(
-      'When set, return scaffold files (manifest.json, .rego, sample input) for this template. Omit to list templates.',
+      'Return scaffold files only for this template. Omit for the authoring guide + template list.',
     ),
 });
 export type PolicyHelpInput = z.infer<typeof PolicyHelpSchema>;
@@ -17,8 +17,8 @@ export function createPolicyHelpTool(_clients: PolicyToolClients) {
   return defineTool({
     name: 'policy_help',
     description:
-      'Policy Engine authoring guide and embedded starter templates. ' +
-      'Use before writing Rego. ActivatePolicyEngineBundles scope covers all policy tools — do not create separate API keys per operation.',
+      'Policy Engine authoring guide (no args) or starter scaffold files (templateId). ' +
+      'ActivatePolicyEngineBundles covers all policy tools — do not create separate API keys per operation.',
     category: 'Policy Engine',
     readOnly: true,
     requireAuth: false,

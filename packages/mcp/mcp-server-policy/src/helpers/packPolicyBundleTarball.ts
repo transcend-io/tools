@@ -174,6 +174,55 @@ function formatBytes(bytes: number): string {
 }
 
 /**
+ * Rejects absolute paths and `..` segments so materialization cannot escape the staging dir.
+ *
+ * @param relativePath - Caller-supplied relative path key
+ */
+export function assertSafePolicyBundleRelativePath(relativePath: string): void {
+  if (!relativePath || relativePath.trim().length === 0) {
+    throw new Error('Policy bundle file paths must be non-empty relative paths.');
+  }
+
+  if (path.isAbsolute(relativePath)) {
+    throw new Error(`Policy bundle file path must be relative, got: ${relativePath}`);
+  }
+
+  const normalized = path.posix.normalize(relativePath.replace(/\\/g, '/'));
+  if (normalized === '..' || normalized.startsWith('../') || normalized.includes('/../')) {
+    throw new Error(`Policy bundle file path must not contain "..": ${relativePath}`);
+  }
+}
+
+/**
+ * Writes an in-memory path→content map to a fresh temp directory.
+ *
+ * Callers must delete the returned directory when finished (typically after packing).
+ *
+ * @param files - Relative path → file contents (same shape as policy_help templateFiles.files)
+ * @returns Absolute path to the staging directory
+ */
+export function materializePolicyBundleFiles(files: Record<string, string>): string {
+  const stagingDir = fs.mkdtempSync(path.join(os.tmpdir(), 'transcend-policy-files-'));
+  const stagingRoot = path.resolve(stagingDir);
+
+  try {
+    for (const [relativePath, content] of Object.entries(files)) {
+      assertSafePolicyBundleRelativePath(relativePath);
+      const filePath = path.resolve(stagingDir, relativePath);
+      if (filePath !== stagingRoot && !filePath.startsWith(`${stagingRoot}${path.sep}`)) {
+        throw new Error(`Policy bundle file path escapes staging directory: ${relativePath}`);
+      }
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, content, 'utf8');
+    }
+    return stagingDir;
+  } catch (error) {
+    fs.rmSync(stagingDir, { recursive: true, force: true });
+    throw error;
+  }
+}
+
+/**
  * Builds a gzip-compressed policy bundle tarball for upload to Transcend.
  *
  * Unlike the CLI `transcend policy publish` path, this does **not** invoke the
@@ -227,4 +276,24 @@ export async function packPolicyBundleTarball(dir: string): Promise<string> {
   }
 
   return outputPath;
+}
+
+/**
+ * Materializes an in-memory file map, packs it, then removes the staging directory.
+ *
+ * Non-publishable extras (e.g. `sample-input.json`) may be present; only
+ * `manifest.json` and publishable `.rego` files are archived.
+ *
+ * @param files - Relative path → file contents
+ * @returns Absolute path to the generated `.tar.gz` bundle
+ */
+export async function packPolicyBundleTarballFromFiles(
+  files: Record<string, string>,
+): Promise<string> {
+  const stagingDir = materializePolicyBundleFiles(files);
+  try {
+    return await packPolicyBundleTarball(stagingDir);
+  } finally {
+    fs.rmSync(stagingDir, { recursive: true, force: true });
+  }
 }

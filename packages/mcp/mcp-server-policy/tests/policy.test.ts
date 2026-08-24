@@ -4,7 +4,11 @@ import path from 'node:path';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { packPolicyBundleTarball } from '../src/helpers/packPolicyBundleTarball.js';
+import {
+  assertSafePolicyBundleRelativePath,
+  packPolicyBundleTarball,
+  packPolicyBundleTarballFromFiles,
+} from '../src/helpers/packPolicyBundleTarball.js';
 import {
   activatePolicyBundleVersion,
   deactivatePolicyBundle,
@@ -12,7 +16,9 @@ import {
   listPolicyBundles,
   publishPolicyBundle,
 } from '../src/helpers/policyCliOperations.js';
+import { POLICY_TEMPLATES } from '../src/templates/index.js';
 import { getPolicyTools } from '../src/tools/index.js';
+import { PolicyPublishSchema } from '../src/tools/policy_publish.js';
 
 const EXPECTED_TOOL_NAMES = [
   'policy_help',
@@ -20,6 +26,8 @@ const EXPECTED_TOOL_NAMES = [
   'policy_publish',
   'policy_set_live',
 ] as const;
+
+const STARTER_FILES = POLICY_TEMPLATES.starter.files;
 
 function writeStarterBundle(dir: string): void {
   fs.mkdirSync(path.join(dir, 'policy_engine'), { recursive: true });
@@ -65,6 +73,9 @@ describe('Policy MCP tools', () => {
           templates: expect.arrayContaining([expect.objectContaining({ id: 'starter' })]),
         },
       });
+      expect(result.data).toMatchObject({
+        guide: expect.stringContaining('files'),
+      });
     });
 
     it('returns template files when templateId is set', async () => {
@@ -81,6 +92,36 @@ describe('Policy MCP tools', () => {
           },
         },
       });
+      expect(result.data).not.toHaveProperty('guide');
+      expect(result.data).not.toHaveProperty('templates');
+    });
+  });
+
+  describe('PolicyPublishSchema', () => {
+    it('accepts dir without files', () => {
+      expect(
+        PolicyPublishSchema.safeParse({ dir: '/tmp/bundle', bundleName: 'main' }).success,
+      ).toBe(true);
+    });
+
+    it('accepts files without dir', () => {
+      expect(
+        PolicyPublishSchema.safeParse({ files: STARTER_FILES, bundleName: 'main' }).success,
+      ).toBe(true);
+    });
+
+    it('rejects when both dir and files are set', () => {
+      const result = PolicyPublishSchema.safeParse({
+        dir: '/tmp/bundle',
+        files: STARTER_FILES,
+        bundleName: 'main',
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects when neither dir nor files is set', () => {
+      const result = PolicyPublishSchema.safeParse({ bundleName: 'main' });
+      expect(result.success).toBe(false);
     });
   });
 
@@ -110,6 +151,32 @@ describe('Policy MCP tools', () => {
       const tarball = await packPolicyBundleTarball(dir);
       expect(fs.existsSync(tarball)).toBe(true);
       fs.unlinkSync(tarball);
+    });
+
+    it('packs from an in-memory files map including sample-input.json', async () => {
+      const tarball = await packPolicyBundleTarballFromFiles(STARTER_FILES);
+      expect(fs.existsSync(tarball)).toBe(true);
+      fs.unlinkSync(tarball);
+    });
+
+    it('rejects path traversal in file keys', async () => {
+      expect(() => assertSafePolicyBundleRelativePath('../etc/passwd')).toThrow(/\.\./);
+      await expect(
+        packPolicyBundleTarballFromFiles({
+          '../etc/passwd': 'nope',
+          'manifest.json': JSON.stringify({ roots: ['policy_engine'] }),
+          'policy_engine/decision.rego': 'package policy_engine\n',
+        }),
+      ).rejects.toThrow(/\.\./);
+    });
+
+    it('rejects absolute file paths', async () => {
+      await expect(
+        packPolicyBundleTarballFromFiles({
+          '/tmp/evil.rego': 'package policy_engine\n',
+          'manifest.json': JSON.stringify({ roots: ['policy_engine'] }),
+        }),
+      ).rejects.toThrow(/relative/);
     });
   });
 
@@ -170,6 +237,42 @@ describe('Policy MCP tools', () => {
       expect(mockClient.post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
         body: expect.any(FormData),
       });
+    });
+
+    it('publishPolicyBundle accepts an in-memory files map', async () => {
+      mockClient.get.mockReturnValue({
+        json: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
+      });
+      mockClient.post.mockReturnValue({
+        json: vi.fn().mockResolvedValue({
+          bundle: { id: 'b1', bundleName: 'main' },
+          version: { id: 'v1', version: 'main-2026-01-01' },
+        }),
+      });
+
+      const result = await publishPolicyBundle(mockClient as never, {
+        files: STARTER_FILES,
+        bundleName: 'main',
+        version: 'main-2026-01-01',
+      });
+
+      expect(result).toMatchObject({
+        bundle: { id: 'b1' },
+        version: { id: 'v1' },
+      });
+      expect(mockClient.post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', {
+        body: expect.any(FormData),
+      });
+    });
+
+    it('publishPolicyBundle rejects when both dir and files are set', async () => {
+      await expect(
+        publishPolicyBundle(mockClient as never, {
+          dir: '/tmp/bundle',
+          files: STARTER_FILES,
+          bundleName: 'main',
+        }),
+      ).rejects.toThrow(/exactly one of dir or files/);
     });
 
     it('publishPolicyBundle appends a version when bundle exists', async () => {

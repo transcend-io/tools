@@ -77,10 +77,11 @@ Policy Engine (Seneca) bundles are **OPA Rego** packages uploaded as immutable v
 - Exclude \`*_test.rego\` from uploads — they are for local testing only.
 - Upload limits: **5 KiB compressed**, **50 KiB decompressed** (\`manifest.json\` + publishable \`.rego\` only).
 
-## Workflow (always two steps)
+## Workflow
 
-1. **policy_publish** — uploads an **inert** version (Manage Policy scope).
-2. **policy_set_live** — explicitly activates or deactivates (Activate Policy scope).
+1. **policy_help** — guide (no args) or scaffold files (\`templateId\`).
+2. **policy_publish** — upload inert version via \`files\` (from help) or \`dir\`.
+3. **policy_set_live** — activate or deactivate.
 
 Never combine publish + activate in one step.
 
@@ -100,21 +101,27 @@ Do not ask the user to create separate keys for view, publish, and activate.
 |------|---------|
 | policy_help | This guide + embedded templates |
 | policy_status | List bundles, version history, download URLs |
-| policy_publish | Upload inert version from a workspace directory |
+| policy_publish | Upload inert version from \`files\` map or workspace \`dir\` |
 | policy_set_live | Activate or deactivate a version |
 
 CLI equivalents: \`transcend policy bundles\`, \`versions\`, \`download\`, \`publish\`, \`activate\`, \`deactivate\`.
 `;
 
 /**
- * Returns template summaries or a single template's files.
+ * Returns the authoring guide + template list, or scaffold files for one template.
+ *
+ * When `templateId` is set, omits the full guide and template list to avoid
+ * repeating large text the agent already fetched (or does not need).
  *
  * @param templateId - Optional template id
- * @returns Guide text, template list, or template files
+ * @returns Guide + templates, or template files only
  */
 export function resolvePolicyHelpContent(templateId?: string): {
-  guide: string;
-  templates: PolicyTemplateSummary[];
+  /** Full authoring guide (list mode only) */
+  guide?: string;
+  /** Template summaries (list mode only) */
+  templates?: PolicyTemplateSummary[];
+  /** Scaffold files when `templateId` is set */
   templateFiles?: PolicyTemplateFiles;
 } {
   const templates = Object.values(POLICY_TEMPLATES).map(({ id, title, description }) => ({
@@ -135,8 +142,6 @@ export function resolvePolicyHelpContent(templateId?: string): {
   }
 
   return {
-    guide: POLICY_AUTHORING_GUIDE,
-    templates,
     templateFiles: { files: template.files },
   };
 }
