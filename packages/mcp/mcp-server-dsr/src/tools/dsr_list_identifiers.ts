@@ -1,16 +1,14 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  OffsetPaginationSchema,
   type ToolClients,
   z,
 } from '@transcend-io/mcp-server-base';
 
-export const listIdentifiersSchema = z
-  .object({
-    requestId: z.string().describe('ID of the DSR'),
-  })
-  .merge(PaginationSchema);
+export const listIdentifiersSchema = OffsetPaginationSchema.extend({
+  requestId: z.string().describe('ID of the DSR'),
+});
 export type ListIdentifiersInput = z.infer<typeof listIdentifiersSchema>;
 
 export function createDsrListIdentifiersTool(clients: ToolClients) {
@@ -18,15 +16,27 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
 
   return defineTool({
     name: 'dsr_list_identifiers',
-    description: 'List all identifiers attached to a Data Subject Request',
+    description:
+      'List decrypted identifiers attached to a Data Subject Request (for fulfillment and integration). ' +
+      'Paginate with offset (increment by first) until hasNextPage is false. ' +
+      'This endpoint returns a consolidated fulfillment set via Sombra REST; the admin UI may show more rows ' +
+      'per source via GraphQL requestIdentifiers.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: listIdentifiersSchema,
-    handler: async ({ requestId }) => {
-      const identifiers = await rest.listRequestIdentifiers(requestId);
-      return createListResult(identifiers);
+    handler: async ({ requestId, first, offset }) => {
+      const identifiers = await rest.listRequestIdentifiers(requestId, { first, offset });
+
+      const hasNextPage = identifiers.length === first;
+
+      return createListResult(identifiers, {
+        hasNextPage,
+        paginationNote: hasNextPage
+          ? 'More results may be available. Increment offset by first to fetch the next page.'
+          : 'No more results.',
+      });
     },
   });
 }

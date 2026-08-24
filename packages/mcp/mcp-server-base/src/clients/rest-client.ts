@@ -344,12 +344,22 @@ export class TranscendRestClient {
     return response.arrayBuffer();
   }
 
-  async listRequestIdentifiers(requestId: string): Promise<Record<string, string>[]> {
+  async listRequestIdentifiers(
+    requestId: string,
+    options?: {
+      /** Maximum number of identifiers to return (default 50) */
+      first?: number;
+      /** Zero-based offset for pagination */
+      offset?: number;
+    },
+  ): Promise<Record<string, string>[]> {
+    const first = Math.min(options?.first ?? 50, 100);
+    const offset = options?.offset ?? 0;
     const response = await this.makeRequest<{ identifiers: Record<string, string>[] }>(
       '/v1/request-identifiers',
       {
         method: 'POST',
-        body: JSON.stringify({ requestId }),
+        body: JSON.stringify({ requestId, first, offset }),
       },
     );
     return response.identifiers || [];

@@ -126,7 +126,7 @@ describe('TranscendRestClient Sombra host and headers', () => {
     );
   });
 
-  it('listRequestIdentifiers POSTs requestId in the body', async () => {
+  it('listRequestIdentifiers POSTs requestId with default pagination in the body', async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ identifiers: [{ email: 'a@b.com' }] }), {
         status: 200,
@@ -147,6 +147,33 @@ describe('TranscendRestClient Sombra host and headers', () => {
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual({
       requestId: 'd6e2445a-32d2-4c35-9aa5-9e80cb8e3f89',
+      first: 50,
+      offset: 0,
+    });
+  });
+
+  it('listRequestIdentifiers POSTs custom first and offset', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ identifiers: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    await client.listRequestIdentifiers('d6e2445a-32d2-4c35-9aa5-9e80cb8e3f89', {
+      first: 10,
+      offset: 20,
+    });
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(JSON.parse(init.body)).toEqual({
+      requestId: 'd6e2445a-32d2-4c35-9aa5-9e80cb8e3f89',
+      first: 10,
+      offset: 20,
     });
   });
 
