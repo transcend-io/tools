@@ -92,6 +92,9 @@ describe('DSR_ERROR_MESSAGE', () => {
     ).toBe(
       'The following dataSiloIds are not connected to the workflow config "wf-123": silo-a, silo-b. dataSiloIds may only narrow the workflow\'s connected data silos.',
     );
+    expect(DSR_ERROR_MESSAGE[DsrErrorCode.ConflictingDataSiloFilters]()).toBe(
+      "dataSiloIds and ignoreDataSiloIds cannot both be set on the same input. Use dataSiloIds to restrict fulfillment to a subset of the workflow's connected data silos, or ignoreDataSiloIds to exclude silos from it.",
+    );
     expect(
       DSR_ERROR_MESSAGE[DsrErrorCode.TypeNotMatchingWorkflow]({
         workflowConfigId: 'wf-123',
