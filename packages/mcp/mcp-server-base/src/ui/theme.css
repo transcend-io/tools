@@ -115,8 +115,8 @@
   --text-heading-sm--line-height: var(--font-heading-sm-line-height, 1.5rem);
   --text-heading-md: var(--font-heading-md-size, 1.125rem);
   --text-heading-md--line-height: var(--font-heading-md-line-height, 1.625rem);
-  /* Ours: a KPI value has to outrank its own label at a glance, which the
-     heading sizes above are too close to do. */
+  /* Ours: a display number that outranks its label, which the heading
+     sizes above are too close to do. */
   --text-metric: 1.75rem;
   --text-metric--line-height: 2.125rem;
 
@@ -134,18 +134,14 @@
   --spacing: 0.25rem;
   --breakpoint-sm: 24rem;
   --breakpoint-md: 32rem;
-  /*
-   * Three KPI cards side by side need roughly this much before a nine-digit
-   * count clips, which is well past `md`.
-   */
+  /* Past `md`: a multi-column row needs this much before its contents clip. */
   --breakpoint-lg: 48rem;
 
   /*
    * Widest a view's content grows before it reads as stretched rather than
    * full-bleed. A host gives an app whatever width the conversation has, and an
-   * inspector or a maximized panel is far wider than a dashboard can fill:
-   * cards turn into letterboxes and a progress bar becomes a rule across the
-   * screen. Structural, so it is ours rather than the host's.
+   * inspector or maximized panel is often far wider than the content can fill.
+   * Structural, so it is ours rather than the host's.
    */
   --container-view: 64rem;
 }
