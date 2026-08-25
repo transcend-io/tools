@@ -134,7 +134,6 @@
   --spacing: 0.25rem;
   --breakpoint-sm: 24rem;
   --breakpoint-md: 32rem;
-  /* Past `md`: a multi-column row needs this much before its contents clip. */
   --breakpoint-lg: 48rem;
 
   /*

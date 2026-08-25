@@ -489,6 +489,8 @@ The namespaces available, all of which are host-aware:
 
 Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
 
+**Reach for a container query before a breakpoint.** `sm:` and friends measure the iframe viewport, which a host sizes to its own panel rather than to the window — Claude's inline panel lands just under `lg` and never moves, so a view that gates its columns on `lg:` stays stacked no matter how large the display is. Mark the row `@container` and gate on its width (`@min-[36rem]:grid-cols-3`), which is what `Grid` from the kit does. Breakpoints are still right for the rare case that genuinely depends on the panel itself.
+
 The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
 
 ### Developing and debugging a view
