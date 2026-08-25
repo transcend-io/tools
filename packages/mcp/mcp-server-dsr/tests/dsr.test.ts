@@ -29,7 +29,7 @@ describe('DSR Tools', () => {
     submitDSR: ReturnType<typeof vi.fn>;
     pollDSRStatus: ReturnType<typeof vi.fn>;
     downloadKeys: ReturnType<typeof vi.fn>;
-    listDSRIdentifiers: ReturnType<typeof vi.fn>;
+    listRequestIdentifiers: ReturnType<typeof vi.fn>;
     enrichIdentifiers: ReturnType<typeof vi.fn>;
     respondAccess: ReturnType<typeof vi.fn>;
     respondErasure: ReturnType<typeof vi.fn>;
@@ -46,7 +46,7 @@ describe('DSR Tools', () => {
       submitDSR: vi.fn(),
       pollDSRStatus: vi.fn(),
       downloadKeys: vi.fn(),
-      listDSRIdentifiers: vi.fn(),
+      listRequestIdentifiers: vi.fn(),
       enrichIdentifiers: vi.fn(),
       respondAccess: vi.fn(),
       respondErasure: vi.fn(),
@@ -142,6 +142,66 @@ describe('DSR Tools', () => {
 
       expect(result).toMatchObject({ success: true, data: details });
       expect(mockGraphql.getRequest).toHaveBeenCalledWith('req-1');
+    });
+  });
+
+  describe('dsr_list_identifiers', () => {
+    it('zodSchema rejects when requestId is missing', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_identifiers')!;
+
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].path).toEqual(['requestId']);
+    });
+
+    it('returns identifiers with pagination metadata on success', async () => {
+      const identifiers = [
+        { id: 'ri-1', name: 'email', value: 'a@b.com', type: 'email' },
+        { id: 'ri-2', name: 'phone', value: '+1123123123', type: 'phone' },
+      ];
+      mockRest.listRequestIdentifiers.mockResolvedValue(identifiers);
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_identifiers')!;
+
+      expect(tool.requireSombra).toBe(true);
+
+      const result = await tool.handler({
+        requestId: 'req-1',
+        first: 2,
+        offset: 0,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: identifiers,
+        hasNextPage: true,
+      });
+      expect(mockRest.listRequestIdentifiers).toHaveBeenCalledWith('req-1', {
+        first: 2,
+        offset: 0,
+      });
+    });
+
+    it('sets hasNextPage false when page is shorter than first', async () => {
+      mockRest.listRequestIdentifiers.mockResolvedValue([
+        { id: 'ri-1', name: 'email', value: 'a@b.com', type: 'email' },
+      ]);
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_identifiers')!;
+
+      const result = await tool.handler({
+        requestId: 'req-1',
+        first: 50,
+        offset: 0,
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        hasNextPage: false,
+      });
     });
   });
 
