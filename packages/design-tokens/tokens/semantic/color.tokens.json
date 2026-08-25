@@ -189,11 +189,7 @@
         "$description": "Focus ring on inputs"
       },
       "subtle": {
-        "$value": {
-          "colorSpace": "srgb",
-          "components": [0.37254902720451355, 0.35686275362968445, 0.9686274528503418],
-          "alpha": 0.5
-        },
+        "$value": "{palette.indigo.500-alpha-50}",
         "$description": "Brand focus ring with alpha — editor focus outlines, soft focus states"
       }
     },
