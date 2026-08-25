@@ -126,7 +126,7 @@ describe('TranscendRestClient Sombra host and headers', () => {
     );
   });
 
-  it('listRequestIdentifiers POSTs requestId in the body', async () => {
+  it('listRequestIdentifiers POSTs requestId with default pagination in the body', async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ identifiers: [{ email: 'a@b.com' }] }), {
         status: 200,
@@ -147,6 +147,103 @@ describe('TranscendRestClient Sombra host and headers', () => {
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body)).toEqual({
       requestId: 'd6e2445a-32d2-4c35-9aa5-9e80cb8e3f89',
+      first: 50,
+      offset: 0,
     });
+  });
+
+  it('listRequestIdentifiers POSTs custom first and offset', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ identifiers: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    await client.listRequestIdentifiers('d6e2445a-32d2-4c35-9aa5-9e80cb8e3f89', {
+      first: 10,
+      offset: 20,
+    });
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(JSON.parse(init.body)).toEqual({
+      requestId: 'd6e2445a-32d2-4c35-9aa5-9e80cb8e3f89',
+      first: 10,
+      offset: 20,
+    });
+  });
+
+  it('submitDSR POSTs bulk input with workflowConfigId and attestedAuthContext', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          requests: [
+            {
+              id: 'req-1',
+              status: 'COMPILING',
+              type: 'ACCESS',
+              subjectType: 'customer',
+              email: 'person@example.com',
+              coreIdentifier: 'person@example.com',
+              isSilent: true,
+              isTest: false,
+              link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+              attributeValues: [],
+              workflowConfig: { id: 'wf-config-1' },
+            },
+          ],
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      ),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    const result = await client.submitDSR({
+      workflowConfigId: 'wf-config-1',
+      email: 'person@example.com',
+      isSilent: true,
+      locale: 'en-US',
+    });
+
+    expect(result).toEqual([
+      {
+        id: 'req-1',
+        status: 'COMPILING',
+        type: 'ACCESS',
+        subjectType: 'customer',
+        link: 'https://app.transcend.io/privacy-requests/incoming-requests/req-1',
+      },
+    ]);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toBe('https://sombra.example.com/v1/data-subject-request-bulk');
+    expect(init.method).toBe('POST');
+    const body = JSON.parse(init.body);
+    expect(body).toEqual({
+      input: [
+        {
+          workflowConfigId: 'wf-config-1',
+          attestedAuthContext: {
+            email: 'person@example.com',
+            coreIdentifier: 'person@example.com',
+          },
+          locale: 'en-US',
+          isSilent: true,
+        },
+      ],
+    });
+    expect(body).not.toHaveProperty('dhEncrypted');
+    expect(body.input[0]).not.toHaveProperty('type');
+    expect(body.input[0]).not.toHaveProperty('subjectType');
   });
 });

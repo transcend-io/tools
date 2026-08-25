@@ -151,23 +151,56 @@ export interface RequestFile {
 }
 
 export interface DSRSubmission {
-  type: RequestType;
+  /**
+   * Published workflow config UUID (Privacy Requests → Workflows).
+   * Request type and subject class are derived from this config.
+   */
+  workflowConfigId: string;
+  /** Email address of the data subject (required when not silent) */
   email: string;
+  /** Core identifier; defaults to email when omitted */
   coreIdentifier?: string;
-  subjectType?: string;
-  name?: string;
-  phone?: string;
+  /** Locale for communications (e.g. en-US) */
   locale?: string;
+  /** When true, suppress email notifications to the data subject */
   isSilent?: boolean;
-  skipSecondaryLookup?: boolean;
-  additionalIdentifiers?: Record<string, string>;
 }
 
 export interface DSRResponse {
+  /** Privacy request ID */
   id: string;
+  /** Request status */
   status: string;
+  /** Optional server message */
   message?: string;
+  /** Optional nonce */
   nonce?: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Subject email on the created request */
+  email?: string | null;
+  /** Core identifier on the created request */
+  coreIdentifier?: string;
+  /** Admin dashboard deep link */
+  link?: string;
+}
+
+/**
+ * Minimal summary of a request returned from bulk DSR create.
+ */
+export interface DSRCreatedSummary {
+  /** Privacy request ID */
+  id: string;
+  /** Request status */
+  status: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Admin dashboard deep link */
+  link?: string;
 }
 
 export interface DownloadKey {

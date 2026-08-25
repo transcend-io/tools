@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.23.0
+
+### Minor Changes
+
+- ea1ab3c: Add `DsrErrorCode.ConflictingDataSiloFilters` (`CONFLICTING_DATA_SILO_FILTERS`) for bulk DSR inputs that set both `dataSiloIds` and `ignoreDataSiloIds`.
+
 ## 5.22.0
 
 ### Minor Changes

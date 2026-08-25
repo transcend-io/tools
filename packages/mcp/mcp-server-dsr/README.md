@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`, `ViewWorkflows`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 
@@ -87,16 +87,19 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ### Environment variables
 
-| Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                                                                       |
-| ------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients)                                               |
-| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                                                                    |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
-| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
-| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
-| `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth). Disables OAuth when set alongside client ID                                                             |
-| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI convention)                                                                                                  |
-| `SOMBRA_URL`                    | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
+| Variable                        | Required (stdio OAuth) | Default                    | Description                                                                                                                                       |
+| ------------------------------- | ---------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients)                                               |
+| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                          | Client secret from the same OAuth clients page                                                                                                    |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
+| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
+| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
+| `TRANSCEND_API_KEY`             | No                     | —                          | API key for stdio (alternative to OAuth). Disables OAuth when set alongside client ID                                                             |
+| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io` | GraphQL backend API URL (org lookup, non-create tools)                                                                                            |
+| `SOMBRA_URL`                    | No                     | _(lazy GraphQL resolve)_   | Sticky **customer ingress** base URL for DSR create and other Sombra REST tools. When unset, resolves `organization.sombra.customerUrl`           |
+| `SOMBRA_CUSTOMER_KEY`           | No                     | —                          | Optional self-hosted customer-ingress key. Sent as `X-Sombra-Authorization: Bearer …`. Not needed on multi-tenant Transcend-hosted Sombra         |
+
+`dsr_submit` creates requests via customer ingress (`POST /v1/data-subject-request-bulk`). Pass a published `workflowConfigId`; request type and subject class are derived from that workflow. Sombra attests the subject server-side—do not set platform HMAC/KMS secrets or compute Diffie-Hellman in the MCP client. For local Sombra, point `SOMBRA_URL` at customer ingress (often port **5046**), not transcend/external ingress.
 
 **Monorepo:** keep these in root **`secret.env`** (from [`secret.env.example`](../../../secret.env.example)); see **Run from the monorepo**.
 
@@ -105,8 +108,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `dsr_list` — List data subject requests (includes assigned owners and teams)
 - `dsr_get_details` — Get request details (includes assigned owners and teams)
 - `dsr_list_request_data_silos` — List connected systems for a request (status, errors, system owners)
-- `dsr_submit` — Submit a new DSR
-- `dsr_submit_on_behalf` — Submit a DSR as an admin on behalf of a data subject
+- `dsr_submit` — Submit a new DSR via customer-ingress REST
 - `dsr_cancel` — Cancel a request
 - `dsr_respond_access` — Respond to an access request
 - `dsr_respond_erasure` — Respond to an erasure request

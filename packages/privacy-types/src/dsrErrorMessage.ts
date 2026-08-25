@@ -96,6 +96,7 @@ export type DsrErrorMessageMap = {
   [DsrErrorCode.UnsupportedIdentifierName]: (name: string) => string;
   [DsrErrorCode.MissingRequiredEmail]: () => string;
   [DsrErrorCode.DataSiloNotInWorkflow]: (input: DataSiloNotInWorkflowMessageInput) => string;
+  [DsrErrorCode.ConflictingDataSiloFilters]: () => string;
   [DsrErrorCode.TypeNotMatchingWorkflow]: (input: TypeNotMatchingWorkflowMessageInput) => string;
   [DsrErrorCode.SubjectTypeNotMatchingWorkflow]: (
     input: SubjectTypeNotMatchingWorkflowMessageInput,
@@ -177,6 +178,8 @@ export const DSR_ERROR_MESSAGE = {
     `The following dataSiloIds are not connected to the workflow config ` +
     `"${workflowConfigId}": ${dataSiloIds.join(', ')}. ` +
     `dataSiloIds may only narrow the workflow's connected data silos.`,
+  [DsrErrorCode.ConflictingDataSiloFilters]: () =>
+    "dataSiloIds and ignoreDataSiloIds cannot both be set on the same input. Use dataSiloIds to restrict fulfillment to a subset of the workflow's connected data silos, or ignoreDataSiloIds to exclude silos from it.",
   [DsrErrorCode.TypeNotMatchingWorkflow]: ({
     workflowConfigId,
     providedType,

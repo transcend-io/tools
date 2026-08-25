@@ -12,12 +12,13 @@ import { graphql } from './__generated__/gql.js';
 import type {
   RequestDataSiloFiltersInput,
   RequestDataSiloStatus,
+  RequestFiltersInput,
   VisualRequestDataSiloStatus,
 } from './__generated__/graphql.js';
 
 const ListRequestsDoc = graphql(/* GraphQL */ `
-  query DsrListRequests($first: Int, $after: String) {
-    requests(first: $first, after: $after) {
+  query DsrListRequests($first: Int, $after: String, $filterBy: RequestFiltersInput) {
+    requests(first: $first, after: $after, filterBy: $filterBy) {
       nodes {
         id
         type
@@ -103,21 +104,6 @@ const ListRequestDataSilosDoc = graphql(/* GraphQL */ `
   }
 `);
 
-const EmployeeMakeDataSubjectRequestDoc = graphql(/* GraphQL */ `
-  mutation DsrEmployeeMakeRequest($input: EmployeeRequestInput!) {
-    employeeMakeDataSubjectRequest(input: $input) {
-      clientMutationId
-      request {
-        id
-        type
-        status
-        createdAt
-        updatedAt
-      }
-    }
-  }
-`);
-
 const CancelRequestDoc = graphql(/* GraphQL */ `
   mutation DsrCancel($input: CommunicationInput!) {
     cancelRequest(input: $input) {
@@ -150,6 +136,14 @@ function mapTeams(teams: { id: string; name: string }[] | null | undefined): Req
   }));
 }
 
+/** Options for listing privacy requests (DSRs) */
+export interface ListRequestsOptions extends ListOptions {
+  /** Fuzzy/exact search across request identifiers (email, phone, etc.) */
+  identifierValue?: string;
+  /** Exact match on primary email address only */
+  emails?: string[];
+}
+
 /** Filters for listing request–data-silo jobs on a DSR */
 export interface ListRequestDataSilosOptions extends ListOptions {
   /** Request ID to list silo jobs for (required) */
@@ -163,10 +157,15 @@ export interface ListRequestDataSilosOptions extends ListOptions {
 }
 
 export class DSRMixin extends TranscendGraphQLBase {
-  async listRequests(options?: ListOptions): Promise<PaginatedResponse<Request>> {
+  async listRequests(options?: ListRequestsOptions): Promise<PaginatedResponse<Request>> {
+    const filterBy: RequestFiltersInput = {
+      ...(options?.identifierValue ? { identifierValue: options.identifierValue } : {}),
+      ...(options?.emails?.length ? { emails: options.emails } : {}),
+    };
     const data = await this.makeRequest(ListRequestsDoc, {
       first: Math.min(options?.first ?? 50, 100),
       after: options?.after ?? null,
+      filterBy: Object.keys(filterBy).length > 0 ? filterBy : undefined,
     });
     return {
       nodes: data.requests.nodes.map((node) => ({
@@ -254,32 +253,6 @@ export class DSRMixin extends TranscendGraphQLBase {
         hasPreviousPage: offset > 0,
       },
       totalCount,
-    };
-  }
-
-  async employeeMakeDataSubjectRequest(input: {
-    type: RequestType;
-    email: string;
-    coreIdentifier?: string;
-    locale?: string;
-    isSilent?: boolean;
-    subjectType: string;
-    attributes?: Record<string, unknown>;
-    clientMutationId?: string;
-  }): Promise<{ request: Request; clientMutationId?: string }> {
-    const data = await this.makeRequest(EmployeeMakeDataSubjectRequestDoc, {
-      input: input as never,
-    });
-    const payload = data.employeeMakeDataSubjectRequest;
-    return {
-      request: {
-        id: payload.request.id,
-        type: payload.request.type as RequestType,
-        status: payload.request.status as Request['status'],
-        createdAt: payload.request.createdAt,
-        updatedAt: payload.request.updatedAt,
-      },
-      clientMutationId: payload.clientMutationId ?? undefined,
     };
   }
 
