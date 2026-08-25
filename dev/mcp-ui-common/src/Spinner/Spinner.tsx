@@ -123,7 +123,6 @@ export function Spinner({
         role="status"
         aria-label={label}
         aria-busy="true"
-        data-allow-motion=""
       >
         {svg}
       </span>
@@ -136,7 +135,6 @@ export function Spinner({
       role="status"
       aria-label={label}
       aria-busy="true"
-      data-allow-motion=""
     >
       {svg}
       {label ? (

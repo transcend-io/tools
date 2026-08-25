@@ -244,20 +244,4 @@
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
-
-  /*
-   * A subtree marked `data-allow-motion` keeps its animation, for the few
-   * cases where motion carries the meaning — a busy indicator that freezes
-   * reads as a hung view. Those subtrees are expected to tone themselves down
-   * under `prefers-reduced-motion` rather than ignore it. `:where()` keeps the
-   * exception at zero specificity, so nothing else in the cascade shifts.
-   */
-  @media (prefers-reduced-motion: reduce) {
-    *:not(:where([data-allow-motion], [data-allow-motion] *)),
-    *:not(:where([data-allow-motion], [data-allow-motion] *))::before,
-    *:not(:where([data-allow-motion], [data-allow-motion] *))::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
 }
