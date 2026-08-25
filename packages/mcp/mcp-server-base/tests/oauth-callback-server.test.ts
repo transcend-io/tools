@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { startCallbackServer } from '../src/oauth/callback-server.js';
 import { generateOAuthState } from '../src/oauth/pkce.js';
@@ -46,11 +46,16 @@ describe('startCallbackServer', () => {
     try {
       await fetch(`${handle.redirectUri}?code=auth-code-123&state=${encodeURIComponent(state)}`);
       await handle.waitForCallback();
-      await handle.close();
 
-      await expect(
-        fetch(`${handle.redirectUri}?code=ignored&state=${encodeURIComponent(state)}`),
-      ).rejects.toThrow();
+      // Production code calls void closeServer() after a valid callback; port must
+      // become bindable again without an explicit handle.close() from the caller.
+      await vi.waitFor(async () => {
+        const replacement = await startCallbackServer({
+          expectedState: generateOAuthState(),
+          timeoutMs: 5000,
+        });
+        await replacement.close();
+      });
     } finally {
       await handle.close().catch(() => undefined);
     }
