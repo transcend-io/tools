@@ -424,6 +424,7 @@ Two rules, both enforced rather than trusted:
 
 - **Only the entry may end in `View.tsx`.** Discovery looks for exactly one match at the top level of the view directory, so a sibling named `ConfirmModalView.tsx` fails the build by name. Nesting is unaffected — `table/TriageTableView.tsx` would be fine, since the search is not recursive — but the simplest habit is to reserve the suffix for the entry.
 - **Shared components go in a `_`-prefixed directory under `src/ui/`.** Tailwind generates utilities per document by scanning files, so the synthesized stylesheet sources every `_` directory in addition to the view's own. Putting a shared component anywhere else outside the view directory bundles it correctly and then renders it unstyled, which reads as a CSS bug rather than a missing `@source`. The cost of sourcing them is that shared components' utilities appear in every view's document, which is why `_shared` is for genuinely shared UI rather than a dumping ground.
+- **Cross-package widgets live in `@transcend-io/mcp-ui-common`.** That private kit (`dev/mcp-ui-common`) is Grid, Heading, MetricCard, ProgressBar, and Spinner. Add it as a **view `devDependency`** (`workspace:*`) of the MCP server that builds the view — discovery then `@source`s the kit so those class names emit. Same-package `_shared` is still the right place for components that only that server uses. Do not add the kit to `pnpm mcp:new`: the scaffolded stub does not need dashboard chrome, and hello-world in `dev/mcp-server-examples` must stay off it.
 
 ```tsx
 // src/ui/hello/HelloView.tsx
@@ -483,10 +484,14 @@ The namespaces available, all of which are host-aware:
 | `text-success`, `text-warning`, `text-danger`              | Transcend status colors                                                                                                                        |
 | `text-sm`, `text-md`, `text-heading-sm`, `text-heading-md` | Font sizes, each carrying its line height                                                                                                      |
 | `rounded-*`, `shadow-sm`, `font-*`                         | `sm`, `md`, `lg`, `full`                                                                                                                       |
+| `max-w-view`                                               | `64rem`, the widest a view's content grows                                                                                                     |
+| `sm:`, `md:`, `lg:`                                        | `24rem`, `32rem`, `48rem` — ours, since skipping the default theme leaves no breakpoints                                                       |
 
 Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
 
 The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
+
+The `base` layer also neutralizes animation under `prefers-reduced-motion: reduce`, and it does so with `!important`. That is worth knowing before you write keyframes, because it cannot be overridden the usual way: important declarations reverse layer order, so an unlayered rule — which is what a component injecting its own `<style>` writes — loses to it. **Motion that carries meaning opts out by marking its subtree `data-allow-motion`.** `Spinner` is the only case today: a busy indicator frozen mid-animation reads as a hung view, and it deliberately keeps the same motion as the dashboard's `LogoSpinner`, which the preference does not reach either.
 
 ### Developing and debugging a view
 
