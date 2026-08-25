@@ -6,7 +6,8 @@ import { generateOAuthState } from '../src/oauth/pkce.js';
 describe('startCallbackServer', () => {
   const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
   const originalRedirectHost = process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
-  let nextPort = 19000;
+  // Stay clear of Cursor Myelin's published Docker ports (19001/19003/19004).
+  let nextPort = 51900;
 
   beforeEach(() => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = String(nextPort++);
