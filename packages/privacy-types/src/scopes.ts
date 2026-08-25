@@ -108,7 +108,7 @@ export enum ScopeName {
   // Custom Functions — dedicated scopes (LINK-7162); endpoints migrate in LINK-7163
   ViewCustomFunction = 'viewCustomFunction',
   ManageCustomFunction = 'manageCustomFunction',
-  // Usage dashboard — assignable View Usage (GAN-700); endpoint mapping in main
+  // Assignable view access for the Administration Usage dashboard
   ViewUsage = 'viewUsage',
 }
 
