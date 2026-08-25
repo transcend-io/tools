@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.24.0
+
+### Minor Changes
+
+- 7d1d57c: Add `ViewUsage` (`viewUsage`) to the AD scope catalog, titled "View Usage". Grants view access to organization usage metrics in the Administration Usage dashboard.
+
 ## 5.23.0
 
 ### Minor Changes
