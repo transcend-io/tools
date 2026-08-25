@@ -345,12 +345,15 @@ describe('inventory-stats MCP App document', () => {
   });
 
   it('caps the panel and stacks the metric cards on a narrow host', () => {
-    // Both rules come from theme tokens the view never names directly, so
-    // dropping `--container-view` or `--breakpoint-lg` does not fail a build:
-    // Tailwind just stops emitting the utility and the layout silently goes
-    // back to stretching across a maximized panel, or to three squeezed columns
-    // in a phone-width sidebar.
+    // The cap comes from a theme token the view never names directly, so
+    // dropping `--container-view` does not fail a build: Tailwind just stops
+    // emitting the utility and the layout silently stretches across a
+    // maximized panel.
     expect(inventoryStatsHtml).toMatch(/\.max-w-view\{max-width:var\(--container-view\)}/);
-    expect(inventoryStatsHtml).toMatch(/min-width:\s*48rem\)\{[^@]*\.lg\\:grid-cols-3\{/);
+    // Columns key off the row's own width, not the viewport. A host sizes the
+    // iframe to its panel, so a media query here would stack three cards that
+    // had room to sit side by side.
+    expect(inventoryStatsHtml).toContain('container-type:inline-size');
+    expect(inventoryStatsHtml).toMatch(/@container \(width>=36rem\)\{[^{]*grid-cols-3\{/);
   });
 });
