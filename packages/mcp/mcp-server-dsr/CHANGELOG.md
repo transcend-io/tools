@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-dsr
 
+## 0.8.3
+
+### Patch Changes
+
+- 4aa92a1: Adds pagination to list indentifiers tool
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
 ## 0.8.2
 
 ### Patch Changes

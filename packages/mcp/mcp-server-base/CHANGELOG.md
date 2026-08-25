@@ -1,5 +1,11 @@
 # @transcend-io/mcp-server-base
 
+## 1.7.1
+
+### Patch Changes
+
+- 4aa92a1: Adds pagination to list indentifiers tool
+
 ## 1.7.0
 
 ### Minor Changes
