@@ -190,23 +190,17 @@ When binding to `0.0.0.0` (e.g. in Docker), the SDK's DNS rebinding protection i
 
 Ensure your reverse proxy has buffering disabled and a long read timeout for the `/mcp` path. See the nginx configuration above.
 
-## Docs sync (tool counts → README + Sanity)
+## Docs sync (tool counts → Sanity)
 
-Package tool counts and OAuth scope titles are generated from code so they cannot drift from `get*Tools()` / `*_OAUTH_SCOPES`.
+Package tool counts and OAuth scope titles are generated from code at release time so public docs stay aligned with `get*Tools()` / `*_OAUTH_SCOPES`. The sync payload (`packages/mcp/mcp/docs/mcp-guide-sync.json`) is **gitignored** — do not commit it.
 
-### Regenerate repo docs
+### Generate the sync payload
 
 ```bash
 pnpm --dir packages/mcp/mcp genfiles
 ```
 
-This updates:
-
-- `packages/mcp/README.md` (Packages + OAuth scopes tables, marked regions)
-- `packages/mcp/mcp/README.md` (umbrella tool-total markers)
-- `packages/mcp/mcp/docs/mcp-guide-sync.json` (machine-readable payload for Sanity)
-
-CI fails if these files are stale (`Verify generated MCP docs are up to date` in `.github/workflows/ci.yml`).
+Writes `packages/mcp/mcp/docs/mcp-guide-sync.json` (local/CI only). Repo READMEs are hand-maintained; live tool counts live on the [MCP Guide](https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide).
 
 ### Draft-sync public docs (Sanity)
 
@@ -225,8 +219,8 @@ pnpm --dir packages/mcp/mcp sync:sanity
 # optional: -- --discover   (print table/prose block keys)
 ```
 
-**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
+**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `genfiles` then `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
 
 4. If you did **not** pass `--publish` locally: open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`), then publish when ready
 
-Scope tables are regenerated in the tools README only; the public MCP Guide scopes section is deferred.
+The public MCP Guide scopes section is deferred (repo README scopes table is hand-maintained; canonical lists live in each package’s `src/scopes.ts`).

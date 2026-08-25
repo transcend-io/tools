@@ -14,3 +14,5 @@ secret.env
 # of truth (committed); the per-package generated TS lives under __generated__/
 # and is rebuilt on every `pnpm codegen`/`pnpm typecheck`/`pnpm build`.
 **/__generated__/
+# MCP docs sync payload — generated on release / Sanity sync workflows, not committed.
+packages/mcp/mcp/docs/mcp-guide-sync.json

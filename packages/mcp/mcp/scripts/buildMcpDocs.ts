@@ -1,6 +1,6 @@
 /**
- * Regenerates MCP package/tool-count and OAuth-scope tables in packages/mcp/README.md
- * and writes docs/mcp-guide-sync.json for Sanity sync.
+ * Writes docs/mcp-guide-sync.json for Sanity sync (gitignored).
+ * Generated on release / docs-sync workflows — not committed to the repo.
  *
  * Run via: pnpm --dir packages/mcp/mcp genfiles
  */
@@ -22,9 +22,6 @@ import { getWorkflowTools, WORKFLOW_OAUTH_SCOPES } from '@transcend-io/mcp-serve
 import { TRANSCEND_SCOPES, type ScopeName } from '@transcend-io/privacy-types';
 
 const packageRoot = fileURLToPath(new URL('..', import.meta.url));
-const mcpRoot = join(packageRoot, '..');
-const readmePath = join(mcpRoot, 'README.md');
-const umbrellaReadmePath = join(packageRoot, 'README.md');
 const syncJsonPath = join(packageRoot, 'docs', 'mcp-guide-sync.json');
 
 const stubClients: ToolClients = {
@@ -46,8 +43,6 @@ interface DomainMeta {
   description: string;
   /** Short domain label used on the public MCP Guide */
   domain: string;
-  /** Relative README link path from packages/mcp/README.md */
-  readmeHref: string;
   /** OAuth scopes for this domain, or null when N/A */
   scopes: readonly ScopeName[] | null;
   /** Scope cell override (unified / docs / base) */
@@ -64,7 +59,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp',
     description: 'Unified server — all tools in one process',
     domain: 'Everything in one process',
-    readmeHref: './mcp/',
     scopes: null,
     scopesLabel: 'Union of all domain scopes below',
   },
@@ -75,7 +69,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-admin',
     description: 'Organization, users, teams, API keys',
     domain: 'Org, users, teams, API keys',
-    readmeHref: './mcp-server-admin/',
     scopes: ADMIN_OAUTH_SCOPES,
     getTools: getAdminTools,
   },
@@ -86,7 +79,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-assessment',
     description: 'Privacy assessments, templates, groups',
     domain: 'Privacy assessments',
-    readmeHref: './mcp-server-assessment/',
     scopes: ASSESSMENT_OAUTH_SCOPES,
     getTools: getAssessmentTools,
   },
@@ -97,7 +89,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-consent',
     description: 'Consent management, analytics, cookie triage',
     domain: 'Consent, cookies, data flows',
-    readmeHref: './mcp-server-consent/',
     scopes: CONSENT_OAUTH_SCOPES,
     getTools: getConsentTools,
   },
@@ -108,7 +99,6 @@ const DOMAINS: DomainMeta[] = [
     binary: null,
     description: 'Shared infrastructure (not installed directly)',
     domain: 'Shared infrastructure',
-    readmeHref: './mcp-server-base/',
     scopes: null,
     scopesLabel: '—',
   },
@@ -119,7 +109,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-discovery',
     description: 'Data discovery, classification, NER',
     domain: 'Data discovery, classification',
-    readmeHref: './mcp-server-discovery/',
     scopes: DISCOVERY_OAUTH_SCOPES,
     getTools: getDiscoveryTools,
   },
@@ -130,7 +119,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-docs',
     description: 'Transcend documentation lookup (list + fetch)',
     domain: 'Documentation lookup',
-    readmeHref: './mcp-server-docs/',
     scopes: null,
     scopesLabel: '_(none — tools fetch public docs URLs only)_',
     getTools: getDocsTools,
@@ -142,7 +130,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-dsr',
     description: 'Data subject requests (submit, track, respond)',
     domain: 'Data subject requests',
-    readmeHref: './mcp-server-dsr/',
     scopes: DSR_OAUTH_SCOPES,
     getTools: getDSRTools,
   },
@@ -153,7 +140,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-inventory',
     description: 'Data inventory, silos, vendors, data points',
     domain: 'Data inventory, silos, vendors',
-    readmeHref: './mcp-server-inventory/',
     scopes: INVENTORY_OAUTH_SCOPES,
     getTools: getInventoryTools,
   },
@@ -164,7 +150,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-preferences',
     description: 'Privacy preference store (query, upsert, delete)',
     domain: 'User Preferences',
-    readmeHref: './mcp-server-preferences/',
     scopes: PREFERENCE_OAUTH_SCOPES,
     getTools: getPreferenceTools,
   },
@@ -175,7 +160,6 @@ const DOMAINS: DomainMeta[] = [
     binary: 'transcend-mcp-workflows',
     description: 'Workflow & email-template configuration',
     domain: 'Workflow & email templates',
-    readmeHref: './mcp-server-workflows/',
     scopes: WORKFLOW_OAUTH_SCOPES,
     getTools: getWorkflowTools,
   },
@@ -189,92 +173,6 @@ function scopeTitles(scopes: readonly ScopeName[]): string[] {
     }
     return def.title;
   });
-}
-
-function pad(value: string, width: number, align: 'left' | 'right' = 'left'): string {
-  if (value.length >= width) {
-    return value;
-  }
-  const padding = ' '.repeat(width - value.length);
-  return align === 'right' ? padding + value : value + padding;
-}
-
-function renderPackagesTable(
-  rows: Array<{
-    link: string;
-    binary: string;
-    tools: string;
-    description: string;
-  }>,
-): string {
-  const headers = {
-    link: 'Package',
-    binary: 'Binary',
-    tools: 'Tools',
-    description: 'Description',
-  };
-  const w = {
-    link: Math.max(headers.link.length, ...rows.map((r) => r.link.length)),
-    binary: Math.max(headers.binary.length, ...rows.map((r) => r.binary.length)),
-    tools: Math.max(headers.tools.length, ...rows.map((r) => r.tools.length)),
-    description: Math.max(headers.description.length, ...rows.map((r) => r.description.length)),
-  };
-
-  const line = (r: typeof headers) =>
-    `| ${pad(r.link, w.link)} | ${pad(r.binary, w.binary)} | ${pad(r.tools, w.tools, 'right')} | ${pad(r.description, w.description)} |`;
-
-  const sep = `| ${'-'.repeat(w.link)} | ${'-'.repeat(w.binary)} | ${'-'.repeat(w.tools)}: | ${'-'.repeat(w.description)} |`;
-
-  return [line(headers), sep, ...rows.map(line)].join('\n');
-}
-
-function renderScopesTable(
-  rows: Array<{
-    link: string;
-    scopes: string;
-  }>,
-): string {
-  const headers = { link: 'Package', scopes: 'OAuth scopes requested' };
-  const w = {
-    link: Math.max(headers.link.length, ...rows.map((r) => r.link.length)),
-    scopes: Math.max(headers.scopes.length, ...rows.map((r) => r.scopes.length)),
-  };
-
-  const line = (r: typeof headers) => `| ${pad(r.link, w.link)} | ${pad(r.scopes, w.scopes)} |`;
-  const sep = `| ${'-'.repeat(w.link)} | ${'-'.repeat(w.scopes)} |`;
-
-  return [line(headers), sep, ...rows.map(line)].join('\n');
-}
-
-function replaceMarker(content: string, start: string, end: string, body: string): string {
-  const pattern = new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}`, 'g');
-  if (!pattern.test(content)) {
-    throw new Error(`Missing markers ${start} … ${end}`);
-  }
-  pattern.lastIndex = 0;
-  return content.replace(pattern, `${start}\n${body}\n${end}`);
-}
-
-function replaceInlineToolTotals(content: string, total: number): string {
-  const start = '<!-- MCP_TOOL_TOTAL_START -->';
-  const end = '<!-- MCP_TOOL_TOTAL_END -->';
-  const pattern = new RegExp(`${escapeRegExp(start)}[\\s\\S]*?${escapeRegExp(end)}`, 'g');
-  if (!pattern.test(content)) {
-    throw new Error(`Missing inline markers ${start} … ${end}`);
-  }
-  pattern.lastIndex = 0;
-  return content.replace(pattern, `${start}${total}${end}`);
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function packageLink(domain: DomainMeta): string {
-  if (domain.id === 'mcp') {
-    return `[\`mcp\`](${domain.readmeHref})`;
-  }
-  return `[\`${domain.dir}\`](${domain.readmeHref})`;
 }
 
 const domainCounts = DOMAINS.map((domain) => {
@@ -292,44 +190,6 @@ if (!mcpRow) {
   throw new Error('Missing mcp domain meta');
 }
 mcpRow.toolCount = umbrellaToolCount;
-
-const packageTableRows = domainCounts.map(({ domain, toolCount }) => ({
-  link: packageLink(domain),
-  binary: domain.binary ? `\`${domain.binary}\`` : '—',
-  tools: toolCount === null ? '—' : String(toolCount),
-  description: domain.description,
-}));
-
-const scopeTableRows = domainCounts
-  .filter((d) => d.domain.id !== 'base')
-  .map(({ domain, titles }) => {
-    const link = domain.id === 'mcp' ? `${packageLink(domain)} (unified)` : packageLink(domain);
-    const scopes = domain.scopesLabel ?? titles.join(', ');
-    return { link, scopes };
-  });
-
-const packagesMarkdown = renderPackagesTable(packageTableRows);
-const scopesMarkdown = renderScopesTable(scopeTableRows);
-
-let readme = fs.readFileSync(readmePath, 'utf8');
-readme = replaceMarker(
-  readme,
-  '<!-- MCP_PACKAGES_START -->',
-  '<!-- MCP_PACKAGES_END -->',
-  packagesMarkdown,
-);
-readme = replaceMarker(
-  readme,
-  '<!-- MCP_SCOPES_START -->',
-  '<!-- MCP_SCOPES_END -->',
-  scopesMarkdown,
-);
-readme = replaceInlineToolTotals(readme, umbrellaToolCount);
-fs.writeFileSync(readmePath, readme);
-
-let umbrellaReadme = fs.readFileSync(umbrellaReadmePath, 'utf8');
-umbrellaReadme = replaceInlineToolTotals(umbrellaReadme, umbrellaToolCount);
-fs.writeFileSync(umbrellaReadmePath, umbrellaReadme);
 
 const syncPayload = {
   umbrellaToolCount,
@@ -351,11 +211,9 @@ const syncPayload = {
 fs.mkdirSync(dirname(syncJsonPath), { recursive: true });
 fs.writeFileSync(syncJsonPath, `${JSON.stringify(syncPayload, null, 2)}\n`);
 
-execSync(`oxfmt ${readmePath} ${umbrellaReadmePath} ${syncJsonPath}`, {
-  cwd: mcpRoot,
+execSync(`oxfmt ${syncJsonPath}`, {
+  cwd: packageRoot,
   stdio: 'inherit',
 });
 
-console.log(`Updated ${readmePath}`);
-console.log(`Updated ${umbrellaReadmePath}`);
 console.log(`Wrote ${syncJsonPath} (umbrellaToolCount=${umbrellaToolCount})`);
