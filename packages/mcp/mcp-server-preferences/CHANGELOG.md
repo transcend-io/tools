@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-preferences
 
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+
 ## 0.6.1
 
 ### Patch Changes
