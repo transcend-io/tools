@@ -493,8 +493,6 @@ Two rules follow from this. **Never write an arbitrary color or length** — `bg
 
 The theme replaces Tailwind's Preflight rather than layering on top of it, because a view lives in an iframe the host measures: the body has to be transparent and nothing may trap content in its own scroller. It is ordered as `@layer theme, tokens, base, components, utilities`, which is also how a view ends up dark inside a dark host — `tokens.css` declares `color-scheme: light`, and the later `base` layer overrides it.
 
-The `base` layer also neutralizes animation under `prefers-reduced-motion: reduce`, and it does so with `!important`. That is worth knowing before you write keyframes, because it cannot be overridden the usual way: important declarations reverse layer order, so an unlayered rule — which is what a component injecting its own `<style>` writes — loses to it. **Motion that carries meaning opts out by marking its subtree `data-allow-motion`.** `Spinner` is the only case today: a busy indicator frozen mid-animation reads as a hung view, and it deliberately keeps the same motion as the dashboard's `LogoSpinner`, which the preference does not reach either.
-
 ### Developing and debugging a view
 
 `pnpm mcp:inspect [pkg]` is the loop. It builds the target, starts a watcher that rebuilds a view on save, and opens the official MCP Inspector against it: a real `initialize` handshake, real `_meta.ui` binding, a real sandboxed iframe, and real `tools/call` traffic from inside the view. A simulated host is faster to iterate against but can only ever agree with itself, and the failures that matter here are the ones a real host produces.
