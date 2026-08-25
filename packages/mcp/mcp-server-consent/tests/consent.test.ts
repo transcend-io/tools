@@ -9,6 +9,7 @@ import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
 import { getConsentTools } from '../src/tools/index.js';
+import inventoryStatsHtml from '../src/ui/generated/inventory-stats.html';
 
 const EXPECTED_TOOL_NAMES = [
   'consent_get_preferences',
@@ -324,5 +325,42 @@ describe('resolveAnalyticsDateRange', () => {
         end: '2024-01-01T00:00:00.000Z',
       }),
     ).toThrow('Start date must be before end date');
+  });
+});
+
+describe('inventory-stats MCP App document', () => {
+  it('includes kit utilities so MetricCard and ProgressBar are not unstyled', () => {
+    // Tailwind only emits these if discoverMcpAppViews @source'd mcp-ui-common.
+    // A missed glob still bundles the components; they just render without CSS.
+    expect(inventoryStatsHtml).toContain('bg-card');
+    expect(inventoryStatsHtml).toContain('text-metric');
+    expect(inventoryStatsHtml).toContain('bg-fill-success');
+  });
+
+  it('inlines component-owned Spinner CSS into the single document', () => {
+    // Importing spinner.css must still produce no external asset: the shared
+    // Vite build collects it into the document's style tag.
+    expect(inventoryStatsHtml).toContain('@keyframes transcend-logo-spinner-trim');
+    expect(inventoryStatsHtml).toContain('--transcend-logo-spinner-inner-rest');
+  });
+
+  it('leaves the spinner animating under prefers-reduced-motion', () => {
+    // The theme neutralizes animation with a layered `!important`, which the
+    // spinner's own CSS cannot outrank. Both halves of the exemption have to
+    // ship, or the busy indicator freezes and the view looks hung.
+    expect(inventoryStatsHtml).toMatch(
+      /prefers-reduced-motion:\s*reduce\)\{[^@]*:not\(:where\(\[data-allow-motion]/,
+    );
+    expect(inventoryStatsHtml).toContain('data-allow-motion');
+  });
+
+  it('caps the panel and stacks the metric cards on a narrow host', () => {
+    // Both rules come from theme tokens the view never names directly, so
+    // dropping `--container-view` or `--breakpoint-lg` does not fail a build:
+    // Tailwind just stops emitting the utility and the layout silently goes
+    // back to stretching across a maximized panel, or to three squeezed columns
+    // in a phone-width sidebar.
+    expect(inventoryStatsHtml).toMatch(/\.max-w-view\{max-width:var\(--container-view\)}/);
+    expect(inventoryStatsHtml).toMatch(/min-width:\s*48rem\)\{[^@]*\.lg\\:grid-cols-3\{/);
   });
 });
