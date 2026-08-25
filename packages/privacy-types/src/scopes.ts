@@ -108,6 +108,8 @@ export enum ScopeName {
   // Custom Functions — dedicated scopes (LINK-7162); endpoints migrate in LINK-7163
   ViewCustomFunction = 'viewCustomFunction',
   ManageCustomFunction = 'manageCustomFunction',
+  // Usage dashboard — assignable View Usage (GAN-700); endpoint mapping in main
+  ViewUsage = 'viewUsage',
 }
 
 /**
@@ -1031,6 +1033,13 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
       TranscendProduct.SiloDiscovery,
       TranscendProduct.UnstructuredDiscovery,
     ],
+  },
+  [ScopeName.ViewUsage]: {
+    title: 'View Usage',
+    dependencies: [],
+    description: 'View organization usage metrics in the Administration Usage dashboard.',
+    type: ScopeType.View,
+    products: [TranscendProduct.Administration],
   },
 };
 
