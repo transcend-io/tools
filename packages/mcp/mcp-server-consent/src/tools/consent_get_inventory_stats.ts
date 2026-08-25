@@ -6,15 +6,15 @@ import {
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
+import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import {
   COOKIE_STATS,
-  DATA_FLOW_STATS,
   type TranscendCliCookieStatsResponse,
-  type TranscendCliDataFlowStatsResponse,
   type TranscendTrackerStatsGql,
 } from '@transcend-io/sdk';
 
 import { INVENTORY_STATS_APP_RESOURCE } from '../apps/inventory-stats.js';
+import { getDataFlowCount } from '../getDataFlowCount.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const GetInventoryStatsSchema = z.object({});
@@ -28,17 +28,41 @@ export interface InventoryStatsPayload {
   dataFlows: TranscendTrackerStatsGql;
 }
 
+const TOOL_DESCRIPTION =
+  'Get cookie and data-flow inventory triage counts: live (approved), needs review, and junk. ' +
+  'Counts match the Consent Manager tables and the default consent_list_cookies / ' +
+  'consent_list_data_flows filters (CSP data flows are omitted, same as the UI). ' +
+  'This is inventory status, not consent analytics — use consent_get_aggregate_analytics or ' +
+  'consent_get_timeseries_analytics for opt-in/out and signal metrics. ' +
+  'On hosts that support MCP Apps, renders an interactive triage dashboard.';
+
 /** Shared by the baseline tool, the MCP App variant, and the refresh companion. */
 async function inventoryStatsPayload(clients: ToolClients): Promise<unknown> {
   const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-  const variables = { input: { airgapBundleId } };
-  const [cookieData, dfData] = await Promise.all([
-    clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, variables),
-    clients.graphql.makeRequest<TranscendCliDataFlowStatsResponse>(DATA_FLOW_STATS, variables),
+  const [cookieData, needReviewCount, liveCount, junkCount] = await Promise.all([
+    clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, {
+      input: { airgapBundleId },
+    }),
+    getDataFlowCount(clients.graphql, airgapBundleId, {
+      status: ConsentTrackerStatus.NeedsReview,
+    }),
+    getDataFlowCount(clients.graphql, airgapBundleId, {
+      status: ConsentTrackerStatus.Live,
+      isJunk: false,
+    }),
+    getDataFlowCount(clients.graphql, airgapBundleId, {
+      status: ConsentTrackerStatus.Live,
+      isJunk: true,
+    }),
   ]);
+
   return createToolResult(true, {
     cookies: cookieData.cookieStats,
-    dataFlows: dfData.dataFlowStats,
+    dataFlows: {
+      liveCount,
+      needReviewCount,
+      junkCount,
+    },
   } satisfies InventoryStatsPayload);
 }
 
@@ -65,11 +89,7 @@ function createInventoryStatsRefreshTool(clients: ToolClients) {
 export function createConsentGetInventoryStatsTool(clients: ToolClients) {
   return defineToolWithCapabilities({
     name: 'consent_get_inventory_stats',
-    description:
-      'Get cookie and data-flow inventory triage counts: live (approved), needs review, and junk. ' +
-      'This is inventory status, not consent analytics — use consent_get_aggregate_analytics or ' +
-      'consent_get_timeseries_analytics for opt-in/out and signal metrics. ' +
-      'On hosts that support MCP Apps, renders an interactive triage dashboard.',
+    description: TOOL_DESCRIPTION,
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

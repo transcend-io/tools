@@ -1,4 +1,10 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import {
   ConsentTrackerStatus,
   CookieOrderField,
@@ -8,20 +14,7 @@ import { COOKIES, type TranscendCliCookiesResponse } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-export const ListCookiesSchema = z.object({
-  limit: z
-    .number()
-    .min(1)
-    .max(200)
-    .optional()
-    .default(50)
-    .describe('Maximum number of cookies to return per page (1-200, default 50).'),
-  offset: z
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for pagination (default 0).'),
+export const ListCookiesSchema = OffsetPaginationSchema.extend({
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),
@@ -31,8 +24,8 @@ export const ListCookiesSchema = z.object({
     .optional()
     .describe(
       'Include items with zero activity. Omit (default) so the NEEDS_REVIEW total matches ' +
-        'consent_get_inventory_stats needReviewCount; set true for the full triage backlog ' +
-        'including never-active cookies.',
+        'consent_get_inventory_stats cookies.needReviewCount; set true for the full triage ' +
+        'backlog including never-active cookies.',
     ),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
@@ -63,7 +56,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListCookiesSchema,
     handler: async ({
-      limit,
+      first,
       offset,
       status,
       isJunk,
@@ -77,7 +70,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const data = await clients.graphql.makeRequest<TranscendCliCookiesResponse>(COOKIES, {
         input: { airgapBundleId },
-        first: limit,
+        first,
         offset,
         filterBy: {
           status,

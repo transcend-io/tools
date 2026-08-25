@@ -151,23 +151,56 @@ export interface RequestFile {
 }
 
 export interface DSRSubmission {
-  type: RequestType;
+  /**
+   * Published workflow config UUID (Privacy Requests → Workflows).
+   * Request type and subject class are derived from this config.
+   */
+  workflowConfigId: string;
+  /** Email address of the data subject (required when not silent) */
   email: string;
+  /** Core identifier; defaults to email when omitted */
   coreIdentifier?: string;
-  subjectType?: string;
-  name?: string;
-  phone?: string;
+  /** Locale for communications (e.g. en-US) */
   locale?: string;
+  /** When true, suppress email notifications to the data subject */
   isSilent?: boolean;
-  skipSecondaryLookup?: boolean;
-  additionalIdentifiers?: Record<string, string>;
 }
 
 export interface DSRResponse {
+  /** Privacy request ID */
   id: string;
+  /** Request status */
   status: string;
+  /** Optional server message */
   message?: string;
+  /** Optional nonce */
   nonce?: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Subject email on the created request */
+  email?: string | null;
+  /** Core identifier on the created request */
+  coreIdentifier?: string;
+  /** Admin dashboard deep link */
+  link?: string;
+}
+
+/**
+ * Minimal summary of a request returned from bulk DSR create.
+ */
+export interface DSRCreatedSummary {
+  /** Privacy request ID */
+  id: string;
+  /** Request status */
+  status: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Admin dashboard deep link */
+  link?: string;
 }
 
 export interface DownloadKey {
@@ -406,7 +439,7 @@ export interface InventoryTeamPreview {
 export interface BusinessEntity {
   /** Unique identifier */
   id: string;
-  /** Display title (use with inventory_update_data_silo `businessEntityTitles`) */
+  /** Display title (use with inventory_write_data_silo `businessEntityTitles`) */
   title: string;
   /** Description */
   description?: string;
@@ -414,7 +447,7 @@ export interface BusinessEntity {
 
 /** Data subject row for inventory list / silo blocklist resolution */
 export interface DataSubject {
-  /** Unique identifier (use with inventory_update_data_silo `dataSubjectBlockListIds`) */
+  /** Unique identifier (use with inventory_write_data_silo `dataSubjectBlockListIds`) */
   id: string;
   /** Machine type key (e.g. CUSTOMER, EMPLOYEE) */
   type: string;
@@ -526,6 +559,13 @@ export interface DataSiloUpdateInput {
   isLive?: boolean;
 }
 
+export interface DataSiloWriteInput extends Omit<DataSiloUpdateInput, 'id'> {
+  /** Existing data silo ID (update path when set) */
+  id?: string;
+  /** Catalog integration name (GraphQL `name`) required to create when id is omitted */
+  integrationName?: string;
+}
+
 export interface DataPoint {
   /** Unique identifier */
   id: string;
@@ -573,6 +613,10 @@ export interface DataCategory {
   description?: string;
   /** Optional classification regex */
   regex?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface DataPurpose {
@@ -602,7 +646,7 @@ export interface DataCatalog {
 
 /**
  * Integration catalog entry from GraphQL `catalogs`.
- * Pass `integrationName` to `inventory_create_data_silo`.
+ * Pass `integrationName` to `inventory_write_data_silo`.
  */
 export interface CatalogIntegration {
   /** Catalog slug for createDataSilos (`name`) */
@@ -701,6 +745,45 @@ export interface ProcessingPurposeWriteInput {
   purpose?: string;
   /** Description */
   description?: string;
+}
+
+export interface DataCategoryCreateInput {
+  /** Subcategory display name */
+  name: string;
+  /** Top-level data category type */
+  category: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryUpdateInput {
+  /** Data subcategory ID */
+  id: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryWriteInput {
+  /** Existing data subcategory ID (update path when set) */
+  id?: string;
+  /** Subcategory display name (upsert key with category when id is omitted) */
+  name?: string;
+  /** Top-level data category type (upsert key with name when id is omitted) */
+  category?: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface VendorCreateInput {

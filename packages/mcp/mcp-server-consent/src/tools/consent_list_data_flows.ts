@@ -1,4 +1,10 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import {
   ConsentTrackerStatus,
   DataFlowOrderField,
@@ -9,20 +15,7 @@ import { DATA_FLOWS, type TranscendCliDataFlowsResponse } from '@transcend-io/sd
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
-export const ListDataFlowsSchema = z.object({
-  limit: z
-    .number()
-    .min(1)
-    .max(200)
-    .optional()
-    .default(50)
-    .describe('Maximum number of data flows to return per page (1-200, default 50).'),
-  offset: z
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for pagination (default 0).'),
+export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
   status: z
     .nativeEnum(ConsentTrackerStatus)
     .describe('Filter by status: NEEDS_REVIEW (triage) or LIVE (approved)'),
@@ -32,8 +25,8 @@ export const ListDataFlowsSchema = z.object({
     .optional()
     .describe(
       'Include items with zero activity. Omit (default) so the NEEDS_REVIEW total matches ' +
-        'consent_get_inventory_stats needReviewCount; set true for the full triage backlog ' +
-        'including never-active flows.',
+        'consent_get_inventory_stats dataFlows.needReviewCount (the Consent Manager table). ' +
+        'Set true for the full triage backlog including never-active flows.',
     ),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
@@ -72,7 +65,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataFlowsSchema,
     handler: async ({
-      limit,
+      first,
       offset,
       status,
       isJunk,
@@ -88,7 +81,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
         input: { airgapBundleId },
-        first: limit,
+        first,
         offset,
         filterBy: {
           status,

@@ -1,5 +1,37 @@
 # @transcend-io/cli
 
+## 10.27.1
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/airgap.js-types@14.2.38
+  - @transcend-io/sdk@2.1.1
+
+## 10.27.0
+
+### Minor Changes
+
+- a5e8334: `transcend inventory pull` now writes per-workflow deletion dependencies into `transcend.yml`. Global-only configs stay as a list of titles; once any override exists, the whole field is written as objects. Overrides on workflows without an internal name are skipped with a warning, since `transcend.yml` references workflows by internal name.
+
+  `DataSiloEnriched` gains `dependedOnDataSilosPerWorkflow`.
+
+### Patch Changes
+
+- 6c6ea93: Add `Signals` (`'signals'`) to `ConsentPrecedenceOption` and deprecate `Signal` (`'signal'`) in favor of the plural value. Regenerate CLI transcend.yml JSON schemas to include the new enum value.
+- 48a41a5: Bump `fast-csv` from `^4.3.6` to `^5.0.0`.
+- 6e5c4cf: Bump `undici` from `6.27.0` to `6.28.0` to address CVE-2026-15157 (CRLF injection via blob-like body `type`, GHSA-m8rv-5g2x-5cg5), CVE-2026-16728 (downstream response desynchronization via retry interceptor, GHSA-8xcm-r25x-g524), and CVE-2026-16729 (cookie attribute injection via `setCookie`, GHSA-v3r7-h72x-cjcm).
+- Updated dependencies [6c6ea93]
+- Updated dependencies [48a41a5]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+- Updated dependencies [a5e8334]
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/utils@0.2.1
+  - @transcend-io/sdk@2.1.0
+  - @transcend-io/airgap.js-types@14.2.37
+
 ## 10.26.1
 
 ### Patch Changes

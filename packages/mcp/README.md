@@ -79,7 +79,7 @@ There are two ways to consume the MCP tools, and they can be mixed freely.
 
 ### Unified server
 
-Install **`@transcend-io/mcp`** to get every tool (73 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
+Install **`@transcend-io/mcp`** to get every tool (81 across all domains) in a single process. This is the fastest way to get started and is ideal when your agent can handle a large tool set.
 
 **Claude Desktop** (`claude_desktop_config.json`) / **Cursor** (`.cursor/mcp.json`):
 
@@ -237,15 +237,15 @@ When both cookie and API key headers are present, the session cookie takes prior
 
 | Package                                               | Binary                      | Tools | Description                                      |
 | ----------------------------------------------------- | --------------------------- | ----: | ------------------------------------------------ |
-| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    73 | Unified server — all tools in one process        |
+| [`mcp`](./mcp/)                                       | `transcend-mcp`             |    81 | Unified server — all tools in one process        |
 | [`mcp-server-admin`](./mcp-server-admin/)             | `transcend-mcp-admin`       |     8 | Organization, users, teams, API keys             |
 | [`mcp-server-assessment`](./mcp-server-assessment/)   | `transcend-mcp-assessment`  |    14 | Privacy assessments, templates, groups           |
 | [`mcp-server-consent`](./mcp-server-consent/)         | `transcend-mcp-consent`     |    14 | Consent management, analytics, cookie triage     |
 | [`mcp-server-base`](./mcp-server-base/)               | —                           |     — | Shared infrastructure (not installed directly)   |
-| [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     6 | Data discovery, classification, NER              |
+| [`mcp-server-discovery`](./mcp-server-discovery/)     | `transcend-mcp-discovery`   |     4 | Data discovery, classification, NER              |
 | [`mcp-server-docs`](./mcp-server-docs/)               | `transcend-mcp-docs`        |     2 | Transcend documentation lookup (list + fetch)    |
-| [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    12 | Data subject requests (submit, track, respond)   |
-| [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    10 | Data inventory, silos, vendors, data points      |
+| [`mcp-server-dsr`](./mcp-server-dsr/)                 | `transcend-mcp-dsr`         |    13 | Data subject requests (submit, track, respond)   |
+| [`mcp-server-inventory`](./mcp-server-inventory/)     | `transcend-mcp-inventory`   |    17 | Data inventory, silos, vendors, data points      |
 | [`mcp-server-preferences`](./mcp-server-preferences/) | `transcend-mcp-preferences` |     6 | Privacy preference store (query, upsert, delete) |
 | [`mcp-server-workflows`](./mcp-server-workflows/)     | `transcend-mcp-workflows`   |     3 | Workflow & email-template configuration          |
 
@@ -510,8 +510,6 @@ A view's document is read once, when the app's sandbox iframe mounts, and never 
 
 Two things must be true for that reopen to show new markup, and both are handled for you. The server has to read the view from disk rather than the copy inlined at build time, and it has to actually receive `TRANSCEND_MCP_DEV_VIEWS` — which exporting it cannot achieve, because the Inspector spawns a stdio server with an allowlisted environment (`HOME`, `LOGNAME`, `PATH`, `SHELL`, `TERM`, `USER`) plus only what its `-e KEY=VALUE` flag supplied. `pnpm mcp:inspect` passes the flag. The same allowlist drops API credentials, and we deliberately leave them out rather than exposing them in a command line every local process can read, so use `--http` when a tool needs to reach the Transcend API: there we spawn the server ourselves and it inherits the environment normally.
 
-One workaround runs before launch. v2's published tarball omits `clients/web/static/sandbox_proxy.html`, the document that hosts the app's iframe, so opening an app renders `Sandbox not loaded: ENOENT ...` inside the app frame — a missing file that looks like a broken view. `pnpm mcp:inspect` restores it from a vendored copy of upstream's file and logs a line when it does. It is a workaround for [inspector#1859](https://github.com/modelcontextprotocol/inspector/issues/1859), tracked by a `TODO` in [`scripts/lib/mcp-app-dev.ts`](../../scripts/lib/mcp-app-dev.ts) to delete once a release ships the file; an install that already has the document is left alone. Because the Inspector reads it once at startup, an instance that was already running when the file appeared keeps serving the error — restart it.
-
 #### When a view does not appear, check the capability gate first
 
 This is the failure that looks exactly like a broken view. A tool's `_meta.ui` is only attached when the client declared the MCP Apps extension:
@@ -539,21 +537,22 @@ That is a limit of the Inspector rather than a gap in coverage. Variant selectio
 
 All servers share the same environment variables:
 
-| Variable                        | Required (stdio OAuth) | Default                                    | Description                                                                                                                                       |
-| ------------------------------- | ---------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients); enables OAuth stdio mode when set            |
-| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                                          | Client secret from the same OAuth clients page                                                                                                    |
-| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
-| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
-| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected                              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
-| `TRANSCEND_API_KEY`             | No                     | —                                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                        |
-| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                  |
-| `SOMBRA_URL`                    | No                     | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                                                                |
-| `TRANSCEND_DASHBOARD_URL`       | No                     | `https://app.transcend.io`                 | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards                                 |
-| `TRANSCEND_HTTP_PORT`           | No                     | `3000`                                     | HTTP listen port                                                                                                                                  |
-| `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                                | HTTP listen host                                                                                                                                  |
-| `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                                          | Comma-separated allowed CORS origins                                                                                                              |
-| `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                                  | Idle session timeout (ms)                                                                                                                         |
+| Variable                        | Required (stdio OAuth) | Default                    | Description                                                                                                                                       |
+| ------------------------------- | ---------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_OAUTH_CLIENT_ID`     | Yes                    | —                          | Client ID from [app.transcend.io/admin/oauth-clients](https://app.transcend.io/admin/oauth-clients); enables OAuth stdio mode when set            |
+| `TRANSCEND_OAUTH_CLIENT_SECRET` | Yes                    | —                          | Client secret from the same OAuth clients page                                                                                                    |
+| `TRANSCEND_OAUTH_REDIRECT_PORT` | Yes                    | —                          | Port number you choose for the OAuth callback server (must be available on your machine); **must match the port in your registered redirect URI** |
+| `TRANSCEND_OAUTH_REDIRECT_HOST` | No                     | `127.0.0.1`                | Loopback host for the OAuth callback (`127.0.0.1` or `::1` for `http://[::1]:{port}/callback`)                                                    |
+| `TRANSCEND_OAUTH_ISSUER`        | No                     | auto-detected              | OAuth issuer URL; production auto-detects region. Test-only override                                                                              |
+| `TRANSCEND_API_KEY`             | No                     | —                          | API key for stdio (alternative to OAuth) or HTTP default auth. Disables OAuth when set alongside client ID                                        |
+| `TRANSCEND_API_URL`             | No                     | `https://api.transcend.io` | GraphQL backend API URL (org lookup, non-create tools)                                                                                            |
+| `SOMBRA_URL`                    | No                     | _(lazy GraphQL resolve)_   | Sticky **customer ingress** base URL for DSR create and other Sombra REST tools. When unset, resolves `organization.sombra.customerUrl`           |
+| `SOMBRA_CUSTOMER_KEY`           | No                     | —                          | Optional self-hosted customer-ingress key. Sent as `X-Sombra-Authorization: Bearer …`. Not needed on multi-tenant Transcend-hosted Sombra         |
+| `TRANSCEND_DASHBOARD_URL`       | No                     | `https://app.transcend.io` | Override the admin-dashboard base URL used for deep links. Useful for testing against staging or local dashboards                                 |
+| `TRANSCEND_HTTP_PORT`           | No                     | `3000`                     | HTTP listen port                                                                                                                                  |
+| `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                | HTTP listen host                                                                                                                                  |
+| `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                          | Comma-separated allowed CORS origins                                                                                                              |
+| `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                  | Idle session timeout (ms)                                                                                                                         |
 
 Two more exist for local view development only, both set automatically by `pnpm mcp:inspect`:
 

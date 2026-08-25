@@ -3,10 +3,6 @@ export { DSR_OAUTH_SCOPES } from './scopes.js';
 export { DSRMixin } from './graphql.js';
 
 export { submitDsrSchema, type SubmitDsrInput } from './tools/dsr_submit.js';
-export {
-  submitDsrOnBehalfSchema,
-  type SubmitDsrOnBehalfInput,
-} from './tools/dsr_submit_on_behalf.js';
 export { cancelDsrSchema, type CancelDsrInput } from './tools/dsr_cancel.js';
 export { downloadKeysSchema, type DownloadKeysInput } from './tools/dsr_download_keys.js';
 export { getDetailsSchema, type GetDetailsInput } from './tools/dsr_get_details.js';

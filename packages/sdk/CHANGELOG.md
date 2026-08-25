@@ -1,5 +1,31 @@
 # @transcend-io/sdk
 
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/airgap.js-types@14.2.38
+
+## 2.1.0
+
+### Minor Changes
+
+- a5e8334: `transcend inventory pull` now writes per-workflow deletion dependencies into `transcend.yml`. Global-only configs stay as a list of titles; once any override exists, the whole field is written as objects. Overrides on workflows without an internal name are skipped with a warning, since `transcend.yml` references workflows by internal name.
+
+  `DataSiloEnriched` gains `dependedOnDataSilosPerWorkflow`.
+
+### Patch Changes
+
+- Updated dependencies [6c6ea93]
+- Updated dependencies [48a41a5]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/utils@0.2.1
+  - @transcend-io/airgap.js-types@14.2.37
+
 ## 2.0.1
 
 ### Patch Changes

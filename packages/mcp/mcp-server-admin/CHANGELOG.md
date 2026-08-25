@@ -1,5 +1,45 @@
 # @transcend-io/mcp-server-admin
 
+## 0.6.3
+
+### Patch Changes
+
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+
+## 0.6.0
+
+### Minor Changes
+
+- 3f81b5d: Add full Admin Users filter parity to `admin_list_users` (`text`, booleans, `teamIds`, scopes, last-login bounds, offset pagination, and orderBy).
+- 0e77676: Move the TRANSCEND_SCOPES catalog off `admin_create_api_key`'s tools/list descriptor onto compact `admin_list_scopes`, keeping runtime ScopeName validation on create. Cap every tool description at 700 characters and the umbrella tools/list JSON at 85k characters.
+
+### Patch Changes
+
+- 3f81b5d: Fix `admin_list_users` crashing when no filter is provided by sending `filterBy: {}` instead of letting `$filterBy` resolve to `null`.
+- Updated dependencies [d00bd92]
+- Updated dependencies [6c6ea93]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+  - @transcend-io/mcp-server-base@1.6.0
+  - @transcend-io/privacy-types@5.22.0
+
 ## 0.5.19
 
 ### Patch Changes

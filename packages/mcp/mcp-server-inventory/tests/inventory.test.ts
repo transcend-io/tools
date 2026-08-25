@@ -6,8 +6,7 @@ const EXPECTED_TOOL_NAMES = [
   'inventory_list_data_silos',
   'inventory_get_data_silo',
   'inventory_list_catalog_integrations',
-  'inventory_create_data_silo',
-  'inventory_update_data_silo',
+  'inventory_write_data_silo',
   'inventory_list_vendors',
   'inventory_write_vendor',
   'inventory_list_data_points',
@@ -15,6 +14,7 @@ const EXPECTED_TOOL_NAMES = [
   'inventory_list_sub_data_points',
   'inventory_list_identifiers',
   'inventory_list_categories',
+  'inventory_write_category',
   'inventory_list_processing_purposes',
   'inventory_write_processing_purpose',
   'inventory_list_business_entities',
@@ -27,8 +27,7 @@ describe('Inventory Tools', () => {
     listDataSilos: ReturnType<typeof vi.fn>;
     getDataSilo: ReturnType<typeof vi.fn>;
     listCatalogs: ReturnType<typeof vi.fn>;
-    createDataSilo: ReturnType<typeof vi.fn>;
-    updateDataSilo: ReturnType<typeof vi.fn>;
+    writeDataSilo: ReturnType<typeof vi.fn>;
     listVendors: ReturnType<typeof vi.fn>;
     writeVendor: ReturnType<typeof vi.fn>;
     listDataPoints: ReturnType<typeof vi.fn>;
@@ -36,6 +35,7 @@ describe('Inventory Tools', () => {
     listSubDataPoints: ReturnType<typeof vi.fn>;
     listIdentifiers: ReturnType<typeof vi.fn>;
     listDataCategories: ReturnType<typeof vi.fn>;
+    writeDataCategory: ReturnType<typeof vi.fn>;
     listProcessingPurposes: ReturnType<typeof vi.fn>;
     writeProcessingPurpose: ReturnType<typeof vi.fn>;
     listBusinessEntities: ReturnType<typeof vi.fn>;
@@ -47,8 +47,7 @@ describe('Inventory Tools', () => {
       listDataSilos: vi.fn(),
       getDataSilo: vi.fn(),
       listCatalogs: vi.fn(),
-      createDataSilo: vi.fn(),
-      updateDataSilo: vi.fn(),
+      writeDataSilo: vi.fn(),
       listVendors: vi.fn(),
       writeVendor: vi.fn(),
       listDataPoints: vi.fn(),
@@ -56,6 +55,7 @@ describe('Inventory Tools', () => {
       listSubDataPoints: vi.fn(),
       listIdentifiers: vi.fn(),
       listDataCategories: vi.fn(),
+      writeDataCategory: vi.fn(),
       listProcessingPurposes: vi.fn(),
       writeProcessingPurpose: vi.fn(),
       listBusinessEntities: vi.fn(),
@@ -110,18 +110,51 @@ describe('Inventory Tools', () => {
     });
   });
 
-  describe('inventory_update_data_silo', () => {
-    it('forwards extended Data Systems fields', async () => {
-      mockGraphql.updateDataSilo.mockResolvedValue({
-        id: 'silo-1',
+  describe('inventory_write_data_silo', () => {
+    it('creates by integrationName', async () => {
+      const dataSilo = {
+        id: 'silo-new',
         title: 'Salesforce',
-        type: 'api',
-        isLive: true,
+        type: 'api' as const,
+        isLive: false,
         createdAt: '2024-01-01T00:00:00.000Z',
-      });
+      };
+      mockGraphql.writeDataSilo.mockResolvedValue({ dataSilo, created: true });
 
       const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_update_data_silo')!;
+      const tool = tools.find((t) => t.name === 'inventory_write_data_silo')!;
+
+      const result = await tool.handler({
+        integrationName: 'salesforce',
+        title: 'Salesforce',
+        ownerEmails: ['a@example.com'],
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { dataSilo, created: true },
+      });
+      expect(mockGraphql.writeDataSilo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          integrationName: 'salesforce',
+          title: 'Salesforce',
+          ownerEmails: ['a@example.com'],
+        }),
+      );
+    });
+
+    it('updates by dataSiloId', async () => {
+      const dataSilo = {
+        id: 'silo-1',
+        title: 'Salesforce',
+        type: 'api' as const,
+        isLive: true,
+        createdAt: '2024-01-01T00:00:00.000Z',
+      };
+      mockGraphql.writeDataSilo.mockResolvedValue({ dataSilo, created: false });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_data_silo')!;
 
       await tool.handler({
         dataSiloId: 'silo-1',
@@ -134,7 +167,7 @@ describe('Inventory Tools', () => {
         notes: 'updated',
       });
 
-      expect(mockGraphql.updateDataSilo).toHaveBeenCalledWith(
+      expect(mockGraphql.writeDataSilo).toHaveBeenCalledWith(
         expect.objectContaining({
           id: 'silo-1',
           title: 'Salesforce',
@@ -146,6 +179,14 @@ describe('Inventory Tools', () => {
           notes: 'updated',
         }),
       );
+    });
+
+    it('zodSchema rejects when neither dataSiloId nor integrationName provided', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_data_silo')!;
+
+      const result = tool.zodSchema.safeParse({ title: 'only title' });
+      expect(result.success).toBe(false);
     });
   });
 
@@ -353,40 +394,6 @@ describe('Inventory Tools', () => {
         first: 25,
         offset: 50,
         text: undefined,
-      });
-    });
-  });
-
-  describe('inventory_create_data_silo', () => {
-    it('passes integrationName as catalog name with optional title and description', async () => {
-      mockGraphql.createDataSilo.mockResolvedValue({
-        id: 'silo-1',
-        title: 'My Custom Silo',
-        type: 'server',
-        description: 'Seeded',
-        isLive: false,
-        createdAt: '2024-01-01T00:00:00.000Z',
-      });
-
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'inventory_create_data_silo')!;
-
-      const result = await tool.handler({
-        integrationName: 'server',
-        title: 'My Custom Silo',
-        description: 'Seeded',
-      });
-
-      expect(result).toMatchObject({
-        success: true,
-        data: {
-          message: 'Data silo "My Custom Silo" created successfully',
-        },
-      });
-      expect(mockGraphql.createDataSilo).toHaveBeenCalledWith({
-        name: 'server',
-        title: 'My Custom Silo',
-        description: 'Seeded',
       });
     });
   });
@@ -606,6 +613,64 @@ describe('Inventory Tools', () => {
         offset: 0,
         text: 'Essential',
       });
+    });
+  });
+
+  describe('inventory_write_category', () => {
+    it('upserts by name and category', async () => {
+      const category = {
+        id: 'cat-1',
+        name: 'Email',
+        category: 'CONTACT',
+        description: 'Email address',
+      };
+      mockGraphql.writeDataCategory.mockResolvedValue({
+        category,
+        created: true,
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_category')!;
+
+      const result = await tool.handler({ name: 'Email', category: 'CONTACT' });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { category, created: true },
+      });
+      expect(mockGraphql.writeDataCategory).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Email', category: 'CONTACT' }),
+      );
+    });
+
+    it('updates by id', async () => {
+      const category = {
+        id: 'cat-1',
+        name: 'Email',
+        category: 'CONTACT',
+        description: 'Updated',
+      };
+      mockGraphql.writeDataCategory.mockResolvedValue({
+        category,
+        created: false,
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_category')!;
+
+      await tool.handler({ id: 'cat-1', description: 'Updated' });
+
+      expect(mockGraphql.writeDataCategory).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'cat-1', description: 'Updated' }),
+      );
+    });
+
+    it('zodSchema rejects when neither id nor name+category provided', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'inventory_write_category')!;
+
+      const result = tool.zodSchema.safeParse({ description: 'only description' });
+      expect(result.success).toBe(false);
     });
   });
 
