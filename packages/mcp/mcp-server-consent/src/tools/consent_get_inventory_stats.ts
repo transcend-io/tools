@@ -1,6 +1,5 @@
 import {
   createToolResult,
-  defineTool,
   defineToolWithCapabilities,
   McpClientCapability,
   z,
@@ -36,7 +35,7 @@ const TOOL_DESCRIPTION =
   'consent_get_timeseries_analytics for opt-in/out and signal metrics. ' +
   'On hosts that support MCP Apps, renders an interactive triage dashboard.';
 
-/** Shared by the baseline tool, the MCP App variant, and the refresh companion. */
+/** Shared by the baseline tool and the MCP App variant. */
 async function inventoryStatsPayload(clients: ToolClients): Promise<unknown> {
   const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
   const [cookieData, needReviewCount, liveCount, junkCount] = await Promise.all([
@@ -66,20 +65,6 @@ async function inventoryStatsPayload(clients: ToolClients): Promise<unknown> {
   } satisfies InventoryStatsPayload);
 }
 
-/** Companion the view calls to refresh itself. Never listed to the model. */
-function createInventoryStatsRefreshTool(clients: ToolClients) {
-  return defineTool({
-    name: 'consent_get_inventory_stats_refresh',
-    description:
-      'Re-fetch cookie and data-flow inventory triage counts for the inventory-stats view.',
-    category: 'Consent Management',
-    readOnly: true,
-    annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
-    zodSchema: GetInventoryStatsSchema,
-    handler: async () => inventoryStatsPayload(clients),
-  });
-}
-
 /**
  * Cookie and data-flow inventory triage counts.
  *
@@ -99,7 +84,6 @@ export function createConsentGetInventoryStatsTool(clients: ToolClients) {
       [McpClientCapability.McpApp]: {
         resource: INVENTORY_STATS_APP_RESOURCE,
         handler: async () => inventoryStatsPayload(clients),
-        appOnlyTools: [createInventoryStatsRefreshTool(clients)],
       },
     },
   });

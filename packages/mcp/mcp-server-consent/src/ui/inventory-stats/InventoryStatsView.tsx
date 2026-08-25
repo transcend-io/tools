@@ -15,7 +15,7 @@ interface TrackerStats {
   junkCount?: number;
 }
 
-/** Payload shape returned by `consent_get_inventory_stats` and its refresh companion. */
+/** Payload shape returned by `consent_get_inventory_stats`. */
 interface InventoryStatsData {
   /** Cookie triage counts */
   cookies?: TrackerStats;
@@ -51,10 +51,9 @@ function triageSegments(stats: TrackerStats | undefined) {
  * with utilities from `@transcend-io/mcp-server-base/ui/theme.css`.
  */
 export function InventoryStatsView() {
-  const { data, isConnected, connectionError, toolError, isCallingTool, callTool } =
-    useMcpApp<InventoryStatsData>({
-      appInfo: { name: 'transcend-consent-inventory-stats', version: '1.0.0' },
-    });
+  const { data, isConnected, connectionError, toolError } = useMcpApp<InventoryStatsData>({
+    appInfo: { name: 'transcend-consent-inventory-stats', version: '1.0.0' },
+  });
 
   if (connectionError) {
     return (
@@ -81,19 +80,7 @@ export function InventoryStatsView() {
 
   return (
     <div className={PANEL}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Heading text="Inventory triage" variant="title" />
-        <button
-          className="shrink-0 rounded-sm bg-brand px-3.5 py-1.5 text-sm font-medium text-content-inverse transition-colors hover:not-disabled:bg-brand-hovered active:not-disabled:bg-brand-pressed disabled:cursor-default disabled:opacity-60"
-          type="button"
-          disabled={isCallingTool}
-          onClick={() => {
-            void callTool('consent_get_inventory_stats_refresh', {});
-          }}
-        >
-          {isCallingTool ? 'Refreshing…' : 'Refresh'}
-        </button>
-      </div>
+      <Heading text="Inventory triage" variant="title" />
 
       {toolError ? (
         <p className="text-sm text-danger" role="alert">
