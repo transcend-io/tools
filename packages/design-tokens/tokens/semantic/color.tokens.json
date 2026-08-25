@@ -184,8 +184,18 @@
       "$description": "Strong divider, emphasized border"
     },
     "focused": {
-      "$value": "{palette.indigo.700}",
-      "$description": "Focus ring on inputs"
+      "default": {
+        "$value": "{palette.indigo.700}",
+        "$description": "Focus ring on inputs"
+      },
+      "subtle": {
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [0.37254902720451355, 0.35686275362968445, 0.9686274528503418],
+          "alpha": 0.5
+        },
+        "$description": "Brand focus ring with alpha — editor focus outlines, soft focus states"
+      }
     },
     "disabled": {
       "$value": "{palette.gray.200}",
@@ -254,6 +264,10 @@
       "pressed": {
         "$value": "{palette.gray.200}",
         "$description": "Interactive surface, pressed or selected state — selected rows, active list items"
+      },
+      "subtle": {
+        "$value": "{palette.gray.50}",
+        "$description": "Canvas/surface background — graph containers, label backgrounds"
       }
     },
     "neutral": {
