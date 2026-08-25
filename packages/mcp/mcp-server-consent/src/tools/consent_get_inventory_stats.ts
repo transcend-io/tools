@@ -27,14 +27,6 @@ export interface InventoryStatsPayload {
   dataFlows: TranscendTrackerStatsGql;
 }
 
-const TOOL_DESCRIPTION =
-  'Get cookie and data-flow inventory triage counts: live (approved), needs review, and junk. ' +
-  'Counts match the Consent Manager tables and the default consent_list_cookies / ' +
-  'consent_list_data_flows filters (CSP data flows are omitted, same as the UI). ' +
-  'This is inventory status, not consent analytics — use consent_get_aggregate_analytics or ' +
-  'consent_get_timeseries_analytics for opt-in/out and signal metrics. ' +
-  'On hosts that support MCP Apps, renders an interactive triage dashboard.';
-
 /** Shared by the baseline tool and the MCP App variant. */
 async function inventoryStatsPayload(clients: ToolClients): Promise<unknown> {
   const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
@@ -74,7 +66,12 @@ async function inventoryStatsPayload(clients: ToolClients): Promise<unknown> {
 export function createConsentGetInventoryStatsTool(clients: ToolClients) {
   return defineToolWithCapabilities({
     name: 'consent_get_inventory_stats',
-    description: TOOL_DESCRIPTION,
+    description:
+      'Get cookie and data-flow inventory triage counts: live (approved), needs review, and junk. ' +
+      'Counts match the Consent Manager tables and the default consent_list_cookies / ' +
+      'consent_list_data_flows filters (CSP data flows are omitted, same as the UI). ' +
+      'This is inventory status, not consent analytics — use consent_get_aggregate_analytics or ' +
+      'consent_get_timeseries_analytics for opt-in/out and signal metrics.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
