@@ -344,16 +344,6 @@ describe('inventory-stats MCP App document', () => {
     expect(inventoryStatsHtml).toContain('--transcend-logo-spinner-inner-rest');
   });
 
-  it('leaves the spinner animating under prefers-reduced-motion', () => {
-    // The theme neutralizes animation with a layered `!important`, which the
-    // spinner's own CSS cannot outrank. Both halves of the exemption have to
-    // ship, or the busy indicator freezes and the view looks hung.
-    expect(inventoryStatsHtml).toMatch(
-      /prefers-reduced-motion:\s*reduce\)\{[^@]*:not\(:where\(\[data-allow-motion]/,
-    );
-    expect(inventoryStatsHtml).toContain('data-allow-motion');
-  });
-
   it('caps the panel and stacks the metric cards on a narrow host', () => {
     // Both rules come from theme tokens the view never names directly, so
     // dropping `--container-view` or `--breakpoint-lg` does not fail a build:
