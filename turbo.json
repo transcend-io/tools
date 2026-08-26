@@ -118,6 +118,14 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "@transcend-io/mcp-server-consent#build": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": ["dist/**", "src/ui/generated/**"]
+    },
+    "@transcend-io/mcp-server-consent#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "@transcend-io/mcp#typecheck": {
       "dependsOn": ["^build", "//#codegen"],
       "outputs": []
