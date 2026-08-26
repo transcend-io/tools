@@ -1,18 +1,10 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-export const UpdateIdentifiersItemSchema = z.object({
-  oldValue: z.string().describe('Old identifier value'),
-  newValue: z.string().describe('New identifier value'),
-  type: z.string().optional().describe('Identifier type (optional)'),
-});
-export type UpdateIdentifiersItemInput = z.infer<typeof UpdateIdentifiersItemSchema>;
+import { UpdateRecordSchema } from './preference-schemas.js';
 
 export const UpdateIdentifiersSchema = z.object({
-  partition: z.string().describe('Partition/organization context'),
-  userId: z.string().describe('User ID to update identifiers for'),
-  identifiers: z
-    .array(UpdateIdentifiersItemSchema)
-    .describe('Array of identifier update objects with old and new values'),
+  partition: z.string().describe('Preference store partition key'),
+  records: z.array(UpdateRecordSchema).min(1).describe('Identifier update operations to perform'),
 });
 export type UpdateIdentifiersInput = z.infer<typeof UpdateIdentifiersSchema>;
 
@@ -32,20 +24,12 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     requireSombra: true,
     zodSchema: UpdateIdentifiersSchema,
-    handler: async ({ partition, userId, identifiers }) => {
-      const result = await rest.updateIdentifiers(
-        partition,
-        userId,
-        identifiers.map((id) => ({
-          oldValue: id.oldValue,
-          newValue: id.newValue,
-          type: id.type,
-        })),
-      );
+    handler: async ({ partition, records }) => {
+      const result = await rest.updateIdentifiers(partition, records);
 
       return createToolResult(true, {
         ...result,
-        identifiersUpdated: identifiers.length,
+        recordsProcessed: records.length,
         message: 'Identifiers updated successfully',
       });
     },

@@ -40,7 +40,7 @@ OAuth stdio is the recommended path for MCP clients (Cursor, Claude Desktop). Re
 
 At startup the server verifies client ID, secret, and redirect URI. On first tool call it opens a browser for login. Tokens are session-only (in-memory).
 
-**OAuth scopes:** `ViewPrivacyCenter`, `ManagePrivacyCenter`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
+**OAuth scopes:** `ViewManagedConsentDatabaseAdminApi`, `ManageStoredPreferences`. The signed-in user must hold these permissions. See [`src/scopes.ts`](./src/scopes.ts).
 
 Full setup, troubleshooting, and multi-server guidance: [MCP root README](../README.md#oauth-client-setup).
 

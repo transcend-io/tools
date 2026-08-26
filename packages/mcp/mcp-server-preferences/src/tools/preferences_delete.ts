@@ -1,10 +1,10 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-import { IdentifierSchema } from './preferences_query.js';
+import { DeleteRecordSchema } from './preference-schemas.js';
 
 export const DeletePreferencesSchema = z.object({
-  partition: z.string().describe('Partition/organization context'),
-  identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to delete'),
+  partition: z.string().describe('Preference store partition key'),
+  records: z.array(DeleteRecordSchema).min(1).describe('Preference records to delete'),
 });
 export type DeletePreferencesInput = z.infer<typeof DeletePreferencesSchema>;
 
@@ -24,18 +24,13 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     requireSombra: true,
     zodSchema: DeletePreferencesSchema,
-    handler: async ({ partition, identifiers }) => {
-      const result = await rest.deletePreferences(
-        partition,
-        identifiers.map((id) => ({
-          value: id.value,
-          type: id.type,
-        })),
-      );
+    handler: async ({ partition, records }) => {
+      const result = await rest.deletePreferences(partition, records);
 
       return createToolResult(true, {
         ...result,
-        message: `Successfully deleted ${result.count} preference records`,
+        recordsProcessed: records.length,
+        message: `Processed deletion for ${records.length} preference record(s)`,
       });
     },
   });

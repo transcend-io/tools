@@ -1,8 +1,9 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
 
 export const respondErasureSchema = z.object({
-  requestId: z.string().describe('ID of the DSR'),
-  dataSiloId: z.string().describe('ID of the data silo that completed erasure'),
+  nonce: z
+    .string()
+    .describe('JWT nonce from webhook header or pending-requests for this data silo job'),
   profileIds: z
     .array(z.string())
     .optional()
@@ -15,16 +16,16 @@ export function createDsrRespondErasureTool(clients: ToolClients) {
 
   return defineTool({
     name: 'dsr_respond_erasure',
-    description: 'Confirm that data erasure has been completed for a data silo',
+    description:
+      'Confirm that data erasure has been completed for a data silo. Requires a nonce from the webhook or pending-requests.',
     category: 'DSR Automation',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: respondErasureSchema,
-    handler: async ({ requestId, dataSiloId, profileIds }) => {
+    handler: async ({ nonce, profileIds }) => {
       const result = await rest.confirmErasure({
-        requestId,
-        dataSiloId,
+        nonce,
         profileIds,
       });
       return createToolResult(true, {

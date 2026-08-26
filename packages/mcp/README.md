@@ -57,7 +57,7 @@ Each server requests domain-specific OAuth scopes during browser consent (plus `
 | [`mcp-server-docs`](./mcp-server-docs/)               | _(none — tools fetch public docs URLs only)_                                                                                                                                                     |
 | [`mcp-server-dsr`](./mcp-server-dsr/)                 | `ViewRequests`, `ViewAssignedRequests`, `MakeDataSubjectRequest`, `ManageAssignedRequests`, `ViewRequestCompilation`, `ManageRequestCompilation`                                                 |
 | [`mcp-server-inventory`](./mcp-server-inventory/)     | `ViewDataMap`, `ViewAssignedIntegrations`, `ManageDataMap`, `ManageAssignedIntegrations`, `ViewDataInventory`, `ViewAssignedDataInventory`, `ManageDataInventory`, `ManageAssignedDataInventory` |
-| [`mcp-server-preferences`](./mcp-server-preferences/) | `ViewPrivacyCenter`, `ManagePrivacyCenter`                                                                                                                                                       |
+| [`mcp-server-preferences`](./mcp-server-preferences/) | `ViewManagedConsentDatabaseAdminApi`, `ManageStoredPreferences`                                                                                                                                  |
 | [`mcp-server-workflows`](./mcp-server-workflows/)     | `ViewAllActionItems`, `ManageAllActionItems`, `ViewEmailTemplates`                                                                                                                               |
 
 Canonical scope lists live in each package's `src/scopes.ts`.

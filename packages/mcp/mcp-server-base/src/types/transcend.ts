@@ -209,23 +209,27 @@ export interface DownloadKey {
 }
 
 export interface EnrichIdentifiersInput {
-  requestId: string;
+  /** JWT nonce from webhook or pending-requests (preferred) */
+  nonce?: string;
+  /** Request ID for manual enrichment when nonce is unavailable */
+  requestId?: string;
+  /** Enricher ID for manual enrichment when nonce is unavailable */
+  enricherId?: string;
+  /** Identifier names and values to add */
   identifiers: Record<string, string>;
 }
 
 export interface AccessResponseInput {
-  requestId: string;
-  dataSiloId: string;
-  profiles?: Record<string, unknown>[];
-  files?: {
-    fileName: string;
-    fileData: string;
-  }[];
+  /** JWT nonce from webhook or pending-requests */
+  nonce: string;
+  /** Profile data to return for the access request */
+  profiles?: { profileId?: string; profileData?: unknown }[];
 }
 
 export interface ErasureResponseInput {
-  requestId: string;
-  dataSiloId: string;
+  /** JWT nonce from webhook or pending-requests */
+  nonce: string;
+  /** Profile IDs that were erased */
   profileIds?: string[];
 }
 
@@ -255,22 +259,137 @@ export interface UserPreferences {
   confirmed?: boolean;
 }
 
+export interface PreferenceStoreIdentifier {
+  /** Identifier name (e.g. email, phone) */
+  name: string;
+  /** Identifier value */
+  value: string;
+}
+
 export interface PreferenceQueryInput {
+  /** Preference store partition key */
   partition: string;
+  /** Identifiers to query */
   identifiers: {
+    /** Identifier value */
     value: string;
-    type?: string;
+    /** Identifier name (optional; inferred when omitted) */
+    name?: string;
+  }[];
+  /** Max records per page (1–50) */
+  limit?: number;
+  /** Pagination cursor from a previous query */
+  cursor?: string;
+}
+
+export interface PreferenceQueryResult {
+  /** Matching preference records */
+  nodes: unknown[];
+  /** Cursor for the next page, if any */
+  cursor?: string;
+}
+
+export interface PreferenceUpsertRecord {
+  /** Partition key for this record */
+  partition: string;
+  /** ISO 8601 timestamp for the consent update */
+  timestamp: string;
+  /** Whether consent was explicitly confirmed */
+  confirmed?: boolean;
+  /** User identifiers */
+  identifiers?: PreferenceStoreIdentifier[];
+  /** Legacy user ID (prefer identifiers) */
+  userId?: string;
+  /** Purpose consent updates */
+  purposes: {
+    /** Purpose slug */
+    purpose: string;
+    /** Consent value */
+    consent: ConsentValue;
+    /** ISO 8601 timestamp for this purpose */
+    timestamp?: string;
   }[];
 }
 
 export interface PreferenceUpsertInput {
-  partition: string;
+  /** Records to upsert */
+  records: PreferenceUpsertRecord[];
+  /** When true, skip workflow triggers */
+  skipWorkflowTriggers?: boolean;
+}
+
+export interface PreferenceDeleteRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the deletion */
+  timestamp: string;
+}
+
+export interface PreferenceAppendIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier to append */
+  append: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Merge records when append value conflicts */
+    mergeRecordsOnConflict?: boolean;
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceUpdateIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier update details */
+  update: {
+    /** Identifier name */
+    name: string;
+    /** Current identifier value */
+    oldValue: string;
+    /** New identifier value */
+    newValue: string;
+  };
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Merge records when update value conflicts */
+    mergeRecordsOnConflict?: boolean;
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceDeleteIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier to delete */
+  delete: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceIdentifiersResponse {
+  /** Per-record operation results */
   records: {
-    identifier: string;
-    identifierType?: string;
-    purposes: ConsentPreference[];
-    confirmed?: boolean;
+    /** Whether the operation succeeded */
+    success: boolean;
+    /** Remaining identifiers when requested */
+    identifiers?: PreferenceStoreIdentifier[];
+    /** Error message when success is false */
+    errorMessage?: string;
   }[];
+  /** Index-aligned failures */
+  failures?: { index: number; error: string }[];
 }
 
 export interface AirgapBundle {
@@ -923,33 +1042,62 @@ export interface DiscoveryPlugin {
 }
 
 export interface LLMClassificationInput {
+  /** Text strings to classify */
   texts: string[];
-  categories?: string[];
+  /** Category labels to classify against */
+  categories: string[];
+  /** LLM model type override */
   model?: string;
 }
 
 export interface LLMClassificationResult {
+  /** Input text that was classified */
   text: string;
+  /** Classification guesses for this text */
   classifications: {
+    /** Predicted category label */
     category: string;
+    /** Confidence score */
     confidence: number;
+    /** Parent category when available */
     subcategory?: string;
   }[];
 }
 
 export interface NERExtractionInput {
+  /** Text to extract entities from */
   text: string;
-  entityTypes?: string[];
+  /** Entity type labels to extract */
+  entityTypes: string[];
 }
 
 export interface NERExtractionResult {
+  /** Extracted entities */
   entities: {
+    /** Extracted entity value */
     text: string;
+    /** Entity type label */
     type: string;
-    start: number;
-    end: number;
+    /** Confidence score */
     confidence: number;
+    /** Source text snippet when available */
+    snippet?: string;
   }[];
+}
+
+export interface PendingRequestItem {
+  /** Pending identifier value */
+  identifier: string;
+  /** Identifier type */
+  type: string;
+  /** Core identifier for the request */
+  coreIdentifier: string;
+  /** Data silo ID */
+  dataSiloId: string;
+  /** Privacy request ID */
+  requestId: string;
+  /** JWT nonce for responding to this pending item */
+  nonce: string;
 }
 
 // Assessment Types

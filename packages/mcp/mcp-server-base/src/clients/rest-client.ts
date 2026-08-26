@@ -24,7 +24,14 @@ import type {
   AccessResponseInput,
   ErasureResponseInput,
   PreferenceQueryInput,
+  PreferenceQueryResult,
   PreferenceUpsertInput,
+  PreferenceDeleteRecordInput,
+  PreferenceAppendIdentifierRecordInput,
+  PreferenceUpdateIdentifierRecordInput,
+  PreferenceDeleteIdentifierRecordInput,
+  PreferenceIdentifiersResponse,
+  PendingRequestItem,
   UserPreferences,
   LLMClassificationInput,
   LLMClassificationResult,
@@ -366,22 +373,39 @@ export class TranscendRestClient {
   }
 
   async enrichIdentifiers(input: EnrichIdentifiersInput): Promise<{ success: boolean }> {
+    const enrichedIdentifiers = Object.entries(input.identifiers).reduce<
+      Record<string, { value: string }[]>
+    >((acc, [key, value]) => {
+      acc[key] = [{ value: key === 'email' ? value.toLowerCase() : value }];
+      return acc;
+    }, {});
+
+    const headers: Record<string, string> = {};
+    if (input.nonce) {
+      headers['x-transcend-nonce'] = input.nonce;
+    } else if (input.requestId && input.enricherId) {
+      headers['x-transcend-request-id'] = input.requestId.toLowerCase();
+      headers['x-transcend-enricher-id'] = input.enricherId;
+    } else {
+      throw new Error(
+        'Either nonce or both requestId and enricherId are required for identifier enrichment',
+      );
+    }
+
     return this.makeRequest<{ success: boolean }>('/v1/enrich-identifiers', {
       method: 'POST',
-      body: JSON.stringify(input),
+      headers,
+      body: JSON.stringify({ enrichedIdentifiers }),
     });
   }
 
   async respondToAccess(input: AccessResponseInput): Promise<{ success: boolean }> {
-    const payload = {
-      requestId: input.requestId,
-      dataSiloId: input.dataSiloId,
-      ...(input.profiles && { profiles: input.profiles }),
-      ...(input.files && { files: input.files }),
-    };
-    return this.makeRequest<{ success: boolean }>('/v1/datapoint', {
+    return this.makeRequest<{ success: boolean }>('/v1/data-silo', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      headers: { 'x-transcend-nonce': input.nonce },
+      body: JSON.stringify({
+        profiles: input.profiles ?? [],
+      }),
     });
   }
 
@@ -390,18 +414,19 @@ export class TranscendRestClient {
   ): Promise<{ success: boolean }> {
     return this.makeRequest<{ success: boolean }>('/v1/datapoint-chunked', {
       method: 'POST',
+      headers: { 'x-transcend-nonce': input.nonce },
       body: JSON.stringify(input),
     });
   }
 
   async confirmErasure(input: ErasureResponseInput): Promise<{ success: boolean }> {
+    const profiles = (input.profileIds ?? []).map((profileId) => ({ profileId }));
     return this.makeRequest<{ success: boolean }>('/v1/data-silo', {
-      method: 'POST',
+      method: 'PUT',
+      headers: { 'x-transcend-nonce': input.nonce },
       body: JSON.stringify({
-        requestId: input.requestId,
-        dataSiloId: input.dataSiloId,
-        status: 'COMPLETED',
-        ...(input.profileIds && { profileIds: input.profileIds }),
+        profiles,
+        status: 'READY',
       }),
     });
   }
@@ -409,69 +434,83 @@ export class TranscendRestClient {
   async getPendingRequests(
     dataSiloId: string,
     requestType: 'ACCESS' | 'ERASURE',
-  ): Promise<{ requests: { id: string; identifiers: Record<string, string> }[] }> {
-    return this.makeRequest<{ requests: { id: string; identifiers: Record<string, string> }[] }>(
+  ): Promise<{ items: PendingRequestItem[] }> {
+    return this.makeRequest<{ items: PendingRequestItem[] }>(
       `/v1/data-silo/${dataSiloId}/pending-requests/${requestType}`,
     );
   }
 
-  async queryPreferences(input: PreferenceQueryInput): Promise<UserPreferences[]> {
-    const response = await this.makeRequest<{ preferences: UserPreferences[] }>(
+  async queryPreferences(input: PreferenceQueryInput): Promise<PreferenceQueryResult> {
+    const identifiers = input.identifiers.map(({ value, name }) => ({
+      value,
+      ...(name !== undefined && { name }),
+    }));
+    const limit = Math.max(1, Math.min(50, input.limit ?? identifiers.length));
+    const response = await this.makeRequest<{ nodes: unknown[]; cursor?: string }>(
       `/v1/preferences/${encodeURIComponent(input.partition)}/query`,
-      { method: 'POST', body: JSON.stringify({ identifiers: input.identifiers }) },
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          filter: { identifiers },
+          limit,
+          ...(input.cursor && { cursor: input.cursor }),
+        }),
+      },
     );
-    return response.preferences || [];
+    return { nodes: response.nodes || [], cursor: response.cursor };
   }
 
   async upsertPreferences(
     input: PreferenceUpsertInput,
-  ): Promise<{ success: boolean; count: number }> {
-    return this.makeRequest<{ success: boolean; count: number }>('/v1/preferences', {
-      method: 'POST',
-      body: JSON.stringify(input),
+  ): Promise<{ success: boolean; nodes?: unknown[] }> {
+    return this.makeRequest<{ success: boolean; nodes?: unknown[] }>('/v1/preferences', {
+      method: 'PUT',
+      body: JSON.stringify({
+        records: input.records,
+        ...(input.skipWorkflowTriggers !== undefined && {
+          skipWorkflowTriggers: input.skipWorkflowTriggers,
+        }),
+      }),
     });
   }
 
   async deletePreferences(
     partition: string,
-    identifiers: { value: string; type?: string }[],
-  ): Promise<{ success: boolean; count: number }> {
-    return this.makeRequest<{ success: boolean; count: number }>(
+    records: PreferenceDeleteRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/delete`,
-      { method: 'DELETE', body: JSON.stringify({ identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
   async appendIdentifiers(
     partition: string,
-    userId: string,
-    identifiers: { value: string; type?: string }[],
-  ): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(
+    records: PreferenceAppendIdentifierRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/append-identifiers`,
-      { method: 'POST', body: JSON.stringify({ userId, identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
   async updateIdentifiers(
     partition: string,
-    userId: string,
-    identifiers: { oldValue: string; newValue: string; type?: string }[],
-  ): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(
+    records: PreferenceUpdateIdentifierRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/update-identifiers`,
-      { method: 'PUT', body: JSON.stringify({ userId, identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
   async deleteIdentifiers(
     partition: string,
-    userId: string,
-    identifiers: { value: string; type?: string }[],
-  ): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(
+    records: PreferenceDeleteIdentifierRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/delete-identifiers`,
-      { method: 'DELETE', body: JSON.stringify({ userId, identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
@@ -496,20 +535,52 @@ export class TranscendRestClient {
   }
 
   async classifyText(input: LLMClassificationInput): Promise<LLMClassificationResult[]> {
-    const payload = { inputList: input.texts, labels: input.categories || [] };
-    const response = await this.makeRequest<{ results: LLMClassificationResult[] }>(
-      '/llm/classify-text',
-      { method: 'POST', body: JSON.stringify(payload) },
-    );
-    return response.results || [];
+    const payload: { inputList: string[]; labels: string[]; model_type?: string } = {
+      inputList: input.texts,
+      labels: input.categories,
+    };
+    if (input.model) {
+      payload.model_type = input.model;
+    }
+    const response = await this.makeRequest<{
+      guesses: {
+        name?: string;
+        category?: string;
+        confidence: number;
+      }[][];
+    }>('/llm/classify-text', { method: 'POST', body: JSON.stringify(payload) });
+
+    return (response.guesses ?? []).map((guesses, index) => ({
+      text: input.texts[index] ?? '',
+      classifications: guesses.map((guess) => ({
+        category: guess.name || guess.category || '',
+        confidence: guess.confidence,
+        ...(guess.category && guess.name !== guess.category ? { subcategory: guess.category } : {}),
+      })),
+    }));
   }
 
   async extractEntities(input: NERExtractionInput): Promise<NERExtractionResult> {
-    const payload = { inputList: [input.text], labels: input.entityTypes || [] };
-    return this.makeRequest<NERExtractionResult>('/classify/unstructured-text', {
+    const payload = { inputList: [input.text], labels: input.entityTypes };
+    const response = await this.makeRequest<{
+      guesses: {
+        value?: string;
+        type?: string;
+        confidence?: number;
+        snippet?: string;
+      }[][];
+    }>('/classify/unstructured-text', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+
+    const entities = (response.guesses?.[0] ?? []).map((guess) => ({
+      text: guess.value ?? '',
+      type: guess.type ?? '',
+      confidence: guess.confidence ?? 0,
+      ...(guess.snippet !== undefined && { snippet: guess.snippet }),
+    }));
+    return { entities };
   }
 
   async getSombraPublicKey(): Promise<{ key: string }> {

@@ -246,4 +246,172 @@ describe('TranscendRestClient Sombra host and headers', () => {
     expect(body.input[0]).not.toHaveProperty('type');
     expect(body.input[0]).not.toHaveProperty('subjectType');
   });
+
+  it('classifyText maps guesses response and sends model_type', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          guesses: [[{ name: 'EMAIL', category: 'Contact', confidence: 0.91 }]],
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      ),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    const results = await client.classifyText({
+      texts: ['a@b.com'],
+      categories: ['EMAIL'],
+      model: 'gpt-4',
+    });
+
+    expect(results).toEqual([
+      {
+        text: 'a@b.com',
+        classifications: [{ category: 'EMAIL', confidence: 0.91, subcategory: 'Contact' }],
+      },
+    ]);
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(JSON.parse(init.body)).toEqual({
+      inputList: ['a@b.com'],
+      labels: ['EMAIL'],
+      model_type: 'gpt-4',
+    });
+  });
+
+  it('extractEntities maps guesses response to entities', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          guesses: [[{ value: 'a@b.com', type: 'Email', confidence: 0.88, snippet: 'a@b.com' }]],
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      ),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    const result = await client.extractEntities({
+      text: 'email a@b.com',
+      entityTypes: ['Email'],
+    });
+
+    expect(result).toEqual({
+      entities: [{ text: 'a@b.com', type: 'Email', confidence: 0.88, snippet: 'a@b.com' }],
+    });
+  });
+
+  it('enrichIdentifiers sends nonce header and enrichedIdentifiers body', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    await client.enrichIdentifiers({
+      nonce: 'test-nonce',
+      identifiers: { email: 'User@Example.com' },
+    });
+
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(init.method).toBe('POST');
+    expect(init.headers['x-transcend-nonce']).toBe('test-nonce');
+    expect(JSON.parse(init.body)).toEqual({
+      enrichedIdentifiers: { email: [{ value: 'user@example.com' }] },
+    });
+  });
+
+  it('respondToAccess POSTs /v1/data-silo with nonce header', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    await client.respondToAccess({
+      nonce: 'access-nonce',
+      profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
+    });
+
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toBe('https://sombra.example.com/v1/data-silo');
+    expect(init.method).toBe('POST');
+    expect(init.headers['x-transcend-nonce']).toBe('access-nonce');
+    expect(JSON.parse(init.body)).toEqual({
+      profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
+    });
+  });
+
+  it('confirmErasure PUTs /v1/data-silo with READY status', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    await client.confirmErasure({
+      nonce: 'erasure-nonce',
+      profileIds: ['profile-1'],
+    });
+
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toBe('https://sombra.example.com/v1/data-silo');
+    expect(init.method).toBe('PUT');
+    expect(init.headers['x-transcend-nonce']).toBe('erasure-nonce');
+    expect(JSON.parse(init.body)).toEqual({
+      profiles: [{ profileId: 'profile-1' }],
+      status: 'READY',
+    });
+  });
+
+  it('queryPreferences sends filter/limit and parses nodes', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ nodes: [{ userId: 'u1' }], cursor: 'next' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    const result = await client.queryPreferences({
+      partition: 'default',
+      identifiers: [{ name: 'email', value: 'a@b.com' }],
+    });
+
+    expect(result).toEqual({ nodes: [{ userId: 'u1' }], cursor: 'next' });
+    const [url, init] = mockFetch.mock.calls[0]!;
+    expect(url).toBe('https://sombra.example.com/v1/preferences/default/query');
+    expect(JSON.parse(init.body)).toEqual({
+      filter: { identifiers: [{ name: 'email', value: 'a@b.com' }] },
+      limit: 1,
+    });
+  });
 });

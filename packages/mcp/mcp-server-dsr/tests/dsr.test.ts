@@ -31,8 +31,8 @@ describe('DSR Tools', () => {
     downloadKeys: ReturnType<typeof vi.fn>;
     listRequestIdentifiers: ReturnType<typeof vi.fn>;
     enrichIdentifiers: ReturnType<typeof vi.fn>;
-    respondAccess: ReturnType<typeof vi.fn>;
-    respondErasure: ReturnType<typeof vi.fn>;
+    respondToAccess: ReturnType<typeof vi.fn>;
+    confirmErasure: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -48,8 +48,8 @@ describe('DSR Tools', () => {
       downloadKeys: vi.fn(),
       listRequestIdentifiers: vi.fn(),
       enrichIdentifiers: vi.fn(),
-      respondAccess: vi.fn(),
-      respondErasure: vi.fn(),
+      respondToAccess: vi.fn(),
+      confirmErasure: vi.fn(),
     };
   });
 
@@ -351,6 +351,72 @@ describe('DSR Tools', () => {
       const tool = tools.find((t) => t.name === 'dsr_list')!;
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
+    });
+  });
+
+  describe('dsr_enrich_identifiers', () => {
+    it('requires nonce or requestId + enricherId in schema', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_enrich_identifiers')!;
+
+      expect(tool.zodSchema.safeParse({ identifiers: { email: 'a@b.com' } }).success).toBe(false);
+      expect(
+        tool.zodSchema.safeParse({
+          nonce: 'nonce-1',
+          identifiers: { email: 'a@b.com' },
+        }).success,
+      ).toBe(true);
+    });
+
+    it('calls enrichIdentifiers with nonce', async () => {
+      mockRest.enrichIdentifiers.mockResolvedValue({ success: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_enrich_identifiers')!;
+
+      await tool.handler({ nonce: 'nonce-1', identifiers: { email: 'a@b.com' } });
+
+      expect(mockRest.enrichIdentifiers).toHaveBeenCalledWith({
+        nonce: 'nonce-1',
+        requestId: undefined,
+        enricherId: undefined,
+        identifiers: { email: 'a@b.com' },
+      });
+    });
+  });
+
+  describe('dsr_respond_access', () => {
+    it('calls respondToAccess with nonce', async () => {
+      mockRest.respondToAccess.mockResolvedValue({ success: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_respond_access')!;
+
+      await tool.handler({
+        nonce: 'access-nonce',
+        profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
+      });
+
+      expect(mockRest.respondToAccess).toHaveBeenCalledWith({
+        nonce: 'access-nonce',
+        profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
+      });
+    });
+  });
+
+  describe('dsr_respond_erasure', () => {
+    it('calls confirmErasure with nonce', async () => {
+      mockRest.confirmErasure.mockResolvedValue({ success: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_respond_erasure')!;
+
+      await tool.handler({ nonce: 'erasure-nonce', profileIds: ['p1'] });
+
+      expect(mockRest.confirmErasure).toHaveBeenCalledWith({
+        nonce: 'erasure-nonce',
+        profileIds: ['p1'],
+      });
     });
   });
 });

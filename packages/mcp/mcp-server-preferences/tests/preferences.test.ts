@@ -59,21 +59,29 @@ describe('Preferences Tools', () => {
     });
 
     it('returns preferences on success', async () => {
-      const preferences = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
-      mockRest.queryPreferences.mockResolvedValue(preferences);
+      const nodes = [{ userId: 'u1', purposes: [{ purpose: 'analytics', enabled: true }] }];
+      mockRest.queryPreferences.mockResolvedValue({ nodes, cursor: 'next-page' });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'preferences_query')!;
 
       const result = await tool.handler({
         partition: 'my-org',
-        identifiers: [{ value: 'user@example.com', type: 'email' }],
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
       });
 
-      expect(result).toMatchObject({ success: true, data: preferences });
+      expect(result).toMatchObject({
+        success: true,
+        data: nodes,
+        hasNextPage: true,
+        nextCursor: 'next-page',
+      });
       expect(mockRest.queryPreferences).toHaveBeenCalledWith({
         partition: 'my-org',
-        identifiers: [{ value: 'user@example.com', type: 'email' }],
+        identifiers: [{ name: 'email', value: 'user@example.com' }],
+        limit: 10,
+        cursor: undefined,
       });
     });
 
@@ -86,9 +94,30 @@ describe('Preferences Tools', () => {
       await expect(
         tool.handler({
           partition: 'my-org',
-          identifiers: [{ value: 'user@example.com' }],
+          identifiers: [{ name: 'email', value: 'user@example.com' }],
         }),
       ).rejects.toThrow('REST error');
+    });
+  });
+
+  describe('preferences_append_identifiers', () => {
+    it('calls appendIdentifiers with records payload', async () => {
+      mockRest.appendIdentifiers.mockResolvedValue({ records: [{ success: true }], failures: [] });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_append_identifiers')!;
+      const records = [
+        {
+          anchorIdentifier: { name: 'email', value: 'user@example.com' },
+          append: { name: 'phone', value: '+15551234567' },
+          timestamp: '2024-01-15T10:30:00Z',
+        },
+      ];
+
+      const result = await tool.handler({ partition: 'default', records });
+
+      expect(result).toMatchObject({ success: true });
+      expect(mockRest.appendIdentifiers).toHaveBeenCalledWith('default', records);
     });
   });
 });

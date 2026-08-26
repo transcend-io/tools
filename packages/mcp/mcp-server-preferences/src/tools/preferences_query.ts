@@ -1,14 +1,20 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-export const IdentifierSchema = z.object({
-  value: z.string().describe('Identifier value'),
-  type: z.string().optional().describe('Identifier type (optional)'),
-});
-export type IdentifierInput = z.infer<typeof IdentifierSchema>;
+import { IdentifierSchema } from './preference-schemas.js';
+
+export { IdentifierSchema };
+export type { IdentifierInput } from './preference-schemas.js';
 
 export const QueryPreferencesSchema = z.object({
-  partition: z.string().describe('Partition/organization context'),
-  identifiers: z.array(IdentifierSchema).describe('Array of identifier objects to query'),
+  partition: z.string().describe('Preference store partition key'),
+  identifiers: z.array(IdentifierSchema).describe('Identifiers to query'),
+  limit: z
+    .number()
+    .min(1)
+    .max(50)
+    .optional()
+    .describe('Max records to return (1–50, defaults to identifier count)'),
+  cursor: z.string().optional().describe('Pagination cursor from a previous query'),
 });
 export type QueryPreferencesInput = z.infer<typeof QueryPreferencesSchema>;
 
@@ -22,17 +28,18 @@ export function createPreferencesQueryTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: QueryPreferencesSchema,
-    handler: async ({ partition, identifiers }) => {
+    handler: async ({ partition, identifiers, limit, cursor }) => {
       const result = await rest.queryPreferences({
         partition,
-        identifiers: identifiers.map((id) => ({
-          value: id.value,
-          type: id.type,
-        })),
+        identifiers,
+        limit,
+        cursor,
       });
 
-      return createListResult(result, {
-        totalCount: result.length,
+      return createListResult(result.nodes, {
+        totalCount: result.nodes.length,
+        hasNextPage: Boolean(result.cursor),
+        cursor: result.cursor,
       });
     },
   });
