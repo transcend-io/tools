@@ -8,15 +8,6 @@ export interface GridProps {
   children?: ReactNode;
 }
 
-/**
- * Each count stacks until the row itself is wide enough, at roughly 11rem per
- * column plus gaps.
- *
- * Container queries rather than `lg:` because a breakpoint measures the iframe
- * viewport, which a host sizes to its panel and not to the window: Claude's
- * inline panel sits just under `lg`, so a viewport-gated row stacked three
- * cards that had room to sit side by side.
- */
 const COLUMN_CLASS: Record<1 | 2 | 3 | 4, string> = {
   1: 'grid-cols-1',
   2: 'grid-cols-1 @min-[24rem]:grid-cols-2',
