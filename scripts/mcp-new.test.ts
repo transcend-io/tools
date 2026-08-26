@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -191,7 +191,10 @@ describe('app kind', () => {
       tailwindcss: 'catalog:',
       vite: 'catalog:',
     });
-    expect(readFileSync(join(pkg.dir, '.gitignore'), 'utf8')).toContain('src/ui/generated/');
+    expect(existsSync(join(pkg.dir, '.gitignore'))).toBe(false);
+    expect(readFileSync(join(pkg.dir, 'tsconfig.ui.json'), 'utf8')).toContain(
+      'src/ui/generated/**',
+    );
   });
 
   test('points the script and the tsconfig at the repo root from where the package is', () => {
