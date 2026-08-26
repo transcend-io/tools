@@ -1,0 +1,29 @@
+{
+  "name": "@transcend-io/mcp-ui-common",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared presentational components for Transcend MCP App views. Development only, never published.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit"
+  },
+  "dependencies": {
+    "@transcend-io/type-utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "react": "catalog:"
+  }
+}
