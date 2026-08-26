@@ -40,6 +40,48 @@ function umbrellaTools(): ToolDefinition[] {
   return new ToolRegistry(mockClients).getAllTools();
 }
 
+/** Minimal valid args so widened schemas can be parsed with an approval token. */
+const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
+  dsr_cancel: { requestId: 'req-1' },
+  dsr_submit: {
+    workflowConfigId: '00000000-0000-4000-8000-000000000001',
+    email: 'a@example.com',
+  },
+  dsr_enrich_identifiers: {
+    nonce: 'nonce',
+    identifiers: { email: 'a@example.com' },
+  },
+  preferences_delete: {
+    partition: 'default',
+    records: [
+      {
+        anchorIdentifier: { name: 'email', value: 'a@example.com' },
+        timestamp: '2020-01-01T00:00:00.000Z',
+      },
+    ],
+  },
+  preferences_delete_identifiers: {
+    partition: 'default',
+    records: [
+      {
+        anchorIdentifier: { name: 'email', value: 'a@example.com' },
+        delete: { name: 'phone', value: '+15555555555' },
+        timestamp: '2020-01-01T00:00:00.000Z',
+      },
+    ],
+  },
+  preferences_update_identifiers: {
+    partition: 'default',
+    records: [
+      {
+        anchorIdentifier: { name: 'email', value: 'a@example.com' },
+        update: { name: 'email', oldValue: 'a@example.com', newValue: 'b@example.com' },
+        timestamp: '2020-01-01T00:00:00.000Z',
+      },
+    ],
+  },
+};
+
 describe('umbrella confirmation wiring', () => {
   it('gates at least one tool, so the rest of this file is meaningful', () => {
     expect(umbrellaTools().filter((tool) => tool.confirmation).length).toBeGreaterThan(0);
@@ -61,9 +103,12 @@ describe('umbrella confirmation wiring', () => {
       // the handler `parseResult.data`, and Zod drops keys it does not know rather
       // than rejecting them. A tool that advertised the token but stripped it would
       // re-ask forever, so assert on the parsed output and not on parsing merely
-      // not erroring — every required field it omits would error either way.
-      // `partial()` sidesteps needing valid values for seven different tools.
-      expect(object.partial().parse({ [APPROVAL_TOKEN_ARG]: 'tok' }), name).toEqual({
+      // not erroring. Replay always resends the approved args plus approvalToken,
+      // so parse with minimal valid args for each gated tool (Zod 4 forbids
+      // `.partial()` on schemas with refinements such as dsr_enrich_identifiers).
+      const minimalArgs = MINIMAL_GATED_TOOL_ARGS[name];
+      expect(minimalArgs, `missing minimal args fixture for ${name}`).toBeDefined();
+      expect(object.parse({ ...minimalArgs, [APPROVAL_TOKEN_ARG]: 'tok' }), name).toMatchObject({
         [APPROVAL_TOKEN_ARG]: 'tok',
       });
     }
