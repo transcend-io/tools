@@ -1,5 +1,26 @@
 # @transcend-io/mcp
 
+## 0.15.5
+
+### Patch Changes
+
+- 4c1b802: Add an MCP App view to `consent_get_inventory_stats` that renders cookie and
+  data-flow triage counts.
+- 656903e: Add a private shared widget kit for MCP App views and teach the view builder to
+  include its Tailwind sources only when a consuming package opts in.
+- Updated dependencies [4c1b802]
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-consent@0.9.0
+  - @transcend-io/mcp-server-base@1.7.2
+  - @transcend-io/mcp-server-admin@0.6.5
+  - @transcend-io/mcp-server-assessment@0.5.25
+  - @transcend-io/mcp-server-discovery@0.5.25
+  - @transcend-io/mcp-server-docs@0.3.23
+  - @transcend-io/mcp-server-dsr@0.8.5
+  - @transcend-io/mcp-server-inventory@0.7.5
+  - @transcend-io/mcp-server-preferences@0.6.5
+  - @transcend-io/mcp-server-workflows@0.5.25
+
 ## 0.15.4
 
 ### Patch Changes

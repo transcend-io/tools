@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-base
 
+## 1.7.2
+
+### Patch Changes
+
+- 656903e: Add a private shared widget kit for MCP App views and teach the view builder to
+  include its Tailwind sources only when a consuming package opts in.
+
 ## 1.7.1
 
 ### Patch Changes

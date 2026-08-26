@@ -1,5 +1,17 @@
 # @transcend-io/mcp-server-consent
 
+## 0.9.0
+
+### Minor Changes
+
+- 4c1b802: Add an MCP App view to `consent_get_inventory_stats` that renders cookie and
+  data-flow triage counts.
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
 ## 0.8.4
 
 ### Patch Changes
