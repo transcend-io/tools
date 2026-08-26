@@ -386,7 +386,7 @@ To add a view, run the generator and fill in the three files it writes:
 pnpm mcp:new app inventory usage-chart
 ```
 
-That is `src/ui/usage-chart/UsageChartView.tsx`, the component; `src/apps/usage-chart.ts`, which binds the built document to a `ui://` resource; and `src/tools/usage_chart_app.ts`, the `defineToolWithCapabilities` tool that opens it with the resource already bound. On a package with no views yet it also adds `tsconfig.ui.json`, the gitignore entry, three scripts, and the browser-side devDependencies, then installs them.
+That is `src/ui/usage-chart/UsageChartView.tsx`, the component; `src/apps/usage-chart.ts`, which binds the built document to a `ui://` resource; and `src/tools/usage_chart_app.ts`, the `defineToolWithCapabilities` tool that opens it with the resource already bound. On a package with no views yet it also adds `tsconfig.ui.json`, three scripts, and the browser-side devDependencies, then installs them.
 
 The one step it leaves alone is adding the generated factory to the array `src/tools/index.ts` returns. That line is where a tool's name and description become public API on a published package, so it stays a person's decision; the command prints the two lines to paste.
 
@@ -450,7 +450,7 @@ Import view code only from `@transcend-io/mcp-server-base/ui`, never the package
 A few constraints worth knowing before adding a view:
 
 - **A package has no Vite config of its own.** `scripts/build-mcp-views.ts` discovers the package's views and runs one Vite build per view, because the single-file plugin collapses a whole bundle into one document — so a config naming a single entry could not express a package with two views, and would have silently emitted both into one document. The script also passes `configFile: false`, since Vitest auto-loads a `vite.config.ts` when a package has no test config and would otherwise replace the shared root config.
-- **The built document is generated into `src/ui/generated/` and gitignored**, then inlined as a string by tsdown's `.html` text loader. Because a test reads the document off disk, `test` for a view-building package depends on `build` in `turbo.json`. Typecheck does not: the `declare module '*.html'` in `types/html.d.ts` is a wildcard, which TypeScript resolves without the file existing.
+- **The built document is generated into `src/ui/generated/` and gitignored from the repo root**, then inlined as a string by tsdown's `.html` text loader. Because a test reads the document off disk, `test` for a view-building package depends on `build` in `turbo.json`. Typecheck does not: the `declare module '*.html'` in `types/html.d.ts` is a wildcard, which TypeScript resolves without the file existing.
 - **Views are checked by a second tsconfig.** `tsconfig.json` excludes `src/ui`, since browser code needs bundler module resolution — `@modelcontextprotocol/ext-apps` re-exports its React entry with extensionless specifiers that `NodeNext` refuses to resolve.
 - **Expect a few hundred kilobytes per view.** React, the Apps SDK, and its Zod dependency are all inlined. That is fine for a locally served resource, but it is not a budget for many small views.
 

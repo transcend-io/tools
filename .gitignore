@@ -14,3 +14,6 @@ secret.env
 # of truth (committed); the per-package generated TS lives under __generated__/
 # and is rebuilt on every `pnpm codegen`/`pnpm typecheck`/`pnpm build`.
 **/__generated__/
+
+# Vite-built MCP App views, rebuilt by `pnpm prebuild` / `pnpm build:ui`.
+**/src/ui/generated/
