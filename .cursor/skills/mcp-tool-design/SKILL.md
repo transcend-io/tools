@@ -7,10 +7,10 @@ description: Standards and review checklist for writing MCP tools, including nam
 
 Two modes. Pick one before starting.
 
-| Mode          | Trigger                                                              | Output                                             |
-| ------------- | -------------------------------------------------------------------- | -------------------------------------------------- |
-| **Authoring** | Adding a tool, or generating tools from an existing API              | Tool code + filled checklist                       |
-| **Review**    | Auditing an existing tool or a PR that adds one                      | Verdict per checklist item, with specific rewrites  |
+| Mode          | Trigger                                                 | Output                                             |
+| ------------- | ------------------------------------------------------- | -------------------------------------------------- |
+| **Authoring** | Adding a tool, or generating tools from an existing API | Tool code + filled checklist                       |
+| **Review**    | Auditing an existing tool or a PR that adds one         | Verdict per checklist item, with specific rewrites |
 
 Both modes use the same checklist. In review mode, every item is pass/fail with a
 named reason — never "looks fine."
@@ -139,11 +139,11 @@ nothing.
 
 **Failure modes this catches**, all real:
 
-| Tool                     | Caller says   | Tool text says | Result             |
-| ------------------------ | ------------- | -------------- | ------------------ |
-| `admin_list_api_keys`    | "credentials" | "API keys"     | zero term overlap  |
-| `admin_get_current_user` | "signed in"   | "authenticated"| zero term overlap  |
-| `admin_list_teams`       | "groups"      | "teams"        | wrong domain wins  |
+| Tool                     | Caller says   | Tool text says  | Result            |
+| ------------------------ | ------------- | --------------- | ----------------- |
+| `admin_list_api_keys`    | "credentials" | "API keys"      | zero term overlap |
+| `admin_get_current_user` | "signed in"   | "authenticated" | zero term overlap |
+| `admin_list_teams`       | "groups"      | "teams"         | wrong domain wins |
 
 Write descriptions in the caller's vocabulary throughout, not just for
 synonyms. Internal product nouns, service names, and table names are invisible
@@ -154,8 +154,8 @@ to callers and should not appear unless callers say them.
 - **Every field gets a `describe()`.** No exceptions — parameter descriptions
   are indexed text and are often where caller vocabulary fits when the
   description is full.
-- **Describe the field's meaning, not its type.** `"Partition/organization
-  context"` beats `"partition string"`.
+- **Describe the field's meaning, not its type.**
+  `"Partition/organization context"` beats `"partition string"`.
 - **Never inline a large enum.** Point at where the values live (see
   [Description budget](#description-budget)).
 - **Give optional fields real defaults**, and make the default the cheap
@@ -174,14 +174,14 @@ call without showing the user.
 
 Each tool must declare, and the review must argue, all of:
 
-| Field                            | Question                                                        |
-| -------------------------------- | --------------------------------------------------------------- |
-| `readOnly`                       | Does this mutate anything at all?                               |
-| `annotations.readOnlyHint`       | Same answer as `readOnly` — must not disagree.                  |
-| `annotations.destructiveHint`    | Can this remove or overwrite data a caller can't reconstruct?   |
-| `annotations.idempotentHint`     | Does calling it twice with the same args equal calling it once?  |
-| `confirmation`                   | Should a human see the arguments before this runs?               |
-| visibility / capability gating   | Should this be hidden when the client can't support it?          |
+| Field                          | Question                                                        |
+| ------------------------------ | --------------------------------------------------------------- |
+| `readOnly`                     | Does this mutate anything at all?                               |
+| `annotations.readOnlyHint`     | Same answer as `readOnly` — must not disagree.                  |
+| `annotations.destructiveHint`  | Can this remove or overwrite data a caller can't reconstruct?   |
+| `annotations.idempotentHint`   | Does calling it twice with the same args equal calling it once? |
+| `confirmation`                 | Should a human see the arguments before this runs?              |
+| visibility / capability gating | Should this be hidden when the client can't support it?         |
 
 Rules:
 
@@ -326,16 +326,18 @@ that names the missing toolset is the minimum.
 
 **Verdict:** Approve / Approve with changes / Needs rework
 
-| # | Item        | Verdict | Note                                          |
-| - | ----------- | ------- | --------------------------------------------- |
-| 0 | Existence   | Pass    | No existing tool covers writes to this entity |
-| 1 | Naming      | Fail    | Indistinguishable from `x_update_y` on line 1 |
+| #   | Item      | Verdict | Note                                          |
+| --- | --------- | ------- | --------------------------------------------- |
+| 0   | Existence | Pass    | No existing tool covers writes to this entity |
+| 1   | Naming    | Fail    | Indistinguishable from `x_update_y` on line 1 |
 | ... |
 
 ### Required changes
+
 1. <specific rewrite, with the replacement text>
 
 ### Optional
+
 1. <suggestion>
 ```
 
@@ -344,14 +346,14 @@ Quote the replacement text rather than describing it. A review that says
 
 ## Anti-patterns
 
-| Pattern                                       | Why it fails                                              |
-| --------------------------------------------- | --------------------------------------------------------- |
-| One tool per API endpoint                     | Near-duplicates cost recall on every sibling              |
-| Internal product nouns in descriptions        | Callers never type them, so the tool is unreachable       |
-| Annotations copied from the neighboring file  | Adjacent tools routinely have different correct answers   |
-| Enum catalog inlined in a description         | Always-loaded cost for rarely-needed data                 |
-| `describe()` omitted on a parameter           | Discards indexed text where vocabulary fits for free      |
-| Raw upstream error passed through             | Agent gets a symptom with no next step                    |
-| Empty success for not-found                   | Agent cannot distinguish "none" from "failed"             |
-| Unbounded list response                       | Uncapped context cost, unlike the capped description      |
-| Description says "improve" / "handle properly"| Not a spec; nothing is verifiable                         |
+| Pattern                                        | Why it fails                                            |
+| ---------------------------------------------- | ------------------------------------------------------- |
+| One tool per API endpoint                      | Near-duplicates cost recall on every sibling            |
+| Internal product nouns in descriptions         | Callers never type them, so the tool is unreachable     |
+| Annotations copied from the neighboring file   | Adjacent tools routinely have different correct answers |
+| Enum catalog inlined in a description          | Always-loaded cost for rarely-needed data               |
+| `describe()` omitted on a parameter            | Discards indexed text where vocabulary fits for free    |
+| Raw upstream error passed through              | Agent gets a symptom with no next step                  |
+| Empty success for not-found                    | Agent cannot distinguish "none" from "failed"           |
+| Unbounded list response                        | Uncapped context cost, unlike the capped description    |
+| Description says "improve" / "handle properly" | Not a spec; nothing is verifiable                       |
