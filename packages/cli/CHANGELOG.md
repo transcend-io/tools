@@ -1,5 +1,15 @@
 # @transcend-io/cli
 
+## 10.27.2
+
+### Patch Changes
+
+- 7d1d57c: Add `ViewUsage` (`viewUsage`) to the AD scope catalog, titled "View Usage". Grants view access to organization usage metrics in the Administration Usage dashboard.
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/airgap.js-types@14.2.39
+  - @transcend-io/sdk@2.1.2
+
 ## 10.27.1
 
 ### Patch Changes

@@ -386,7 +386,7 @@ To add a view, run the generator and fill in the three files it writes:
 pnpm mcp:new app inventory usage-chart
 ```
 
-That is `src/ui/usage-chart/UsageChartView.tsx`, the component; `src/apps/usage-chart.ts`, which binds the built document to a `ui://` resource; and `src/tools/usage_chart_app.ts`, the `defineToolWithCapabilities` tool that opens it with the resource already bound. On a package with no views yet it also adds `tsconfig.ui.json`, the gitignore entry, three scripts, and the browser-side devDependencies, then installs them.
+That is `src/ui/usage-chart/UsageChartView.tsx`, the component; `src/apps/usage-chart.ts`, which binds the built document to a `ui://` resource; and `src/tools/usage_chart_app.ts`, the `defineToolWithCapabilities` tool that opens it with the resource already bound. On a package with no views yet it also adds `tsconfig.ui.json`, three scripts, and the browser-side devDependencies, then installs them.
 
 The one step it leaves alone is adding the generated factory to the array `src/tools/index.ts` returns. That line is where a tool's name and description become public API on a published package, so it stays a person's decision; the command prints the two lines to paste.
 
@@ -424,6 +424,7 @@ Two rules, both enforced rather than trusted:
 
 - **Only the entry may end in `View.tsx`.** Discovery looks for exactly one match at the top level of the view directory, so a sibling named `ConfirmModalView.tsx` fails the build by name. Nesting is unaffected — `table/TriageTableView.tsx` would be fine, since the search is not recursive — but the simplest habit is to reserve the suffix for the entry.
 - **Shared components go in a `_`-prefixed directory under `src/ui/`.** Tailwind generates utilities per document by scanning files, so the synthesized stylesheet sources every `_` directory in addition to the view's own. Putting a shared component anywhere else outside the view directory bundles it correctly and then renders it unstyled, which reads as a CSS bug rather than a missing `@source`. The cost of sourcing them is that shared components' utilities appear in every view's document, which is why `_shared` is for genuinely shared UI rather than a dumping ground.
+- **Cross-package widgets live in `@transcend-io/mcp-ui-common`.** That private kit (`dev/mcp-ui-common`) is Grid, Heading, MetricCard, ProgressBar, and Spinner. Add it as a **view `devDependency`** (`workspace:*`) of the MCP server that builds the view — discovery then `@source`s the kit so those class names emit. Same-package `_shared` is still the right place for components that only that server uses. Do not add the kit to `pnpm mcp:new`: the scaffolded stub does not need dashboard chrome, and hello-world in `dev/mcp-server-examples` must stay off it.
 
 ```tsx
 // src/ui/hello/HelloView.tsx
@@ -449,7 +450,7 @@ Import view code only from `@transcend-io/mcp-server-base/ui`, never the package
 A few constraints worth knowing before adding a view:
 
 - **A package has no Vite config of its own.** `scripts/build-mcp-views.ts` discovers the package's views and runs one Vite build per view, because the single-file plugin collapses a whole bundle into one document — so a config naming a single entry could not express a package with two views, and would have silently emitted both into one document. The script also passes `configFile: false`, since Vitest auto-loads a `vite.config.ts` when a package has no test config and would otherwise replace the shared root config.
-- **The built document is generated into `src/ui/generated/` and gitignored**, then inlined as a string by tsdown's `.html` text loader. Because a test reads the document off disk, `test` for a view-building package depends on `build` in `turbo.json`. Typecheck does not: the `declare module '*.html'` in `types/html.d.ts` is a wildcard, which TypeScript resolves without the file existing.
+- **The built document is generated into `src/ui/generated/` and gitignored from the repo root**, then inlined as a string by tsdown's `.html` text loader. Because a test reads the document off disk, `test` for a view-building package depends on `build` in `turbo.json`. Typecheck does not: the `declare module '*.html'` in `types/html.d.ts` is a wildcard, which TypeScript resolves without the file existing.
 - **Views are checked by a second tsconfig.** `tsconfig.json` excludes `src/ui`, since browser code needs bundler module resolution — `@modelcontextprotocol/ext-apps` re-exports its React entry with extensionless specifiers that `NodeNext` refuses to resolve.
 - **Expect a few hundred kilobytes per view.** React, the Apps SDK, and its Zod dependency are all inlined. That is fine for a locally served resource, but it is not a budget for many small views.
 
@@ -483,6 +484,8 @@ The namespaces available, all of which are host-aware:
 | `text-success`, `text-warning`, `text-danger`              | Transcend status colors                                                                                                                        |
 | `text-sm`, `text-md`, `text-heading-sm`, `text-heading-md` | Font sizes, each carrying its line height                                                                                                      |
 | `rounded-*`, `shadow-sm`, `font-*`                         | `sm`, `md`, `lg`, `full`                                                                                                                       |
+| `max-w-view`                                               | `64rem`, the widest a view's content grows                                                                                                     |
+| `sm:`, `md:`, `lg:`                                        | `24rem`, `32rem`, `48rem` — ours, since skipping the default theme leaves no breakpoints                                                       |
 
 Two rules follow from this. **Never write an arbitrary color or length** — `bg-[#fff]`, `p-[20px]`, `bg-[var(--color-surface)]` — because each one opts a view out of the host. Snap to the scale, or add a token to the theme if the scale is genuinely missing something. Arbitrary values that are _structural_ are fine, since they have no namespace to live in: `grid-cols-[max-content_1fr]` is the intended way to write that.
 

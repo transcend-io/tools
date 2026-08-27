@@ -1,5 +1,32 @@
 # @transcend-io/mcp-server-consent
 
+## 0.9.1
+
+### Patch Changes
+
+- cef7025: Ignore Vite-built MCP App documents from the repo root instead of a per-package
+  gitignore.
+
+## 0.9.0
+
+### Minor Changes
+
+- 4c1b802: Add an MCP App view to `consent_get_inventory_stats` that renders cookie and
+  data-flow triage counts.
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/sdk@2.1.2
+
 ## 0.8.3
 
 ### Patch Changes
