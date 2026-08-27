@@ -74,3 +74,67 @@ jobs:
           publish: pnpm release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
+
+  # After a successful npm release (changeset-release/main merge or manual dispatch),
+  # push MCP tool counts to docs.transcend.io and publish the drafts.
+  # Soft-fail: docs sync must not mark the release workflow as failed.
+  sync-mcp-docs:
+    needs: publish
+    continue-on-error: true
+    runs-on: ubuntu-24.04-arm
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      SANITY_API_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && 'main' || github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Build MCP packages
+        run: pnpm exec turbo run build --filter="@transcend-io/mcp..."
+
+      - name: Regenerate MCP docs
+        run: pnpm --dir packages/mcp/mcp genfiles
+
+      - name: Sync and publish tool counts to Sanity
+        id: sync_sanity
+        run: pnpm --dir packages/mcp/mcp sync:sanity -- --publish
+
+      - name: Report docs sync result
+        if: always()
+        run: |
+          if [ "${{ steps.sync_sanity.outcome }}" = "success" ]; then
+            {
+              echo "MCP docs synced and published to Sanity."
+              echo ""
+              echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide"
+              echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-cursor-setup"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "::warning title=MCP docs sync failed::npm publish succeeded, but Sanity docs sync failed. Run the sync manually (see job summary)."
+
+          {
+            echo "## MCP docs sync failed (release still succeeded)"
+            echo ""
+            echo "Packages were published to npm. Tool counts on docs.transcend.io were **not** updated."
+            echo ""
+            echo "### Fix manually"
+            echo ""
+            echo '```bash'
+            echo 'export SANITY_API_TOKEN=...   # Editor token for project 1ievmmav'
+            echo 'pnpm --dir packages/mcp/mcp genfiles'
+            echo 'pnpm --dir packages/mcp/mcp sync:sanity -- --publish'
+            echo '```'
+            echo ""
+            echo "Or re-run **Actions → Sync MCP docs to Sanity** with \`publish=true\`."
+            echo ""
+            echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide"
+            echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-cursor-setup"
+          } >> "$GITHUB_STEP_SUMMARY"

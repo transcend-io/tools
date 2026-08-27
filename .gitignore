@@ -17,3 +17,6 @@ secret.env
 
 # Vite-built MCP App views, rebuilt by `pnpm prebuild` / `pnpm build:ui`.
 **/src/ui/generated/
+
+# MCP docs sync payload — generated on release / Sanity sync workflows, not committed.
+packages/mcp/mcp/docs/mcp-guide-sync.json
