@@ -193,6 +193,13 @@ export {
   resetOAuthClientState,
 } from './oauth/client-registry.js';
 export { ensureOAuthStartupReady } from './oauth/startup.js';
+export {
+  ALLOW_TEST_OVERRIDES_ENV,
+  MCP_SKIP_CONFIRMATION_ENV,
+  allowTestOverrides,
+  resolveTestOverride,
+  skipConfirmation,
+} from './oauth/env.js';
 export { OAuthCallbackError, parseOAuthCallbackQuery } from './oauth/parse-callback.js';
 export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
 export { refreshOAuthTokens } from './oauth/token-refresh.js';

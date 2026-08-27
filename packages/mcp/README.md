@@ -556,6 +556,7 @@ All servers share the same environment variables:
 | `TRANSCEND_HTTP_HOST`           | No                     | `127.0.0.1`                | HTTP listen host                                                                                                                                  |
 | `TRANSCEND_MCP_CORS_ORIGINS`    | No                     | —                          | Comma-separated allowed CORS origins                                                                                                              |
 | `TRANSCEND_MCP_SESSION_TTL_MS`  | No                     | `1800000`                  | Idle session timeout (ms)                                                                                                                         |
+| `MCP_SKIP_CONFIRMATION`         | No                     | —                          | When `1`, bypasses server confirmation gates for consequential tools. **Never set in production** — removes human approval before mutations run   |
 
 Two more exist for local view development only, both set automatically by `pnpm mcp:inspect`:
 
