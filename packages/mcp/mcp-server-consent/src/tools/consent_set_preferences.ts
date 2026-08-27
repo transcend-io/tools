@@ -21,6 +21,11 @@ export function createConsentSetPreferencesTool(clients: ToolClients) {
     description: 'Set consent preferences for a user (client-side sync)',
     category: 'Consent Management',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Syncs consent preferences for this identifier, overwriting the stored purpose ' +
+        'settings. Check partition, identifier, and purposes in the call arguments before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: SetPreferencesSchema,
