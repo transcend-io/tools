@@ -1,5 +1,28 @@
 # @transcend-io/mcp
 
+## 0.15.7
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+  - @transcend-io/mcp-server-consent@0.9.2
+  - @transcend-io/mcp-server-preferences@0.6.6
+  - @transcend-io/mcp-server-admin@0.6.6
+  - @transcend-io/mcp-server-assessment@0.5.26
+  - @transcend-io/mcp-server-discovery@0.5.26
+  - @transcend-io/mcp-server-docs@0.3.24
+  - @transcend-io/mcp-server-dsr@0.8.6
+  - @transcend-io/mcp-server-inventory@0.7.6
+  - @transcend-io/mcp-server-workflows@0.5.26
+
 ## 0.15.6
 
 ### Patch Changes
