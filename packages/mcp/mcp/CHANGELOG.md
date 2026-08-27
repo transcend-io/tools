@@ -1,5 +1,11 @@
 # @transcend-io/mcp
 
+## 0.15.8
+
+### Patch Changes
+
+- befa05d: Fix for linter
+
 ## 0.15.7
 
 ### Patch Changes
