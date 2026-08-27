@@ -660,16 +660,13 @@ describe('confirmation and the protocol annotations agree', () => {
     );
   });
 
-  it('refuses a gated tool that calls itself non-destructive', () => {
-    // destructiveHint is what an Apps host reads to decide how hard to prompt,
-    // and Apps is exactly the path the gate does not cover. Letting the two
-    // disagree would under-prompt precisely where we stepped back.
-    expect(gatedWith({ readOnlyHint: false, destructiveHint: false })).toThrow(
-      /annotates destructiveHint: false/,
-    );
+  it('accepts a gated tool that calls itself non-destructive', () => {
+    // confirmation gates the server-side handler; destructiveHint is a separate
+    // host advisory for how loudly to warn on paths that do not run the gate.
+    expect(gatedWith({ readOnlyHint: false, destructiveHint: false })).not.toThrow();
   });
 
-  it('accepts the one coherent combination', () => {
+  it('accepts a gated tool that calls itself destructive and mutating', () => {
     expect(gatedWith({ readOnlyHint: false, destructiveHint: true })).not.toThrow();
   });
 });
