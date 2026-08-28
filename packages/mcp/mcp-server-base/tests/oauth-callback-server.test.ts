@@ -25,6 +25,8 @@ function getAvailablePort(): Promise<number> {
 describe('startCallbackServer', () => {
   const originalRedirectPort = process.env.TRANSCEND_OAUTH_REDIRECT_PORT;
   const originalRedirectHost = process.env.TRANSCEND_OAUTH_REDIRECT_HOST;
+  // Stay clear of Cursor Myelin's published Docker ports (19001/19003/19004).
+  let nextPort = 51900;
 
   beforeEach(async () => {
     process.env.TRANSCEND_OAUTH_REDIRECT_PORT = String(await getAvailablePort());

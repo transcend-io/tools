@@ -22,6 +22,7 @@ import {
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { getRequestMcpCaller } from '../mcp-caller-context.js';
 import { mcpSessionContext } from '../mcp-session-context.js';
+import { skipConfirmation } from '../oauth/env.js';
 import { ensureLazyOAuthAuth, getLazyOAuthCredentials } from '../oauth/lazy-auth.js';
 import type { PromptDefinition } from '../prompts/types.js';
 import { toolCallContext } from '../tool-call-context.js';
@@ -178,6 +179,13 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
   }
 
   const gate = resolveConfirmationGate(options);
+
+  if (skipConfirmation()) {
+    logger.warn(
+      'MCP_SKIP_CONFIRMATION=1: server confirmation gates are disabled; consequential tools ' +
+        'will run without human approval',
+    );
+  }
 
   const gated = registered.filter((tool) => tool.confirmation).map((tool) => tool.name);
   if (gated.length > 0) {

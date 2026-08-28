@@ -18,6 +18,12 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
     description: 'Batch upsert consent preference records for multiple users',
     category: 'Preference Management',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Records or overwrites stored consent preferences for these identifiers. Purpose ' +
+        'settings take effect for compliance and downstream systems. Check partition, ' +
+        'identifiers, and purpose values in the call arguments before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: UpsertPreferencesSchema,

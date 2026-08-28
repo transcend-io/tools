@@ -15,6 +15,12 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
     description: 'Append additional identifiers to existing user preference records',
     category: 'Preference Management',
     readOnly: false,
+    confirmation: {
+      hint:
+        'Links additional identifiers to an existing preference record, widening how that ' +
+        "user's consent can be looked up. Check userId and identifiers in the call " +
+        'arguments before agreeing.',
+    },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     requireSombra: true,
     zodSchema: AppendIdentifiersSchema,
