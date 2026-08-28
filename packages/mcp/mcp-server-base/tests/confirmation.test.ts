@@ -18,6 +18,7 @@ import {
   type ClientCapabilityReport,
 } from '../src/capabilities/types.js';
 import { mcpSessionContext, type McpSession } from '../src/mcp-session-context.js';
+import { MCP_SKIP_CONFIRMATION_ENV } from '../src/oauth/env.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import { ApprovalTokenStore } from '../src/tools/approval-tokens.js';
 import {
@@ -977,6 +978,68 @@ describe('the gate against a real SDK server', () => {
 
     expect(mutate).not.toHaveBeenCalled();
     await client.close();
+  });
+});
+
+describe('MCP_SKIP_CONFIRMATION', () => {
+  const originalSkip = process.env[MCP_SKIP_CONFIRMATION_ENV];
+
+  afterEach(() => {
+    if (originalSkip === undefined) delete process.env[MCP_SKIP_CONFIRMATION_ENV];
+    else process.env[MCP_SKIP_CONFIRMATION_ENV] = originalSkip;
+  });
+
+  it('returns the gated tool unchanged when skip is enabled', () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const mutate = vi.fn();
+    const tool = gatedTool(mutate);
+    expect(withConfirmation(tool, askOrToken())).toBe(tool);
+  });
+
+  it('runs the handler immediately when skip is enabled', async () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const mutate = vi.fn(async () => ({ ok: true }));
+    const gated = withConfirmation(gatedTool(mutate), askOrToken());
+    const result = await gated.handler({ requestId: 'req-1' });
+    expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it('does not widen the schema with approvalToken when skip is enabled', () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const gated = withConfirmation(gatedTool(vi.fn()), askOrToken());
+    expect(gated.zodSchema.parse({ requestId: 'r', approvalToken: 'x' })).toEqual({
+      requestId: 'r',
+    });
+  });
+
+  it('still gates when skip is unset', async () => {
+    delete process.env[MCP_SKIP_CONFIRMATION_ENV];
+    const { mutate, elicitInput } = await callAs({
+      capabilities: [McpClientCapability.Elicitation],
+      answer: { action: 'cancel', content: {} },
+    });
+    expect(elicitInput).toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('still gates when skip is not exactly 1', async () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '0';
+    const { mutate, elicitInput } = await callAs({
+      capabilities: [McpClientCapability.Elicitation],
+      answer: { action: 'accept', content: {} },
+    });
+    expect(elicitInput).toHaveBeenCalled();
+    expect(mutate).toHaveBeenCalled();
+  });
+
+  it('expandToolsForClient leaves handlers unwrapped when skip is enabled', async () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const mutate = vi.fn(async () => ({ ok: true }));
+    const client = { capabilities: new Set<McpClientCapability>(), host: McpHostClient.Claude };
+    const [expanded] = expandToolsForClient([gatedTool(mutate)], client, askOrToken());
+    await expanded.handler({ requestId: 'req-1' });
+    expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
   });
 });
 

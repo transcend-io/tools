@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { McpClientCapability, type ClientCapabilityReport } from '../capabilities/types.js';
 import { SimpleLogger } from '../clients/graphql/base.js';
 import { getMcpSession, hasCapability, requestElicitation } from '../mcp-session-context.js';
+import { skipConfirmation } from '../oauth/env.js';
 import { ApprovalTokenOutcome, ApprovalTokenStore } from './approval-tokens.js';
 import { describeArgs, type ConfirmationSummary } from './describe-args.js';
 import { createToolResult } from './helpers.js';
@@ -167,6 +168,7 @@ export function withConfirmation(
   gate: ConfirmationGate,
 ): ToolDefinition {
   if (!tool.confirmation) return tool;
+  if (skipConfirmation()) return tool;
 
   const mutate = tool.handler;
   const message = tool.confirmation.hint;
