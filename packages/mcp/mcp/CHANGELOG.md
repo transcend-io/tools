@@ -1,5 +1,25 @@
 # @transcend-io/mcp
 
+## 0.15.9
+
+### Patch Changes
+
+- 423a25b: Load real HTML in the docgen asset stub so MCP App views work with `defineUiResource` instead of being stubbed as empty strings.
+- 5b97f8e: Add `MCP_SKIP_CONFIRMATION=1` to bypass server confirmation gates for local
+  automation and accept-path testing. Gated tools still declare `confirmation`
+  metadata; only runtime enforcement is skipped.
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+  - @transcend-io/mcp-server-admin@0.6.7
+  - @transcend-io/mcp-server-assessment@0.5.27
+  - @transcend-io/mcp-server-consent@0.9.3
+  - @transcend-io/mcp-server-discovery@0.5.27
+  - @transcend-io/mcp-server-docs@0.3.25
+  - @transcend-io/mcp-server-dsr@0.8.7
+  - @transcend-io/mcp-server-inventory@0.7.7
+  - @transcend-io/mcp-server-preferences@0.6.7
+  - @transcend-io/mcp-server-workflows@0.5.27
+
 ## 0.15.8
 
 ### Patch Changes
