@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-inventory
 
+## 0.7.7
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
 ## 0.7.6
 
 ### Patch Changes

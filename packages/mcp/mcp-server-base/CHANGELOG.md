@@ -1,5 +1,13 @@
 # @transcend-io/mcp-server-base
 
+## 1.7.4
+
+### Patch Changes
+
+- 5b97f8e: Add `MCP_SKIP_CONFIRMATION=1` to bypass server confirmation gates for local
+  automation and accept-path testing. Gated tools still declare `confirmation`
+  metadata; only runtime enforcement is skipped.
+
 ## 1.7.3
 
 ### Patch Changes
