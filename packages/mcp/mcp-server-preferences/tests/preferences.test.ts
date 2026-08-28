@@ -1,8 +1,10 @@
+import { FETCH_CONSENT_MANAGER, CONSENT_PARTITIONS } from '@transcend-io/sdk';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { getPreferenceTools } from '../src/tools.js';
 
 const EXPECTED_TOOL_NAMES = [
+  'preferences_list_partitions',
   'preferences_query',
   'preferences_upsert',
   'preferences_delete',
@@ -20,6 +22,9 @@ describe('Preferences Tools', () => {
     updateIdentifiers: ReturnType<typeof vi.fn>;
     deleteIdentifiers: ReturnType<typeof vi.fn>;
   };
+  let mockGraphql: {
+    makeRequest: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     mockRest = {
@@ -30,19 +35,157 @@ describe('Preferences Tools', () => {
       updateIdentifiers: vi.fn(),
       deleteIdentifiers: vi.fn(),
     };
+    mockGraphql = {
+      makeRequest: vi.fn(),
+    };
   });
 
   const getTools = () =>
     getPreferenceTools({
       rest: mockRest as never,
-      graphql: {} as never,
+      graphql: mockGraphql as never,
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 6 tools with expected names', () => {
+  it('registers exactly 7 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(6);
+    expect(tools).toHaveLength(7);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
+  });
+
+  describe('preferences_list_partitions', () => {
+    it('returns default + custom partitions with effective flag using path key', async () => {
+      const bundleId = 'bundle-uuid-1111';
+      const customPath = 'custom-slug-abc';
+      const customDbId = 'airgap-partition-db-id';
+
+      mockGraphql.makeRequest.mockImplementation(async (query: unknown) => {
+        if (query === FETCH_CONSENT_MANAGER) {
+          return {
+            consentManager: {
+              consentManager: {
+                id: bundleId,
+                partition: { partition: customPath },
+              },
+            },
+          };
+        }
+        if (query === CONSENT_PARTITIONS) {
+          return {
+            consentPartitions: {
+              nodes: [{ id: customDbId, name: 'EU Store', partition: customPath }],
+            },
+          };
+        }
+        throw new Error(`Unexpected query: ${String(query)}`);
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_list_partitions')!;
+      const result = (await tool.handler({})) as {
+        success: boolean;
+        data: {
+          effectivePartition: string;
+          partitions: Array<{
+            partition: string;
+            name: string;
+            type: string;
+            isEffectiveForConsentManager: boolean;
+            airgapPartitionId?: string;
+          }>;
+        };
+      };
+
+      expect(result.success).toBe(true);
+      expect(result.data.effectivePartition).toBe(customPath);
+      expect(result.data.partitions).toEqual([
+        {
+          partition: bundleId,
+          name: 'Default (airgap bundle)',
+          type: 'default',
+          isEffectiveForConsentManager: false,
+        },
+        {
+          partition: customPath,
+          name: 'EU Store',
+          type: 'custom',
+          isEffectiveForConsentManager: true,
+          airgapPartitionId: customDbId,
+        },
+      ]);
+      expect(result.data.partitions[1].partition).not.toBe(customDbId);
+      expect(mockGraphql.makeRequest).toHaveBeenCalledWith(FETCH_CONSENT_MANAGER, {});
+      expect(mockGraphql.makeRequest).toHaveBeenCalledWith(CONSENT_PARTITIONS, {
+        first: 50,
+        offset: 0,
+      });
+    });
+
+    it('marks default as effective when no custom partition is linked', async () => {
+      const bundleId = 'bundle-uuid-2222';
+
+      mockGraphql.makeRequest.mockImplementation(async (query: unknown) => {
+        if (query === FETCH_CONSENT_MANAGER) {
+          return {
+            consentManager: {
+              consentManager: {
+                id: bundleId,
+              },
+            },
+          };
+        }
+        if (query === CONSENT_PARTITIONS) {
+          return { consentPartitions: { nodes: [] } };
+        }
+        throw new Error(`Unexpected query: ${String(query)}`);
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_list_partitions')!;
+      const result = (await tool.handler({})) as {
+        data: {
+          effectivePartition: string;
+          partitions: Array<{ type: string; isEffectiveForConsentManager: boolean }>;
+        };
+      };
+
+      expect(result.data.effectivePartition).toBe(bundleId);
+      expect(result.data.partitions).toHaveLength(1);
+      expect(result.data.partitions[0]).toMatchObject({
+        type: 'default',
+        isEffectiveForConsentManager: true,
+      });
+    });
+
+    it('deduplicates custom rows whose path equals the bundle id', async () => {
+      const bundleId = 'bundle-uuid-3333';
+
+      mockGraphql.makeRequest.mockImplementation(async (query: unknown) => {
+        if (query === FETCH_CONSENT_MANAGER) {
+          return {
+            consentManager: {
+              consentManager: { id: bundleId },
+            },
+          };
+        }
+        if (query === CONSENT_PARTITIONS) {
+          return {
+            consentPartitions: {
+              nodes: [{ id: 'dup-id', name: 'Dup', partition: bundleId }],
+            },
+          };
+        }
+        throw new Error(`Unexpected query: ${String(query)}`);
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_list_partitions')!;
+      const result = (await tool.handler({})) as {
+        data: { partitions: unknown[] };
+      };
+
+      expect(result.data.partitions).toHaveLength(1);
+    });
   });
 
   describe('preferences_query', () => {

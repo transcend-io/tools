@@ -4,4 +4,5 @@ import { ScopeName } from '@transcend-io/privacy-types';
 export const PREFERENCE_OAUTH_SCOPES = [
   ScopeName.ViewManagedConsentDatabaseAdminApi,
   ScopeName.ManageStoredPreferences,
+  ScopeName.ViewConsentManager,
 ] as const;

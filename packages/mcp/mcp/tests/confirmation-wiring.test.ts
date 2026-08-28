@@ -42,6 +42,10 @@ function umbrellaTools(): ToolDefinition[] {
 
 /** Minimal valid args so widened schemas can be parsed with an approval token. */
 const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
+  consent_set_preferences: {
+    partition: 'default',
+    purposes: [{ purpose: 'Advertising', enabled: true }],
+  },
   dsr_cancel: { requestId: 'req-1' },
   dsr_submit: {
     workflowConfigId: '00000000-0000-4000-8000-000000000001',
@@ -50,6 +54,16 @@ const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
   dsr_enrich_identifiers: {
     nonce: 'nonce',
     identifiers: { email: 'a@example.com' },
+  },
+  preferences_append_identifiers: {
+    partition: 'default',
+    records: [
+      {
+        anchorIdentifier: { name: 'email', value: 'a@example.com' },
+        append: { name: 'phone', value: '+15555555555' },
+        timestamp: '2020-01-01T00:00:00.000Z',
+      },
+    ],
   },
   preferences_delete: {
     partition: 'default',
@@ -77,6 +91,15 @@ const MINIMAL_GATED_TOOL_ARGS: Record<string, Record<string, unknown>> = {
         anchorIdentifier: { name: 'email', value: 'a@example.com' },
         update: { name: 'email', oldValue: 'a@example.com', newValue: 'b@example.com' },
         timestamp: '2020-01-01T00:00:00.000Z',
+      },
+    ],
+  },
+  preferences_upsert: {
+    records: [
+      {
+        partition: 'default',
+        timestamp: '2020-01-01T00:00:00.000Z',
+        purposes: [{ purpose: 'Advertising', consent: true }],
       },
     ],
   },

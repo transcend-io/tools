@@ -1,9 +1,9 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-import { UpdateRecordSchema } from './preference-schemas.js';
+import { UpdateRecordSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export const UpdateIdentifiersSchema = z.object({
-  partition: z.string().describe('Preference store partition key'),
+  partition: z.string().describe(PARTITION_DESCRIBE),
   records: z.array(UpdateRecordSchema).min(1).describe('Identifier update operations to perform'),
 });
 export type UpdateIdentifiersInput = z.infer<typeof UpdateIdentifiersSchema>;

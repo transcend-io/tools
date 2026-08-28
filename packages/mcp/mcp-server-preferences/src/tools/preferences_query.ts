@@ -1,12 +1,12 @@
 import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-import { IdentifierSchema } from './preference-schemas.js';
+import { IdentifierSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export { IdentifierSchema };
 export type { IdentifierInput } from './preference-schemas.js';
 
 export const QueryPreferencesSchema = z.object({
-  partition: z.string().describe('Preference store partition key'),
+  partition: z.string().describe(PARTITION_DESCRIBE),
   identifiers: z.array(IdentifierSchema).describe('Identifiers to query'),
   limit: z
     .number()

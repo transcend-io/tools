@@ -1,5 +1,11 @@
 import { z } from '@transcend-io/mcp-server-base';
 
+/** Shared describe for Preference Store `partition` inputs on preferences_* tools */
+export const PARTITION_DESCRIBE =
+  'Preference Store partition key for the Sombra path. Call preferences_list_partitions first; ' +
+  'use the returned partition string (bundle UUID or custom slug), not the organization id. ' +
+  'Prefer the row with isEffectiveForConsentManager unless the user named another partition.';
+
 export const IdentifierSchema = z.object({
   name: z.string().describe('Identifier name (e.g. email, phone)'),
   value: z.string().describe('Identifier value'),
@@ -37,7 +43,7 @@ export const UpsertPurposeSchema = z.object({
 });
 
 export const UpsertRecordSchema = z.object({
-  partition: z.string().describe('Preference store partition key'),
+  partition: z.string().describe(PARTITION_DESCRIBE),
   timestamp: z.string().describe('ISO 8601 timestamp for the consent update'),
   confirmed: z.boolean().optional().describe('Whether consent was explicitly confirmed'),
   identifiers: z.array(IdentifierSchema).optional().describe('User identifiers'),

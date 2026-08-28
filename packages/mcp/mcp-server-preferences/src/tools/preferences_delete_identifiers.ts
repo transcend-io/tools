@@ -1,9 +1,9 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-import { DeleteIdentifierRecordSchema } from './preference-schemas.js';
+import { DeleteIdentifierRecordSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export const DeleteIdentifiersSchema = z.object({
-  partition: z.string().describe('Preference store partition key'),
+  partition: z.string().describe(PARTITION_DESCRIBE),
   records: z
     .array(DeleteIdentifierRecordSchema)
     .min(1)

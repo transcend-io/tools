@@ -1,9 +1,9 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-import { AppendRecordSchema } from './preference-schemas.js';
+import { AppendRecordSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export const AppendIdentifiersSchema = z.object({
-  partition: z.string().describe('Preference store partition key'),
+  partition: z.string().describe(PARTITION_DESCRIBE),
   records: z.array(AppendRecordSchema).min(1).describe('Identifier append operations to perform'),
 });
 export type AppendIdentifiersInput = z.infer<typeof AppendIdentifiersSchema>;
