@@ -29,6 +29,14 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
     ),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
+  trackingPurposes: z
+    .array(z.string())
+    .min(1)
+    .optional()
+    .describe(
+      'Filter to cookies assigned any of these tracking purpose slugs ' +
+        '(e.g. ["Advertising", "Analytics"]). Use consent_list_purposes for valid slugs.',
+    ),
   minOccurrences: z
     .number()
     .min(0)
@@ -37,8 +45,15 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
   orderField: z
     .nativeEnum(CookieOrderField)
     .optional()
-    .describe('Field to sort by (e.g. occurrences to rank by traffic)'),
-  orderDirection: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
+    .describe(
+      'Optional sort field. Omit for consent_cookie_triage_review_app fetches (the app sorts by occurrences).',
+    ),
+  orderDirection: z
+    .nativeEnum(OrderDirection)
+    .optional()
+    .describe(
+      'Optional sort direction when orderField is set. Omit for cookie triage app fetches.',
+    ),
 });
 export type ListCookiesInput = z.infer<typeof ListCookiesSchema>;
 
@@ -49,8 +64,12 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       'List cookies in your consent manager. ' +
       'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved cookies. ' +
       'Returns name, service, tracking purposes, activity (occurrences), junk status, and more. ' +
-      'Sort by occurrences (orderField=occurrences, orderDirection=DESC) to surface ' +
-      'top-traffic cookies, and use minOccurrences to filter low-traffic noise.',
+      'Filter with trackingPurposes (purpose slugs from consent_list_purposes). ' +
+      'Optional orderField/orderDirection (e.g. occurrences DESC) and minOccurrences for ad-hoc listing. ' +
+      'For consent_cookie_triage_review_app: fetch with status NEEDS_REVIEW and first: 100 (paginate via offset); ' +
+      'omit orderField/orderDirection and do not split by purpose — project each row to slim fields ' +
+      '(name, id, service.title, trackingPurposes, occurrences, lastDiscoveredAt) before classifying; ' +
+      'the app groups and sorts the flat list.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -63,6 +82,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       showZeroActivity,
       text,
       service,
+      trackingPurposes,
       minOccurrences,
       orderField,
       orderDirection,
@@ -78,6 +98,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
           ...(showZeroActivity !== undefined ? { showZeroActivity } : {}),
           ...(text ? { text } : {}),
           ...(service ? { service } : {}),
+          ...(trackingPurposes ? { trackingPurposes } : {}),
           ...(minOccurrences !== undefined ? { minOccurrences } : {}),
         },
         ...(orderField && orderDirection

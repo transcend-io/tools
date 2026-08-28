@@ -1,6 +1,12 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../../tsconfig.ui.base.json",
-  "include": ["src/ui/**/*.ts", "src/ui/**/*.tsx"],
+  "include": [
+    "src/ui/**/*.ts",
+    "src/ui/**/*.tsx",
+    "src/lib/cookieTriageTypes.ts",
+    "src/lib/groupCookiesForTriage.ts",
+    "src/lib/resolvePrimaryCookiePurpose.ts"
+  ],
   "exclude": ["src/ui/generated/**"]
 }

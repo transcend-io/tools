@@ -53,3 +53,20 @@ export {
   BulkTriageSchema,
   type BulkTriageInput,
 } from './tools/consent_bulk_triage.js';
+export { CookieTriageAnalysisSchema, CookieTriageAppSchema } from './tools/cookie_triage_app.js';
+export {
+  type CookieTriageAnalysis,
+  type CookieTriageAppInput,
+  type CookieTriageAppPayload,
+  type CookieTriageCategoryPayload,
+  type CookieTriageSuggestion,
+} from './lib/cookieTriageTypes.js';
+export {
+  COOKIE_TRIAGE_MAX_PER_PURPOSE,
+  compareCookiesByOccurrencesDesc,
+  groupCookiesForTriage,
+} from './lib/groupCookiesForTriage.js';
+export {
+  resolvePrimaryCookiePurpose,
+  type CookieTriagePurposeCategory,
+} from './lib/resolvePrimaryCookiePurpose.js';

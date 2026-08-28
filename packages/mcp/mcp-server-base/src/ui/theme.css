@@ -79,6 +79,19 @@
   --color-fill-warning: var(--background-warning-bold, #c98300);
   --color-fill-danger: var(--background-danger-bold, #bb0036);
   --color-fill-neutral: var(--background-neutral, #ebebef);
+  /* Dormant badge — warmer than fill-warning so it reads as a status chip */
+  --color-fill-dormant: var(--background-warning-bold, #ec9e00);
+
+  /*
+   * Consent purpose accent fills (cookie triage purpose badges). Fallbacks match
+   * Transcend accent tokens used in the Agentic Assist mockups.
+   */
+  --color-purpose-essential: var(--background-accent-lime-bold, #90b900);
+  --color-purpose-functional: var(--background-accent-yellow-bold, #ebcd0d);
+  --color-purpose-advertising: var(--background-accent-pink-bold, #e448b0);
+  --color-purpose-analytics: var(--background-accent-orange-bold, #e56200);
+  --color-purpose-sale: var(--background-accent-purple-bold, #9d11ff);
+  --color-purpose-other: var(--background-neutral-bold, #85838f);
 
   /*
    * Brand and status are Transcend's identity, so tokens lead here and the host

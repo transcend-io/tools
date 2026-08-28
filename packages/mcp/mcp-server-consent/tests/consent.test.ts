@@ -8,7 +8,9 @@ import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
 import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
+import { CookieTriageAppSchema } from '../src/tools/cookie_triage_app.js';
 import { getConsentTools } from '../src/tools/index.js';
+import cookieTriageHtml from '../src/ui/generated/cookie-triage.html';
 import inventoryStatsHtml from '../src/ui/generated/inventory-stats.html';
 
 const EXPECTED_TOOL_NAMES = [
@@ -20,6 +22,7 @@ const EXPECTED_TOOL_NAMES = [
   'consent_list_airgap_bundles',
   'consent_list_regimes',
   'consent_get_inventory_stats',
+  'consent_cookie_triage_review_app',
   'consent_get_aggregate_analytics',
   'consent_get_timeseries_analytics',
   'consent_get_analytics_data',
@@ -192,6 +195,82 @@ describe('Consent Tools', () => {
     });
   });
 
+  describe('consent_cookie_triage_review_app', () => {
+    const validInput = {
+      organizationName: 'Acme Corp',
+      cookies: [
+        {
+          name: '_ga',
+          trackingPurposes: ['Analytics'],
+          suggestion: 'approve' as const,
+          reason: 'Google Analytics first-party cookie used for session measurement.',
+          lastActivityAt: '2026-08-25T14:32:00.000Z',
+        },
+        {
+          name: '_unknown',
+          suggestion: 'review' as const,
+          reason: 'No vendor match found; needs manual review.',
+        },
+      ],
+    };
+
+    it('groups flat cookies by purpose and sets shownCount', async () => {
+      const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
+      const result = await tool.handler(validInput);
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          organizationName: 'Acme Corp',
+          categories: [
+            {
+              purpose: 'Analytics',
+              totalCount: 1,
+              shownCount: 1,
+              cookies: [
+                {
+                  name: '_ga',
+                  suggestion: 'approve',
+                  lastActivityAt: '2026-08-25T14:32:00.000Z',
+                },
+              ],
+            },
+            {
+              purpose: 'NoPurpose',
+              totalCount: 1,
+              shownCount: 1,
+              cookies: [{ name: '_unknown', suggestion: 'review' }],
+            },
+          ],
+        },
+      });
+    });
+
+    it('rejects more than 600 cookies', () => {
+      const cookies = Array.from({ length: 601 }, (_, index) => ({
+        name: `cookie-${index}`,
+        suggestion: 'review' as const,
+        reason: 'Needs review.',
+      }));
+
+      expect(
+        CookieTriageAppSchema.safeParse({
+          organizationName: 'Acme Corp',
+          cookies,
+        }).success,
+      ).toBe(false);
+    });
+
+    it('rejects an empty reason', () => {
+      expect(
+        CookieTriageAppSchema.safeParse({
+          organizationName: 'Acme Corp',
+          cookies: [{ name: '_sess', suggestion: 'approve', reason: '' }],
+        }).success,
+      ).toBe(false);
+    });
+  });
+
   describe('consent_list_cookies', () => {
     it('forwards orderBy when sorting by occurrences', async () => {
       mockGraphql.makeRequest.mockResolvedValueOnce({
@@ -212,10 +291,34 @@ describe('Consent Tools', () => {
       expect(variables.orderBy).toEqual([{ field: 'occurrences', direction: 'DESC' }]);
     });
 
+    it('forwards trackingPurposes into filterBy', async () => {
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        consentManager: { consentManager: { id: 'bundle-1' } },
+      });
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        cookies: { nodes: [], totalCount: 0 },
+      });
+      const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
+      await tool.handler(
+        tool.zodSchema.parse({
+          status: 'LIVE',
+          trackingPurposes: ['Advertising', 'Analytics'],
+        }),
+      );
+      const variables = mockGraphql.makeRequest.mock.calls[1][1];
+      expect(variables.filterBy.trackingPurposes).toEqual(['Advertising', 'Analytics']);
+    });
+
     it('zodSchema accepts occurrences as an orderField', () => {
       const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
       const result = tool.zodSchema.safeParse({ status: 'LIVE', orderField: 'occurrences' });
       expect(result.success).toBe(true);
+    });
+
+    it('zodSchema rejects empty trackingPurposes', () => {
+      const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
+      const result = tool.zodSchema.safeParse({ status: 'LIVE', trackingPurposes: [] });
+      expect(result.success).toBe(false);
     });
 
     it('defaults OffsetPaginationSchema first/offset and forwards first to GraphQL', async () => {
@@ -355,5 +458,14 @@ describe('inventory-stats MCP App document', () => {
     // had room to sit side by side.
     expect(inventoryStatsHtml).toContain('container-type:inline-size');
     expect(inventoryStatsHtml).toMatch(/@container \(width>=36rem\)\{[^{]*grid-cols-3\{/);
+  });
+});
+
+describe('cookie-triage MCP App document', () => {
+  it('includes cookie triage chrome and theme utilities', () => {
+    expect(cookieTriageHtml).toContain('Cookie triage');
+    expect(cookieTriageHtml).toContain('Connecting');
+    expect(cookieTriageHtml).toMatch(/\.max-w-view\{max-width:var\(--container-view\)}/);
+    expect(cookieTriageHtml).toContain('text-content-muted');
   });
 });
