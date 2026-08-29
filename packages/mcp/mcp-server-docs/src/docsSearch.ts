@@ -185,6 +185,11 @@ export async function searchDocs(
       // recall identical to 1 while cutting matches on a typical query from
       // ~417 to ~131.
       threshold: 0.3,
+      // Per-field score multipliers: a term matching in `title` counts four
+      // times as much as the same term in `body`. A title names what an article
+      // is about, so a match there is a far stronger signal of relevance than a
+      // passing mention in the prose. Slugs restate the title, and section names
+      // are too broad to mean much.
       boost: {
         title: 4,
         urlPath: 2,
