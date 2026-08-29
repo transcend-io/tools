@@ -54,22 +54,59 @@ describe('docs_list', () => {
     vi.restoreAllMocks();
   });
 
-  it('returns the full index when no filters are provided', async () => {
+  it('returns sections rather than every article when no filters are provided', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
 
     const tool = createDocsListTool();
     const result = (await tool.handler({})) as {
       success: boolean;
-      data: Array<{ title: string; section: string; url: string }>;
+      data: Array<{ section: string; articleCount: number }>;
       count: number;
+      paginationNote: string;
     };
 
     expect(result.success).toBe(true);
-    expect(result.count).toBe(3);
-    expect(result.data[0]?.title).toBe('DSR Automation');
+    expect(result.data).toEqual([
+      { section: 'General', articleCount: 2 },
+      { section: 'Use Case Guides', articleCount: 1 },
+    ]);
+    expect(result.paginationNote).toContain('section');
+    expect(result.paginationNote).toContain('3 articles');
   });
 
-  it('filters by section and keyword', async () => {
+  it('lists the articles in a section', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ section: 'General' })) as {
+      data: Array<{ title: string; section: string; url: string }>;
+      count: number;
+      totalCount: number;
+      paginationNote?: string;
+    };
+
+    expect(result.count).toBe(2);
+    expect(result.totalCount).toBe(2);
+    expect(result.data.map((entry) => entry.title)).toEqual([
+      'DSR Automation',
+      'Consent Management',
+    ]);
+    // Nothing was withheld, so there is no note to explain.
+    expect(result.paginationNote).toBeUndefined();
+  });
+
+  it('names the valid sections when the section does not exist', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
+
+    const tool = createDocsListTool();
+    await expect(tool.handler({ section: 'general' })).rejects.toThrow(
+      "Unknown section 'general'. Valid sections: General, Use Case Guides.",
+    );
+    // An inherited Object property is not a section.
+    await expect(tool.handler({ section: 'constructor' })).rejects.toThrow(/Unknown section/);
+  });
+
+  it('filters by section and query', async () => {
     mockDocsFetch({
       llmsTxt: fixtureLlmsTxt,
       bodies: {
@@ -83,7 +120,7 @@ describe('docs_list', () => {
     });
 
     const tool = createDocsListTool();
-    const result = (await tool.handler({ section: 'General', keyword: 'consent' })) as {
+    const result = (await tool.handler({ section: 'General', query: 'consent' })) as {
       success: boolean;
       data: Array<{ title: string }>;
       count: number;
@@ -91,6 +128,72 @@ describe('docs_list', () => {
 
     expect(result.count).toBe(1);
     expect(result.data[0]?.title).toBe('Consent Management');
+  });
+
+  it('refuses a blank query rather than quietly browsing instead', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
+
+    const tool = createDocsListTool();
+    await expect(tool.handler({ query: '   ' })).rejects.toThrow(/query was empty/);
+    await expect(tool.handler({ query: '' })).rejects.toThrow(/omit query/);
+  });
+
+  it('caps a large section and says what was withheld', async () => {
+    const titles = Array.from({ length: 60 }, (_, index) => `Guide ${index + 1}`);
+    const llmsTxt = [
+      '# Transcend',
+      '',
+      '## Use Case Guides',
+      ...titles.map(
+        (title, index) =>
+          `- [${title}](https://docs.transcend.io/docs/articles/guide-${index + 1}.md)`,
+      ),
+    ].join('\n');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(llmsTxt, { status: 200 }));
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ section: 'Use Case Guides' })) as {
+      count: number;
+      totalCount: number;
+      paginationNote: string;
+    };
+
+    expect(result.count).toBe(50);
+    expect(result.totalCount).toBe(60);
+    expect(result.paginationNote).toBe(
+      "Showing 50 of 60 articles in 'Use Case Guides'. There is no paging: add query to " +
+        'search within this section.',
+    );
+  });
+
+  it('tells the caller how to narrow when search matches exceed the page', async () => {
+    const urls = Array.from(
+      { length: 25 },
+      (_, index) => `https://docs.transcend.io/docs/articles/consent-${index + 1}.md`,
+    );
+    mockDocsFetch({
+      llmsTxt: [
+        '# Transcend',
+        '',
+        '## General',
+        ...urls.map((url, index) => `- [Consent Topic ${index + 1}](${url})`),
+      ].join('\n'),
+      bodies: Object.fromEntries(urls.map((url) => [url, '# Consent\n\nConsent banner setup.'])),
+    });
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ query: 'consent' })) as {
+      count: number;
+      totalCount: number;
+      paginationNote: string;
+    };
+
+    expect(result.count).toBe(20);
+    expect(result.totalCount).toBe(25);
+    expect(result.paginationNote).toBe(
+      'Showing the 20 highest-ranked of 25 matches. There is no paging: use more ' +
+        'distinctive terms to narrow the search.',
+    );
   });
 
   it('ranks body matches for session when the title does not contain the term', async () => {
@@ -106,7 +209,7 @@ describe('docs_list', () => {
     });
 
     const tool = createDocsListTool();
-    const result = (await tool.handler({ keyword: 'session' })) as {
+    const result = (await tool.handler({ query: 'session' })) as {
       success: boolean;
       data: Array<{ title: string; snippet: string }>;
       count: number;

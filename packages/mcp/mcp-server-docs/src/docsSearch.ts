@@ -5,7 +5,14 @@ import { getBody, getIndex, type DocEntry } from './docsIndex.js';
 
 const SEARCH_CACHE_KEY = 'search';
 const SEARCH_INDEX_TTL_MS = 24 * 60 * 60 * 1000;
-const SEARCH_LIMIT = 10;
+/**
+ * Results per search. On a labeled benchmark the targets that missed the top
+ * ten sat at a median rank of 16 and 19, so one page deeper takes hit@k from
+ * 87% to 95% on title terms and 88% to 95% on natural questions for about 434
+ * extra tokens. Almost nothing recoverable lives past rank 30; those queries
+ * need different terms, not more pages, which is why there is no offset.
+ */
+const SEARCH_LIMIT = 20;
 const HYDRATE_CONCURRENCY = 15;
 const SNIPPET_CHARS = 200;
 const SNIPPET_PREFIX = 40;
@@ -24,7 +31,7 @@ function createDocsDb() {
 
 type DocsOrama = ReturnType<typeof createDocsDb>;
 
-/** Ranked article hit returned by docs_list keyword search. */
+/** Ranked article hit returned by docs_list full-text search. */
 export interface DocsSearchHit {
   /** Human-readable article title. */
   title: string;
@@ -167,8 +174,17 @@ export async function searchDocs(
     search(db, {
       term,
       limit: SEARCH_LIMIT,
-      tolerance: 1,
-      threshold: 1,
+      // Exact tokens only. Fuzzy matching mostly added noise: on a labeled
+      // benchmark it cost accuracy on every query set, and a typo it "rescued"
+      // returned unrelated articles rather than the intended one. Returning
+      // nothing is a clearer signal to retry than returning the wrong thing.
+      tolerance: 0,
+      // Requiring every term (0) would break multi-word search outright, since
+      // few articles contain all of a caller's words; accepting any one term (1)
+      // matched the whole corpus and made totalCount meaningless. This keeps
+      // recall identical to 1 while cutting matches on a typical query from
+      // ~417 to ~131.
+      threshold: 0.3,
       boost: {
         title: 4,
         urlPath: 2,
