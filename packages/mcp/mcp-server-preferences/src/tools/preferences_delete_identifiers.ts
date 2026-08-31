@@ -20,7 +20,9 @@ export function createPreferencesDeleteIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'preferences_delete_identifiers',
-    description: 'Delete specific identifiers from user preference records',
+    description:
+      'Remove one identifier from a preference record, keeping the record and its remaining ' +
+      'identifiers. Use preferences_delete to remove the whole record.',
     category: 'Preference Management',
     readOnly: false,
     confirmation: {

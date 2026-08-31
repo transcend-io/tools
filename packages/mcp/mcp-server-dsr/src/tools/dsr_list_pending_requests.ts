@@ -25,13 +25,11 @@ export function createDsrListPendingRequestsTool(clients: ToolClients) {
   return defineTool({
     name: 'dsr_list_pending_requests',
     description:
-      'List pending DSR jobs for a data silo (GET /v1/data-silo/{id}/pending-requests/{ACCESS|ERASURE}). ' +
-      'Each item has a Sombra-signed nonce JWT — pass only that field as nonce to dsr_respond_access, ' +
-      'dsr_respond_erasure, or dsr_enrich_identifiers. Never invent a nonce or use encryptedCekContext ' +
-      'or other payload fields. Match by requestId; enrichment-stage nonces are invalid for later ' +
-      'fulfillment respond calls. Requires Sombra and an API key associated with the given data silo ' +
-      '(TRANSCEND_API_KEY; Admin → API Keys → linked Data Silos). OAuth-only is not enough. A 401 usually ' +
-      'means the key is missing/wrong or not associated with dataSiloId.',
+      'List outstanding ACCESS or ERASURE jobs waiting on one data silo (integration), oldest first. ' +
+      'Each item carries the requestId, the identifier to process, and the Sombra-signed nonce that ' +
+      'dsr_respond_access, dsr_respond_erasure, and dsr_enrich_identifiers require for that job. ' +
+      'Requires Sombra and a Transcend API key linked to this data silo; ' +
+      'OAuth-only auth returns 401.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

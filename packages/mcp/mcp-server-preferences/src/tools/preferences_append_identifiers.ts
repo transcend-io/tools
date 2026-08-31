@@ -17,7 +17,9 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'preferences_append_identifiers',
-    description: 'Append additional identifiers to existing user preference records',
+    description:
+      'Add another identifier that resolves to an existing preference record. ' +
+      'Leaves current identifiers and their consent history intact.',
     category: 'Preference Management',
     readOnly: false,
     confirmation: {

@@ -56,11 +56,11 @@ export function createPreferencesListPartitionsTool(clients: ToolClients) {
   return defineTool({
     name: 'preferences_list_partitions',
     description:
-      'List Preference Store partition keys for this organization. ' +
-      'Call this before preferences_query / preferences_upsert / other preferences_* tools. ' +
-      'Returns the default airgap-bundle partition and any custom partitions, plus ' +
-      "effectivePartition (the consent manager's current partition). " +
-      'Use partitions[].partition as the partition argument — not the organization id.',
+      'List Preference Store partition keys for this organization: the default airgap-bundle ' +
+      'partition plus any custom consent partitions. partitions[].partition is the string to pass ' +
+      'as `partition` on preferences_* tools — not the organization id. effectivePartition is the ' +
+      'partition the consent manager currently uses; prefer the row with isEffectiveForConsentManager ' +
+      'unless the user named another partition.',
     category: 'Preference Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

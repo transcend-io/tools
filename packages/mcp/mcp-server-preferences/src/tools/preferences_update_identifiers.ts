@@ -17,7 +17,9 @@ export function createPreferencesUpdateIdentifiersTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'preferences_update_identifiers',
-    description: 'Update existing identifiers for a user (e.g., when email changes)',
+    description:
+      'Rewrite an existing identifier value in place, moving its consent history onto the ' +
+      'new value. The old value stops resolving.',
     category: 'Preference Management',
     readOnly: false,
     confirmation: {

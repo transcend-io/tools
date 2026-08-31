@@ -433,7 +433,7 @@ describe('DSR Tools', () => {
       const tool = tools.find((t) => t.name === 'dsr_list_pending_requests')!;
 
       expect(tool.requireSombra).toBe(true);
-      expect(tool.description).toMatch(/API key associated with the given data silo/i);
+      expect(tool.description).toMatch(/API key linked to this data silo/i);
 
       const result = await tool.handler({
         dataSiloId: 'silo-1',
