@@ -999,6 +999,9 @@ importers:
       '@transcend-io/privacy-types':
         specifier: workspace:*
         version: link:../../privacy-types
+      '@transcend-io/utils':
+        specifier: workspace:*
+        version: link:../../utils
       fast-glob:
         specifier: ^3.2.12
         version: 3.3.3
