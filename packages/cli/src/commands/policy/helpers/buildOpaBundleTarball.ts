@@ -4,9 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { gunzipSync } from 'node:zlib';
 
+import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
 import fg from 'fast-glob';
 
-import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '../constants.js';
 import { assertOpaInstalled } from './assertOpaInstalled.js';
 import { runOPACapture } from './runOpa.js';
 
