@@ -1,5 +1,10 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
+import {
+  isPreferenceMutationSuccessful,
+  preferenceMutationFailureCount,
+  preferenceMutationToolResult,
+} from './mutation-success.js';
 import { AppendRecordSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export const AppendIdentifiersSchema = z.object({
@@ -27,11 +32,20 @@ export function createPreferencesAppendIdentifiersTool(clients: ToolClients) {
     handler: async ({ partition, records }) => {
       const result = await rest.appendIdentifiers(partition, records);
 
-      return createToolResult(true, {
-        ...result,
-        recordsProcessed: records.length,
-        message: 'Identifiers appended successfully',
-      });
+      const ok = isPreferenceMutationSuccessful(result);
+      const failureCount = preferenceMutationFailureCount(result);
+      return preferenceMutationToolResult(
+        createToolResult,
+        ok,
+        {
+          ...result,
+          recordsProcessed: records.length,
+          message: ok
+            ? 'Identifiers appended successfully'
+            : `Identifier append completed with ${failureCount} failure(s)`,
+        },
+        `Identifier append failed for ${failureCount} record(s)`,
+      );
     },
   });
 }

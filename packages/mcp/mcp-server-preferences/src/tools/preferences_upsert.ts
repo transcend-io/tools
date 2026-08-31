@@ -1,5 +1,10 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
+import {
+  isPreferenceMutationSuccessful,
+  preferenceMutationFailureCount,
+  preferenceMutationToolResult,
+} from './mutation-success.js';
 import { UpsertRecordSchema } from './preference-schemas.js';
 
 export const UpsertPreferencesSchema = z.object({
@@ -15,7 +20,9 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'preferences_upsert',
-    description: 'Batch upsert consent preference records for multiple users',
+    description:
+      'Batch upsert consent preference records for multiple users. Call preferences_list_partitions ' +
+      'first and pass purposes[].enabled (boolean) — Preference Store rejects a "consent" field.',
     category: 'Preference Management',
     readOnly: false,
     confirmation: {
@@ -33,11 +40,20 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
         skipWorkflowTriggers,
       });
 
-      return createToolResult(true, {
-        ...result,
-        recordsProcessed: records.length,
-        message: `Successfully upserted ${records.length} preference record(s)`,
-      });
+      const ok = isPreferenceMutationSuccessful(result);
+      const failureCount = preferenceMutationFailureCount(result);
+      return preferenceMutationToolResult(
+        createToolResult,
+        ok,
+        {
+          ...result,
+          recordsProcessed: records.length,
+          message: ok
+            ? `Successfully upserted ${records.length} preference record(s)`
+            : `Preference upsert completed with ${failureCount} failure(s)`,
+        },
+        `Preference upsert failed for ${failureCount} record(s)`,
+      );
     },
   });
 }

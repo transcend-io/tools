@@ -14,7 +14,8 @@ export function createDsrGetDetailsTool(clients: ToolClients) {
     name: 'dsr_get_details',
     description:
       'Get detailed information about a specific Data Subject Request, including assigned request ' +
-      'owners (individual assignees) and teams. For connected system status, failures, and system ' +
+      'owners (individual assignees), teams, and request enrichers (enricher.id for ' +
+      'dsr_enrich_identifiers without a nonce). For connected system status, failures, and system ' +
       'owners, use dsr_list_request_data_silos.',
     category: 'DSR Automation',
     readOnly: true,

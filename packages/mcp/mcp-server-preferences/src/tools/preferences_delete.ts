@@ -1,5 +1,10 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
+import {
+  isPreferenceMutationSuccessful,
+  preferenceMutationFailureCount,
+  preferenceMutationToolResult,
+} from './mutation-success.js';
 import { DeleteRecordSchema, PARTITION_DESCRIBE } from './preference-schemas.js';
 
 export const DeletePreferencesSchema = z.object({
@@ -27,11 +32,20 @@ export function createPreferencesDeleteTool(clients: ToolClients) {
     handler: async ({ partition, records }) => {
       const result = await rest.deletePreferences(partition, records);
 
-      return createToolResult(true, {
-        ...result,
-        recordsProcessed: records.length,
-        message: `Processed deletion for ${records.length} preference record(s)`,
-      });
+      const ok = isPreferenceMutationSuccessful(result);
+      const failureCount = preferenceMutationFailureCount(result);
+      return preferenceMutationToolResult(
+        createToolResult,
+        ok,
+        {
+          ...result,
+          recordsProcessed: records.length,
+          message: ok
+            ? `Processed deletion for ${records.length} preference record(s)`
+            : `Preference delete completed with ${failureCount} failure(s)`,
+        },
+        `Preference delete failed for ${failureCount} record(s)`,
+      );
     },
   });
 }

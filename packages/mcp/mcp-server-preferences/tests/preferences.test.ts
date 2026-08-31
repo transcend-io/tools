@@ -244,6 +244,29 @@ describe('Preferences Tools', () => {
   });
 
   describe('preferences_append_identifiers', () => {
+    it('reports failure when append returns failures', async () => {
+      mockRest.appendIdentifiers.mockResolvedValue({
+        records: [{ success: false, errorMessage: 'No consent record found' }],
+        failures: [{ index: 0, error: 'No consent record found' }],
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'preferences_append_identifiers')!;
+      const result = (await tool.handler({
+        partition: 'default',
+        records: [
+          {
+            anchorIdentifier: { name: 'email', value: 'user@example.com' },
+            append: { name: 'phone', value: '+14155550101' },
+            timestamp: '2024-01-15T10:30:00Z',
+          },
+        ],
+      })) as { success: boolean; error?: string };
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('failed');
+    });
+
     it('calls appendIdentifiers with records payload', async () => {
       mockRest.appendIdentifiers.mockResolvedValue({ records: [{ success: true }], failures: [] });
 

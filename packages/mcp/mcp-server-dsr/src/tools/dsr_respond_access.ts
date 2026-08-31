@@ -3,7 +3,10 @@ import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io
 export const respondAccessSchema = z.object({
   nonce: z
     .string()
-    .describe('JWT nonce from webhook header or pending-requests for this data silo job'),
+    .describe(
+      'Sombra-signed JWT from dsr_list_pending_requests item.nonce (or the job webhook ' +
+        'x-transcend-nonce header). Never invent a JWT; never pass encryptedCekContext.',
+    ),
   profiles: z
     .array(
       z.object({
@@ -22,7 +25,11 @@ export function createDsrRespondAccessTool(clients: ToolClients) {
   return defineTool({
     name: 'dsr_respond_access',
     description:
-      'Respond to an ACCESS request by uploading user data. Requires a nonce from the webhook or pending-requests.',
+      'Respond to an ACCESS fulfillment job by uploading user data. MCP flow: resolve dataSiloId ' +
+      '(e.g. dsr_list_request_data_silos) → dsr_list_pending_requests with requestType ACCESS → ' +
+      "match the pending item for this requestId → pass that item's nonce here. Do not reuse an " +
+      'enrichment-stage nonce for fulfillment. Requires Sombra. Listing pending jobs needs a ' +
+      'Transcend API key associated with that data silo (not OAuth-only).',
     category: 'DSR Automation',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },

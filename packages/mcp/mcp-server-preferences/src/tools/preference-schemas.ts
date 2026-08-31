@@ -8,7 +8,11 @@ export const PARTITION_DESCRIBE =
 
 export const IdentifierSchema = z.object({
   name: z.string().describe('Identifier name (e.g. email, phone)'),
-  value: z.string().describe('Identifier value'),
+  value: z
+    .string()
+    .describe(
+      'Identifier value. For name "phone", use E.164 (e.g. +14155550101), not national formats like +1-555-0101.',
+    ),
 });
 export type IdentifierInput = z.infer<typeof IdentifierSchema>;
 
@@ -36,9 +40,12 @@ export const DeleteIdentifierOptionsSchema = z
 
 export const UpsertPurposeSchema = z.object({
   purpose: z.string().describe('Purpose slug'),
-  consent: z
-    .union([z.boolean(), z.literal('NOTSET')])
-    .describe('Consent value (true, false, or NOTSET)'),
+  enabled: z
+    .boolean()
+    .describe(
+      'Whether the purpose is enabled (Preference Store PUT /v1/preferences field name). ' +
+        'Do not send "consent" — the API expects enabled: boolean.',
+    ),
   timestamp: z.string().optional().describe('ISO 8601 timestamp for this purpose'),
 });
 

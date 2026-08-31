@@ -91,6 +91,24 @@ export interface Request {
   teams?: InventoryTeamPreview[];
 }
 
+/** Nested enricher definition on a request-enricher job */
+export interface RequestEnricherEnricher {
+  /** Enricher UUID — pass as `enricherId` / `x-transcend-enricher-id` */
+  id: string;
+  /** Display title */
+  title: string;
+  /** Enricher type (e.g. SOMBRA, PERSON) */
+  type: string;
+}
+
+/** Enricher job attached to a privacy request (preflight / enrichment stage) */
+export interface RequestEnricherSummary {
+  /** Status of this enricher job on the request (e.g. ENRICHING, RESOLVED, ERROR) */
+  status: string;
+  /** Enricher definition; use `enricher.id` as `enricherId` for `dsr_enrich_identifiers` */
+  enricher: RequestEnricherEnricher;
+}
+
 export interface RequestDetails extends Request {
   dataSubjectType?: string;
   locale?: string;
@@ -99,6 +117,8 @@ export interface RequestDetails extends Request {
   requestIdentifiers?: RequestIdentifier[];
   requestDataSilos?: RequestDataSilo[];
   requestFiles?: RequestFile[];
+  /** Enricher jobs for this request (for discovering enricherId without a nonce) */
+  requestEnrichers?: RequestEnricherSummary[];
 }
 
 export interface RequestIdentifier {
@@ -304,8 +324,8 @@ export interface PreferenceUpsertRecord {
   purposes: {
     /** Purpose slug */
     purpose: string;
-    /** Consent value */
-    consent: ConsentValue;
+    /** Whether the purpose is enabled (Preference Store wire field) */
+    enabled: boolean;
     /** ISO 8601 timestamp for this purpose */
     timestamp?: string;
   }[];
@@ -379,6 +399,8 @@ export interface PreferenceDeleteIdentifierRecordInput {
 }
 
 export interface PreferenceIdentifiersResponse {
+  /** Overall success when the API includes it */
+  success?: boolean;
   /** Per-record operation results */
   records: {
     /** Whether the operation succeeded */
@@ -390,6 +412,19 @@ export interface PreferenceIdentifiersResponse {
   }[];
   /** Index-aligned failures */
   failures?: { index: number; error: string }[];
+  /** Schema / batch validation errors */
+  errors?: unknown[];
+}
+
+export interface PreferenceUpsertResponse {
+  /** Overall success flag from Preference Store */
+  success?: boolean;
+  /** Successfully written records */
+  nodes?: unknown[];
+  /** Index-aligned failures */
+  failures?: { index: number; error: string }[];
+  /** Schema / batch validation errors */
+  errors?: unknown[];
 }
 
 export interface AirgapBundle {
@@ -1057,10 +1092,12 @@ export interface LLMClassificationResult {
   classifications: {
     /** Predicted category label */
     category: string;
-    /** Confidence score */
+    /** Confidence score (0–1); derived from confidenceLabel when only ordinals are returned */
     confidence: number;
     /** Parent category when available */
     subcategory?: string;
+    /** Ordinal confidence from the classifier when present (HIGH / MEDIUM / LOW) */
+    confidenceLabel?: string;
   }[];
 }
 
@@ -1350,6 +1387,14 @@ export interface AssessmentPrefillInput {
 export interface Workflow {
   id: string;
   title: { defaultMessage: string };
+  /** Dashboard internal name when present */
+  internalName?: string;
+  /** Visibility of the workflow config (e.g. published vs draft) */
+  workflowConfigVisibility?: string;
+  /** DSR action type derived from the workflow (e.g. ACCESS, ERASURE) */
+  actionType?: string;
+  /** Data subject class for the workflow (e.g. customer, employee) */
+  subjectType?: string;
   type?: string;
   description?: string;
   isActive?: boolean;

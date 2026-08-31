@@ -26,6 +26,7 @@ import type {
   PreferenceQueryInput,
   PreferenceQueryResult,
   PreferenceUpsertInput,
+  PreferenceUpsertResponse,
   PreferenceDeleteRecordInput,
   PreferenceAppendIdentifierRecordInput,
   PreferenceUpdateIdentifierRecordInput,
@@ -460,10 +461,8 @@ export class TranscendRestClient {
     return { nodes: response.nodes || [], cursor: response.cursor };
   }
 
-  async upsertPreferences(
-    input: PreferenceUpsertInput,
-  ): Promise<{ success: boolean; nodes?: unknown[] }> {
-    return this.makeRequest<{ success: boolean; nodes?: unknown[] }>('/v1/preferences', {
+  async upsertPreferences(input: PreferenceUpsertInput): Promise<PreferenceUpsertResponse> {
+    return this.makeRequest<PreferenceUpsertResponse>('/v1/preferences', {
       method: 'PUT',
       body: JSON.stringify({
         records: input.records,
@@ -527,13 +526,6 @@ export class TranscendRestClient {
     }
   }
 
-  async syncConsent(preferences: UserPreferences): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>('/sync', {
-      method: 'POST',
-      body: JSON.stringify(preferences),
-    });
-  }
-
   async classifyText(input: LLMClassificationInput): Promise<LLMClassificationResult[]> {
     const payload: { inputList: string[]; labels: string[]; model_type?: string } = {
       inputList: input.texts,
@@ -544,19 +536,40 @@ export class TranscendRestClient {
     }
     const response = await this.makeRequest<{
       guesses: {
+        /** Documented Preference/LLM classifier label field */
+        type?: string;
+        /** Legacy / alternate label fields seen in some responses */
         name?: string;
         category?: string;
-        confidence: number;
+        /** Numeric confidence when the classifier returns one */
+        confidence?: number;
+        /** Documented ordinal confidence (HIGH / MEDIUM / LOW) */
+        confidenceLabel?: string;
       }[][];
     }>('/llm/classify-text', { method: 'POST', body: JSON.stringify(payload) });
 
     return (response.guesses ?? []).map((guesses, index) => ({
       text: input.texts[index] ?? '',
-      classifications: guesses.map((guess) => ({
-        category: guess.name || guess.category || '',
-        confidence: guess.confidence,
-        ...(guess.category && guess.name !== guess.category ? { subcategory: guess.category } : {}),
-      })),
+      classifications: guesses.map((guess) => {
+        const category = guess.type ?? guess.name ?? guess.category ?? '';
+        const confidenceLabel = guess.confidenceLabel;
+        const confidence =
+          typeof guess.confidence === 'number'
+            ? guess.confidence
+            : confidenceLabelToNumber(confidenceLabel);
+        const subcategory =
+          guess.category && guess.name && guess.name !== guess.category
+            ? guess.category
+            : guess.category && guess.type && guess.type !== guess.category
+              ? guess.category
+              : undefined;
+        return {
+          category,
+          confidence,
+          ...(subcategory ? { subcategory } : {}),
+          ...(confidenceLabel ? { confidenceLabel } : {}),
+        };
+      }),
     }));
   }
 
@@ -602,5 +615,19 @@ export class TranscendRestClient {
    */
   getBaseUrl(): string {
     return this.baseUrl ?? '';
+  }
+}
+
+/** Map documented ordinal confidence labels to a 0–1 score for agents. */
+function confidenceLabelToNumber(label: string | undefined): number {
+  switch (label?.toUpperCase()) {
+    case 'HIGH':
+      return 0.9;
+    case 'MEDIUM':
+      return 0.6;
+    case 'LOW':
+      return 0.3;
+    default:
+      return 0;
   }
 }

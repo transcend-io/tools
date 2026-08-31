@@ -247,7 +247,59 @@ describe('TranscendRestClient Sombra host and headers', () => {
     expect(body.input[0]).not.toHaveProperty('subjectType');
   });
 
-  it('classifyText maps guesses response and sends model_type', async () => {
+  it('classifyText maps documented type/confidenceLabel response and sends model_type', async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          guesses: [
+            [
+              {
+                type: 'Personal Identifier',
+                confidenceLabel: 'HIGH',
+                classifierVersion: 20000,
+                classificationMethod: 'TRANSCEND_LLM_CLASSIFY',
+              },
+            ],
+          ],
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        },
+      ),
+    );
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new TranscendRestClient(TEST_AUTH, {
+      baseUrl: 'https://sombra.example.com',
+    });
+    const results = await client.classifyText({
+      texts: ['a@b.com'],
+      categories: ['Personal Identifier'],
+      model: 'gpt-4',
+    });
+
+    expect(results).toEqual([
+      {
+        text: 'a@b.com',
+        classifications: [
+          {
+            category: 'Personal Identifier',
+            confidence: 0.9,
+            confidenceLabel: 'HIGH',
+          },
+        ],
+      },
+    ]);
+    const [, init] = mockFetch.mock.calls[0]!;
+    expect(JSON.parse(init.body)).toEqual({
+      inputList: ['a@b.com'],
+      labels: ['Personal Identifier'],
+      model_type: 'gpt-4',
+    });
+  });
+
+  it('classifyText still maps legacy name/category/confidence guesses', async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       new Response(
         JSON.stringify({
@@ -267,7 +319,6 @@ describe('TranscendRestClient Sombra host and headers', () => {
     const results = await client.classifyText({
       texts: ['a@b.com'],
       categories: ['EMAIL'],
-      model: 'gpt-4',
     });
 
     expect(results).toEqual([
@@ -276,12 +327,6 @@ describe('TranscendRestClient Sombra host and headers', () => {
         classifications: [{ category: 'EMAIL', confidence: 0.91, subcategory: 'Contact' }],
       },
     ]);
-    const [, init] = mockFetch.mock.calls[0]!;
-    expect(JSON.parse(init.body)).toEqual({
-      inputList: ['a@b.com'],
-      labels: ['EMAIL'],
-      model_type: 'gpt-4',
-    });
   });
 
   it('extractEntities maps guesses response to entities', async () => {

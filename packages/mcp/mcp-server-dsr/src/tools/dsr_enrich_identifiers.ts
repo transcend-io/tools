@@ -5,15 +5,24 @@ export const enrichIdentifiersSchema = z
     nonce: z
       .string()
       .optional()
-      .describe('JWT nonce from webhook header or pending-requests (preferred)'),
+      .describe(
+        'Preferred: Sombra-signed JWT from dsr_list_pending_requests item.nonce for the ' +
+          'enrichment stage (or webhook x-transcend-nonce). Never invent; never use encryptedCekContext.',
+      ),
     requestId: z
       .string()
       .optional()
-      .describe('Request ID for manual enrichment when nonce is unavailable'),
+      .describe(
+        'Alternate (no nonce): privacy request ID together with enricherId ' +
+          '(sent as x-transcend-request-id). Respond paths still need a real nonce.',
+      ),
     enricherId: z
       .string()
       .optional()
-      .describe('Enricher ID for manual enrichment when nonce is unavailable'),
+      .describe(
+        'Alternate (no nonce): enricher ID together with requestId ' +
+          '(sent as x-transcend-enricher-id). Discover via dsr_get_details → requestEnrichers[].enricher.id.',
+      ),
     identifiers: z
       .record(z.string(), z.string())
       .describe('Key-value pairs of identifier names and values to add'),
@@ -32,7 +41,11 @@ export function createDsrEnrichIdentifiersTool(clients: ToolClients) {
   return defineTool({
     name: 'dsr_enrich_identifiers',
     description:
-      'Enrich a Data Subject Request with additional identifiers during preflight processing. Requires a nonce from the webhook or pending-requests, or requestId + enricherId for manual enrichment.',
+      'Enrich a Data Subject Request with additional identifiers during preflight. Prefer a ' +
+      'nonce from dsr_list_pending_requests (enrichment stage) or the webhook. Alternate with no ' +
+      'nonce: pass requestId + enricherId (official enrich-only header path). Access/erasure ' +
+      'respond tools still require a real fulfillment nonce. Requires Sombra. Listing pending ' +
+      'jobs needs a Transcend API key associated with that data silo (not OAuth-only).',
     category: 'DSR Automation',
     readOnly: false,
     confirmation: {
