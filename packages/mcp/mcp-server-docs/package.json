@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
+    "@orama/orama": "catalog:",
     "@transcend-io/mcp-server-base": "workspace:*",
     "lru-cache": "catalog:",
     "zod": "catalog:"
