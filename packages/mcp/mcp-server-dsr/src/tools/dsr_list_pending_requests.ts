@@ -25,15 +25,13 @@ export function createDsrListPendingRequestsTool(clients: ToolClients) {
   return defineTool({
     name: 'dsr_list_pending_requests',
     description:
-      'List pending DSR jobs for a data silo (`GET /v1/data-silo/{id}/pending-requests/{ACCESS|ERASURE}`). ' +
-      'Each item includes a Sombra-signed `nonce` JWT — pass that field (and only that field) as `nonce` ' +
-      'to dsr_respond_access, dsr_respond_erasure, or dsr_enrich_identifiers. Never invent a nonce, and ' +
-      'never use encryptedCekContext or other payload fields as the nonce. Match the pending item to ' +
-      'your requestId; enrichment-stage nonces are not valid for later fulfillment respond calls. ' +
-      'Requires Sombra and a Transcend API key associated with the given data silo ' +
-      '(Admin → Developer → API Keys → linked Data Silos). OAuth-only sessions are not enough — ' +
-      'authenticate with TRANSCEND_API_KEY for a key linked to that silo. A 401 usually means the ' +
-      'key is missing/wrong or not associated with dataSiloId.',
+      'List pending DSR jobs for a data silo (GET /v1/data-silo/{id}/pending-requests/{ACCESS|ERASURE}). ' +
+      'Each item has a Sombra-signed nonce JWT — pass only that field as nonce to dsr_respond_access, ' +
+      'dsr_respond_erasure, or dsr_enrich_identifiers. Never invent a nonce or use encryptedCekContext ' +
+      'or other payload fields. Match by requestId; enrichment-stage nonces are invalid for later ' +
+      'fulfillment respond calls. Requires Sombra and a TRANSCEND_API_KEY linked to that data silo ' +
+      '(Admin → API Keys → linked Data Silos). OAuth-only is not enough. A 401 usually means the key ' +
+      'is missing/wrong or not associated with dataSiloId.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
