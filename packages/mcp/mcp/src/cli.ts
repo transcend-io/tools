@@ -44,7 +44,13 @@ function createToolRegistry(
     sombraUrl,
     sombraCustomerKey,
   });
-  return new ToolRegistry({ rest: restClient, graphql: graphqlClient, dashboardUrl });
+  return new ToolRegistry({
+    rest: restClient,
+    graphql: graphqlClient,
+    dashboardUrl,
+    transcendApiUrl: graphqlUrl,
+    auth,
+  });
 }
 
 async function main(): Promise<void> {

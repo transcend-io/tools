@@ -49,6 +49,7 @@
     "@transcend-io/mcp-server-docs": "workspace:*",
     "@transcend-io/mcp-server-dsr": "workspace:*",
     "@transcend-io/mcp-server-inventory": "workspace:*",
+    "@transcend-io/mcp-server-policy": "workspace:*",
     "@transcend-io/mcp-server-preferences": "workspace:*",
     "@transcend-io/mcp-server-workflows": "workspace:*",
     "zod": "catalog:"

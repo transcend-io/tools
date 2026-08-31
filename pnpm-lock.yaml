@@ -582,6 +582,9 @@ importers:
       '@transcend-io/mcp-server-inventory':
         specifier: workspace:*
         version: link:../mcp-server-inventory
+      '@transcend-io/mcp-server-policy':
+        specifier: workspace:*
+        version: link:../mcp-server-policy
       '@transcend-io/mcp-server-preferences':
         specifier: workspace:*
         version: link:../mcp-server-preferences
