@@ -1,3 +1,5 @@
+import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '@transcend-io/utils';
+
 /** Parsed JSON error body from a Policy Engine API response. */
 interface PolicyEngineErrorBody {
   /** Human-readable error message */
@@ -19,6 +21,14 @@ interface PolicyEngineHttpError {
   /** HTTP response metadata */
   response?: PolicyEngineHttpResponse;
 }
+
+const NETWORK_ERROR_HINTS = [
+  'network',
+  'timeout',
+  'econnrefused',
+  'enotfound',
+  'etimedout',
+] as const;
 
 /**
  * Extracts a human-readable message from a Policy Engine API error body.
@@ -55,6 +65,8 @@ function extractApiMessage(body: unknown): string | undefined {
  */
 function formatHttpStatusError(statusCode: number, apiMessage?: string): string {
   switch (statusCode) {
+    case 400:
+      return apiMessage ?? 'The request was invalid. Check your inputs and try again.';
     case 401:
       return 'Authentication failed (401). Verify your API key or OAuth token has Policy Engine scopes.';
     case 403:
@@ -64,14 +76,12 @@ function formatHttpStatusError(statusCode: number, apiMessage?: string): string 
         apiMessage ??
         'Policy bundle or version not found. Use policy_status to list bundles and versions.'
       );
-    case 400:
-      return apiMessage ?? 'The request was invalid. Check your inputs and try again.';
     case 409:
       return apiMessage ?? 'The request conflicted with the current policy bundle state.';
     case 413:
       return (
         apiMessage ??
-        'Policy bundle upload is too large (max 5 KiB compressed, 50 KiB decompressed).'
+        `Policy bundle upload is too large (max ${MAX_BUNDLE_COMPRESSED_BYTES / 1024} KiB compressed, ${MAX_BUNDLE_DECOMPRESSED_BYTES / 1024} KiB decompressed).`
       );
     case 429:
       return apiMessage ?? 'Rate limit exceeded (429). Wait and retry.';
@@ -105,13 +115,7 @@ function isNetworkError(error: unknown): boolean {
   }
 
   const message = error.message.toLowerCase();
-  return (
-    message.includes('network') ||
-    message.includes('timeout') ||
-    message.includes('econnrefused') ||
-    message.includes('enotfound') ||
-    message.includes('etimedout')
-  );
+  return NETWORK_ERROR_HINTS.some((hint) => message.includes(hint));
 }
 
 /**
