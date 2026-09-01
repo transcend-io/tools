@@ -7,6 +7,7 @@ import { createDsrEnrichIdentifiersTool } from './dsr_enrich_identifiers.js';
 import { createDsrGetDetailsTool } from './dsr_get_details.js';
 import { createDsrListTool } from './dsr_list.js';
 import { createDsrListIdentifiersTool } from './dsr_list_identifiers.js';
+import { createDsrListPendingRequestsTool } from './dsr_list_pending_requests.js';
 import { createDsrListRequestDataSilosTool } from './dsr_list_request_data_silos.js';
 import { createDsrPollStatusTool } from './dsr_poll_status.js';
 import { createDsrRespondAccessTool } from './dsr_respond_access.js';
@@ -22,6 +23,7 @@ export function getDSRTools(clients: ToolClients): ToolDefinition[] {
     createDsrDownloadKeysTool(clients),
     createDsrListIdentifiersTool(clients),
     createDsrListRequestDataSilosTool(clients),
+    createDsrListPendingRequestsTool(clients),
     createDsrEnrichIdentifiersTool(clients),
     createDsrRespondAccessTool(clients),
     createDsrRespondErasureTool(clients),

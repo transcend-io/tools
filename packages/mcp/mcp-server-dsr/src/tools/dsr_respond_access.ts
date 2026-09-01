@@ -1,12 +1,21 @@
 import { createToolResult, defineTool, type ToolClients, z } from '@transcend-io/mcp-server-base';
 
 export const respondAccessSchema = z.object({
-  requestId: z.string().describe('ID of the DSR'),
-  dataSiloId: z.string().describe('ID of the data silo responding'),
+  nonce: z
+    .string()
+    .describe(
+      'Sombra-signed JWT from dsr_list_pending_requests item.nonce (or the job webhook ' +
+        'x-transcend-nonce header). Never invent a JWT; never pass encryptedCekContext.',
+    ),
   profiles: z
-    .array(z.record(z.string(), z.unknown()))
+    .array(
+      z.object({
+        profileId: z.string().optional().describe('Profile identifier'),
+        profileData: z.record(z.string(), z.unknown()).optional().describe('Profile data payload'),
+      }),
+    )
     .optional()
-    .describe('Array of profile data objects to return'),
+    .describe('Profile data objects to return for the access request'),
 });
 export type RespondAccessInput = z.infer<typeof respondAccessSchema>;
 
@@ -15,17 +24,21 @@ export function createDsrRespondAccessTool(clients: ToolClients) {
 
   return defineTool({
     name: 'dsr_respond_access',
-    description: 'Respond to an ACCESS request by uploading user data',
+    description:
+      'Respond to an ACCESS fulfillment job by uploading user data. MCP flow: resolve dataSiloId ' +
+      '(e.g. dsr_list_request_data_silos) → dsr_list_pending_requests with requestType ACCESS → ' +
+      "match the pending item for this requestId → pass that item's nonce here. Do not reuse an " +
+      'enrichment-stage nonce for fulfillment. Requires Sombra. Listing pending jobs needs a ' +
+      'Transcend API key associated with that data silo (not OAuth-only).',
     category: 'DSR Automation',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     requireSombra: true,
     zodSchema: respondAccessSchema,
-    handler: async ({ requestId, dataSiloId, profiles }) => {
+    handler: async ({ nonce, profiles }) => {
       const result = await rest.respondToAccess({
-        requestId,
-        dataSiloId,
-        profiles: profiles as Record<string, unknown>[] | undefined,
+        nonce,
+        profiles,
       });
       return createToolResult(true, {
         ...result,

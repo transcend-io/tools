@@ -16,6 +16,7 @@ import {
   type AuthCredentials,
 } from '@transcend-io/mcp-server-base';
 import { getConsentPrompts } from '@transcend-io/mcp-server-consent';
+import { getDsrPrompts } from '@transcend-io/mcp-server-dsr';
 
 import packageJson from '../package.json' with { type: 'json' };
 import { TranscendGraphQLClient } from './graphql-client.js';
@@ -29,8 +30,8 @@ const buildServerOptions = {
   name: 'transcend-mcp',
   version: VERSION,
   instructions: UMBRELLA_DOCS_SERVER_INSTRUCTIONS,
-  prompts: getConsentPrompts(),
-} as const;
+  prompts: [...getConsentPrompts(), ...getDsrPrompts()],
+};
 
 function createToolRegistry(
   auth: AuthCredentials | null,

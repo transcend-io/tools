@@ -13,7 +13,6 @@ import inventoryStatsHtml from '../src/ui/generated/inventory-stats.html';
 
 const EXPECTED_TOOL_NAMES = [
   'consent_get_preferences',
-  'consent_set_preferences',
   'consent_list_purposes',
   'consent_list_data_flows',
   'consent_list_cookies',
