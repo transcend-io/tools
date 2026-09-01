@@ -1,5 +1,14 @@
 # @transcend-io/mcp-server-dsr
 
+## 0.8.8
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
 ## 0.8.7
 
 ### Patch Changes
