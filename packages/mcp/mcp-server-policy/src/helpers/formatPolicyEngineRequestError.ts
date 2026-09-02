@@ -149,6 +149,15 @@ export function formatPolicyEngineRequestError(error: unknown): string {
 }
 
 /**
+ * Rethrows a Policy Engine request failure with a user-readable message.
+ *
+ * @param error - The thrown error, typically a got `HTTPError`
+ */
+export function throwPolicyEngineRequestError(error: unknown): never {
+  throw new Error(formatPolicyEngineRequestError(error), { cause: error });
+}
+
+/**
  * Awaits a Policy Engine HTTP request and maps failures to user-readable errors.
  *
  * @param request - Promise returned by a got client call (e.g. `.json()`)
@@ -158,6 +167,6 @@ export async function policyEngineRequest<T>(request: Promise<T>): Promise<T> {
   try {
     return await request;
   } catch (error) {
-    throw new Error(formatPolicyEngineRequestError(error), { cause: error });
+    throwPolicyEngineRequestError(error);
   }
 }

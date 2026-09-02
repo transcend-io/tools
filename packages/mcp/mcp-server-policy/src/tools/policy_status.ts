@@ -13,7 +13,6 @@ import {
 } from '../helpers/policyCliOperations.js';
 import { createPolicyEngineClient, type PolicyToolClients } from '../helpers/policyContext.js';
 import { resolveBundle } from '../helpers/resolveBundle.js';
-import { resolvePolicyBundleVersion } from '../helpers/resolvePolicyBundleVersion.js';
 
 export const PolicyStatusSchema = OffsetPaginationSchema.extend({
   bundleId: z.string().uuid().optional().describe('Policy bundle UUID to inspect'),
@@ -47,8 +46,10 @@ export function createPolicyStatusTool(clients: PolicyToolClients) {
         const bundle = await resolveBundle(client, { bundleId, bundleName });
 
         if (versionId) {
-          const version = await resolvePolicyBundleVersion(client, bundle.id, { versionId });
-          const detail = await getPolicyBundleVersion(client, bundle.id, version.id);
+          const detail = await getPolicyBundleVersion(client, versionId);
+          if (detail.bundleName !== bundle.bundleName) {
+            throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
+          }
           return createToolResult(true, {
             bundle: {
               id: bundle.id,
@@ -57,7 +58,7 @@ export function createPolicyStatusTool(clients: PolicyToolClients) {
               lastActivatedAt: bundle.lastActivatedAt,
             },
             version: detail,
-            isActive: bundle.activeVersionId === version.id,
+            isActive: bundle.activeVersionId === versionId,
           });
         }
 

@@ -1,7 +1,15 @@
 import type { Got } from 'got';
 
-import { policyEngineRequest } from './formatPolicyEngineRequestError.js';
-import type { PolicyBundleVersion, PolicyBundleVersionListResponse } from './types.js';
+import {
+  policyEngineRequest,
+  throwPolicyEngineRequestError,
+} from './formatPolicyEngineRequestError.js';
+import type {
+  GetPolicyBundleVersionResponse,
+  PolicyBundle,
+  PolicyBundleVersion,
+  PolicyBundleVersionListResponse,
+} from './types.js';
 
 /** Options for resolving a policy bundle version. */
 export interface ResolvePolicyBundleVersionOptions {
@@ -12,57 +20,91 @@ export interface ResolvePolicyBundleVersionOptions {
 }
 
 /**
- * Lists all versions for a bundle, following cursor pagination.
+ * Maps a direct version-by-id API response to the canonical version record shape.
  *
- * @param client - Policy Engine REST client
- * @param bundleId - Parent bundle UUID
- * @returns All uploaded versions
+ * @param body - Version metadata from `GET /policy-bundle-versions/:versionId`
+ * @returns Version record used by MCP tools
  */
-async function listAllPolicyBundleVersions(
-  client: Got,
-  bundleId: string,
-): Promise<PolicyBundleVersion[]> {
-  const limit = 100;
-  const versions: PolicyBundleVersion[] = [];
-  let after: string | undefined;
-
-  while (true) {
-    const searchParams: Record<string, string | number> = { limit };
-    if (after) {
-      searchParams.after = after;
-    }
-
-    const body = await policyEngineRequest(
-      client
-        .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
-          searchParams,
-        })
-        .json<PolicyBundleVersionListResponse>(),
-    );
-
-    versions.push(...body.nodes);
-
-    if (!body.pageInfo.hasNextPage || !body.pageInfo.endCursor) {
-      break;
-    }
-    after = body.pageInfo.endCursor;
-  }
-
-  return versions;
+function mapGetPolicyBundleVersionResponse(
+  body: GetPolicyBundleVersionResponse,
+): PolicyBundleVersion {
+  return {
+    id: body.versionId,
+    version: body.version,
+    sha256: body.sha256,
+    sizeBytes: body.sizeBytes,
+    description: body.description,
+    createdBy: '',
+    activatedAt: body.activatedAt,
+    deactivatedAt: body.deactivatedAt,
+    createdAt: body.uploadedAt,
+    updatedAt: body.uploadedAt,
+  };
 }
 
 /**
- * Compares two version records by createdAt, newest first.
+ * Fetches a version scoped to a parent bundle via list filters.
  *
- * @param left - First version
- * @param right - Second version
- * @returns Sort order for descending createdAt
+ * @param client - Policy Engine REST client
+ * @param bundleId - Parent bundle UUID
+ * @param searchParams - List endpoint query parameters
+ * @returns First matching version on the page
  */
-function compareVersionsByCreatedAtDesc(
-  left: PolicyBundleVersion,
-  right: PolicyBundleVersion,
-): number {
-  return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+async function fetchPolicyBundleVersionPage(
+  client: Got,
+  bundleId: string,
+  searchParams: Record<string, string | number>,
+): Promise<PolicyBundleVersion | undefined> {
+  const body = await policyEngineRequest(
+    client
+      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions`, {
+        searchParams,
+      })
+      .json<PolicyBundleVersionListResponse>(),
+  );
+
+  return body.nodes[0];
+}
+
+/**
+ * Resolves a version by UUID and verifies it belongs to the given parent bundle.
+ *
+ * @param client - Policy Engine REST client
+ * @param bundleId - Parent bundle UUID
+ * @param versionId - Version UUID
+ * @returns Matching version record
+ */
+async function resolvePolicyBundleVersionById(
+  client: Got,
+  bundleId: string,
+  versionId: string,
+): Promise<PolicyBundleVersion> {
+  let body: GetPolicyBundleVersionResponse;
+  try {
+    body = await client
+      .get(`v1/policy-engine/policy-bundle-versions/${versionId}`)
+      .json<GetPolicyBundleVersionResponse>();
+  } catch (error) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'response' in error &&
+      (error as { response?: { statusCode?: number } }).response?.statusCode === 404
+    ) {
+      throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
+    }
+    throwPolicyEngineRequestError(error);
+  }
+
+  const bundle = await policyEngineRequest(
+    client.get(`v1/policy-engine/policy-bundles/${bundleId}`).json<PolicyBundle>(),
+  );
+
+  if (body.bundleName !== bundle.bundleName) {
+    throw new Error(`Version id "${versionId}" was not found for this policy bundle.`);
+  }
+
+  return mapGetPolicyBundleVersionResponse(body);
 }
 
 /**
@@ -80,27 +122,23 @@ export async function resolvePolicyBundleVersion(
   bundleId: string,
   options: ResolvePolicyBundleVersionOptions,
 ): Promise<PolicyBundleVersion> {
-  const versions = await listAllPolicyBundleVersions(client, bundleId);
+  if (options.versionId) {
+    return resolvePolicyBundleVersionById(client, bundleId, options.versionId);
+  }
 
-  if (versions.length === 0) {
+  const searchParams: Record<string, string | number> = { limit: 1 };
+  if (options.version) {
+    searchParams['filter[version]'] = options.version;
+  }
+
+  const match = await fetchPolicyBundleVersionPage(client, bundleId, searchParams);
+
+  if (!match) {
+    if (options.version) {
+      throw new Error(`Version "${options.version}" was not found for this policy bundle.`);
+    }
     throw new Error('No versions found for this policy bundle.');
   }
 
-  if (options.versionId) {
-    const match = versions.find((entry) => entry.id === options.versionId);
-    if (!match) {
-      throw new Error(`Version id "${options.versionId}" was not found for this policy bundle.`);
-    }
-    return match;
-  }
-
-  if (options.version) {
-    const match = versions.find((entry) => entry.version === options.version);
-    if (!match) {
-      throw new Error(`Version "${options.version}" was not found for this policy bundle.`);
-    }
-    return match;
-  }
-
-  return versions.sort(compareVersionsByCreatedAtDesc)[0]!;
+  return match;
 }
