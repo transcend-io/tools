@@ -98,10 +98,11 @@ export {
   CONFIRMATION_TIMEOUT_MS,
   ConfirmationCode,
   ConfirmationPolicy,
+  HUMAN_RESPONSE_FLOOR_MS,
   renderConfirmationPrompt,
   withConfirmation,
-} from './tools/confirmation.js';
-export type { ConfirmationGate } from './tools/confirmation.js';
+} from './tools/confirmation/index.js';
+export type { ConfirmationGate } from './tools/confirmation/index.js';
 
 export { APPROVAL_TOKEN_TTL_MS, ApprovalTokenStore } from './tools/approval-tokens.js';
 
