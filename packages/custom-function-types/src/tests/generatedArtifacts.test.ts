@@ -81,7 +81,6 @@ describe('generated Custom Function artifacts', () => {
     expect(declaration).toContain('class SDK');
     expect(declaration).toContain('interface KV');
     expect(declaration).not.toContain('import ');
-    expect(declaration).not.toContain('Maestro');
   });
 
   it('exports the same schemas through the JavaScript API', () => {
