@@ -18,6 +18,8 @@ export enum AttributeSupportedResourceType {
   AuditorSchedule = 'auditorSchedule',
   /** Business entity table */
   BusinessEntity = 'businessEntity',
+  /** Consent Manager domain records */
+  ConsentSite = 'consentSite',
   /** Categories table */
   DataSubCategory = 'dataSubCategory',
   /** Datapoint table */
