@@ -45,15 +45,11 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
   orderField: z
     .nativeEnum(CookieOrderField)
     .optional()
-    .describe(
-      'Optional sort field. Omit for consent_cookie_triage_review_app fetches (the app sorts by occurrences).',
-    ),
+    .describe('Sort field. Omit for consent_cookie_triage_review_app fetches.'),
   orderDirection: z
     .nativeEnum(OrderDirection)
     .optional()
-    .describe(
-      'Optional sort direction when orderField is set. Omit for cookie triage app fetches.',
-    ),
+    .describe('Sort direction when orderField is set. Omit for triage app fetches.'),
 });
 export type ListCookiesInput = z.infer<typeof ListCookiesSchema>;
 
@@ -62,14 +58,14 @@ export function createConsentListCookiesTool(clients: ToolClients) {
     name: 'consent_list_cookies',
     description:
       'List cookies in your consent manager. ' +
-      'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved cookies. ' +
-      'Returns name, service, tracking purposes, activity (occurrences), junk status, and more. ' +
-      'Filter with trackingPurposes (purpose slugs from consent_list_purposes). ' +
-      'Optional orderField/orderDirection (e.g. occurrences DESC) and minOccurrences for ad-hoc listing. ' +
-      'For consent_cookie_triage_review_app: fetch with status NEEDS_REVIEW and first: 100 (paginate via offset); ' +
-      'omit orderField/orderDirection and do not split by purpose — project each row to slim fields ' +
-      '(name, id, service.title, trackingPurposes, occurrences, lastDiscoveredAt) before classifying; ' +
-      'the app groups and sorts the flat list.',
+      'Requires status: NEEDS_REVIEW (triage) or LIVE (approved). ' +
+      'Returns name, service, tracking purposes, occurrences, junk status, and more. ' +
+      'Filter with trackingPurposes (slugs from consent_list_purposes). ' +
+      'Optional orderField/orderDirection and minOccurrences for ad-hoc listing. ' +
+      'For consent_cookie_triage_review_app: fetch NEEDS_REVIEW with first: 100 (paginate via offset); ' +
+      'omit order/purpose filters; project slim fields ' +
+      '(name, id, service.title, trackingPurposes, occurrences, lastDiscoveredAt) before classifying.',
+
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
