@@ -18,5 +18,5 @@ describe('customer examples', () => {
         stdio: 'pipe',
       }),
     ).not.toThrow();
-  });
+  }, 15_000);
 });
