@@ -2,16 +2,16 @@
 
 > **Beta** — this package is under active development. APIs may change without notice.
 
-Transcend MCP Server for Policy Engine (Seneca). Provides tools to author OPA Rego policies and inspect bundle versions. Publish / set-live tools land in a follow-up PR.
+Transcend MCP Server for Policy Engine. Provides tools to author OPA Rego policies and inspect bundle versions. Publish / set-live tools land in a follow-up PR.
 
 Requires **Node.js ≥ 22.12** (see `engines` in `package.json`).
 
 ## Tools
 
-| Tool            | Description                                                 |
-| --------------- | ----------------------------------------------------------- |
-| `policy_help`   | Authoring guide and embedded starter templates (no network) |
-| `policy_status` | List bundles, version history, presigned download URLs      |
+| Tool            | Description                                            |
+| --------------- | ------------------------------------------------------ |
+| `policy_help`   | Embedded starter templates for policy bundles (no network) |
+| `policy_status` | List bundles, version history, presigned download URLs |
 
 Operations mirror `transcend policy` CLI commands. Use a single credential with **Activate Policy** scope — it includes Manage and View.
 
