@@ -1,8 +1,12 @@
 import type { Got } from 'got';
 
-import { policyEngineRequest } from './formatPolicyEngineRequestError.js';
+import {
+  policyEngineRequest,
+  throwPolicyEngineRequestError,
+} from './formatPolicyEngineRequestError.js';
 import type {
   GetPolicyBundleVersionResponse,
+  PolicyBundle,
   PolicyBundleListResponse,
   PolicyBundleVersionListResponse,
 } from './types.js';
@@ -37,6 +41,32 @@ export async function listPolicyBundles(
 }
 
 /**
+ * Fetches a policy bundle parent record by UUID.
+ *
+ * @param client - Policy Engine REST client
+ * @param bundleId - Bundle UUID
+ * @returns Matching bundle when found
+ */
+export async function getPolicyBundleById(
+  client: Got,
+  bundleId: string,
+): Promise<PolicyBundle | undefined> {
+  try {
+    return await client.get(`v1/policy-engine/policy-bundles/${bundleId}`).json<PolicyBundle>();
+  } catch (error) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'response' in error &&
+      (error as { response?: { statusCode?: number } }).response?.statusCode === 404
+    ) {
+      return undefined;
+    }
+    throwPolicyEngineRequestError(error);
+  }
+}
+
+/**
  * Lists versions for a bundle (mirrors `transcend policy versions --json`).
  *
  * @param client - Policy Engine REST client
@@ -47,12 +77,15 @@ export async function listPolicyBundles(
 export async function listPolicyBundleVersions(
   client: Got,
   bundleId: string,
-  options: { limit?: number; after?: string } = {},
+  options: { limit?: number; after?: string; version?: string } = {},
 ): Promise<PolicyBundleVersionListResponse> {
   const limit = options.limit ?? 50;
   const searchParams: Record<string, string | number> = { limit };
   if (options.after) {
     searchParams.after = options.after;
+  }
+  if (options.version) {
+    searchParams['filter[version]'] = options.version;
   }
 
   return policyEngineRequest(
@@ -68,18 +101,16 @@ export async function listPolicyBundleVersions(
  * Fetches version metadata and presigned download URL (mirrors `transcend policy download --json`).
  *
  * @param client - Policy Engine REST client
- * @param bundleId - Parent bundle UUID
  * @param versionId - Version UUID
  * @returns Version metadata with download URL
  */
 export async function getPolicyBundleVersion(
   client: Got,
-  bundleId: string,
   versionId: string,
 ): Promise<GetPolicyBundleVersionResponse> {
   return policyEngineRequest(
     client
-      .get(`v1/policy-engine/policy-bundles/${bundleId}/versions/${versionId}`)
+      .get(`v1/policy-engine/policy-bundle-versions/${versionId}`)
       .json<GetPolicyBundleVersionResponse>(),
   );
 }
