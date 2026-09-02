@@ -236,7 +236,7 @@ export namespace CustomFunction {
    * Trigger data is free-form JSON. Transcend adds `coreIdentifier` on every
    * invocation; all other keys depend on the rule trigger or test payload.
    */
-  export interface MaestroResolverProperties {
+  export interface GeneralResolverProperties {
     /** Initial authenticated identifier added by Transcend. */
     coreIdentifier: CoreIdentifier;
     /** Webhook or schedule fields from the rule trigger. */
@@ -289,7 +289,7 @@ export namespace CustomFunction {
    *
    * Transcend adds `coreIdentifier` when it is omitted.
    */
-  export interface MaestroTestPayload {
+  export interface GeneralTestPayload {
     /** Optional override for the identifier Transcend would add. */
     coreIdentifier?: CoreIdentifier;
     /** Webhook or schedule fields from the test fixture. */
@@ -383,7 +383,7 @@ export namespace CustomFunction {
   export type EnricherArgument = Argument<EnricherResolverProperties>;
 
   /** Argument passed to a General Custom Function. */
-  export type MaestroArgument = Argument<MaestroResolverProperties>;
+  export type GeneralArgument = Argument<GeneralResolverProperties>;
 
   /** Supported return type for a Custom Function handler. */
   export type HandlerResult = void | Promise<void>;
@@ -410,5 +410,5 @@ export namespace CustomFunction {
    * @param argument - General invocation values
    * @returns Handler completion
    */
-  export type MaestroHandler = (argument: MaestroArgument) => HandlerResult;
+  export type GeneralHandler = (argument: GeneralArgument) => HandlerResult;
 }

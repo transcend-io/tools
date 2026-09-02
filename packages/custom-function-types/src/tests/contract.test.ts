@@ -70,7 +70,7 @@ describe('Custom Function authoring contract', () => {
     expectTypeOf<CustomFunction.DataPointTestPayload['coreIdentifier']>().toEqualTypeOf<
       CustomFunction.CoreIdentifier | undefined
     >();
-    expectTypeOf<CustomFunction.MaestroTestPayload['coreIdentifier']>().toEqualTypeOf<
+    expectTypeOf<CustomFunction.GeneralTestPayload['coreIdentifier']>().toEqualTypeOf<
       CustomFunction.CoreIdentifier | undefined
     >();
   });

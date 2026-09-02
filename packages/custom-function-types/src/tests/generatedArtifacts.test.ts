@@ -63,10 +63,10 @@ describe('generated Custom Function artifacts', () => {
   });
 
   it('publishes a self-contained Monaco ambient declaration', () => {
-    // Why: the editor loads this declaration without module resolution.
+    // Why: the editor loads this declaration without exposing internal terminology.
     // Given: the generated Monaco declaration.
     // When: its compatibility surface is inspected.
-    // Then: legacy globals and runtime services are present without imports.
+    // Then: public globals and services are present without imports or codenames.
     const declaration = readGeneratedArtifact('monaco/lib.custom-function.d.ts.txt');
 
     expect(declaration).toContain(
@@ -81,6 +81,7 @@ describe('generated Custom Function artifacts', () => {
     expect(declaration).toContain('class SDK');
     expect(declaration).toContain('interface KV');
     expect(declaration).not.toContain('import ');
+    expect(declaration).not.toContain('Maestro');
   });
 
   it('exports the same schemas through the JavaScript API', () => {

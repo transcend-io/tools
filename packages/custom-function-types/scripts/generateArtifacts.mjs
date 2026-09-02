@@ -12,7 +12,7 @@ const checkOnly = process.argv.includes('--check');
 
 const schemaDefinitions = [
   {
-    type: 'CustomFunction.MaestroTestPayload',
+    type: 'CustomFunction.GeneralTestPayload',
     filename: 'general-payload.json',
     title: 'General Custom Function payload',
     id: 'file:///general-custom-function-payload.schema.json',

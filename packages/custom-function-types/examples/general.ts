@@ -5,6 +5,6 @@ import type { CustomFunction } from '@transcend-io/custom-function-types';
  *
  * @param argument - Payload provided for the General invocation
  */
-export default function customFunction({ payload }: CustomFunction.MaestroArgument): void {
+export default function customFunction({ payload }: CustomFunction.GeneralArgument): void {
   void payload;
 }
