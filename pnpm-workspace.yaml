@@ -36,6 +36,7 @@ catalog:
   semver: ^7.7.4
   syncpack: ^14.2.0
   tailwindcss: ^4.3.3
+  ts-json-schema-generator: ^2.9.0
   tsdown: ^0.21.2
   turbo: ^2.9.14
   typescript: ^6.0.0

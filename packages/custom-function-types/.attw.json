@@ -1,0 +1,8 @@
+{
+  "excludeEntrypoints": [
+    "monaco",
+    "schemas/general-payload.json",
+    "schemas/dsr-datapoint-payload.json",
+    "schemas/dsr-request-enricher-payload.json"
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "name": "@transcend-io/custom-function-types",
+  "version": "0.0.0",
+  "description": "TypeScript contracts and validation schemas for authoring Transcend Custom Functions.",
+  "homepage": "https://github.com/transcend-io/tools/tree/main/packages/custom-function-types",
+  "license": "Apache-2.0",
+  "author": "Transcend Inc.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/transcend-io/tools.git",
+    "directory": "packages/custom-function-types"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "@transcend-io/source": "./src/index.ts",
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
+    },
+    "./monaco": "./dist/generated/monaco/lib.custom-function.d.ts.txt",
+    "./schemas/general-payload.json": "./dist/generated/schemas/general-payload.json",
+    "./schemas/dsr-datapoint-payload.json": "./dist/generated/schemas/dsr-datapoint-payload.json",
+    "./schemas/dsr-request-enricher-payload.json": "./dist/generated/schemas/dsr-request-enricher-payload.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "generate": "node scripts/generateArtifacts.mjs",
+    "check:generated": "node scripts/generateArtifacts.mjs --check",
+    "prebuild": "pnpm generate",
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
+    "check:publint": "publint --level warning --strict --pack pnpm"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "catalog:",
+    "@transcend-io/privacy-types": "workspace:*",
+    "@types/node": "catalog:",
+    "publint": "catalog:",
+    "ts-json-schema-generator": "catalog:",
+    "tsdown": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
