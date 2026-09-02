@@ -103,7 +103,6 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 ## Tools
 
 - `consent_get_preferences` — Get consent preferences for a user
-- `consent_set_preferences` — Set consent preferences
 - `consent_list_purposes` — List tracking purposes
 - `consent_list_data_flows` — List data flows
 - `consent_list_cookies` — List cookies

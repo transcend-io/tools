@@ -7,6 +7,16 @@ import type { AdminMixin } from '../graphql.js';
 /** GraphQL UserOrderField values exposed on admin_list_users */
 const USER_ORDER_FIELDS = ['name', 'createdAt', 'updatedAt'] as const;
 
+const SCOPE_NAME_VALUES = new Set<string>(Object.values(ScopeName));
+
+function isScopeName(value: string): value is ScopeName {
+  return SCOPE_NAME_VALUES.has(value);
+}
+
+const scopeNameString = z.string().refine(isScopeName, {
+  message: 'Unknown scope. Call admin_list_scopes for valid ScopeName values.',
+});
+
 export const ListUsersSchema = z.object({
   limit: z.coerce
     .number()
@@ -46,14 +56,16 @@ export const ListUsersSchema = z.object({
       'Filter to users on these team UUIDs. Resolve team names to IDs with admin_list_teams first.',
     ),
   scopeNames: z
-    .array(z.nativeEnum(ScopeName))
-    .optional()
-    .describe('Filter by directly assigned ScopeName enum values (not free text)'),
-  derivedScopeNames: z
-    .array(z.nativeEnum(ScopeName))
+    .array(scopeNameString)
     .optional()
     .describe(
-      'Filter by derived ScopeName values (includes grants via teams, dependencies, and admins)',
+      'Filter by directly assigned ScopeName values. Call admin_list_scopes for valid names.',
+    ),
+  derivedScopeNames: z
+    .array(scopeNameString)
+    .optional()
+    .describe(
+      'Filter by derived ScopeName values (teams, dependencies, admins). Call admin_list_scopes.',
     ),
   lastLoggedInAfter: z
     .string()
@@ -72,7 +84,15 @@ export const ListUsersSchema = z.object({
     .optional()
     .describe('Sort direction ASC or DESC (default: ASC, matching Admin Users)'),
 });
-export type ListUsersInput = z.infer<typeof ListUsersSchema>;
+export type ListUsersInput = Omit<
+  z.infer<typeof ListUsersSchema>,
+  'scopeNames' | 'derivedScopeNames'
+> & {
+  /** Filter by directly assigned ScopeName values */
+  scopeNames?: ScopeName[];
+  /** Filter by derived ScopeName values */
+  derivedScopeNames?: ScopeName[];
+};
 
 export function createAdminListUsersTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
@@ -82,7 +102,7 @@ export function createAdminListUsersTool(clients: ToolClients) {
       'List users in your Transcend organization with the same filters as Administration → Users. ' +
       'text searches name and email (case-insensitive substring). ' +
       'Team filters need UUIDs — call admin_list_teams then pass teamIds. ' +
-      'scopeNames / derivedScopeNames use ScopeName enum values. ' +
+      'scopeNames / derivedScopeNames use ScopeName values from admin_list_scopes. ' +
       'Pagination is offset-based (limit + offset); default sort is name ASC.',
     category: 'Admin',
     readOnly: true,

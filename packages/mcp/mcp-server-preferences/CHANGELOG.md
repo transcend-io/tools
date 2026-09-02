@@ -1,5 +1,33 @@
 # @transcend-io/mcp-server-preferences
 
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/sdk@2.1.3
+
+## 0.7.0
+
+### Minor Changes
+
+- 2a6a955: Add `preferences_list_partitions` so agents can discover Preference Store partition keys (default airgap bundle + custom) via GraphQL before calling Sombra preferences tools. Require `ViewConsentManager` and point sibling `partition` field descriptions at the new discovery tool.
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
+## 0.6.7
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
 ## 0.6.6
 
 ### Patch Changes

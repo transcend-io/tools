@@ -6,12 +6,6 @@ export { resolveAnalyticsDateRange } from './analyticsDateRange.js';
 
 export { GetPreferencesSchema, type GetPreferencesInput } from './tools/consent_get_preferences.js';
 export {
-  PurposeConsentSchema,
-  type PurposeConsentInput,
-  SetPreferencesSchema,
-  type SetPreferencesInput,
-} from './tools/consent_set_preferences.js';
-export {
   ListAirgapBundlesSchema,
   type ListAirgapBundlesInput,
 } from './tools/consent_list_airgap_bundles.js';

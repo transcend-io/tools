@@ -17,6 +17,14 @@ const ListWorkflowsDoc = graphql(/* GraphQL */ `
         title {
           defaultMessage
         }
+        internalName
+        workflowConfigVisibility
+        action {
+          type
+        }
+        subject {
+          type
+        }
       }
       totalCount
     }
@@ -81,6 +89,10 @@ export class WorkflowsMixin extends TranscendGraphQLBase {
       nodes: data.workflows.nodes.map((w) => ({
         id: w.id,
         title: { defaultMessage: w.title.defaultMessage },
+        internalName: w.internalName ?? undefined,
+        workflowConfigVisibility: w.workflowConfigVisibility ?? undefined,
+        actionType: w.action?.type ?? undefined,
+        subjectType: w.subject?.type ?? undefined,
       })),
       pageInfo: {
         hasNextPage: data.workflows.nodes.length < data.workflows.totalCount,

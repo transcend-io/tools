@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.25.0
+
+### Minor Changes
+
+- ff0204c: Add `ConsentSite` to `AttributeSupportedResourceType` for Consent Manager domain custom fields. Regenerate CLI transcend.yml JSON schemas to match.
+
 ## 5.24.0
 
 ### Minor Changes

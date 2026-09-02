@@ -10,6 +10,7 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 import { getRequestAuth, requestAuthContext } from '../auth-context.js';
 import { ASSUME_CAPABILITIES_ENV_VAR, assumedCapabilitiesFromEnv } from '../capabilities/assume.js';
@@ -28,6 +29,7 @@ import type { PromptDefinition } from '../prompts/types.js';
 import { toolCallContext } from '../tool-call-context.js';
 import { ApprovalTokenStore } from '../tools/approval-tokens.js';
 import {
+  APPROVAL_TOKEN_ARG,
   canObtainApproval,
   ConfirmationPolicy,
   type ConfirmationGate,
@@ -136,6 +138,64 @@ function buildToolMeta(tool: ToolDefinition): Record<string, unknown> | undefine
     meta.requireSombra = true;
   }
   return Object.keys(meta).length > 0 ? meta : undefined;
+}
+
+/**
+ * Schemas used to validate a call, keyed by the tool they belong to.
+ *
+ * Rebuilding a strict schema allocates, and `tools/call` is on the hot path, so
+ * the derived schema is memoized against the tool object that produced it.
+ */
+const validationSchemas = new WeakMap<ToolDefinition, z.ZodType<unknown>>();
+
+/**
+ * The schema a `tools/call` is validated against: the tool's own, made strict.
+ *
+ * Zod strips unknown keys by default, so a misspelled argument name parses
+ * cleanly and the tool then runs whatever it does with no arguments — while
+ * reporting success. That is how `docs_list` answered `{ query: … }` with the
+ * entire catalog, and on a destructive tool the same slip writes without the
+ * fields the caller meant to send.
+ *
+ * Confirmable tools additionally tolerate the approval token even when their
+ * gate does not advertise it, so a replayed token reaches the gate and gets its
+ * explanation of why tokens are not issued here, rather than a bare
+ * unknown-argument error. The advertised input schema is unaffected: that is
+ * derived from `tool.zodSchema`, which this never mutates.
+ */
+function validationSchemaFor(tool: ToolDefinition): z.ZodType<unknown> {
+  const cached = validationSchemas.get(tool);
+  if (cached) return cached;
+
+  const schema = tool.zodSchema;
+  // A non-object schema has no unknown keys to reject.
+  if (!(schema instanceof z.ZodObject)) return schema;
+
+  const widened =
+    tool.confirmation && !(APPROVAL_TOKEN_ARG in schema.shape)
+      ? schema.extend({ [APPROVAL_TOKEN_ARG]: z.string().optional() })
+      : schema;
+  const strict = widened.strict();
+  validationSchemas.set(tool, strict);
+  return strict;
+}
+
+/**
+ * Names the rejected arguments and the ones that would have worked.
+ *
+ * Zod says only what was wrong. An agent that guessed `query` for `keyword` can
+ * correct itself in one retry if the accepted names come back with the refusal,
+ * which is the whole point of failing here instead of silently continuing.
+ */
+function explainUnrecognizedKeys(keys: readonly PropertyKey[], tool: ToolDefinition): string {
+  const rejected = keys.map((key) => `'${String(key)}'`).join(', ');
+  const schema = tool.zodSchema;
+  const accepted = schema instanceof z.ZodObject ? Object.keys(schema.shape) : [];
+  const suffix =
+    accepted.length > 0
+      ? `Valid arguments: ${accepted.join(', ')}.`
+      : `${tool.name} takes no arguments.`;
+  return `input: unrecognized argument ${rejected}. ${suffix}`;
 }
 
 /**
@@ -396,12 +456,13 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
         throw new Error(`Unknown tool: ${name}`);
       }
 
-      const parseResult = tool.zodSchema.safeParse(args || {});
+      const parseResult = validationSchemaFor(tool).safeParse(args || {});
       if (!parseResult.success) {
         const issues = parseResult.error.issues
-          .map(
-            (i: { path: PropertyKey[]; message: string }) =>
-              `${i.path.join('.') || 'input'}: ${i.message}`,
+          .map((i) =>
+            i.code === 'unrecognized_keys'
+              ? explainUnrecognizedKeys(i.keys, tool)
+              : `${i.path.join('.') || 'input'}: ${i.message}`,
           )
           .join('; ');
         const errorResult = createToolResult(false, undefined, `Invalid input: ${issues}`, {

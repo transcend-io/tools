@@ -1,22 +1,18 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
-export const UpsertPreferencesPurposeSchema = z.object({
-  purpose: z.string().describe('Purpose slug'),
-  enabled: z.boolean().describe('Whether consent is granted'),
-});
-export type UpsertPreferencesPurposeInput = z.infer<typeof UpsertPreferencesPurposeSchema>;
-
-export const UpsertPreferencesRecordSchema = z.object({
-  identifier: z.string().describe('User identifier'),
-  identifierType: z.string().optional().describe('Identifier type (optional)'),
-  purposes: z.array(UpsertPreferencesPurposeSchema).describe('Array of purpose consent settings'),
-  confirmed: z.boolean().optional().describe('Whether consent was explicitly confirmed'),
-});
-export type UpsertPreferencesRecordInput = z.infer<typeof UpsertPreferencesRecordSchema>;
+import {
+  isPreferenceMutationSuccessful,
+  preferenceMutationFailureCount,
+  preferenceMutationToolResult,
+} from './mutation-success.js';
+import { UpsertRecordSchema } from './preference-schemas.js';
 
 export const UpsertPreferencesSchema = z.object({
-  partition: z.string().describe('Partition/organization context'),
-  records: z.array(UpsertPreferencesRecordSchema).describe('Array of preference records to upsert'),
+  records: z.array(UpsertRecordSchema).min(1).describe('Preference records to upsert'),
+  skipWorkflowTriggers: z
+    .boolean()
+    .optional()
+    .describe('When true, skip workflow triggers for these updates'),
 });
 export type UpsertPreferencesInput = z.infer<typeof UpsertPreferencesSchema>;
 
@@ -24,7 +20,9 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'preferences_upsert',
-    description: 'Batch upsert consent preference records for multiple users',
+    description:
+      'Batch upsert consent preference records for multiple users. Call preferences_list_partitions ' +
+      'first and pass purposes[].enabled (boolean) — Preference Store rejects a "consent" field.',
     category: 'Preference Management',
     readOnly: false,
     confirmation: {
@@ -36,25 +34,26 @@ export function createPreferencesUpsertTool(clients: ToolClients) {
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: UpsertPreferencesSchema,
-    handler: async ({ partition, records }) => {
+    handler: async ({ records, skipWorkflowTriggers }) => {
       const result = await rest.upsertPreferences({
-        partition,
-        records: records.map((record) => ({
-          identifier: record.identifier,
-          identifierType: record.identifierType,
-          purposes: record.purposes.map((p) => ({
-            purpose: p.purpose,
-            enabled: p.enabled,
-          })),
-          confirmed: record.confirmed,
-        })),
+        records,
+        skipWorkflowTriggers,
       });
 
-      return createToolResult(true, {
-        ...result,
-        recordsProcessed: records.length,
-        message: `Successfully upserted ${result.count} preference records`,
-      });
+      const ok = isPreferenceMutationSuccessful(result);
+      const failureCount = preferenceMutationFailureCount(result);
+      return preferenceMutationToolResult(
+        createToolResult,
+        ok,
+        {
+          ...result,
+          recordsProcessed: records.length,
+          message: ok
+            ? `Successfully upserted ${records.length} preference record(s)`
+            : `Preference upsert completed with ${failureCount} failure(s)`,
+        },
+        `Preference upsert failed for ${failureCount} record(s)`,
+      );
     },
   });
 }

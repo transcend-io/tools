@@ -24,10 +24,11 @@ export function createDsrSubmitTool(clients: ToolClients) {
     name: 'dsr_submit',
     description:
       'Submit a Data Subject Request via customer-ingress REST bulk create ' +
-      '(`POST /v1/data-subject-request-bulk`). Requires a published workflowConfigId; type and ' +
-      'subjectType are derived from that workflow. Sombra attests the subject from the provided ' +
-      'email/identifiers. coreIdentifier defaults to email. Returns a minimal summary for each ' +
-      'created request. Requires Sombra (SOMBRA_URL or organization customerUrl).',
+      '(`POST /v1/data-subject-request-bulk`). Call `workflows_list` first and pass a returned ' +
+      '`id` as `workflowConfigId` — type and subjectType are derived from that workflow (do not ' +
+      'invent them). Sombra attests the subject from the provided email/identifiers. ' +
+      'coreIdentifier defaults to email. Returns a minimal summary for each created request. ' +
+      'Requires Sombra (SOMBRA_URL or organization customerUrl).',
     category: 'DSR Automation',
     readOnly: false,
     confirmation: {

@@ -9,8 +9,35 @@ import { createDocsFetchTool } from '../src/tools/docs_fetch.js';
 import { createDocsListTool } from '../src/tools/docs_list.js';
 import { getDocsTools } from '../src/tools/index.js';
 
-const fixturePath = join(dirname(fileURLToPath(import.meta.url)), 'fixtures/llms.txt');
-const fixtureLlmsTxt = readFileSync(fixturePath, 'utf8');
+const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), 'fixtures');
+const fixtureLlmsTxt = readFileSync(join(fixturesDir, 'llms.txt'), 'utf8');
+const fixtureLlmsSearch = readFileSync(join(fixturesDir, 'llms-search.txt'), 'utf8');
+
+const DASHBOARD_URL =
+  'https://docs.transcend.io/docs/articles/consent-management/reference/metrics-reporting/consent-dashboard.md';
+const TELEMETRY_URL =
+  'https://docs.transcend.io/docs/articles/consent-management/reference/telemetry-and-data-flows/telemetry.md';
+const REGIONAL_URL =
+  'https://docs.transcend.io/docs/articles/use-case-guides/regional-experiences.md';
+
+function mockDocsFetch(options: {
+  /** llms.txt body */
+  llmsTxt: string;
+  /** Per-article markdown keyed by URL */
+  bodies: Record<string, string>;
+}): void {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = String(input);
+    if (url === LLMS_TXT_URL) {
+      return new Response(options.llmsTxt, { status: 200 });
+    }
+    const body = options.bodies[url];
+    if (body !== undefined) {
+      return new Response(body, { status: 200 });
+    }
+    throw new Error(`Unexpected fetch: ${url}`);
+  });
+}
 
 describe('getDocsTools', () => {
   it('registers list and fetch tools', () => {
@@ -27,26 +54,73 @@ describe('docs_list', () => {
     vi.restoreAllMocks();
   });
 
-  it('returns the full index when no filters are provided', async () => {
+  it('returns sections rather than every article when no filters are provided', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
 
     const tool = createDocsListTool();
     const result = (await tool.handler({})) as {
       success: boolean;
-      data: Array<{ title: string; section: string; url: string }>;
+      data: Array<{ section: string; articleCount: number }>;
       count: number;
+      paginationNote: string;
     };
 
     expect(result.success).toBe(true);
-    expect(result.count).toBe(3);
-    expect(result.data[0]?.title).toBe('DSR Automation');
+    expect(result.data).toEqual([
+      { section: 'General', articleCount: 2 },
+      { section: 'Use Case Guides', articleCount: 1 },
+    ]);
+    expect(result.paginationNote).toContain('section');
+    expect(result.paginationNote).toContain('3 articles');
   });
 
-  it('filters by section and keyword', async () => {
+  it('lists the articles in a section', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
 
     const tool = createDocsListTool();
-    const result = (await tool.handler({ section: 'General', keyword: 'consent' })) as {
+    const result = (await tool.handler({ section: 'General' })) as {
+      data: Array<{ title: string; section: string; url: string }>;
+      count: number;
+      totalCount: number;
+      paginationNote?: string;
+    };
+
+    expect(result.count).toBe(2);
+    expect(result.totalCount).toBe(2);
+    expect(result.data.map((entry) => entry.title)).toEqual([
+      'DSR Automation',
+      'Consent Management',
+    ]);
+    // Nothing was withheld, so there is no note to explain.
+    expect(result.paginationNote).toBeUndefined();
+  });
+
+  it('names the valid sections when the section does not exist', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
+
+    const tool = createDocsListTool();
+    await expect(tool.handler({ section: 'general' })).rejects.toThrow(
+      "Unknown section 'general'. Valid sections: General, Use Case Guides.",
+    );
+    // An inherited Object property is not a section.
+    await expect(tool.handler({ section: 'constructor' })).rejects.toThrow(/Unknown section/);
+  });
+
+  it('filters by section and query', async () => {
+    mockDocsFetch({
+      llmsTxt: fixtureLlmsTxt,
+      bodies: {
+        'https://docs.transcend.io/docs/articles/dsr-automation.md':
+          '# DSR Automation\n\nRequests.',
+        'https://docs.transcend.io/docs/articles/consent-management.md':
+          '# Consent Management\n\nConsent banner configuration.',
+        'https://docs.transcend.io/docs/articles/use-case-guides/regional-experiences.md':
+          '# Regional Experiences\n\nGeo targeting.',
+      },
+    });
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ section: 'General', query: 'consent' })) as {
       success: boolean;
       data: Array<{ title: string }>;
       count: number;
@@ -54,6 +128,103 @@ describe('docs_list', () => {
 
     expect(result.count).toBe(1);
     expect(result.data[0]?.title).toBe('Consent Management');
+  });
+
+  it('refuses a blank query rather than quietly browsing instead', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(fixtureLlmsTxt, { status: 200 }));
+
+    const tool = createDocsListTool();
+    await expect(tool.handler({ query: '   ' })).rejects.toThrow(/query was empty/);
+    await expect(tool.handler({ query: '' })).rejects.toThrow(/omit query/);
+  });
+
+  it('caps a large section and says what was withheld', async () => {
+    const titles = Array.from({ length: 60 }, (_, index) => `Guide ${index + 1}`);
+    const llmsTxt = [
+      '# Transcend',
+      '',
+      '## Use Case Guides',
+      ...titles.map(
+        (title, index) =>
+          `- [${title}](https://docs.transcend.io/docs/articles/guide-${index + 1}.md)`,
+      ),
+    ].join('\n');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(llmsTxt, { status: 200 }));
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ section: 'Use Case Guides' })) as {
+      count: number;
+      totalCount: number;
+      paginationNote: string;
+    };
+
+    expect(result.count).toBe(50);
+    expect(result.totalCount).toBe(60);
+    expect(result.paginationNote).toBe(
+      "Showing 50 of 60 articles in 'Use Case Guides'. There is no paging: add query to " +
+        'search within this section.',
+    );
+  });
+
+  it('tells the caller how to narrow when search matches exceed the page', async () => {
+    const urls = Array.from(
+      { length: 25 },
+      (_, index) => `https://docs.transcend.io/docs/articles/consent-${index + 1}.md`,
+    );
+    mockDocsFetch({
+      llmsTxt: [
+        '# Transcend',
+        '',
+        '## General',
+        ...urls.map((url, index) => `- [Consent Topic ${index + 1}](${url})`),
+      ].join('\n'),
+      bodies: Object.fromEntries(urls.map((url) => [url, '# Consent\n\nConsent banner setup.'])),
+    });
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ query: 'consent' })) as {
+      count: number;
+      totalCount: number;
+      paginationNote: string;
+    };
+
+    expect(result.count).toBe(20);
+    expect(result.totalCount).toBe(25);
+    expect(result.paginationNote).toBe(
+      'Showing the 20 highest-ranked of 25 matches. There is no paging: use more ' +
+        'distinctive terms to narrow the search.',
+    );
+  });
+
+  it('ranks body matches for session when the title does not contain the term', async () => {
+    mockDocsFetch({
+      llmsTxt: fixtureLlmsSearch,
+      bodies: {
+        [DASHBOARD_URL]:
+          '**Sessions**: a unique sessionStorage context. In most browsers, each tab gets a unique sessionStorage context.',
+        [TELEMETRY_URL]:
+          'A "session" is defined as a unique sessionStorage context. Telemetry includes cumulative unique sessionStorage contexts.',
+        [REGIONAL_URL]: 'Configure regional consent experiences and banner copy.',
+      },
+    });
+
+    const tool = createDocsListTool();
+    const result = (await tool.handler({ query: 'session' })) as {
+      success: boolean;
+      data: Array<{ title: string; snippet: string }>;
+      count: number;
+    };
+
+    expect(result.success).toBe(true);
+    expect(result.count).toBeGreaterThanOrEqual(2);
+    const titles = result.data.map((hit) => hit.title);
+    expect(titles).toContain('Consent Dashboard');
+    expect(titles).toContain('Transcend-Stored Telemetry Data');
+    expect(titles.slice(0, 2)).toEqual(
+      expect.arrayContaining(['Consent Dashboard', 'Transcend-Stored Telemetry Data']),
+    );
+    const dashboard = result.data.find((hit) => hit.title === 'Consent Dashboard');
+    expect(dashboard?.snippet.toLowerCase()).toContain('sessionstorage');
   });
 });
 

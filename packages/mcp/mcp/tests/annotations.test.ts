@@ -118,7 +118,6 @@ describe('MCP Tool Annotations', () => {
 
   describe('confirmation-gated tools', () => {
     const expectedGated = [
-      'consent_set_preferences',
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
@@ -129,11 +128,7 @@ describe('MCP Tool Annotations', () => {
       'preferences_upsert',
     ];
 
-    const expectedGatedNonDestructive = [
-      'consent_set_preferences',
-      'preferences_append_identifiers',
-      'preferences_upsert',
-    ];
+    const expectedGatedNonDestructive = ['preferences_append_identifiers', 'preferences_upsert'];
 
     // Exact in both directions: adding a gate makes a tool refuse on hosts that
     // cannot ask, and dropping one silently un-guards an irreversible action.
@@ -169,7 +164,6 @@ describe('MCP Tool Annotations', () => {
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
       'workflows_update_config',
-      'consent_set_preferences',
       'preferences_upsert',
       'preferences_update_identifiers',
       'inventory_write_vendor',
