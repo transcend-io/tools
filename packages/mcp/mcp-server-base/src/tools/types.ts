@@ -183,19 +183,12 @@ export function assertConfirmableSchema(
   }
 }
 
-/** Gated tools must be annotated as mutating and destructive. */
+/** Gated tools must be annotated as mutating. destructiveHint is independent — it tells hosts how loudly to warn, not whether the server gate runs. */
 export function assertConfirmableAnnotations(toolName: string, annotations: ToolAnnotations): void {
   if (annotations.readOnlyHint) {
     throw new Error(
       `Tool "${toolName}" declares confirmation but annotates readOnlyHint: true. ` +
         'Confirmation gates a mutation, and a read-only tool has nothing to approve.',
-    );
-  }
-  if (!annotations.destructiveHint) {
-    throw new Error(
-      `Tool "${toolName}" declares confirmation but annotates destructiveHint: false. ` +
-        'Hosts use destructiveHint to decide how to prompt for a tool call, so it has to ' +
-        'agree with the gate.',
     );
   }
 }

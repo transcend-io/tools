@@ -17,7 +17,7 @@ describe('Discovery Tools', () => {
 
   let mockRest: {
     classifyText: ReturnType<typeof vi.fn>;
-    nerExtract: ReturnType<typeof vi.fn>;
+    extractEntities: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('Discovery Tools', () => {
     };
     mockRest = {
       classifyText: vi.fn(),
-      nerExtract: vi.fn(),
+      extractEntities: vi.fn(),
     };
   });
 
@@ -68,6 +68,84 @@ describe('Discovery Tools', () => {
       const tool = tools.find((t) => t.name === 'discovery_list_scans')!;
 
       await expect(tool.handler({})).rejects.toThrow('API error');
+    });
+  });
+
+  describe('discovery_classify_text', () => {
+    it('zodSchema rejects when categories are missing', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'discovery_classify_text')!;
+
+      const result = tool.zodSchema.safeParse({ texts: ['hello'] });
+      expect(result.success).toBe(false);
+    });
+
+    it('returns mapped classification results on success', async () => {
+      mockRest.classifyText.mockResolvedValue([
+        {
+          text: 'contact me at a@b.com',
+          classifications: [{ category: 'EMAIL', confidence: 0.95, subcategory: 'Contact' }],
+        },
+      ]);
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'discovery_classify_text')!;
+
+      const result = await tool.handler({
+        texts: ['contact me at a@b.com'],
+        categories: ['EMAIL', 'PHONE'],
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          results: [
+            {
+              text: 'contact me at a@b.com',
+              classifications: [{ category: 'EMAIL', confidence: 0.95, subcategory: 'Contact' }],
+            },
+          ],
+          inputCount: 1,
+        },
+      });
+      expect(mockRest.classifyText).toHaveBeenCalledWith({
+        texts: ['contact me at a@b.com'],
+        categories: ['EMAIL', 'PHONE'],
+        model: undefined,
+      });
+    });
+  });
+
+  describe('discovery_ner_extract', () => {
+    it('zodSchema rejects when entityTypes are missing', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'discovery_ner_extract')!;
+
+      const result = tool.zodSchema.safeParse({ text: 'hello' });
+      expect(result.success).toBe(false);
+    });
+
+    it('returns extracted entities on success', async () => {
+      mockRest.extractEntities.mockResolvedValue({
+        entities: [{ text: 'a@b.com', type: 'Email', confidence: 0.9, snippet: 'a@b.com' }],
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'discovery_ner_extract')!;
+
+      const result = await tool.handler({
+        text: 'email me at a@b.com',
+        entityTypes: ['Email'],
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          entities: [{ text: 'a@b.com', type: 'Email', confidence: 0.9, snippet: 'a@b.com' }],
+          entityCount: 1,
+          entityTypes: ['Email'],
+        },
+      });
     });
   });
 });

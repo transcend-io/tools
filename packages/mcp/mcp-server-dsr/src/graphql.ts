@@ -5,6 +5,7 @@ import {
   type Request,
   type RequestDataSilo,
   type RequestDetails,
+  type RequestEnricherSummary,
   type RequestType,
 } from '@transcend-io/mcp-server-base';
 
@@ -65,6 +66,28 @@ const GetRequestDoc = graphql(/* GraphQL */ `
         id
         name
       }
+    }
+  }
+`);
+
+/** Same shape as CLI/SDK REQUEST_ENRICHERS — request does not nest enrichers. */
+const ListRequestEnrichersDoc = graphql(/* GraphQL */ `
+  query DsrListRequestEnrichers($first: Int!, $offset: Int!, $requestId: ID!) {
+    requestEnrichers(
+      input: { requestId: $requestId }
+      first: $first
+      offset: $offset
+      useMaster: false
+    ) {
+      nodes {
+        status
+        enricher {
+          id
+          title
+          type
+        }
+      }
+      totalCount
     }
   }
 `);
@@ -187,8 +210,26 @@ export class DSRMixin extends TranscendGraphQLBase {
   }
 
   async getRequest(id: string): Promise<RequestDetails> {
-    const data = await this.makeRequest(GetRequestDoc, { id });
+    // Request does not nest enrichers — fetch both in parallel (CLI REQUEST_ENRICHERS).
+    const [data, enrichersData] = await Promise.all([
+      this.makeRequest(GetRequestDoc, { id }),
+      this.makeRequest(ListRequestEnrichersDoc, {
+        first: 100,
+        offset: 0,
+        requestId: id,
+      }),
+    ]);
     const r = data.request;
+    const requestEnrichers: RequestEnricherSummary[] = enrichersData.requestEnrichers.nodes.map(
+      (node) => ({
+        status: node.status,
+        enricher: {
+          id: node.enricher.id,
+          title: node.enricher.title,
+          type: node.enricher.type,
+        },
+      }),
+    );
     return {
       id: r.id,
       type: r.type as RequestType,
@@ -201,6 +242,7 @@ export class DSRMixin extends TranscendGraphQLBase {
       isSilent: r.isSilent,
       owners: mapOwners(r.owners),
       teams: mapTeams(r.teams),
+      requestEnrichers,
     };
   }
 

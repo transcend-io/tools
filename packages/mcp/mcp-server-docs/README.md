@@ -70,7 +70,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 
 ## Tools
 
-- `docs_list` — List/search the Transcend docs index (`llms.txt`); optional `section` and `keyword` filters
+- `docs_list` — Browse the Transcend docs sections (`llms.txt`), list one section's articles with `section`, or full-text search titles and article bodies with `query` (ranked snippets; then `docs_fetch`)
 - `docs_fetch` — Fetch full markdown for a docs article URL (host restricted to `docs.transcend.io`)
 
 ## Related packages

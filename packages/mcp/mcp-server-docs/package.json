@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-docs",
-  "version": "0.3.22",
+  "version": "0.4.0",
   "description": "Transcend MCP Server — Documentation lookup tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-docs",
   "license": "Apache-2.0",
@@ -38,6 +38,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
+    "@orama/orama": "catalog:",
     "@transcend-io/mcp-server-base": "workspace:*",
     "lru-cache": "catalog:",
     "zod": "catalog:"

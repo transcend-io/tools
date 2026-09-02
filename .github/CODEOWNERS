@@ -64,3 +64,4 @@ pnpm-workspace.yaml @transcend-io/lakitu @transcend-io/zelda
 # Never published. Listed after the defaults above so a manifest or config here
 # belongs to the team whose code it exercises.
 /dev/mcp-server-examples/ @transcend-io/zelda
+/dev/mcp-ui-common/ @transcend-io/zelda

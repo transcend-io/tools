@@ -2,6 +2,11 @@ export { getPreferenceTools } from './tools/index.js';
 export { PREFERENCE_OAUTH_SCOPES } from './scopes.js';
 
 export {
+  ListPartitionsSchema,
+  type ListPartitionsInput,
+  type PreferencePartitionRow,
+} from './tools/preferences_list_partitions.js';
+export {
   IdentifierSchema,
   QueryPreferencesSchema,
   type IdentifierInput,
@@ -9,12 +14,13 @@ export {
 } from './tools/preferences_query.js';
 export {
   UpsertPreferencesSchema,
-  UpsertPreferencesPurposeSchema,
-  UpsertPreferencesRecordSchema,
   type UpsertPreferencesInput,
-  type UpsertPreferencesPurposeInput,
-  type UpsertPreferencesRecordInput,
 } from './tools/preferences_upsert.js';
+export {
+  PARTITION_DESCRIBE,
+  UpsertPurposeSchema,
+  UpsertRecordSchema,
+} from './tools/preference-schemas.js';
 export {
   DeletePreferencesSchema,
   type DeletePreferencesInput,
@@ -25,9 +31,7 @@ export {
 } from './tools/preferences_append_identifiers.js';
 export {
   UpdateIdentifiersSchema,
-  UpdateIdentifiersItemSchema,
   type UpdateIdentifiersInput,
-  type UpdateIdentifiersItemInput,
 } from './tools/preferences_update_identifiers.js';
 export {
   DeleteIdentifiersSchema,

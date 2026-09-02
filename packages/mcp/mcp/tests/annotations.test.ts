@@ -121,10 +121,14 @@ describe('MCP Tool Annotations', () => {
       'dsr_cancel',
       'dsr_enrich_identifiers',
       'dsr_submit',
+      'preferences_append_identifiers',
       'preferences_delete',
       'preferences_delete_identifiers',
       'preferences_update_identifiers',
+      'preferences_upsert',
     ];
+
+    const expectedGatedNonDestructive = ['preferences_append_identifiers', 'preferences_upsert'];
 
     // Exact in both directions: adding a gate makes a tool refuse on hosts that
     // cannot ask, and dropping one silently un-guards an irreversible action.
@@ -141,18 +145,25 @@ describe('MCP Tool Annotations', () => {
       expect(tool.confirmation?.hint.trim()).not.toBe('');
     });
 
-    it('every gated tool is also annotated destructive and mutating', () => {
+    it('every gated tool is annotated mutating', () => {
       for (const tool of allTools.filter((t) => t.confirmation)) {
-        expect(tool.annotations.destructiveHint, `${tool.name}`).toBe(true);
         expect(tool.annotations.readOnlyHint, `${tool.name}`).toBe(false);
       }
     });
+
+    it.each(expectedGatedNonDestructive)(
+      '%s is gated without destructiveHint (confirmation and destructiveHint are independent)',
+      (name) => {
+        const tool = toolByName(name);
+        expect(tool.confirmation?.hint.trim()).not.toBe('');
+        expect(tool.annotations.destructiveHint).toBe(false);
+      },
+    );
   });
 
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
       'workflows_update_config',
-      'consent_set_preferences',
       'preferences_upsert',
       'preferences_update_identifiers',
       'inventory_write_vendor',

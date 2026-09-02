@@ -1,15 +1,70 @@
-import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createToolResult,
+  defineToolWithCapabilities,
+  McpClientCapability,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
-import { COOKIE_STATS, type TranscendCliCookieStatsResponse } from '@transcend-io/sdk';
+import {
+  COOKIE_STATS,
+  type TranscendCliCookieStatsResponse,
+  type TranscendTrackerStatsGql,
+} from '@transcend-io/sdk';
 
+import { INVENTORY_STATS_APP_RESOURCE } from '../apps/inventory-stats.js';
 import { getDataFlowCount } from '../getDataFlowCount.js';
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
 
 export const GetInventoryStatsSchema = z.object({});
 export type GetInventoryStatsInput = z.infer<typeof GetInventoryStatsSchema>;
 
+/** Cookie and data-flow triage counts returned by {@link createConsentGetInventoryStatsTool}. */
+export interface InventoryStatsPayload {
+  /** Cookie live / needs-review / junk counts */
+  cookies: TranscendTrackerStatsGql;
+  /** Data-flow live / needs-review / junk counts */
+  dataFlows: TranscendTrackerStatsGql;
+}
+
+/** Shared by the baseline tool and the MCP App variant. */
+async function inventoryStatsPayload(clients: ToolClients): Promise<unknown> {
+  const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
+  const [cookieData, needReviewCount, liveCount, junkCount] = await Promise.all([
+    clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, {
+      input: { airgapBundleId },
+    }),
+    getDataFlowCount(clients.graphql, airgapBundleId, {
+      status: ConsentTrackerStatus.NeedsReview,
+    }),
+    getDataFlowCount(clients.graphql, airgapBundleId, {
+      status: ConsentTrackerStatus.Live,
+      isJunk: false,
+    }),
+    getDataFlowCount(clients.graphql, airgapBundleId, {
+      status: ConsentTrackerStatus.Live,
+      isJunk: true,
+    }),
+  ]);
+
+  return createToolResult(true, {
+    cookies: cookieData.cookieStats,
+    dataFlows: {
+      liveCount,
+      needReviewCount,
+      junkCount,
+    },
+  } satisfies InventoryStatsPayload);
+}
+
+/**
+ * Cookie and data-flow inventory triage counts.
+ *
+ * Renders as an interactive dashboard on hosts that support MCP Apps, and
+ * returns plain JSON everywhere else.
+ */
 export function createConsentGetInventoryStatsTool(clients: ToolClients) {
-  return defineTool({
+  return defineToolWithCapabilities({
     name: 'consent_get_inventory_stats',
     description:
       'Get cookie and data-flow inventory triage counts: live (approved), needs review, and junk. ' +
@@ -21,33 +76,12 @@ export function createConsentGetInventoryStatsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: GetInventoryStatsSchema,
-    handler: async () => {
-      const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
-      const [cookieData, needReviewCount, liveCount, junkCount] = await Promise.all([
-        clients.graphql.makeRequest<TranscendCliCookieStatsResponse>(COOKIE_STATS, {
-          input: { airgapBundleId },
-        }),
-        getDataFlowCount(clients.graphql, airgapBundleId, {
-          status: ConsentTrackerStatus.NeedsReview,
-        }),
-        getDataFlowCount(clients.graphql, airgapBundleId, {
-          status: ConsentTrackerStatus.Live,
-          isJunk: false,
-        }),
-        getDataFlowCount(clients.graphql, airgapBundleId, {
-          status: ConsentTrackerStatus.Live,
-          isJunk: true,
-        }),
-      ]);
-
-      return createToolResult(true, {
-        cookies: cookieData.cookieStats,
-        dataFlows: {
-          liveCount,
-          needReviewCount,
-          junkCount,
-        },
-      });
+    handler: async () => inventoryStatsPayload(clients),
+    variants: {
+      [McpClientCapability.McpApp]: {
+        resource: INVENTORY_STATS_APP_RESOURCE,
+        handler: async () => inventoryStatsPayload(clients),
+      },
     },
   });
 }

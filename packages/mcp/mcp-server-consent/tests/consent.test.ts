@@ -9,10 +9,10 @@ import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
 import { getConsentTools } from '../src/tools/index.js';
+import inventoryStatsHtml from '../src/ui/generated/inventory-stats.html';
 
 const EXPECTED_TOOL_NAMES = [
   'consent_get_preferences',
-  'consent_set_preferences',
   'consent_list_purposes',
   'consent_list_data_flows',
   'consent_list_cookies',
@@ -324,5 +324,35 @@ describe('resolveAnalyticsDateRange', () => {
         end: '2024-01-01T00:00:00.000Z',
       }),
     ).toThrow('Start date must be before end date');
+  });
+});
+
+describe('inventory-stats MCP App document', () => {
+  it('includes kit utilities so MetricCard and ProgressBar are not unstyled', () => {
+    // Tailwind only emits these if discoverMcpAppViews @source'd mcp-ui-common.
+    // A missed glob still bundles the components; they just render without CSS.
+    expect(inventoryStatsHtml).toContain('bg-card');
+    expect(inventoryStatsHtml).toContain('text-metric');
+    expect(inventoryStatsHtml).toContain('bg-fill-success');
+  });
+
+  it('inlines component-owned Spinner CSS into the single document', () => {
+    // Importing spinner.css must still produce no external asset: the shared
+    // Vite build collects it into the document's style tag.
+    expect(inventoryStatsHtml).toContain('@keyframes transcend-logo-spinner-trim');
+    expect(inventoryStatsHtml).toContain('--transcend-logo-spinner-inner-rest');
+  });
+
+  it('caps the panel and stacks the metric cards on a narrow host', () => {
+    // The cap comes from a theme token the view never names directly, so
+    // dropping `--container-view` does not fail a build: Tailwind just stops
+    // emitting the utility and the layout silently stretches across a
+    // maximized panel.
+    expect(inventoryStatsHtml).toMatch(/\.max-w-view\{max-width:var\(--container-view\)}/);
+    // Columns key off the row's own width, not the viewport. A host sizes the
+    // iframe to its panel, so a media query here would stack three cards that
+    // had room to sit side by side.
+    expect(inventoryStatsHtml).toContain('container-type:inline-size');
+    expect(inventoryStatsHtml).toMatch(/@container \(width>=36rem\)\{[^{]*grid-cols-3\{/);
   });
 });

@@ -10,6 +10,7 @@ const EXPECTED_TOOL_NAMES = [
   'dsr_download_keys',
   'dsr_list_identifiers',
   'dsr_list_request_data_silos',
+  'dsr_list_pending_requests',
   'dsr_enrich_identifiers',
   'dsr_respond_access',
   'dsr_respond_erasure',
@@ -31,8 +32,9 @@ describe('DSR Tools', () => {
     downloadKeys: ReturnType<typeof vi.fn>;
     listRequestIdentifiers: ReturnType<typeof vi.fn>;
     enrichIdentifiers: ReturnType<typeof vi.fn>;
-    respondAccess: ReturnType<typeof vi.fn>;
-    respondErasure: ReturnType<typeof vi.fn>;
+    respondToAccess: ReturnType<typeof vi.fn>;
+    confirmErasure: ReturnType<typeof vi.fn>;
+    getPendingRequests: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -48,8 +50,9 @@ describe('DSR Tools', () => {
       downloadKeys: vi.fn(),
       listRequestIdentifiers: vi.fn(),
       enrichIdentifiers: vi.fn(),
-      respondAccess: vi.fn(),
-      respondErasure: vi.fn(),
+      respondToAccess: vi.fn(),
+      confirmErasure: vi.fn(),
+      getPendingRequests: vi.fn(),
     };
   });
 
@@ -60,9 +63,9 @@ describe('DSR Tools', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-  it('registers exactly 12 tools with expected names', () => {
+  it('registers exactly 13 tools with expected names', () => {
     const tools = getTools();
-    expect(tools).toHaveLength(12);
+    expect(tools).toHaveLength(13);
     expect(tools.map((t) => t.name)).toEqual([...EXPECTED_TOOL_NAMES]);
   });
 
@@ -351,6 +354,119 @@ describe('DSR Tools', () => {
       const tool = tools.find((t) => t.name === 'dsr_list')!;
 
       await expect(tool.handler({})).rejects.toThrow('GraphQL error');
+    });
+  });
+
+  describe('dsr_enrich_identifiers', () => {
+    it('requires nonce or requestId + enricherId in schema', () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_enrich_identifiers')!;
+
+      expect(tool.zodSchema.safeParse({ identifiers: { email: 'a@b.com' } }).success).toBe(false);
+      expect(
+        tool.zodSchema.safeParse({
+          nonce: 'nonce-1',
+          identifiers: { email: 'a@b.com' },
+        }).success,
+      ).toBe(true);
+    });
+
+    it('calls enrichIdentifiers with nonce', async () => {
+      mockRest.enrichIdentifiers.mockResolvedValue({ success: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_enrich_identifiers')!;
+
+      await tool.handler({ nonce: 'nonce-1', identifiers: { email: 'a@b.com' } });
+
+      expect(mockRest.enrichIdentifiers).toHaveBeenCalledWith({
+        nonce: 'nonce-1',
+        requestId: undefined,
+        enricherId: undefined,
+        identifiers: { email: 'a@b.com' },
+      });
+    });
+  });
+
+  describe('dsr_respond_access', () => {
+    it('calls respondToAccess with nonce', async () => {
+      mockRest.respondToAccess.mockResolvedValue({ success: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_respond_access')!;
+
+      await tool.handler({
+        nonce: 'access-nonce',
+        profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
+      });
+
+      expect(mockRest.respondToAccess).toHaveBeenCalledWith({
+        nonce: 'access-nonce',
+        profiles: [{ profileId: 'p1', profileData: { email: 'a@b.com' } }],
+      });
+    });
+  });
+
+  describe('dsr_respond_erasure', () => {
+    it('calls confirmErasure with nonce', async () => {
+      mockRest.confirmErasure.mockResolvedValue({ success: true });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_respond_erasure')!;
+
+      await tool.handler({ nonce: 'erasure-nonce', profileIds: ['p1'] });
+
+      expect(mockRest.confirmErasure).toHaveBeenCalledWith({
+        nonce: 'erasure-nonce',
+        profileIds: ['p1'],
+      });
+    });
+  });
+
+  describe('dsr_list_pending_requests', () => {
+    it('requires Sombra and returns pending items', async () => {
+      mockRest.getPendingRequests.mockResolvedValue({
+        items: [{ requestId: 'req-1', nonce: 'jwt-nonce' }],
+      });
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_pending_requests')!;
+
+      expect(tool.requireSombra).toBe(true);
+      expect(tool.description).toMatch(/API key linked to this data silo/i);
+
+      const result = await tool.handler({
+        dataSiloId: 'silo-1',
+        requestType: 'ACCESS',
+      });
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          items: [{ requestId: 'req-1', nonce: 'jwt-nonce' }],
+          count: 1,
+        },
+      });
+      expect(mockRest.getPendingRequests).toHaveBeenCalledWith('silo-1', 'ACCESS');
+    });
+
+    it('returns a silo-association hint on 401', async () => {
+      mockRest.getPendingRequests.mockRejectedValue(
+        new Error('REST API error: 401 Unauthorized - API key invalid'),
+      );
+
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'dsr_list_pending_requests')!;
+
+      const result = await tool.handler({
+        dataSiloId: 'silo-algolia',
+        requestType: 'ERASURE',
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringMatching(/associated with data silo silo-algolia/i),
+      });
     });
   });
 });

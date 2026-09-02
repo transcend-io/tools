@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp",
-  "version": "0.15.4",
+  "version": "0.16.1",
   "description": "Transcend MCP Server — unified server with all domain tools.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp",
   "license": "Apache-2.0",
@@ -34,7 +34,10 @@
     "test": "vitest run --config ../../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
-    "check:publint": "publint --level warning --strict --pack pnpm"
+    "check:publint": "publint --level warning --strict --pack pnpm",
+    "docgen": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx --import ./scripts/register-asset-stubs.mjs scripts/buildMcpDocs.ts",
+    "genfiles": "pnpm docgen",
+    "sync:sanity": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/syncMcpGuideToSanity.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "catalog:",
@@ -52,10 +55,12 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@sanity/client": "^7.6.0",
     "@transcend-io/privacy-types": "workspace:*",
     "@types/node": "catalog:",
     "publint": "catalog:",
     "tsdown": "catalog:",
+    "tsx": "4.22.4",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
