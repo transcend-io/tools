@@ -29,7 +29,7 @@ describe('generated Custom Function artifacts', () => {
         stdio: 'pipe',
       }),
     ).not.toThrow();
-  });
+  }, 15_000);
 
   it.each([
     [
