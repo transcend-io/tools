@@ -24,19 +24,16 @@ describe('Policy MCP read tools', () => {
   });
 
   describe('policy_help', () => {
-    it('returns guide and template list by default', async () => {
+    it('returns template list by default', async () => {
       const tool = getPolicyTools(clients).find((entry) => entry.name === 'policy_help')!;
       const result = await tool.handler({});
       expect(result).toMatchObject({
         success: true,
         data: {
-          guide: expect.stringContaining('ActivatePolicyEngineBundles'),
           templates: expect.arrayContaining([expect.objectContaining({ id: 'starter' })]),
         },
       });
-      expect(result.data).toMatchObject({
-        guide: expect.stringContaining('files'),
-      });
+      expect(result.data).not.toHaveProperty('guide');
     });
 
     it('returns template files when templateId is set', async () => {
