@@ -507,18 +507,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
-      oxfmt:
-        specifier: 'catalog:'
-        version: 0.54.0
-      oxlint:
-        specifier: 'catalog:'
-        version: 1.69.0
       publint:
         specifier: 'catalog:'
         version: 0.3.21
-      syncpack:
-        specifier: 'catalog:'
-        version: 14.3.1
       ts-json-schema-generator:
         specifier: 'catalog:'
         version: 2.9.0
