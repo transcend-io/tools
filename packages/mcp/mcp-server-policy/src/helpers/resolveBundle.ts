@@ -1,10 +1,13 @@
 import type { Got } from 'got';
 
-import { policyEngineRequest } from './formatPolicyEngineRequestError.js';
+import {
+  policyEngineRequest,
+  throwPolicyEngineRequestError,
+} from './formatPolicyEngineRequestError.js';
 import type { PolicyBundle, PolicyBundleListResponse } from './types.js';
 
 /**
- * Resolves a bundle name to its parent record by scanning offset-paginated listings.
+ * Resolves a bundle name to its parent record via the bundleName list filter.
  *
  * Same logic as `transcend policy bundles` / publish / activate helpers in the CLI.
  *
@@ -16,28 +19,15 @@ export async function resolveBundleByName(
   client: Got,
   bundleName: string,
 ): Promise<PolicyBundle | undefined> {
-  const limit = 100;
-  let offset = 0;
+  const body = await policyEngineRequest(
+    client
+      .get('v1/policy-engine/policy-bundles', {
+        searchParams: { 'filter[bundleName]': bundleName, limit: 1, offset: 0 },
+      })
+      .json<PolicyBundleListResponse>(),
+  );
 
-  while (true) {
-    const body = await policyEngineRequest(
-      client
-        .get('v1/policy-engine/policy-bundles', {
-          searchParams: { limit, offset },
-        })
-        .json<PolicyBundleListResponse>(),
-    );
-
-    const match = body.nodes.find((bundle) => bundle.bundleName === bundleName);
-    if (match) {
-      return match;
-    }
-
-    offset += body.nodes.length;
-    if (offset >= body.totalCount || body.nodes.length === 0) {
-      return undefined;
-    }
-  }
+  return body.nodes[0];
 }
 
 /**
@@ -66,27 +56,18 @@ export async function resolveBundleById(
   client: Got,
   bundleId: string,
 ): Promise<PolicyBundle | undefined> {
-  const limit = 100;
-  let offset = 0;
-
-  while (true) {
-    const body = await policyEngineRequest(
-      client
-        .get('v1/policy-engine/policy-bundles', {
-          searchParams: { limit, offset },
-        })
-        .json<PolicyBundleListResponse>(),
-    );
-
-    const match = body.nodes.find((bundle) => bundle.id === bundleId);
-    if (match) {
-      return match;
-    }
-
-    offset += body.nodes.length;
-    if (offset >= body.totalCount || body.nodes.length === 0) {
+  try {
+    return await client.get(`v1/policy-engine/policy-bundles/${bundleId}`).json<PolicyBundle>();
+  } catch (error) {
+    if (
+      error &&
+      typeof error === 'object' &&
+      'response' in error &&
+      (error as { response?: { statusCode?: number } }).response?.statusCode === 404
+    ) {
       return undefined;
     }
+    throwPolicyEngineRequestError(error);
   }
 }
 
