@@ -18,10 +18,6 @@ export const PurposeTabs = memo(function PurposeTabs() {
   const selectedPurpose = useSelectedPurpose();
   const { selectPurpose } = useCookieTriageActions();
 
-  if (selectedPurpose === undefined) {
-    return null;
-  }
-
   function focusAndSelect(purpose: CookieTriagePurposeCategory): void {
     selectPurpose(purpose);
     document.getElementById(`cookie-triage-tab-${purpose}`)?.focus();

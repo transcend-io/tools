@@ -41,6 +41,14 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .nativeEnum(DataFlowScope)
     .optional()
     .describe('Filter by data flow scope type (e.g. HOST, PATH, REGEX, CSP)'),
+  trackingTypes: z
+    .array(z.string())
+    .min(1)
+    .optional()
+    .describe(
+      'Filter to data flows assigned any of these tracking purpose slugs ' +
+        '(e.g. ["Advertising", "Analytics"]). Use consent_list_purposes for valid slugs.',
+    ),
   minOccurrences: z
     .number()
     .min(0)
@@ -59,7 +67,8 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved flows. ' +
       'Returns value (URL/host), service, tracking purposes, activity (occurrences), and more. ' +
       'Use unmappedOnly to find approved flows with no service, type to filter by scope ' +
-      '(e.g. CSP), and minOccurrences to focus on high-traffic flows.',
+      '(e.g. CSP), trackingTypes (slugs from consent_list_purposes), and minOccurrences ' +
+      'to focus on high-traffic flows.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -74,6 +83,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       service,
       unmappedOnly,
       type,
+      trackingTypes,
       minOccurrences,
       orderField,
       orderDirection,
@@ -92,6 +102,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
           // server-side, so unmappedOnly takes precedence over a named service filter.
           ...(unmappedOnly ? { service: '' } : service ? { service } : {}),
           ...(type ? { type } : {}),
+          ...(trackingTypes ? { trackingTypes } : {}),
           ...(minOccurrences !== undefined ? { minOccurrences } : {}),
         },
         ...(orderField && orderDirection

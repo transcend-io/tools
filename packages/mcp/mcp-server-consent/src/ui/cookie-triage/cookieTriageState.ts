@@ -1,50 +1,59 @@
 import type {
   CookieTriageAnalysis,
-  CookieTriageAppPayload,
-  CookieTriageSuggestion,
+  CookieTriageDecision,
+  ConsentTriageType,
 } from '../../lib/cookieTriageTypes.ts';
-import { compareCookiesByOccurrencesDesc } from '../../lib/groupCookiesForTriage.ts';
 import {
   COOKIE_TRIAGE_PURPOSE_ORDER,
+  resolvePrimaryCookiePurpose,
   type CookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 
-export { compareCookiesByOccurrencesDesc } from '../../lib/groupCookiesForTriage.ts';
+export type { CookieTriageDecision };
 
-/** User triage decision for a cookie row */
-export type CookieTriageDecision = CookieTriageSuggestion;
+/** Per-tab list fetch status */
+export type CookieTriageLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
-/** Live state for one cookie row within a purpose category */
+/** Live state for one cookie/data-flow row within a purpose category */
 export interface CookieRowState {
-  /** Stable row key (cookie name) */
+  /** Stable row key (cookie name or data-flow value) */
   name: string;
-  /** Cloned snapshot of the cookie at load time; used as the undo reference */
+  /** Cloned snapshot of the item at load time; used as the undo reference */
   initial: CookieTriageAnalysis;
-  /** Current user decision; undefined means still pending (matches initial) */
+  /** Current user decision; undefined means still pending */
   decision?: CookieTriageDecision;
 }
 
 /** Live state for one purpose category bucket */
 export interface CookieTriageCategoryState {
-  /** Total cookies in this bucket org-wide */
+  /** Total items in this bucket (API total, or loaded count for Other) */
   totalCount: number;
-  /** Cookies shown in this category, sorted by occurrences (highest first) */
+  /** Items shown in this category */
   cookies: CookieRowState[];
+  /** List fetch status for this tab */
+  loadStatus: CookieTriageLoadStatus;
+  /** Error message from the most recent failed list call, if any */
+  loadError?: string;
+  /** Offset of the next list page (API rows received for this query) */
+  nextOffset: number;
+  /** Whether another list page exists for this query */
+  hasNextPage: boolean;
 }
 
-/** Purpose-keyed category state cloned from the tool payload */
-export type CookieTriageCategoriesState = Partial<
-  Record<CookieTriagePurposeCategory, CookieTriageCategoryState>
+/** Purpose-keyed category state for the session */
+export type CookieTriageCategoriesState = Record<
+  CookieTriagePurposeCategory,
+  CookieTriageCategoryState
 >;
 
 /** Session state for the loaded cookie triage view */
 export interface CookieTriageSessionState {
-  /** Display name of the organization being triaged */
-  organizationName: string;
-  /** Purpose-keyed categories with live cookie rows */
+  /** Whether this session is cookies or data flows */
+  triageType: ConsentTriageType;
+  /** Purpose-keyed categories with live rows */
   categories: CookieTriageCategoriesState;
   /** Purpose tab currently selected in the triage UI */
-  selectedPurpose?: CookieTriagePurposeCategory;
+  selectedPurpose: CookieTriagePurposeCategory;
 }
 
 /** Summary counts derived from row state */
@@ -60,21 +69,21 @@ export interface CookieTriageSummary {
 /** Actions dispatched to {@link cookieTriageReducer} */
 export type CookieTriageAction =
   | {
-      /** Record a triage decision for one cookie */
+      /** Record a triage decision for one item */
       type: 'decide';
-      /** Primary purpose bucket the cookie belongs to */
+      /** Primary purpose bucket the item belongs to */
       purpose: CookieTriagePurposeCategory;
-      /** Cookie name */
+      /** Cookie name or data-flow value */
       name: string;
       /** Decision to apply */
       decision: CookieTriageDecision;
     }
   | {
-      /** Revert one cookie row to its initial pending state */
+      /** Revert one row to its initial pending state */
       type: 'undo';
-      /** Primary purpose bucket the cookie belongs to */
+      /** Primary purpose bucket the item belongs to */
       purpose: CookieTriagePurposeCategory;
-      /** Cookie name */
+      /** Cookie name or data-flow value */
       name: string;
     }
   | {
@@ -84,64 +93,79 @@ export type CookieTriageAction =
       purpose: CookieTriagePurposeCategory;
     }
   | {
-      /**
-       * Apply each pending row's non-review suggestion in one purpose category
-       * (approve / junk only; review rows are skipped).
-       */
-      type: 'applySuggestions';
-      /** Purpose category to apply within */
+      /** Mark a purpose tab as fetching a list page */
+      type: 'loadStart';
+      /** Purpose tab being loaded */
       purpose: CookieTriagePurposeCategory;
+    }
+  | {
+      /** Merge a list page into a purpose tab */
+      type: 'appendPage';
+      /** Purpose tab the page was fetched for */
+      purpose: CookieTriagePurposeCategory;
+      /** Projected rows from the list tool (unclaimed; may include other primaries) */
+      items: CookieTriageAnalysis[];
+      /** Number of API rows in this page (drives nextOffset) */
+      fetchedCount: number;
+      /** API totalCount for this filter, when known */
+      totalCount?: number;
+      /** Whether the list tool reported another page */
+      hasNextPage: boolean;
+    }
+  | {
+      /** Record a failed list fetch for a purpose tab */
+      type: 'loadError';
+      /** Purpose tab that failed */
+      purpose: CookieTriagePurposeCategory;
+      /** Error message from the tool */
+      error: string;
     };
 
 const DORMANT_MS = 1000 * 60 * 60 * 24 * 30;
 
-/** Whether a cookie has had no telemetry activity in the last 30 days. */
+/** Whether an item has had no telemetry activity in the last 30 days. */
 export function isDormantCookie(cookie: CookieTriageAnalysis): boolean {
   return (
-    cookie.lastActivityAt !== undefined &&
+    cookie.lastActivityAt === undefined ||
     new Date(cookie.lastActivityAt).getTime() < Date.now() - DORMANT_MS
   );
 }
 
-/** Build initial session state from the MCP tool payload (already grouped/sorted by the tool). */
-export function createInitialState(payload: CookieTriageAppPayload): CookieTriageSessionState {
-  const categories: CookieTriageCategoriesState = {};
-
-  for (const category of payload.categories) {
-    categories[category.purpose] = {
-      totalCount: category.totalCount,
-      cookies: [...category.cookies].sort(compareCookiesByOccurrencesDesc).map((cookie) => ({
-        name: cookie.name,
-        initial: structuredClone(cookie),
-      })),
-    };
-  }
-
+function emptyCategory(): CookieTriageCategoryState {
   return {
-    organizationName: payload.organizationName,
-    categories,
-    selectedPurpose: selectPurposes(categories)[0],
+    totalCount: 0,
+    cookies: [],
+    loadStatus: 'idle',
+    nextOffset: 0,
+    hasNextPage: true,
   };
 }
 
-/** Purpose keys present in the session, in canonical tab order. */
-export function selectPurposes(
-  categories: CookieTriageCategoriesState,
-): CookieTriagePurposeCategory[] {
-  return COOKIE_TRIAGE_PURPOSE_ORDER.filter((purpose) => categories[purpose] !== undefined);
+/** Build an empty session with every purpose tab seeded. */
+export function createEmptySession(triageType: ConsentTriageType): CookieTriageSessionState {
+  const categories = Object.fromEntries(
+    COOKIE_TRIAGE_PURPOSE_ORDER.map((purpose) => [purpose, emptyCategory()]),
+  ) as CookieTriageCategoriesState;
+
+  return {
+    triageType,
+    categories,
+    selectedPurpose: 'Essential',
+  };
 }
 
-/** Derive overview counts from all category rows. */
+/** Ordered purpose keys shown as tabs (always the full set). */
+export function selectPurposes(): CookieTriagePurposeCategory[] {
+  return [...COOKIE_TRIAGE_PURPOSE_ORDER];
+}
+
+/** Aggregate pending / dormant / triaged counts across all purpose categories. */
 export function selectSummary(categories: CookieTriageCategoriesState): CookieTriageSummary {
   let pendingCount = 0;
   let dormantCount = 0;
   let triagedCount = 0;
 
   for (const category of Object.values(categories)) {
-    if (!category) {
-      continue;
-    }
-
     for (const row of category.cookies) {
       if (row.decision === undefined) {
         pendingCount++;
@@ -162,54 +186,36 @@ export function canUndoRow(row: CookieRowState): boolean {
   return row.decision !== undefined;
 }
 
-/** Per-category summary for the group header and apply button. */
+/** Per-category summary for the group header. */
 export interface CookieTriageCategorySummary {
-  /** Rows whose agent suggestion is approve (any decision state) */
-  approveCount: number;
-  /** Rows whose agent suggestion is junk (any decision state) */
-  junkCount: number;
+  /** Pending rows in this category */
+  pendingCount: number;
   /** Pending rows with no telemetry in the last 30 days */
   dormantCount: number;
-  /** Pending rows with an approve suggestion that can be bulk-applied */
-  pendingApproveCount: number;
-  /** Pending rows with a junk suggestion that can be bulk-applied */
-  pendingJunkCount: number;
+  /** Rows with a user decision in this category */
+  triagedCount: number;
 }
 
 /** Derive group-header counts for one purpose category. */
 export function selectCategorySummary(
   category: CookieTriageCategoryState,
 ): CookieTriageCategorySummary {
-  let approveCount = 0;
-  let junkCount = 0;
+  let pendingCount = 0;
   let dormantCount = 0;
-  let pendingApproveCount = 0;
-  let pendingJunkCount = 0;
+  let triagedCount = 0;
 
   for (const row of category.cookies) {
-    if (row.initial.suggestion === 'approve') {
-      approveCount++;
-      if (row.decision === undefined) {
-        pendingApproveCount++;
+    if (row.decision === undefined) {
+      pendingCount++;
+      if (isDormantCookie(row.initial)) {
+        dormantCount++;
       }
-    } else if (row.initial.suggestion === 'junk') {
-      junkCount++;
-      if (row.decision === undefined) {
-        pendingJunkCount++;
-      }
-    }
-
-    if (row.decision === undefined && isDormantCookie(row.initial)) {
-      dormantCount++;
+    } else {
+      triagedCount++;
     }
   }
 
-  return { approveCount, junkCount, dormantCount, pendingApproveCount, pendingJunkCount };
-}
-
-/** Pending rows that can be bulk-applied (approve or junk suggestion). */
-export function selectAppliableCount(summary: CookieTriageCategorySummary): number {
-  return summary.pendingApproveCount + summary.pendingJunkCount;
+  return { pendingCount, dormantCount, triagedCount };
 }
 
 /** Format encounter counts for the table (e.g. `31,204`). */
@@ -247,9 +253,9 @@ export function formatLastActivity(lastActivityAt: string | undefined, now = Dat
   return rtf.format(Math.round(deltaSec / (60 * 60 * 24)), 'day');
 }
 
-/** Capitalized label for a triage suggestion in the My Read column. */
-export function suggestionReadLabel(suggestion: CookieTriageSuggestion): string {
-  switch (suggestion) {
+/** Capitalized label for a triage decision. */
+export function decisionReadLabel(decision: CookieTriageDecision): string {
+  switch (decision) {
     case 'approve':
       return 'Approve';
     case 'junk':
@@ -257,38 +263,23 @@ export function suggestionReadLabel(suggestion: CookieTriageSuggestion): string 
     case 'review':
       return 'Review';
     default:
-      return suggestion;
+      return decision;
   }
 }
 
 /** Build the plain-language group summary under the purpose title. */
 export function formatCategorySummaryLine(summary: CookieTriageCategorySummary): string {
   const parts: string[] = [];
-  if (summary.approveCount > 0) {
-    parts.push(`${summary.approveCount} to approve as-is`);
-  }
-  if (summary.junkCount > 0) {
-    parts.push(`${summary.junkCount} to junk`);
+  if (summary.pendingCount > 0) {
+    parts.push(`${summary.pendingCount} pending`);
   }
   if (summary.dormantCount > 0) {
     parts.push(`${summary.dormantCount} dormant, worth a look`);
   }
-  return parts.length > 0 ? parts.join(' · ') : 'Nothing left to apply in this group';
-}
-
-/** Label for the bulk apply button reflecting pending approve/junk counts. */
-export function formatApplySuggestionsLabel(summary: CookieTriageCategorySummary): string {
-  const actions: string[] = [];
-  if (summary.pendingApproveCount > 0) {
-    actions.push(`${summary.pendingApproveCount} approve`);
+  if (summary.triagedCount > 0) {
+    parts.push(`${summary.triagedCount} decided`);
   }
-  if (summary.pendingJunkCount > 0) {
-    actions.push(`${summary.pendingJunkCount} junk`);
-  }
-  if (actions.length === 0) {
-    return 'Apply suggestions';
-  }
-  return `Apply suggestions · ${actions.join(' · ')}`;
+  return parts.length > 0 ? parts.join(' · ') : 'Nothing left in this group';
 }
 
 function findRow(
@@ -296,7 +287,7 @@ function findRow(
   purpose: CookieTriagePurposeCategory,
   name: string,
 ): CookieRowState | undefined {
-  return categories[purpose]?.cookies.find((row) => row.name === name);
+  return categories[purpose].cookies.find((row) => row.name === name);
 }
 
 function updateCategoryRow(
@@ -310,6 +301,45 @@ function updateCategoryRow(
   };
 }
 
+function sessionRowKeys(categories: CookieTriageCategoriesState): Set<string> {
+  const keys = new Set<string>();
+  for (const category of Object.values(categories)) {
+    for (const row of category.cookies) {
+      keys.add(row.name);
+      if (row.initial.id !== undefined) {
+        keys.add(row.initial.id);
+      }
+    }
+  }
+  return keys;
+}
+
+/** Rows from a list page that belong on this tab and are not already in the session. */
+export function claimPageItems(
+  categories: CookieTriageCategoriesState,
+  purpose: CookieTriagePurposeCategory,
+  items: readonly CookieTriageAnalysis[],
+): CookieTriageAnalysis[] {
+  const keys = sessionRowKeys(categories);
+  const claimed: CookieTriageAnalysis[] = [];
+
+  for (const item of items) {
+    if (resolvePrimaryCookiePurpose(item.trackingPurposes) !== purpose) {
+      continue;
+    }
+    if (keys.has(item.name) || (item.id !== undefined && keys.has(item.id))) {
+      continue;
+    }
+    claimed.push(item);
+    keys.add(item.name);
+    if (item.id !== undefined) {
+      keys.add(item.id);
+    }
+  }
+
+  return claimed;
+}
+
 /** Immutable reducer for cookie triage session state. */
 export function cookieTriageReducer(
   state: CookieTriageSessionState,
@@ -319,7 +349,7 @@ export function cookieTriageReducer(
     case 'decide': {
       const category = state.categories[action.purpose];
       const row = findRow(state.categories, action.purpose, action.name);
-      if (!category || !row) {
+      if (!row) {
         return state;
       }
 
@@ -336,7 +366,7 @@ export function cookieTriageReducer(
     case 'undo': {
       const category = state.categories[action.purpose];
       const row = findRow(state.categories, action.purpose, action.name);
-      if (!category || !row || row.decision === undefined) {
+      if (!row || row.decision === undefined) {
         return state;
       }
 
@@ -350,7 +380,7 @@ export function cookieTriageReducer(
     }
     case 'selectPurpose': {
       if (
-        state.categories[action.purpose] === undefined ||
+        !COOKIE_TRIAGE_PURPOSE_ORDER.includes(action.purpose) ||
         state.selectedPurpose === action.purpose
       ) {
         return state;
@@ -358,26 +388,9 @@ export function cookieTriageReducer(
 
       return { ...state, selectedPurpose: action.purpose };
     }
-    case 'applySuggestions': {
+    case 'loadStart': {
       const category = state.categories[action.purpose];
-      if (!category) {
-        return state;
-      }
-
-      let changed = false;
-      const cookies = category.cookies.map((row) => {
-        if (row.decision !== undefined) {
-          return row;
-        }
-        const suggestion = row.initial.suggestion;
-        if (suggestion === 'review') {
-          return row;
-        }
-        changed = true;
-        return { ...row, decision: suggestion };
-      });
-
-      if (!changed) {
+      if (category.loadStatus === 'loading') {
         return state;
       }
 
@@ -385,7 +398,60 @@ export function cookieTriageReducer(
         ...state,
         categories: {
           ...state.categories,
-          [action.purpose]: { ...category, cookies },
+          [action.purpose]: {
+            ...category,
+            loadStatus: 'loading',
+            loadError: undefined,
+          },
+        },
+      };
+    }
+    case 'appendPage': {
+      const category = state.categories[action.purpose];
+      const claimed = claimPageItems(state.categories, action.purpose, action.items);
+      const cookies =
+        claimed.length === 0
+          ? category.cookies
+          : [
+              ...category.cookies,
+              ...claimed.map((item) => ({
+                name: item.name,
+                initial: structuredClone(item),
+              })),
+            ];
+
+      const totalCount =
+        action.purpose === 'NoPurpose'
+          ? cookies.length
+          : (action.totalCount ?? category.totalCount);
+
+      return {
+        ...state,
+        categories: {
+          ...state.categories,
+          [action.purpose]: {
+            ...category,
+            cookies,
+            totalCount,
+            nextOffset: category.nextOffset + action.fetchedCount,
+            hasNextPage: action.hasNextPage,
+            loadStatus: 'ready',
+            loadError: undefined,
+          },
+        },
+      };
+    }
+    case 'loadError': {
+      const category = state.categories[action.purpose];
+      return {
+        ...state,
+        categories: {
+          ...state.categories,
+          [action.purpose]: {
+            ...category,
+            loadStatus: 'error',
+            loadError: action.error,
+          },
         },
       };
     }

@@ -16,8 +16,7 @@ export const COOKIE_TRIAGE_APP_URI = 'ui://transcend-consent/cookie-triage';
 export const COOKIE_TRIAGE_APP_RESOURCE: UiResourceDefinition = defineUiResource({
   uri: COOKIE_TRIAGE_APP_URI,
   name: 'Cookie triage review',
-  description:
-    'Interactive review of agent-researched cookie classification suggestions grouped by purpose.',
+  description: 'Interactive review of cookies or data flows needing review, grouped by purpose.',
   html: viewHtml({
     bundled: COOKIE_TRIAGE_APP_HTML,
     moduleUrl: import.meta.url,

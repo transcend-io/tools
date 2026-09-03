@@ -42,14 +42,11 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
     .min(0)
     .optional()
     .describe('Only return cookies with at least this many occurrences (traffic)'),
-  orderField: z
-    .nativeEnum(CookieOrderField)
-    .optional()
-    .describe('Sort field. Omit for consent_cookie_triage_review_app fetches.'),
+  orderField: z.nativeEnum(CookieOrderField).optional().describe('Sort field (e.g. occurrences).'),
   orderDirection: z
     .nativeEnum(OrderDirection)
     .optional()
-    .describe('Sort direction when orderField is set. Omit for triage app fetches.'),
+    .describe('Sort direction when orderField is set.'),
 });
 export type ListCookiesInput = z.infer<typeof ListCookiesSchema>;
 
@@ -62,9 +59,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       'Returns name, service, tracking purposes, occurrences, junk status, and more. ' +
       'Filter with trackingPurposes (slugs from consent_list_purposes). ' +
       'Optional orderField/orderDirection and minOccurrences for ad-hoc listing. ' +
-      'For consent_cookie_triage_review_app: fetch NEEDS_REVIEW with first: 100 (paginate via offset); ' +
-      'omit order/purpose filters; project slim fields ' +
-      '(name, id, service.title, trackingPurposes, occurrences, lastDiscoveredAt) before classifying.',
+      'consent_cookie_triage_review_app pages NEEDS_REVIEW cookies via this tool when triageType is cookies.',
 
     category: 'Consent Management',
     readOnly: true,

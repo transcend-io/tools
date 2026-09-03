@@ -1,3 +1,4 @@
+import { isCapabilityAwareTool, McpClientCapability } from '@transcend-io/mcp-server-base';
 import {
   AirgapBundleAnalyticsDimension,
   AirgapBundleAnalyticsMetric,
@@ -131,6 +132,20 @@ describe('Consent Tools', () => {
       expect(variables.filterBy).toMatchObject({ type: 'CSP', minOccurrences: 10 });
     });
 
+    it('forwards trackingTypes into filterBy', async () => {
+      const variables = await runDataFlows({
+        status: 'NEEDS_REVIEW',
+        trackingTypes: ['Advertising', 'Analytics'],
+      });
+      expect(variables.filterBy.trackingTypes).toEqual(['Advertising', 'Analytics']);
+    });
+
+    it('zodSchema rejects empty trackingTypes', () => {
+      const tool = getTools().find((t) => t.name === 'consent_list_data_flows')!;
+      const result = tool.zodSchema.safeParse({ status: 'LIVE', trackingTypes: [] });
+      expect(result.success).toBe(false);
+    });
+
     it('omits showZeroActivity by default for NEEDS_REVIEW so counts match inventory stats', async () => {
       const variables = await runDataFlows({ status: 'NEEDS_REVIEW' });
       expect(variables.filterBy).not.toHaveProperty('showZeroActivity');
@@ -195,32 +210,41 @@ describe('Consent Tools', () => {
   });
 
   describe('consent_cookie_triage_review_app', () => {
-    const validInput = {
-      organizationName: 'Acme Corp',
-      cookies: [
-        {
-          name: '_ga',
-          trackingPurposes: ['Analytics'],
-          suggestion: 'approve' as const,
-          reason: 'Google Analytics first-party cookie used for session measurement.',
-          lastActivityAt: '2026-08-25T14:32:00.000Z',
-        },
-        {
-          name: '_unknown',
-          suggestion: 'review' as const,
-          reason: 'No vendor match found; needs manual review.',
-        },
-      ],
-    };
+    it('fetches cookies, groups by purpose, and sets shownCount', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ organization: { name: 'Acme Corp' } })
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({
+          cookies: {
+            totalCount: 2,
+            nodes: [
+              {
+                id: 'c1',
+                name: '_ga',
+                trackingPurposes: ['Analytics'],
+                occurrences: 10,
+                lastDiscoveredAt: '2026-08-25T14:32:00.000Z',
+                service: { title: 'Google Analytics' },
+              },
+              {
+                id: 'c2',
+                name: '_unknown',
+                trackingPurposes: [],
+                occurrences: 1,
+              },
+            ],
+          },
+        });
 
-    it('groups flat cookies by purpose and sets shownCount', async () => {
       const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
-      const result = await tool.handler(validInput);
+      const result = await tool.handler(tool.zodSchema.parse({ triageType: 'cookies' }));
 
       expect(result).toMatchObject({
         success: true,
         data: {
+          triageType: 'cookies',
           organizationName: 'Acme Corp',
+          loaded: true,
           categories: [
             {
               purpose: 'Analytics',
@@ -229,7 +253,7 @@ describe('Consent Tools', () => {
               cookies: [
                 {
                   name: '_ga',
-                  suggestion: 'approve',
+                  service: 'Google Analytics',
                   lastActivityAt: '2026-08-25T14:32:00.000Z',
                 },
               ],
@@ -238,35 +262,101 @@ describe('Consent Tools', () => {
               purpose: 'NoPurpose',
               totalCount: 1,
               shownCount: 1,
-              cookies: [{ name: '_unknown', suggestion: 'review' }],
+              cookies: [{ name: '_unknown' }],
             },
           ],
         },
       });
     });
 
-    it('rejects more than 600 cookies', () => {
-      const cookies = Array.from({ length: 601 }, (_, index) => ({
-        name: `cookie-${index}`,
-        suggestion: 'review' as const,
-        reason: 'Needs review.',
-      }));
+    it('MCP App open returns a shell without GraphQL', async () => {
+      const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
+      expect(isCapabilityAwareTool(tool)).toBe(true);
+      if (!isCapabilityAwareTool(tool)) {
+        return;
+      }
 
-      expect(
-        CookieTriageAppSchema.safeParse({
-          organizationName: 'Acme Corp',
-          cookies,
-        }).success,
-      ).toBe(false);
+      const appVariant = tool.variants[McpClientCapability.McpApp];
+      expect(appVariant).toBeDefined();
+      const result = await appVariant!.handler(tool.zodSchema.parse({ triageType: 'data_flows' }));
+
+      expect(mockGraphql.makeRequest).not.toHaveBeenCalled();
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          triageType: 'data_flows',
+          organizationName: '',
+          categories: [],
+          loaded: false,
+        },
+      });
+      expect(appVariant!.appOnlyTools ?? []).toEqual([]);
     });
 
-    it('rejects an empty reason', () => {
-      expect(
-        CookieTriageAppSchema.safeParse({
+    it('fetches data flows when triageType is data_flows', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ organization: { name: 'Acme Corp' } })
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({
+          dataFlows: {
+            totalCount: 1,
+            nodes: [
+              {
+                id: 'df1',
+                value: 'cdn.example.com',
+                trackingType: ['Advertising'],
+                occurrences: 42,
+                lastDiscoveredAt: '2026-08-20T00:00:00.000Z',
+                service: { title: 'Example CDN' },
+              },
+            ],
+          },
+        });
+
+      const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
+      const result = await tool.handler(tool.zodSchema.parse({ triageType: 'data_flows' }));
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          triageType: 'data_flows',
           organizationName: 'Acme Corp',
-          cookies: [{ name: '_sess', suggestion: 'approve', reason: '' }],
-        }).success,
-      ).toBe(false);
+          loaded: true,
+          categories: [
+            {
+              purpose: 'Advertising',
+              totalCount: 1,
+              shownCount: 1,
+              cookies: [
+                {
+                  name: 'cdn.example.com',
+                  id: 'df1',
+                  service: 'Example CDN',
+                  occurrences: 42,
+                  lastActivityAt: '2026-08-20T00:00:00.000Z',
+                },
+              ],
+            },
+          ],
+        },
+      });
+    });
+
+    it('rejects unknown triageType values', () => {
+      expect(CookieTriageAppSchema.safeParse({ triageType: 'both' }).success).toBe(false);
+      expect(CookieTriageAppSchema.safeParse({}).success).toBe(false);
+    });
+
+    it('surfaces which fetch step failed', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ organization: { name: 'Acme Corp' } })
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockRejectedValueOnce(new Error('cookies GraphQL boom'));
+
+      const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
+      await expect(tool.handler(tool.zodSchema.parse({ triageType: 'cookies' }))).rejects.toThrow(
+        /Failed to fetch cookies for consent triage \(cookies\): cookies GraphQL boom/,
+      );
     });
   });
 
@@ -462,8 +552,9 @@ describe('inventory-stats MCP App document', () => {
 
 describe('cookie-triage MCP App document', () => {
   it('includes cookie triage chrome and theme utilities', () => {
-    expect(cookieTriageHtml).toContain('Cookie triage');
-    expect(cookieTriageHtml).toContain('Connecting');
+    expect(cookieTriageHtml).toContain('Could not reach the host');
+    expect(cookieTriageHtml).toContain('Connecting to the host');
+    expect(cookieTriageHtml).toContain('Load more');
     expect(cookieTriageHtml).toMatch(/\.max-w-view\{max-width:var\(--container-view\)}/);
     expect(cookieTriageHtml).toContain('text-content-muted');
   });

@@ -4,14 +4,22 @@ import { describe, expect, it } from 'vitest';
 import { CookieTriageAppSchema } from '../src/tools/cookie_triage_app.js';
 
 describe('CookieTriageAppSchema JSON schema', () => {
-  it('exposes a flat cookies array with lastActivityAt for MCP hosts', () => {
+  it('exposes triageType enum for MCP hosts', () => {
     const schema = toJsonSchemaCompat(CookieTriageAppSchema as never) as {
       properties: {
-        cookies: { items: { properties: Record<string, unknown> } };
+        triageType: { type?: string; enum?: string[] };
       };
+      required?: string[];
     };
 
-    expect(schema.properties.cookies.items.properties.lastActivityAt).toBeDefined();
-    expect(schema.properties.cookies.items.properties.trackingPurposes).toBeDefined();
+    expect(schema.required).toEqual(['triageType']);
+    expect(schema.properties.triageType.enum).toEqual(['cookies', 'data_flows']);
+  });
+
+  it('accepts cookies and data_flows', () => {
+    expect(CookieTriageAppSchema.safeParse({ triageType: 'cookies' }).success).toBe(true);
+    expect(CookieTriageAppSchema.safeParse({ triageType: 'data_flows' }).success).toBe(true);
+    expect(CookieTriageAppSchema.safeParse({ triageType: 'both' }).success).toBe(false);
+    expect(CookieTriageAppSchema.safeParse({}).success).toBe(false);
   });
 });

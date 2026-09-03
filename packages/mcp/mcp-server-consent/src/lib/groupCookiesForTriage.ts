@@ -17,9 +17,9 @@ export function compareCookiesByOccurrencesDesc(
 }
 
 /**
- * Group flat researched cookies by primary purpose, sort by occurrences, and cap per bucket.
+ * Group flat triage items by primary purpose, sort by occurrences, and cap per bucket.
  *
- * Primary purpose uses {@link resolvePrimaryCookiePurpose} on each cookie's `trackingPurposes`.
+ * Primary purpose uses {@link resolvePrimaryCookiePurpose} on each item's `trackingPurposes`.
  * `totalCount` is the full grouped size; `cookies` / `shownCount` are capped at
  * {@link COOKIE_TRIAGE_MAX_PER_PURPOSE}.
  */

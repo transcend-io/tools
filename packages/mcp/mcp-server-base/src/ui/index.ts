@@ -16,13 +16,14 @@
  *
  * @example
  * ```tsx
- * import { FullscreenButton, useMcpApp } from '@transcend-io/mcp-server-base/ui';
+ * import { FullscreenButton, useMcpApp, useTool } from '@transcend-io/mcp-server-base/ui';
  *
  * export function View() {
  *   const { app, data, isConnected } = useMcpApp<{ greeting: string }>({
  *     appInfo: { name: 'my-view', version: '1.0.0' },
  *     capabilities: { availableDisplayModes: ['inline', 'fullscreen'] },
  *   });
+ *   const org = useTool<{ name: string }>(app, 'admin_get_organization');
  *   return (
  *     <>
  *       <FullscreenButton app={app} />
@@ -36,3 +37,4 @@
 export { FullscreenButton, type FullscreenButtonProps } from './FullscreenButton.js';
 export { useHostDisplayMode, type HostDisplayModeState } from './use-host-display-mode.js';
 export { useMcpApp, type McpAppState, type UseMcpAppOptions } from './use-mcp-app.js';
+export { useTool, type UseToolState, type ParsedToolResult } from './use-tool.js';

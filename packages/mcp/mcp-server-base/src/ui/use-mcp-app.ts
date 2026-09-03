@@ -96,11 +96,16 @@ export function useMcpApp<TData = unknown>({
     onAppCreated: (created: App) => {
       created.addEventListener('toolresult', (params) => {
         const parsed = parseToolEnvelope<TData>(params);
+        if (parsed.error !== undefined) {
+          console.error('[mcp-app] tool result error', parsed.error, params);
+        }
         setData(parsed.data);
         setToolError(parsed.error);
       });
       created.addEventListener('toolcancelled', (params) => {
-        setToolError(params.reason ?? 'Tool call cancelled');
+        const reason = params.reason ?? 'Tool call cancelled';
+        console.error('[mcp-app] tool cancelled', reason, params);
+        setToolError(reason);
         // A cancelled call may never settle, so abandon everything in flight
         // rather than leaving `isCallingTool` stuck on forever.
         latestCallId.current += 1;
@@ -125,6 +130,9 @@ export function useMcpApp<TData = unknown>({
       try {
         const result = await app.callServerTool({ name, arguments: args ?? {} });
         const parsed = parseToolEnvelope<TData>(result);
+        if (parsed.error !== undefined) {
+          console.error(`[mcp-app] callTool "${name}" failed`, parsed.error, result);
+        }
         if (callId === latestCallId.current) {
           setData(parsed.data);
           setToolError(parsed.error);

@@ -47,14 +47,29 @@ export {
   BulkTriageSchema,
   type BulkTriageInput,
 } from './tools/consent_bulk_triage.js';
-export { CookieTriageAnalysisSchema, CookieTriageAppSchema } from './tools/cookie_triage_app.js';
+export { ConsentTriageTypeSchema, CookieTriageAppSchema } from './tools/cookie_triage_app.js';
 export {
+  type ConsentTriageType,
   type CookieTriageAnalysis,
   type CookieTriageAppInput,
   type CookieTriageAppPayload,
   type CookieTriageCategoryPayload,
-  type CookieTriageSuggestion,
+  type CookieTriageDecision,
 } from './lib/cookieTriageTypes.js';
+export {
+  COOKIE_TRIAGE_FETCH_MAX,
+  COOKIE_TRIAGE_FETCH_PAGE_SIZE,
+  fetchConsentTriageItems,
+  fetchCookiesForTriage,
+  fetchDataFlowsForTriage,
+  fetchTriageOrganizationName,
+} from './lib/fetchConsentTriageItems.js';
+export {
+  projectCookieForTriage,
+  projectDataFlowForTriage,
+  projectListNodeForTriage,
+  type ConsentTriageListNode,
+} from './lib/projectTriageItem.js';
 export {
   COOKIE_TRIAGE_MAX_PER_PURPOSE,
   compareCookiesByOccurrencesDesc,

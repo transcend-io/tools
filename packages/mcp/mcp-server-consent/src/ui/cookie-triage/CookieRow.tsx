@@ -9,7 +9,6 @@ import {
   formatEncounters,
   formatLastActivity,
   isDormantCookie,
-  suggestionReadLabel,
   type CookieRowState,
   type CookieTriageDecision,
 } from './cookieTriageState.ts';
@@ -28,15 +27,13 @@ const DECISION_BUTTON =
 const DECISION_IDLE = `${DECISION_BUTTON} border-line`;
 const DECISION_ACTIVE = `${DECISION_BUTTON} border-brand-text text-brand-text`;
 
-/** One cookie triage table row matching the Agentic Assist mockup. */
+/** One cookie/data-flow triage table row. */
 export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProps) {
   const { decide, undo } = useCookieTriageActions();
   const cookie = row.initial;
   const dormant = isDormantCookie(cookie);
-  const activeDecision: CookieTriageDecision | undefined =
-    row.decision ?? (cookie.suggestion === 'review' ? undefined : cookie.suggestion);
+  const activeDecision: CookieTriageDecision | undefined = row.decision;
   const purposeLabel = COOKIE_TRIAGE_PURPOSE_LABELS[purpose];
-  const readLabel = suggestionReadLabel(cookie.suggestion);
 
   function onDecision(next: CookieTriageDecision): void {
     if (row.decision === next) {
@@ -68,14 +65,9 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
         </div>
       </td>
       <td className="px-4 py-3">
-        <p className="text-sm text-content">
-          <span className="font-semibold">{readLabel}.</span> {cookie.reason}
-        </p>
-      </td>
-      <td className="px-4 py-3">
         <div
           className="flex min-w-0 items-center gap-2 rounded-sm border border-line bg-surface px-1.5 py-1.5"
-          aria-label={`Suggested purpose: ${purposeLabel}`}
+          aria-label={`Purpose: ${purposeLabel}`}
         >
           <span
             className={`inline-flex h-6 shrink-0 items-center rounded-sm px-1.5 text-sm text-content-inverse ${PURPOSE_BADGE_BG[purpose]}`}
@@ -88,7 +80,7 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
         </div>
       </td>
       <td className="px-4 py-3">
-        <div className="flex items-center gap-2.5" role="group" aria-label="Suggested decision">
+        <div className="flex items-center gap-2.5" role="group" aria-label="Decision">
           <button
             type="button"
             className={activeDecision === 'approve' ? DECISION_ACTIVE : DECISION_IDLE}

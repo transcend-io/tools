@@ -24,19 +24,17 @@ describe('Consent Prompts', () => {
     });
 
     expect(messages).toHaveLength(2);
-    expect(messages[0]!.content.text).toContain('Triage cookies in batches of 5');
+    expect(messages[0]!.content.text).toContain('Triage cookies');
+    expect(messages[0]!.content.text).toContain('batch size 5');
     expect(messages[1]!.content.text).toContain('consent_get_inventory_stats');
     expect(messages[1]!.content.text).toContain('consent_cookie_triage_review_app');
-    expect(messages[1]!.content.text).toContain('ungrouped');
-    expect(messages[1]!.content.text).toContain('fast path');
-    expect(messages[1]!.content.text).toContain('Heuristic-first');
+    expect(messages[1]!.content.text).toContain('"triageType": "cookies"');
+    expect(messages[1]!.content.text).toContain('Do **not** pre-fetch');
     expect(messages[1]!.content.text).toContain('dataFlows.needReviewCount');
-    expect(messages[1]!.content.text).toContain(
-      'consent_list_cookies { status: "NEEDS_REVIEW", first: 100',
-    );
     expect(messages[1]!.content.text).toContain(
       'consent_list_cookies { status: "NEEDS_REVIEW", first: 5',
     );
     expect(messages[1]!.content.text).not.toContain('consent_list_data_flows');
+    expect(messages[1]!.content.text).not.toContain('"triageType": "data_flows"');
   });
 });

@@ -1,85 +1,129 @@
 import {
   createToolResult,
   defineToolWithCapabilities,
+  ErrorCode,
   McpClientCapability,
+  ToolError,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
 import { COOKIE_TRIAGE_APP_RESOURCE } from '../apps/cookie-triage.js';
-import type { CookieTriageAppInput } from '../lib/cookieTriageTypes.js';
+import type {
+  ConsentTriageType,
+  CookieTriageAppInput,
+  CookieTriageAppPayload,
+} from '../lib/cookieTriageTypes.js';
+import {
+  COOKIE_TRIAGE_FETCH_MAX,
+  COOKIE_TRIAGE_FETCH_PAGE_SIZE,
+  fetchConsentTriageItems,
+  fetchTriageOrganizationName,
+} from '../lib/fetchConsentTriageItems.js';
 import {
   COOKIE_TRIAGE_MAX_PER_PURPOSE,
   groupCookiesForTriage,
 } from '../lib/groupCookiesForTriage.js';
 
-const CookieTriageSuggestion = z.enum(['approve', 'junk', 'review']);
-
-export const CookieTriageAnalysisSchema = z.object({
-  name: z.string().describe('Cookie name (upsert key)'),
-  id: z.string().optional().describe('Cookie ID when available'),
-  service: z.string().optional().describe('Service title from consent_list_cookies'),
-  trackingPurposes: z
-    .array(z.string())
-    .optional()
-    .describe('Assigned purpose slugs — needed for purpose tabs'),
-  occurrences: z.number().optional().describe('Telemetry occurrence count'),
-  lastActivityAt: z
-    .string()
-    .optional()
-    .describe('ISO 8601 last-seen time (lastDiscoveredAt from consent_list_cookies)'),
-  suggestion: CookieTriageSuggestion.describe(
-    'approve = known tracker; junk = noise; review = needs a human',
-  ),
-  reason: z.string().min(1).describe('Short rationale (prefer ≤80 chars)'),
-});
+export const ConsentTriageTypeSchema = z
+  .enum(['cookies', 'data_flows'])
+  .describe('Open the review UI for cookies or data flows that need review');
 
 export const CookieTriageAppSchema = z.object({
-  organizationName: z
-    .string()
-    .min(1)
-    .describe('Org display name from admin_get_organization'),
-  cookies: z
-    .array(CookieTriageAnalysisSchema)
-    .min(1)
-    .max(COOKIE_TRIAGE_MAX_PER_PURPOSE * 6)
-    .describe(
-      'Flat projected cookies (not full API objects). Tool groups by purpose and sorts by traffic.',
-    ),
+  triageType: ConsentTriageTypeSchema,
 }) satisfies z.ZodType<CookieTriageAppInput>;
 
-/** Soft target for a single app open; paginate list fetches up to the schema max. */
-const COOKIE_TRIAGE_FETCH_PAGE_SIZE = 100;
+const COOKIE_TRIAGE_APP_DESCRIPTION = `Opens an interactive consent triage review UI for cookies or data flows. Pass triageType ("cookies" | "data_flows"). On MCP App hosts the tool returns a fast shell and the view pages consent_list_cookies or consent_list_data_flows; elsewhere the tool fetches the organization name and items (pages of ${COOKIE_TRIAGE_FETCH_PAGE_SIZE}, cap ~${COOKIE_TRIAGE_FETCH_MAX}), groups by purpose (≤${COOKIE_TRIAGE_MAX_PER_PURPOSE}/tab), and sorts by traffic. No agent classification suggestions. Use the consent-triage prompt for the full workflow.`;
 
-const COOKIE_TRIAGE_APP_DESCRIPTION = `Opens a cookie triage review UI. Pass organizationName (admin_get_organization) and a flat projected cookies array from consent_list_cookies { status: "NEEDS_REVIEW", first: ${COOKIE_TRIAGE_FETCH_PAGE_SIZE} } (omit order/purpose filters; cap ~${COOKIE_TRIAGE_MAX_PER_PURPOSE * 6}). Project slim fields, classify locally (approve|junk|review + short reason), call once — this tool groups by purpose (≤${COOKIE_TRIAGE_MAX_PER_PURPOSE}/tab) and sorts by traffic. Prefer speed; no web search unless asked. Use the consent-triage prompt for the full workflow.`;
+/**
+ * Re-throw a fetch failure with the step name so the UI/agent can see what broke.
+ *
+ * @param step - Which fetch failed
+ * @param triageType - cookies vs data_flows
+ * @param error - Underlying failure
+ */
+function wrapTriageFetchError(
+  step: 'organization' | ConsentTriageType,
+  triageType: ConsentTriageType,
+  error: unknown,
+): ToolError {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = error instanceof ToolError ? error.code : ErrorCode.API_ERROR;
+  const retryable = error instanceof ToolError ? error.retryable : false;
+  const details = {
+    step,
+    triageType,
+    ...(error instanceof ToolError && error.details ? error.details : {}),
+  };
 
-/** Shared by both variants, so a host without MCP Apps describes the same result. */
-function cookieTriagePayload(input: CookieTriageAppInput): unknown {
-  return createToolResult(true, {
-    organizationName: input.organizationName,
-    categories: groupCookiesForTriage(input.cookies),
-  });
+  return new ToolError(
+    code,
+    `Failed to fetch ${step} for consent triage (${triageType}): ${message}`,
+    retryable,
+    details,
+  );
 }
 
 /**
- * Interactive cookie triage review UI fed by agent classification suggestions (local metadata).
+ * Fast shell so MCP App hosts can mount the iframe before GraphQL work starts.
  *
- * Renders as an MCP App on capable hosts; returns structured JSON everywhere else.
+ * @param input - Open-app arguments
+ * @returns Payload with `loaded: false` and empty categories
  */
-export function createConsentCookieTriageAppTool(_clients?: ToolClients) {
+function buildShellPayload(input: CookieTriageAppInput): CookieTriageAppPayload {
+  return {
+    triageType: input.triageType,
+    organizationName: '',
+    categories: [],
+    loaded: false,
+  };
+}
+
+/**
+ * Interactive cookie/data-flow triage review UI that loads NEEDS_REVIEW items from the API.
+ *
+ * On MCP App hosts the open call returns a shell immediately; the view then pages
+ * `consent_list_cookies` or `consent_list_data_flows`. Baseline hosts get the
+ * full payload from the main tool handler.
+ */
+export function createConsentCookieTriageAppTool(clients: ToolClients) {
+  async function buildPayload(input: CookieTriageAppInput): Promise<CookieTriageAppPayload> {
+    let organizationName: string;
+    try {
+      organizationName = await fetchTriageOrganizationName(clients);
+    } catch (error) {
+      console.error('[consent_cookie_triage_review_app] organization fetch failed', error);
+      throw wrapTriageFetchError('organization', input.triageType, error);
+    }
+
+    let items;
+    try {
+      items = await fetchConsentTriageItems(clients, input.triageType);
+    } catch (error) {
+      console.error(`[consent_cookie_triage_review_app] ${input.triageType} fetch failed`, error);
+      throw wrapTriageFetchError(input.triageType, input.triageType, error);
+    }
+
+    return {
+      triageType: input.triageType,
+      organizationName,
+      categories: groupCookiesForTriage(items),
+      loaded: true,
+    };
+  }
+
   return defineToolWithCapabilities({
     name: 'consent_cookie_triage_review_app',
     description: COOKIE_TRIAGE_APP_DESCRIPTION,
     category: 'Consent Management',
     readOnly: true,
-    requireAuth: false,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: CookieTriageAppSchema,
-    handler: async (input) => cookieTriagePayload(input),
+    handler: async (input) => createToolResult(true, await buildPayload(input)),
     variants: {
       [McpClientCapability.McpApp]: {
         resource: COOKIE_TRIAGE_APP_RESOURCE,
-        handler: async (input) => cookieTriagePayload(input),
+        handler: async (input) => createToolResult(true, buildShellPayload(input)),
       },
     },
   });

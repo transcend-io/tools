@@ -10,27 +10,19 @@ describe('groupCookiesForTriage', () => {
         name: 'low-analytics',
         trackingPurposes: ['Analytics'],
         occurrences: 1,
-        suggestion: 'review',
-        reason: 'Low.',
       },
       {
         name: 'essential',
         trackingPurposes: ['Essential'],
         occurrences: 5,
-        suggestion: 'approve',
-        reason: 'Session.',
       },
       {
         name: 'high-analytics',
         trackingPurposes: ['Analytics', 'Advertising'],
         occurrences: 100,
-        suggestion: 'approve',
-        reason: 'Ad platform.',
       },
       {
         name: 'orphan',
-        suggestion: 'review',
-        reason: 'Unknown.',
       },
     ];
 
@@ -56,8 +48,6 @@ describe('groupCookiesForTriage', () => {
       name: `cookie-${index}`,
       trackingPurposes: ['Essential'],
       occurrences: index,
-      suggestion: 'review' as const,
-      reason: 'Needs review.',
     }));
 
     const [essential] = groupCookiesForTriage(cookies);

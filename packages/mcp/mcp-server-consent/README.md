@@ -109,7 +109,7 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_list_airgap_bundles` — List Airgap bundles
 - `consent_list_regimes` — List consent regimes
 - `consent_get_inventory_stats` — Cookie/data-flow inventory triage counts (live, needs review, junk). Matches the Consent Manager tables; CSP data flows are omitted like the UI.
-- `consent_cookie_triage_review_app` — Open an interactive cookie triage review UI; pass a flat projected cookie list (local-metadata suggestions) and the tool groups by purpose
+- `consent_cookie_triage_review_app` — Open an interactive cookie/data-flow triage review UI; pass `triageType` (`cookies` | `data_flows`). MCP App hosts get a fast shell then the view pages `consent_list_cookies` or `consent_list_data_flows`; other hosts get the full payload from the tool
 - `consent_get_aggregate_analytics` — Aggregate consent analytics (`airgapBundleAggregateAnalytics`)
 - `consent_get_timeseries_analytics` — Timeseries consent analytics (`airgapBundleTimeseriesAnalytics`)
 - `consent_get_analytics_data` — Consent metrics via `analyticsData` (opt-in/out, signals, sessions)
@@ -123,7 +123,7 @@ Analytics tools require the **ViewConsentManager** scope (included in this serve
 
 Workflow templates discoverable via MCP `prompts/list` / `prompts/get`:
 
-- `consent-triage` — End-to-end cookie/data-flow triage (fast local cookie path + data-flow research/push)
+- `consent-triage` — End-to-end cookie/data-flow triage via `consent_cookie_triage_review_app` + classification push
 - `consent-research-tracker` — Research methodology for classifying a single tracker
 - `consent-inspect-site` — Live site investigation via browser DevTools / airgap console
 
