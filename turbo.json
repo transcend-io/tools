@@ -152,6 +152,18 @@
     "@transcend-io/design-tokens#typecheck": {
       "dependsOn": ["build"],
       "outputs": []
+    },
+    "@transcend-io/custom-function-types#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "scripts/**",
+        "src/**",
+        "!src/__generated__/**",
+        "package.json",
+        "tsconfig.json",
+        "tsdown.config.ts"
+      ],
+      "outputs": ["dist/**", "src/__generated__/**"]
     }
   }
 }
