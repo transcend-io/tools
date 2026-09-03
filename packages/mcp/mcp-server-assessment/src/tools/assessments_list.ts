@@ -2,7 +2,7 @@ import {
   createListResult,
   defineTool,
   z,
-  PaginationSchema,
+  OffsetPaginationSchema,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 import { AssessmentFormStatus } from '@transcend-io/privacy-types';
@@ -17,7 +17,7 @@ export const ListAssessmentsSchema = z
   .object({
     status: AssessmentStatusEnum.optional().describe('Filter by assessment status'),
   })
-  .merge(PaginationSchema.omit({ cursor: true }));
+  .merge(OffsetPaginationSchema);
 export type ListAssessmentsInput = z.infer<typeof ListAssessmentsSchema>;
 
 export function createAssessmentsListTool(clients: ToolClients) {
@@ -27,15 +27,15 @@ export function createAssessmentsListTool(clients: ToolClients) {
     name: 'assessments_list',
     description:
       'List all privacy assessments in your organization. Supports filtering by status. ' +
-      'Returns at most `limit` rows (max 100). ' +
       'Surface the `url` on each row verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAssessmentsSchema,
-    handler: async ({ status, limit }) => {
+    handler: async ({ status, limit, offset }) => {
       const result = await graphql.listAssessments({
         first: limit,
+        offset,
         filterBy: status ? { statuses: [status] } : undefined,
       });
 

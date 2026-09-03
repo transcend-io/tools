@@ -1,14 +1,14 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  CursorPaginationSchema,
   type ToolClients,
   z,
 } from '@transcend-io/mcp-server-base';
 
 import type { DSRMixin } from '../graphql.js';
 
-export const listRequestsSchema = PaginationSchema.extend({
+export const listRequestsSchema = CursorPaginationSchema.extend({
   identifierValue: z
     .string()
     .optional()
@@ -37,8 +37,8 @@ export function createDsrListTool(clients: ToolClients) {
       'Filter by identifierValue to look up requests by email or phone (fuzzy/exact across ' +
       'request identifiers, same as admin "Identifier Value (Fuzzy)"). ' +
       'Use emails only for exact match on primary email address. ' +
-      'Use cursor pagination to retrieve all results. Note: Server-side date filtering is not ' +
-      'available — filter results client-side if needed. For per-system failures and system ' +
+      'Note: Server-side date filtering is not available — filter results client-side if ' +
+      'needed. For per-system failures and system ' +
       'owners, use dsr_list_request_data_silos on a specific request.',
     category: 'DSR Automation',
     readOnly: true,

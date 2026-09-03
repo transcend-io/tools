@@ -1,4 +1,5 @@
 import {
+  derivePageInfo,
   TranscendGraphQLBase,
   type ListOptions,
   type PaginatedResponse,
@@ -290,10 +291,7 @@ export class DSRMixin extends TranscendGraphQLBase {
     const totalCount = connection.totalCount;
     return {
       nodes,
-      pageInfo: {
-        hasNextPage: offset + nodes.length < totalCount,
-        hasPreviousPage: offset > 0,
-      },
+      pageInfo: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }),
       totalCount,
     };
   }

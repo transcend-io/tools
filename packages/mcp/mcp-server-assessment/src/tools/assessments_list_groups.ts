@@ -1,7 +1,7 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
@@ -9,7 +9,7 @@ import {
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentGroupUrl } from '../helpers/buildAssessmentLinks.js';
 
-export const ListGroupsSchema = PaginationSchema.omit({ cursor: true });
+export const ListGroupsSchema = OffsetPaginationSchema;
 export type ListGroupsInput = z.infer<typeof ListGroupsSchema>;
 
 export function createAssessmentsListGroupsTool(clients: ToolClients) {
@@ -25,9 +25,10 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListGroupsSchema,
-    handler: async ({ limit }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listAssessmentGroups({
         first: limit,
+        offset,
       });
 
       const nodesWithLinks = result.nodes.map((node) => ({

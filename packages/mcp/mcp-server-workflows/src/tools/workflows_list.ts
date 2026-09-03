@@ -1,14 +1,14 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
 import type { WorkflowsMixin } from '../graphql.js';
 
-export const ListWorkflowsSchema = PaginationSchema.omit({ cursor: true });
+export const ListWorkflowsSchema = OffsetPaginationSchema;
 export type ListWorkflowsInput = z.infer<typeof ListWorkflowsSchema>;
 
 export function createWorkflowsListTool(clients: ToolClients) {
@@ -18,14 +18,15 @@ export function createWorkflowsListTool(clients: ToolClients) {
     description:
       'List workflow configs in your organization. Use each returned `id` as `workflowConfigId` ' +
       'for `dsr_submit`. Results include `actionType` and `subjectType` so you can pick ACCESS vs ' +
-      'ERASURE (and subject class) without guessing. Returns at most `limit` rows (max 100).',
+      'ERASURE (and subject class) without guessing.',
     category: 'Workflows',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListWorkflowsSchema,
-    handler: async ({ limit }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listWorkflows({
         first: limit,
+        offset,
       });
 
       return createListResult(result.nodes, {

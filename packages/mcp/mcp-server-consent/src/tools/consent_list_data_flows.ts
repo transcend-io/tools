@@ -1,6 +1,7 @@
 import {
   createListResult,
   defineTool,
+  derivePageInfo,
   OffsetPaginationSchema,
   z,
   type ToolClients,
@@ -65,7 +66,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListDataFlowsSchema,
     handler: async ({
-      first,
+      limit,
       offset,
       status,
       isJunk,
@@ -81,7 +82,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const data = await clients.graphql.makeRequest<TranscendCliDataFlowsResponse>(DATA_FLOWS, {
         input: { airgapBundleId },
-        first,
+        first: limit,
         offset,
         filterBy: {
           status,
@@ -101,7 +102,7 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       const { nodes, totalCount } = data.dataFlows;
       return createListResult(nodes, {
         totalCount,
-        hasNextPage: offset + nodes.length < totalCount,
+        hasNextPage: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }).hasNextPage,
       });
     },
   });

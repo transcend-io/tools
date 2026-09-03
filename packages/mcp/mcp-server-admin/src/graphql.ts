@@ -1,4 +1,5 @@
 import {
+  derivePageInfo,
   TranscendGraphQLBase,
   type ApiKey,
   type ApiKeyCreateInput,
@@ -97,8 +98,8 @@ const ListUsersDoc = graphql(/* GraphQL */ `
 `);
 
 const ListTeamsDoc = graphql(/* GraphQL */ `
-  query AdminListTeams($first: Int) {
-    teams(first: $first) {
+  query AdminListTeams($first: Int, $offset: Int) {
+    teams(first: $first, offset: $offset) {
       nodes {
         id
         name
@@ -226,17 +227,20 @@ export class AdminMixin extends TranscendGraphQLBase {
           name: scope.name,
         })),
       })),
-      pageInfo: {
-        hasNextPage: offset + data.users.nodes.length < data.users.totalCount,
-        hasPreviousPage: offset > 0,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.users.nodes.length,
+        totalCount: data.users.totalCount,
+      }),
       totalCount: data.users.totalCount,
     };
   }
 
   async listTeams(options?: ListOptions): Promise<PaginatedResponse<Team>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListTeamsDoc, {
       first: Math.min(options?.first ?? 50, 100),
+      offset,
     });
     return {
       nodes: data.teams.nodes.map((node) => ({
@@ -244,18 +248,20 @@ export class AdminMixin extends TranscendGraphQLBase {
         name: node.name,
         createdAt: new Date(0).toISOString(),
       })),
-      pageInfo: {
-        hasNextPage: data.teams.nodes.length < data.teams.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.teams.nodes.length,
+        totalCount: data.teams.totalCount,
+      }),
       totalCount: data.teams.totalCount,
     };
   }
 
   async listApiKeys(options?: ListOptions): Promise<PaginatedResponse<ApiKey>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListApiKeysDoc, {
       first: Math.min(options?.first ?? 50, 100),
-      offset: options?.offset ?? 0,
+      offset,
     });
     return {
       nodes: data.apiKeys.nodes.map((node) => ({
@@ -268,10 +274,11 @@ export class AdminMixin extends TranscendGraphQLBase {
         lastUsedAt: node.lastUsedAt ?? undefined,
         createdAt: node.createdAt,
       })),
-      pageInfo: {
-        hasNextPage: data.apiKeys.nodes.length < data.apiKeys.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.apiKeys.nodes.length,
+        totalCount: data.apiKeys.totalCount,
+      }),
       totalCount: data.apiKeys.totalCount,
     };
   }
