@@ -680,51 +680,217 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_list', () => {
-    it('zodSchema rejects invalid status', () => {
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_list')!;
+    const listTool = () => getTools().find((t) => t.name === 'assessments_list')!;
 
-      const result = tool.zodSchema.safeParse({ status: 'INVALID_STATUS' });
+    /** Parse through the schema so defaults land the way the server applies them. */
+    const call = async (input: Record<string, unknown>) => {
+      const tool = listTool();
+      const parsed = tool.zodSchema.parse(input);
+      return tool.handler(parsed as never);
+    };
+
+    const resolveList = (nodes: unknown[], totalCount = nodes.length, offset = 0) => {
+      mockGraphql.listAssessments.mockResolvedValue({
+        nodes,
+        totalCount,
+        pageInfo: {
+          hasNextPage: offset + nodes.length < totalCount,
+          hasPreviousPage: offset > 0,
+        },
+      });
+    };
+
+    const NODES = [
+      { id: 'a1', title: 'Assessment 1', status: 'DRAFT' },
+      { id: 'a2', title: 'Assessment 2', status: 'IN_PROGRESS' },
+    ];
+
+    it('rejects a status value outside the AssessmentFormStatus enum', () => {
+      const result = listTool().zodSchema.safeParse({ statuses: ['INVALID_STATUS'] });
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['status']);
+      expect((result as any).error.issues[0].path).toEqual(['statuses', 0]);
     });
 
-    it('returns assessments on success', async () => {
-      const mockNodes = [
-        { id: 'a1', title: 'Assessment 1', status: 'DRAFT' },
-        { id: 'a2', title: 'Assessment 2', status: 'IN_PROGRESS' },
-      ];
-      mockGraphql.listAssessments.mockResolvedValue({
-        nodes: mockNodes,
-        totalCount: 2,
-        pageInfo: { hasNextPage: false },
-      });
+    it('no longer declares the singular status argument', () => {
+      // Replaced by `statuses`. The server refuses unknown arguments (see
+      // strict-arguments in mcp-server-base), so dropping it from the shape is
+      // what turns the old name into an error rather than a silent no-op.
+      const { shape } = listTool().zodSchema as unknown as { shape: Record<string, unknown> };
+      expect(shape).not.toHaveProperty('status');
+      expect(shape).toHaveProperty('statuses');
+    });
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_list')!;
+    it('returns assessments with dashboard links on success', async () => {
+      resolveList(NODES);
 
-      const result = await tool.handler({ status: 'DRAFT', limit: 25 });
+      const result = await call({ statuses: ['DRAFT'], limit: 25 });
 
       expect(result).toMatchObject({
         success: true,
-        data: mockNodes,
         count: 2,
         totalCount: 2,
         hasNextPage: false,
       });
-      expect(mockGraphql.listAssessments).toHaveBeenCalledWith({
-        first: 25,
-        filterBy: { statuses: ['DRAFT'] },
+      expect((result as any).data[0]).toMatchObject({
+        id: 'a1',
+        url: expect.stringContaining('a1'),
       });
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          first: 25,
+          offset: 0,
+          includeDetails: false,
+          filterBy: { statuses: ['DRAFT'] },
+        }),
+      );
+    });
+
+    it('forwards every filter to the API rather than filtering client-side', async () => {
+      resolveList(NODES);
+
+      await call({
+        statuses: ['IN_REVIEW'],
+        text: 'rideshare',
+        ids: ['a1'],
+        assigneeIds: ['u1'],
+        reviewerIds: ['u2'],
+        externalAssigneeEmails: ['vendor@example.com'],
+        templateIds: ['t1'],
+        assessmentGroupIds: ['g1'],
+        createdAfter: '2026-01-01',
+        createdBefore: '2026-04-01',
+        dueAfter: '2026-02-01',
+        dueBefore: '2026-03-01',
+      });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filterBy: {
+            statuses: ['IN_REVIEW'],
+            text: 'rideshare',
+            ids: ['a1'],
+            assigneeIds: ['u1'],
+            reviewerIds: ['u2'],
+            externalAssigneeEmails: ['vendor@example.com'],
+            templateIds: ['t1'],
+            assessmentGroupIds: ['g1'],
+            createdAtAfter: '2026-01-01',
+            createdAtBefore: '2026-04-01',
+            dueDateAfter: '2026-02-01',
+            dueDateBefore: '2026-03-01',
+          },
+        }),
+      );
+    });
+
+    it('rejects a date that is not ISO 8601 and names the field', () => {
+      const result = listTool().zodSchema.safeParse({ dueBefore: 'last friday' });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].message).toContain('dueBefore');
+      expect((result as any).error.issues[0].message).toContain('2026-01-31');
+    });
+
+    it('accepts a full timestamp as well as a bare date', () => {
+      expect(listTool().zodSchema.safeParse({ createdAfter: '2026-01-31T09:30:00Z' }).success).toBe(
+        true,
+      );
+    });
+
+    it('maps caller sort names onto the GraphQL order field', async () => {
+      resolveList(NODES);
+
+      await call({ sortBy: 'status', sortDirection: 'DESC' });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({ sortField: 'statusRank', sortDirection: 'DESC' }),
+      );
+    });
+
+    it('omits sorting entirely when sortBy is not given', async () => {
+      resolveList(NODES);
+
+      await call({});
+
+      const [args] = mockGraphql.listAssessments.mock.calls[0];
+      expect(args).not.toHaveProperty('sortField');
+    });
+
+    it('rejects an unknown sortBy and lists the valid columns', () => {
+      const result = listTool().zodSchema.safeParse({ sortBy: 'dueDate' });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].message).toContain('title, status, submittedAt');
+    });
+
+    it('gates the expensive detail fields behind includeDetails', async () => {
+      resolveList(NODES);
+
+      await call({ includeDetails: true });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({ includeDetails: true }),
+      );
+    });
+
+    it('pages with offset and reports that more remain', async () => {
+      resolveList(NODES, 120, 50);
+
+      const result = await call({ limit: 50, offset: 50 });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 50, offset: 50 }),
+      );
+      expect(result).toMatchObject({ hasNextPage: true, totalCount: 120 });
+      expect((result as any).paginationNote).toContain('offset 100');
+    });
+
+    it('says so plainly on the last page', async () => {
+      resolveList(NODES, 52, 50);
+
+      const result = await call({ limit: 50, offset: 50 });
+
+      expect((result as any).paginationNote).toContain('No further pages');
+    });
+
+    it('distinguishes no matches from a broken query and names the filters', async () => {
+      resolveList([], 0);
+
+      const result = await call({ statuses: ['APPROVED'], text: 'nope' });
+
+      expect(result).toMatchObject({ success: true, count: 0 });
+      const note = (result as any).paginationNote;
+      expect(note).toContain('statuses');
+      expect(note).toContain('text');
+      expect(note).toContain('query succeeded');
+    });
+
+    it('reports an empty organization differently from an over-filtered one', async () => {
+      resolveList([], 0);
+
+      const result = await call({});
+
+      expect((result as any).paginationNote).toContain('no assessments');
+    });
+
+    it('rejects an offset past the end instead of implying nothing matched', async () => {
+      resolveList([], 12, 500);
+
+      await expect(call({ offset: 500 })).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+        message: expect.stringContaining('past the end'),
+        details: { offset: 500, totalCount: 12 },
+      });
+    });
+
+    it('allows offset 0 against an empty result set', async () => {
+      resolveList([], 0);
+
+      await expect(call({ offset: 0 })).resolves.toMatchObject({ count: 0 });
     });
 
     it('throws when client throws', async () => {
       mockGraphql.listAssessments.mockRejectedValue(new Error('API unavailable'));
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_list')!;
-
-      await expect(tool.handler({ limit: 50 })).rejects.toThrow('API unavailable');
+      await expect(call({ limit: 50 })).rejects.toThrow('API unavailable');
     });
   });
 

@@ -204,9 +204,24 @@ function choicesNotAlreadyAnswered(
     : options.map(toAnswerOption);
 }
 
+/**
+ * Assessment index. `AssessmentFormsPayload` exposes `totalCount` but no
+ * `pageInfo`, so paging is offset-based and `hasNextPage` has to be derived
+ * from `offset + nodes.length < totalCount`.
+ *
+ * The people, dates and lock state behind `@include(if: $includeDetails)`
+ * roughly triple the bytes per row, so a caller who only wants titles and
+ * statuses does not pay for them.
+ */
 const ListAssessmentsDoc = graphql(/* GraphQL */ `
-  query AssessmentsList($first: Int, $offset: Int, $filterBy: AssessmentFormFiltersInput) {
-    assessmentForms(first: $first, offset: $offset, filterBy: $filterBy) {
+  query AssessmentsList(
+    $first: Int
+    $offset: Int
+    $filterBy: AssessmentFormFiltersInput
+    $orderBy: [AssessmentFormRawOrder!]
+    $includeDetails: Boolean!
+  ) {
+    assessmentForms(first: $first, offset: $offset, filterBy: $filterBy, orderBy: $orderBy) {
       nodes {
         id
         title
@@ -214,6 +229,26 @@ const ListAssessmentsDoc = graphql(/* GraphQL */ `
         createdAt
         assessmentGroup {
           id
+          title
+        }
+        dueDate @include(if: $includeDetails)
+        updatedAt @include(if: $includeDetails)
+        submittedAt @include(if: $includeDetails)
+        isArchived @include(if: $includeDetails)
+        isLocked @include(if: $includeDetails)
+        assignees @include(if: $includeDetails) {
+          id
+          name
+          email
+        }
+        reviewers @include(if: $includeDetails) {
+          id
+          name
+          email
+        }
+        externalAssignees @include(if: $includeDetails) {
+          id
+          email
         }
       }
       totalCount
@@ -715,34 +750,107 @@ const GetAssessmentFormTemplateDoc = graphql(/* GraphQL */ `
   }
 `);
 
+/** Fields of `AssessmentFormFiltersInput` that `assessments_list` exposes. */
+export interface ListAssessmentsFilter {
+  /** Restrict to these assessment form IDs */
+  ids?: string[];
+  /** Lifecycle statuses to include */
+  statuses?: string[];
+  /** Free-text match over assessment titles */
+  text?: string;
+  /** Internal Transcend users the form is assigned to */
+  assigneeIds?: string[];
+  /** External (vendor) assignee email addresses */
+  externalAssigneeEmails?: string[];
+  /** Internal Transcend users reviewing the form */
+  reviewerIds?: string[];
+  /** Templates the forms were built from */
+  templateIds?: string[];
+  /** Groups the forms belong to */
+  assessmentGroupIds?: string[];
+  /** Created strictly before this ISO 8601 date */
+  createdAtBefore?: string;
+  /** Created strictly after this ISO 8601 date */
+  createdAtAfter?: string;
+  /** Due strictly before this ISO 8601 date */
+  dueDateBefore?: string;
+  /** Due strictly after this ISO 8601 date */
+  dueDateAfter?: string;
+}
+
+/** Sortable columns on the assessment index, in `AssessmentFormRawOrderField` terms. */
+export type ListAssessmentsSortField = 'statusRank' | 'submittedAt' | 'title';
+
 export class AssessmentsMixin extends TranscendGraphQLBase {
+  /**
+   * Page the assessment index. `first`/`offset` map straight onto the query;
+   * `hasNextPage` is derived because the payload carries no `pageInfo`.
+   *
+   * `includeDetails` gates the assignee, reviewer, date and lock fields so the
+   * cheap listing stays cheap.
+   */
   async listAssessments(
-    options?: ListOptions & { filterBy?: { statuses?: string[] } },
+    options?: ListOptions & {
+      /** Filters forwarded to `AssessmentFormFiltersInput` */
+      filterBy?: ListAssessmentsFilter;
+      /** Column to sort on; omit to keep the API default order */
+      sortField?: ListAssessmentsSortField;
+      /** Sort direction, applied only alongside `sortField` */
+      sortDirection?: 'ASC' | 'DESC';
+      /** Fetch people, dates and lock state on each row */
+      includeDetails?: boolean;
+    },
   ): Promise<PaginatedResponse<Assessment>> {
+    const first = Math.min(options?.first ?? 50, 100);
     const offset = options?.offset ?? 0;
+    const filterBy = options?.filterBy;
+    const includeDetails = options?.includeDetails ?? false;
+
     const data = await this.makeRequest(ListAssessmentsDoc, {
-      first: Math.min(options?.first ?? 50, 100),
+      first,
       offset,
-      filterBy: options?.filterBy?.statuses
-        ? // The codegen-emitted enum is structurally equivalent to the manual
-          // string array we accept here; the server validates it strictly.
-          ({ statuses: options.filterBy.statuses } as never)
+      includeDetails,
+      // The codegen-emitted enums are structurally equivalent to the plain
+      // strings accepted here; the server validates them strictly.
+      filterBy: filterBy && Object.keys(filterBy).length > 0 ? (filterBy as never) : null,
+      orderBy: options?.sortField
+        ? ([{ field: options.sortField, direction: options.sortDirection ?? 'ASC' }] as never)
         : null,
     });
+
+    const { nodes, totalCount } = data.assessmentForms;
     return {
-      nodes: data.assessmentForms.nodes.map((node) => ({
+      nodes: nodes.map((node) => ({
         id: node.id,
         title: node.title,
         status: node.status as Assessment['status'],
         createdAt: node.createdAt,
         assessmentGroupId: node.assessmentGroup?.id,
+        assessmentGroupTitle: node.assessmentGroup?.title,
+        ...(includeDetails && {
+          dueDate: node.dueDate ?? undefined,
+          updatedAt: node.updatedAt ?? undefined,
+          submittedAt: node.submittedAt ?? undefined,
+          isArchived: node.isArchived,
+          isLocked: node.isLocked,
+          assignees: node.assignees?.map((user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          })),
+          reviewers: node.reviewers?.map((user) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+          })),
+          externalAssignees: node.externalAssignees?.map((assignee) => ({
+            id: assignee.id,
+            email: assignee.email,
+          })),
+        }),
       })),
-      pageInfo: derivePageInfo({
-        offset,
-        nodeCount: data.assessmentForms.nodes.length,
-        totalCount: data.assessmentForms.totalCount,
-      }),
-      totalCount: data.assessmentForms.totalCount,
+      pageInfo: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }),
+      totalCount,
     };
   }
 

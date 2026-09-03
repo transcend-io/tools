@@ -1150,6 +1150,24 @@ export type AssessmentFormStatus =
 /** @deprecated Use AssessmentFormStatus */
 export type AssessmentStatus = AssessmentFormStatus;
 
+/** A Transcend user attached to an assessment as an assignee or reviewer. */
+export interface AssessmentParticipant {
+  /** Transcend user ID, usable as `assigneeIds`/`reviewerIds` in `assessments_list` */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Email address */
+  email: string;
+}
+
+/** Someone outside the organization a form was shared with. */
+export interface AssessmentExternalParticipant {
+  /** External assignee ID */
+  id: string;
+  /** Email address, usable as `externalAssigneeEmails` in `assessments_list` */
+  email: string;
+}
+
 export interface Assessment {
   /** Unique identifier */
   id: string;
@@ -1165,12 +1183,23 @@ export interface Assessment {
    * `listAssessments` so callers can build deep links to the group view.
    */
   assessmentGroupId?: string;
+  /** Title of the assessment group, so callers can name it without a second lookup */
+  assessmentGroupTitle?: string;
   /** Source template, when expanded */
   template?: AssessmentTemplate;
-  /** Primary assignee */
-  assignee?: User;
-  /** Reviewer */
-  reviewer?: User;
+  /**
+   * Internal Transcend users the form is assigned to. A form can carry several,
+   * which is why this is a list rather than a single assignee.
+   */
+  assignees?: AssessmentParticipant[];
+  /** Internal Transcend users reviewing the form */
+  reviewers?: AssessmentParticipant[];
+  /** Non-Transcend recipients the form was shared with, identified by email only */
+  externalAssignees?: AssessmentExternalParticipant[];
+  /** Whether the form has been archived out of the working set */
+  isArchived?: boolean;
+  /** Whether the form is locked against further edits */
+  isLocked?: boolean;
   /** Optional due date (ISO 8601) */
   dueDate?: string;
   /** When the form was submitted for review (ISO 8601) */
