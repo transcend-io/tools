@@ -1,5 +1,14 @@
 # @transcend-io/mcp-server-discovery
 
+## 0.5.30
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+- Updated dependencies [a19b07e]
+  - @transcend-io/mcp-server-base@1.8.1
+  - @transcend-io/privacy-types@5.26.0
+
 ## 0.5.29
 
 ### Patch Changes
