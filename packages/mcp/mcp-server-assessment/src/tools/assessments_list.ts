@@ -92,7 +92,9 @@ export const ListAssessmentsSchema = z
         message: 'sortBy must be one of: title, status, submittedAt',
       })
       .optional()
-      .describe('Column to sort on. Omit to keep the API default order.'),
+      .describe(
+        'Column to sort on; the API offers no creation-date sort. Omit for its default order.',
+      ),
     sortDirection: z
       .enum(['ASC', 'DESC'], { message: 'sortDirection must be ASC or DESC' })
       .optional()
