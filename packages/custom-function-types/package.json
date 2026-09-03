@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/custom-function-types",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "TypeScript contracts and validation schemas for authoring Transcend Custom Functions.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/custom-function-types",
   "license": "Apache-2.0",
