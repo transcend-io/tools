@@ -631,12 +631,20 @@ const UpdateAssessmentFormDoc = graphql(/* GraphQL */ `
 `);
 
 const ListAssessmentTemplatesDoc = graphql(/* GraphQL */ `
-  query AssessmentsListTemplates($first: Int, $offset: Int) {
-    assessmentFormTemplates(first: $first, offset: $offset) {
+  query AssessmentsListTemplates(
+    $first: Int
+    $offset: Int
+    $filterBy: AssessmentFormTemplateFiltersInput
+  ) {
+    assessmentFormTemplates(first: $first, offset: $offset, filterBy: $filterBy) {
       nodes {
         id
         title
         description
+        status
+        isArchived
+        createdAt
+        updatedAt
       }
       totalCount
     }
@@ -1208,6 +1216,8 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       filterBy?: {
         /** Free-text match over group titles */
         text?: string;
+        /** Restrict to these group IDs */
+        ids?: string[];
         /** Restrict to groups built from these templates */
         templateIds?: string[];
       };
@@ -1288,30 +1298,48 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     };
   }
 
+  /**
+   * Page the template index. Same derived `hasNextPage` as the other assessment
+   * lists, since `AssessmentFormTemplatesPayload` carries no `pageInfo`.
+   */
   async listAssessmentTemplates(
-    options?: ListOptions,
+    options?: ListOptions & {
+      /** Filters forwarded to `AssessmentFormTemplateFiltersInput` */
+      filterBy?: {
+        /** Restrict to these template IDs */
+        ids?: string[];
+        /** Free-text match over template titles */
+        text?: string;
+        /** Publication statuses to include */
+        statuses?: string[];
+      };
+    },
   ): Promise<PaginatedResponse<AssessmentTemplate>> {
+    const first = Math.min(options?.first ?? 50, 100);
     const offset = options?.offset ?? 0;
+    const filterBy = options?.filterBy;
+
     const data = await this.makeRequest(ListAssessmentTemplatesDoc, {
-      first: Math.min(options?.first ?? 50, 100),
+      first,
       offset,
+      // The codegen-emitted enum is structurally equivalent to the plain strings
+      // accepted here; the server validates them strictly.
+      filterBy: filterBy && Object.keys(filterBy).length > 0 ? (filterBy as never) : null,
     });
-    const templates: AssessmentTemplate[] = data.assessmentFormTemplates.nodes.map((t) => ({
-      id: t.id,
-      title: t.title,
-      description: t.description ?? undefined,
-      version: '1.0.0',
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    }));
+
+    const { nodes, totalCount } = data.assessmentFormTemplates;
     return {
-      nodes: templates,
-      pageInfo: derivePageInfo({
-        offset,
-        nodeCount: data.assessmentFormTemplates.nodes.length,
-        totalCount: data.assessmentFormTemplates.totalCount,
-      }),
-      totalCount: data.assessmentFormTemplates.totalCount,
+      nodes: nodes.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description ?? undefined,
+        status: t.status,
+        isArchived: t.isArchived,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
+      })),
+      pageInfo: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }),
+      totalCount,
     };
   }
 

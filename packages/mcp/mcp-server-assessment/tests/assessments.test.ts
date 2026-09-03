@@ -6,6 +6,7 @@ describe('Assessment Tools', () => {
   let mockGraphql: {
     listAssessments: ReturnType<typeof vi.fn>;
     listAssessmentGroups: ReturnType<typeof vi.fn>;
+    listAssessmentTemplates: ReturnType<typeof vi.fn>;
     createAssessment: ReturnType<typeof vi.fn>;
     getAssessment: ReturnType<typeof vi.fn>;
     getAssessmentSkeleton: ReturnType<typeof vi.fn>;
@@ -25,6 +26,7 @@ describe('Assessment Tools', () => {
     mockGraphql = {
       listAssessments: vi.fn(),
       listAssessmentGroups: vi.fn(),
+      listAssessmentTemplates: vi.fn(),
       createAssessment: vi.fn(),
       getAssessment: vi.fn(),
       getAssessmentSkeleton: vi.fn(),
@@ -894,6 +896,83 @@ describe('Assessment Tools', () => {
     });
   });
 
+  describe('assessments_list_templates', () => {
+    const templatesTool = () => getTools().find((t) => t.name === 'assessments_list_templates')!;
+
+    it('narrows by title instead of scanning pages', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-7', title: 'Vendor Onboarding' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      await tool.handler(
+        tool.zodSchema.parse({ text: 'Vendor Onboarding', statuses: ['PUBLISHED'] }) as never,
+      );
+
+      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          filterBy: { text: 'Vendor Onboarding', statuses: ['PUBLISHED'] },
+        }),
+      );
+    });
+
+    it('pages with offset', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-9', title: 'Template 9' }],
+        totalCount: 200,
+        pageInfo: { hasNextPage: true },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ limit: 50, offset: 100 }) as never,
+      )) as { hasNextPage: boolean; totalCount: number };
+
+      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 50, offset: 100 }),
+      );
+      expect(result).toMatchObject({ hasNextPage: true, totalCount: 200 });
+    });
+
+    it('rejects a status outside DRAFT and PUBLISHED', () => {
+      const result = templatesTool().zodSchema.safeParse({ statuses: ['ARCHIVED'] });
+      expect(result.success).toBe(false);
+    });
+
+    it('passes template metadata through without inventing values', async () => {
+      // This mapper used to stamp every row with version 1.0.0, isActive true
+      // and createdAt = now, which reported every template as created today.
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [
+          {
+            id: 'tpl-7',
+            title: 'Vendor Onboarding',
+            status: 'PUBLISHED',
+            isArchived: false,
+            createdAt: '2024-03-01T00:00:00.000Z',
+          },
+        ],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        data: Array<Record<string, unknown>>;
+      };
+
+      expect(result.data[0]).toMatchObject({
+        status: 'PUBLISHED',
+        createdAt: '2024-03-01T00:00:00.000Z',
+      });
+      expect(result.data[0]).not.toHaveProperty('version');
+      expect(result.data[0]).not.toHaveProperty('isActive');
+    });
+  });
+
   describe('assessments_create', () => {
     it('zodSchema rejects when title is missing', () => {
       const tools = getTools();
@@ -1472,6 +1551,32 @@ describe('Assessment Tools', () => {
         expect.objectContaining({ first: 50, offset: 50 }),
       );
       expect(result).toMatchObject({ hasNextPage: true, totalCount: 120 });
+    });
+
+    it('assessments_list_groups resolves a form to its template via assessmentGroupId', async () => {
+      // The documented bridge to assessments_export_template: AssessmentFormRaw
+      // reaches its group but not its template, so the group row carries it.
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [
+          {
+            id: 'grp-1',
+            title: 'Vendor Onboarding',
+            assessmentFormTemplate: { id: 'tpl-7', title: 'Vendor Onboarding' },
+          },
+        ],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const result = (await tool.handler(tool.zodSchema.parse({ ids: ['grp-1'] }) as never)) as {
+        data: Array<Record<string, any>>;
+      };
+
+      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith(
+        expect.objectContaining({ filterBy: { ids: ['grp-1'] } }),
+      );
+      expect(result.data[0]!.assessmentFormTemplate.id).toBe('tpl-7');
     });
 
     it('assessments_list_groups no longer accepts a cursor', () => {
