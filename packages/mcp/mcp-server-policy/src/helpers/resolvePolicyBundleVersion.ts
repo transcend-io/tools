@@ -1,19 +1,19 @@
 import type { Got } from 'got';
 
+import {
+  policyEngineRequest,
+  throwPolicyEngineRequestError,
+} from './formatPolicyEngineRequestError.js';
 import type {
   GetPolicyBundleVersionResponse,
   PolicyBundle,
   PolicyBundleVersion,
   PolicyBundleVersionListResponse,
-} from '../types.js';
-import {
-  policyEngineRequest,
-  throwPolicyEngineRequestError,
-} from './formatPolicyEngineRequestError.js';
+} from './types.js';
 
 /** Options for resolving a policy bundle version. */
 export interface ResolvePolicyBundleVersionOptions {
-  /** Caller-supplied version label; omitted to pick the latest by createdAt */
+  /** Caller-supplied version label */
   version?: string;
   /** Version UUID */
   versionId?: string;
@@ -23,7 +23,7 @@ export interface ResolvePolicyBundleVersionOptions {
  * Maps a direct version-by-id API response to the canonical version record shape.
  *
  * @param body - Version metadata from `GET /policy-bundle-versions/:versionId`
- * @returns Version record used by CLI commands
+ * @returns Version record used by MCP tools
  */
 function mapGetPolicyBundleVersionResponse(
   body: GetPolicyBundleVersionResponse,
@@ -43,7 +43,7 @@ function mapGetPolicyBundleVersionResponse(
 }
 
 /**
- * Fetches a version scoped to a parent bundle via list filters or direct id lookup.
+ * Fetches a version scoped to a parent bundle via list filters.
  *
  * @param client - Policy Engine REST client
  * @param bundleId - Parent bundle UUID
@@ -108,12 +108,14 @@ async function resolvePolicyBundleVersionById(
 }
 
 /**
- * Resolves a version label or UUID to a version record, or picks the latest by createdAt.
+ * Resolves a version label or UUID to a version record.
+ *
+ * Mirrors `transcend policy activate` / `download` version resolution in the CLI.
  *
  * @param client - Policy Engine REST client
  * @param bundleId - Parent bundle UUID
  * @param options - Version lookup options
- * @returns Matching or latest version record
+ * @returns Matching version record
  */
 export async function resolvePolicyBundleVersion(
   client: Got,
