@@ -119,13 +119,13 @@ export function createAssessmentsListTool(clients: ToolClients) {
     name: 'assessments_list',
     description:
       'Find privacy assessments — PIAs, DPIAs, privacy reviews, vendor questionnaires — by ' +
-      'status, title text, assignee, reviewer, template, group, or creation and due date. ' +
-      'Returns one row per form; pass `includeDetails` for the people and dates on each. ' +
-      'Use `assessments_get` to read the questions and answers on one form, ' +
-      '`assessments_list_groups` for the containers, and `assessments_list_templates` for blank ' +
-      'templates. `totalCount` is how many forms match the filters, not how many this page ' +
-      'returned. ' +
-      'Surface the `url` on each row verbatim; never build assessment URLs from IDs.',
+      'status, text, assignee, reviewer, template, group, creation or due date. Each row has ' +
+      'id, title, status, createdAt, assessmentGroupId and url; `includeDetails` adds ' +
+      'assignees, reviewers and further dates. There is no creation-date sort, so order by ' +
+      'createdAt yourself for oldest-first. `assessments_get` reads one form in full, ' +
+      '`assessments_list_groups` the containers, `assessments_list_templates` blank templates. ' +
+      '`totalCount` counts every match, not this page. ' +
+      'Surface each `url` verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

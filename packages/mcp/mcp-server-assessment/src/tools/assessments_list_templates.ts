@@ -26,7 +26,9 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
       'Find blank assessment templates, the starting points new assessments are built from. ' +
       'Narrow with `text` rather than scanning pages, then use the returned `id` as ' +
       '`templateId` for `assessments_export_template` to read the questions, or for ' +
-      '`assessments_create`.',
+      '`assessments_create`. Each row has id, title, description, status, isArchived, createdAt ' +
+      'and updatedAt; the API offers no date filter or sort, so rank by createdAt yourself when ' +
+      'asked which are new.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
