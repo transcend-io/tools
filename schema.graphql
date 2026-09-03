@@ -828,6 +828,7 @@ enum DatabaseModelName {
   WorkflowConfigPurpose
   ConsentSiteAirgapDataFlow
   ConsentSiteAirgapCookie
+  ConsentSiteAttributeValue
   WorkflowPreferenceMappingConfig
   PurposeSubject
   PurposeDataPoint
@@ -1135,6 +1136,7 @@ enum AttributeSupportedResourceType {
   auditorRun
   auditorSchedule
   businessEntity
+  consentSite
   dataSubCategory
   dataPoint
   dataPointLevel
@@ -2254,6 +2256,7 @@ enum UsageMart {
   WORKFLOW_RUNS
   WEB_VISITORS
   SCANNED_DATA_STORES
+  INTEGRATIONS
 }
 
 enum ActionOrderField {
@@ -2896,6 +2899,7 @@ enum DownloadAndDecryptError {
   DECRYPTION_FAILED
   DECRYPTION_FAILED_FINALIZATION
   STREAM_PIPELINE_TIMEOUT
+  DOWNLOAD_INTERRUPTED_TAB_HIDDEN
   SINK_STALL_TIMEOUT
   SERVICE_WORKER_LOST
   SINK_BACKPRESSURE_TIMEOUT
@@ -2919,6 +2923,7 @@ enum DownloadAndDecryptEventType {
   ERROR_RECOVERED
   STALLED
   ERROR
+  ABANDONED
 }
 
 enum DownloadAndDecryptPhase {
@@ -2927,6 +2932,30 @@ enum DownloadAndDecryptPhase {
   DECRYPT_STREAM
   SINK_STREAM
   CONCATENATION_STREAM
+}
+
+enum DownloadBrowserFamily {
+  CHROME
+  SAFARI
+  FIREFOX
+  EDGE
+  OTHER
+}
+
+enum DownloadDeviceClass {
+  DESKTOP
+  MOBILE
+  TABLET
+  OTHER
+}
+
+enum DownloadOsFamily {
+  IOS
+  MACOS
+  WINDOWS
+  ANDROID
+  LINUX
+  OTHER
 }
 
 enum LegalHoldOrderField {
@@ -4487,6 +4516,7 @@ enum AuditEventCode {
   ORG_TCF_SPECIAL_FEATURE_PURPOSE
   CONSENT_SERVICE
   CONSENT_SITE
+  CONSENT_SITE_ATTRIBUTE
   AIRGAP_BUNDLE_TCF_STACK
   AIRGAP_PARTITION
   AIRGAP_PREFIX_MODULE
@@ -4653,8 +4683,13 @@ enum CONSENT_AUDIT_EVENTS {
   AIRGAP_DATA_FLOW_PURPOSE
   AIRGAP_DATA_FLOW_TEAM
   AIRGAP_PARTITION
+  AIRGAP_PREFIX_MODULE
+  AIRGAP_PREFIX_MODULE_RELEASE
+  AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE
+  AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE_SETTINGS
   CONSENT_SERVICE
   CONSENT_SITE
+  CONSENT_SITE_ATTRIBUTE
   EXPERIENCE
   EXPERIENCE_PURPOSE
   TRACKING_PURPOSE
@@ -5058,6 +5093,7 @@ type Query {
   predictPrivacyPolicyUrl: PredictPrivacyPolicyUrlPayload!
   preference(filterBy: PreferenceFiltersInput!): PreferencePayload!
   preferenceOptionValues(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceOptionValueFilterInput): PreferenceOptionValuesPayload!
+  preferenceStoreSetup: PreferenceStoreSetup!
   preferenceTopicOptionValueDataPoints(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicOptionValueDataPointFilterInput): PreferenceTopicOptionValueDataPointsPayload!
   preferenceTopicOptionValues(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicOptionValueFilterInput): PreferenceTopicOptionValuesPayload!
   preferenceTopics(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicFilterInput): PreferenceTopicsPayload!
@@ -5085,6 +5121,7 @@ type Query {
   purposeDataPointWorkflowMappings(first: Int, offset: Int = 0, last: Int, filterBy: PurposeDataPointWorkflowMappingsFilterInput): PurposeDataPointWorkflowMappingsPayload!
   purposes(first: Int, offset: Int = 0, last: Int, filterBy: TrackingPurposeFiltersInput, orderBy: [PurposeOrder!], input: TrackingPurposeInput): PurposesPayload!
   queryConsentPreferences(input: MCDConsentLookupInput!): ConsentPreferenceResponseSombra!
+  queryRocUserRecords(input: QueryRocUserRecordsInput!): QueryRocUserRecordsPayload!
   repositories(first: Int, offset: Int = 0, last: Int, filterBy: RepositoryFiltersInput, orderBy: [RepositoryOrder!]): RepositoriesPayload!
   request(id: ID!): Request!
   requestAttachments(first: Int, last: Int, before: String, after: String, filterBy: RequestAttachmentFiltersInput!, orderBy: [RequestAttachmentOrder!]): RequestAttachmentsPayload!
@@ -5183,6 +5220,7 @@ type Mutation {
   cloneWorkflowConfig(input: WorkflowConfigIdInput!): CloneWorkflowConfigPayload!
   compileRequest(id: ID!): CompileRequestPayload!
   completeDropIntake(input: CompleteDropIntakeInput!): CompleteDropIntakePayload!
+  completePreferenceManagementOnboarding: CompletePreferenceManagementOnboardingPayload!
   consentPreferences(first: Int, input: ConsentPreferencesInput!, dhEncrypted: String!): ConsentPreferencesPayload!
   createActionItemCollection(input: CreateActionItemCollectionInput!): CreateActionItemCollectionPayload!
   createActionItems(input: [CreateActionItemsInput!]!): CreateActionItemsPayload!
@@ -5380,6 +5418,7 @@ type Mutation {
   manuallyTestAndRefreshDataSilo(id: ID!): ManuallyTestAndRefreshDataSiloPayload!
   markDataSiloDiscoveryResultsDuplicate(input: [MarkDataSiloDiscoveryResultsDuplicateInput!]!): MarkDataSiloDiscoveryResultsDuplicatePayload!
   markDataSiloDiscoveryResultsJunk(input: [MarkDataSiloDiscoveryResultsJunkInput!]!): MarkDataSiloDiscoveryResultsJunkPayload!
+  markDataSiloNotConfigured(id: ID!): MarkDataSiloNotConfiguredPayload!
   markDropStarterDownloaded(input: MarkDropStarterDownloadedInput!): MarkDropStarterDownloadedPayload!
   materializeDropRun(id: ID!): MaterializeDropRunPayload!
   notifyAdditionalTime(input: AdditionalTimeInput!): NotifyAdditionalTimePayload!
@@ -7222,6 +7261,14 @@ type AttributeBusinessEntityResource implements AttributeResourceInterface {
   headquarterSubDivision: String
 }
 
+type AttributeConsentSiteResource implements AttributeResourceInterface {
+  resourceType: AttributeSupportedResourceType!
+  id: ID!
+  name: String!
+  site: String!
+  host: String!
+}
+
 type AttributeDataSiloResource implements AttributeResourceInterface & DataSiloInterface {
   resourceType: AttributeSupportedResourceType!
   discoveredBy: [DiscoveredByDataSiloPreview!]!
@@ -8636,6 +8683,11 @@ input CompleteDropIntakeInput {
   dropRunId: ID!
 }
 
+type CompletePreferenceManagementOnboardingPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
 type ComplianceReport {
   id: ID!
   createdAt: Date!
@@ -8946,6 +8998,7 @@ type ConsentHost {
   cookieCountTriageLastWeek: Int!
   consentUiThemeId: ID
   consentUiTheme: ConsentUiThemePreview
+  attributeValues: [AttributeValue!]!
 }
 
 type ConsentHostsPayload {
@@ -9219,6 +9272,13 @@ type ConsentSite {
   site: String!
   createdAt: Date!
   hosts: [ConsentHost!]!
+}
+
+type ConsentSiteHostPreview {
+  id: ID!
+  name: String!
+  site: String!
+  host: String!
 }
 
 type ConsentSitePreview {
@@ -10289,6 +10349,7 @@ input CreateOrUpdateConsentSiteInput {
   description: String
   includeInMetadata: Boolean
   airgapBundleId: ID!
+  attributes: [AttributeInput!]
 }
 
 type CreateOrUpdateConsentWorkflowTriggerPayload {
@@ -12922,6 +12983,13 @@ input DownloadAndDecryptEventInput {
   phase: DownloadAndDecryptPhase
   metrics: DownloadAndDecryptMetricsInput
   sinkMode: DownloadSinkMode
+  swPreflightMs: Float
+  downloadAttemptId: String
+  attemptElapsedMs: Float
+  attemptNumber: Int
+  deviceClass: DownloadDeviceClass
+  browserFamily: DownloadBrowserFamily
+  osFamily: DownloadOsFamily
   documentVisibilityState: DownloadDocumentVisibilityState
 }
 
@@ -13706,6 +13774,7 @@ input FilterConsentHostInput {
   filterLastActivityDays: Int
   includeInMetadata: Boolean
   ids: [ID!]
+  attributeValueIds: [ID!]
 }
 
 input FilterConsentServicesInput {
@@ -13724,6 +13793,7 @@ input FilterConsentSiteInput {
   userId: [String!]
   description: String
   includeNulls: [String!]
+  attributeValueIds: [ID!]
 }
 
 input FireIntegrationsInput {
@@ -13866,11 +13936,11 @@ type FormItem {
   authenticationMethods: [AuthenticationMethod!]
   jsonSchema: String
   examples: [FormItemJsonExample!]
-  example: String
+  example: String @deprecated(reason: "Use examples instead. Remove after deploy: https://linear.app/transcend/issue/PIK-8398")
 }
 
 type FormItemJsonExample {
-  title: String
+  title: String!
   value: String!
 }
 
@@ -14004,6 +14074,7 @@ type GlobalActionItemContext {
   pluginType: String
   aggregateCount: Int
   identifierCount: Int
+  unreadMessageCount: Int
 }
 
 input GlobalActionItemFiltersInput {
@@ -14701,6 +14772,11 @@ type MarkDataSiloDiscoveryResultsJunkPayload {
 
 input MarkDataSiloDiscoveryResultsJunkInput {
   id: ID!
+}
+
+type MarkDataSiloNotConfiguredPayload {
+  clientMutationId: String
+  dataSilo: DataSilo!
 }
 
 type MarkDropStarterDownloadedPayload {
@@ -15426,6 +15502,15 @@ type PreferenceStoreIdentifierSchema {
   name: String!
 }
 
+type PreferenceStoreSetup {
+  consentManagerId: ID
+  preferenceStoreEnabled: Boolean!
+  hasEncryptionKey: Boolean
+  hasJwtSigningKey: Boolean
+  unauthenticatedUpdatesEnabled: Boolean
+  onboardingStatus: PreferenceManagementOnboardingStatus!
+}
+
 type PreferenceTopic {
   id: ID!
   slug: String!
@@ -15694,6 +15779,7 @@ type PrivacyCenterStringified {
   transcendHostedDomain: String!
   consentPartitions: [ConsentPartition!]!
   workflowsCustomFieldsRequired: Boolean!
+  workflowsV2EnabledOnPc: Boolean!
   footerLinks: [PrivacyCenterFooterLink!]!
   footerLayout: PrivacyCenterFooterLayout!
 }
@@ -16360,6 +16446,19 @@ type PurposeSubjectPreview {
 
 input QueryActionItemSubscriptionInput {
   orgLevelSubscriptions: Boolean
+}
+
+type QueryRocUserRecordsPayload {
+  clientMutationId: String
+  nodes: [RocUserRecordSchema!]!
+  containsInitialRecord: Boolean!
+}
+
+input QueryRocUserRecordsInput {
+  partition: String!
+  identifier: PreferenceStoreIdentifierInput!
+  limit: Int
+  includeRawRequest: Boolean
 }
 
 type RateLimitConfig {
@@ -21310,6 +21409,7 @@ input UpdatePrivacyCenterInput {
   displayOrder: Int
   displayedChildOrganizationIds: [ID!]
   workflowsCustomFieldsRequired: Boolean
+  workflowsV2EnabledOnPc: Boolean
   footerLayout: PrivacyCenterFooterLayout
 }
 
