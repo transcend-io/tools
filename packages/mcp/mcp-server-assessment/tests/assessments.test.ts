@@ -8,6 +8,9 @@ describe('Assessment Tools', () => {
     listAssessmentGroups: ReturnType<typeof vi.fn>;
     createAssessment: ReturnType<typeof vi.fn>;
     getAssessment: ReturnType<typeof vi.fn>;
+    getAssessmentSkeleton: ReturnType<typeof vi.fn>;
+    listAssessmentFormComments: ReturnType<typeof vi.fn>;
+    listAssessmentSectionComments: ReturnType<typeof vi.fn>;
     createAssessmentFormTemplate: ReturnType<typeof vi.fn>;
     selectAssessmentQuestionAnswers: ReturnType<typeof vi.fn>;
     updateAssessmentFormAssignees: ReturnType<typeof vi.fn>;
@@ -21,6 +24,9 @@ describe('Assessment Tools', () => {
       listAssessmentGroups: vi.fn(),
       createAssessment: vi.fn(),
       getAssessment: vi.fn(),
+      getAssessmentSkeleton: vi.fn(),
+      listAssessmentFormComments: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
+      listAssessmentSectionComments: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
       createAssessmentFormTemplate: vi.fn(),
       selectAssessmentQuestionAnswers: vi.fn(),
       updateAssessmentFormAssignees: vi.fn(),
@@ -35,6 +41,199 @@ describe('Assessment Tools', () => {
       graphql: mockGraphql as never,
       dashboardUrl,
     });
+
+  describe('assessments_get', () => {
+    const getTool = () => getTools().find((t) => t.name === 'assessments_get')!;
+
+    const SKELETON = {
+      id: 'form-1',
+      title: 'DPIA for Rideshare App',
+      status: 'IN_REVIEW',
+      sections: [
+        { id: 'sec-1', title: 'Data collected', index: 0, questionCount: 12 },
+        { id: 'sec-2', title: 'Retention', index: 1, questionCount: 8 },
+      ],
+    };
+
+    const EXPANDED = {
+      id: 'form-1',
+      title: 'DPIA for Rideshare App',
+      status: 'IN_REVIEW',
+      sections: [
+        {
+          id: 'sec-1',
+          title: 'Data collected',
+          index: 0,
+          questionCount: 1,
+          questions: [
+            {
+              id: 'q-1',
+              title: 'What data do you collect?',
+              type: 'LONG_ANSWER_TEXT',
+              comments: [
+                {
+                  id: 'c-q1',
+                  level: 'QUESTION',
+                  targetId: 'q-1',
+                  content: 'Please list the exact fields.',
+                  createdAt: '2026-01-01T00:00:00.000Z',
+                },
+                {
+                  id: 'c-q2',
+                  level: 'QUESTION',
+                  targetId: 'q-1',
+                  content: 'Resolved earlier.',
+                  resolvedAt: '2026-01-02T00:00:00.000Z',
+                  createdAt: '2026-01-01T00:00:00.000Z',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    it('returns the section index without question bodies when sectionIds is omitted', async () => {
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        includeComments: false,
+        includeResolvedComments: false,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(result.success).toBe(true);
+      expect(mockGraphql.getAssessment).not.toHaveBeenCalled();
+      expect(result.data.sections).toHaveLength(2);
+      expect(result.data.sections[0].questionCount).toBe(12);
+      expect(result.data.sections[0].questions).toBeUndefined();
+      expect(result.data.expandHint).toContain('sectionIds');
+    });
+
+    it('expands only the requested sections', async () => {
+      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+        includeComments: false,
+        includeResolvedComments: false,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.getAssessmentSkeleton).not.toHaveBeenCalled();
+      expect(mockGraphql.getAssessment).toHaveBeenCalledWith('form-1', {
+        sectionIds: ['sec-1'],
+        includeComments: false,
+      });
+      expect(result.data.sections[0].questions).toHaveLength(1);
+      expect(result.data.expandHint).toBeUndefined();
+    });
+
+    it('does not fetch comments unless asked', async () => {
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        includeComments: false,
+        includeResolvedComments: false,
+      })) as { data: Record<string, any> };
+
+      expect(mockGraphql.listAssessmentFormComments).not.toHaveBeenCalled();
+      expect(mockGraphql.listAssessmentSectionComments).not.toHaveBeenCalled();
+      expect(result.data.comments).toBeUndefined();
+    });
+
+    it('returns form and section comments even when nothing is expanded', async () => {
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [
+          {
+            id: 'c-f1',
+            level: 'FORM',
+            targetId: 'form-1',
+            content: 'Needs legal sign-off.',
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        totalCount: 1,
+      });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({
+        nodes: [
+          {
+            id: 'c-s1',
+            level: 'SECTION',
+            targetId: 'sec-2',
+            content: 'Retention period looks too long.',
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+        ],
+        totalCount: 1,
+      });
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        includeComments: true,
+        includeResolvedComments: false,
+      })) as { data: Record<string, any> };
+
+      // Section comments are bounded by section count, so withholding them until
+      // the caller expands something would hand back a partial answer that looks
+      // complete. Only question comments are gated behind sectionIds.
+      expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(['sec-1', 'sec-2'], {
+        first: 100,
+      });
+      expect(result.data.comments.map((c: any) => c.id)).toEqual(['c-f1', 'c-s1']);
+      expect(result.data.commentSummary.questionCommentsOmitted).toContain('sectionIds');
+    });
+
+    it('hides resolved comments by default and includes them on request', async () => {
+      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+
+      const hidden = (await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+        includeComments: true,
+        includeResolvedComments: false,
+      })) as { data: Record<string, any> };
+
+      expect(hidden.data.comments.map((c: any) => c.id)).toEqual(['c-q1']);
+      expect(hidden.data.commentSummary.resolvedHidden).toBe(true);
+
+      const shown = (await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+        includeComments: true,
+        includeResolvedComments: true,
+      })) as { data: Record<string, any> };
+
+      expect(shown.data.comments.map((c: any) => c.id)).toEqual(['c-q1', 'c-q2']);
+      expect(shown.data.commentSummary.resolvedHidden).toBeUndefined();
+    });
+
+    it('pulls section comments once sections are expanded', async () => {
+      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+
+      await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+        includeComments: true,
+        includeResolvedComments: false,
+      });
+
+      expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(['sec-1'], {
+        first: 100,
+      });
+    });
+
+    it('no longer accepts the display-only assessmentName argument', () => {
+      const parsed = getTool().zodSchema.safeParse({
+        assessmentId: 'form-1',
+        assessmentName: 'DPIA',
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data).not.toHaveProperty('assessmentName');
+    });
+  });
 
   describe('assessments_list', () => {
     it('zodSchema rejects invalid status', () => {
@@ -553,7 +752,7 @@ describe('Assessment Tools', () => {
     });
 
     it('assessments_get returns the form response URL for APPROVED status', async () => {
-      mockGraphql.getAssessment.mockResolvedValue({
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue({
         id: FORM_ID,
         title: 'DPIA',
         status: 'APPROVED',

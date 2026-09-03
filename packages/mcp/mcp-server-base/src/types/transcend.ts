@@ -1213,6 +1213,56 @@ export interface AssessmentSection {
   responses?: AssessmentResponse[];
   isComplete?: boolean;
   questions?: AssessmentFormQuestion[];
+  /**
+   * How many questions the section holds. Returned in place of `questions`
+   * when a caller asks for the section index rather than section contents, so
+   * they can size a drill-down before paying for it.
+   */
+  questionCount?: number;
+}
+
+/** Which part of an assessment form a comment hangs off. */
+export type AssessmentCommentLevel = 'FORM' | 'SECTION' | 'QUESTION';
+
+/**
+ * Who wrote a comment. Reviewers outside the organization comment via a share
+ * link and have an email but no user record, so every field is optional.
+ */
+export interface AssessmentCommentAuthor {
+  /** ID of the internal user who wrote the comment, when there is one */
+  id?: string;
+  /** Email address of the author, including external reviewers */
+  email?: string;
+  /** Display name of the author */
+  name?: string;
+}
+
+/**
+ * A comment left on an assessment form, one of its sections, or one of its
+ * questions. The three levels are separate entities in the API but share this
+ * shape; `level` and `targetId` say which record a comment hangs off.
+ */
+export interface AssessmentComment {
+  /** Unique identifier */
+  id: string;
+  /** Whether the comment is attached to the form, a section, or a question */
+  level: AssessmentCommentLevel;
+  /** ID of the form, section, or question the comment is attached to */
+  targetId: string;
+  /** Body of the comment */
+  content: string;
+  /** Who wrote the comment */
+  author?: AssessmentCommentAuthor;
+  /** ID of the comment this one replies to, when it is a threaded reply */
+  parentCommentId?: string;
+  /** When the comment was resolved (ISO 8601); absent while it is still open */
+  resolvedAt?: string;
+  /** Number of files attached to the comment */
+  fileCount?: number;
+  /** When the comment was created (ISO 8601) */
+  createdAt: string;
+  /** When the comment was last edited (ISO 8601) */
+  updatedAt?: string;
 }
 
 export interface AssessmentFormQuestion {
@@ -1227,6 +1277,8 @@ export interface AssessmentFormQuestion {
   referenceId?: string;
   answerOptions?: AssessmentAnswerOption[];
   selectedAnswers?: AssessmentAnswerOption[];
+  /** Comments left on this question, when the caller asked for them */
+  comments?: AssessmentComment[];
 }
 
 export interface AssessmentAnswerOption {

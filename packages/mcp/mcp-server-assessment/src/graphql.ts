@@ -1,7 +1,11 @@
 import {
   derivePageInfo,
+  ErrorCode,
+  ToolError,
   TranscendGraphQLBase,
   type Assessment,
+  type AssessmentComment,
+  type AssessmentCommentLevel,
   type AssessmentCreateInput,
   type AssessmentGroup,
   type AssessmentQuestionInput,
@@ -17,6 +21,108 @@ import {
 import { graphql } from './__generated__/gql.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Shape shared by the form, section, and question comment types in the API. */
+interface RawComment {
+  /** Unique identifier */
+  id: string;
+  /** Body of the comment */
+  content: string;
+  /** ID of the comment this one replies to */
+  parentCommentId?: string | null;
+  /** When the comment was resolved (ISO 8601) */
+  resolvedAt?: string | null;
+  /** When the comment was created (ISO 8601) */
+  createdAt: string;
+  /** When the comment was last edited (ISO 8601) */
+  updatedAt?: string | null;
+  /** Email of an external reviewer who has no user record */
+  externalAuthorEmail?: string | null;
+  /** Internal user who wrote the comment */
+  author?: {
+    /** User ID */
+    id: string;
+    /** User email */
+    email: string;
+    /** User display name */
+    name: string;
+  } | null;
+  /** Files attached to the comment */
+  files?: {
+    /** File ID */
+    id: string;
+  }[];
+}
+
+/**
+ * Flatten one API comment into the shared {@link AssessmentComment} shape.
+ * External reviewers arrive as a bare `externalAuthorEmail` rather than an
+ * `author` record, so both spellings collapse into one author field.
+ */
+function toComment(
+  comment: RawComment,
+  level: AssessmentCommentLevel,
+  targetId: string,
+): AssessmentComment {
+  return {
+    id: comment.id,
+    level,
+    targetId,
+    content: comment.content,
+    author: comment.author
+      ? { id: comment.author.id, email: comment.author.email, name: comment.author.name }
+      : comment.externalAuthorEmail
+        ? { email: comment.externalAuthorEmail }
+        : undefined,
+    parentCommentId: comment.parentCommentId ?? undefined,
+    resolvedAt: comment.resolvedAt ?? undefined,
+    fileCount: comment.files?.length || undefined,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt ?? undefined,
+  };
+}
+
+function toComments(
+  comments: RawComment[] | undefined,
+  level: AssessmentCommentLevel,
+  targetId: string,
+): AssessmentComment[] | undefined {
+  return comments?.map((c) => toComment(c, level, targetId));
+}
+
+/** Not-found for a form ID, pointing the caller at the tool that lists valid IDs. */
+function assessmentNotFound(id: string): ToolError {
+  return new ToolError(
+    ErrorCode.NOT_FOUND,
+    `No assessment form with id "${id}". Call assessments_list to find valid assessment IDs, ` +
+      'or assessments_list_templates if you meant a template rather than a filled-in form.',
+    false,
+    { assessmentId: id },
+  );
+}
+
+/**
+ * Not-found for a section ID. Lists the sections the form does have, since the
+ * caller reached here from a skeleton read and most likely mistyped or reused
+ * an ID from a different form.
+ */
+function sectionNotFound(
+  assessmentId: string,
+  requested: string[],
+  available: { id: string; title?: string | null }[],
+): ToolError {
+  return new ToolError(
+    ErrorCode.NOT_FOUND,
+    `None of the requested sectionIds exist on assessment "${assessmentId}". ` +
+      'Call assessments_get without sectionIds to list the sections this form has.',
+    false,
+    {
+      assessmentId,
+      requestedSectionIds: requested,
+      availableSections: available.map((s) => ({ id: s.id, title: s.title ?? undefined })),
+    },
+  );
+}
 
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -75,12 +181,21 @@ const ListAssessmentsDoc = graphql(/* GraphQL */ `
   }
 `);
 
+/**
+ * Full form contents. Question comments ride along on the nested `comments`
+ * field rather than the root `assessmentQuestionComments` query because
+ * `AssessmentQuestionComment` carries no question ID, so a batched root query
+ * cannot say which question each comment belongs to. The nested field takes no
+ * pagination arguments, hence the `@include` guard: callers who did not ask for
+ * comments must not pay for an unbounded list of them.
+ */
 const GetAssessmentDoc = graphql(/* GraphQL */ `
-  query AssessmentsGet($ids: [ID!]!) {
+  query AssessmentsGet($ids: [ID!]!, $includeComments: Boolean!) {
     assessmentForms(first: 1, filterBy: { ids: $ids }) {
       nodes {
         id
         title
+        description
         status
         dueDate
         submittedAt
@@ -113,9 +228,125 @@ const GetAssessmentDoc = graphql(/* GraphQL */ `
               index
               value
             }
+            comments @include(if: $includeComments) {
+              id
+              content
+              parentCommentId
+              resolvedAt
+              createdAt
+              updatedAt
+              externalAuthorEmail
+              author {
+                id
+                email
+                name
+              }
+              files {
+                id
+              }
+            }
           }
         }
       }
+    }
+  }
+`);
+
+/**
+ * Section index for a form: everything except question bodies. `questions { id }`
+ * is only there to count them — a real form runs to hundreds of questions and
+ * tens of thousands of characters, which is why this is the default read.
+ */
+const GetAssessmentSkeletonDoc = graphql(/* GraphQL */ `
+  query AssessmentsGetSkeleton($ids: [ID!]!) {
+    assessmentForms(first: 1, filterBy: { ids: $ids }) {
+      nodes {
+        id
+        title
+        description
+        status
+        dueDate
+        submittedAt
+        createdAt
+        updatedAt
+        assessmentGroup {
+          id
+        }
+        sections {
+          id
+          title
+          index
+          status
+          questions {
+            id
+          }
+        }
+      }
+    }
+  }
+`);
+
+/**
+ * The three comment levels are separate root queries because only
+ * `AssessmentQuestionRaw` exposes a nested `comments` field, and that nested
+ * field takes no pagination arguments. Going through the root queries is the
+ * only way to bound how many comments a call returns.
+ */
+const ListFormCommentsDoc = graphql(/* GraphQL */ `
+  query AssessmentsListFormComments($first: Int, $offset: Int, $formIds: [ID!]) {
+    assessmentFormComments(
+      first: $first
+      offset: $offset
+      filterBy: { assessmentFormIds: $formIds }
+    ) {
+      nodes {
+        id
+        content
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+      totalCount
+    }
+  }
+`);
+
+const ListSectionCommentsDoc = graphql(/* GraphQL */ `
+  query AssessmentsListSectionComments($first: Int, $offset: Int, $sectionIds: [ID!]) {
+    assessmentSectionComments(
+      first: $first
+      offset: $offset
+      filterBy: { assessmentSectionIds: $sectionIds }
+    ) {
+      nodes {
+        id
+        content
+        assessmentSectionId
+        parentCommentId
+        resolvedAt
+        createdAt
+        updatedAt
+        externalAuthorEmail
+        author {
+          id
+          email
+          name
+        }
+        files {
+          id
+        }
+      }
+      totalCount
     }
   }
 `);
@@ -353,15 +584,21 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     };
   }
 
-  async getAssessment(id: string): Promise<Assessment> {
-    const data = await this.makeRequest(GetAssessmentDoc, { ids: [id] });
+  /**
+   * Section index for a form: metadata plus one row per section with a question
+   * count, and no question bodies. This is the cheap read that lets a caller
+   * decide which sections are worth expanding.
+   */
+  async getAssessmentSkeleton(id: string): Promise<Assessment> {
+    const data = await this.makeRequest(GetAssessmentSkeletonDoc, { ids: [id] });
     const node = data.assessmentForms.nodes[0];
     if (!node) {
-      throw new Error(`Assessment with id ${id} not found`);
+      throw assessmentNotFound(id);
     }
     return {
       id: node.id,
       title: node.title,
+      description: node.description ?? undefined,
       status: node.status as Assessment['status'],
       dueDate: node.dueDate ?? undefined,
       submittedAt: node.submittedAt ?? undefined,
@@ -373,6 +610,53 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         title: section.title ?? undefined,
         index: section.index ?? undefined,
         status: section.status ?? undefined,
+        questionCount: section.questions?.length ?? 0,
+      })),
+    };
+  }
+
+  /**
+   * Full form contents, optionally narrowed to specific sections. `sectionIds`
+   * filters after the fetch because neither `sections` nor `questions` accepts
+   * pagination arguments in the API — the narrowing exists to bound what the
+   * caller has to read, not what the server has to send.
+   */
+  async getAssessment(
+    id: string,
+    options: {
+      /** Restrict the returned sections to these IDs. Omit for every section. */
+      sectionIds?: string[];
+      /** Fetch the comments attached to each question. */
+      includeComments?: boolean;
+    } = {},
+  ): Promise<Assessment> {
+    const includeComments = options.includeComments ?? false;
+    const data = await this.makeRequest(GetAssessmentDoc, { ids: [id], includeComments });
+    const node = data.assessmentForms.nodes[0];
+    if (!node) {
+      throw assessmentNotFound(id);
+    }
+    const wanted = options.sectionIds?.length ? new Set(options.sectionIds) : undefined;
+    const sections = (node.sections ?? []).filter((s) => !wanted || wanted.has(s.id));
+    if (wanted && sections.length === 0) {
+      throw sectionNotFound(id, options.sectionIds ?? [], node.sections ?? []);
+    }
+    return {
+      id: node.id,
+      title: node.title,
+      description: node.description ?? undefined,
+      status: node.status as Assessment['status'],
+      dueDate: node.dueDate ?? undefined,
+      submittedAt: node.submittedAt ?? undefined,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt ?? undefined,
+      assessmentGroupId: node.assessmentGroup?.id,
+      sections: sections.map((section) => ({
+        id: section.id,
+        title: section.title ?? undefined,
+        index: section.index ?? undefined,
+        status: section.status ?? undefined,
+        questionCount: section.questions?.length ?? 0,
         questions: section.questions?.map((q) => ({
           id: q.id,
           title: q.title ?? undefined,
@@ -392,8 +676,44 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
             index: a.index,
             value: a.value,
           })),
+          comments: 'comments' in q ? toComments(q.comments, 'QUESTION', q.id) : undefined,
         })),
       })),
+    };
+  }
+
+  /** Comments left on the form as a whole, newest page first. */
+  async listAssessmentFormComments(
+    formId: string,
+    options: { first?: number; offset?: number } = {},
+  ): Promise<{ nodes: AssessmentComment[]; totalCount: number }> {
+    const data = await this.makeRequest(ListFormCommentsDoc, {
+      formIds: [formId],
+      first: Math.min(options.first ?? 50, 100),
+      offset: options.offset ?? 0,
+    });
+    return {
+      nodes: data.assessmentFormComments.nodes.map((c) => toComment(c, 'FORM', formId)),
+      totalCount: data.assessmentFormComments.totalCount,
+    };
+  }
+
+  /** Comments left on specific sections of a form. */
+  async listAssessmentSectionComments(
+    sectionIds: string[],
+    options: { first?: number; offset?: number } = {},
+  ): Promise<{ nodes: AssessmentComment[]; totalCount: number }> {
+    if (sectionIds.length === 0) return { nodes: [], totalCount: 0 };
+    const data = await this.makeRequest(ListSectionCommentsDoc, {
+      sectionIds,
+      first: Math.min(options.first ?? 50, 100),
+      offset: options.offset ?? 0,
+    });
+    return {
+      nodes: data.assessmentSectionComments.nodes.map((c) =>
+        toComment(c, 'SECTION', c.assessmentSectionId),
+      ),
+      totalCount: data.assessmentSectionComments.totalCount,
     };
   }
 
