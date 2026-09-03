@@ -5,7 +5,7 @@ import {
   McpHostClient,
   type ClientCapabilityReport,
 } from '../src/capabilities/types.js';
-import { ConfirmationPolicy, type ConfirmationGate } from '../src/tools/confirmation.js';
+import { ConfirmationPolicy, type ConfirmationGate } from '../src/tools/confirmation/index.js';
 import {
   assertElicitFormSchema,
   defineToolWithCapabilities,

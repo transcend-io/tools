@@ -1,15 +1,22 @@
 import type { ElicitRequestFormParams, ElicitResult } from '@modelcontextprotocol/sdk/types.js';
-import { makeEnum } from '@transcend-io/type-utils';
 import { z } from 'zod';
 
-import { McpClientCapability, type ClientCapabilityReport } from '../capabilities/types.js';
-import { SimpleLogger } from '../clients/graphql/base.js';
-import { getMcpSession, hasCapability, requestElicitation } from '../mcp-session-context.js';
-import { skipConfirmation } from '../oauth/env.js';
-import { ApprovalTokenOutcome, ApprovalTokenStore } from './approval-tokens.js';
-import { describeArgs, type ConfirmationSummary } from './describe-args.js';
-import { createToolResult } from './helpers.js';
-import { assertConfirmableSchema, type ToolDefinition } from './types.js';
+import { McpClientCapability, type ClientCapabilityReport } from '../../capabilities/types.js';
+import { SimpleLogger } from '../../clients/graphql/base.js';
+import { getMcpSession, hasCapability, requestElicitation } from '../../mcp-session-context.js';
+import { skipConfirmation } from '../../oauth/env.js';
+import { ApprovalTokenOutcome, ApprovalTokenStore } from '../approval-tokens.js';
+import { describeArgs, type ConfirmationSummary } from '../describe-args.js';
+import { createToolResult } from '../helpers.js';
+import { assertConfirmableSchema, type ToolDefinition } from '../types.js';
+import { declineCameFromUndeliveredPrompt } from './cursor-decline-quirk.js';
+import {
+  ConfirmationCode,
+  ConfirmationPolicy,
+  UnaskedReason,
+  type AskOutcome,
+  type ConfirmationGate,
+} from './types.js';
 
 /** Replay arg for hosts that cannot render a confirmation form. */
 export const APPROVAL_TOKEN_ARG = 'approvalToken';
@@ -25,63 +32,6 @@ export const APPROVAL_TOKEN_ARG = 'approvalToken';
 export const CONFIRMATION_TIMEOUT_MS = 10 * 60 * 1000;
 
 const logger = new SimpleLogger();
-
-/** Why a gated call did not run, or what the caller must do next. */
-export const ConfirmationCode = makeEnum({
-  /** Form unavailable; approval token issued for replay */
-  Required: 'CONFIRMATION_REQUIRED',
-  /** User said no */
-  Declined: 'CONFIRMATION_DECLINED',
-  /** User dismissed the form */
-  Cancelled: 'CONFIRMATION_CANCELLED',
-  /** This connection may not approve gated calls at all */
-  Unavailable: 'CONFIRMATION_UNAVAILABLE',
-  /** Token unknown, expired, spent, or mismatched */
-  TokenInvalid: 'CONFIRMATION_TOKEN_INVALID',
-});
-
-export type ConfirmationCode = (typeof ConfirmationCode)[keyof typeof ConfirmationCode];
-
-/** How a transport is allowed to obtain a human's approval. */
-export const ConfirmationPolicy = makeEnum({
-  /** Elicit a decision from the host's user, falling back to a replayable token */
-  ElicitOrToken: 'ELICIT_OR_TOKEN',
-  /** Elicit on the originating call's own stream, with nothing to fall back on */
-  ElicitOnly: 'ELICIT_ONLY',
-  /** Never run the action, whatever the host says it can render */
-  Refuse: 'REFUSE',
-});
-
-export type ConfirmationPolicy = (typeof ConfirmationPolicy)[keyof typeof ConfirmationPolicy];
-
-/**
- * Which routes to approval this connection has, fixed by its transport.
- *
- * Settled before anything the host declared is consulted, so a connection with no
- * route cannot be talked into one. Whether a route reaches a real person is a
- * separate question — see {@link canObtainApproval}.
- */
-export type ConfirmationGate =
-  | {
-      /** Elicit a decision, or issue a token if the host cannot show a form */
-      policy: typeof ConfirmationPolicy.ElicitOrToken;
-      /** Store backing the token fallback */
-      tokens: ApprovalTokenStore;
-    }
-  | {
-      /**
-       * Elicit a decision, and refuse if that fails.
-       *
-       * A token here would be relayed by the very model the gate is interposing
-       * on, since the agent lives on the far side of the transport. Requires the
-       * prompt to be bound to its call — see `McpSession.request`.
-       */
-      policy: typeof ConfirmationPolicy.ElicitOnly;
-    }
-  | {
-      /** Refuse every gated call on this connection */
-      policy: typeof ConfirmationPolicy.Refuse;
-    };
 
 /**
  * Whether a gated tool could actually be approved on this connection.
@@ -128,23 +78,6 @@ const NO_FIELDS: ElicitRequestFormParams['requestedSchema'] = {
   type: 'object',
   properties: {},
 };
-
-/** What came of trying to put the question to a person. */
-type AskOutcome =
-  | {
-      /** The user chose to proceed */
-      outcome: 'confirmed';
-    }
-  | {
-      /** The user answered, and the answer was no */
-      outcome: 'refused';
-      /** Structured refusal to return to the caller */
-      result: unknown;
-    }
-  | {
-      /** Nobody was asked: the host cannot show a form, or the request failed */
-      outcome: 'unasked';
-    };
 
 /** Hint plus arg recap for the elicitation form. */
 export function renderConfirmationPrompt(
@@ -195,12 +128,15 @@ export function withConfirmation(
         // surface in the wrong user's turn or go undelivered and silently expire.
         // stdio has one stream and a token to fall back on, so neither applies.
         requireBinding: gate.policy === ConfirmationPolicy.ElicitOnly,
+        // Without somewhere to fall back to, second-guessing a refusal would only
+        // change which refusal is returned, so the host's answer stands as given.
+        softConfirmationAvailable: tokens !== undefined,
       });
       if (asked.outcome === 'confirmed') return await mutate(args);
       if (asked.outcome === 'refused') return asked.result;
 
       return tokens
-        ? mintApproval(tool.name, message, args, tokens)
+        ? mintApproval(tool.name, message, args, tokens, asked.reason)
         : refusedUnanswered(tool.name, message);
     },
   };
@@ -224,19 +160,24 @@ async function askForConfirmation(
   options: {
     /** Whether to give up unless the form can be tied to the originating call */
     requireBinding: boolean;
+    /** Whether an approval token can carry the decision instead */
+    softConfirmationAvailable: boolean;
   },
 ): Promise<AskOutcome> {
-  if (!hasCapability(McpClientCapability.Elicitation)) return { outcome: 'unasked' };
+  const unasked = { outcome: 'unasked', reason: UnaskedReason.NoAnswer } as const;
+
+  if (!hasCapability(McpClientCapability.Elicitation)) return unasked;
 
   if (options.requireBinding && getMcpSession()?.request === undefined) {
     logger.warn(
       `Not asking for confirmation of ${toolName}: no originating call to bind the form to`,
     );
-    return { outcome: 'unasked' };
+    return unasked;
   }
 
   const prompt = renderConfirmationPrompt(message, describeArgs(args));
 
+  const askedAt = Date.now();
   let answer: ElicitResult | undefined;
   try {
     answer = await requestElicitation(prompt, NO_FIELDS, {
@@ -248,7 +189,7 @@ async function askForConfirmation(
       // The caller gave up while the form was open, so nothing is wrong here — but
       // the answer that never arrived must not be treated as one.
       logger.debug(`Confirmation of ${toolName} abandoned by the caller`);
-      return { outcome: 'unasked' };
+      return unasked;
     }
     // A warning rather than silence: the host said it could ask and then did not,
     // so whatever happens below is covering for a host-side problem someone may
@@ -258,10 +199,10 @@ async function askForConfirmation(
       host: session?.client.host,
       clientName: session?.client.clientInfo?.name,
     });
-    return { outcome: 'unasked' };
+    return unasked;
   }
 
-  if (!answer) return { outcome: 'unasked' };
+  if (!answer) return unasked;
 
   if (answer.action === 'cancel') {
     return {
@@ -270,6 +211,16 @@ async function askForConfirmation(
     };
   }
   if (answer.action === 'decline') {
+    if (
+      declineCameFromUndeliveredPrompt(
+        toolName,
+        Date.now() - askedAt,
+        options.softConfirmationAvailable,
+      )
+    ) {
+      return { outcome: 'unasked', reason: UnaskedReason.Undelivered };
+    }
+
     return {
       outcome: 'refused',
       result: refused(ConfirmationCode.Declined, 'declined the action'),
@@ -291,12 +242,14 @@ function mintApproval(
   args: Record<string, unknown>,
   /** Store issuing the approval */
   tokens: ApprovalTokenStore,
+  /** Why the form did not decide this, which changes what to tell the user */
+  reason: UnaskedReason,
 ): unknown {
   const { token, expiresAt } = tokens.mint(toolName, args);
   return createToolResult(
     false,
     undefined,
-    `${message} This host cannot show a confirmation form, so nothing has run yet. ` +
+    `${message} ${describeWhyUnasked(reason)}, so nothing has run yet. ` +
       `Show the pending call arguments to the user, and only if they agree, call ` +
       `${toolName} again with the same arguments plus ${APPROVAL_TOKEN_ARG}.`,
     {
@@ -308,6 +261,17 @@ function mintApproval(
       },
     },
   );
+}
+
+/**
+ * The clause explaining why the token is being handed over instead of a form
+ * deciding it.
+ */
+function describeWhyUnasked(reason: UnaskedReason): string {
+  return reason === UnaskedReason.Undelivered
+    ? 'This host refused the confirmation without showing it to anybody, which happens ' +
+        'when the prompt is delivered to a different window than the one being used'
+    : 'This host cannot show a confirmation form';
 }
 
 /**

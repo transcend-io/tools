@@ -33,7 +33,7 @@ import {
   canObtainApproval,
   ConfirmationPolicy,
   type ConfirmationGate,
-} from '../tools/confirmation.js';
+} from '../tools/confirmation/index.js';
 import {
   expandToolsForClient,
   isCapabilityAwareTool,

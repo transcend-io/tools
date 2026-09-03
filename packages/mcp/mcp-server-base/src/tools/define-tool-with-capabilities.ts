@@ -6,7 +6,7 @@ import { type z } from 'zod';
 
 import { McpClientCapability, type ClientCapabilityReport } from '../capabilities/types.js';
 import { collectMissingDescriptions } from '../validation/describe-audit.js';
-import { withConfirmation, type ConfirmationGate } from './confirmation.js';
+import { withConfirmation, type ConfirmationGate } from './confirmation/index.js';
 import {
   confirmationViewError,
   defineTool,
