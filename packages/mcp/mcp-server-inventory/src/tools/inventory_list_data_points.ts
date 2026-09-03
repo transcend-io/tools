@@ -1,8 +1,14 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
 
-export const ListDataPointsSchema = z.object({
+export const ListDataPointsSchema = OffsetPaginationSchema.extend({
   dataSiloId: z
     .string()
     .optional()
@@ -14,19 +20,6 @@ export const ListDataPointsSchema = z.object({
     .string()
     .optional()
     .describe('Free-text search across datapoints (GraphQL filterBy.text)'),
-  limit: z.coerce
-    .number()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Results per page (1-100, default: 50)'),
-  offset: z.coerce
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for pagination (default: 0)'),
 });
 export type ListDataPointsInput = z.infer<typeof ListDataPointsSchema>;
 
@@ -37,7 +30,7 @@ export function createInventoryListDataPointsTool(clients: ToolClients) {
     description:
       'List data points (collections of personal data). Pass `dataSiloId` to scope to one ' +
       'data system (recommended) and/or `text` to search. Each row includes `dataSiloId`. ' +
-      'Paginate with `offset` until `hasNextPage` is false. For field-level purposes/categories, ' +
+      'For field-level purposes/categories, ' +
       'follow up with inventory_list_sub_data_points.',
     category: 'Data Inventory',
     readOnly: true,

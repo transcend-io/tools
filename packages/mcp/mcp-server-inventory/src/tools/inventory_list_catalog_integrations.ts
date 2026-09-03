@@ -1,25 +1,18 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { InventoryMixin } from '../graphql.js';
 
-export const ListCatalogIntegrationsSchema = z.object({
+export const ListCatalogIntegrationsSchema = OffsetPaginationSchema.extend({
   text: z
     .string()
     .optional()
     .describe('Free-text search across catalog title and integrationName (GraphQL filterBy.text)'),
-  limit: z.coerce
-    .number()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Results per page (1-100, default: 50)'),
-  offset: z.coerce
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for pagination (default: 0)'),
 });
 export type ListCatalogIntegrationsInput = z.infer<typeof ListCatalogIntegrationsSchema>;
 
@@ -30,7 +23,7 @@ export function createInventoryListCatalogIntegrationsTool(clients: ToolClients)
     description:
       'Search the Transcend integration catalog for valid `integrationName` values to pass to ' +
       'inventory_write_data_silo. Pass `text` to match title or integrationName (e.g. "salesforce"). ' +
-      'Paginate with `offset` until `hasNextPage` is false; `totalCount` is the full count.',
+      '`totalCount` is the full match count, not the size of this page.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

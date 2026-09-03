@@ -1,36 +1,29 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 
 import type { AdminMixin } from '../graphql.js';
 
-export const ListTeamsSchema = z.object({
-  limit: z.coerce
-    .number()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Results per page (1-100, default: 50)'),
-  cursor: z
-    .string()
-    .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
-});
+export const ListTeamsSchema = OffsetPaginationSchema;
 export type ListTeamsInput = z.infer<typeof ListTeamsSchema>;
 
 export function createAdminListTeamsTool(clients: ToolClients) {
   const graphql = clients.graphql as AdminMixin;
   return defineTool({
     name: 'admin_list_teams',
-    description:
-      'List all teams in your Transcend organization. Note: API does not support cursor pagination (max ~100 results).',
+    description: 'List all teams in your Transcend organization.',
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTeamsSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listTeams({
         first: limit,
-        after: cursor,
+        offset,
       });
       return createListResult(result.nodes, {
         totalCount: result.totalCount,

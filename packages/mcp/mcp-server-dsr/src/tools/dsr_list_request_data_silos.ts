@@ -40,18 +40,18 @@ export function createDsrListRequestDataSilosTool(clients: ToolClients) {
       'List connected data systems (request data silos) for a Data Subject Request, including each ' +
       "system's processing status, error message when failed, and the responsible system owners and teams. " +
       'Use this to diagnose approval or compilation bottlenecks caused by failed or stalled systems. ' +
-      'Filter with status=["ERROR"] for failures. Paginate with offset until hasNextPage is false.',
+      'Filter with status=["ERROR"] for failures.',
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: listRequestDataSilosSchema,
-    handler: async ({ requestId, status, visualStatus, text, first, offset }) => {
+    handler: async ({ requestId, status, visualStatus, text, limit, offset }) => {
       const result = await graphql.listRequestDataSilos({
         requestId,
         status,
         visualStatus,
         text,
-        first,
+        first: limit,
         offset,
       });
 

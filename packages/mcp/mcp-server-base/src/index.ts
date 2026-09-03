@@ -45,6 +45,7 @@ export type { ToolCallContext } from './tool-call-context.js';
 
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
+export { derivePageInfo } from './clients/graphql/pagination.js';
 export { TranscendRestClient } from './clients/rest-client.js';
 export type { TranscendRestClientOptions } from './clients/rest-client.js';
 
@@ -69,7 +70,6 @@ export {
   CursorPaginationSchema,
   EmptySchema,
   OffsetPaginationSchema,
-  PaginationSchema,
 } from './validation/schemas.js';
 export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
 
@@ -140,6 +140,7 @@ export type {
 } from './tools/define-tool-with-capabilities.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
+export { toolInputSchema } from './tools/input-schema.js';
 
 export type {
   PromptArgument,

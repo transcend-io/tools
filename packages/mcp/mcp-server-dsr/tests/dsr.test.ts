@@ -172,7 +172,7 @@ describe('DSR Tools', () => {
 
       const result = await tool.handler({
         requestId: 'req-1',
-        first: 2,
+        limit: 2,
         offset: 0,
       });
 
@@ -187,7 +187,7 @@ describe('DSR Tools', () => {
       });
     });
 
-    it('sets hasNextPage false when page is shorter than first', async () => {
+    it('sets hasNextPage false when page is shorter than limit', async () => {
       mockRest.listRequestIdentifiers.mockResolvedValue([
         { id: 'ri-1', name: 'email', value: 'a@b.com', type: 'email' },
       ]);
@@ -197,7 +197,7 @@ describe('DSR Tools', () => {
 
       const result = await tool.handler({
         requestId: 'req-1',
-        first: 50,
+        limit: 50,
         offset: 0,
       });
 
@@ -245,7 +245,7 @@ describe('DSR Tools', () => {
       const result = await tool.handler({
         requestId: 'req-1',
         status: ['ERROR'],
-        first: 10,
+        limit: 10,
         offset: 0,
       });
 

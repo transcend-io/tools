@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import {
   CallToolRequestSchema,
   GetPromptRequestSchema,
@@ -39,6 +38,7 @@ import {
   isCapabilityAwareTool,
 } from '../tools/define-tool-with-capabilities.js';
 import { createErrorResult, createToolResult } from '../tools/helpers.js';
+import { toolInputSchema } from '../tools/input-schema.js';
 import { isVisibleToModel, type ToolDefinition } from '../tools/types.js';
 import {
   buildUiResourceMeta,
@@ -342,7 +342,7 @@ export function buildMcpServer(options: BuildMcpServerOptions): Server {
     const cacheKey = `${tool.name}:${tool.ui?.resource.uri ?? ''}`;
     const cached = jsonSchemaCache.get(cacheKey);
     if (cached) return cached;
-    const schema = toJsonSchemaCompat(tool.zodSchema as never) as Record<string, unknown>;
+    const schema = toolInputSchema(tool.zodSchema);
     jsonSchemaCache.set(cacheKey, schema);
     return schema;
   };

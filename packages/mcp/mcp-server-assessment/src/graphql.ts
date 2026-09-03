@@ -1,4 +1,5 @@
 import {
+  derivePageInfo,
   TranscendGraphQLBase,
   type Assessment,
   type AssessmentCreateInput,
@@ -58,8 +59,8 @@ function normalizeQuestion(q: AssessmentQuestionInput): Record<string, unknown> 
 }
 
 const ListAssessmentsDoc = graphql(/* GraphQL */ `
-  query AssessmentsList($first: Int, $filterBy: AssessmentFormFiltersInput) {
-    assessmentForms(first: $first, filterBy: $filterBy) {
+  query AssessmentsList($first: Int, $offset: Int, $filterBy: AssessmentFormFiltersInput) {
+    assessmentForms(first: $first, offset: $offset, filterBy: $filterBy) {
       nodes {
         id
         title
@@ -144,8 +145,8 @@ const UpdateAssessmentFormAssigneesDoc = graphql(/* GraphQL */ `
 `);
 
 const ListAssessmentGroupsDoc = graphql(/* GraphQL */ `
-  query AssessmentsListGroups($first: Int) {
-    assessmentGroups(first: $first) {
+  query AssessmentsListGroups($first: Int, $offset: Int) {
+    assessmentGroups(first: $first, offset: $offset) {
       nodes {
         id
         title
@@ -202,8 +203,8 @@ const UpdateAssessmentFormDoc = graphql(/* GraphQL */ `
 `);
 
 const ListAssessmentTemplatesDoc = graphql(/* GraphQL */ `
-  query AssessmentsListTemplates($first: Int) {
-    assessmentFormTemplates(first: $first) {
+  query AssessmentsListTemplates($first: Int, $offset: Int) {
+    assessmentFormTemplates(first: $first, offset: $offset) {
       nodes {
         id
         title
@@ -325,8 +326,10 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
   async listAssessments(
     options?: ListOptions & { filterBy?: { statuses?: string[] } },
   ): Promise<PaginatedResponse<Assessment>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListAssessmentsDoc, {
       first: Math.min(options?.first ?? 50, 100),
+      offset,
       filterBy: options?.filterBy?.statuses
         ? // The codegen-emitted enum is structurally equivalent to the manual
           // string array we accept here; the server validates it strictly.
@@ -341,10 +344,11 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         createdAt: node.createdAt,
         assessmentGroupId: node.assessmentGroup?.id,
       })),
-      pageInfo: {
-        hasNextPage: data.assessmentForms.nodes.length < data.assessmentForms.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.assessmentForms.nodes.length,
+        totalCount: data.assessmentForms.totalCount,
+      }),
       totalCount: data.assessmentForms.totalCount,
     };
   }
@@ -412,8 +416,10 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
   }
 
   async listAssessmentGroups(options?: ListOptions): Promise<PaginatedResponse<AssessmentGroup>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListAssessmentGroupsDoc, {
       first: Math.min(options?.first ?? 50, 100),
+      offset,
     });
     return {
       nodes: data.assessmentGroups.nodes.map((node) => ({
@@ -423,10 +429,11 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
           ? { id: node.assessmentFormTemplate.id, title: node.assessmentFormTemplate.title }
           : undefined,
       })),
-      pageInfo: {
-        hasNextPage: data.assessmentGroups.nodes.length < data.assessmentGroups.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.assessmentGroups.nodes.length,
+        totalCount: data.assessmentGroups.totalCount,
+      }),
       totalCount: data.assessmentGroups.totalCount,
     };
   }
@@ -485,8 +492,10 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
   async listAssessmentTemplates(
     options?: ListOptions,
   ): Promise<PaginatedResponse<AssessmentTemplate>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListAssessmentTemplatesDoc, {
       first: Math.min(options?.first ?? 50, 100),
+      offset,
     });
     const templates: AssessmentTemplate[] = data.assessmentFormTemplates.nodes.map((t) => ({
       id: t.id,
@@ -498,11 +507,11 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     }));
     return {
       nodes: templates,
-      pageInfo: {
-        hasNextPage:
-          data.assessmentFormTemplates.nodes.length < data.assessmentFormTemplates.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.assessmentFormTemplates.nodes.length,
+        totalCount: data.assessmentFormTemplates.totalCount,
+      }),
       totalCount: data.assessmentFormTemplates.totalCount,
     };
   }

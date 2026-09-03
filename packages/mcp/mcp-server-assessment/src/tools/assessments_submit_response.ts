@@ -17,7 +17,10 @@ export function createAssessmentsSubmitResponseTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_submit_response',
     description:
-      'Submit an assessment form for review. Optionally specify which sections to submit. This transitions the assessment toward the IN_REVIEW status. The response includes a `url` field pointing at the assessment-group page where reviewers can find the submitted form — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
+      'Submit an assessment form for review. Optionally specify which sections to submit. This ' +
+      'transitions the assessment toward the IN_REVIEW status. The returned `url` points at the ' +
+      'assessment-group page where reviewers find the submitted form — surface it verbatim; ' +
+      'never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
