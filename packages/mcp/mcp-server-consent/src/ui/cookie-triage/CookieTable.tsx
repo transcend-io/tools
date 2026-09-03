@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 
 import type { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
 import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
@@ -12,6 +12,8 @@ interface CookieTableProps {
   purpose: CookieTriagePurposeCategory;
   /** Rows for this purpose */
   cookies: CookieRowState[];
+  /** Optional footer rendered inside the scroll container (e.g. Load more) */
+  footer?: ReactNode;
 }
 
 const HEADER_CELL = 'px-4 py-2.5 text-left text-sm font-semibold uppercase text-content-subtle';
@@ -21,14 +23,15 @@ export const CookieTable = memo(function CookieTable({
   triageType,
   purpose,
   cookies,
+  footer,
 }: CookieTableProps) {
   const itemLabel = triageType === 'cookies' ? 'Cookie' : 'Data flow';
 
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="min-h-0 w-full flex-1 overflow-auto">
       <table className="w-full min-w-[44rem] border-collapse">
-        <thead>
-          <tr className="border-b border-line-subtle">
+        <thead className="sticky top-0 z-10">
+          <tr className="border-b border-line-subtle bg-surface">
             <th scope="col" className={HEADER_CELL}>
               <span className="block">{itemLabel}</span>
               <span className="block font-normal">Service</span>
@@ -51,6 +54,7 @@ export const CookieTable = memo(function CookieTable({
           ))}
         </tbody>
       </table>
+      {footer ? <div className="px-4 py-3">{footer}</div> : null}
     </div>
   );
 });

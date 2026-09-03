@@ -259,7 +259,7 @@ describe('Consent Tools', () => {
               ],
             },
             {
-              purpose: 'NoPurpose',
+              purpose: 'Unknown',
               totalCount: 1,
               shownCount: 1,
               cookies: [{ name: '_unknown' }],
@@ -408,6 +408,28 @@ describe('Consent Tools', () => {
       const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
       const result = tool.zodSchema.safeParse({ status: 'LIVE', trackingPurposes: [] });
       expect(result.success).toBe(false);
+    });
+
+    it('forwards lastDiscoveredAtBefore into filterBy', async () => {
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        consentManager: { consentManager: { id: 'bundle-1' } },
+      });
+      mockGraphql.makeRequest.mockResolvedValueOnce({
+        cookies: { nodes: [], totalCount: 12 },
+      });
+      const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
+      await tool.handler(
+        tool.zodSchema.parse({
+          status: 'NEEDS_REVIEW',
+          first: 1,
+          lastDiscoveredAtBefore: '2026-08-04T12:00:00.000Z',
+        }),
+      );
+      const variables = mockGraphql.makeRequest.mock.calls[1][1];
+      expect(variables.filterBy).toMatchObject({
+        status: 'NEEDS_REVIEW',
+        lastDiscoveredAtBefore: '2026-08-04T12:00:00.000Z',
+      });
     });
 
     it('defaults OffsetPaginationSchema first/offset and forwards first to GraphQL', async () => {

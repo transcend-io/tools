@@ -13,6 +13,8 @@ export interface ConsentTriageListNode {
     /** Service or vendor display title */
     title?: string;
   };
+  /** Notes / description from the dashboard */
+  description?: string;
   /** Cookie tracking purpose slugs */
   trackingPurposes?: string[];
   /** Data-flow tracking purpose slugs */
@@ -28,11 +30,15 @@ export function projectCookieForTriage(cookie: ConsentTriageListNode): CookieTri
   if (cookie.name === undefined || cookie.name.length === 0) {
     throw new Error('Cookie list node is missing a name');
   }
+  if (cookie.id === undefined || cookie.id.length === 0) {
+    throw new Error('Cookie list node is missing an id');
+  }
 
   return {
     name: cookie.name,
-    ...(cookie.id ? { id: cookie.id } : {}),
+    id: cookie.id,
     ...(cookie.service?.title ? { service: cookie.service.title } : {}),
+    ...(cookie.description !== undefined ? { description: cookie.description } : {}),
     ...(cookie.trackingPurposes ? { trackingPurposes: cookie.trackingPurposes } : {}),
     ...(cookie.occurrences !== undefined ? { occurrences: cookie.occurrences } : {}),
     ...(cookie.lastDiscoveredAt ? { lastActivityAt: cookie.lastDiscoveredAt } : {}),
@@ -44,11 +50,15 @@ export function projectDataFlowForTriage(flow: ConsentTriageListNode): CookieTri
   if (flow.value === undefined || flow.value.length === 0) {
     throw new Error('Data-flow list node is missing a value');
   }
+  if (flow.id === undefined || flow.id.length === 0) {
+    throw new Error('Data-flow list node is missing an id');
+  }
 
   return {
     name: flow.value,
-    ...(flow.id ? { id: flow.id } : {}),
+    id: flow.id,
     ...(flow.service?.title ? { service: flow.service.title } : {}),
+    ...(flow.description !== undefined ? { description: flow.description } : {}),
     ...(flow.trackingType ? { trackingPurposes: flow.trackingType } : {}),
     ...(flow.occurrences !== undefined ? { occurrences: flow.occurrences } : {}),
     ...(flow.lastDiscoveredAt ? { lastActivityAt: flow.lastDiscoveredAt } : {}),
@@ -87,6 +97,7 @@ function asListNode(node: unknown): ConsentTriageListNode | undefined {
     ...(asNonEmptyString(record.name) ? { name: asNonEmptyString(record.name) } : {}),
     ...(asNonEmptyString(record.value) ? { value: asNonEmptyString(record.value) } : {}),
     ...(service ? { service } : {}),
+    ...(typeof record.description === 'string' ? { description: record.description } : {}),
     ...(asStringArray(record.trackingPurposes)
       ? { trackingPurposes: asStringArray(record.trackingPurposes) }
       : {}),

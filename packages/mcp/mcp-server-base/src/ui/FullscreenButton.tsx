@@ -102,7 +102,7 @@ export const FullscreenButton = memo(function FullscreenButton({
   }
 
   const baseClassName =
-    'inline-flex shrink-0 items-center gap-1.5 rounded-sm border border-line bg-surface px-2 py-1 text-sm text-content';
+    'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-surface px-2 py-1 text-sm text-content';
 
   return (
     <button

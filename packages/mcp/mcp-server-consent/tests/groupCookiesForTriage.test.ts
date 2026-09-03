@@ -22,6 +22,11 @@ describe('groupCookiesForTriage', () => {
         occurrences: 100,
       },
       {
+        name: 'custom-purpose',
+        trackingPurposes: ['Loyalty'],
+        occurrences: 3,
+      },
+      {
         name: 'orphan',
       },
     ];
@@ -32,7 +37,8 @@ describe('groupCookiesForTriage', () => {
       'Essential',
       'Advertising',
       'Analytics',
-      'NoPurpose',
+      'Unknown',
+      'Custom',
     ]);
     expect(
       categories.find((category) => category.purpose === 'Advertising')?.cookies[0]?.name,
@@ -40,7 +46,10 @@ describe('groupCookiesForTriage', () => {
     expect(
       categories.find((category) => category.purpose === 'Analytics')?.cookies.map((c) => c.name),
     ).toEqual(['low-analytics']);
-    expect(categories.find((category) => category.purpose === 'NoPurpose')?.totalCount).toBe(1);
+    expect(categories.find((category) => category.purpose === 'Custom')?.cookies[0]?.name).toBe(
+      'custom-purpose',
+    );
+    expect(categories.find((category) => category.purpose === 'Unknown')?.totalCount).toBe(1);
   });
 
   it('caps each purpose at 100 cookies and keeps full totalCount', () => {

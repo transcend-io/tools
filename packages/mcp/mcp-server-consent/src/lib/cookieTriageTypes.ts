@@ -6,14 +6,24 @@ export type ConsentTriageType = 'cookies' | 'data_flows';
 /** User triage decision for a cookie or data-flow row */
 export type CookieTriageDecision = 'approve' | 'junk' | 'review';
 
+/** One selectable tracking purpose from `consent_list_purposes`. */
+export interface CookieTriagePurposeOption {
+  /** Purpose slug written to `trackingPurposes` / `trackingTypes` */
+  slug: string;
+  /** Human-readable label for the purpose select */
+  label: string;
+}
+
 /** Cookie or data-flow item shown in the triage view */
 export interface CookieTriageAnalysis {
   /** Cookie name or data-flow value (upsert / row key) */
   name: string;
   /** Transcend cookie or data-flow ID when available */
-  id?: string;
+  id: string;
   /** Service or vendor title when known */
   service?: string;
+  /** Notes / description from the dashboard when known */
+  description?: string;
   /** Current assigned purpose slugs from the API (used to group into purpose tabs) */
   trackingPurposes?: string[];
   /** Telemetry occurrences when available */

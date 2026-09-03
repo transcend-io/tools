@@ -9,6 +9,7 @@ describe('projectCookieForTriage', () => {
         id: 'c1',
         name: '_ga',
         service: { title: 'Google Analytics' },
+        description: 'Analytics session cookie',
         trackingPurposes: ['Analytics'],
         occurrences: 10,
         lastDiscoveredAt: '2026-08-25T14:32:00.000Z',
@@ -17,6 +18,7 @@ describe('projectCookieForTriage', () => {
       name: '_ga',
       id: 'c1',
       service: 'Google Analytics',
+      description: 'Analytics session cookie',
       trackingPurposes: ['Analytics'],
       occurrences: 10,
       lastActivityAt: '2026-08-25T14:32:00.000Z',
@@ -58,6 +60,7 @@ describe('projectListNodeForTriage', () => {
   it('returns undefined for unusable nodes', () => {
     expect(projectListNodeForTriage('cookies', { value: 'not-a-cookie' })).toBeUndefined();
     expect(projectListNodeForTriage('data_flows', { name: 'not-a-flow' })).toBeUndefined();
+    expect(projectListNodeForTriage('cookies', { name: '_ga' })).toBeUndefined();
     expect(projectListNodeForTriage('cookies', null)).toBeUndefined();
   });
 });

@@ -54,6 +54,17 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .min(0)
     .optional()
     .describe('Only return flows with at least this many occurrences (traffic)'),
+  lastDiscoveredAtBefore: z
+    .string()
+    .optional()
+    .describe(
+      'ISO 8601 upper bound for lastDiscoveredAt (exclusive of newer activity). ' +
+        'Use with first=1 to count dormant NEEDS_REVIEW flows last seen before this time.',
+    ),
+  lastDiscoveredAtAfter: z
+    .string()
+    .optional()
+    .describe('ISO 8601 lower bound for lastDiscoveredAt (flows last seen on/after this time)'),
   orderField: z.nativeEnum(DataFlowOrderField).optional().describe('Field to sort by'),
   orderDirection: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
 });
@@ -67,8 +78,8 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved flows. ' +
       'Returns value (URL/host), service, tracking purposes, activity (occurrences), and more. ' +
       'Use unmappedOnly to find approved flows with no service, type to filter by scope ' +
-      '(e.g. CSP), trackingTypes (slugs from consent_list_purposes), and minOccurrences ' +
-      'to focus on high-traffic flows.',
+      '(e.g. CSP), trackingTypes (slugs from consent_list_purposes), minOccurrences ' +
+      'for high-traffic flows, and lastDiscoveredAtBefore/After for last-seen windows.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -85,6 +96,8 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
       type,
       trackingTypes,
       minOccurrences,
+      lastDiscoveredAtBefore,
+      lastDiscoveredAtAfter,
       orderField,
       orderDirection,
     }) => {
@@ -104,6 +117,8 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
           ...(type ? { type } : {}),
           ...(trackingTypes ? { trackingTypes } : {}),
           ...(minOccurrences !== undefined ? { minOccurrences } : {}),
+          ...(lastDiscoveredAtBefore ? { lastDiscoveredAtBefore } : {}),
+          ...(lastDiscoveredAtAfter ? { lastDiscoveredAtAfter } : {}),
         },
         ...(orderField && orderDirection
           ? { orderBy: [{ field: orderField, direction: orderDirection }] }

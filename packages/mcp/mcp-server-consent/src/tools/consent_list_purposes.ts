@@ -15,7 +15,9 @@ export type ListPurposesInput = z.infer<typeof ListPurposesSchema>;
 export function createConsentListPurposesTool(clients: ToolClients) {
   return defineTool({
     name: 'consent_list_purposes',
-    description: 'List all tracking purposes configured for consent management (max ~100 results).',
+    description:
+      'List the organization tracking purposes configured for consent (slug = trackingType). ' +
+      'Use these slugs when filtering or assigning purposes on cookies and data flows (max ~100).',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

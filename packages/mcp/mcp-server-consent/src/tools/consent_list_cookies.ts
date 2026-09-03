@@ -42,6 +42,17 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
     .min(0)
     .optional()
     .describe('Only return cookies with at least this many occurrences (traffic)'),
+  lastDiscoveredAtBefore: z
+    .string()
+    .optional()
+    .describe(
+      'ISO 8601 upper bound for lastDiscoveredAt (exclusive of newer activity). ' +
+        'Use with first=1 to count dormant NEEDS_REVIEW cookies last seen before this time.',
+    ),
+  lastDiscoveredAtAfter: z
+    .string()
+    .optional()
+    .describe('ISO 8601 lower bound for lastDiscoveredAt (cookies last seen on/after this time)'),
   orderField: z.nativeEnum(CookieOrderField).optional().describe('Sort field (e.g. occurrences).'),
   orderDirection: z
     .nativeEnum(OrderDirection)
@@ -58,7 +69,8 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       'Requires status: NEEDS_REVIEW (triage) or LIVE (approved). ' +
       'Returns name, service, tracking purposes, occurrences, junk status, and more. ' +
       'Filter with trackingPurposes (slugs from consent_list_purposes). ' +
-      'Optional orderField/orderDirection and minOccurrences for ad-hoc listing. ' +
+      'Optional lastDiscoveredAtBefore/After for last-seen windows, ' +
+      'orderField/orderDirection and minOccurrences for ad-hoc listing. ' +
       'consent_cookie_triage_review_app pages NEEDS_REVIEW cookies via this tool when triageType is cookies.',
 
     category: 'Consent Management',
@@ -75,6 +87,8 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       service,
       trackingPurposes,
       minOccurrences,
+      lastDiscoveredAtBefore,
+      lastDiscoveredAtAfter,
       orderField,
       orderDirection,
     }) => {
@@ -91,6 +105,8 @@ export function createConsentListCookiesTool(clients: ToolClients) {
           ...(service ? { service } : {}),
           ...(trackingPurposes ? { trackingPurposes } : {}),
           ...(minOccurrences !== undefined ? { minOccurrences } : {}),
+          ...(lastDiscoveredAtBefore ? { lastDiscoveredAtBefore } : {}),
+          ...(lastDiscoveredAtAfter ? { lastDiscoveredAtAfter } : {}),
         },
         ...(orderField && orderDirection
           ? { orderBy: [{ field: orderField, direction: orderDirection }] }

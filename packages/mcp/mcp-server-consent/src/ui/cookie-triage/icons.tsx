@@ -17,7 +17,7 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
-/** Close/X icon for the review decision control. */
+/** Close/X icon for the junk decision control. */
 export function CloseIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 10 10" fill="none" aria-hidden="true" width={16} height={16} {...props}>
@@ -37,7 +37,7 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
-/** Trash icon for the junk decision control. */
+/** Trash icon for the delete control (not wired yet). */
 export function TrashIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" width={16} height={16} {...props}>
@@ -105,6 +105,27 @@ export function ChevronDownIcon(props: IconProps) {
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" width={24} height={24} {...props}>
       <path
         d="M8 10L12 14L16 10"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Circular arrows icon for the header refresh control. */
+export function RefreshIcon(props: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" width={16} height={16} {...props}>
+      <path
+        d="M13.5 8A5.5 5.5 0 1 1 11.3 3.4"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M11 1.5V4.5H14"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"

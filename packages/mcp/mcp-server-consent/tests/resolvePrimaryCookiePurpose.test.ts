@@ -3,26 +3,47 @@ import { describe, expect, it } from 'vitest';
 import {
   COOKIE_TRIAGE_PURPOSE_LABELS,
   COOKIE_TRIAGE_PURPOSE_ORDER,
+  isDefaultCookiePurposeSlug,
+  isUnknownCookiePurposeSlug,
   resolvePrimaryCookiePurpose,
 } from '../src/lib/resolvePrimaryCookiePurpose.js';
 
 describe('COOKIE_TRIAGE_PURPOSE_ORDER', () => {
-  it('lists purposes in tab display order', () => {
+  it('lists purposes in tab display order with Custom last', () => {
     expect(COOKIE_TRIAGE_PURPOSE_ORDER).toEqual([
       'Essential',
       'Functional',
       'Advertising',
       'Analytics',
       'SaleOfInfo',
-      'NoPurpose',
+      'Unknown',
+      'Custom',
     ]);
   });
 });
 
 describe('COOKIE_TRIAGE_PURPOSE_LABELS', () => {
-  it('maps SaleOfInfo and NoPurpose to app copy', () => {
+  it('maps SaleOfInfo, Custom, and Unknown to app copy', () => {
     expect(COOKIE_TRIAGE_PURPOSE_LABELS.SaleOfInfo).toBe('Sale of Personal Info');
-    expect(COOKIE_TRIAGE_PURPOSE_LABELS.NoPurpose).toBe('Other');
+    expect(COOKIE_TRIAGE_PURPOSE_LABELS.Custom).toBe('Custom');
+    expect(COOKIE_TRIAGE_PURPOSE_LABELS.Unknown).toBe('Unknown');
+  });
+});
+
+describe('isDefaultCookiePurposeSlug', () => {
+  it('matches built-in slugs case-insensitively', () => {
+    expect(isDefaultCookiePurposeSlug('Analytics')).toBe(true);
+    expect(isDefaultCookiePurposeSlug('essential')).toBe(true);
+    expect(isDefaultCookiePurposeSlug('Loyalty')).toBe(false);
+    expect(isDefaultCookiePurposeSlug('Unknown')).toBe(false);
+  });
+});
+
+describe('isUnknownCookiePurposeSlug', () => {
+  it('matches Unknown case-insensitively', () => {
+    expect(isUnknownCookiePurposeSlug('Unknown')).toBe(true);
+    expect(isUnknownCookiePurposeSlug('unknown')).toBe(true);
+    expect(isUnknownCookiePurposeSlug('Loyalty')).toBe(false);
   });
 });
 
@@ -41,14 +62,17 @@ describe('resolvePrimaryCookiePurpose', () => {
     expect(resolvePrimaryCookiePurpose(['SaleOfInfo', 'Analytics'])).toBe('Analytics');
   });
 
-  it('returns NoPurpose for empty or missing lists', () => {
-    expect(resolvePrimaryCookiePurpose([])).toBe('NoPurpose');
-    expect(resolvePrimaryCookiePurpose(undefined)).toBe('NoPurpose');
-    expect(resolvePrimaryCookiePurpose(null)).toBe('NoPurpose');
+  it('returns Unknown for empty, missing, or Unknown-only lists', () => {
+    expect(resolvePrimaryCookiePurpose([])).toBe('Unknown');
+    expect(resolvePrimaryCookiePurpose(undefined)).toBe('Unknown');
+    expect(resolvePrimaryCookiePurpose(null)).toBe('Unknown');
+    expect(resolvePrimaryCookiePurpose(['Unknown'])).toBe('Unknown');
+    expect(resolvePrimaryCookiePurpose(['unknown'])).toBe('Unknown');
   });
 
-  it('returns NoPurpose when only unrecognized slugs are present', () => {
-    expect(resolvePrimaryCookiePurpose(['Unknown', 'CustomPurpose'])).toBe('NoPurpose');
+  it('returns Custom when only unrecognized non-Unknown slugs are present', () => {
+    expect(resolvePrimaryCookiePurpose(['Loyalty', 'CustomPurpose'])).toBe('Custom');
+    expect(resolvePrimaryCookiePurpose(['Unknown', 'CustomPurpose'])).toBe('Custom');
   });
 
   it('ignores unrecognized slugs and uses the best known match', () => {

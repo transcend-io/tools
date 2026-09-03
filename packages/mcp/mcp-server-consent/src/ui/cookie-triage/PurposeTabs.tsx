@@ -68,8 +68,8 @@ export const PurposeTabs = memo(function PurposeTabs() {
               id={`cookie-triage-tab-${purpose}`}
               className={
                 isActive
-                  ? 'relative -mb-px flex items-center gap-2 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand-text'
-                  : 'relative -mb-px flex items-center gap-2 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-content'
+                  ? 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand-text'
+                  : 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-content'
               }
               onClick={() => selectPurpose(purpose)}
               onKeyDown={(event) => onTabKeyDown(event, index)}

@@ -3,7 +3,7 @@ import { memo } from 'react';
 import { useCookieTriageSummary } from './CookieTriageContext.tsx';
 import { OverviewItem } from './OverviewItem.tsx';
 
-/** Overview KPIs derived from live triage session state. */
+/** Overview KPIs from API count calls plus session triage decisions. */
 export const Overviews = memo(function Overviews() {
   const { triagedCount, dormantCount, pendingCount } = useCookieTriageSummary();
 
