@@ -1436,6 +1436,51 @@ describe('Assessment Tools', () => {
       expect(result.data[1]!.groupUrl).toBe('https://app.transcend.io/assessments/groups/grp-2');
     });
 
+    it('assessments_list_groups narrows by title instead of scanning pages', async () => {
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [{ id: 'grp-1', title: 'Vendor Onboarding' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      await tool.handler(
+        tool.zodSchema.parse({ text: 'Vendor Onboarding', templateIds: ['tpl-1'] }) as never,
+      );
+
+      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          filterBy: { text: 'Vendor Onboarding', templateIds: ['tpl-1'] },
+        }),
+      );
+    });
+
+    it('assessments_list_groups pages with offset', async () => {
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [{ id: 'grp-3', title: 'Group 3' }],
+        totalCount: 120,
+        pageInfo: { hasNextPage: true },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ limit: 50, offset: 50 }) as never,
+      )) as { hasNextPage: boolean; totalCount: number };
+
+      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 50, offset: 50 }),
+      );
+      expect(result).toMatchObject({ hasNextPage: true, totalCount: 120 });
+    });
+
+    it('assessments_list_groups no longer accepts a cursor', () => {
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const { shape } = tool.zodSchema as unknown as { shape: Record<string, unknown> };
+      expect(shape).not.toHaveProperty('cursor');
+      expect(shape).toHaveProperty('offset');
+    });
+
     it('honors a caller-supplied dashboard URL on the ToolClients', async () => {
       mockGraphql.createAssessment.mockResolvedValue({
         id: FORM_ID,

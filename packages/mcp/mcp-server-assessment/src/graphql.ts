@@ -573,8 +573,8 @@ const UpdateAssessmentFormAssigneesDoc = graphql(/* GraphQL */ `
 `);
 
 const ListAssessmentGroupsDoc = graphql(/* GraphQL */ `
-  query AssessmentsListGroups($first: Int, $offset: Int) {
-    assessmentGroups(first: $first, offset: $offset) {
+  query AssessmentsListGroups($first: Int, $offset: Int, $filterBy: AssessmentGroupFiltersInput) {
+    assessmentGroups(first: $first, offset: $offset, filterBy: $filterBy) {
       nodes {
         id
         title
@@ -1198,26 +1198,42 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     return data.updateAssessmentFormAssignees.assessmentForm;
   }
 
-  async listAssessmentGroups(options?: ListOptions): Promise<PaginatedResponse<AssessmentGroup>> {
+  /**
+   * Page the group index. Like `assessmentForms`, `AssessmentGroupsPayload`
+   * carries no `pageInfo`, so `hasNextPage` is derived from the offset.
+   */
+  async listAssessmentGroups(
+    options?: ListOptions & {
+      /** Filters forwarded to `AssessmentGroupFiltersInput` */
+      filterBy?: {
+        /** Free-text match over group titles */
+        text?: string;
+        /** Restrict to groups built from these templates */
+        templateIds?: string[];
+      };
+    },
+  ): Promise<PaginatedResponse<AssessmentGroup>> {
+    const first = Math.min(options?.first ?? 50, 100);
     const offset = options?.offset ?? 0;
+    const filterBy = options?.filterBy;
+
     const data = await this.makeRequest(ListAssessmentGroupsDoc, {
-      first: Math.min(options?.first ?? 50, 100),
+      first,
       offset,
+      filterBy: filterBy && Object.keys(filterBy).length > 0 ? filterBy : null,
     });
+
+    const { nodes, totalCount } = data.assessmentGroups;
     return {
-      nodes: data.assessmentGroups.nodes.map((node) => ({
+      nodes: nodes.map((node) => ({
         id: node.id,
         title: node.title,
         assessmentFormTemplate: node.assessmentFormTemplate
           ? { id: node.assessmentFormTemplate.id, title: node.assessmentFormTemplate.title }
           : undefined,
       })),
-      pageInfo: derivePageInfo({
-        offset,
-        nodeCount: data.assessmentGroups.nodes.length,
-        totalCount: data.assessmentGroups.totalCount,
-      }),
-      totalCount: data.assessmentGroups.totalCount,
+      pageInfo: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }),
+      totalCount,
     };
   }
 
