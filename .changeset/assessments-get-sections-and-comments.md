@@ -19,8 +19,17 @@ with a question count for each, which is small enough to be safe on any form. Pa
 `includeComments` adds reviewer feedback on top. Form-level comments always come back;
 section- and question-level comments come back only for expanded sections, which is what
 keeps a heavily-reviewed form bounded. Resolved comments are hidden unless
-`includeResolvedComments` is set, and the total is capped at 200 with the omitted count
-reported.
+`includeResolvedComments` is set.
+
+Comments are paged with `limit` and `offset`, which move through the comments rather than
+the sections. The three comment levels come from separate queries and are merged, so each
+source is read out in full and the merged list ordered by creation time and id before a
+page is cut — an offset names the same comment on every call. `commentSummary` reports
+`totalCount` and a `pageInfo`.
+
+This also fixes comments going missing without saying so: form and section comments were
+previously fetched with a fixed `first: 100`, so a form with more than that lost the
+remainder at the fetch layer while the reported omission count stayed at zero.
 
 Question comments come from the nested field on the form query rather than the
 `assessmentQuestionComments` root query, because `AssessmentQuestionComment` carries no

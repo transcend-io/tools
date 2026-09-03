@@ -174,6 +174,8 @@ describe('Assessment Tools', () => {
         assessmentId: 'form-1',
         includeComments: true,
         includeResolvedComments: false,
+        limit: 50,
+        offset: 0,
       })) as { data: Record<string, any> };
 
       // Section comments are bounded by section count, so withholding them until
@@ -181,6 +183,7 @@ describe('Assessment Tools', () => {
       // complete. Only question comments are gated behind sectionIds.
       expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(['sec-1', 'sec-2'], {
         first: 100,
+        offset: 0,
       });
       expect(result.data.comments.map((c: any) => c.id)).toEqual(['c-f1', 'c-s1']);
       expect(result.data.commentSummary.questionCommentsOmitted).toContain('sectionIds');
@@ -194,6 +197,8 @@ describe('Assessment Tools', () => {
         sectionIds: ['sec-1'],
         includeComments: true,
         includeResolvedComments: false,
+        limit: 50,
+        offset: 0,
       })) as { data: Record<string, any> };
 
       expect(hidden.data.comments.map((c: any) => c.id)).toEqual(['c-q1']);
@@ -204,6 +209,8 @@ describe('Assessment Tools', () => {
         sectionIds: ['sec-1'],
         includeComments: true,
         includeResolvedComments: true,
+        limit: 50,
+        offset: 0,
       })) as { data: Record<string, any> };
 
       expect(shown.data.comments.map((c: any) => c.id)).toEqual(['c-q1', 'c-q2']);
@@ -218,11 +225,86 @@ describe('Assessment Tools', () => {
         sectionIds: ['sec-1'],
         includeComments: true,
         includeResolvedComments: false,
+        limit: 50,
+        offset: 0,
       });
 
       expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(['sec-1'], {
         first: 100,
+        offset: 0,
       });
+    });
+
+    it('pages the merged comment list and reports where the caller is in it', async () => {
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [1, 2, 3, 4, 5].map((n) => ({
+          id: `c-f${n}`,
+          level: 'FORM',
+          targetId: 'form-1',
+          content: `Comment ${n}`,
+          createdAt: `2026-01-0${n}T00:00:00.000Z`,
+        })),
+        totalCount: 5,
+      });
+
+      const page = (await getTool().handler({
+        assessmentId: 'form-1',
+        includeComments: true,
+        includeResolvedComments: false,
+        limit: 2,
+        offset: 2,
+      })) as { data: Record<string, any> };
+
+      expect(page.data.comments.map((c: any) => c.id)).toEqual(['c-f3', 'c-f4']);
+      expect(page.data.commentSummary.totalCount).toBe(5);
+      expect(page.data.commentSummary.pageInfo).toEqual({
+        hasNextPage: true,
+        hasPreviousPage: true,
+      });
+
+      const last = (await getTool().handler({
+        assessmentId: 'form-1',
+        includeComments: true,
+        includeResolvedComments: false,
+        limit: 2,
+        offset: 4,
+      })) as { data: Record<string, any> };
+
+      expect(last.data.comments.map((c: any) => c.id)).toEqual(['c-f5']);
+      expect(last.data.commentSummary.pageInfo.hasNextPage).toBe(false);
+    });
+
+    it('reads past the first page of a comment source instead of dropping the rest', async () => {
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
+      // 150 form comments: one round trip of 100 leaves 50 behind, and the old
+      // fixed `first: 100` fetch reported nothing missing.
+      const all = Array.from({ length: 150 }, (_, i) => ({
+        id: `c-f${String(i).padStart(3, '0')}`,
+        level: 'FORM',
+        targetId: 'form-1',
+        content: `Comment ${i}`,
+        createdAt: '2026-01-01T00:00:00.000Z',
+      }));
+      mockGraphql.listAssessmentFormComments.mockImplementation(
+        (_id: string, { first, offset }: { first: number; offset: number }) => ({
+          nodes: all.slice(offset, offset + first),
+          totalCount: all.length,
+        }),
+      );
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        includeComments: true,
+        includeResolvedComments: false,
+        limit: 10,
+        offset: 140,
+      })) as { data: Record<string, any> };
+
+      expect(mockGraphql.listAssessmentFormComments).toHaveBeenCalledTimes(2);
+      expect(result.data.commentSummary.totalCount).toBe(150);
+      expect(result.data.comments.map((c: any) => c.id)).toEqual(all.slice(140).map((c) => c.id));
+      expect(result.data.commentSummary.pageInfo.hasNextPage).toBe(false);
     });
 
     it('no longer accepts the display-only assessmentName argument', () => {
