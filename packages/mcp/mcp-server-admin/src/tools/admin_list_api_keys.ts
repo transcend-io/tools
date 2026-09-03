@@ -10,10 +10,6 @@ export const ListApiKeysSchema = z.object({
     .optional()
     .default(50)
     .describe('Results per page (1-100, default: 50)'),
-  cursor: z
-    .string()
-    .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
   offset: z.coerce
     .number()
     .min(0)
@@ -28,7 +24,7 @@ export function createAdminListApiKeysTool(clients: ToolClients) {
   return defineTool({
     name: 'admin_list_api_keys',
     description:
-      'List all API keys configured for your organization (tokens are not shown). Note: API does not support cursor pagination (max ~100 results).',
+      'List all API keys configured for your organization (tokens are not shown). Page with `offset`.',
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

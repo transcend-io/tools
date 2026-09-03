@@ -8,11 +8,7 @@ import {
 
 import type { WorkflowsMixin } from '../graphql.js';
 
-export const ListEmailTemplatesSchema = PaginationSchema.extend({
-  cursor: z
-    .string()
-    .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
+export const ListEmailTemplatesSchema = PaginationSchema.omit({ cursor: true }).extend({
   offset: z.coerce
     .number()
     .min(0)
@@ -27,7 +23,7 @@ export function createWorkflowsListEmailTemplatesTool(clients: ToolClients) {
   return defineTool({
     name: 'workflows_list_email_templates',
     description:
-      'List all email templates used in workflows and communications. Note: API does not support cursor pagination (max ~100 results).',
+      'List all email templates used in workflows and communications. Page with `offset`.',
     category: 'Workflows',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

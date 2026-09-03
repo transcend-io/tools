@@ -8,12 +8,7 @@ import {
 
 import type { DiscoveryMixin } from '../graphql.js';
 
-export const ListPluginsSchema = PaginationSchema.extend({
-  cursor: z
-    .string()
-    .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
-});
+export const ListPluginsSchema = PaginationSchema.omit({ cursor: true });
 export type ListPluginsInput = z.infer<typeof ListPluginsSchema>;
 
 export function createDiscoveryListPluginsTool(clients: ToolClients) {
@@ -25,10 +20,9 @@ export function createDiscoveryListPluginsTool(clients: ToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListPluginsSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit }) => {
       const result = await graphql.listDiscoveryPlugins({
         first: limit,
-        after: cursor,
       });
       return createListResult(result.nodes, {
         totalCount: result.totalCount,

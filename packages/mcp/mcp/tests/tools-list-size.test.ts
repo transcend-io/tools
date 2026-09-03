@@ -1,5 +1,8 @@
-import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
-import { TranscendRestClient, type AuthCredentials } from '@transcend-io/mcp-server-base';
+import {
+  toolInputSchema,
+  TranscendRestClient,
+  type AuthCredentials,
+} from '@transcend-io/mcp-server-base';
 import { describe, expect, it } from 'vitest';
 
 import { TranscendGraphQLClient } from '../src/graphql-client.js';
@@ -13,8 +16,9 @@ const MAX_TOOL_DESCRIPTION_CHARS = 700;
 /**
  * Ceiling for the full stdio-shaped tools/list JSON (name, description,
  * inputSchema, annotations). Character length of JSON.stringify.
- * Measured at 76,087 across 82 tools after relocating TRANSCEND_SCOPES. Prefer
- * consolidating or trimming descriptors over raising this cap.
+ * Measured at 80,346 across 82 tools after dropping the per-schema `$schema`
+ * pointer and expanding `assessments_list`. Prefer consolidating or trimming
+ * descriptors over raising this cap.
  */
 const MAX_TOOLS_LIST_JSON_CHARS = 85_000;
 
@@ -22,7 +26,7 @@ function listDescriptors(registry: ToolRegistry) {
   return registry.getAllTools().map((tool) => ({
     name: tool.name,
     description: tool.description,
-    inputSchema: toJsonSchemaCompat(tool.zodSchema as never),
+    inputSchema: toolInputSchema(tool.zodSchema),
     annotations: tool.annotations,
   }));
 }

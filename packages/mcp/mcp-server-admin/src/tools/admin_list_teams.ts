@@ -10,10 +10,6 @@ export const ListTeamsSchema = z.object({
     .optional()
     .default(50)
     .describe('Results per page (1-100, default: 50)'),
-  cursor: z
-    .string()
-    .optional()
-    .describe('Pagination cursor from previous response (where supported)'),
 });
 export type ListTeamsInput = z.infer<typeof ListTeamsSchema>;
 
@@ -22,15 +18,14 @@ export function createAdminListTeamsTool(clients: ToolClients) {
   return defineTool({
     name: 'admin_list_teams',
     description:
-      'List all teams in your Transcend organization. Note: API does not support cursor pagination (max ~100 results).',
+      'List all teams in your Transcend organization. Returns at most `limit` rows (max 100).',
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTeamsSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit }) => {
       const result = await graphql.listTeams({
         first: limit,
-        after: cursor,
       });
       return createListResult(result.nodes, {
         totalCount: result.totalCount,

@@ -8,7 +8,7 @@ import {
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-export const ListTemplatesSchema = PaginationSchema;
+export const ListTemplatesSchema = PaginationSchema.omit({ cursor: true });
 export type ListTemplatesInput = z.infer<typeof ListTemplatesSchema>;
 
 export function createAssessmentsListTemplatesTool(clients: ToolClients) {
@@ -16,15 +16,15 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_list_templates',
     description:
-      'List all available assessment templates. Note: Cursor pagination is not supported by the Transcend API for templates - use limit to control results (max 100).',
+      'List the blank assessment templates available to build new assessments from. ' +
+      'Returns at most `limit` rows (max 100).',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTemplatesSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit }) => {
       const result = await graphql.listAssessmentTemplates({
         first: limit,
-        after: cursor,
       });
 
       return createListResult(result.nodes, {
