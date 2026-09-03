@@ -370,6 +370,25 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
 
+    it('returns an actionable error before creating when no assignee is provided', async () => {
+      const tools = getTools();
+      const tool = tools.find((t) => t.name === 'assessments_prefill')!;
+
+      const result = await tool.handler({
+        title: 'Prefill Test',
+        assessmentGroupId: 'grp-1',
+        answers: { Q1: 'A1' },
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
+        retryable: false,
+        error: expect.stringContaining('DRAFT to SHARED'),
+      });
+      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+    });
+
     it('prefills assessment on happy path (multi-step flow)', async () => {
       const mockAssessment = {
         id: 'assess-prefill-1',
@@ -392,6 +411,7 @@ describe('Assessment Tools', () => {
                 referenceId: 'ref-1',
                 type: 'SHORT_ANSWER_TEXT',
                 answerOptions: [],
+                selectedAnswers: [{ id: 'answer-1', value: 'Alice' }],
               },
               {
                 id: 'q2',
@@ -402,6 +422,7 @@ describe('Assessment Tools', () => {
                   { id: 'opt-a', value: 'Option A' },
                   { id: 'opt-b', value: 'Option B' },
                 ],
+                selectedAnswers: [{ id: 'opt-a', value: 'Option A' }],
               },
             ],
           },
@@ -409,6 +430,11 @@ describe('Assessment Tools', () => {
       };
       mockGraphql.getAssessment.mockResolvedValue(mockFullForm);
       mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue([]);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: 'assess-prefill-1',
+        title: 'Prefilled Assessment',
+        status: 'SHARED',
+      });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
@@ -416,6 +442,8 @@ describe('Assessment Tools', () => {
       const result = await tool.handler({
         title: 'Prefilled Assessment',
         assessmentGroupId: 'grp-prefill',
+        assigneeIds: ['user-1'],
+        includeDetails: true,
         answers: {
           'What is your name?': 'Alice',
           'Select one': 'Option A',
@@ -436,9 +464,75 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.createAssessment).toHaveBeenCalledWith({
         title: 'Prefilled Assessment',
         assessmentGroupId: 'grp-prefill',
+        assigneeIds: ['user-1'],
       });
-      expect(mockGraphql.getAssessment).toHaveBeenCalledWith('assess-prefill-1');
+      expect(mockGraphql.updateAssessmentFormAssignees).toHaveBeenCalledWith({
+        id: 'assess-prefill-1',
+        assigneeIds: ['user-1'],
+        externalAssigneeEmails: undefined,
+      });
+      expect(mockGraphql.updateAssessmentFormAssignees.mock.invocationCallOrder[0]).toBeLessThan(
+        mockGraphql.selectAssessmentQuestionAnswers.mock.invocationCallOrder[0]!,
+      );
+      expect(mockGraphql.getAssessment).toHaveBeenCalledTimes(2);
       expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports incomplete prefills as failures and does not submit', async () => {
+      const form = {
+        id: 'assess-incomplete',
+        title: 'Incomplete Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockRejectedValue(
+        new Error('Cannot update question'),
+      );
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Incomplete Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'Question one': 'answer' },
+        submitForReview: true,
+      });
+
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_INCOMPLETE',
+        retryable: true,
+        details: {
+          assessmentId: 'assess-incomplete',
+          answersApplied: 0,
+          totalQuestions: 1,
+          unansweredQuestions: ['Question one'],
+          errors: [
+            {
+              question: 'Question one',
+              status: expect.stringContaining('Cannot update question'),
+            },
+          ],
+        },
+      });
+      expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
     });
 
     it('returns early success when form has no sections', async () => {
@@ -453,6 +547,11 @@ describe('Assessment Tools', () => {
         title: 'Empty Form',
         sections: [],
       });
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({
+        id: 'assess-empty',
+        title: 'Empty Form',
+        status: 'SHARED',
+      });
 
       const tools = getTools();
       const tool = tools.find((t) => t.name === 'assessments_prefill')!;
@@ -460,6 +559,7 @@ describe('Assessment Tools', () => {
       const result = await tool.handler({
         title: 'Empty Form',
         assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
         answers: { Q1: 'A1' },
       });
 
@@ -484,6 +584,7 @@ describe('Assessment Tools', () => {
         tool.handler({
           title: 'Failing Prefill',
           assessmentGroupId: 'grp-1',
+          assigneeIds: ['user-1'],
           answers: { Q1: 'A1' },
         }),
       ).rejects.toThrow('Create failed');
