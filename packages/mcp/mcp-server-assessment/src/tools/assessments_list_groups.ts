@@ -33,8 +33,8 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
       '`assessments_create` needs. Each row carries the template it was built from, so this ' +
       'is also how you get from a form to its template: take `assessmentGroupId` off an ' +
       '`assessments_list` row, pass it as `ids` here, and read `assessmentFormTemplate`. ' +
-      'Narrow with `text` rather than scanning pages. Page with `offset` (increment by `limit`) ' +
-      'while `hasNextPage` is true. Surface the `groupUrl` on each row verbatim.',
+      'Narrow with `text` rather than scanning pages. ' +
+      'Surface the `groupUrl` on each row verbatim.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

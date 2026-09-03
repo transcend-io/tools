@@ -25,7 +25,10 @@ export const PrefillSchema = z.object({
   answers: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .describe(
-      'Map of answers keyed by question title or referenceId. Values should be strings for text/single-select, or arrays of strings for multi-select.',
+      'Map of answers keyed by question title or referenceId, both of which come from ' +
+        'assessments_export_template on the template you are creating from. A string for text ' +
+        'and single-select, an array for multi-select. Select answers must match the option ' +
+        'text exactly.',
     ),
   assigneeIds: z
     .array(z.string())
@@ -50,12 +53,9 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_prefill',
     description:
-      'Convenience tool: Create a new assessment form, AI-prefill all the answers, and assign it to a reviewer. ' +
-      'Combines: create form → get questions → answer each question → assign reviewers → optionally submit for review. ' +
-      'Provide answers as a map of {questionTitle: answer} or {referenceId: answer}. ' +
-      'For SINGLE_SELECT/MULTI_SELECT, the answer should match the exact text of the answer option(s). ' +
-      'For text questions, provide the free-text answer string. ' +
-      'For multi-select, provide an array of answer option values.',
+      'Create an assessment form, fill in the answers you supply, and assign it for review in ' +
+      'one call. Combines: create form → read its questions → answer each → assign reviewers → ' +
+      'optionally submit. The answers are yours to provide; nothing is generated for you.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
