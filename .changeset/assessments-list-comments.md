@@ -54,3 +54,9 @@ An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
 `assessments_list`. It previously returned an empty page that read exactly like "this form
 has no feedback", which is the wrong thing to report to a user. A filter that genuinely
 matches nothing still comes back as a success carrying `noMatches`.
+
+`levels` narrows to feedback left on the form, on a section, or on a question. Without it,
+"what did reviewers say about the answers" meant paging past every form-level comment first:
+the three levels are merged into one list ordered by creation time, so a form carrying
+hundreds of comments on itself buries the handful left on its questions. A level nobody asked
+for is not queried at all, so narrowing also costs fewer round trips than reading everything.

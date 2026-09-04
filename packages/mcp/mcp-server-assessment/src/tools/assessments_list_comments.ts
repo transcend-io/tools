@@ -42,6 +42,14 @@ export const ListAssessmentCommentsSchema = z
           'something. RESOLVED returns only what has been dealt with, ALL returns both. ' +
           'Default OPEN.',
       ),
+    levels: z
+      .array(z.enum(['FORM', 'SECTION', 'QUESTION']))
+      .optional()
+      .describe(
+        'Only feedback left at these levels: FORM for the assessment as a whole, SECTION ' +
+          'for one of its sections, QUESTION for a single question. Use QUESTION for "what ' +
+          'did reviewers say about the answers". Omit for every level.',
+      ),
   })
   .merge(OffsetPaginationSchema);
 export type ListAssessmentCommentsInput = z.infer<typeof ListAssessmentCommentsSchema>;
@@ -88,28 +96,39 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
       'Read the reviewer feedback on one assessment — the comments and discussion left on a ' +
       'PIA, DPIA, privacy review or vendor questionnaire. Returns feedback from all three ' +
       'levels at once, whether it was left on the form as a whole, on a section, or on a ' +
-      'single question, each row saying which. Filter by who wrote it with authorIds, and by ' +
-      'whether it is still open with resolution. Use this rather than assessments_get, which ' +
-      'reads the questions and answers and only counts the feedback.',
+      'single question, each row saying which. Narrow with levels to one of those, authorIds ' +
+      'to who wrote it, and resolution to whether it is still open. Use this rather than ' +
+      'assessments_get, which reads the questions and answers and only counts the feedback.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListAssessmentCommentsSchema,
-    handler: async ({ assessmentId, authorIds, resolution, limit, offset }) => {
+    handler: async ({ assessmentId, authorIds, resolution, levels, limit, offset }) => {
+      const wanted = (level: AssessmentCommentLevel): boolean =>
+        levels === undefined || levels.length === 0 || levels.includes(level);
+
       // This call both validates the form exists and yields the section ids, so
-      // the other two levels can be read without a separate lookup.
+      // the other two levels can be read without a separate lookup. It also
+      // carries the question comments, which have no query of their own.
       const questions = await graphql.listAssessmentQuestionComments(assessmentId);
+      // A level nobody asked for is not read at all: on a form carrying
+      // hundreds of comments, that is the difference between one round trip and
+      // several.
       const [formComments, sectionComments] = await Promise.all([
-        readAllComments((o, first) =>
-          graphql.listAssessmentFormComments(assessmentId, { first, offset: o, authorIds }),
-        ),
-        readAllComments((o, first) =>
-          graphql.listAssessmentSectionComments(questions.sectionIds, {
-            first,
-            offset: o,
-            authorIds,
-          }),
-        ),
+        wanted('FORM')
+          ? readAllComments((o, first) =>
+              graphql.listAssessmentFormComments(assessmentId, { first, offset: o, authorIds }),
+            )
+          : [],
+        wanted('SECTION')
+          ? readAllComments((o, first) =>
+              graphql.listAssessmentSectionComments(questions.sectionIds, {
+                first,
+                offset: o,
+                authorIds,
+              }),
+            )
+          : [],
       ]);
 
       // Question comments arrive nested on the form, which takes no filter
@@ -126,7 +145,10 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
         (resolution === 'RESOLVED' ? comment.resolvedAt !== undefined : !comment.resolvedAt);
 
       const matched = [...formComments, ...sectionComments, ...questions.nodes]
-        .filter((comment) => matchesAuthor(comment) && matchesResolution(comment))
+        .filter(
+          (comment) =>
+            wanted(comment.level) && matchesAuthor(comment) && matchesResolution(comment),
+        )
         .sort(byCreationThenId);
 
       const totalByLevel: Record<AssessmentCommentLevel, number> = {

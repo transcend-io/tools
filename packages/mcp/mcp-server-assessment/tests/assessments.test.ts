@@ -348,6 +348,51 @@ describe('Assessment Tools', () => {
       );
     });
 
+    it('narrows to one level and does not read the levels nobody asked for', async () => {
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        levels: ['QUESTION'],
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // Reading the form and section levels to throw them away costs round
+      // trips on a form carrying hundreds of comments.
+      expect(mockGraphql.listAssessmentFormComments).not.toHaveBeenCalled();
+      expect(mockGraphql.listAssessmentSectionComments).not.toHaveBeenCalled();
+      expect(result.data.comments.map((c: any) => c.level)).toEqual(['QUESTION']);
+      expect(result.data.totalCount).toBe(1);
+      expect(result.data.totalByLevel).toEqual({ FORM: 0, SECTION: 0, QUESTION: 1 });
+    });
+
+    it('takes more than one level at a time', async () => {
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        levels: ['SECTION', 'QUESTION'],
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      expect(mockGraphql.listAssessmentFormComments).not.toHaveBeenCalled();
+      expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalled();
+      expect(result.data.totalCount).toBe(2);
+      expect(result.data.totalByLevel).toEqual({ FORM: 0, SECTION: 1, QUESTION: 1 });
+    });
+
+    it('reads every level when levels is omitted', async () => {
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      expect(mockGraphql.listAssessmentFormComments).toHaveBeenCalled();
+      expect(result.data.totalCount).toBe(4);
+    });
+
     it('names the section a comment sits on', async () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
