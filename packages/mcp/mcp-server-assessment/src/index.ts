@@ -27,6 +27,10 @@ export {
 } from './tools/assessments_export_template.js';
 export { GetAssessmentSchema, type GetAssessmentInput } from './tools/assessments_get.js';
 export {
+  ListAssessmentCommentsSchema,
+  type ListAssessmentCommentsInput,
+} from './tools/assessments_list_comments.js';
+export {
   AssessmentStatusEnum,
   ListAssessmentsSchema,
   type AssessmentStatusEnumInput,

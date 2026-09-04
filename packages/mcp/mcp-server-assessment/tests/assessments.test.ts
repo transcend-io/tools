@@ -11,6 +11,8 @@ describe('Assessment Tools', () => {
     getAssessmentSkeleton: ReturnType<typeof vi.fn>;
     listAssessmentFormComments: ReturnType<typeof vi.fn>;
     listAssessmentSectionComments: ReturnType<typeof vi.fn>;
+    listAssessmentQuestionComments: ReturnType<typeof vi.fn>;
+    countAssessmentComments: ReturnType<typeof vi.fn>;
     createAssessmentFormTemplate: ReturnType<typeof vi.fn>;
     selectAssessmentQuestionAnswers: ReturnType<typeof vi.fn>;
     updateAssessmentFormAssignees: ReturnType<typeof vi.fn>;
@@ -27,6 +29,10 @@ describe('Assessment Tools', () => {
       getAssessmentSkeleton: vi.fn(),
       listAssessmentFormComments: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
       listAssessmentSectionComments: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
+      listAssessmentQuestionComments: vi
+        .fn()
+        .mockResolvedValue({ nodes: [], questionTitles: {}, sectionIds: ['sec-1', 'sec-2'] }),
+      countAssessmentComments: vi.fn().mockResolvedValue({ FORM: 0, SECTION: 0, QUESTION: 0 }),
       createAssessmentFormTemplate: vi.fn(),
       selectAssessmentQuestionAnswers: vi.fn(),
       updateAssessmentFormAssignees: vi.fn(),
@@ -98,8 +104,6 @@ describe('Assessment Tools', () => {
 
       const result = (await getTool().handler({
         assessmentId: 'form-1',
-        includeComments: false,
-        includeResolvedComments: false,
       })) as { success: boolean; data: Record<string, any> };
 
       expect(result.success).toBe(true);
@@ -116,8 +120,6 @@ describe('Assessment Tools', () => {
       const result = (await getTool().handler({
         assessmentId: 'form-1',
         sectionIds: ['sec-1'],
-        includeComments: false,
-        includeResolvedComments: false,
       })) as { success: boolean; data: Record<string, any> };
 
       expect(mockGraphql.getAssessmentSkeleton).not.toHaveBeenCalled();
@@ -129,258 +131,67 @@ describe('Assessment Tools', () => {
       expect(result.data.expandHint).toBeUndefined();
     });
 
-    it('does not fetch comments unless asked', async () => {
+    it('counts feedback without returning any of it', async () => {
       mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
+      mockGraphql.countAssessmentComments.mockResolvedValue({
+        FORM: 152,
+        SECTION: 60,
+        QUESTION: 40,
+      });
 
       const result = (await getTool().handler({
         assessmentId: 'form-1',
-        includeComments: false,
-        includeResolvedComments: false,
       })) as { data: Record<string, any> };
 
+      // Reading bodies is assessments_list_comments' job; this only says how
+      // much there is and where.
+      expect(result.data.comments).toBeUndefined();
       expect(mockGraphql.listAssessmentFormComments).not.toHaveBeenCalled();
       expect(mockGraphql.listAssessmentSectionComments).not.toHaveBeenCalled();
-      expect(result.data.comments).toBeUndefined();
+      expect(result.data.commentSummary.totalCount).toBe(252);
+      expect(result.data.commentSummary.byLevel).toEqual({ FORM: 152, SECTION: 60, QUESTION: 40 });
+      expect(result.data.commentSummary.readWith).toContain('assessments_list_comments');
     });
 
-    it('returns form and section comments even when nothing is expanded', async () => {
+    it('counts question comments the same whether or not sections are expanded', async () => {
       mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
-      mockGraphql.listAssessmentFormComments.mockResolvedValue({
-        nodes: [
-          {
-            id: 'c-f1',
-            level: 'FORM',
-            targetId: 'form-1',
-            content: 'Needs legal sign-off.',
-            createdAt: '2026-01-01T00:00:00.000Z',
-          },
-        ],
-        totalCount: 1,
-      });
-      mockGraphql.listAssessmentSectionComments.mockResolvedValue({
-        nodes: [
-          {
-            id: 'c-s1',
-            level: 'SECTION',
-            targetId: 'sec-2',
-            content: 'Retention period looks too long.',
-            createdAt: '2026-01-01T00:00:00.000Z',
-          },
-        ],
-        totalCount: 1,
-      });
-
-      const result = (await getTool().handler({
-        assessmentId: 'form-1',
-        includeComments: true,
-        includeResolvedComments: false,
-        limit: 50,
-        offset: 0,
-      })) as { data: Record<string, any> };
-
-      // Section comments are bounded by section count, so withholding them until
-      // the caller expands something would hand back a partial answer that looks
-      // complete. Only question comments are gated behind sectionIds.
-      expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(['sec-1', 'sec-2'], {
-        first: 100,
-        offset: 0,
-      });
-      expect(result.data.comments.map((c: any) => c.id)).toEqual(['c-f1', 'c-s1']);
-      expect(result.data.commentSummary.questionCommentsOmitted).toContain('sectionIds');
-    });
-
-    it('hides resolved comments by default and includes them on request', async () => {
       mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+      mockGraphql.countAssessmentComments.mockResolvedValue({ FORM: 2, SECTION: 1, QUESTION: 40 });
 
-      const hidden = (await getTool().handler({
+      const bare = (await getTool().handler({ assessmentId: 'form-1' })) as {
+        data: Record<string, any>;
+      };
+      const expanded = (await getTool().handler({
         assessmentId: 'form-1',
         sectionIds: ['sec-1'],
-        includeComments: true,
-        includeResolvedComments: false,
-        limit: 50,
-        offset: 0,
       })) as { data: Record<string, any> };
 
-      expect(hidden.data.comments.map((c: any) => c.id)).toEqual(['c-q1']);
-      expect(hidden.data.commentSummary.resolvedHidden).toBe(1);
-
-      const shown = (await getTool().handler({
-        assessmentId: 'form-1',
-        sectionIds: ['sec-1'],
-        includeComments: true,
-        includeResolvedComments: true,
-        limit: 50,
-        offset: 0,
-      })) as { data: Record<string, any> };
-
-      expect(shown.data.comments.map((c: any) => c.id)).toEqual(['c-q1', 'c-q2']);
-      expect(shown.data.commentSummary.resolvedHidden).toBeUndefined();
+      // The old shape reported 3 here and 43 there, so a caller who read the
+      // total once had no way to know it was partial.
+      expect(bare.data.commentSummary.totalCount).toBe(43);
+      expect(expanded.data.commentSummary.totalCount).toBe(43);
     });
 
-    it('pulls section comments once sections are expanded', async () => {
-      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
-
-      await getTool().handler({
-        assessmentId: 'form-1',
-        sectionIds: ['sec-1'],
-        includeComments: true,
-        includeResolvedComments: false,
-        limit: 50,
-        offset: 0,
-      });
-
-      expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(['sec-1'], {
-        first: 100,
-        offset: 0,
-      });
-    });
-
-    it('breaks the comment total down by level so the split needs no paging', async () => {
-      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
-      mockGraphql.listAssessmentFormComments.mockResolvedValue({
-        nodes: [1, 2].map((n) => ({
-          id: `c-f${n}`,
-          level: 'FORM',
-          targetId: 'form-1',
-          content: `Form comment ${n}`,
-          createdAt: `2026-01-0${n}T00:00:00.000Z`,
-        })),
-        totalCount: 2,
-      });
-      mockGraphql.listAssessmentSectionComments.mockResolvedValue({
-        nodes: [
-          {
-            id: 'c-s1',
-            level: 'SECTION',
-            targetId: 'sec-1',
-            content: 'Section comment',
-            createdAt: '2026-01-03T00:00:00.000Z',
-          },
-        ],
-        totalCount: 1,
-      });
-
-      const result = (await getTool().handler({
-        assessmentId: 'form-1',
-        sectionIds: ['sec-1'],
-        includeComments: true,
-        includeResolvedComments: true,
-        limit: 1,
-        offset: 0,
-      })) as { data: Record<string, any> };
-
-      // One page of one, but the caller still learns the whole shape.
-      expect(result.data.comments).toHaveLength(1);
-      expect(result.data.commentSummary.byLevel).toEqual({ FORM: 2, SECTION: 1, QUESTION: 2 });
-      expect(result.data.commentSummary.totalCount).toBe(5);
-    });
-
-    it('returns question comments once, in the paged list rather than inline', async () => {
-      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
-
-      const result = (await getTool().handler({
-        assessmentId: 'form-1',
-        sectionIds: ['sec-1'],
-        includeComments: true,
-        includeResolvedComments: true,
-        limit: 50,
-        offset: 0,
-      })) as { data: Record<string, any> };
-
-      // Keeping the nested copy too would double-count these, and it answers no
-      // offset, so it would disagree with the page beside it.
-      expect(result.data.comments.map((c: any) => c.id)).toEqual(['c-q1', 'c-q2']);
-      expect(result.data.sections[0].questions[0]).not.toHaveProperty('comments');
-      expect(result.data.sections[0].questions[0].id).toBe('q-1');
-    });
-
-    it('says how many resolved comments it hid rather than just that it hid some', async () => {
-      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
-
-      const result = (await getTool().handler({
-        assessmentId: 'form-1',
-        sectionIds: ['sec-1'],
-        includeComments: true,
-        includeResolvedComments: false,
-        limit: 50,
-        offset: 0,
-      })) as { data: Record<string, any> };
-
-      // EXPANDED carries one resolved question comment, c-q2.
-      expect(result.data.commentSummary.resolvedHidden).toBe(1);
-      expect(result.data.commentSummary.totalCount).toBe(1);
-    });
-
-    it('pages the merged comment list and reports where the caller is in it', async () => {
+    it('says nothing about reading feedback when there is none', async () => {
       mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
-      mockGraphql.listAssessmentFormComments.mockResolvedValue({
-        nodes: [1, 2, 3, 4, 5].map((n) => ({
-          id: `c-f${n}`,
-          level: 'FORM',
-          targetId: 'form-1',
-          content: `Comment ${n}`,
-          createdAt: `2026-01-0${n}T00:00:00.000Z`,
-        })),
-        totalCount: 5,
-      });
 
-      const page = (await getTool().handler({
-        assessmentId: 'form-1',
-        includeComments: true,
-        includeResolvedComments: false,
-        limit: 2,
-        offset: 2,
-      })) as { data: Record<string, any> };
+      const result = (await getTool().handler({ assessmentId: 'form-1' })) as {
+        data: Record<string, any>;
+      };
 
-      expect(page.data.comments.map((c: any) => c.id)).toEqual(['c-f3', 'c-f4']);
-      expect(page.data.commentSummary.totalCount).toBe(5);
-      expect(page.data.commentSummary.pageInfo).toEqual({
-        hasNextPage: true,
-        hasPreviousPage: true,
-      });
-
-      const last = (await getTool().handler({
-        assessmentId: 'form-1',
-        includeComments: true,
-        includeResolvedComments: false,
-        limit: 2,
-        offset: 4,
-      })) as { data: Record<string, any> };
-
-      expect(last.data.comments.map((c: any) => c.id)).toEqual(['c-f5']);
-      expect(last.data.commentSummary.pageInfo.hasNextPage).toBe(false);
+      expect(result.data.commentSummary.totalCount).toBe(0);
+      expect(result.data.commentSummary.readWith).toBeUndefined();
     });
 
-    it('reads past the first page of a comment source instead of dropping the rest', async () => {
-      mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
-      // 150 form comments: one round trip of 100 leaves 50 behind, and the old
-      // fixed `first: 100` fetch reported nothing missing.
-      const all = Array.from({ length: 150 }, (_, i) => ({
-        id: `c-f${String(i).padStart(3, '0')}`,
-        level: 'FORM',
-        targetId: 'form-1',
-        content: `Comment ${i}`,
-        createdAt: '2026-01-01T00:00:00.000Z',
-      }));
-      mockGraphql.listAssessmentFormComments.mockImplementation(
-        (_id: string, { first, offset }: { first: number; offset: number }) => ({
-          nodes: all.slice(offset, offset + first),
-          totalCount: all.length,
-        }),
-      );
-
-      const result = (await getTool().handler({
+    it('no longer takes the comment arguments that moved to assessments_list_comments', () => {
+      const parsed = getTool().zodSchema.safeParse({
         assessmentId: 'form-1',
         includeComments: true,
-        includeResolvedComments: false,
         limit: 10,
-        offset: 140,
-      })) as { data: Record<string, any> };
-
-      expect(mockGraphql.listAssessmentFormComments).toHaveBeenCalledTimes(2);
-      expect(result.data.commentSummary.totalCount).toBe(150);
-      expect(result.data.comments.map((c: any) => c.id)).toEqual(all.slice(140).map((c) => c.id));
-      expect(result.data.commentSummary.pageInfo.hasNextPage).toBe(false);
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data).not.toHaveProperty('includeComments');
+      expect(parsed.data).not.toHaveProperty('limit');
     });
 
     it('no longer accepts the display-only assessmentName argument', () => {
@@ -390,6 +201,220 @@ describe('Assessment Tools', () => {
       });
       expect(parsed.success).toBe(true);
       expect(parsed.data).not.toHaveProperty('assessmentName');
+    });
+  });
+
+  describe('assessments_list_comments', () => {
+    const commentsTool = () => getTools().find((t) => t.name === 'assessments_list_comments')!;
+
+    const comment = (
+      id: string,
+      level: string,
+      targetId: string,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      id,
+      level,
+      targetId,
+      content: `Comment ${id}`,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      ...extra,
+    });
+
+    beforeEach(() => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [comment('c-f1', 'FORM', 'form-1'), comment('c-f2', 'FORM', 'form-1')],
+        totalCount: 2,
+      });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({
+        nodes: [comment('c-s1', 'SECTION', 'sec-1')],
+        totalCount: 1,
+      });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [comment('c-q1', 'QUESTION', 'q-1')],
+        questionTitles: { 'q-1': 'What data do you collect?' },
+        sectionIds: ['sec-1', 'sec-2'],
+      });
+    });
+
+    it('returns all three levels in one call, without needing sections expanded', async () => {
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(result.success).toBe(true);
+      expect(result.data.byLevel).toEqual({ FORM: 2, SECTION: 1, QUESTION: 1 });
+      expect(result.data.totalCount).toBe(4);
+      expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(
+        ['sec-1', 'sec-2'],
+        expect.objectContaining({ offset: 0 }),
+      );
+    });
+
+    it('names the question a comment sits on', async () => {
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      const question = result.data.comments.find((c: any) => c.level === 'QUESTION');
+      expect(question.questionTitle).toBe('What data do you collect?');
+      // Form comments have no question to name.
+      expect(result.data.comments.find((c: any) => c.level === 'FORM')).not.toHaveProperty(
+        'questionTitle',
+      );
+    });
+
+    it('hides resolved feedback by default and can return it alone', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [
+          comment('c-open', 'FORM', 'form-1'),
+          comment('c-done', 'FORM', 'form-1', { resolvedAt: '2026-02-01T00:00:00.000Z' }),
+        ],
+        totalCount: 2,
+      });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        sectionIds: [],
+      });
+
+      const open = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+      const resolved = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'RESOLVED',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+      const all = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'ALL',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      expect(open.data.comments.map((c: any) => c.id)).toEqual(['c-open']);
+      expect(resolved.data.comments.map((c: any) => c.id)).toEqual(['c-done']);
+      expect(all.data.totalCount).toBe(2);
+    });
+
+    it('filters by author upstream, and applies the same filter to question comments', async () => {
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [
+          comment('c-mine', 'QUESTION', 'q-1', { author: { id: 'u-1', name: 'Annalisa' } }),
+          comment('c-theirs', 'QUESTION', 'q-1', { author: { id: 'u-2', name: 'Someone' } }),
+        ],
+        questionTitles: { 'q-1': 'What data do you collect?' },
+        sectionIds: ['sec-1'],
+      });
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        authorIds: ['u-1'],
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // Form and section comments filter at the API; question comments arrive
+      // nested and unfiltered, so the same match has to happen here too.
+      expect(mockGraphql.listAssessmentFormComments).toHaveBeenCalledWith(
+        'form-1',
+        expect.objectContaining({ authorIds: ['u-1'] }),
+      );
+      expect(result.data.comments.map((c: any) => c.id)).toEqual(['c-mine']);
+    });
+
+    it('pages the merged list and reports where the caller is in it', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [1, 2, 3, 4, 5].map((n) =>
+          comment(`c-f${n}`, 'FORM', 'form-1', { createdAt: `2026-01-0${n}T00:00:00.000Z` }),
+        ),
+        totalCount: 5,
+      });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        sectionIds: [],
+      });
+
+      const page = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 2,
+        offset: 2,
+      })) as { data: Record<string, any> };
+
+      expect(page.data.comments.map((c: any) => c.id)).toEqual(['c-f3', 'c-f4']);
+      expect(page.data.pageInfo).toEqual({ hasNextPage: true, hasPreviousPage: true });
+    });
+
+    it('reads past the first page of a source instead of dropping the rest', async () => {
+      const all = Array.from({ length: 150 }, (_, n) =>
+        comment(`c-f${String(n).padStart(3, '0')}`, 'FORM', 'form-1'),
+      );
+      mockGraphql.listAssessmentFormComments.mockImplementation(
+        (_id: string, { offset }: { offset: number }) =>
+          Promise.resolve({ nodes: all.slice(offset, offset + 100), totalCount: all.length }),
+      );
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        sectionIds: [],
+      });
+
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 10,
+        offset: 140,
+      })) as { data: Record<string, any> };
+
+      expect(mockGraphql.listAssessmentFormComments).toHaveBeenCalledTimes(2);
+      expect(result.data.totalCount).toBe(150);
+      expect(result.data.pageInfo.hasNextPage).toBe(false);
+    });
+
+    it('distinguishes no matching feedback from a form that could not be read', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        sectionIds: [],
+      });
+
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(result.success).toBe(true);
+      expect(result.data.totalCount).toBe(0);
+      expect(result.data.noMatches).toContain('resolution ALL');
+    });
+
+    it('defaults to open feedback only', () => {
+      const parsed = commentsTool().zodSchema.safeParse({ assessmentId: 'form-1' });
+      expect(parsed.success).toBe(true);
+      expect((parsed.data as any).resolution).toBe('OPEN');
     });
   });
 

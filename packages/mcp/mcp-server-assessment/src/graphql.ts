@@ -290,14 +290,19 @@ const GetAssessmentSkeletonDoc = graphql(/* GraphQL */ `
  * The three comment levels are separate root queries because only
  * `AssessmentQuestionRaw` exposes a nested `comments` field, and that nested
  * field takes no pagination arguments. Going through the root queries is the
- * only way to bound how many comments a call returns.
+ * only way to bound how many comments a call returns, and it is also what lets
+ * question comments be read from their ids rather than by expanding a section.
+ *
+ * None of them can filter on resolution: `resolvedAt` is a returned field, not
+ * a filter input. Callers asking for open comments only are served by filtering
+ * what comes back.
  */
 const ListFormCommentsDoc = graphql(/* GraphQL */ `
-  query AssessmentsListFormComments($first: Int, $offset: Int, $formIds: [ID!]) {
+  query AssessmentsListFormComments($first: Int, $offset: Int, $formIds: [ID!], $authorIds: [ID!]) {
     assessmentFormComments(
       first: $first
       offset: $offset
-      filterBy: { assessmentFormIds: $formIds }
+      filterBy: { assessmentFormIds: $formIds, authorIds: $authorIds }
     ) {
       nodes {
         id
@@ -322,11 +327,16 @@ const ListFormCommentsDoc = graphql(/* GraphQL */ `
 `);
 
 const ListSectionCommentsDoc = graphql(/* GraphQL */ `
-  query AssessmentsListSectionComments($first: Int, $offset: Int, $sectionIds: [ID!]) {
+  query AssessmentsListSectionComments(
+    $first: Int
+    $offset: Int
+    $sectionIds: [ID!]
+    $authorIds: [ID!]
+  ) {
     assessmentSectionComments(
       first: $first
       offset: $offset
-      filterBy: { assessmentSectionIds: $sectionIds }
+      filterBy: { assessmentSectionIds: $sectionIds, authorIds: $authorIds }
     ) {
       nodes {
         id
@@ -347,6 +357,93 @@ const ListSectionCommentsDoc = graphql(/* GraphQL */ `
         }
       }
       totalCount
+    }
+  }
+`);
+
+/**
+ * Question comments come through the form rather than the `assessmentQuestionComments`
+ * root query, because that root query returns no back-reference to the question
+ * a comment sits on — batching ids into it would answer "what feedback exists"
+ * while losing "on which question". This asks for question id, title and
+ * comments only, so it carries none of the answer text that makes a full form
+ * read expensive.
+ */
+/**
+ * Ids of everything on a form that can carry a comment. Small enough to fetch
+ * alongside a form read, and it is what lets comment totals be counted without
+ * pulling a single comment body.
+ */
+const CommentTargetsDoc = graphql(/* GraphQL */ `
+  query AssessmentsCommentTargets($ids: [ID!]!) {
+    assessmentForms(first: 1, filterBy: { ids: $ids }) {
+      nodes {
+        id
+        sections {
+          id
+          questions {
+            id
+          }
+        }
+      }
+    }
+  }
+`);
+
+/** Comment totals per level, read from `totalCount` without fetching bodies. */
+const CountFormCommentsDoc = graphql(/* GraphQL */ `
+  query AssessmentsCountFormComments($formIds: [ID!]) {
+    assessmentFormComments(first: 1, filterBy: { assessmentFormIds: $formIds }) {
+      totalCount
+    }
+  }
+`);
+
+const CountSectionCommentsDoc = graphql(/* GraphQL */ `
+  query AssessmentsCountSectionComments($sectionIds: [ID!]) {
+    assessmentSectionComments(first: 1, filterBy: { assessmentSectionIds: $sectionIds }) {
+      totalCount
+    }
+  }
+`);
+
+const CountQuestionCommentsDoc = graphql(/* GraphQL */ `
+  query AssessmentsCountQuestionComments($questionIds: [ID!]) {
+    assessmentQuestionComments(first: 1, filterBy: { assessmentQuestionIds: $questionIds }) {
+      totalCount
+    }
+  }
+`);
+
+const ListQuestionCommentsDoc = graphql(/* GraphQL */ `
+  query AssessmentsListQuestionComments($ids: [ID!]!) {
+    assessmentForms(first: 1, filterBy: { ids: $ids }) {
+      nodes {
+        sections {
+          id
+          questions {
+            id
+            title
+            comments {
+              id
+              content
+              parentCommentId
+              resolvedAt
+              createdAt
+              updatedAt
+              externalAuthorEmail
+              author {
+                id
+                email
+                name
+              }
+              files {
+                id
+              }
+            }
+          }
+        }
+      }
     }
   }
 `);
@@ -685,10 +782,11 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
   /** Comments left on the form as a whole, newest page first. */
   async listAssessmentFormComments(
     formId: string,
-    options: { first?: number; offset?: number } = {},
+    options: { first?: number; offset?: number; authorIds?: string[] } = {},
   ): Promise<{ nodes: AssessmentComment[]; totalCount: number }> {
     const data = await this.makeRequest(ListFormCommentsDoc, {
       formIds: [formId],
+      authorIds: options.authorIds,
       first: Math.min(options.first ?? 50, 100),
       offset: options.offset ?? 0,
     });
@@ -701,11 +799,12 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
   /** Comments left on specific sections of a form. */
   async listAssessmentSectionComments(
     sectionIds: string[],
-    options: { first?: number; offset?: number } = {},
+    options: { first?: number; offset?: number; authorIds?: string[] } = {},
   ): Promise<{ nodes: AssessmentComment[]; totalCount: number }> {
     if (sectionIds.length === 0) return { nodes: [], totalCount: 0 };
     const data = await this.makeRequest(ListSectionCommentsDoc, {
       sectionIds,
+      authorIds: options.authorIds,
       first: Math.min(options.first ?? 50, 100),
       offset: options.offset ?? 0,
     });
@@ -714,6 +813,64 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         toComment(c, 'SECTION', c.assessmentSectionId),
       ),
       totalCount: data.assessmentSectionComments.totalCount,
+    };
+  }
+
+  /**
+   * Every comment left on a question of this form, each carrying the question
+   * it sits on. Unpaginated at the API — the nested `comments` field takes no
+   * paging arguments — so callers page the merged result themselves.
+   */
+  async listAssessmentQuestionComments(formId: string): Promise<{
+    /** The comments, tagged with their question */
+    nodes: AssessmentComment[];
+    /** Question title by question id, so a comment can name its question */
+    questionTitles: Record<string, string>;
+    /** Sections of the form, so section comments can be read in the same pass */
+    sectionIds: string[];
+  }> {
+    const data = await this.makeRequest(ListQuestionCommentsDoc, { ids: [formId] });
+    const node = data.assessmentForms.nodes[0];
+    if (!node) {
+      throw assessmentNotFound(formId);
+    }
+    const sections = node.sections ?? [];
+    const questions = sections.flatMap((section) => section.questions ?? []);
+    return {
+      nodes: questions.flatMap(
+        (question) => toComments(question.comments, 'QUESTION', question.id) ?? [],
+      ),
+      questionTitles: Object.fromEntries(questions.map((q) => [q.id, q.title])),
+      sectionIds: sections.map((section) => section.id),
+    };
+  }
+
+  /**
+   * How many comments sit at each level of a form, without fetching any of
+   * them. Lets a form read say that feedback exists, and how much, for the
+   * price of counts rather than bodies.
+   */
+  async countAssessmentComments(formId: string): Promise<Record<AssessmentCommentLevel, number>> {
+    const targets = await this.makeRequest(CommentTargetsDoc, { ids: [formId] });
+    const node = targets.assessmentForms.nodes[0];
+    if (!node) {
+      throw assessmentNotFound(formId);
+    }
+    const sectionIds = (node.sections ?? []).map((section) => section.id);
+    const questionIds = (node.sections ?? []).flatMap((section) =>
+      (section.questions ?? []).map((question) => question.id),
+    );
+    const [form, section, question] = await Promise.all([
+      this.makeRequest(CountFormCommentsDoc, { formIds: [formId] }),
+      sectionIds.length > 0 ? this.makeRequest(CountSectionCommentsDoc, { sectionIds }) : undefined,
+      questionIds.length > 0
+        ? this.makeRequest(CountQuestionCommentsDoc, { questionIds })
+        : undefined,
+    ]);
+    return {
+      FORM: form.assessmentFormComments.totalCount,
+      SECTION: section?.assessmentSectionComments.totalCount ?? 0,
+      QUESTION: question?.assessmentQuestionComments.totalCount ?? 0,
     };
   }
 
