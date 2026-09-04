@@ -30,12 +30,23 @@ export const PrefillSchema = z.object({
   assigneeIds: z
     .array(z.string())
     .optional()
-    .describe('Internal user IDs to assign the form to (optional)'),
+    .describe(
+      'Internal user IDs to assign before prefilling. Provide this or assigneeEmails so the form can leave DRAFT.',
+    ),
   assigneeEmails: z
     .array(z.string())
     .optional()
-    .describe('External email addresses to assign the form to (optional)'),
+    .describe(
+      'External email addresses to assign before prefilling. Provide this or assigneeIds so the form can leave DRAFT.',
+    ),
   reviewerIds: z.array(z.string()).optional().describe('User IDs to set as reviewers (optional)'),
+  includeDetails: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      'When true, include one result row per question. Default false returns compact counts.',
+    ),
   submitForReview: z
     .boolean()
     .optional()
@@ -50,12 +61,11 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_prefill',
     description:
-      'Convenience tool: Create a new assessment form, AI-prefill all the answers, and assign it to a reviewer. ' +
-      'Combines: create form → get questions → answer each question → assign reviewers → optionally submit for review. ' +
+      'Create an assessment, assign it, prefill its answers, validate completeness, and optionally submit it. ' +
+      'Provide assigneeIds or assigneeEmails: assignment moves the form from DRAFT to SHARED before answers move it to IN_PROGRESS. ' +
       'Provide answers as a map of {questionTitle: answer} or {referenceId: answer}. ' +
       'For SINGLE_SELECT/MULTI_SELECT, the answer should match the exact text of the answer option(s). ' +
-      'For text questions, provide the free-text answer string. ' +
-      'For multi-select, provide an array of answer option values.',
+      'For text questions, provide a string; for multi-select, provide an array.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
@@ -68,6 +78,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       assigneeIds,
       assigneeEmails,
       reviewerIds,
+      includeDetails,
       submitForReview,
     }) => {
       let resolvedAssessmentGroupId = assessmentGroupId;
@@ -83,12 +94,37 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           'Either templateId or assessmentGroupId is required.',
         );
       }
+      if (!assigneeIds?.length && !assigneeEmails?.length) {
+        return createToolResult(
+          false,
+          undefined,
+          'Provide assigneeIds or assigneeEmails before prefilling. An assessment must be assigned so it can move from DRAFT to SHARED before answers move it to IN_PROGRESS.',
+          {
+            code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
+            retryable: false,
+          },
+        );
+      }
 
       const assessment = await graphql.createAssessment({
         title,
         assessmentGroupId: resolvedAssessmentGroupId,
+        assigneeIds,
       });
       const assessmentId = assessment.id;
+
+      const assignmentResult = await graphql.updateAssessmentFormAssignees({
+        id: assessmentId,
+        assigneeIds,
+        externalAssigneeEmails: assigneeEmails,
+      });
+
+      if (reviewerIds) {
+        await graphql.updateAssessment({
+          id: assessmentId,
+          reviewerIds,
+        });
+      }
 
       const fullForm = await graphql.getAssessment(assessmentId);
       if (!fullForm.sections || fullForm.sections.length === 0) {
@@ -197,20 +233,30 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         }
       }
 
-      let assignmentResult: Record<string, unknown> | null = null;
-      if (assigneeIds || assigneeEmails) {
-        assignmentResult = await graphql.updateAssessmentFormAssignees({
-          id: assessmentId,
-          assigneeIds,
-          externalAssigneeEmails: assigneeEmails,
-        });
-      }
+      const verifiedForm = await graphql.getAssessment(assessmentId);
+      const unansweredQuestions = (verifiedForm.sections as AssessmentSection[] | undefined)
+        ?.flatMap((section) => section.questions ?? [])
+        .filter((question) => !question.selectedAnswers?.length)
+        .map((question) => question.title || question.id);
+      const failedResults = results.filter((result) => result.status.startsWith('error:'));
 
-      if (reviewerIds) {
-        await graphql.updateAssessment({
-          id: assessmentId,
-          reviewerIds,
-        });
+      if (failedResults.length > 0 || unansweredQuestions?.length) {
+        return createToolResult(
+          false,
+          undefined,
+          `Assessment "${title}" was created and assigned, but only ${answersApplied}/${results.length} questions were answered. Retry the unanswered questions before submitting.`,
+          {
+            code: 'ASSESSMENT_PREFILL_INCOMPLETE',
+            retryable: true,
+            details: {
+              assessmentId,
+              answersApplied,
+              totalQuestions: results.length,
+              unansweredQuestions: unansweredQuestions ?? [],
+              errors: failedResults.map(({ question, status }) => ({ question, status })),
+            },
+          },
+        );
       }
 
       let submitResult: Assessment | null = null;
@@ -230,17 +276,15 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         answersApplied,
         answersSkipped,
         totalQuestions: results.length,
-        results,
-        assignment: assignmentResult
-          ? {
-              status: assignmentResult.status,
-              message: 'Assignees updated',
-            }
-          : null,
+        ...(includeDetails && { results }),
+        assignment: {
+          status: assignmentResult.status,
+          message: 'Assignees updated before prefilling',
+        },
         submittedForReview: !!submitResult,
         message:
           `Assessment "${title}" created and prefilled with ${answersApplied}/${results.length} answers. ` +
-          (assignmentResult ? `Assigned to reviewers. ` : '') +
+          'Assigned before prefilling. ' +
           (submitResult ? 'Submitted for review.' : 'Ready for manual submission.'),
       });
     },
