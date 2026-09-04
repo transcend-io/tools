@@ -42,13 +42,12 @@ export function createAssessmentsGetTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_get',
     description:
-      'Read one filled-in assessment — a PIA, DPIA, privacy review or vendor questionnaire — ' +
-      'and the answers submitted to it. Given only assessmentId it returns the section list ' +
-      'with a question count each, NOT the question text. To read the questions, either pass ' +
-      'questionText to get just the ones on a topic wherever they sit, or sectionIds to expand ' +
-      'whole sections; every sectionId must exist or the call fails, and reading the form in ' +
-      'full means passing every one of them. Surface the returned `url` verbatim; never build ' +
-      'assessment URLs from IDs.',
+      'Read one filled-in assessment and the answers submitted to it. Given only assessmentId ' +
+      'it returns the section list with a question count each, NOT the question text. To read ' +
+      'the questions, either pass questionText to get just the ones on a topic wherever they ' +
+      'sit, or sectionIds to expand whole sections; every sectionId must exist or the call ' +
+      'fails, and reading the form in full means passing every one of them. Surface the ' +
+      'returned `url` verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
