@@ -851,6 +851,24 @@ describe('Assessment Tools', () => {
       const result = await call({ limit: 50, offset: 50 });
 
       expect((result as any).paginationNote).toContain('No further pages');
+      expect((result as any).paginationNote).toContain('the last');
+    });
+
+    it('does not call a single page of results "the last" one', async () => {
+      resolveList(NODES.slice(0, 2), 2, 0);
+
+      const result = await call({ limit: 50, offset: 0 });
+
+      // "the last 2 of 2" implies a page came before this one.
+      expect((result as any).paginationNote).toBe('Showing all 2 matches. No further pages.');
+    });
+
+    it('does not say "1 matches"', async () => {
+      resolveList(NODES.slice(0, 1), 1, 0);
+
+      const result = await call({ limit: 50, offset: 0 });
+
+      expect((result as any).paginationNote).toBe('Showing all 1 match. No further pages.');
     });
 
     it('distinguishes no matches from a broken query and names the filters', async () => {
