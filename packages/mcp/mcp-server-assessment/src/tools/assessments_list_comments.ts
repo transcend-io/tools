@@ -108,12 +108,12 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_list_comments',
     description:
-      'Read the reviewer feedback on one assessment — the comments and discussion left on a ' +
-      'PIA, DPIA, privacy review or vendor questionnaire. Returns feedback from all three ' +
-      'levels at once, whether it was left on the form as a whole, on a section, or on a ' +
-      'single question, each row saying which. Narrow with levels to one of those, authorIds ' +
-      'to who wrote it, and resolution to whether it is still open. Use this rather than ' +
-      'assessments_get, which reads the questions and answers and only counts the feedback.',
+      'Read the reviewer feedback on one assessment — the comments left on it during review. ' +
+      'Returns feedback from all three levels at once, whether it was left on the form as a ' +
+      'whole, on a section, or on a single question, each row naming what it sits on. Narrow ' +
+      'with levels to one of those, authorIds to who wrote it, and resolution to whether it ' +
+      'is still open. Use this rather than assessments_get, which reads the questions and ' +
+      'answers and only counts the feedback.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
