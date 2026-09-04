@@ -8,6 +8,7 @@ import {
   type AssessmentCreateInput,
   type AssessmentGroup,
   type AssessmentQuestionInput,
+  type AssessmentQuestionMatch,
   type AssessmentSubmitForReviewInput,
   type AssessmentTemplate,
   type AssessmentTemplateCreateInput,
@@ -21,6 +22,8 @@ import { graphql } from './__generated__/gql.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Rows to pull per round trip when draining question search results. */
+const QUESTION_FETCH_CHUNK = 100;
 /** Not-found for a form ID, pointing the caller at the tool that lists valid IDs. */
 function assessmentNotFound(id: string): ToolError {
   return new ToolError(
@@ -140,6 +143,47 @@ const ListAssessmentsDoc = graphql(/* GraphQL */ `
         createdAt
         assessmentGroup {
           id
+        }
+      }
+      totalCount
+    }
+  }
+`);
+
+/**
+ * Questions matched by text, queried at the root rather than through a form.
+ *
+ * `assessmentQuestions` is the only field that filters on question text; the
+ * `questions` list hanging off a section takes no arguments at all, so the
+ * alternative is reading every question and matching them here. Scoping is by
+ * section id, there being no form filter, which is why the caller's sections
+ * have to be resolved first.
+ */
+const SearchQuestionsDoc = graphql(/* GraphQL */ `
+  query AssessmentQuestionsSearch(
+    $first: Int
+    $offset: Int
+    $filterBy: AssessmentQuestionFiltersInput
+  ) {
+    assessmentQuestions(first: $first, offset: $offset, filterBy: $filterBy) {
+      nodes {
+        id
+        title
+        index
+        type
+        subType
+        description
+        isRequired
+        placeholder
+        answerOptions {
+          id
+          index
+          value
+        }
+        selectedAnswers {
+          id
+          index
+          value
         }
       }
       totalCount
@@ -490,6 +534,130 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         questionCount: section.questions?.length ?? 0,
       })),
     };
+  }
+
+  /**
+   * The questions on a form whose text matches `text`, with the form's section
+   * index alongside them.
+   *
+   * Both halves come from one skeleton read: it yields the section ids the
+   * search has to be scoped to, and the question ids that say which section
+   * each match belongs to, since a question carries no reference back to its
+   * section. Matches are drained rather than paged — they cannot outnumber the
+   * questions on the form, and a caller searching for one topic should not have
+   * to page to learn whether the form covers it.
+   */
+  async searchAssessmentQuestions(
+    id: string,
+    text: string,
+    options: {
+      /** Restrict the search to these sections. Omit to search the whole form. */
+      sectionIds?: string[];
+    } = {},
+  ): Promise<{
+    /** The form's metadata and section index */
+    form: Assessment;
+    /** Matching questions, in section then question order */
+    matches: AssessmentQuestionMatch[];
+    /** How many questions the form has in the searched sections */
+    searchedCount: number;
+  }> {
+    const data = await this.makeRequest(GetAssessmentSkeletonDoc, { ids: [id] });
+    const node = data.assessmentForms.nodes[0];
+    if (!node) {
+      throw assessmentNotFound(id);
+    }
+    const available = node.sections ?? [];
+    const wanted = options.sectionIds?.length ? new Set(options.sectionIds) : undefined;
+    if (wanted) {
+      const present = new Set(available.map((section) => section.id));
+      const missing = [...wanted].filter((sectionId) => !present.has(sectionId));
+      if (missing.length > 0) {
+        throw sectionNotFound(id, missing, available);
+      }
+    }
+    const sections = available.filter((section) => !wanted || wanted.has(section.id));
+
+    const sectionOfQuestion = new Map<string, { id: string; title?: string }>();
+    for (const section of sections) {
+      for (const question of section.questions ?? []) {
+        sectionOfQuestion.set(question.id, {
+          id: section.id,
+          title: section.title ?? undefined,
+        });
+      }
+    }
+
+    const form: Assessment = {
+      id: node.id,
+      title: node.title,
+      description: node.description ?? undefined,
+      status: node.status as Assessment['status'],
+      dueDate: node.dueDate ?? undefined,
+      submittedAt: node.submittedAt ?? undefined,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt ?? undefined,
+      assessmentGroupId: node.assessmentGroup?.id,
+      sections: available.map((section) => ({
+        id: section.id,
+        title: section.title ?? undefined,
+        index: section.index ?? undefined,
+        status: section.status ?? undefined,
+        questionCount: section.questions?.length ?? 0,
+      })),
+    };
+    const searchedCount = sectionOfQuestion.size;
+    if (sections.length === 0) return { form, matches: [], searchedCount };
+
+    const matches: AssessmentQuestionMatch[] = [];
+    // Paging counts rows read, not rows kept: offsetting by the matches held
+    // would re-request the same page forever the moment one row is dropped.
+    let read = 0;
+    for (;;) {
+      const page = await this.makeRequest(SearchQuestionsDoc, {
+        first: QUESTION_FETCH_CHUNK,
+        offset: read,
+        filterBy: { text, assessmentSectionIds: sections.map((section) => section.id) },
+      });
+      read += page.assessmentQuestions.nodes.length;
+      for (const question of page.assessmentQuestions.nodes) {
+        // A question the search returned but the skeleton never listed cannot
+        // be placed, and would read as belonging to a section it does not.
+        const section = sectionOfQuestion.get(question.id);
+        if (!section) continue;
+        matches.push({
+          id: question.id,
+          title: question.title ?? undefined,
+          index: question.index ?? undefined,
+          type: question.type,
+          subType: question.subType ?? undefined,
+          description: question.description ?? undefined,
+          isRequired: question.isRequired ?? undefined,
+          placeholder: question.placeholder ?? undefined,
+          answerOptions: choicesNotAlreadyAnswered(
+            question.answerOptions,
+            question.selectedAnswers,
+          ),
+          selectedAnswers: question.selectedAnswers?.map(toAnswerOption),
+          sectionId: section.id,
+          sectionTitle: section.title,
+        });
+      }
+      if (
+        page.assessmentQuestions.nodes.length === 0 ||
+        read >= page.assessmentQuestions.totalCount
+      ) {
+        break;
+      }
+    }
+
+    const order = new Map(form.sections?.map((section, i) => [section.id, i]));
+    matches.sort(
+      (a, b) =>
+        (order.get(a.sectionId) ?? 0) - (order.get(b.sectionId) ?? 0) ||
+        (a.index ?? 0) - (b.index ?? 0),
+    );
+    return { form, matches, searchedCount };
   }
 
   /**

@@ -9,6 +9,7 @@ describe('Assessment Tools', () => {
     createAssessment: ReturnType<typeof vi.fn>;
     getAssessment: ReturnType<typeof vi.fn>;
     getAssessmentSkeleton: ReturnType<typeof vi.fn>;
+    searchAssessmentQuestions: ReturnType<typeof vi.fn>;
     createAssessmentFormTemplate: ReturnType<typeof vi.fn>;
     selectAssessmentQuestionAnswers: ReturnType<typeof vi.fn>;
     updateAssessmentFormAssignees: ReturnType<typeof vi.fn>;
@@ -23,6 +24,7 @@ describe('Assessment Tools', () => {
       createAssessment: vi.fn(),
       getAssessment: vi.fn(),
       getAssessmentSkeleton: vi.fn(),
+      searchAssessmentQuestions: vi.fn(),
       createAssessmentFormTemplate: vi.fn(),
       selectAssessmentQuestionAnswers: vi.fn(),
       updateAssessmentFormAssignees: vi.fn(),
@@ -71,6 +73,82 @@ describe('Assessment Tools', () => {
         },
       ],
     };
+
+    const FOUND = {
+      form: SKELETON,
+      searchedCount: 20,
+      matches: [
+        {
+          id: 'q-9',
+          title: 'Describe your data retention practices.',
+          type: 'LONG_ANSWER_TEXT',
+          sectionId: 'sec-2',
+          sectionTitle: 'Retention',
+          selectedAnswers: [{ id: 'a-1', index: 0, value: 'Kept for 24 months.' }],
+        },
+      ],
+    };
+
+    it('returns just the matching questions when questionText is passed', async () => {
+      mockGraphql.searchAssessmentQuestions.mockResolvedValue(FOUND);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        questionText: 'retention',
+      })) as { data: Record<string, any> };
+
+      expect(mockGraphql.getAssessment).not.toHaveBeenCalled();
+      expect(result.data.questionMatches).toHaveLength(1);
+      // Pulled out of the section nesting, a match has to say where it sits.
+      expect(result.data.questionMatches[0].sectionTitle).toBe('Retention');
+      expect(result.data.questionMatches[0].selectedAnswers[0].value).toBe('Kept for 24 months.');
+      expect(result.data.matchNote).toContain('1 of 20');
+    });
+
+    it('reports an empty search as an answer rather than a failure', async () => {
+      mockGraphql.searchAssessmentQuestions.mockResolvedValue({
+        form: SKELETON,
+        searchedCount: 20,
+        matches: [],
+      });
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        questionText: 'biometric',
+      })) as { data: Record<string, any> };
+
+      // "The form does not ask about this" is what the caller wanted to know,
+      // but only if it cannot be read as a broken lookup.
+      expect(result.data.noMatches).toContain('search succeeded');
+      expect(result.data.noMatches).toContain('biometric');
+      expect(result.data).not.toHaveProperty('matchNote');
+    });
+
+    it('searches inside the named sections rather than expanding them', async () => {
+      mockGraphql.searchAssessmentQuestions.mockResolvedValue(FOUND);
+
+      await getTool().handler({
+        assessmentId: 'form-1',
+        questionText: 'retention',
+        sectionIds: ['sec-2'],
+      });
+
+      expect(mockGraphql.getAssessment).not.toHaveBeenCalled();
+      expect(mockGraphql.searchAssessmentQuestions).toHaveBeenCalledWith('form-1', 'retention', {
+        sectionIds: ['sec-2'],
+      });
+    });
+
+    it('drops the expand hint on a search, having already answered', async () => {
+      mockGraphql.searchAssessmentQuestions.mockResolvedValue(FOUND);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        questionText: 'retention',
+      })) as { data: Record<string, any> };
+
+      expect(result.data).not.toHaveProperty('expandHint');
+    });
 
     it('returns the section index without question bodies when sectionIds is omitted', async () => {
       mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);

@@ -282,3 +282,113 @@ describe('AssessmentsMixin (getAssessment section validation)', () => {
     expect(form.sections?.map((s) => s.id)).toEqual(['sec-2']);
   });
 });
+
+describe('AssessmentsMixin (searchAssessmentQuestions)', () => {
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const SKELETON = {
+    assessmentForms: {
+      nodes: [
+        {
+          id: 'form-1',
+          title: 'DPIA',
+          status: 'IN_REVIEW',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          sections: [
+            { id: 'sec-1', title: 'Data collected', index: 0, questions: [{ id: 'q-1' }] },
+            {
+              id: 'sec-2',
+              title: 'Retention',
+              index: 1,
+              questions: [{ id: 'q-2' }, { id: 'q-3' }],
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  const question = (id: string) => ({
+    id,
+    title: `Question ${id}`,
+    index: 0,
+    type: 'LONG_ANSWER_TEXT',
+    answerOptions: [],
+    selectedAnswers: [],
+  });
+
+  /** Answers the skeleton request first, then each search page in turn. */
+  function mockSearch(...pages: { nodes: unknown[]; totalCount: number }[]) {
+    const payloads = [SKELETON, ...pages.map((p) => ({ assessmentQuestions: p }))];
+    let call = 0;
+    return vi.fn().mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      text: async () => '',
+      json: async () => ({ data: payloads[Math.min(call++, payloads.length - 1)] }),
+    }));
+  }
+
+  it('names the section each match belongs to', async () => {
+    vi.stubGlobal('fetch', mockSearch({ nodes: [question('q-3')], totalCount: 1 }));
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+
+    const { matches, searchedCount } = await client.searchAssessmentQuestions(
+      'form-1',
+      'retention',
+    );
+
+    // A question carries no reference back to its section, so this mapping is
+    // the only thing that places a match on the form.
+    expect(matches).toHaveLength(1);
+    expect(matches[0]).toMatchObject({ id: 'q-3', sectionId: 'sec-2', sectionTitle: 'Retention' });
+    expect(searchedCount).toBe(3);
+  });
+
+  it('scopes the search to the requested sections', async () => {
+    const fetchMock = mockSearch({ nodes: [], totalCount: 0 });
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+
+    const { searchedCount } = await client.searchAssessmentQuestions('form-1', 'retention', {
+      sectionIds: ['sec-1'],
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[1][1].body as string);
+    expect(body.variables.filterBy).toEqual({ text: 'retention', assessmentSectionIds: ['sec-1'] });
+    // Only the searched section counts toward "N of M questions".
+    expect(searchedCount).toBe(1);
+  });
+
+  it('rejects a section the form does not have', async () => {
+    vi.stubGlobal('fetch', mockSearch({ nodes: [], totalCount: 0 }));
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+
+    await expect(
+      client.searchAssessmentQuestions('form-1', 'retention', { sectionIds: ['typo'] }),
+    ).rejects.toThrow(/no section with ID "typo"/);
+  });
+
+  it('drains every page of matches, and keeps paging past rows it drops', async () => {
+    // A full page of questions this form does not have, then the one it does.
+    const strangers = Array.from({ length: 100 }, (_, i) => question(`other-${i}`));
+    const fetchMock = mockSearch(
+      { nodes: strangers, totalCount: 101 },
+      { nodes: [question('q-2')], totalCount: 101 },
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+
+    const { matches } = await client.searchAssessmentQuestions('form-1', 'q');
+
+    // Offsetting by matches held rather than rows read would re-request page
+    // one forever, since this page contributes nothing to keep.
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(matches.map((m) => m.id)).toEqual(['q-2']);
+  });
+});

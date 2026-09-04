@@ -1254,6 +1254,19 @@ export interface AssessmentFormQuestion {
   selectedAnswers?: AssessmentAnswerOption[];
 }
 
+/**
+ * A question found by searching a form's text, carrying the section it sits in.
+ *
+ * Questions are reached through sections everywhere else, so a match pulled out
+ * of that nesting has to say where it came from or the caller cannot place it.
+ */
+export interface AssessmentQuestionMatch extends AssessmentFormQuestion {
+  /** ID of the section holding this question */
+  sectionId: string;
+  /** Title of that section, when it has one */
+  sectionTitle?: string;
+}
+
 /** One selectable choice on a question, and the shape a submitted answer takes. */
 export interface AssessmentAnswerOption {
   /** Unique identifier */
