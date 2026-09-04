@@ -1,10 +1,14 @@
 import {
   derivePageInfo,
+  ErrorCode,
+  ToolError,
   TranscendGraphQLBase,
   type Assessment,
+  type AssessmentAnswerOption,
   type AssessmentCreateInput,
   type AssessmentGroup,
   type AssessmentQuestionInput,
+  type AssessmentQuestionMatch,
   type AssessmentSubmitForReviewInput,
   type AssessmentTemplate,
   type AssessmentTemplateCreateInput,
@@ -17,6 +21,46 @@ import {
 import { graphql } from './__generated__/gql.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Rows to pull per round trip when draining question search results. */
+const QUESTION_FETCH_CHUNK = 100;
+/** Not-found for a form ID, pointing the caller at the tool that lists valid IDs. */
+function assessmentNotFound(id: string): ToolError {
+  return new ToolError(
+    ErrorCode.NOT_FOUND,
+    `No assessment form with id "${id}". Call assessments_list to find valid assessment IDs, ` +
+      'or assessments_list_templates if you meant a template rather than a filled-in form.',
+    false,
+    { assessmentId: id },
+  );
+}
+
+/**
+ * Not-found for a section ID. Raised when any requested ID is missing, not only
+ * when all of them are: returning the sections that did match would be a
+ * partial answer wearing the shape of a complete one, and a caller who asked
+ * for four sections and reads three has no way to tell. Lists the sections the
+ * form does have, since the caller reached here from a skeleton read and most
+ * likely mistyped or reused an ID from a different form.
+ */
+function sectionNotFound(
+  assessmentId: string,
+  missing: string[],
+  available: { id: string; title?: string | null }[],
+): ToolError {
+  return new ToolError(
+    ErrorCode.NOT_FOUND,
+    `Assessment "${assessmentId}" has no section with ID ${missing.map((s) => `"${s}"`).join(', ')}. ` +
+      'No sections were returned, including any that did match. Call assessments_get without ' +
+      'sectionIds to list the sections this form has.',
+    false,
+    {
+      assessmentId,
+      missingSectionIds: missing,
+      availableSections: available.map((s) => ({ id: s.id, title: s.title ?? undefined })),
+    },
+  );
+}
 
 function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -58,6 +102,37 @@ function normalizeQuestion(q: AssessmentQuestionInput): Record<string, unknown> 
   };
 }
 
+/** Narrow an API answer option to the fields a reader needs. */
+function toAnswerOption(option: {
+  id: string;
+  index: number;
+  value: string;
+}): AssessmentAnswerOption {
+  return { id: option.id, index: option.index, value: option.value };
+}
+
+/**
+ * The choices on offer, dropped when they say nothing the answers do not.
+ *
+ * Free-text questions have no choice set: the API models the typed answer as an
+ * option, so the paragraph comes back once under `answerOptions` and again,
+ * byte for byte, under `selectedAnswers`. Select questions are the case worth
+ * keeping, where the options a respondent passed over are real information.
+ * Comparing the two by id tells them apart without hardcoding which question
+ * types behave which way, and drops nothing a caller could not already read off
+ * `selectedAnswers`.
+ */
+function choicesNotAlreadyAnswered(
+  options: readonly { id: string; index: number; value: string }[] | undefined | null,
+  selected: readonly { id: string }[] | undefined | null,
+): AssessmentAnswerOption[] | undefined {
+  if (!options) return undefined;
+  const answered = new Set((selected ?? []).map((answer) => answer.id));
+  return options.every((option) => answered.has(option.id))
+    ? undefined
+    : options.map(toAnswerOption);
+}
+
 const ListAssessmentsDoc = graphql(/* GraphQL */ `
   query AssessmentsList($first: Int, $offset: Int, $filterBy: AssessmentFormFiltersInput) {
     assessmentForms(first: $first, offset: $offset, filterBy: $filterBy) {
@@ -75,12 +150,55 @@ const ListAssessmentsDoc = graphql(/* GraphQL */ `
   }
 `);
 
+/**
+ * Questions matched by text, queried at the root rather than through a form.
+ *
+ * `assessmentQuestions` is the only field that filters on question text; the
+ * `questions` list hanging off a section takes no arguments at all, so the
+ * alternative is reading every question and matching them here. Scoping is by
+ * section id, there being no form filter, which is why the caller's sections
+ * have to be resolved first.
+ */
+const SearchQuestionsDoc = graphql(/* GraphQL */ `
+  query AssessmentQuestionsSearch(
+    $first: Int
+    $offset: Int
+    $filterBy: AssessmentQuestionFiltersInput
+  ) {
+    assessmentQuestions(first: $first, offset: $offset, filterBy: $filterBy) {
+      nodes {
+        id
+        title
+        index
+        type
+        subType
+        description
+        isRequired
+        placeholder
+        answerOptions {
+          id
+          index
+          value
+        }
+        selectedAnswers {
+          id
+          index
+          value
+        }
+      }
+      totalCount
+    }
+  }
+`);
+
+/** Full contents of the sections a caller expanded, answers included. */
 const GetAssessmentDoc = graphql(/* GraphQL */ `
   query AssessmentsGet($ids: [ID!]!) {
     assessmentForms(first: 1, filterBy: { ids: $ids }) {
       nodes {
         id
         title
+        description
         status
         dueDate
         submittedAt
@@ -113,6 +231,40 @@ const GetAssessmentDoc = graphql(/* GraphQL */ `
               index
               value
             }
+          }
+        }
+      }
+    }
+  }
+`);
+
+/**
+ * Section index for a form: everything except question bodies. `questions { id }`
+ * is only there to count them — a real form runs to hundreds of questions and
+ * tens of thousands of characters, which is why this is the default read.
+ */
+const GetAssessmentSkeletonDoc = graphql(/* GraphQL */ `
+  query AssessmentsGetSkeleton($ids: [ID!]!) {
+    assessmentForms(first: 1, filterBy: { ids: $ids }) {
+      nodes {
+        id
+        title
+        description
+        status
+        dueDate
+        submittedAt
+        createdAt
+        updatedAt
+        assessmentGroup {
+          id
+        }
+        sections {
+          id
+          title
+          index
+          status
+          questions {
+            id
           }
         }
       }
@@ -353,15 +505,21 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     };
   }
 
-  async getAssessment(id: string): Promise<Assessment> {
-    const data = await this.makeRequest(GetAssessmentDoc, { ids: [id] });
+  /**
+   * Section index for a form: metadata plus one row per section with a question
+   * count, and no question bodies. This is the cheap read that lets a caller
+   * decide which sections are worth expanding.
+   */
+  async getAssessmentSkeleton(id: string): Promise<Assessment> {
+    const data = await this.makeRequest(GetAssessmentSkeletonDoc, { ids: [id] });
     const node = data.assessmentForms.nodes[0];
     if (!node) {
-      throw new Error(`Assessment with id ${id} not found`);
+      throw assessmentNotFound(id);
     }
     return {
       id: node.id,
       title: node.title,
+      description: node.description ?? undefined,
       status: node.status as Assessment['status'],
       dueDate: node.dueDate ?? undefined,
       submittedAt: node.submittedAt ?? undefined,
@@ -373,6 +531,179 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         title: section.title ?? undefined,
         index: section.index ?? undefined,
         status: section.status ?? undefined,
+        questionCount: section.questions?.length ?? 0,
+      })),
+    };
+  }
+
+  /**
+   * The questions on a form whose text matches `text`, with the form's section
+   * index alongside them.
+   *
+   * Both halves come from one skeleton read: it yields the section ids the
+   * search has to be scoped to, and the question ids that say which section
+   * each match belongs to, since a question carries no reference back to its
+   * section. Matches are drained rather than paged — they cannot outnumber the
+   * questions on the form, and a caller searching for one topic should not have
+   * to page to learn whether the form covers it.
+   */
+  async searchAssessmentQuestions(
+    id: string,
+    text: string,
+    options: {
+      /** Restrict the search to these sections. Omit to search the whole form. */
+      sectionIds?: string[];
+    } = {},
+  ): Promise<{
+    /** The form's metadata and section index */
+    form: Assessment;
+    /** Matching questions, in section then question order */
+    matches: AssessmentQuestionMatch[];
+    /** How many questions the form has in the searched sections */
+    searchedCount: number;
+  }> {
+    const data = await this.makeRequest(GetAssessmentSkeletonDoc, { ids: [id] });
+    const node = data.assessmentForms.nodes[0];
+    if (!node) {
+      throw assessmentNotFound(id);
+    }
+    const available = node.sections ?? [];
+    const wanted = options.sectionIds?.length ? new Set(options.sectionIds) : undefined;
+    if (wanted) {
+      const present = new Set(available.map((section) => section.id));
+      const missing = [...wanted].filter((sectionId) => !present.has(sectionId));
+      if (missing.length > 0) {
+        throw sectionNotFound(id, missing, available);
+      }
+    }
+    const sections = available.filter((section) => !wanted || wanted.has(section.id));
+
+    const sectionOfQuestion = new Map<string, { id: string; title?: string }>();
+    for (const section of sections) {
+      for (const question of section.questions ?? []) {
+        sectionOfQuestion.set(question.id, {
+          id: section.id,
+          title: section.title ?? undefined,
+        });
+      }
+    }
+
+    const form: Assessment = {
+      id: node.id,
+      title: node.title,
+      description: node.description ?? undefined,
+      status: node.status as Assessment['status'],
+      dueDate: node.dueDate ?? undefined,
+      submittedAt: node.submittedAt ?? undefined,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt ?? undefined,
+      assessmentGroupId: node.assessmentGroup?.id,
+      sections: available.map((section) => ({
+        id: section.id,
+        title: section.title ?? undefined,
+        index: section.index ?? undefined,
+        status: section.status ?? undefined,
+        questionCount: section.questions?.length ?? 0,
+      })),
+    };
+    const searchedCount = sectionOfQuestion.size;
+    if (sections.length === 0) return { form, matches: [], searchedCount };
+
+    const matches: AssessmentQuestionMatch[] = [];
+    // Paging counts rows read, not rows kept: offsetting by the matches held
+    // would re-request the same page forever the moment one row is dropped.
+    let read = 0;
+    for (;;) {
+      const page = await this.makeRequest(SearchQuestionsDoc, {
+        first: QUESTION_FETCH_CHUNK,
+        offset: read,
+        filterBy: { text, assessmentSectionIds: sections.map((section) => section.id) },
+      });
+      read += page.assessmentQuestions.nodes.length;
+      for (const question of page.assessmentQuestions.nodes) {
+        // A question the search returned but the skeleton never listed cannot
+        // be placed, and would read as belonging to a section it does not.
+        const section = sectionOfQuestion.get(question.id);
+        if (!section) continue;
+        matches.push({
+          id: question.id,
+          title: question.title ?? undefined,
+          index: question.index ?? undefined,
+          type: question.type,
+          subType: question.subType ?? undefined,
+          description: question.description ?? undefined,
+          isRequired: question.isRequired ?? undefined,
+          placeholder: question.placeholder ?? undefined,
+          answerOptions: choicesNotAlreadyAnswered(
+            question.answerOptions,
+            question.selectedAnswers,
+          ),
+          selectedAnswers: question.selectedAnswers?.map(toAnswerOption),
+          sectionId: section.id,
+          sectionTitle: section.title,
+        });
+      }
+      if (
+        page.assessmentQuestions.nodes.length === 0 ||
+        read >= page.assessmentQuestions.totalCount
+      ) {
+        break;
+      }
+    }
+
+    const order = new Map(form.sections?.map((section, i) => [section.id, i]));
+    matches.sort(
+      (a, b) =>
+        (order.get(a.sectionId) ?? 0) - (order.get(b.sectionId) ?? 0) ||
+        (a.index ?? 0) - (b.index ?? 0),
+    );
+    return { form, matches, searchedCount };
+  }
+
+  /**
+   * Full form contents, optionally narrowed to specific sections. `sectionIds`
+   * filters after the fetch because neither `sections` nor `questions` accepts
+   * pagination arguments in the API — the narrowing exists to bound what the
+   * caller has to read, not what the server has to send.
+   */
+  async getAssessment(
+    id: string,
+    options: {
+      /** Restrict the returned sections to these IDs. Omit for every section. */
+      sectionIds?: string[];
+    } = {},
+  ): Promise<Assessment> {
+    const data = await this.makeRequest(GetAssessmentDoc, { ids: [id] });
+    const node = data.assessmentForms.nodes[0];
+    if (!node) {
+      throw assessmentNotFound(id);
+    }
+    const available = node.sections ?? [];
+    const wanted = options.sectionIds?.length ? new Set(options.sectionIds) : undefined;
+    if (wanted) {
+      const present = new Set(available.map((section) => section.id));
+      const missing = [...wanted].filter((sectionId) => !present.has(sectionId));
+      if (missing.length > 0) {
+        throw sectionNotFound(id, missing, available);
+      }
+    }
+    const sections = available.filter((s) => !wanted || wanted.has(s.id));
+    return {
+      id: node.id,
+      title: node.title,
+      description: node.description ?? undefined,
+      status: node.status as Assessment['status'],
+      dueDate: node.dueDate ?? undefined,
+      submittedAt: node.submittedAt ?? undefined,
+      createdAt: node.createdAt,
+      updatedAt: node.updatedAt ?? undefined,
+      assessmentGroupId: node.assessmentGroup?.id,
+      sections: sections.map((section) => ({
+        id: section.id,
+        title: section.title ?? undefined,
+        index: section.index ?? undefined,
+        status: section.status ?? undefined,
+        questionCount: section.questions?.length ?? 0,
         questions: section.questions?.map((q) => ({
           id: q.id,
           title: q.title ?? undefined,
@@ -382,16 +713,8 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
           description: q.description ?? undefined,
           isRequired: q.isRequired ?? undefined,
           placeholder: q.placeholder ?? undefined,
-          answerOptions: q.answerOptions?.map((a) => ({
-            id: a.id,
-            index: a.index,
-            value: a.value,
-          })),
-          selectedAnswers: q.selectedAnswers?.map((a) => ({
-            id: a.id,
-            index: a.index,
-            value: a.value,
-          })),
+          answerOptions: choicesNotAlreadyAnswered(q.answerOptions, q.selectedAnswers),
+          selectedAnswers: q.selectedAnswers?.map(toAnswerOption),
         })),
       })),
     };
