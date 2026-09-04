@@ -1,6 +1,7 @@
 ---
 '@transcend-io/mcp-server-assessment': minor
 '@transcend-io/mcp-server-base': minor
+'@transcend-io/mcp': minor
 ---
 
 Add `assessments_list_comments`, and have `assessments_get` count feedback rather than carry it.
