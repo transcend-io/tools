@@ -1205,33 +1205,62 @@ export interface AssessmentTemplateSection {
 }
 
 export interface AssessmentSection {
+  /** Unique identifier */
   id: string;
+  /** Heading the section is shown under */
   title?: string;
+  /** Position of the section within the form, zero-based */
   index?: number;
+  /** Review state of this section, distinct from the form's own status */
   status?: string;
+  /** The template section this one was built from */
   templateSection?: AssessmentTemplateSection;
+  /** Submitted answers, when the caller asked for section contents */
   responses?: AssessmentResponse[];
+  /** Whether every required question in the section has been answered */
   isComplete?: boolean;
+  /** Questions in the section, present only for sections the caller expanded */
   questions?: AssessmentFormQuestion[];
+  /**
+   * How many questions the section holds. Returned in place of `questions`
+   * when a caller asks for the section index rather than section contents, so
+   * they can size a drill-down before paying for it.
+   */
+  questionCount?: number;
 }
 
 export interface AssessmentFormQuestion {
+  /** Unique identifier */
   id: string;
+  /** The question as it is put to the respondent */
   title?: string;
+  /** Position of the question within its section, zero-based */
   index?: number;
+  /** Answer shape, e.g. LONG_ANSWER_TEXT, SINGLE_SELECT, FILE */
   type: string;
+  /** Narrows `type` for select questions, e.g. USER, TEAM, ATTRIBUTE_KEY */
   subType?: string;
+  /** Guidance shown alongside the question */
   description?: string;
+  /** Whether the form cannot be submitted while this is unanswered */
   isRequired?: boolean;
+  /** Hint text shown in an empty answer field */
   placeholder?: string;
+  /** Stable key for matching this question across forms built from one template */
   referenceId?: string;
+  /** Choices offered for select questions; absent on free-text questions */
   answerOptions?: AssessmentAnswerOption[];
+  /** Choices the respondent actually picked, or their typed answer */
   selectedAnswers?: AssessmentAnswerOption[];
 }
 
+/** One selectable choice on a question, and the shape a submitted answer takes. */
 export interface AssessmentAnswerOption {
+  /** Unique identifier */
   id: string;
+  /** Position among the choices offered, zero-based */
   index?: number;
+  /** Text of the choice, or the respondent's answer when it is a submitted one */
   value: string;
 }
 

@@ -8,6 +8,7 @@ describe('Assessment Tools', () => {
     listAssessmentGroups: ReturnType<typeof vi.fn>;
     createAssessment: ReturnType<typeof vi.fn>;
     getAssessment: ReturnType<typeof vi.fn>;
+    getAssessmentSkeleton: ReturnType<typeof vi.fn>;
     createAssessmentFormTemplate: ReturnType<typeof vi.fn>;
     selectAssessmentQuestionAnswers: ReturnType<typeof vi.fn>;
     updateAssessmentFormAssignees: ReturnType<typeof vi.fn>;
@@ -21,6 +22,7 @@ describe('Assessment Tools', () => {
       listAssessmentGroups: vi.fn(),
       createAssessment: vi.fn(),
       getAssessment: vi.fn(),
+      getAssessmentSkeleton: vi.fn(),
       createAssessmentFormTemplate: vi.fn(),
       selectAssessmentQuestionAnswers: vi.fn(),
       updateAssessmentFormAssignees: vi.fn(),
@@ -35,6 +37,81 @@ describe('Assessment Tools', () => {
       graphql: mockGraphql as never,
       dashboardUrl,
     });
+
+  describe('assessments_get', () => {
+    const getTool = () => getTools().find((t) => t.name === 'assessments_get')!;
+
+    const SKELETON = {
+      id: 'form-1',
+      title: 'DPIA for Rideshare App',
+      status: 'IN_REVIEW',
+      sections: [
+        { id: 'sec-1', title: 'Data collected', index: 0, questionCount: 12 },
+        { id: 'sec-2', title: 'Retention', index: 1, questionCount: 8 },
+      ],
+    };
+
+    const EXPANDED = {
+      id: 'form-1',
+      title: 'DPIA for Rideshare App',
+      status: 'IN_REVIEW',
+      sections: [
+        {
+          id: 'sec-1',
+          title: 'Data collected',
+          index: 0,
+          questionCount: 1,
+          questions: [
+            {
+              id: 'q-1',
+              title: 'What data do you collect?',
+              type: 'LONG_ANSWER_TEXT',
+            },
+          ],
+        },
+      ],
+    };
+
+    it('returns the section index without question bodies when sectionIds is omitted', async () => {
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(result.success).toBe(true);
+      expect(mockGraphql.getAssessment).not.toHaveBeenCalled();
+      expect(result.data.sections).toHaveLength(2);
+      expect(result.data.sections[0].questionCount).toBe(12);
+      expect(result.data.sections[0].questions).toBeUndefined();
+      expect(result.data.expandHint).toContain('sectionIds');
+    });
+
+    it('expands only the requested sections', async () => {
+      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+      })) as { success: boolean; data: Record<string, any> };
+
+      expect(mockGraphql.getAssessmentSkeleton).not.toHaveBeenCalled();
+      expect(mockGraphql.getAssessment).toHaveBeenCalledWith('form-1', {
+        sectionIds: ['sec-1'],
+      });
+      expect(result.data.sections[0].questions).toHaveLength(1);
+      expect(result.data.expandHint).toBeUndefined();
+    });
+
+    it('no longer accepts the display-only assessmentName argument', () => {
+      const parsed = getTool().zodSchema.safeParse({
+        assessmentId: 'form-1',
+        assessmentName: 'DPIA',
+      });
+      expect(parsed.success).toBe(true);
+      expect(parsed.data).not.toHaveProperty('assessmentName');
+    });
+  });
 
   describe('assessments_list', () => {
     it('zodSchema rejects invalid status', () => {
@@ -553,7 +630,7 @@ describe('Assessment Tools', () => {
     });
 
     it('assessments_get returns the form response URL for APPROVED status', async () => {
-      mockGraphql.getAssessment.mockResolvedValue({
+      mockGraphql.getAssessmentSkeleton.mockResolvedValue({
         id: FORM_ID,
         title: 'DPIA',
         status: 'APPROVED',
