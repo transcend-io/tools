@@ -33,23 +33,27 @@ function assessmentNotFound(id: string): ToolError {
 }
 
 /**
- * Not-found for a section ID. Lists the sections the form does have, since the
- * caller reached here from a skeleton read and most likely mistyped or reused
- * an ID from a different form.
+ * Not-found for a section ID. Raised when any requested ID is missing, not only
+ * when all of them are: returning the sections that did match would be a
+ * partial answer wearing the shape of a complete one, and a caller who asked
+ * for four sections and reads three has no way to tell. Lists the sections the
+ * form does have, since the caller reached here from a skeleton read and most
+ * likely mistyped or reused an ID from a different form.
  */
 function sectionNotFound(
   assessmentId: string,
-  requested: string[],
+  missing: string[],
   available: { id: string; title?: string | null }[],
 ): ToolError {
   return new ToolError(
     ErrorCode.NOT_FOUND,
-    `None of the requested sectionIds exist on assessment "${assessmentId}". ` +
-      'Call assessments_get without sectionIds to list the sections this form has.',
+    `Assessment "${assessmentId}" has no section with ID ${missing.map((s) => `"${s}"`).join(', ')}. ` +
+      'No sections were returned, including any that did match. Call assessments_get without ' +
+      'sectionIds to list the sections this form has.',
     false,
     {
       assessmentId,
-      requestedSectionIds: requested,
+      missingSectionIds: missing,
       availableSections: available.map((s) => ({ id: s.id, title: s.title ?? undefined })),
     },
   );
@@ -506,11 +510,16 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     if (!node) {
       throw assessmentNotFound(id);
     }
+    const available = node.sections ?? [];
     const wanted = options.sectionIds?.length ? new Set(options.sectionIds) : undefined;
-    const sections = (node.sections ?? []).filter((s) => !wanted || wanted.has(s.id));
-    if (wanted && sections.length === 0) {
-      throw sectionNotFound(id, options.sectionIds ?? [], node.sections ?? []);
+    if (wanted) {
+      const present = new Set(available.map((section) => section.id));
+      const missing = [...wanted].filter((sectionId) => !present.has(sectionId));
+      if (missing.length > 0) {
+        throw sectionNotFound(id, missing, available);
+      }
     }
+    const sections = available.filter((s) => !wanted || wanted.has(s.id));
     return {
       id: node.id,
       title: node.title,

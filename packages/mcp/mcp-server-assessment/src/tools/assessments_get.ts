@@ -31,8 +31,9 @@ export function createAssessmentsGetTool(clients: ToolClients) {
       'and the answers submitted to it. Given only assessmentId it returns the section list ' +
       'with a question count each, NOT the question text. Pass sectionIds to expand those ' +
       'sections into their questions and submitted answers; a whole form can run to hundreds ' +
-      'of questions, so expand only what you need. Surface the returned `url` verbatim; never ' +
-      'build assessment URLs from IDs.',
+      'of questions, so expand only what you need, and pass every sectionId from that list to ' +
+      'read the form in full. There is no flag for that. Every sectionId must exist or the ' +
+      'call fails. Surface the returned `url` verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

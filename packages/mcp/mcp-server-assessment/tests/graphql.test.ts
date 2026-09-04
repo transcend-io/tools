@@ -217,3 +217,68 @@ describe('AssessmentsMixin (getAssessment answer shapes)', () => {
     expect(question?.answerOptions?.map((a) => a.value)).toEqual(['Email', 'Mobile ID']);
   });
 });
+
+describe('AssessmentsMixin (getAssessment section validation)', () => {
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  function mockTwoSectionForm() {
+    return createMockFetchResponse({
+      assessmentForms: {
+        nodes: [
+          {
+            id: 'form-1',
+            title: 'DPIA',
+            description: '',
+            status: 'IN_REVIEW',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            assessmentGroup: { id: 'grp-1' },
+            sections: [
+              { id: 'sec-1', title: 'Data collected', index: 0, status: null, questions: [] },
+              { id: 'sec-2', title: 'Retention', index: 1, status: null, questions: [] },
+            ],
+          },
+        ],
+      },
+    });
+  }
+
+  it('fails when only some of the requested sections exist', async () => {
+    vi.stubGlobal('fetch', mockTwoSectionForm());
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+
+    // Returning just sec-1 would be a partial answer shaped like a complete
+    // one, and the caller could not tell which of the two it got.
+    await expect(client.getAssessment('form-1', { sectionIds: ['sec-1', 'typo'] })).rejects.toThrow(
+      /no section with ID "typo"/,
+    );
+  });
+
+  it('names the missing sections and the ones the form does have', async () => {
+    vi.stubGlobal('fetch', mockTwoSectionForm());
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+
+    const error = await client
+      .getAssessment('form-1', { sectionIds: ['nope', 'sec-2'] })
+      .then(() => undefined)
+      .catch((e) => e as { details?: Record<string, unknown> });
+
+    expect(error?.details?.missingSectionIds).toEqual(['nope']);
+    expect(error?.details?.availableSections).toEqual([
+      { id: 'sec-1', title: 'Data collected' },
+      { id: 'sec-2', title: 'Retention' },
+    ]);
+  });
+
+  it('expands the requested sections when every id is real', async () => {
+    vi.stubGlobal('fetch', mockTwoSectionForm());
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+
+    const form = await client.getAssessment('form-1', { sectionIds: ['sec-2'] });
+
+    expect(form.sections?.map((s) => s.id)).toEqual(['sec-2']);
+  });
+});

@@ -16,6 +16,12 @@ It now reads in two steps. Called with just `assessmentId` it returns the sectio
 a question count for each, which is small enough to be safe on any form and is enough to
 decide what is worth opening. Passing `sectionIds` expands only those sections, in full.
 
+A `sectionIds` list containing an ID the form does not have now fails, rather than quietly
+returning the sections that did match. Previously the call only failed when *none* of the
+IDs matched, so a caller who asked for four sections and mistyped one got three back in a
+response shaped exactly like a complete one, with nothing to say a section was dropped. The
+error names the missing IDs and lists the sections the form does have.
+
 A free-text answer is also no longer returned twice. The API has no separate field for a
 typed response, so it models one as an answer option — the same paragraph came back under
 both `answerOptions` and `selectedAnswers`, byte for byte. The options are now dropped when
