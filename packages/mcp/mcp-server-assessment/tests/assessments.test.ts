@@ -202,7 +202,7 @@ describe('Assessment Tools', () => {
       })) as { data: Record<string, any> };
 
       expect(hidden.data.comments.map((c: any) => c.id)).toEqual(['c-q1']);
-      expect(hidden.data.commentSummary.resolvedHidden).toBe(true);
+      expect(hidden.data.commentSummary.resolvedHidden).toBe(1);
 
       const shown = (await getTool().handler({
         assessmentId: 'form-1',
@@ -233,6 +233,42 @@ describe('Assessment Tools', () => {
         first: 100,
         offset: 0,
       });
+    });
+
+    it('returns question comments once, in the paged list rather than inline', async () => {
+      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+        includeComments: true,
+        includeResolvedComments: true,
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // Keeping the nested copy too would double-count these, and it answers no
+      // offset, so it would disagree with the page beside it.
+      expect(result.data.comments.map((c: any) => c.id)).toEqual(['c-q1', 'c-q2']);
+      expect(result.data.sections[0].questions[0]).not.toHaveProperty('comments');
+      expect(result.data.sections[0].questions[0].id).toBe('q-1');
+    });
+
+    it('says how many resolved comments it hid rather than just that it hid some', async () => {
+      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+        includeComments: true,
+        includeResolvedComments: false,
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // EXPANDED carries one resolved question comment, c-q2.
+      expect(result.data.commentSummary.resolvedHidden).toBe(1);
+      expect(result.data.commentSummary.totalCount).toBe(1);
     });
 
     it('pages the merged comment list and reports where the caller is in it', async () => {

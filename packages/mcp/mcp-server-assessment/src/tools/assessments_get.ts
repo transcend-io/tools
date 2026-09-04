@@ -101,11 +101,16 @@ function pageComments(
   page: AssessmentComment[];
   /** Comments matching the request across every page */
   totalCount: number;
+  /** How many resolved comments the filter removed */
+  resolvedHidden: number;
 } {
-  const ordered = (includeResolved ? comments : comments.filter((c) => !c.resolvedAt)).sort(
-    byCreationThenId,
-  );
-  return { page: ordered.slice(offset, offset + limit), totalCount: ordered.length };
+  const kept = includeResolved ? comments : comments.filter((c) => !c.resolvedAt);
+  const ordered = [...kept].sort(byCreationThenId);
+  return {
+    page: ordered.slice(offset, offset + limit),
+    totalCount: ordered.length,
+    resolvedHidden: comments.length - kept.length,
+  };
 }
 
 export function createAssessmentsGetTool(clients: ToolClients) {
@@ -114,8 +119,8 @@ export function createAssessmentsGetTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_get',
     description:
-      'Read one filled-in assessment — a PIA, DPIA, privacy review or vendor questionnaire — ' +
-      'in two calls. Given only assessmentId it returns the section list with a question count ' +
+      'Read one filled-in assessment — a PIA, DPIA, privacy review or vendor questionnaire. ' +
+      'Given only assessmentId it returns the section list with a question count ' +
       'each, NOT the question text. Pass sectionIds to expand those sections into their ' +
       'questions, submitted answers and question-level comments; a whole form can run to ' +
       'hundreds of questions, so expand only what you need. Set includeComments for reviewer ' +
@@ -167,27 +172,40 @@ export function createAssessmentsGetTool(clients: ToolClients) {
       const questionComments = sections.flatMap(
         (section) => section.questions?.flatMap((q) => q.comments ?? []) ?? [],
       );
-      const { page, totalCount } = pageComments(
+      const { page, totalCount, resolvedHidden } = pageComments(
         [...formComments, ...sectionComments, ...questionComments],
         { includeResolved: includeResolvedComments, limit, offset },
       );
 
+      // The question comments above also ride nested on each question. Leaving
+      // both copies would double-count them, and the nested one answers no
+      // offset, so it would contradict the page beside it. Each comment carries
+      // `level` and `targetId`, so attribution survives the strip.
+      const sectionsWithoutInlineComments = sections.map((section) => ({
+        ...section,
+        ...(section.questions && {
+          questions: section.questions.map(({ comments: _nested, ...question }) => question),
+        }),
+      }));
+
       return createToolResult(true, {
         ...result,
+        sections: sectionsWithoutInlineComments,
         ...links,
         comments: page,
         commentSummary: {
           returned: page.length,
           totalCount,
           pageInfo: derivePageInfo({ offset, nodeCount: page.length, totalCount }),
-          ...(includeResolvedComments ? {} : { resolvedHidden: true }),
+          ...(includeResolvedComments ? {} : { resolvedHidden }),
           // Say what is missing rather than letting a partial answer look whole.
           ...(expand
             ? { questionCommentsFrom: sections.map((s) => s.id) }
             : {
                 questionCommentsOmitted:
-                  'Form and section comments are complete. Comments left on individual ' +
-                  'questions are not included — re-call with sectionIds to read those.',
+                  'Form and section comments are complete, but totalCount here excludes ' +
+                  'comments left on individual questions — re-call with sectionIds to read ' +
+                  'those, and totalCount will grow.',
               }),
         },
         ...(expand ? {} : { expandHint: 'Pass sectionIds to read the questions in a section.' }),
