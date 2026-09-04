@@ -81,7 +81,10 @@ export const ListAssessmentsSchema = z
       .array(z.string())
       .optional()
       .describe('Email addresses of external (vendor) assignees'),
-    templateIds: idList('Templates the forms were built from; see `assessments_list_templates`'),
+    templateIds: idList(
+      'Templates the forms were built from; see `assessments_list_templates`. Costs one extra ' +
+        'lookup, since a form reaches its template through its group',
+    ),
     assessmentGroupIds: idList('Groups the forms belong to; see `assessments_list_groups`'),
     createdAfter: isoDate('createdAfter').describe('Only forms created on or after this date'),
     createdBefore: isoDate('createdBefore').describe('Only forms created before this date'),
@@ -149,6 +152,14 @@ export function createAssessmentsListTool(clients: ToolClients) {
       limit,
       offset,
     }) => {
+      // `assessmentForms` accepts templateIds and then rejects it —
+      // "assessmentFormTemplate is not associated to assessmentForm". A form
+      // reaches its template only through its group, so the ids are resolved
+      // into groups here and the caller is spared knowing that.
+      const groupIds = templateIds?.length
+        ? await groupsBuiltFromTemplates(graphql, templateIds, assessmentGroupIds)
+        : assessmentGroupIds;
+
       const filterBy = {
         ...(statuses?.length && { statuses }),
         ...(text && { text }),
@@ -156,14 +167,46 @@ export function createAssessmentsListTool(clients: ToolClients) {
         ...(assigneeIds?.length && { assigneeIds }),
         ...(reviewerIds?.length && { reviewerIds }),
         ...(externalAssigneeEmails?.length && { externalAssigneeEmails }),
-        ...(templateIds?.length && { templateIds }),
-        ...(assessmentGroupIds?.length && { assessmentGroupIds }),
+        ...(groupIds?.length && { assessmentGroupIds: groupIds }),
         ...(createdAfter && { createdAtAfter: createdAfter }),
         ...(createdBefore && { createdAtBefore: createdBefore }),
         ...(dueAfter && { dueDateAfter: dueAfter }),
         ...(dueBefore && { dueDateBefore: dueBefore }),
       };
-      const appliedFilters = Object.keys(filterBy);
+      // Named as the caller passed them. Reporting the API's own field names
+      // sent an agent looking for a `dueDateAfter` argument this tool does not
+      // have, and would say `assessmentGroupIds` to a caller who asked by
+      // template.
+      const appliedFilters = Object.entries({
+        statuses: statuses?.length,
+        text,
+        ids: ids?.length,
+        assigneeIds: assigneeIds?.length,
+        reviewerIds: reviewerIds?.length,
+        externalAssigneeEmails: externalAssigneeEmails?.length,
+        templateIds: templateIds?.length,
+        assessmentGroupIds: assessmentGroupIds?.length,
+        createdAfter,
+        createdBefore,
+        dueAfter,
+        dueBefore,
+      })
+        .filter(([, value]) => Boolean(value))
+        .map(([name]) => name);
+
+      // No group was built from those templates, so no form can match. An empty
+      // assessmentGroupIds would have been dropped as "no filter" and returned
+      // every assessment in the organization.
+      if (templateIds?.length && (groupIds ?? []).length === 0) {
+        return createListResult([], {
+          totalCount: 0,
+          hasNextPage: false,
+          paginationNote:
+            `No assessments match the filters applied (${appliedFilters.join(', ')}). ` +
+            'The query succeeded; no assessment group was built from those templates. ' +
+            'Call assessments_list_templates to check the id.',
+        });
+      }
 
       const result = await graphql.listAssessments({
         first: limit,
@@ -210,6 +253,37 @@ export function createAssessmentsListTool(clients: ToolClients) {
       });
     },
   });
+}
+
+/** Rows to pull per round trip when reading the group index to the end. */
+const GROUP_FETCH_CHUNK = 100;
+
+/**
+ * The groups built from the given templates, intersected with any groups the
+ * caller asked for directly.
+ *
+ * A form does not point at its template — it points at a group, and the group
+ * points at the template — so the only route from one to the other runs through
+ * the group index. Every group is read, because a template used by more groups
+ * than fit in one page would otherwise silently lose the assessments in the
+ * groups that did not fit.
+ */
+async function groupsBuiltFromTemplates(
+  graphql: AssessmentsMixin,
+  templateIds: string[],
+  assessmentGroupIds: string[] | undefined,
+): Promise<string[]> {
+  const found: string[] = [];
+  for (;;) {
+    const page = await graphql.listAssessmentGroups({
+      first: GROUP_FETCH_CHUNK,
+      offset: found.length,
+      filterBy: { templateIds },
+    });
+    found.push(...page.nodes.map((group) => group.id));
+    if (page.nodes.length === 0 || found.length >= (page.totalCount ?? found.length)) break;
+  }
+  return assessmentGroupIds?.length ? found.filter((id) => assessmentGroupIds.includes(id)) : found;
 }
 
 /**

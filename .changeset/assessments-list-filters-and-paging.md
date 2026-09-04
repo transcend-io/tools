@@ -35,6 +35,19 @@ Zero results carry a note naming the applied filters and saying the query succee
 are validated against ISO 8601 with a message naming the field and showing the format, and
 `sortBy` rejects unknown columns by listing the valid ones.
 
+`templateIds` is served through the group index rather than forwarded. `assessmentForms`
+accepts the field and then rejects it — `assessmentFormTemplate is not associated to
+assessmentForm` — because a form reaches its template only through its group. A cold-read
+probe hit that error on a documented filter and had to work the two-hop route out for itself,
+so the tool now does it: the template ids resolve to groups, every page of them, and the forms
+are queried by group. A template no group was built from returns an explicit zero result
+rather than an empty `assessmentGroupIds` that the API would have read as "no filter" and
+answered with every assessment in the organization.
+
+Filters are named back to the caller as the caller spelled them. The empty-result note used
+the API's field names, telling an agent that `dueDateAfter` had been applied when the argument
+it passed was `dueAfter`.
+
 The pagination note no longer calls a single page of results "the last" one, which implied
 a page had come before it.
 
