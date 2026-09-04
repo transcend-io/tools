@@ -235,6 +235,46 @@ describe('Assessment Tools', () => {
       });
     });
 
+    it('breaks the comment total down by level so the split needs no paging', async () => {
+      mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({
+        nodes: [1, 2].map((n) => ({
+          id: `c-f${n}`,
+          level: 'FORM',
+          targetId: 'form-1',
+          content: `Form comment ${n}`,
+          createdAt: `2026-01-0${n}T00:00:00.000Z`,
+        })),
+        totalCount: 2,
+      });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({
+        nodes: [
+          {
+            id: 'c-s1',
+            level: 'SECTION',
+            targetId: 'sec-1',
+            content: 'Section comment',
+            createdAt: '2026-01-03T00:00:00.000Z',
+          },
+        ],
+        totalCount: 1,
+      });
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        sectionIds: ['sec-1'],
+        includeComments: true,
+        includeResolvedComments: true,
+        limit: 1,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // One page of one, but the caller still learns the whole shape.
+      expect(result.data.comments).toHaveLength(1);
+      expect(result.data.commentSummary.byLevel).toEqual({ FORM: 2, SECTION: 1, QUESTION: 2 });
+      expect(result.data.commentSummary.totalCount).toBe(5);
+    });
+
     it('returns question comments once, in the paged list rather than inline', async () => {
       mockGraphql.getAssessment.mockResolvedValue(EXPANDED);
 

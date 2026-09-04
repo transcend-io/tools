@@ -34,7 +34,9 @@ remainder at the fetch layer while the reported omission count stayed at zero.
 Question comments are returned once, in the paged `comments` list, rather than also inline
 on each question. The inline copy answered no offset, so it disagreed with the page beside
 it and double-counted anything that read both. `commentSummary.resolvedHidden` reports how
-many resolved comments were filtered out rather than just that filtering happened.
+many resolved comments were filtered out rather than just that filtering happened, and
+`commentSummary.byLevel` splits the total across form, section and question so that
+answering "how much feedback, and where" no longer means paging the whole list to tally it.
 
 Question comments come from the nested field on the form query rather than the
 `assessmentQuestionComments` root query, because `AssessmentQuestionComment` carries no

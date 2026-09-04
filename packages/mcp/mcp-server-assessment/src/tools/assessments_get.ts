@@ -5,6 +5,7 @@ import {
   OffsetPaginationSchema,
   z,
   type AssessmentComment,
+  type AssessmentCommentLevel,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
@@ -101,14 +102,19 @@ function pageComments(
   page: AssessmentComment[];
   /** Comments matching the request across every page */
   totalCount: number;
+  /** How many of those sit at each level, so the split needs no paging to find */
+  byLevel: Record<AssessmentCommentLevel, number>;
   /** How many resolved comments the filter removed */
   resolvedHidden: number;
 } {
   const kept = includeResolved ? comments : comments.filter((c) => !c.resolvedAt);
   const ordered = [...kept].sort(byCreationThenId);
+  const byLevel = { FORM: 0, SECTION: 0, QUESTION: 0 };
+  for (const comment of ordered) byLevel[comment.level] += 1;
   return {
     page: ordered.slice(offset, offset + limit),
     totalCount: ordered.length,
+    byLevel,
     resolvedHidden: comments.length - kept.length,
   };
 }
@@ -172,7 +178,7 @@ export function createAssessmentsGetTool(clients: ToolClients) {
       const questionComments = sections.flatMap(
         (section) => section.questions?.flatMap((q) => q.comments ?? []) ?? [],
       );
-      const { page, totalCount, resolvedHidden } = pageComments(
+      const { page, totalCount, byLevel, resolvedHidden } = pageComments(
         [...formComments, ...sectionComments, ...questionComments],
         { includeResolved: includeResolvedComments, limit, offset },
       );
@@ -196,6 +202,7 @@ export function createAssessmentsGetTool(clients: ToolClients) {
         commentSummary: {
           returned: page.length,
           totalCount,
+          byLevel,
           pageInfo: derivePageInfo({ offset, nodeCount: page.length, totalCount }),
           ...(includeResolvedComments ? {} : { resolvedHidden }),
           // Say what is missing rather than letting a partial answer look whole.
