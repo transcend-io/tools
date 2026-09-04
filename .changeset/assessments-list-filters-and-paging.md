@@ -35,6 +35,9 @@ Zero results carry a note naming the applied filters and saying the query succee
 are validated against ISO 8601 with a message naming the field and showing the format, and
 `sortBy` rejects unknown columns by listing the valid ones.
 
+The pagination note no longer calls a single page of results "the last" one, which implied
+a page had come before it.
+
 BREAKING: the singular `status` argument is replaced by `statuses`, which takes a list.
 Callers passing `status` now get an unknown-argument error instead of an unfiltered list.
 

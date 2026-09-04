@@ -246,5 +246,7 @@ function describeOutcome({
       offset + limit
     }.`;
   }
-  return `Showing the last ${returned} of ${totalCount} matches. No further pages.`;
+  return offset === 0
+    ? `Showing all ${returned} match${returned === 1 ? '' : 'es'}. No further pages.`
+    : `Showing the last ${returned} of ${totalCount} matches. No further pages.`;
 }
