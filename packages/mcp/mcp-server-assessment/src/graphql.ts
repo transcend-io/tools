@@ -4,6 +4,7 @@ import {
   ToolError,
   TranscendGraphQLBase,
   type Assessment,
+  type AssessmentAnswerOption,
   type AssessmentCreateInput,
   type AssessmentGroup,
   type AssessmentQuestionInput,
@@ -92,6 +93,37 @@ function normalizeQuestion(q: AssessmentQuestionInput): Record<string, unknown> 
     ...(q.riskFrameworkId && { riskFrameworkId: q.riskFrameworkId }),
     ...(q.displayLogic && { displayLogic: q.displayLogic }),
   };
+}
+
+/** Narrow an API answer option to the fields a reader needs. */
+function toAnswerOption(option: {
+  id: string;
+  index: number;
+  value: string;
+}): AssessmentAnswerOption {
+  return { id: option.id, index: option.index, value: option.value };
+}
+
+/**
+ * The choices on offer, dropped when they say nothing the answers do not.
+ *
+ * Free-text questions have no choice set: the API models the typed answer as an
+ * option, so the paragraph comes back once under `answerOptions` and again,
+ * byte for byte, under `selectedAnswers`. Select questions are the case worth
+ * keeping, where the options a respondent passed over are real information.
+ * Comparing the two by id tells them apart without hardcoding which question
+ * types behave which way, and drops nothing a caller could not already read off
+ * `selectedAnswers`.
+ */
+function choicesNotAlreadyAnswered(
+  options: readonly { id: string; index: number; value: string }[] | undefined | null,
+  selected: readonly { id: string }[] | undefined | null,
+): AssessmentAnswerOption[] | undefined {
+  if (!options) return undefined;
+  const answered = new Set((selected ?? []).map((answer) => answer.id));
+  return options.every((option) => answered.has(option.id))
+    ? undefined
+    : options.map(toAnswerOption);
 }
 
 const ListAssessmentsDoc = graphql(/* GraphQL */ `
@@ -504,16 +536,8 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
           description: q.description ?? undefined,
           isRequired: q.isRequired ?? undefined,
           placeholder: q.placeholder ?? undefined,
-          answerOptions: q.answerOptions?.map((a) => ({
-            id: a.id,
-            index: a.index,
-            value: a.value,
-          })),
-          selectedAnswers: q.selectedAnswers?.map((a) => ({
-            id: a.id,
-            index: a.index,
-            value: a.value,
-          })),
+          answerOptions: choicesNotAlreadyAnswered(q.answerOptions, q.selectedAnswers),
+          selectedAnswers: q.selectedAnswers?.map(toAnswerOption),
         })),
       })),
     };

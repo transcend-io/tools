@@ -131,3 +131,89 @@ describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
     expect(questions[0].requireRiskEvaluation).toBe(false);
   });
 });
+
+describe('AssessmentsMixin (getAssessment answer shapes)', () => {
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  /** One form, one section, whatever questions a case needs. */
+  function mockForm(questions: unknown[]) {
+    return createMockFetchResponse({
+      assessmentForms: {
+        nodes: [
+          {
+            id: 'form-1',
+            title: 'DPIA',
+            description: '',
+            status: 'IN_REVIEW',
+            createdAt: '2026-01-01T00:00:00.000Z',
+            assessmentGroup: { id: 'grp-1' },
+            sections: [{ id: 'sec-1', title: 'Section 1', index: 0, status: null, questions }],
+          },
+        ],
+      },
+    });
+  }
+
+  it('returns a typed answer once, not once per field it appears in', async () => {
+    // Free-text questions have no choice set: the API models the typed answer
+    // as an option, so it would otherwise come back byte for byte twice.
+    vi.stubGlobal(
+      'fetch',
+      mockForm([
+        {
+          id: 'q-1',
+          title: 'Describe the project.',
+          index: 0,
+          type: 'LONG_ANSWER_TEXT',
+          subType: 'NONE',
+          description: '',
+          isRequired: true,
+          placeholder: '',
+          answerOptions: [{ id: 'a-1', index: 0, value: 'A long paragraph.' }],
+          selectedAnswers: [{ id: 'a-1', index: 0, value: 'A long paragraph.' }],
+        },
+      ]),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const form = await client.getAssessment('form-1', { sectionIds: ['sec-1'] });
+    const question = form.sections?.[0].questions?.[0];
+
+    expect(question?.selectedAnswers?.map((a) => a.value)).toEqual(['A long paragraph.']);
+    expect(question?.answerOptions).toBeUndefined();
+  });
+
+  it('keeps the choices a respondent passed over', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockForm([
+        {
+          id: 'q-2',
+          title: 'Which identifiers?',
+          index: 0,
+          type: 'MULTI_SELECT',
+          subType: 'CUSTOM',
+          description: '',
+          isRequired: true,
+          placeholder: '',
+          answerOptions: [
+            { id: 'a-1', index: 0, value: 'Email' },
+            { id: 'a-2', index: 1, value: 'Mobile ID' },
+          ],
+          selectedAnswers: [{ id: 'a-2', index: 1, value: 'Mobile ID' }],
+        },
+      ]),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const form = await client.getAssessment('form-1', { sectionIds: ['sec-1'] });
+    const question = form.sections?.[0].questions?.[0];
+
+    // What was not chosen is real information, unlike a duplicated paragraph.
+    expect(question?.answerOptions?.map((a) => a.value)).toEqual(['Email', 'Mobile ID']);
+  });
+});
