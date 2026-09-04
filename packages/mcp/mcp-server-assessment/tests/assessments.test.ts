@@ -177,6 +177,18 @@ describe('Assessment Tools', () => {
       expect(result.data).not.toHaveProperty('expandHint');
     });
 
+    it('still counts the feedback on a search, the count being of the form', async () => {
+      mockGraphql.searchAssessmentQuestions.mockResolvedValue(FOUND);
+      mockGraphql.countAssessmentComments.mockResolvedValue({ FORM: 2, SECTION: 0, QUESTION: 1 });
+
+      const result = (await getTool().handler({
+        assessmentId: 'form-1',
+        questionText: 'retention',
+      })) as { data: Record<string, any> };
+
+      expect(result.data.commentSummary.totalCount).toBe(3);
+    });
+
     it('returns the section index without question bodies when sectionIds is omitted', async () => {
       mockGraphql.getAssessmentSkeleton.mockResolvedValue(SKELETON);
 
