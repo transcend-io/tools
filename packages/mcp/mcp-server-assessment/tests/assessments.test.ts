@@ -310,6 +310,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [comment('c-q1', 'QUESTION', 'q-1')],
         questionTitles: { 'q-1': 'What data do you collect?' },
+        sectionTitles: {},
         sectionIds: ['sec-1', 'sec-2'],
       });
     });
@@ -323,7 +324,7 @@ describe('Assessment Tools', () => {
       })) as { success: boolean; data: Record<string, any> };
 
       expect(result.success).toBe(true);
-      expect(result.data.byLevel).toEqual({ FORM: 2, SECTION: 1, QUESTION: 1 });
+      expect(result.data.totalByLevel).toEqual({ FORM: 2, SECTION: 1, QUESTION: 1 });
       expect(result.data.totalCount).toBe(4);
       expect(mockGraphql.listAssessmentSectionComments).toHaveBeenCalledWith(
         ['sec-1', 'sec-2'],
@@ -347,6 +348,63 @@ describe('Assessment Tools', () => {
       );
     });
 
+    it('names the section a comment sits on', async () => {
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        sectionTitles: { 'sec-1': 'Data Storage and Security' },
+        sectionIds: ['sec-1'],
+      });
+
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // A bare target id left the caller to look the section up in a second
+      // call, which question comments never needed.
+      const section = result.data.comments.find((c: any) => c.level === 'SECTION');
+      expect(section.sectionTitle).toBe('Data Storage and Security');
+      expect(result.data.comments.find((c: any) => c.level === 'FORM')).not.toHaveProperty(
+        'sectionTitle',
+      );
+    });
+
+    it('fails on an offset past the end rather than returning an empty page', async () => {
+      // An empty page from a non-zero offset reads exactly like "this form has
+      // no feedback", which is the wrong thing to report to a user.
+      await expect(
+        commentsTool().handler({
+          assessmentId: 'form-1',
+          resolution: 'OPEN',
+          limit: 50,
+          offset: 500,
+        }),
+      ).rejects.toThrow(/offset 500 is past the end of the result set: 4 comment\(s\)/);
+    });
+
+    it('still reports no matches, rather than a bad offset, when nothing matched', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        sectionTitles: {},
+        sectionIds: [],
+      });
+
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 500,
+      })) as { data: Record<string, any> };
+
+      expect(result.data.noMatches).toContain('no open feedback');
+    });
+
     it('hides resolved feedback by default and can return it alone', async () => {
       mockGraphql.listAssessmentFormComments.mockResolvedValue({
         nodes: [
@@ -359,6 +417,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        sectionTitles: {},
         sectionIds: [],
       });
 
@@ -393,6 +452,7 @@ describe('Assessment Tools', () => {
           comment('c-theirs', 'QUESTION', 'q-1', { author: { id: 'u-2', name: 'Someone' } }),
         ],
         questionTitles: { 'q-1': 'What data do you collect?' },
+        sectionTitles: {},
         sectionIds: ['sec-1'],
       });
       mockGraphql.listAssessmentFormComments.mockResolvedValue({ nodes: [], totalCount: 0 });
@@ -426,6 +486,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        sectionTitles: {},
         sectionIds: [],
       });
 
@@ -452,6 +513,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        sectionTitles: {},
         sectionIds: [],
       });
 
@@ -473,6 +535,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        sectionTitles: {},
         sectionIds: [],
       });
 

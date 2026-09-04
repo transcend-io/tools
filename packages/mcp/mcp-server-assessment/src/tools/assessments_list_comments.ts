@@ -2,7 +2,9 @@ import {
   createToolResult,
   defineTool,
   derivePageInfo,
+  ErrorCode,
   OffsetPaginationSchema,
+  ToolError,
   z,
   type AssessmentComment,
   type AssessmentCommentLevel,
@@ -127,15 +129,41 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
         .filter((comment) => matchesAuthor(comment) && matchesResolution(comment))
         .sort(byCreationThenId);
 
-      const byLevel: Record<AssessmentCommentLevel, number> = { FORM: 0, SECTION: 0, QUESTION: 0 };
-      for (const comment of matched) byLevel[comment.level] += 1;
+      const totalByLevel: Record<AssessmentCommentLevel, number> = {
+        FORM: 0,
+        SECTION: 0,
+        QUESTION: 0,
+      };
+      for (const comment of matched) totalByLevel[comment.level] += 1;
 
-      // Name the question a comment sits on, so "which question is this about"
-      // does not cost a second call into the form.
+      // An empty page from a non-zero offset is ambiguous: it looks identical to
+      // filters that matched nothing. Fail the way assessments_list does, so the
+      // agent corrects the offset instead of reporting the form has no feedback.
+      if (offset > 0 && offset >= matched.length && matched.length > 0) {
+        throw new ToolError(
+          ErrorCode.VALIDATION_ERROR,
+          `offset ${offset} is past the end of the result set: ${matched.length} ` +
+            `comment(s) match resolution ${resolution}${
+              authorIds && authorIds.length > 0 ? ` and the authorIds filter` : ''
+            }. Retry with an offset below ${matched.length}.`,
+          false,
+          { offset, totalCount: matched.length, resolution, ...(authorIds && { authorIds }) },
+        );
+      }
+
+      // Name what a comment sits on, so "which question is this about" does not
+      // cost a second call into the form.
       const page = matched.slice(offset, offset + limit).map((comment) => {
-        const questionTitle =
-          comment.level === 'QUESTION' ? questions.questionTitles[comment.targetId] : undefined;
-        return questionTitle === undefined ? comment : { ...comment, questionTitle };
+        const title =
+          comment.level === 'QUESTION'
+            ? questions.questionTitles[comment.targetId]
+            : comment.level === 'SECTION'
+              ? questions.sectionTitles[comment.targetId]
+              : undefined;
+        if (title === undefined) return comment;
+        return comment.level === 'QUESTION'
+          ? { ...comment, questionTitle: title }
+          : { ...comment, sectionTitle: title };
       });
 
       return createToolResult(true, {
@@ -144,7 +172,7 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
         comments: page,
         returned: page.length,
         totalCount: matched.length,
-        byLevel,
+        totalByLevel,
         pageInfo: derivePageInfo({ offset, nodeCount: page.length, totalCount: matched.length }),
         ...(matched.length === 0
           ? {

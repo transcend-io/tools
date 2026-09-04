@@ -485,6 +485,7 @@ const ListQuestionCommentsDoc = graphql(/* GraphQL */ `
       nodes {
         sections {
           id
+          title
           questions {
             id
             title
@@ -1007,6 +1008,8 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     nodes: AssessmentComment[];
     /** Question title by question id, so a comment can name its question */
     questionTitles: Record<string, string>;
+    /** Section title by section id, so a comment can name its section */
+    sectionTitles: Record<string, string>;
     /** Sections of the form, so section comments can be read in the same pass */
     sectionIds: string[];
   }> {
@@ -1022,6 +1025,9 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         (question) => toComments(question.comments, 'QUESTION', question.id) ?? [],
       ),
       questionTitles: Object.fromEntries(questions.map((q) => [q.id, q.title])),
+      sectionTitles: Object.fromEntries(
+        sections.flatMap((section) => (section.title ? [[section.id, section.title]] : [])),
+      ),
       sectionIds: sections.map((section) => section.id),
     };
   }

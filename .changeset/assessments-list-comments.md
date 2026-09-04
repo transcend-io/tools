@@ -43,3 +43,14 @@ question it was left on. That query asks for question id, title and comments onl
 carries none of the answer text that makes a full form read expensive. `authorIds` is a
 filter input on the form and section queries but not on that nested field, so the same match
 on author id is applied in the client for question comments.
+
+Each row names what it sits on: question comments carry `questionTitle` and section comments
+carry `sectionTitle`, so "which part of the form is this about" costs no second call. The
+per-level breakdown is called `totalByLevel` rather than `byLevel` because it counts the
+whole filtered set, not the page — sitting beside `returned`, the shorter name read as a
+page breakdown, and a cold-read probe misread it that way.
+
+An `offset` past the end raises a `VALIDATION_ERROR` naming the total, matching
+`assessments_list`. It previously returned an empty page that read exactly like "this form
+has no feedback", which is the wrong thing to report to a user. A filter that genuinely
+matches nothing still comes back as a success carrying `noMatches`.
