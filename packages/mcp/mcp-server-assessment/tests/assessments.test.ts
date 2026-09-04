@@ -31,9 +31,13 @@ describe('Assessment Tools', () => {
       searchAssessmentQuestions: vi.fn(),
       listAssessmentFormComments: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
       listAssessmentSectionComments: vi.fn().mockResolvedValue({ nodes: [], totalCount: 0 }),
-      listAssessmentQuestionComments: vi
-        .fn()
-        .mockResolvedValue({ nodes: [], questionTitles: {}, sectionIds: ['sec-1', 'sec-2'] }),
+      listAssessmentQuestionComments: vi.fn().mockResolvedValue({
+        nodes: [],
+        questionTitles: {},
+        questionSections: {},
+        sectionTitles: {},
+        sectionIds: ['sec-1', 'sec-2'],
+      }),
       countAssessmentComments: vi.fn().mockResolvedValue({ FORM: 0, SECTION: 0, QUESTION: 0 }),
       createAssessmentFormTemplate: vi.fn(),
       selectAssessmentQuestionAnswers: vi.fn(),
@@ -322,6 +326,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [comment('c-q1', 'QUESTION', 'q-1')],
         questionTitles: { 'q-1': 'What data do you collect?' },
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: {},
         sectionIds: ['sec-1', 'sec-2'],
       });
@@ -409,6 +414,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: { 'sec-1': 'Data Storage and Security' },
         sectionIds: ['sec-1'],
       });
@@ -427,6 +433,58 @@ describe('Assessment Tools', () => {
       expect(result.data.comments.find((c: any) => c.level === 'FORM')).not.toHaveProperty(
         'sectionTitle',
       );
+    });
+
+    it('names the section a question comment sits in, not just the question', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [comment('c-q1', 'QUESTION', 'q-1')],
+        questionTitles: { 'q-1': 'What data do you collect?' },
+        questionSections: { 'q-1': 'sec-1' },
+        sectionTitles: { 'sec-1': 'Data Collection and Processing' },
+        sectionIds: ['sec-1'],
+      });
+
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // Grouping feedback by section is otherwise a second read of the whole
+      // form, since a question comment holds no route back to its section.
+      const [question] = result.data.comments;
+      expect(question.questionTitle).toBe('What data do you collect?');
+      expect(question.sectionId).toBe('sec-1');
+      expect(question.sectionTitle).toBe('Data Collection and Processing');
+    });
+
+    it('leaves the section unnamed when the form did not name it', async () => {
+      mockGraphql.listAssessmentFormComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentSectionComments.mockResolvedValue({ nodes: [], totalCount: 0 });
+      mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
+        nodes: [comment('c-q1', 'QUESTION', 'q-1')],
+        questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
+        sectionTitles: {},
+        sectionIds: ['sec-1'],
+      });
+
+      const result = (await commentsTool().handler({
+        assessmentId: 'form-1',
+        resolution: 'OPEN',
+        limit: 50,
+        offset: 0,
+      })) as { data: Record<string, any> };
+
+      // An untitled section still has an id worth returning; an empty title
+      // would read as a section named with nothing.
+      const [question] = result.data.comments;
+      expect(question.sectionId).toBe('sec-1');
+      expect(question).not.toHaveProperty('sectionTitle');
+      expect(question).not.toHaveProperty('questionTitle');
     });
 
     it('fails on an offset past the end rather than returning an empty page', async () => {
@@ -448,6 +506,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: {},
         sectionIds: [],
       });
@@ -474,6 +533,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: {},
         sectionIds: [],
       });
@@ -509,6 +569,7 @@ describe('Assessment Tools', () => {
           comment('c-theirs', 'QUESTION', 'q-1', { author: { id: 'u-2', name: 'Someone' } }),
         ],
         questionTitles: { 'q-1': 'What data do you collect?' },
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: {},
         sectionIds: ['sec-1'],
       });
@@ -543,6 +604,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: {},
         sectionIds: [],
       });
@@ -570,6 +632,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: {},
         sectionIds: [],
       });
@@ -592,6 +655,7 @@ describe('Assessment Tools', () => {
       mockGraphql.listAssessmentQuestionComments.mockResolvedValue({
         nodes: [],
         questionTitles: {},
+        questionSections: { 'q-1': 'sec-1' },
         sectionTitles: {},
         sectionIds: [],
       });

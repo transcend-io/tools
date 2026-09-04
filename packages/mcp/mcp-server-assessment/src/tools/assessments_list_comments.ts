@@ -87,6 +87,21 @@ function byCreationThenId(a: AssessmentComment, b: AssessmentComment): number {
     : a.createdAt.localeCompare(b.createdAt);
 }
 
+/**
+ * Say what a comment sits on, leaving out whatever the form did not name.
+ * An untitled section is reported by its absence rather than as an empty
+ * string, which would read as a section titled with nothing.
+ */
+function describeTarget(
+  comment: AssessmentComment,
+  fields: Record<string, string | undefined>,
+): AssessmentComment {
+  return {
+    ...comment,
+    ...Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined)),
+  };
+}
+
 export function createAssessmentsListCommentsTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
   const { dashboardUrl } = clients;
@@ -174,18 +189,24 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
       }
 
       // Name what a comment sits on, so "which question is this about" does not
-      // cost a second call into the form.
+      // cost a second call into the form. Question rows name their section too:
+      // grouping feedback by section is a common enough ask, and the caller
+      // cannot derive it — a question comment holds no route back to a section.
       const page = matched.slice(offset, offset + limit).map((comment) => {
-        const title =
-          comment.level === 'QUESTION'
-            ? questions.questionTitles[comment.targetId]
-            : comment.level === 'SECTION'
-              ? questions.sectionTitles[comment.targetId]
-              : undefined;
-        if (title === undefined) return comment;
-        return comment.level === 'QUESTION'
-          ? { ...comment, questionTitle: title }
-          : { ...comment, sectionTitle: title };
+        if (comment.level === 'FORM') {
+          return comment;
+        }
+        if (comment.level === 'SECTION') {
+          return describeTarget(comment, {
+            sectionTitle: questions.sectionTitles[comment.targetId],
+          });
+        }
+        const sectionId = questions.questionSections[comment.targetId];
+        return describeTarget(comment, {
+          questionTitle: questions.questionTitles[comment.targetId],
+          sectionId,
+          sectionTitle: sectionId === undefined ? undefined : questions.sectionTitles[sectionId],
+        });
       });
 
       return createToolResult(true, {

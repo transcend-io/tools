@@ -45,8 +45,14 @@ carries none of the answer text that makes a full form read expensive. `authorId
 filter input on the form and section queries but not on that nested field, so the same match
 on author id is applied in the client for question comments.
 
-Each row names what it sits on: question comments carry `questionTitle` and section comments
-carry `sectionTitle`, so "which part of the form is this about" costs no second call. The
+Each row names what it sits on: section comments carry `sectionTitle`, and question comments
+carry `questionTitle` along with the `sectionId` and `sectionTitle` of the section holding
+them, so "which part of the form is this about" costs no second call. That last pair matters
+more than it looks: a question comment holds no route back to a section and neither does the
+question, so grouping feedback by section otherwise meant reading the form twice — once for
+the section list and again with every section expanded, pulling back all the question and
+answer text purely to rebuild an id-to-section lookup. The query behind question comments
+already selects the sections it walks through, so naming them costs nothing on the wire. The
 per-level breakdown is called `totalByLevel` rather than `byLevel` because it counts the
 whole filtered set, not the page — sitting beside `returned`, the shorter name read as a
 page breakdown, and a cold-read probe misread it that way.

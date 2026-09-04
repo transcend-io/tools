@@ -1008,6 +1008,8 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
     nodes: AssessmentComment[];
     /** Question title by question id, so a comment can name its question */
     questionTitles: Record<string, string>;
+    /** Section id by question id, so a question comment can name its section */
+    questionSections: Record<string, string>;
     /** Section title by section id, so a comment can name its section */
     sectionTitles: Record<string, string>;
     /** Sections of the form, so section comments can be read in the same pass */
@@ -1025,6 +1027,15 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         (question) => toComments(question.comments, 'QUESTION', question.id) ?? [],
       ),
       questionTitles: Object.fromEntries(questions.map((q) => [q.id, q.title])),
+      // This read is the only one that knows which section a question sits in:
+      // a question comment carries no route back to its section, and the
+      // question itself carries no reference to its parent. Dropping it here is
+      // what would make a caller expand every section to rebuild the mapping.
+      questionSections: Object.fromEntries(
+        sections.flatMap((section) =>
+          (section.questions ?? []).map((question) => [question.id, section.id]),
+        ),
+      ),
       sectionTitles: Object.fromEntries(
         sections.flatMap((section) => (section.title ? [[section.id, section.title]] : [])),
       ),
