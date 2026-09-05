@@ -24,6 +24,14 @@ export interface ShowCombinedLogsPorts {
   stdout: Pick<NodeJS.WriteStream, 'write'>;
 }
 
+/** Backwards-compatible overrides accepted by older callers. */
+export interface ShowCombinedLogsPortOverrides {
+  /** Read a UTF-8 log file from disk. */
+  readFile?: ShowCombinedLogsPorts['readFile'];
+  /** Write rendered output to the terminal. */
+  stdout?: ShowCombinedLogsPorts['stdout'];
+}
+
 const defaultPorts: ShowCombinedLogsPorts = {
   readFile: (path) => readFileSync(path, 'utf8'),
   stdout: process.stdout,
@@ -35,13 +43,13 @@ const defaultPorts: ShowCombinedLogsPorts = {
  * @param slotLogPaths - Map of worker IDs to their log file paths.
  * @param whichList - one or more sources to include (e.g., ['err','out'])
  * @param filterLevel - 'error', 'warn', or 'all' to filter log levels.
- * @param ports - Optional file and terminal operations.
+ * @param ports - File and terminal operations or legacy overrides.
  */
 export function showCombinedLogs(
   slotLogPaths: Map<number, WorkerLogPaths | undefined>,
   whichList: WhichLogs,
   filterLevel: 'error' | 'warn' | 'all',
-  ports: Partial<ShowCombinedLogsPorts> = {},
+  ports: ShowCombinedLogsPorts | ShowCombinedLogsPortOverrides = defaultPorts,
 ): void {
   const readFile = ports.readFile ?? defaultPorts.readFile;
   const stdout = ports.stdout ?? defaultPorts.stdout;

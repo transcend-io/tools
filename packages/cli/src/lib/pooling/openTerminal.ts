@@ -13,11 +13,14 @@ export interface OpenTerminalPorts {
   platform: typeof platform;
   /** Spawn a terminal process. */
   spawn: typeof spawn;
+  /** Report failures to open a terminal. */
+  logger?: Pick<typeof logger, 'error'>;
 }
 
-const defaultPorts: OpenTerminalPorts = {
+const defaultPorts: Required<OpenTerminalPorts> = {
   platform,
   spawn,
+  logger,
 };
 
 /**
@@ -49,6 +52,7 @@ export function openLogTailWindowMulti(
 
   // Determine the platform and execute the appropriate command
   const p = ports.platform();
+  const activeLogger = ports.logger ?? defaultPorts.logger;
   try {
     // For macOS, use AppleScript to open a new Terminal window
     // and tail the specified files
@@ -109,7 +113,7 @@ export function openLogTailWindowMulti(
         .unref();
     }
   } catch (e) {
-    logger.error(
+    activeLogger.error(
       colors.red(
         `Failed to open terminal window for tailing logs: ${
           e instanceof Error ? e.message : String(e)

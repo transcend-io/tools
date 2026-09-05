@@ -21,10 +21,14 @@ function renderHeader<TTotals>(ctx: CommonCtx<TTotals, ChunkSlotProgress>): stri
  * Worker rows for parquet-to-csv — share the generic row renderer.
  *
  * @param ctx - Dashboard context.
+ * @param now - Return the current Unix timestamp in milliseconds.
  * @returns Array of strings, each representing one worker row.
  */
-function renderWorkers<TTotals>(ctx: CommonCtx<TTotals, ChunkSlotProgress>): string[] {
-  return makeWorkerRows(ctx);
+function renderWorkers<TTotals>(
+  ctx: CommonCtx<TTotals, ChunkSlotProgress>,
+  now: () => number = Date.now,
+): string[] {
+  return makeWorkerRows(ctx, undefined, now);
 }
 
 export const parquetToCsvPlugin: DashboardPlugin<unknown, ChunkSlotProgress> = {

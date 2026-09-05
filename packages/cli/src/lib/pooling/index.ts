@@ -10,3 +10,4 @@ export * from './os.js';
 export * from './dashboardPlugin.js';
 export * from './uiPlugins.js';
 export * from './createExtraKeyHandler.js';
+export * from './poolingDependenciesFromContext.js';

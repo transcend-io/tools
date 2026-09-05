@@ -29,7 +29,7 @@ export interface DashboardPlugin<TTotals, TSlotState extends ObjByString> {
    * @param ctx - Context with pool/worker state, totals, and metadata.
    * @returns An array of strings, each representing one row in the workers section.
    */
-  renderWorkers: (ctx: CommonCtx<TTotals, TSlotState>) => string[];
+  renderWorkers: (ctx: CommonCtx<TTotals, TSlotState>, now?: () => number) => string[];
 
   /**
    * Render any optional extra blocks that appear after the worker rows.
@@ -116,12 +116,15 @@ export interface DashboardPorts {
   cursorTo: typeof readline.cursorTo;
   /** Clear terminal content below the cursor. */
   clearScreenDown: typeof readline.clearScreenDown;
+  /** Return the current Unix timestamp in milliseconds. */
+  now: () => number;
 }
 
 const defaultPorts: DashboardPorts = {
   stdout: process.stdout,
   cursorTo: readline.cursorTo,
   clearScreenDown: readline.clearScreenDown,
+  now: Date.now,
 };
 
 /** Most recently rendered frame per output stream, cached to suppress duplicate renders. */
@@ -177,7 +180,7 @@ export function dashboardPlugin<TTotals, TSlotState extends ObjByString>(
   const frame = [
     ...plugin.renderHeader(ctx),
     '',
-    ...plugin.renderWorkers(ctx),
+    ...plugin.renderWorkers(ctx, ports.now),
     ...(viewerMode ? [] : ['', hotkeysHint(ctx.poolSize, ctx.final)]),
     ...(plugin.renderExtras ? [''].concat(plugin.renderExtras(ctx)) : []),
   ].join('\n');

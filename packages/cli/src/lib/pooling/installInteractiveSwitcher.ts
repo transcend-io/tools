@@ -1,11 +1,15 @@
 import type { ChildProcess } from 'node:child_process';
+import { createReadStream, statSync } from 'node:fs';
 import * as readline from 'node:readline';
 
 import type { WorkerLogPaths } from '@transcend-io/utils';
 
 import { DEBUG } from '../../constants.js';
 import { keymap } from './keymap.js';
-import { replayFileTailToStdout } from './replayFileTailToStdout.js';
+import {
+  replayFileTailToStdout,
+  type ReplayFileTailToStdoutDependencies,
+} from './replayFileTailToStdout.js';
 import type { WhichLogs } from './showCombinedLogs.js';
 import { cycleWorkers, getWorkerIds } from './workerIds.js';
 
@@ -23,7 +27,20 @@ export interface SwitcherPorts {
   stderr: NodeJS.WriteStream;
   /** Enable keypress events on the input stream */
   emitKeypressEvents?: typeof readline.emitKeypressEvents;
+  /** File-system operations used to replay worker log tails. */
+  replayFileTailToStdoutDependencies?: ReplayFileTailToStdoutDependencies;
 }
+
+const defaultPorts: Required<SwitcherPorts> = {
+  stdin: process.stdin,
+  stdout: process.stdout,
+  stderr: process.stderr,
+  emitKeypressEvents: readline.emitKeypressEvents,
+  replayFileTailToStdoutDependencies: {
+    createReadStream,
+    statSync,
+  },
+};
 
 /**
  * Install an interactive switcher for managing worker processes.
@@ -60,17 +77,18 @@ export function installInteractiveSwitcher(opts: {
     replayBytes = 200 * 1024,
     replayWhich = ['out', 'err'],
     onEnterAttachScreen,
-    ports,
+    ports = defaultPorts,
   } = opts;
 
-  const stdin = ports?.stdin ?? process.stdin;
-  const stdout = ports?.stdout ?? process.stdout;
-  const stderr = ports?.stderr ?? process.stderr;
+  const { stdin, stdout, stderr } = ports;
+  const emitKeypressEvents = ports.emitKeypressEvents ?? defaultPorts.emitKeypressEvents;
+  const replayDependencies =
+    ports.replayFileTailToStdoutDependencies ?? defaultPorts.replayFileTailToStdoutDependencies;
 
   const d = (...a: unknown[]): void => {
     if (DEBUG) {
       try {
-        (ports?.stderr ?? process.stderr).write(`[keys] ${a.map(String).join(' ')}\n`);
+        stderr.write(`[keys] ${a.map(String).join(' ')}\n`);
       } catch {
         // noop
       }
@@ -84,7 +102,7 @@ export function installInteractiveSwitcher(opts: {
     };
   }
 
-  (ports?.emitKeypressEvents ?? readline.emitKeypressEvents)(stdin);
+  emitKeypressEvents(stdin);
   stdin.setRawMode?.(true);
 
   let mode: InteractiveDashboardMode = 'dashboard';
@@ -118,7 +136,7 @@ export function installInteractiveSwitcher(opts: {
       stdout.write('\n------------ replay ------------\n');
       for (const p of toReplay) {
         stdout.write(`\n--- ${p} (last ~${Math.floor(replayBytes / 1024)}KB) ---\n`);
-        await replayFileTailToStdout(p, replayBytes, (s) => stdout.write(s));
+        await replayFileTailToStdout(p, replayBytes, (s) => stdout.write(s), replayDependencies);
       }
       stdout.write('\n--------------------------------\n\n');
     }

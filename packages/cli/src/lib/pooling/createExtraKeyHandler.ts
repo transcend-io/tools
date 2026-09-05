@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
 
 import {
@@ -8,6 +10,20 @@ import {
 
 /** Severity filter applied by the viewer. */
 type ViewLevel = 'error' | 'warn' | 'all';
+
+/**
+ * Runtime operations used by the extra key handler.
+ */
+export interface CreateExtraKeyHandlerPorts extends ShowCombinedLogsPorts {
+  /** Return the current Unix timestamp in milliseconds. */
+  now: () => number;
+}
+
+const defaultPorts: CreateExtraKeyHandlerPorts = {
+  readFile: (path) => readFileSync(path, 'utf8'),
+  stdout: process.stdout,
+  now: Date.now,
+};
 
 /**
  * Options for {@link createExtraKeyHandler}.
@@ -54,10 +70,13 @@ export type CreateExtraKeyHandlerOpts = {
    */
   exportStatus?: ExportStatusMap;
 
-  /** Standard output used for viewer and export messages. */
+  /** Runtime operations used for log viewing, output, and timestamps. */
+  ports?: CreateExtraKeyHandlerPorts;
+
+  /** @deprecated Pass a complete `ports` object instead. */
   stdout?: ShowCombinedLogsPorts['stdout'];
 
-  /** Return the current Unix timestamp in milliseconds. */
+  /** @deprecated Pass a complete `ports` object instead. */
   now?: () => number;
 
   /**
@@ -119,19 +138,19 @@ export type CreateExtraKeyHandlerOpts = {
  * @returns A `(buf: Buffer) => void` handler suitable for `process.stdin.on('data', ...)`.
  */
 export function createExtraKeyHandler(opts: CreateExtraKeyHandlerOpts): (buf: Buffer) => void {
-  const {
-    logsBySlot,
-    repaint,
-    setPaused,
-    exportMgr,
-    exportStatus,
-    stdout = process.stdout,
-    now = Date.now,
-    custom,
-  } = opts;
+  const { logsBySlot, repaint, setPaused, exportMgr, exportStatus, ports, stdout, now, custom } =
+    opts;
+  const runtimePorts =
+    ports ??
+    ({
+      ...defaultPorts,
+      stdout: stdout ?? defaultPorts.stdout,
+      now: now ?? defaultPorts.now,
+    } satisfies CreateExtraKeyHandlerPorts);
+  const { now: runtimeNow, stdout: runtimeStdout } = runtimePorts;
 
   const say = (s: string): void => {
-    stdout.write(`${s}\n`);
+    runtimeStdout.write(`${s}\n`);
   };
 
   /**
@@ -142,12 +161,10 @@ export function createExtraKeyHandler(opts: CreateExtraKeyHandlerOpts): (buf: Bu
    * @param p - Absolute path to the exported file.
    */
   const noteExport = (slot: keyof ExportStatusMap, p: string): void => {
-    const savedAt = now();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const cur: any = exportStatus?.[slot] ?? { path: p };
+    const savedAt = runtimeNow();
     if (exportStatus) {
       exportStatus[slot] = {
-        path: p || cur.path,
+        path: p || exportStatus[slot]?.path || '',
         savedAt,
         exported: true,
       };
@@ -170,12 +187,12 @@ export function createExtraKeyHandler(opts: CreateExtraKeyHandlerOpts): (buf: Bu
     setPaused(true);
 
     // optional UX: clear screen and show a hint
-    stdout.write('\x1b[2J\x1b[H'); // clear+home
-    stdout.write('Combined logs viewer (press Esc or Ctrl+] to return)\n\n');
+    runtimeStdout.write('\x1b[2J\x1b[H'); // clear+home
+    runtimeStdout.write('Combined logs viewer (press Esc or Ctrl+] to return)\n\n');
 
     (async () => {
       try {
-        await showCombinedLogs(logsBySlot, sources, level, { stdout });
+        await showCombinedLogs(logsBySlot, sources, level, runtimePorts);
         // NOTE: do NOT unpause here; ESC will handle it.
       } catch {
         // If showCombinedLogs throws, recover and unpause

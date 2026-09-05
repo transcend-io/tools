@@ -112,12 +112,14 @@ export function makeHeader<TTotals, TSlot extends ObjByString>(
  *
  * @param ctx - Dashboard context (slot progress type must have processed/total?).
  * @param getFileLabel - Optional: override how the filename is shown.
+ * @param now - Return the current Unix timestamp in milliseconds.
  * @returns Array of strings, each representing one worker row.
  */
 export function makeWorkerRows<TTotals, TSlot extends Omit<ChunkSlotProgress, 'filePath'>>(
   ctx: CommonCtx<TTotals, TSlot>,
   getFileLabel: (file: string | null | undefined) => string = (file) =>
     file ? basename(file) : '-',
+  now: () => number = Date.now,
 ): string[] {
   const miniWidth = 18;
 
@@ -132,7 +134,7 @@ export function makeWorkerRows<TTotals, TSlot extends Omit<ChunkSlotProgress, 'f
             : colors.dim('IDLE   ');
 
     const fname = getFileLabel(s.file);
-    const elapsed = s.startedAt ? `${Math.floor((Date.now() - s.startedAt) / 1000)}s` : '-';
+    const elapsed = s.startedAt ? `${Math.floor((now() - s.startedAt) / 1000)}s` : '-';
 
     const processed = s.progress?.processed ?? 0;
     const total = s.progress?.total ?? 0;

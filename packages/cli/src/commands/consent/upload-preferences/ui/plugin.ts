@@ -236,10 +236,14 @@ function renderHeader(ctx: CommonCtx<AnyTotals, UploadPreferencesSlotProgress>):
  * Render per-worker rows (one line per slot) using the common row builder.
  *
  * @param ctx - Dashboard context with live slot state.
+ * @param now - Return the current Unix timestamp in milliseconds.
  * @returns Worker row strings.
  */
-function renderWorkers(ctx: CommonCtx<AnyTotals, UploadPreferencesSlotProgress>): string[] {
-  return makeWorkerRows(ctx);
+function renderWorkers(
+  ctx: CommonCtx<AnyTotals, UploadPreferencesSlotProgress>,
+  now: () => number = Date.now,
+): string[] {
+  return makeWorkerRows(ctx, undefined, now);
 }
 
 /**
