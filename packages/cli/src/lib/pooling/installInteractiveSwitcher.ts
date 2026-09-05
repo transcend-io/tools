@@ -21,6 +21,8 @@ export interface SwitcherPorts {
   stdout: NodeJS.WriteStream;
   /** Standard error stream */
   stderr: NodeJS.WriteStream;
+  /** Enable keypress events on the input stream */
+  emitKeypressEvents?: typeof readline.emitKeypressEvents;
 }
 
 /**
@@ -82,7 +84,7 @@ export function installInteractiveSwitcher(opts: {
     };
   }
 
-  readline.emitKeypressEvents(stdin);
+  (ports?.emitKeypressEvents ?? readline.emitKeypressEvents)(stdin);
   stdin.setRawMode?.(true);
 
   let mode: InteractiveDashboardMode = 'dashboard';

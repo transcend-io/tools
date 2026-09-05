@@ -1,3 +1,4 @@
+import { once } from 'node:events';
 import {
   mkdirSync as _mkdirSync,
   createWriteStream as _createWriteStream,
@@ -9,32 +10,25 @@ import { basename, join } from 'node:path';
 /* eslint-disable max-lines */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Import SUT and the mocked fs fns AFTER the mock above
-import { exportCombinedLogs } from '../exportCombinedLogs.js';
+import { exportCombinedLogs, type ExportCombinedLogsDependencies } from '../exportCombinedLogs.js';
 
 /**
- * Mock fs BEFORE importing the SUT.
- * We provide controlled behaviors for mkdirSync, createWriteStream,
- * createReadStream, and statSync so we can assert output deterministically.
- *
- * NOTE: Use an inline mock factory (no external variables) to avoid Vitest hoisting issues.
- */
-vi.mock('node:fs', () => ({
-  mkdirSync: vi.fn(),
-  createWriteStream: vi.fn(),
-  createReadStream: vi.fn(),
-  statSync: vi.fn(),
-}));
-
-/**
- * A typed wrapper around the mocked fs functions so the rest of the test can
- * continue to use `fsMocks.*` with full intellisense and type inference.
+ * File-system fakes passed directly to the function under test.
  */
 const fsMocks = {
-  mkdirSync: vi.mocked(_mkdirSync),
-  createWriteStream: vi.mocked(_createWriteStream),
-  createReadStream: vi.mocked(_createReadStream),
-  statSync: vi.mocked(_statSync),
+  mkdirSync: vi.fn<typeof _mkdirSync>(),
+  createWriteStream: vi.fn<typeof _createWriteStream>(),
+  createReadStream: vi.fn<typeof _createReadStream>(),
+  statSync: vi.fn<typeof _statSync>(),
+};
+const dependencies: ExportCombinedLogsDependencies = {
+  basename,
+  createReadStream: fsMocks.createReadStream,
+  createWriteStream: fsMocks.createWriteStream,
+  join,
+  mkdirSync: fsMocks.mkdirSync,
+  once,
+  statSync: fsMocks.statSync as ExportCombinedLogsDependencies['statSync'],
 };
 
 /**
@@ -248,6 +242,8 @@ describe('exportCombinedLogs', () => {
       slots as any,
       'info',
       outDir,
+      undefined,
+      dependencies,
     );
 
     expect(fsMocks.mkdirSync).toHaveBeenCalledWith(outDir, { recursive: true });
@@ -287,6 +283,7 @@ describe('exportCombinedLogs', () => {
       'all',
       '/logs',
       'custom.log',
+      dependencies,
     ).then(() => getWritten());
 
     expect(text).toContain('==== worker 1 ====');
@@ -325,6 +322,8 @@ describe('exportCombinedLogs', () => {
       new Map([[1, slots.get(1)]]) as any,
       'error',
       '/logs',
+      undefined,
+      dependencies,
     );
     const tErr = getWritten();
     expect(tErr).toContain(`(${basename('/err.log')})`);
@@ -336,6 +335,8 @@ describe('exportCombinedLogs', () => {
       new Map([[2, slots.get(2)]]) as any,
       'warn',
       '/logs',
+      undefined,
+      dependencies,
     );
     const tWarn = getWritten();
     // Our fake fs has no '/warn.log' content → statSync throws → should write [unavailable: path]
@@ -348,6 +349,8 @@ describe('exportCombinedLogs', () => {
       new Map([[3, slots.get(3)]]) as any,
       'info',
       '/logs',
+      undefined,
+      dependencies,
     );
     const tInfo = getWritten();
     expect(tInfo).toContain(`(${basename('/out.log')})`);
@@ -371,6 +374,8 @@ describe('exportCombinedLogs', () => {
       slots as any,
       'info',
       '/logs',
+      undefined,
+      dependencies,
     );
 
     const text = getWritten();
@@ -391,6 +396,8 @@ describe('exportCombinedLogs', () => {
       slots as any,
       'info',
       '/logs',
+      undefined,
+      dependencies,
     );
 
     const text = getWritten();
@@ -410,6 +417,8 @@ describe('exportCombinedLogs', () => {
       slots as any,
       'info',
       '/logs',
+      undefined,
+      dependencies,
     );
 
     const text = getWritten();
