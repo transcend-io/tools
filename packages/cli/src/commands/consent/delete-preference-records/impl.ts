@@ -140,6 +140,7 @@ export async function deletePreferenceRecords(
         timestamp,
         maxItemsInChunk,
         maxConcurrency,
+        logger: this.logger,
       });
       globalProgressBar.increment();
       return result;
