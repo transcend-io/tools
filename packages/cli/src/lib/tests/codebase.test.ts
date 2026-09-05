@@ -7,6 +7,7 @@ import {
   type Application,
   type CommandContext,
 } from '@stricli/core';
+import ts from 'typescript';
 import { describe, expect, test } from 'vitest';
 
 import { app } from '../../app.js';
@@ -138,6 +139,64 @@ describe('CLI Command Structure', () => {
       },
       30_000,
     );
+  });
+
+  describe('Command implementations use LocalContext dependencies', () => {
+    test('No command implementation reaches into runtime globals', () => {
+      const violations: string[] = [];
+
+      for (const command of allCommands) {
+        const implFile = path.join('src', 'commands', ...command, 'impl.ts');
+        const sourceText = fs.readFileSync(implFile, 'utf8');
+        const sourceFile = ts.createSourceFile(
+          implFile,
+          sourceText,
+          ts.ScriptTarget.Latest,
+          true,
+          ts.ScriptKind.TS,
+        );
+
+        /**
+         * Visit a syntax node and record forbidden runtime dependencies.
+         *
+         * @param node - Current TypeScript syntax node.
+         */
+        const visit = (node: ts.Node): void => {
+          if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+            const moduleName = node.moduleSpecifier.text;
+            if (
+              moduleName === 'fs' ||
+              moduleName === 'node:fs' ||
+              moduleName.startsWith('node:fs/') ||
+              moduleName === 'os' ||
+              moduleName === 'node:os' ||
+              moduleName === 'path' ||
+              moduleName === 'node:path' ||
+              moduleName.endsWith('/logger.js')
+            ) {
+              violations.push(`${implFile}: imports ${moduleName}`);
+            }
+          }
+
+          if (ts.isIdentifier(node) && node.text === 'process') {
+            const isContextProperty =
+              ts.isPropertyAccessExpression(node.parent) &&
+              node.parent.name === node &&
+              node.parent.expression.kind === ts.SyntaxKind.ThisKeyword;
+            if (!isContextProperty) {
+              const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+              violations.push(`${implFile}:${position.line + 1}: uses global process`);
+            }
+          }
+
+          ts.forEachChild(node, visit);
+        };
+
+        visit(sourceFile);
+      }
+
+      expect(violations).toEqual([]);
+    });
   });
 
   describe('Non-leaf nodes have routes.ts', () => {
