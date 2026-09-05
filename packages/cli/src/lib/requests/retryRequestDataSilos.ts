@@ -61,10 +61,14 @@ export async function retryRequestDataSilos(
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Compiling, RequestStatus.Approving],
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses: [RequestStatus.Compiling, RequestStatus.Approving],
+    },
+    { logger: dependencies.logger },
+  );
 
   // Notify Transcend
   dependencies.logger.info(

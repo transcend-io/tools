@@ -1,7 +1,6 @@
 import path from 'node:path';
 import process from 'node:process';
 
-import { PersistedState } from '@transcend-io/persisted-state';
 import {
   RequestAction,
   RequestStatus,
@@ -24,6 +23,7 @@ import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests } from '../graphql/index.js';
 import { SuccessfulRequest } from './constants.js';
+import { createPersistedState, type CreatePersistedState } from './createPersistedState.js';
 import { extractClientError } from './extractClientError.js';
 import { restartPrivacyRequest } from './restartPrivacyRequest.js';
 
@@ -46,6 +46,8 @@ const CachedRequestState = t.type({
 
 /** Runtime dependencies used while restarting privacy requests. */
 export interface BulkRestartRequestsDependencies {
+  /** Factory used to create persisted restart receipt state. */
+  readonly createPersistedState: CreatePersistedState;
   /** Logger used for request and error output. */
   readonly logger: CliLogger;
   /** Path implementation used to construct receipt paths. */
@@ -55,6 +57,7 @@ export interface BulkRestartRequestsDependencies {
 }
 
 const defaultDependencies: BulkRestartRequestsDependencies = {
+  createPersistedState,
   logger,
   path,
   process,
@@ -142,7 +145,7 @@ export async function bulkRestartRequests(
     requestReceiptFolder,
     `tr-request-restart-${new Date().toISOString().replace(/:/g, '-')}.json`,
   );
-  const state = new PersistedState(cacheFile, CachedRequestState, {
+  const state = dependencies.createPersistedState(cacheFile, CachedRequestState, {
     restartedRequests: [],
     failingRequests: [],
   });
@@ -156,15 +159,19 @@ export async function bulkRestartRequests(
 
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
-  const allRequests = await fetchAllRequests(client, {
-    requestIds,
-    actions: requestActions,
-    statuses: requestStatuses,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      requestIds,
+      actions: requestActions,
+      statuses: requestStatuses,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+    },
+    { logger: dependencies.logger },
+  );
   const requests = allRequests.filter((request) => new Date(request.createdAt) < createdAt);
   dependencies.logger.info(`Found ${requests.length} requests to restart`);
 

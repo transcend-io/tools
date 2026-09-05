@@ -1,16 +1,26 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
 import type { AttributeKey } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
-import inquirer from 'inquirer';
 
 import { CachedFileState } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
+import { prompt, type RequestPrompt } from './prompt.js';
 
 /**
  * Mapping from attribute name to request input parameter
  */
 export type AttributeNameMap = {
   [k in string]: string;
+};
+
+/** Runtime dependencies used while mapping attribute columns. */
+export interface MapColumnsToAttributesDependencies {
+  /** Prompt capability used to collect attribute mappings. */
+  readonly prompt: RequestPrompt;
+}
+
+const defaultDependencies: MapColumnsToAttributesDependencies = {
+  prompt,
 };
 
 /**
@@ -22,6 +32,7 @@ export type AttributeNameMap = {
  * @param columnNames - The set of all column names
  * @param state - Cached state of this mapping
  * @param requestAttributeKeys - Attribute keys to map
+ * @param dependencies - Runtime dependencies.
  * @returns Mapping from attributes name to column name
  */
 export async function mapColumnsToAttributes(
@@ -29,6 +40,7 @@ export async function mapColumnsToAttributes(
   columnNames: string[],
   state: PersistedState<typeof CachedFileState>,
   requestAttributeKeys: AttributeKey[],
+  dependencies: MapColumnsToAttributesDependencies = defaultDependencies,
 ): Promise<AttributeNameMap> {
   // Determine the columns that should be mapped
   const columnQuestions = requestAttributeKeys.filter(
@@ -40,7 +52,7 @@ export async function mapColumnsToAttributes(
     columnQuestions.length === 0
       ? {}
       : // prompt questions to map columns
-        await inquirer.prompt<{
+        await dependencies.prompt<{
           [k in string]: string;
         }>(
           columnQuestions.map(({ name }) => {

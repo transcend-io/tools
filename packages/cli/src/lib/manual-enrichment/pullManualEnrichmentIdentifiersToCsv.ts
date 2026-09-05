@@ -90,10 +90,14 @@ export async function pullManualEnrichmentIdentifiersToCsv(
   );
 
   // Pull all privacy requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Enriching],
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses: [RequestStatus.Enriching],
+    },
+    { logger: dependencies.logger },
+  );
 
   await validateSombraVersion(client, { logger: dependencies.logger });
 

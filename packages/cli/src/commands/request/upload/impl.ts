@@ -2,7 +2,11 @@ import { splitCsvToList } from '@transcend-io/utils';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { uploadPrivacyRequestsFromCsv } from '../../../lib/requests/index.js';
+import {
+  createPersistedState,
+  prompt,
+  uploadPrivacyRequestsFromCsv,
+} from '../../../lib/requests/index.js';
 
 export interface UploadCommandFlags {
   auth: string;
@@ -66,10 +70,12 @@ export async function upload(
       dryRun,
     },
     {
+      createPersistedState,
       fs: this.fs,
       logger: this.logger,
       path: this.path,
       ['process']: this.process,
+      prompt,
     },
   );
 }

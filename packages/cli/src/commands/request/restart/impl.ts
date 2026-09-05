@@ -6,7 +6,7 @@ import type {
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { bulkRestartRequests } from '../../../lib/requests/index.js';
+import { bulkRestartRequests, createPersistedState } from '../../../lib/requests/index.js';
 
 export interface RestartCommandFlags {
   auth: string;
@@ -79,6 +79,7 @@ export async function restart(
       transcendUrl,
     },
     {
+      createPersistedState,
       logger: this.logger,
       path: this.path,
       ['process']: this.process,

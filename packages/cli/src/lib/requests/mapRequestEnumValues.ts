@@ -17,15 +17,19 @@ import { CachedFileState, NONE, ColumnName } from './constants.js';
 import { getUniqueValuesForColumn } from './getUniqueValuesForColumn.js';
 import { ColumnNameMap } from './mapCsvColumnsToApi.js';
 import { mapEnumValues } from './mapEnumValues.js';
+import { prompt, type RequestPrompt } from './prompt.js';
 
 /** Runtime dependencies used while mapping request enum values. */
 export interface MapRequestEnumValuesDependencies {
   /** Logger used for mapping status and GraphQL output. */
   readonly logger: CliLogger;
+  /** Prompt capability used to collect enum mappings. */
+  readonly prompt: RequestPrompt;
 }
 
 const defaultDependencies: MapRequestEnumValuesDependencies = {
   logger,
+  prompt,
 };
 
 /**
@@ -66,6 +70,7 @@ export async function mapRequestEnumValues(
     getUniqueValuesForColumn(requests, getMappedName(ColumnName.RequestType)),
     Object.values(RequestAction),
     state.getValue('requestTypeToRequestAction'),
+    { prompt: dependencies.prompt },
   );
   await state.setValue(requestTypeToRequestAction, 'requestTypeToRequestAction');
 
@@ -75,6 +80,7 @@ export async function mapRequestEnumValues(
     getUniqueValuesForColumn(requests, getMappedName(ColumnName.SubjectType)),
     internalSubjects.map(({ type }) => type),
     state.getValue('subjectTypeToSubjectName'),
+    { prompt: dependencies.prompt },
   );
   await state.setValue(subjectTypeToSubjectName, 'subjectTypeToSubjectName');
 
@@ -84,6 +90,7 @@ export async function mapRequestEnumValues(
     getUniqueValuesForColumn(requests, getMappedName(ColumnName.Locale)),
     Object.values(LOCALE_KEY),
     state.getValue('languageToLocale'),
+    { prompt: dependencies.prompt },
   );
   await state.setValue(languageToLocale, 'languageToLocale');
   dependencies.logger.info(colors.magenta('Determining mapping of columns for request status'));
@@ -100,6 +107,7 @@ export async function mapRequestEnumValues(
           getUniqueValuesForColumn(requests, requestStatusColumn),
           [...Object.values(CompletedRequestStatus), NONE],
           state.getValue('statusToRequestStatus'),
+          { prompt: dependencies.prompt },
         );
   await state.setValue(statusToRequestStatus, 'statusToRequestStatus');
 
@@ -115,6 +123,7 @@ export async function mapRequestEnumValues(
           getUniqueValuesForColumn(requests, countryColumn),
           [...Object.values(IsoCountryCode), NONE],
           state.getValue('regionToCountry'),
+          { prompt: dependencies.prompt },
         );
   await state.setValue(regionToCountry, 'regionToCountry');
 
@@ -132,6 +141,7 @@ export async function mapRequestEnumValues(
           getUniqueValuesForColumn(requests, countrySubDivisionColumn),
           [...Object.values(IsoCountrySubdivisionCode), NONE],
           state.getValue('regionToCountrySubDivision'),
+          { prompt: dependencies.prompt },
         );
   await state.setValue(regionToCountrySubDivision, 'regionToCountrySubDivision');
 }

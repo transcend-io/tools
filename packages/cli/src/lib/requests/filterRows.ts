@@ -1,21 +1,24 @@
 import { ObjByString } from '@transcend-io/type-utils';
 import colors from 'colors';
-import inquirer from 'inquirer';
 import { uniq } from 'lodash-es';
 
 import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { NONE } from './constants.js';
 import { getUniqueValuesForColumn } from './getUniqueValuesForColumn.js';
+import { prompt, type RequestPrompt } from './prompt.js';
 
 /** Runtime dependencies used while filtering request rows. */
 export interface FilterRowsDependencies {
   /** Logger used to report the number of selected rows. */
   readonly logger: CliLogger;
+  /** Prompt capability used to select row filters. */
+  readonly prompt: RequestPrompt;
 }
 
 const defaultDependencies: FilterRowsDependencies = {
   logger,
+  prompt,
 };
 
 /**
@@ -41,7 +44,7 @@ export async function filterRows(
   while (keepFiltering) {
     // Prompt user for column to filter on
 
-    const { filterColumnName } = await inquirer.prompt<{
+    const { filterColumnName } = await dependencies.prompt<{
       /** Name of column to filter on */
       filterColumnName: string;
     }>([
@@ -60,7 +63,7 @@ export async function filterRows(
     if (keepFiltering) {
       const options = getUniqueValuesForColumn(filteredRows, filterColumnName);
 
-      const { valuesToKeep } = await inquirer.prompt<{
+      const { valuesToKeep } = await dependencies.prompt<{
         /** Values to keep  */
         valuesToKeep: string[];
       }>([

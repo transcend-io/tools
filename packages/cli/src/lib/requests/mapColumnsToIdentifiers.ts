@@ -1,12 +1,12 @@
 import type { PersistedState } from '@transcend-io/persisted-state';
 import { INITIALIZER, type Initializer, makeGraphQLRequest } from '@transcend-io/sdk';
 import type { GraphQLClient } from 'graphql-request';
-import inquirer from 'inquirer';
 
 import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { CachedFileState, IDENTIFIER_BLOCK_LIST } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
+import { prompt, type RequestPrompt } from './prompt.js';
 
 /**
  * Mapping from identifier name to request input parameter
@@ -19,10 +19,13 @@ export type IdentifierNameMap = {
 export interface MapColumnsToIdentifiersDependencies {
   /** Logger forwarded to GraphQL requests. */
   readonly logger: CliLogger;
+  /** Prompt capability used to collect identifier mappings. */
+  readonly prompt: RequestPrompt;
 }
 
 const defaultDependencies: MapColumnsToIdentifiersDependencies = {
   logger,
+  prompt,
 };
 
 /**
@@ -58,7 +61,7 @@ export async function mapColumnsToIdentifiers(
     columnQuestions.length === 0
       ? {}
       : // prompt questions to map columns
-        await inquirer.prompt<{
+        await dependencies.prompt<{
           [k in string]: string;
         }>(
           columnQuestions.map(({ name }) => {

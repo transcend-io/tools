@@ -95,16 +95,20 @@ export async function notifyPrivacyRequestsAdditionalTime(
   }
 
   // Pull in the requests
-  let allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    isSilent: false,
-    isClosed: false,
-    requestIds,
-  });
+  let allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      isSilent: false,
+      isClosed: false,
+      requestIds,
+    },
+    { logger: dependencies.logger },
+  );
 
   // Filter requests by daysLeft
   allRequests = allRequests.filter(

@@ -102,9 +102,15 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers(
 
   let totalRequestCount = 0;
   if (!skipRequestCount) {
-    totalRequestCount = await fetchRequestDataSiloActiveCount(client, {
-      dataSiloId,
-    });
+    totalRequestCount = await fetchRequestDataSiloActiveCount(
+      client,
+      {
+        dataSiloId,
+      },
+      {
+        logger: dependencies.logger,
+      },
+    );
   }
 
   dependencies.logger.info(

@@ -103,15 +103,19 @@ export async function downloadPrivacyRequestFiles(
   }
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: [RequestAction.Access],
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    statuses,
-    requestIds,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: [RequestAction.Access],
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      statuses,
+      requestIds,
+    },
+    { logger: dependencies.logger },
+  );
 
   // Download the file metadata for each request
   const requestFileMetadata = await getFileMetadataForPrivacyRequests(

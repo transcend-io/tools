@@ -1,7 +1,7 @@
 import fuzzysearch from 'fuzzysearch';
-import inquirer from 'inquirer';
 
 import { NONE, BULK_APPLY } from './constants.js';
+import { PROMPT_SEPARATOR, type PromptChoice } from './prompt.js';
 
 /**
  * Check if word1 and word2 are a fuzzy match of each other.
@@ -25,20 +25,20 @@ export function fuzzySearch(word1: string, word2: string): boolean {
  * @param fuzzyMapName - The name of field being mapped to
  * @param isRequired - When true, don't include "NONE" as an option
  * @param canApplyAll - When true, include an option to specify the value in bulk
- * @returns The list of suggestions for inquirer
+ * @returns The list of prompt suggestions
  */
 export function fuzzyMatchColumns(
   allColumnNames: string[],
   fuzzyMapName: string,
   isRequired: boolean,
   canApplyAll?: boolean,
-): (string | InstanceType<typeof inquirer.Separator>)[] {
+): PromptChoice[] {
   const matchingColumnNames = allColumnNames.filter((x) =>
     fuzzySearch(fuzzyMapName.toLowerCase(), x.toLowerCase()),
   );
   return [
     ...matchingColumnNames,
-    new inquirer.Separator(),
+    PROMPT_SEPARATOR,
     ...(isRequired ? [] : [NONE]),
     ...(canApplyAll ? [BULK_APPLY] : []),
     ...allColumnNames.filter((x) => !matchingColumnNames.includes(x)),

@@ -111,15 +111,19 @@ export async function cancelPrivacyRequests(
   }
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    statuses,
-    requestIds,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      statuses,
+      requestIds,
+    },
+    { logger: dependencies.logger },
+  );
 
   // Notify Transcend
   dependencies.logger.info(

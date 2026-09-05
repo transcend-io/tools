@@ -84,15 +84,19 @@ export async function bulkRetryEnrichers(
 
   dependencies.logger.info(colors.magenta('Fetching requests to restart...'));
 
-  const requests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Enriching],
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    requestIds,
-  });
+  const requests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses: [RequestStatus.Enriching],
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      requestIds,
+    },
+    { logger: dependencies.logger },
+  );
 
   let totalRestarted = 0;
 

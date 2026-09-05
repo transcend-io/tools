@@ -159,7 +159,9 @@ export async function streamPrivacyRequestsToCsv(
     await validateSombraVersion(client, { logger: dependencies.logger });
   }
 
-  const totalExpected = await fetchRequestsTotalCount(client, filterBy);
+  const totalExpected = await fetchRequestsTotalCount(client, filterBy, {
+    logger: dependencies.logger,
+  });
   dependencies.logger.info(colors.magenta(`Fetching ${totalExpected} requests`));
 
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
@@ -194,48 +196,52 @@ export async function streamPrivacyRequestsToCsv(
       let rowCount = 0;
 
       try {
-        await fetchAllRequests(client, {
-          actions,
-          text: identifierSearch,
-          statuses,
-          createdAtBefore: chunk.createdAtBefore,
-          createdAtAfter: chunk.createdAtAfter,
-          updatedAtBefore,
-          updatedAtAfter,
-          isTest,
-          onPage: async (nodes) => {
-            if (nodes.length === 0) return;
+        await fetchAllRequests(
+          client,
+          {
+            actions,
+            text: identifierSearch,
+            statuses,
+            createdAtBefore: chunk.createdAtBefore,
+            createdAtAfter: chunk.createdAtAfter,
+            updatedAtBefore,
+            updatedAtAfter,
+            isTest,
+            onPage: async (nodes) => {
+              if (nodes.length === 0) return;
 
-            // Optionally enrich each request with its identifiers
-            const enriched: ExportedPrivacyRequest[] = skipRequestIdentifiers
-              ? nodes.map((n) => ({ ...n, requestIdentifiers: [] }))
-              : await map(
-                  nodes,
-                  async (n) => ({
-                    ...n,
-                    requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
-                      filterBy: { requestId: n.id },
-                      skipSombraCheck: true,
-                      logger: dependencies.logger,
+              // Optionally enrich each request with its identifiers
+              const enriched: ExportedPrivacyRequest[] = skipRequestIdentifiers
+                ? nodes.map((n) => ({ ...n, requestIdentifiers: [] }))
+                : await map(
+                    nodes,
+                    async (n) => ({
+                      ...n,
+                      requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
+                        filterBy: { requestId: n.id },
+                        skipSombraCheck: true,
+                        logger: dependencies.logger,
+                      }),
                     }),
-                  }),
-                  { concurrency: pageLimit },
-                );
+                    { concurrency: pageLimit },
+                  );
 
-            const rows: Record<string, string | null | number | boolean>[] =
-              enriched.map(formatRequestForCsv);
+              const rows: Record<string, string | null | number | boolean>[] =
+                enriched.map(formatRequestForCsv);
 
-            if (!headers) {
-              headers = uniq(rows.map((r: Record<string, unknown>) => Object.keys(r)).flat());
-              initCsvFile(chunkFile, headers, { fs: dependencies.fs });
-            }
+              if (!headers) {
+                headers = uniq(rows.map((r: Record<string, unknown>) => Object.keys(r)).flat());
+                initCsvFile(chunkFile, headers, { fs: dependencies.fs });
+              }
 
-            appendCsvRowsOrdered(chunkFile, rows, headers, { fs: dependencies.fs });
-            rowCount += rows.length;
-            globalFetched += rows.length;
-            progressBar.update(globalFetched);
+              appendCsvRowsOrdered(chunkFile, rows, headers, { fs: dependencies.fs });
+              rowCount += rows.length;
+              globalFetched += rows.length;
+              progressBar.update(globalFetched);
+            },
           },
-        });
+          { logger: dependencies.logger },
+        );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         dependencies.logger.error(

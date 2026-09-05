@@ -75,15 +75,19 @@ export async function approvePrivacyRequests(
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Approving],
-    createdAtAfter,
-    createdAtBefore,
-    updatedAtBefore,
-    updatedAtAfter,
-    origins: requestOrigins,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses: [RequestStatus.Approving],
+      createdAtAfter,
+      createdAtBefore,
+      updatedAtBefore,
+      updatedAtAfter,
+      origins: requestOrigins,
+    },
+    { logger: dependencies.logger },
+  );
 
   // Notify Transcend
   dependencies.logger.info(colors.magenta(`Approving "${allRequests.length}" requests.`));

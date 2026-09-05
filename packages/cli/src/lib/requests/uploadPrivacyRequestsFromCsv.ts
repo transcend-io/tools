@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
-import { PersistedState } from '@transcend-io/persisted-state';
 import {
   buildTranscendGraphQLClient,
   createSombraGotInstance,
@@ -19,6 +18,7 @@ import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { CachedRequestState, CachedFileState } from './constants.js';
+import { createPersistedState, type CreatePersistedState } from './createPersistedState.js';
 import { extractClientError } from './extractClientError.js';
 import { filterRows } from './filterRows.js';
 import { mapColumnsToAttributes } from './mapColumnsToAttributes.js';
@@ -27,11 +27,14 @@ import { mapCsvColumnsToApi } from './mapCsvColumnsToApi.js';
 import { mapCsvRowsToRequestInputs } from './mapCsvRowsToRequestInputs.js';
 import { mapRequestEnumValues } from './mapRequestEnumValues.js';
 import { parseAttributesFromString } from './parseAttributesFromString.js';
+import { prompt, type RequestPrompt } from './prompt.js';
 import { readCsv } from './readCsv.js';
 import { submitPrivacyRequest } from './submitPrivacyRequest.js';
 
 /** Runtime dependencies used while uploading privacy requests. */
 export interface UploadPrivacyRequestsFromCsvDependencies {
+  /** Factory used to create persisted mapping and receipt state. */
+  readonly createPersistedState: CreatePersistedState;
   /** Filesystem implementation used to read the source CSV. */
   readonly fs: typeof fs;
   /** Logger used for status and error output. */
@@ -40,13 +43,17 @@ export interface UploadPrivacyRequestsFromCsvDependencies {
   readonly path: typeof path;
   /** Process implementation used for environment and exit handling. */
   readonly process: NodeJS.Process;
+  /** Prompt capability used for interactive CSV mapping. */
+  readonly prompt: RequestPrompt;
 }
 
 const defaultDependencies: UploadPrivacyRequestsFromCsvDependencies = {
+  createPersistedState,
   fs,
   logger,
   path,
   process,
+  prompt,
 };
 
 /**
@@ -121,7 +128,7 @@ export async function uploadPrivacyRequestsFromCsv(
 
   // Create a new state to persist the metadata that
   // maps the request inputs to the Transcend API shape
-  const state = new PersistedState(cacheFilepath, CachedFileState, {
+  const state = dependencies.createPersistedState(cacheFilepath, CachedFileState, {
     columnNames: {},
     requestTypeToRequestAction: {},
     subjectTypeToSubjectName: {},
@@ -143,7 +150,7 @@ export async function uploadPrivacyRequestsFromCsv(
       .toISOString()
       .replace(/:/g, '-')}-${file.split('/').pop()}`.replace('.csv', '.json'),
   );
-  const requestState = new PersistedState(requestCacheFile, CachedRequestState, {
+  const requestState = dependencies.createPersistedState(requestCacheFile, CachedRequestState, {
     successfulRequests: [],
     duplicateRequests: [],
     failingRequests: [],
@@ -178,7 +185,10 @@ export async function uploadPrivacyRequestsFromCsv(
   // Choose columns that contain metadata to filter the requests
   const filteredRequestList = skipFilterStep
     ? requestsList
-    : await filterRows(requestsList, { logger: dependencies.logger });
+    : await filterRows(requestsList, {
+        logger: dependencies.logger,
+        prompt: dependencies.prompt,
+      });
 
   // Build a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
@@ -187,15 +197,19 @@ export async function uploadPrivacyRequestsFromCsv(
     logger: dependencies.logger,
   });
   // Determine the columns that should be mapped
-  const columnNameMap = await mapCsvColumnsToApi(columnNames, state);
+  const columnNameMap = await mapCsvColumnsToApi(columnNames, state, {
+    prompt: dependencies.prompt,
+  });
   const identifierNameMap = await mapColumnsToIdentifiers(client, columnNames, state, {
     logger: dependencies.logger,
+    prompt: dependencies.prompt,
   });
   const attributeNameMap = await mapColumnsToAttributes(
     client,
     columnNames,
     state,
     requestAttributeKeys,
+    { prompt: dependencies.prompt },
   );
   await mapRequestEnumValues(
     client,
@@ -206,6 +220,7 @@ export async function uploadPrivacyRequestsFromCsv(
     },
     {
       logger: dependencies.logger,
+      prompt: dependencies.prompt,
     },
   );
 

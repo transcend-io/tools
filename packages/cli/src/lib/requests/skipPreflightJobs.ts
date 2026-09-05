@@ -58,9 +58,13 @@ export async function skipPreflightJobs(
   const t0 = new Date().getTime();
 
   // fetch all RequestDataSilos that are open
-  const requests = await fetchAllRequests(client, {
-    statuses: [RequestStatus.Enriching],
-  });
+  const requests = await fetchAllRequests(
+    client,
+    {
+      statuses: [RequestStatus.Enriching],
+    },
+    { logger: dependencies.logger },
+  );
 
   // Notify Transcend
   dependencies.logger.info(

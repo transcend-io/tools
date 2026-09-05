@@ -80,16 +80,20 @@ export async function markSilentPrivacyRequests(
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    isSilent: false,
-    requestIds,
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      isSilent: false,
+      requestIds,
+    },
+    { logger: dependencies.logger },
+  );
 
   // Notify Transcend
   dependencies.logger.info(colors.magenta(`Marking "${allRequests.length}" as silent mode.`));

@@ -61,10 +61,14 @@ export async function removeUnverifiedRequestIdentifiers(
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Pull in the requests
-  const allRequests = await fetchAllRequests(client, {
-    actions: requestActions,
-    statuses: [RequestStatus.Enriching],
-  });
+  const allRequests = await fetchAllRequests(
+    client,
+    {
+      actions: requestActions,
+      statuses: [RequestStatus.Enriching],
+    },
+    { logger: dependencies.logger },
+  );
 
   // Notify Transcend
   dependencies.logger.info(colors.magenta('Fetched requests in preflight/enriching state.'));
