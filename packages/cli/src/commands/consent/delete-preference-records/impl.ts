@@ -1,5 +1,4 @@
-import { readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import path from 'node:path';
 
 import { createSombraGotInstance } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
@@ -10,7 +9,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { writeCsv } from '../../../lib/helpers/index.js';
 import { bulkDeletePreferenceRecords } from '../../../lib/preference-management/index.js';
-import { logger } from '../../../logger.js';
 
 export interface DeletePreferenceRecordsCommandFlags {
   /** Transcend API key for authentication */
@@ -54,68 +52,68 @@ export async function deletePreferenceRecords(
   }: DeletePreferenceRecordsCommandFlags,
 ): Promise<void> {
   if (!!directory && !!file) {
-    logger.error(
+    this.logger.error(
       colors.red('Cannot provide both a directory and a file. Please provide only one.'),
     );
     this.process.exit(1);
   }
 
   if (!file && !directory) {
-    logger.error(
+    this.logger.error(
       colors.red(
         'A file or directory must be provided. Please provide one using --file=./preferences.csv or --directory=./preferences',
       ),
     );
     this.process.exit(1);
   }
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const files: string[] = [];
 
   if (directory) {
     try {
-      const filesInDirectory = readdirSync(directory);
+      const filesInDirectory = this.fs.readdirSync(directory);
       const csvFiles = filesInDirectory.filter((file) => file.endsWith('.csv'));
 
       if (csvFiles.length === 0) {
-        logger.error(colors.red(`No CSV files found in directory: ${directory}`));
+        this.logger.error(colors.red(`No CSV files found in directory: ${directory}`));
         this.process.exit(1);
       }
 
       // Add full paths for each CSV file
-      files.push(...csvFiles.map((file) => join(directory, file)));
+      files.push(...csvFiles.map((file) => path.join(directory, file)));
     } catch (err) {
-      logger.error(colors.red(`Failed to read directory: ${directory}`));
-      logger.error(colors.red((err as Error).message));
+      this.logger.error(colors.red(`Failed to read directory: ${directory}`));
+      this.logger.error(colors.red((err as Error).message));
       this.process.exit(1);
     }
   } else {
     try {
       // Verify file exists and is a CSV
       if (!file.endsWith('.csv')) {
-        logger.error(colors.red('File must be a CSV file'));
+        this.logger.error(colors.red('File must be a CSV file'));
         this.process.exit(1);
       }
       files.push(file);
     } catch (err) {
-      logger.error(colors.red(`Failed to access file: ${file}`));
-      logger.error(colors.red((err as Error).message));
+      this.logger.error(colors.red(`Failed to access file: ${file}`));
+      this.logger.error(colors.red((err as Error).message));
       this.process.exit(1);
     }
   }
 
-  logger.debug(
+  this.logger.debug(
     colors.green(
       `Processing ${files.length} consent preferences files for partition: ${partition}`,
     ),
   );
-  logger.debug(`\nFiles to process: ${files.join(', ')}\n`);
+  this.logger.debug(`\nFiles to process: ${files.join(', ')}\n`);
 
   // Create sombra instance to communicate with
   const sombra = await createSombraGotInstance(transcendUrl, auth, {
-    logger,
+    logger: this.logger,
     sombraApiKey: sombraAuth,
-    sombraUrl: process.env.SOMBRA_URL,
+    sombraUrl: this.process.env.SOMBRA_URL,
   });
   const globalProgressBar = new cliProgress.SingleBar(
     {
@@ -149,18 +147,18 @@ export async function deletePreferenceRecords(
   // Check for failed results and write receipt if any
   let receiptPath = '';
   if (failedResults.length > 0) {
-    receiptPath = join(receiptDirectory, `deletion-failures-${Date.now()}.csv`);
+    receiptPath = path.join(receiptDirectory, `deletion-failures-${Date.now()}.csv`);
     writeCsv(receiptPath, failedResults, true);
   }
 
-  logger.info(colors.green('\n\n ================================== \n\n'));
-  logger.info(colors.green('\n#### Deletion Summary Report #####\n'));
-  logger.info(
+  this.logger.info(colors.green('\n\n ================================== \n\n'));
+  this.logger.info(colors.green('\n#### Deletion Summary Report #####\n'));
+  this.logger.info(
     colors.green(
       `📁 Total Files Processed: ${files.length} \n` +
         `❌ Errors: ${failedResults.length} \n` +
         `📝 Receipt Path: ${receiptPath || 'N/A'}`,
     ),
   );
-  logger.info(colors.green('\n\n==================================\n\n'));
+  this.logger.info(colors.green('\n\n==================================\n\n'));
 }

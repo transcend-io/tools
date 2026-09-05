@@ -11,17 +11,7 @@ import {
 } from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
 
-const spawnSyncMock = vi.hoisted(() => vi.fn());
 const gotExtendMock = vi.hoisted(() => vi.fn());
-
-vi.mock('node:child_process', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:child_process')>();
-  return {
-    ...actual,
-    spawnSync: spawnSyncMock,
-    spawn: vi.fn(),
-  };
-});
 
 vi.mock('got', () => ({
   default: {
@@ -35,15 +25,15 @@ describe('policy helpers', () => {
   });
 
   it('assertOpaInstalled throws when opa is missing', () => {
-    spawnSyncMock.mockReturnValue({ status: 1 });
+    const spawnSync = vi.fn().mockReturnValue({ status: 1 });
 
-    expect(() => assertOpaInstalled()).toThrow(/opa/i);
+    expect(() => assertOpaInstalled(spawnSync)).toThrow(/opa/i);
   });
 
   it('assertOpaInstalled succeeds when opa is available', () => {
-    spawnSyncMock.mockReturnValue({ status: 0 });
+    const spawnSync = vi.fn().mockReturnValue({ status: 0 });
 
-    expect(() => assertOpaInstalled()).not.toThrow();
+    expect(() => assertOpaInstalled(spawnSync)).not.toThrow();
   });
 
   it('defaultPolicyVersionLabel uses bundle name and UTC timestamp', () => {

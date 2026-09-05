@@ -1,16 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import fs from 'node:fs';
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { deletePreferenceRecords, type DeletePreferenceRecordsCommandFlags } from '../impl.js';
 
 const H = vi.hoisted(() => {
-  const logger = {
-    info: vi.fn(),
-    debug: vi.fn(),
-    error: vi.fn(),
-  };
-
   // colors passthrough so assertions don’t include ANSI codes
   const colors = {
     green: (s: string) => s,
@@ -19,8 +15,6 @@ const H = vi.hoisted(() => {
     cyan: (s: string) => s,
     red: (s: string) => s,
   };
-
-  const doneInputValidation = vi.fn();
 
   // Sombra GOT instance returned by factory
   const sombra = { tag: 'sombra' };
@@ -34,9 +28,7 @@ const H = vi.hoisted(() => {
   const reaDirSync = vi.fn((): string[] => []);
 
   return {
-    logger,
     colors,
-    doneInputValidation,
     sombra,
     bulkDeletePreferenceRecords,
     writeCsv,
@@ -45,16 +37,10 @@ const H = vi.hoisted(() => {
 });
 
 /* ----------------- Mocks (must be declared before importing SUT) ----------------- */
-vi.mock('../../../../logger.js', () => ({ logger: H.logger }));
-
 vi.mock('colors', () => ({
   __esModule: true,
   default: H.colors,
   ...H.colors,
-}));
-
-vi.mock('../../../../lib/cli/done-input-validation.js', () => ({
-  doneInputValidation: H.doneInputValidation,
 }));
 
 vi.mock('@transcend-io/sdk', () => ({
@@ -74,24 +60,21 @@ vi.mock('../../../../lib/preference-management/index.js', () => ({
     H.bulkDeletePreferenceRecords(sombra, opts),
 }));
 
-vi.mock('node:fs', () => ({
-  readdirSync: H.reaDirSync,
-}));
-
 describe('deletePreferenceRecordsImpl', () => {
-  const ctx: LocalContext = {
-    exit: vi.fn(),
-    log: vi.fn(),
-    process: {
-      exit: vi.fn(),
+  const ctx = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+    fs: {
+      ...fs,
+      readdirSync: H.reaDirSync as unknown as typeof fs.readdirSync,
     },
-  } as unknown as LocalContext;
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ctx.reset();
   });
 
-  it('calls doneInputValidation with ctx.process.exit', async () => {
+  it('runs input validation using the context process', async () => {
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -107,8 +90,7 @@ describe('deletePreferenceRecordsImpl', () => {
 
     await deletePreferenceRecords.call(ctx, flags);
 
-    expect(H.doneInputValidation).toHaveBeenCalledTimes(1);
-    expect(H.doneInputValidation).toHaveBeenCalledWith(ctx.process.exit);
+    expect(ctx.exit).not.toHaveBeenCalled();
   });
 
   it('errors if both file and directory are provided', async () => {
@@ -125,11 +107,11 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePreferenceRecords.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(
-      H.colors.red('Cannot provide both a directory and a file. Please provide only one.'),
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain(
+      'Cannot provide both a directory and a file. Please provide only one.',
     );
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('errors if neither file nor directory is provided', async () => {
@@ -144,13 +126,11 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePreferenceRecords.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(
-      H.colors.red(
-        'A file or directory must be provided. Please provide one using --file=./preferences.csv or --directory=./preferences',
-      ),
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain(
+      'A file or directory must be provided. Please provide one using --file=./preferences.csv or --directory=./preferences',
     );
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('errors if file is not a CSV', async () => {
@@ -166,18 +146,13 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePreferenceRecords.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(H.colors.red('File must be a CSV file'));
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain('File must be a CSV file');
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('errors if directory has no CSV files', async () => {
-    // Mock readdirSync to return no CSVs
-    vi.doMock('node:fs', () => ({
-      readdirSync: vi.fn(() => ['not-a-csv.txt']),
-    }));
-    // Re-import impl to use new mock
-    const { deletePreferenceRecords: deletePrefRecs } = await import('../impl.js');
+    H.reaDirSync.mockReturnValueOnce(['not-a-csv.txt']);
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -190,11 +165,9 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePrefRecs.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(
-      H.colors.red('No CSV files found in directory: /tmp/dir'),
-    );
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain('No CSV files found in directory: /tmp/dir');
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('processes a single CSV file successfully', async () => {
@@ -216,7 +189,7 @@ describe('deletePreferenceRecordsImpl', () => {
       H.sombra,
       expect.objectContaining({ filePath: '/tmp/out.csv' }),
     );
-    expect(H.logger.info).toHaveBeenCalledWith(expect.stringContaining('Deletion Summary Report'));
+    expect(ctx.stdout).toContain('Deletion Summary Report');
     expect(H.writeCsv).not.toHaveBeenCalled();
   });
 
@@ -242,7 +215,7 @@ describe('deletePreferenceRecordsImpl', () => {
       H.sombra,
       expect.objectContaining({ filePath: expect.stringContaining('a.csv') }),
     );
-    expect(H.logger.info).toHaveBeenCalledWith(expect.stringContaining('Deletion Summary Report'));
+    expect(ctx.stdout).toContain('Deletion Summary Report');
   });
 
   it('writes a receipt if there are failed deletions', async () => {
@@ -265,7 +238,7 @@ describe('deletePreferenceRecordsImpl', () => {
       [{ id: 1, error: 'fail' }],
       true,
     );
-    expect(H.logger.info).toHaveBeenCalledWith(expect.stringContaining('Receipt Path:'));
+    expect(ctx.stdout).toContain('Receipt Path:');
   });
 });
 /* eslint-enable @typescript-eslint/no-explicit-any */

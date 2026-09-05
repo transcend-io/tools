@@ -2,7 +2,6 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
@@ -55,7 +54,7 @@ export async function activate(
     debug = false,
   }: ActivateCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
@@ -65,7 +64,7 @@ export async function activate(
   }
   const resolvedVersion = await resolvePolicyBundleVersion(client, resolvedBundleId, { version });
 
-  logger.info(
+  this.logger.info(
     colors.green(
       dryRun
         ? `Validating activation for version "${resolvedVersion.version}"...`
@@ -114,7 +113,7 @@ export async function activate(
       ].join('\n'),
   });
 
-  logger.info(
+  this.logger.info(
     colors.green(dryRun ? 'Activation validation succeeded.' : 'Policy bundle version activated.'),
   );
 }
