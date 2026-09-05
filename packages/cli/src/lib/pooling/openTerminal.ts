@@ -6,6 +6,21 @@ import colors from 'colors';
 import { logger } from '../../logger.js';
 
 /**
+ * Operating-system operations used to open a log terminal.
+ */
+export interface OpenTerminalPorts {
+  /** Return the current operating-system platform. */
+  platform: typeof platform;
+  /** Spawn a terminal process. */
+  spawn: typeof spawn;
+}
+
+const defaultPorts: OpenTerminalPorts = {
+  platform,
+  spawn,
+};
+
+/**
  * Escapes a string for use in a shell command.
  *
  * @param p - The string to escape.
@@ -21,13 +36,19 @@ export function shellEscape(p: string): string {
  * @param paths - Array of file paths to tail.
  * @param title - Title for the terminal window.
  * @param isSilent - If true, does not open the terminal.
+ * @param ports - Optional platform and process-spawning operations.
  */
-export function openLogTailWindowMulti(paths: string[], title: string, isSilent = false): void {
+export function openLogTailWindowMulti(
+  paths: string[],
+  title: string,
+  isSilent = false,
+  ports: OpenTerminalPorts = defaultPorts,
+): void {
   // If silent mode is enabled, do not open the terminal
   if (isSilent) return;
 
   // Determine the platform and execute the appropriate command
-  const p = platform();
+  const p = ports.platform();
   try {
     // For macOS, use AppleScript to open a new Terminal window
     // and tail the specified files
@@ -39,7 +60,7 @@ export function openLogTailWindowMulti(paths: string[], title: string, isSilent 
           do script "printf '\\e]0;${title}\\a'; tail -n +1 -f ${tails}"
         end tell
       `;
-      spawn('osascript', ['-e', script], { stdio: 'ignore', detached: true });
+      ports.spawn('osascript', ['-e', script], { stdio: 'ignore', detached: true });
       return;
     }
 
@@ -55,10 +76,12 @@ export function openLogTailWindowMulti(paths: string[], title: string, isSilent 
         '-Command',
         `Write-Host '${title}'; $paths = ${arrayLiteral}; Get-Content -Path $paths -Tail 200 -Wait`,
       ];
-      spawn('cmd.exe', ['/c', 'start', ...ps], {
-        stdio: 'ignore',
-        detached: true,
-      }).unref();
+      ports
+        .spawn('cmd.exe', ['/c', 'start', ...ps], {
+          stdio: 'ignore',
+          detached: true,
+        })
+        .unref();
       return;
     }
 
@@ -67,19 +90,23 @@ export function openLogTailWindowMulti(paths: string[], title: string, isSilent 
     // The paths are escaped to handle spaces and special characters
     const tails = paths.map(shellEscape).join(' -f ');
     try {
-      spawn(
-        'gnome-terminal',
-        ['--', 'bash', '-lc', `printf '\\e]0;${title}\\a'; tail -n +1 -f ${tails}`],
-        {
+      ports
+        .spawn(
+          'gnome-terminal',
+          ['--', 'bash', '-lc', `printf '\\e]0;${title}\\a'; tail -n +1 -f ${tails}`],
+          {
+            stdio: 'ignore',
+            detached: true,
+          },
+        )
+        .unref();
+    } catch {
+      ports
+        .spawn('xterm', ['-title', title, '-e', `tail -n +1 -f ${paths.join(' ')}`], {
           stdio: 'ignore',
           detached: true,
-        },
-      ).unref();
-    } catch {
-      spawn('xterm', ['-title', title, '-e', `tail -n +1 -f ${paths.join(' ')}`], {
-        stdio: 'ignore',
-        detached: true,
-      }).unref();
+        })
+        .unref();
     }
   } catch (e) {
     logger.error(

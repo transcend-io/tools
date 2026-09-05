@@ -1,7 +1,7 @@
 import type { ObjByString } from '@transcend-io/type-utils';
-import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
-import type { CommonCtx } from '../dashboardPlugin.js';
+import type { CommonCtx, DashboardPorts } from '../dashboardPlugin.js';
 
 /**
  * Mock `colors` so that `colors.dim` returns the raw string (no ANSI codes).
@@ -9,20 +9,6 @@ import type { CommonCtx } from '../dashboardPlugin.js';
 vi.mock('colors', () => ({
   default: { dim: (s: string): string => s },
   dim: (s: string): string => s,
-}));
-
-/**
- * Spy-able readline fns; we re-export spies from the factory for assertions.
- */
-const mCursorTo = vi.fn((/* stream: NodeJS.WriteStream, x: number, y?: number */): void => {
-  // No-op, just for spying
-});
-const mClearDown = vi.fn((/* stream: NodeJS.WriteStream */): void => {
-  // No-op, just for spying
-});
-vi.mock('node:readline', () => ({
-  cursorTo: mCursorTo,
-  clearScreenDown: mClearDown,
 }));
 
 /**
@@ -41,33 +27,39 @@ function loadSutFresh(): Promise<SutModule> {
 }
 
 /**
- * Spy on stdout writes and expose helpers to read/clear captured output.
+ * Build injected terminal operations and their call records.
  *
- * @returns an object with accessors and a restore function
+ * @returns Injected ports and recorded terminal output.
  */
-function spyStdout(): {
-  /** Spy */
-  spy: ReturnType<typeof vi.spyOn>;
-  /** Restore the original write implementation. */
-  restore: () => void;
-  /** Get all recorded write payloads as strings (in call order). */
-  calls: () => string[];
-  /** Clear recorded calls (without restoring). */
-  clear: () => void;
+function makePorts(): {
+  /** Terminal ports passed to the dashboard. */
+  ports: DashboardPorts;
+  /** Recorded stdout payloads. */
+  writes: string[];
+  /** Cursor positioning spy. */
+  cursorTo: ReturnType<typeof vi.fn>;
+  /** Screen-clearing spy. */
+  clearScreenDown: ReturnType<typeof vi.fn>;
 } {
-  const spy = vi
-    .spyOn(process.stdout, 'write')
-    // Return `true` per Node's stream write signature, to avoid backpressure logic.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .mockImplementation((): boolean => true) as any;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const calls = (): string[] => spy.mock.calls.map((c: any) => String(c[0]));
-  const clear = (): void => {
-    spy.mockClear();
+  const writes: string[] = [];
+  const stdout = {
+    write: vi.fn((chunk) => {
+      writes.push(String(chunk));
+      return true;
+    }),
+  } as unknown as NodeJS.WriteStream;
+  const cursorTo = vi.fn();
+  const clearScreenDown = vi.fn();
+  return {
+    ports: {
+      stdout,
+      cursorTo,
+      clearScreenDown,
+    },
+    writes,
+    cursorTo,
+    clearScreenDown,
   };
-  const restore = (): void => spy.mockRestore();
-  return { spy, restore, calls, clear };
 }
 
 /**
@@ -120,10 +112,6 @@ function makePlugin(): Parameters<SutModule['dashboardPlugin']>[1] {
 }
 
 describe('hotkeysHint', () => {
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('formats live hint for a single worker (digit range [0])', async () => {
     const { hotkeysHint } = await loadSutFresh();
     const s = hotkeysHint(1, false);
@@ -151,36 +139,21 @@ describe('hotkeysHint', () => {
 });
 
 describe('dashboardPlugin', () => {
-  const stdout = spyStdout();
-
-  beforeEach(() => {
-    stdout.clear();
-    mCursorTo.mockClear();
-    mClearDown.mockClear();
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterAll(() => {
-    stdout.restore();
-  });
-
   it('composes a full frame, hides cursor, and repaints in-place during live updates', async () => {
     const sut = await loadSutFresh();
     const ctx = makeCtx({ title: 'Uploader', poolSize: 2 });
     const plugin = makePlugin();
+    const terminal = makePorts();
 
-    sut.dashboardPlugin(ctx, plugin);
+    sut.dashboardPlugin(ctx, plugin, false, terminal.ports);
 
     // Cursor hidden, then frame written
-    const writes = stdout.calls();
+    const { writes } = terminal;
     expect(writes[0]).toBe('\x1b[?25l');
 
     // Readline called to position + clear screen prior to painting frame
-    expect(mCursorTo).toHaveBeenCalledWith(process.stdout, 0, 0);
-    expect(mClearDown).toHaveBeenCalledWith(process.stdout);
+    expect(terminal.cursorTo).toHaveBeenCalledWith(terminal.ports.stdout, 0, 0);
+    expect(terminal.clearScreenDown).toHaveBeenCalledWith(terminal.ports.stdout);
 
     // The final write should be the composed frame + trailing newline.
     const expectedFrame = [
@@ -200,16 +173,31 @@ describe('dashboardPlugin', () => {
     const sut = await loadSutFresh();
     const ctx = makeCtx();
     const plugin = makePlugin();
+    const terminal = makePorts();
 
-    sut.dashboardPlugin(ctx, plugin); // initial paint
-    const countAfterFirst = stdout.spy.mock.calls.length;
+    sut.dashboardPlugin(ctx, plugin, false, terminal.ports); // initial paint
+    const countAfterFirst = terminal.writes.length;
 
-    sut.dashboardPlugin(ctx, plugin); // identical frame
-    const countAfterSecond = stdout.spy.mock.calls.length;
+    sut.dashboardPlugin(ctx, plugin, false, terminal.ports); // identical frame
+    const countAfterSecond = terminal.writes.length;
 
     expect(countAfterSecond).toBe(countAfterFirst); // no extra writes
-    expect(mCursorTo).toHaveBeenCalledTimes(1);
-    expect(mClearDown).toHaveBeenCalledTimes(1);
+    expect(terminal.cursorTo).toHaveBeenCalledTimes(1);
+    expect(terminal.clearScreenDown).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders an identical live frame to a different output stream', async () => {
+    const sut = await loadSutFresh();
+    const ctx = makeCtx();
+    const plugin = makePlugin();
+    const firstTerminal = makePorts();
+    const secondTerminal = makePorts();
+
+    sut.dashboardPlugin(ctx, plugin, false, firstTerminal.ports);
+    sut.dashboardPlugin(ctx, plugin, false, secondTerminal.ports);
+
+    expect(firstTerminal.writes).not.toHaveLength(0);
+    expect(secondTerminal.writes).not.toHaveLength(0);
   });
 
   it('always writes final frame and restores cursor, even if identical to last', async () => {
@@ -217,21 +205,18 @@ describe('dashboardPlugin', () => {
     const ctxLive = makeCtx({ final: false });
     const ctxFinal = { ...ctxLive, final: true } as typeof ctxLive;
     const plugin = makePlugin();
+    const liveTerminal = makePorts();
 
     // Seed lastFrame with the same content by doing a live render first
-    sut.dashboardPlugin(ctxLive, plugin);
+    sut.dashboardPlugin(ctxLive, plugin, false, liveTerminal.ports);
 
-    // Clear spies so we only observe the final render behavior
-    stdout.clear();
-    mCursorTo.mockClear();
-    mClearDown.mockClear();
+    const finalTerminal = makePorts();
+    sut.dashboardPlugin(ctxFinal, plugin, false, finalTerminal.ports);
 
-    sut.dashboardPlugin(ctxFinal, plugin);
-
-    const writes = stdout.calls();
+    const { writes } = finalTerminal;
     // On final, we do NOT move the cursor or clear the screen
-    expect(mCursorTo).not.toHaveBeenCalled();
-    expect(mClearDown).not.toHaveBeenCalled();
+    expect(finalTerminal.cursorTo).not.toHaveBeenCalled();
+    expect(finalTerminal.clearScreenDown).not.toHaveBeenCalled();
 
     // Final render restores cursor then writes the frame
     expect(writes[0]).toBe('\x1b[?25h');
@@ -251,14 +236,15 @@ describe('dashboardPlugin', () => {
   it('omits extras section entirely when plugin.renderExtras is not provided', async () => {
     const sut = await loadSutFresh();
     const ctx = makeCtx();
+    const terminal = makePorts();
     const pluginNoExtras: Parameters<SutModule['dashboardPlugin']>[1] = {
       renderHeader: (c): string[] => [`H:${c.title}`],
       renderWorkers: (c): string[] => [`W:${c.poolSize}`],
       // No renderExtras
     };
 
-    sut.dashboardPlugin(ctx, pluginNoExtras);
-    const writes = stdout.calls();
+    sut.dashboardPlugin(ctx, pluginNoExtras, false, terminal.ports);
+    const { writes } = terminal;
 
     const expected = [
       ...pluginNoExtras.renderHeader(ctx),

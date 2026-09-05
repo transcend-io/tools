@@ -1,59 +1,42 @@
-import { readFileSync } from 'node:fs';
-
 import type { WorkerLogPaths } from '@transcend-io/utils';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { showCombinedLogs, type WhichLogs } from '../showCombinedLogs.js';
-
-/**
- * Mock fs BEFORE importing the SUT.
- * Inline factory avoids Vitest hoisting pitfalls.
- */
-vi.mock('node:fs', () => ({
-  readFileSync: vi.fn(),
-}));
-
-const mockedRead = vi.mocked(readFileSync);
+import {
+  showCombinedLogs,
+  type ShowCombinedLogsPorts,
+  type WhichLogs,
+} from '../showCombinedLogs.js';
 
 describe('showCombinedLogs', () => {
-  let writeSpy: ReturnType<typeof vi.spyOn>;
   let writes: string[];
+  let files: Record<string, string>;
+  let ports: ShowCombinedLogsPorts;
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    // Capture writes to stdout in-memory
     writes = [];
-    writeSpy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
-      writes.push(String(chunk));
-      return true;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }) as any;
-  });
-
-  afterEach(() => {
-    writeSpy.mockRestore();
+    files = {};
+    ports = {
+      readFile: (path) => {
+        const contents = files[path];
+        if (contents === undefined) throw new Error('ENOENT');
+        return contents;
+      },
+      stdout: {
+        write: vi.fn((chunk) => {
+          writes.push(String(chunk));
+          return true;
+        }),
+      } as unknown as ShowCombinedLogsPorts['stdout'],
+    };
   });
 
   /**
-   * Install a fake filesystem for readFileSync.
+   * Install in-memory log file contents.
    *
    * @param files - Map from path to file content. Missing paths will throw.
    */
-  function installFs(files: Record<string, string>): void {
-    mockedRead.mockImplementation((pRaw, encoding) => {
-      const p = String(pRaw);
-      if (encoding && encoding !== 'utf8') {
-        throw new Error(`Unsupported encoding in test: ${encoding}`);
-      }
-      const s = files[p];
-      if (s === undefined) {
-        const e = new Error('ENOENT');
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (e as any).code = 'ENOENT';
-        throw e;
-      }
-      return s;
-    });
+  function installFs(newFiles: Record<string, string>): void {
+    files = newFiles;
   }
 
   /**
@@ -96,7 +79,7 @@ describe('showCombinedLogs', () => {
     const slots = slotMap([[1, paths({ errPath: '/w1.err', outPath: '/w1.out' })]]);
 
     const which: WhichLogs = ['err', 'out'];
-    showCombinedLogs(slots, which, 'all');
+    showCombinedLogs(slots, which, 'all', ports);
 
     // first write: clear screen escape
     expect(writes[0]).toBe('\x1b[2J\x1b[H');
@@ -122,7 +105,7 @@ describe('showCombinedLogs', () => {
     const slots = slotMap([[1, paths({ errPath: '/w1.err', outPath: '/w1.out' })]]);
 
     const which: WhichLogs = ['err', 'out'];
-    showCombinedLogs(slots, which, 'error');
+    showCombinedLogs(slots, which, 'error', ports);
 
     // second write has only the ANSI-containing ERROR line
     const combined = writes[1];
@@ -144,7 +127,7 @@ describe('showCombinedLogs', () => {
     const slots = slotMap([[1, paths({ errPath: '/w1.err', outPath: '/w1.out' })]]);
 
     const which: WhichLogs = ['err', 'out'];
-    showCombinedLogs(slots, which, 'warn');
+    showCombinedLogs(slots, which, 'warn', ports);
 
     const combined = writes[1];
     expect(combined).toContain('just-stderr-line');
@@ -162,7 +145,7 @@ describe('showCombinedLogs', () => {
     const slots = slotMap([[1, paths({ outPath: '/exists.out', errPath: '/missing.err' })]]);
 
     const which: WhichLogs = ['err', 'out'];
-    showCombinedLogs(slots, which, 'all');
+    showCombinedLogs(slots, which, 'all', ports);
 
     // Check we still printed the out content and the prompt
     expect(writes[1]).toBe('2025-01-04T01:00:00 hello\n');
@@ -178,7 +161,7 @@ describe('showCombinedLogs', () => {
     ]);
 
     const which: WhichLogs = ['err', 'out', 'structured', 'warn', 'info'];
-    showCombinedLogs(slots, which, 'all');
+    showCombinedLogs(slots, which, 'all', ports);
 
     // `${lines.join('\n')}\n` with empty lines is just "\n"
     expect(writes[1]).toBe('\n');
@@ -204,7 +187,7 @@ describe('showCombinedLogs', () => {
     ]);
 
     // Only include 'info' — exclude 'out' and 'err'
-    showCombinedLogs(slots, ['info'], 'all');
+    showCombinedLogs(slots, ['info'], 'all', ports);
 
     const combined = writes[1];
     expect(combined).toContain('INFO-LINE');

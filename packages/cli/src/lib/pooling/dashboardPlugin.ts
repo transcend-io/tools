@@ -106,8 +106,26 @@ export type CommonCtx<TTotals, TSlotState extends ObjByString> = {
   exportStatus?: Record<string, unknown>;
 };
 
-/** The most recently rendered frame, cached to suppress flicker from duplicate renders. */
-let lastFrame = '';
+/**
+ * Terminal operations used to paint the dashboard.
+ */
+export interface DashboardPorts {
+  /** Standard output stream used for dashboard rendering. */
+  stdout: NodeJS.WriteStream;
+  /** Move the output cursor before repainting. */
+  cursorTo: typeof readline.cursorTo;
+  /** Clear terminal content below the cursor. */
+  clearScreenDown: typeof readline.clearScreenDown;
+}
+
+const defaultPorts: DashboardPorts = {
+  stdout: process.stdout,
+  cursorTo: readline.cursorTo,
+  clearScreenDown: readline.clearScreenDown,
+};
+
+/** Most recently rendered frame per output stream, cached to suppress duplicate renders. */
+const lastFrames = new WeakMap<NodeJS.WriteStream, string>();
 
 /**
  * Generate the hotkeys hint string that appears at the bottom of the dashboard.
@@ -148,11 +166,13 @@ export const hotkeysHint = (poolSize: number, final: boolean): string => {
  * @param ctx - Shared context containing pool state, worker state, totals, throughput, etc.
  * @param plugin - The plugin that defines how to render the header, workers, and optional extras.
  * @param viewerMode - If true, renders in viewer mode (no ability to switch between files).
+ * @param ports - Optional terminal operations used to paint the dashboard.
  */
 export function dashboardPlugin<TTotals, TSlotState extends ObjByString>(
   ctx: CommonCtx<TTotals, TSlotState>,
   plugin: DashboardPlugin<TTotals, TSlotState>,
   viewerMode = false,
+  ports: DashboardPorts = defaultPorts,
 ): void {
   const frame = [
     ...plugin.renderHeader(ctx),
@@ -163,17 +183,17 @@ export function dashboardPlugin<TTotals, TSlotState extends ObjByString>(
   ].join('\n');
 
   // Skip duplicate renders during live runs to avoid flicker.
-  if (!ctx.final && frame === lastFrame) return;
-  lastFrame = frame;
+  if (!ctx.final && frame === lastFrames.get(ports.stdout)) return;
+  lastFrames.set(ports.stdout, frame);
 
   if (!ctx.final) {
     // Hide cursor and repaint in place
-    process.stdout.write('\x1b[?25l');
-    readline.cursorTo(process.stdout, 0, 0);
-    readline.clearScreenDown(process.stdout);
+    ports.stdout.write('\x1b[?25l');
+    ports.cursorTo(ports.stdout, 0, 0);
+    ports.clearScreenDown(ports.stdout);
   } else {
     // Restore cursor on final render
-    process.stdout.write('\x1b[?25h');
+    ports.stdout.write('\x1b[?25h');
   }
-  process.stdout.write(`${frame}\n`);
+  ports.stdout.write(`${frame}\n`);
 }

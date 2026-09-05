@@ -15,18 +15,38 @@ export type LogLocation = 'out' | 'err' | 'structured' | 'warn' | 'info';
 export type WhichLogs = Array<LogLocation>;
 
 /**
+ * External operations used while rendering combined logs.
+ */
+export interface ShowCombinedLogsPorts {
+  /** Read a UTF-8 log file from disk. */
+  readFile: (path: string) => string;
+  /** Write rendered output to the terminal. */
+  stdout: Pick<NodeJS.WriteStream, 'write'>;
+}
+
+const defaultPorts: ShowCombinedLogsPorts = {
+  readFile: (path) => readFileSync(path, 'utf8'),
+  stdout: process.stdout,
+};
+
+/**
  * Show combined logs from all worker processes.
  *
  * @param slotLogPaths - Map of worker IDs to their log file paths.
  * @param whichList - one or more sources to include (e.g., ['err','out'])
  * @param filterLevel - 'error', 'warn', or 'all' to filter log levels.
+ * @param ports - Optional file and terminal operations.
  */
 export function showCombinedLogs(
   slotLogPaths: Map<number, WorkerLogPaths | undefined>,
   whichList: WhichLogs,
   filterLevel: 'error' | 'warn' | 'all',
+  ports: Partial<ShowCombinedLogsPorts> = {},
 ): void {
-  process.stdout.write('\x1b[2J\x1b[H');
+  const readFile = ports.readFile ?? defaultPorts.readFile;
+  const stdout = ports.stdout ?? defaultPorts.stdout;
+
+  stdout.write('\x1b[2J\x1b[H');
 
   const isError = (t: string): boolean =>
     /\b(ERROR|uncaughtException|unhandledRejection)\b/i.test(t);
@@ -64,7 +84,7 @@ export function showCombinedLogs(
     for (const { path, src } of files) {
       let text = '';
       try {
-        text = readFileSync(path, 'utf8');
+        text = readFile(path);
       } catch {
         continue;
       }
@@ -104,7 +124,7 @@ export function showCombinedLogs(
     return ta.localeCompare(tb);
   });
 
-  process.stdout.write(`${lines.join('\n')}\n`);
-  process.stdout.write('\nPress Esc/Ctrl+] to return to dashboard.\n');
+  stdout.write(`${lines.join('\n')}\n`);
+  stdout.write('\nPress Esc/Ctrl+] to return to dashboard.\n');
 }
 /* eslint-enable no-continue, no-control-regex */
