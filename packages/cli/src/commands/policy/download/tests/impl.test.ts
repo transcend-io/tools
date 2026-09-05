@@ -5,12 +5,12 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import { defaultPolicyDownloadOutputPath, download } from '../impl.js';
+import { defaultPolicyDownloadOutputPath, download, type DownloadCommandFlags } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 const resolveBundleByNameMock = vi.hoisted(() => vi.fn());
 const resolvePolicyBundleVersionMock = vi.hoisted(() => vi.fn());
-const gotMock = vi.hoisted(() => vi.fn());
+const downloadPolicyBundleBytesMock = vi.fn();
 
 vi.mock('../../helpers/index.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../helpers/index.js')>();
@@ -21,12 +21,6 @@ vi.mock('../../helpers/index.js', async (importOriginal) => {
     resolvePolicyBundleVersion: resolvePolicyBundleVersionMock,
   };
 });
-
-vi.mock('got', () => ({
-  default: Object.assign(gotMock, {
-    extend: vi.fn(),
-  }),
-}));
 
 const sampleBundle = {
   id: 'resolved-bundle-id',
@@ -74,6 +68,10 @@ describe('download', () => {
   const context = buildContextForTest({
     env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
   });
+  const runDownload = (flags: DownloadCommandFlags): Promise<void> =>
+    download.call(context, flags, {
+      downloadPolicyBundleBytes: downloadPolicyBundleBytesMock,
+    });
 
   let tempDir: string;
 
@@ -94,13 +92,11 @@ describe('download', () => {
     buildPolicyEngineClientMock.mockReturnValue({ get });
     resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
-    gotMock.mockReturnValue({
-      buffer: vi.fn().mockResolvedValue(Buffer.from('bundle-bytes')),
-    });
+    downloadPolicyBundleBytesMock.mockResolvedValue(Buffer.from('bundle-bytes'));
 
     const outputPath = path.join(tempDir, 'main-2026-06-25.tar.gz');
 
-    await download.call(context, {
+    await runDownload({
       'bundle-name': 'main',
       version: '2026-06-25',
       output: outputPath,
@@ -118,7 +114,7 @@ describe('download', () => {
     expect(get).toHaveBeenCalledWith(
       'v1/policy-engine/policy-bundles/resolved-bundle-id/versions/version-id',
     );
-    expect(gotMock).toHaveBeenCalledWith(sampleDownloadResponse.downloadUrl);
+    expect(downloadPolicyBundleBytesMock).toHaveBeenCalledWith(sampleDownloadResponse.downloadUrl);
     expect(Buffer.from(fs.readFileSync(outputPath))).toEqual(Buffer.from('bundle-bytes'));
     expect(context.stdout).toContain('bundleName  main');
     expect(context.stdout).toContain(`output      ${outputPath}`);
@@ -132,13 +128,11 @@ describe('download', () => {
     });
     buildPolicyEngineClientMock.mockReturnValue({ get });
     resolveBundleByNameMock.mockResolvedValue(sampleBundle);
-    gotMock.mockReturnValue({
-      buffer: vi.fn().mockResolvedValue(Buffer.from('active-bytes')),
-    });
+    downloadPolicyBundleBytesMock.mockResolvedValue(Buffer.from('active-bytes'));
 
     const outputPath = path.join(tempDir, 'main-active-label.tar.gz');
 
-    await download.call(context, {
+    await runDownload({
       'bundle-name': 'main',
       output: outputPath,
       auth: 'test-key',
@@ -163,7 +157,7 @@ describe('download', () => {
     });
 
     await expect(
-      download.call(context, {
+      runDownload({
         'bundle-name': 'main',
         auth: 'test-key',
         'transcend-url': 'https://api.transcend.io',
@@ -183,7 +177,7 @@ describe('download', () => {
     resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
-    await download.call(context, {
+    await runDownload({
       'bundle-name': 'main',
       version: '2026-06-25',
       auth: 'test-key',
@@ -191,7 +185,7 @@ describe('download', () => {
       json: true,
     });
 
-    expect(gotMock).not.toHaveBeenCalled();
+    expect(downloadPolicyBundleBytesMock).not.toHaveBeenCalled();
     expect(context.stdout).toContain(
       '"downloadUrl": "https://s3.example.com/presigned-bundle.tar.gz"',
     );
@@ -203,7 +197,7 @@ describe('download', () => {
     resolveBundleByNameMock.mockResolvedValue(undefined);
 
     await expect(
-      download.call(context, {
+      runDownload({
         'bundle-name': 'missing',
         version: '2026-06-25',
         auth: 'test-key',
@@ -225,7 +219,7 @@ describe('download', () => {
     );
 
     await expect(
-      download.call(context, {
+      runDownload({
         'bundle-name': 'main',
         version: 'missing',
         auth: 'test-key',
@@ -237,19 +231,17 @@ describe('download', () => {
     expect(get).not.toHaveBeenCalled();
   });
 
-  it('surfaces a clear error when the presigned S3 download fails', async () => {
+  it('surfaces errors from the presigned bundle downloader', async () => {
     const get = vi.fn().mockReturnValue({
       json: vi.fn().mockResolvedValue(sampleDownloadResponse),
     });
     buildPolicyEngineClientMock.mockReturnValue({ get });
     resolveBundleByNameMock.mockResolvedValue(sampleBundle);
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
-    gotMock.mockReturnValue({
-      buffer: vi.fn().mockRejectedValue(new Error('Request timed out')),
-    });
+    downloadPolicyBundleBytesMock.mockRejectedValue(new Error('Request timed out'));
 
     await expect(
-      download.call(context, {
+      runDownload({
         'bundle-name': 'main',
         version: '2026-06-25',
         output: path.join(tempDir, 'out.tar.gz'),
@@ -257,7 +249,7 @@ describe('download', () => {
         'transcend-url': 'https://api.transcend.io',
         json: false,
       }),
-    ).rejects.toThrow('Failed to download policy bundle from the presigned URL: Request timed out');
+    ).rejects.toThrow('Request timed out');
   });
 
   it('surfaces monolith errors via the shared error formatter', async () => {
@@ -275,7 +267,7 @@ describe('download', () => {
     resolvePolicyBundleVersionMock.mockResolvedValue(sampleVersion);
 
     await expect(
-      download.call(context, {
+      runDownload({
         'bundle-name': 'main',
         version: '2026-06-25',
         auth: 'test-key',

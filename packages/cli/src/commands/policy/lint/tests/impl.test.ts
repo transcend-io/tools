@@ -1,74 +1,124 @@
+import { spawn, spawnSync } from 'node:child_process';
+import { EventEmitter } from 'node:events';
+import { PassThrough } from 'node:stream';
+
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
+import type { PolicyDependencies } from '../../helpers/index.js';
 import { lint } from '../impl.js';
 
-const runOpaMock = vi.hoisted(() => vi.fn());
-const runOPACaptureMock = vi.hoisted(() => vi.fn());
-const assertOpaInstalledMock = vi.hoisted(() => vi.fn());
 const inquirerConfirmBooleanMock = vi.hoisted(() => vi.fn());
-
-vi.mock('../../helpers/index.js', () => ({
-  assertOpaInstalled: assertOpaInstalledMock,
-  runOpa: runOpaMock,
-  runOPACapture: runOPACaptureMock,
-}));
 
 vi.mock('../../../../lib/helpers/inquirer.js', () => ({
   inquirerConfirmBoolean: inquirerConfirmBooleanMock,
 }));
 
+/** Result emitted by a fake OPA child process. */
+interface FakeOpaResult {
+  /** Child process exit code. */
+  code: number;
+  /** Captured standard output. */
+  stdout?: string;
+  /** Captured standard error. */
+  stderr?: string;
+}
+
 describe('lint', () => {
   const context = buildContextForTest({
     env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
   });
+  const opaResults: FakeOpaResult[] = [];
+  const spawnMock = vi.fn((_command: string, _args: readonly string[], _options?: unknown) => {
+    const child = new EventEmitter();
+    const stdout = new PassThrough();
+    const stderr = new PassThrough();
+    Object.assign(child, { stdout, stderr });
+
+    queueMicrotask(() => {
+      const result = opaResults.shift() ?? { code: 0 };
+      if (result.stdout) {
+        stdout.write(result.stdout);
+      }
+      if (result.stderr) {
+        stderr.write(result.stderr);
+      }
+      child.emit('close', result.code);
+    });
+
+    return child as ReturnType<typeof spawn>;
+  });
+  const spawnSyncMock = vi.fn().mockReturnValue({ status: 0 });
+  const dependencies: Pick<PolicyDependencies, 'assertOpaInstalled' | 'runOpa'> = {
+    assertOpaInstalled: {
+      spawnSync: spawnSyncMock as unknown as typeof spawnSync,
+      env: {},
+    },
+    runOpa: {
+      spawn: spawnMock as unknown as typeof spawn,
+      env: {},
+      stdio: context.process,
+    },
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    opaResults.length = 0;
+    spawnSyncMock.mockReturnValue({ status: 0 });
     context.reset();
   });
 
   it('runs opa check and fmt, exiting on check failure', async () => {
-    runOpaMock.mockResolvedValueOnce(2);
+    opaResults.push({ code: 2 });
 
-    await expect(lint.call(context, { dir: './policies' })).rejects.toMatchObject({ code: 2 });
+    await expect(lint.call(context, { dir: './policies' }, dependencies)).rejects.toMatchObject({
+      code: 2,
+    });
 
-    expect(assertOpaInstalledMock).toHaveBeenCalled();
-    expect(runOpaMock).toHaveBeenCalledWith(['check', '--strict', expect.any(String)]);
-    expect(runOPACaptureMock).not.toHaveBeenCalled();
+    expect(spawnSyncMock).toHaveBeenCalledWith('opa', ['version'], {
+      env: {},
+      stdio: 'ignore',
+    });
+    expect(spawnMock).toHaveBeenCalledTimes(1);
+    expect(spawnMock.mock.calls[0][1]).toEqual(['check', '--strict', expect.any(String)]);
+    expect(spawnMock.mock.calls[0][2]).toMatchObject({
+      env: {},
+      stdio: [context.process.stdin, context.process.stdout, context.process.stderr],
+    });
   });
 
   it('exits when the user declines formatting unformatted files', async () => {
-    runOpaMock.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-    runOPACaptureMock.mockResolvedValueOnce({
-      code: 0,
-      stdout: '/tmp/policies/policy.rego\n',
-      stderr: '',
-    });
+    opaResults.push({ code: 0 }, { code: 0, stdout: '/tmp/policies/policy.rego\n' }, { code: 0 });
     inquirerConfirmBooleanMock.mockResolvedValueOnce(false);
 
-    await expect(lint.call(context, { dir: './policies' })).rejects.toMatchObject({ code: 1 });
+    await expect(lint.call(context, { dir: './policies' }, dependencies)).rejects.toMatchObject({
+      code: 1,
+    });
 
-    expect(runOPACaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
-    expect(runOpaMock).toHaveBeenNthCalledWith(2, ['fmt', '--diff', expect.any(String)]);
+    expect(spawnMock.mock.calls[1][1]).toEqual(['fmt', '--list', expect.any(String)]);
+    expect(spawnMock.mock.calls[2][1]).toEqual(['fmt', '--diff', expect.any(String)]);
     expect(inquirerConfirmBooleanMock).toHaveBeenCalledWith({
       message: 'Format the unformatted policy files listed above?',
     });
-    expect(runOpaMock).not.toHaveBeenCalledWith(['fmt', '-w', expect.any(String)]);
+    expect(spawnMock.mock.calls.map((call) => call[1])).not.toContainEqual([
+      'fmt',
+      '-w',
+      expect.any(String),
+    ]);
   });
 
   it('formats unformatted files when the user confirms', async () => {
-    runOpaMock.mockResolvedValueOnce(0).mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-    runOPACaptureMock.mockResolvedValueOnce({
-      code: 0,
-      stdout: '/tmp/policies/policy.rego\n',
-      stderr: '',
-    });
+    opaResults.push(
+      { code: 0 },
+      { code: 0, stdout: '/tmp/policies/policy.rego\n' },
+      { code: 0 },
+      { code: 0 },
+    );
     inquirerConfirmBooleanMock.mockResolvedValueOnce(true);
 
-    await lint.call(context, { dir: './policies' });
+    await lint.call(context, { dir: './policies' }, dependencies);
 
-    expect(runOpaMock).toHaveBeenNthCalledWith(3, ['fmt', '-w', expect.any(String)]);
+    expect(spawnMock.mock.calls[3][1]).toEqual(['fmt', '-w', expect.any(String)]);
     expect(context.exit).not.toHaveBeenCalled();
   });
 
@@ -78,32 +128,34 @@ describe('lint', () => {
       stdinIsTTY: false,
     });
 
-    runOpaMock.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
-    runOPACaptureMock.mockResolvedValueOnce({
-      code: 0,
-      stdout: '/tmp/policies/policy.rego\n',
-      stderr: '',
-    });
+    opaResults.push({ code: 0 }, { code: 0, stdout: '/tmp/policies/policy.rego\n' }, { code: 0 });
 
-    await expect(lint.call(nonInteractiveContext, { dir: './policies' })).rejects.toMatchObject({
-      code: 1,
-    });
+    const nonInteractiveDependencies = {
+      ...dependencies,
+      runOpa: {
+        ...dependencies.runOpa,
+        stdio: nonInteractiveContext.process,
+      },
+    };
+
+    await expect(
+      lint.call(nonInteractiveContext, { dir: './policies' }, nonInteractiveDependencies),
+    ).rejects.toMatchObject({ code: 1 });
 
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
-    expect(runOpaMock).not.toHaveBeenCalledWith(['fmt', '-w', expect.any(String)]);
+    expect(spawnMock.mock.calls.map((call) => call[1])).not.toContainEqual([
+      'fmt',
+      '-w',
+      expect.any(String),
+    ]);
   });
 
   it('passes when all files are formatted', async () => {
-    runOpaMock.mockResolvedValueOnce(0);
-    runOPACaptureMock.mockResolvedValueOnce({
-      code: 0,
-      stdout: '',
-      stderr: '',
-    });
+    opaResults.push({ code: 0 }, { code: 0 });
 
-    await lint.call(context, { dir: './policies' });
+    await lint.call(context, { dir: './policies' }, dependencies);
 
-    expect(runOpaMock).toHaveBeenCalledTimes(1);
-    expect(runOPACaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
+    expect(spawnMock).toHaveBeenCalledTimes(2);
+    expect(spawnMock.mock.calls[1][1]).toEqual(['fmt', '--list', expect.any(String)]);
   });
 });

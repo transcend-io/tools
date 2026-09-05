@@ -1,8 +1,11 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { spawnSync } from 'node:child_process';
+
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   assertOpaInstalled,
   buildPolicyEngineClient,
+  type BuildPolicyEngineClientDependencies,
   defaultPolicyVersionLabel,
   printResult,
   renderTable,
@@ -11,29 +14,31 @@ import {
 } from '../helpers/index.js';
 import type { PolicyBundleListResponse } from '../types.js';
 
-const gotExtendMock = vi.hoisted(() => vi.fn());
-
-vi.mock('got', () => ({
-  default: {
-    extend: gotExtendMock,
-  },
-}));
-
 describe('policy helpers', () => {
+  const extend = vi.fn<BuildPolicyEngineClientDependencies['extend']>();
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('assertOpaInstalled throws when opa is missing', () => {
-    const spawnSync = vi.fn().mockReturnValue({ status: 1 });
+    const spawnSyncMock = vi.fn().mockReturnValue({ status: 1 });
 
-    expect(() => assertOpaInstalled(spawnSync)).toThrow(/opa/i);
+    expect(() => assertOpaInstalled(spawnSyncMock)).toThrow(/opa/i);
+    expect(spawnSyncMock).toHaveBeenCalledWith('opa', ['version'], {
+      stdio: 'ignore',
+    });
   });
 
   it('assertOpaInstalled succeeds when opa is available', () => {
-    const spawnSync = vi.fn().mockReturnValue({ status: 0 });
+    const spawnSyncMock = vi.fn().mockReturnValue({ status: 0 });
 
-    expect(() => assertOpaInstalled(spawnSync)).not.toThrow();
+    expect(() =>
+      assertOpaInstalled({
+        spawnSync: spawnSyncMock as unknown as typeof spawnSync,
+        env: {},
+      }),
+    ).not.toThrow();
   });
 
   it('defaultPolicyVersionLabel uses bundle name and UTC timestamp', () => {
@@ -78,8 +83,10 @@ describe('policy helpers', () => {
         } satisfies PolicyBundleListResponse),
       });
 
-    gotExtendMock.mockReturnValue({ get });
-    const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key');
+    extend.mockReturnValue({ get } as never);
+    const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key', {
+      extend,
+    });
 
     await expect(resolveBundleByName(client, 'main')).resolves.toMatchObject({
       id: 'main-id',
@@ -112,8 +119,10 @@ describe('policy helpers', () => {
       } satisfies PolicyBundleListResponse),
     });
 
-    gotExtendMock.mockReturnValue({ get });
-    const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key');
+    extend.mockReturnValue({ get } as never);
+    const client = buildPolicyEngineClient('https://api.transcend.io', 'test-key', {
+      extend,
+    });
 
     await expect(resolveBundleIdByName(client, 'main')).resolves.toBe('main-id');
   });

@@ -2,12 +2,18 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { gunzipSync } from 'node:zlib';
 
+import fg from 'fast-glob';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildOpaBundleTarball } from '../buildOpaBundleTarball.js';
+import {
+  buildOpaBundleTarball,
+  type BuildOpaBundleTarballDependencies,
+} from '../buildOpaBundleTarball.js';
 
-const runOPACaptureMock = vi.hoisted(() => vi.fn());
+const runOPACaptureMock = vi.fn();
+const assertOpaInstalledMock = vi.fn();
 
 const constantsMock = vi.hoisted(() => ({
   MAX_BUNDLE_COMPRESSED_BYTES: 5120,
@@ -16,17 +22,10 @@ const constantsMock = vi.hoisted(() => ({
 
 vi.mock('../../constants.js', () => constantsMock);
 
-vi.mock('../assertOpaInstalled.js', () => ({
-  assertOpaInstalled: vi.fn(),
-}));
-
-vi.mock('../runOpa.js', () => ({
-  runOPACapture: runOPACaptureMock,
-}));
-
 describe('buildOpaBundleTarball', () => {
   let tempDir: string;
   let outputPaths: string[];
+  let dependencies: BuildOpaBundleTarballDependencies;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -36,6 +35,19 @@ describe('buildOpaBundleTarball', () => {
     constantsMock.MAX_BUNDLE_DECOMPRESSED_BYTES = 51200;
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'policy-bundle-test-'));
     outputPaths = [];
+    dependencies = {
+      fs,
+      path,
+      os,
+      env: process.env,
+      tarSpawnSync: spawnSync,
+      fastGlob: fg,
+      gunzipSync,
+      opa: {
+        assertInstalled: assertOpaInstalledMock,
+        runCapture: runOPACaptureMock,
+      },
+    };
   });
 
   afterEach(() => {
@@ -63,7 +75,7 @@ describe('buildOpaBundleTarball', () => {
     );
     fs.writeFileSync(path.join(tempDir, 'data.json'), '{}');
 
-    const outputPath = await buildOpaBundleTarball(tempDir);
+    const outputPath = await buildOpaBundleTarball(tempDir, dependencies);
     outputPaths.push(outputPath);
 
     const listResult = spawnSync('tar', ['-tzf', outputPath], { encoding: 'utf8' });
@@ -87,7 +99,7 @@ describe('buildOpaBundleTarball', () => {
       'package policy_engine\n\ndefault decision := "deny"\n',
     );
 
-    const outputPath = await buildOpaBundleTarball(tempDir);
+    const outputPath = await buildOpaBundleTarball(tempDir, dependencies);
     outputPaths.push(outputPath);
 
     // Two OPA invocations: `opa check` then `opa build`.
@@ -116,7 +128,7 @@ describe('buildOpaBundleTarball', () => {
       stderr: 'policy.rego:3: rego parse error: unexpected assign token',
     });
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
       /rego parse error: unexpected assign token/,
     );
     // `opa build` must not run once `opa check` has failed.
@@ -137,7 +149,7 @@ describe('buildOpaBundleTarball', () => {
         stderr: 'policy.rego:5: undefined function data.foo.bar',
       }); // opa build
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
       /undefined function data\.foo\.bar/,
     );
     expect(runOPACaptureMock).toHaveBeenCalledTimes(2);
@@ -146,7 +158,7 @@ describe('buildOpaBundleTarball', () => {
   it('throws when manifest.json is missing', async () => {
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/manifest\.json/i);
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(/manifest\.json/i);
   });
 
   it('throws when no publishable rego files exist', async () => {
@@ -156,14 +168,16 @@ describe('buildOpaBundleTarball', () => {
     );
     fs.writeFileSync(path.join(tempDir, 'policy_test.rego'), 'package policy_engine\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(/at least one \.rego/i);
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
+      /at least one \.rego/i,
+    );
   });
 
   it('throws a clear error when manifest.json is not valid JSON', async () => {
     fs.writeFileSync(path.join(tempDir, 'manifest.json'), '{ not valid json');
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
       /manifest\.json is not valid JSON/i,
     );
   });
@@ -172,7 +186,7 @@ describe('buildOpaBundleTarball', () => {
     fs.writeFileSync(path.join(tempDir, 'manifest.json'), JSON.stringify({}));
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
       /must declare "roots" as a non-empty array/i,
     );
   });
@@ -184,7 +198,7 @@ describe('buildOpaBundleTarball', () => {
     );
     fs.writeFileSync(path.join(tempDir, 'policy.rego'), 'package policy_engine\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
       /"roots" must be an array of non-empty strings/i,
     );
   });
@@ -196,7 +210,7 @@ describe('buildOpaBundleTarball', () => {
     );
     fs.writeFileSync(path.join(tempDir, 'other.rego'), 'package other.package\n');
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
       /do not cover all Rego packages[\s\S]*other\.rego \(package other\.package\)/,
     );
   });
@@ -212,7 +226,7 @@ describe('buildOpaBundleTarball', () => {
       'package policy_engine.transcend\n\ndefault decision := "deny"\n',
     );
 
-    const outputPath = await buildOpaBundleTarball(tempDir);
+    const outputPath = await buildOpaBundleTarball(tempDir, dependencies);
     outputPaths.push(outputPath);
 
     expect(runOPACaptureMock).toHaveBeenCalledTimes(2);
@@ -228,7 +242,7 @@ describe('buildOpaBundleTarball', () => {
     // Force the compressed-size check to trip with a 1-byte limit.
     constantsMock.MAX_BUNDLE_COMPRESSED_BYTES = 1;
 
-    await expect(buildOpaBundleTarball(tempDir)).rejects.toThrow(
+    await expect(buildOpaBundleTarball(tempDir, dependencies)).rejects.toThrow(
       /exceeds the .* compressed upload limit[\s\S]*bundle is .*(KiB|B\))/,
     );
   });

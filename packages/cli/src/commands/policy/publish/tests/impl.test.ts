@@ -6,6 +6,7 @@ import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextF
 import { publish } from '../impl.js';
 
 const buildOpaBundleTarballMock = vi.hoisted(() => vi.fn());
+const buildPolicyBundleFormDataMock = vi.hoisted(() => vi.fn(() => new FormData()));
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
 const resolveBundleIdByNameMock = vi.hoisted(() => vi.fn());
 const inquirerConfirmBooleanMock = vi.hoisted(() => vi.fn());
@@ -17,7 +18,7 @@ vi.mock('../../helpers/index.js', async (importOriginal) => {
     buildOpaBundleTarball: buildOpaBundleTarballMock,
     buildPolicyEngineClient: buildPolicyEngineClientMock,
     resolveBundleIdByName: resolveBundleIdByNameMock,
-    buildPolicyBundleFormData: vi.fn(() => new FormData()),
+    buildPolicyBundleFormData: buildPolicyBundleFormDataMock,
     defaultPolicyVersionLabel: vi.fn(() => 'abc123'),
   };
 });
@@ -85,6 +86,25 @@ describe('publish', () => {
     });
 
     expect(post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', expect.any(Object));
+    expect(buildOpaBundleTarballMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        fs: testFs,
+        path: context.path,
+        os: context.os,
+        env: context.process.env,
+      }),
+    );
+    expect(buildPolicyBundleFormDataMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bundlePath: '/tmp/bundle.tar.gz',
+        bundleName: 'main',
+      }),
+      {
+        fs: testFs,
+        path: context.path,
+      },
+    );
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
     expect(context.stdout).toContain('"version": "abc123"');
     expect(context.stdout).toContain(
