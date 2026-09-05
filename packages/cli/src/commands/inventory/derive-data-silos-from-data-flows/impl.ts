@@ -5,10 +5,10 @@ import colors from 'colors';
 
 import { DataFlowInput } from '../../../codecs.js';
 import type { LocalContext } from '../../../context.js';
-import { listFiles } from '../../../lib/api-keys/index.js';
+import { filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { dataFlowsToDataSilos } from '../../../lib/consent-manager/dataFlowsToDataSilos.js';
-import { readTranscendYaml, writeTranscendYaml } from '../../../lib/readTranscendYaml.js';
+import { parseTranscendYaml, serializeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
 export interface DeriveDataSilosFromDataFlowsCommandFlags {
   auth: string;
@@ -55,10 +55,14 @@ export async function deriveDataSilosFromDataFlows(
   });
 
   // List of each data flow yml file
-  listFiles(dataFlowsYmlFolder).forEach((directory) => {
+  filterFileNames(this.fs.readdirSync(dataFlowsYmlFolder)).forEach((directory) => {
+    const inputPath = path.join(dataFlowsYmlFolder, directory);
+
     // read in the data flows for a specific instance
-    const { 'data-flows': dataFlows = [] } = readTranscendYaml(
-      path.join(dataFlowsYmlFolder, directory),
+    const { 'data-flows': dataFlows = [] } = parseTranscendYaml(
+      this.fs.readFileSync(inputPath, 'utf8'),
+      {},
+      inputPath,
     );
 
     // map the data flows to data silos
@@ -75,8 +79,11 @@ export async function deriveDataSilosFromDataFlows(
     this.logger.log(`Total Services: ${dataSilos.length}`);
     this.logger.log(`Ad Tech Services: ${adTechDataSilos.length}`);
     this.logger.log(`Site Tech Services: ${siteTechDataSilos.length}`);
-    writeTranscendYaml(path.join(dataSilosYmlFolder, directory), {
-      'data-silos': ignoreYmls.includes(directory) ? [] : dataSilos,
-    });
+    this.fs.writeFileSync(
+      path.join(dataSilosYmlFolder, directory),
+      serializeTranscendYaml({
+        'data-silos': ignoreYmls.includes(directory) ? [] : dataSilos,
+      }),
+    );
   });
 }

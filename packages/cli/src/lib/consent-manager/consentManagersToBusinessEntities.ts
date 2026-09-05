@@ -1,5 +1,4 @@
 import { BusinessEntityInput, ConsentManagerInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
 
 /**
  * Combine multiple consent manager configurations into a list of business entity configurations
@@ -15,8 +14,7 @@ export function consentManagersToBusinessEntities(
     input?: ConsentManagerInput;
   }[],
 ): BusinessEntityInput[] {
-  // Construct the business entities YAML definition
-  const businessEntities = inputs.map(
+  return inputs.map(
     ({ name, input }): BusinessEntityInput => ({
       // Title of Transcend Instance
       title: name.replace('.yml', ''),
@@ -59,16 +57,4 @@ export function consentManagersToBusinessEntities(
       ],
     }),
   );
-
-  // Log out info on airgap scripts to host
-  logger.info('\n\n~~~~~~~~~~~\nAirgap scripts to host:');
-  businessEntities.forEach(({ attributes, title }, ind) => {
-    attributes
-      ?.find((attr) => attr.key === 'Airgap Production URL')
-      ?.values?.forEach((url) => {
-        logger.info(`${ind}) ${title} - ${url}`);
-      });
-  });
-
-  return businessEntities;
 }

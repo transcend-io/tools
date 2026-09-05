@@ -6,7 +6,7 @@ import * as t from 'io-ts';
 import { ConsentManagerServiceMetadata, CookieInput, DataFlowInput } from '../../../codecs.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { writeTranscendYaml } from '../../../lib/readTranscendYaml.js';
+import { serializeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
 export interface ConsentManagerServiceJsonToYmlCommandFlags {
   file: string;
@@ -55,11 +55,13 @@ export function consentManagerServiceJsonToYml(
     });
   });
 
-  // write to disk
-  writeTranscendYaml(output, {
-    'data-flows': dataFlows,
-    cookies,
-  });
+  this.fs.writeFileSync(
+    output,
+    serializeTranscendYaml({
+      'data-flows': dataFlows,
+      cookies,
+    }),
+  );
 
   this.logger.info(
     colors.green(
