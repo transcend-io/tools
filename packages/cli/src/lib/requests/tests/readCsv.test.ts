@@ -3,9 +3,15 @@ import { join } from 'node:path';
 import * as t from 'io-ts';
 import { expect, describe, it } from 'vitest';
 
-import { readCsv } from '../index.js';
+import { parseCsv, readCsv } from '../index.js';
 
 describe('readCsv', () => {
+  it('parses and validates CSV contents without filesystem access', () => {
+    expect(
+      parseCsv('name,value\nexample,one\n', t.type({ name: t.string, value: t.string })),
+    ).to.deep.equal([{ name: 'example', value: 'one' }]);
+  });
+
   it('should successfully parse a csv', () => {
     expect(readCsv(join(__dirname, 'sample.csv'), t.record(t.string, t.string))).to.deep.equal([
       {

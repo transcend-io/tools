@@ -1,24 +1,12 @@
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, syncCookies } from '@transcend-io/sdk';
-import { splitCsvToList } from '@transcend-io/utils';
 import colors from 'colors';
 
-import { CookieInput, CookieCsvInput } from '../../codecs.js';
+import { CookieCsvInput } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/readCsv.js';
-
-const OMIT_COLUMNS = [
-  'ID',
-  'Activity',
-  'Encounters',
-  'Last Seen At',
-  'Has Native Do Not Sell/Share Support',
-  'IAB USP API Support',
-  'Service Description',
-  'Website URL',
-  'Categories of Recipients',
-];
+import { mapCookieCsvRowsToInputs } from './mapConsentCsvRowsToInputs.js';
 
 /**
  * Upload a set of cookies from CSV
@@ -47,43 +35,7 @@ export async function uploadCookiesFromCsv({
   logger.info(colors.magenta(`Reading "${file}" from disk`));
   const cookieInputs = readCsv(file, CookieCsvInput);
 
-  // Convert these  inputs into a format that the other function can use
-  const validatedCookieInputs = cookieInputs.map(
-    ({
-      'Is Regex?': isRegex,
-      Notes,
-      // TODO: https://transcend.height.app/T-26391 - export in CSV
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      Service,
-      Purpose,
-      Status,
-      Owners,
-      Teams,
-      Name,
-      ...rest
-    }): CookieInput => ({
-      ...(typeof isRegex === 'string' ? { isRegex: isRegex.toLowerCase() === 'true' } : {}),
-      name: Name,
-      description: Notes,
-      trackingPurposes: splitCsvToList(Purpose),
-      // TODO: https://transcend.height.app/T-26391
-      // service: Service,
-      // Apply the trackerStatus to all values in the CSV -> allows for customer to define tracker status
-      // on a row by row basis if needed
-      status: Status || trackerStatus,
-      owners: Owners ? splitCsvToList(Owners) : undefined,
-      teams: Teams ? splitCsvToList(Teams) : undefined,
-      // all remaining options are attribute
-      attributes: Object.entries(rest)
-        // filter out native columns that are exported from the admin dashboard
-        // but not custom attributes
-        .filter(([key]) => !OMIT_COLUMNS.includes(key))
-        .map(([key, value]) => ({
-          key,
-          values: splitCsvToList(value),
-        })),
-    }),
-  );
+  const validatedCookieInputs = mapCookieCsvRowsToInputs(cookieInputs, trackerStatus);
 
   // Upload the cookies into Transcend dashboard
   const syncedCookies = await syncCookies(client, validatedCookieInputs, { logger });
