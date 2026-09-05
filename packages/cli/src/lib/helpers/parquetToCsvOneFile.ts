@@ -32,7 +32,7 @@ export type ParquetToCsvOneFileOptions = {
   onProgress?: OnProgress;
 };
 
-/** Optional runtime dependencies used by the conversion helper. */
+/** Runtime dependencies used by the conversion helper. */
 export interface ParquetToCsvOneFileDependencies {
   /** Creates the output directory. */
   mkdirSync: typeof mkdirSync;
@@ -82,30 +82,29 @@ const defaultDependencies: ParquetToCsvOneFileDependencies = {
  *
  * @param opts - Conversion options
  * @param DuckDb - DuckDB instance to use
- * @param dependencies - Optional runtime dependency overrides
+ * @param dependencies - Runtime dependencies
  * @returns Promise<void> when the CSV has been written
  */
 export async function parquetToCsvOneFile(
   opts: ParquetToCsvOneFileOptions,
   DuckDb: typeof DuckDBInstance,
-  dependencies: Partial<ParquetToCsvOneFileDependencies> = {},
+  dependencies: ParquetToCsvOneFileDependencies = defaultDependencies,
 ): Promise<void> {
   const { filePath, outputDir, clearOutputDir, onProgress } = opts;
-  const deps = { ...defaultDependencies, ...dependencies };
 
   const baseDir = outputDir || dirname(filePath);
   const { name: baseName } = parse(filePath);
   const outPath = join(baseDir, `${baseName}.csv`);
 
   // Ensure output directory exists
-  deps.mkdirSync(baseDir, { recursive: true });
+  dependencies.mkdirSync(baseDir, { recursive: true });
 
   // Remove any pre-existing output file if requested
-  if (clearOutputDir && deps.existsSync(outPath)) {
+  if (clearOutputDir && dependencies.existsSync(outPath)) {
     try {
-      deps.rmSync(outPath, { force: true });
+      dependencies.rmSync(outPath, { force: true });
     } catch (err) {
-      deps.logger.warn(
+      dependencies.logger.warn(
         colors.yellow(
           `Could not remove existing output file ${outPath}: ${(err as Error).message}`,
         ),
@@ -142,7 +141,7 @@ export async function parquetToCsvOneFile(
     // Best-effort progress notification (DuckDB JS API doesn't expose progress for COPY)
     onProgress?.(0, undefined);
 
-    deps.logger.info(colors.green(`Wrote CSV → ${outPath}`));
+    dependencies.logger.info(colors.green(`Wrote CSV → ${outPath}`));
   } finally {
     // Close connection + db handles gracefully
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

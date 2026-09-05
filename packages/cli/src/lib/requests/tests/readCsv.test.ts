@@ -1,7 +1,8 @@
+import fs from 'node:fs';
 import { join } from 'node:path';
 
 import * as t from 'io-ts';
-import { expect, describe, it } from 'vitest';
+import { expect, describe, it, vi } from 'vitest';
 
 import { readCsv } from '../index.js';
 
@@ -32,6 +33,19 @@ describe('readCsv', () => {
         WORK_PHONE: '',
       },
     ]);
+  });
+
+  it('reads through injected filesystem dependencies', () => {
+    const readFileSync = vi.fn(() => 'name\nvalue\n');
+
+    expect(
+      readCsv(join(__dirname, 'ignored.csv'), t.type({ name: t.string }), undefined, {
+        fs: {
+          readFileSync: readFileSync as unknown as typeof fs.readFileSync,
+        },
+      }),
+    ).to.deep.equal([{ name: 'value' }]);
+    expect(readFileSync).toHaveBeenCalledWith(join(__dirname, 'ignored.csv'), 'utf-8');
   });
 
   it('throw an error for invalid file', () => {

@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import type { CustomFunctionConfigInput } from '@transcend-io/sdk';
@@ -9,6 +9,29 @@ import yaml from 'js-yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 
 import { replaceVariablesInYaml } from '../readTranscendYaml.js';
+
+/** Runtime dependencies used to read custom function manifests. */
+export interface ReadCustomFunctionsManifestDependencies {
+  /** Filesystem operations used to read manifest files. */
+  readonly fs: Pick<typeof fs, 'existsSync' | 'readFileSync'>;
+  /** Path operations used to resolve manifest-relative files. */
+  readonly path: Pick<typeof path, 'dirname' | 'resolve'>;
+}
+
+/** Runtime dependencies used to update custom function manifests. */
+export interface WriteCustomFunctionIdsToManifestDependencies {
+  /** Filesystem operations used to read and update manifest files. */
+  readonly fs: Pick<typeof fs, 'readFileSync' | 'writeFileSync'>;
+}
+
+const defaultReadDependencies: ReadCustomFunctionsManifestDependencies = {
+  fs,
+  path,
+};
+
+const defaultWriteDependencies: WriteCustomFunctionIdsToManifestDependencies = {
+  fs,
+};
 
 export const CustomFunctionManifestEntry = t.intersection([
   t.type({
@@ -100,14 +123,6 @@ export const CustomFunctionsManifest = t.type({
 export type CustomFunctionsManifest = t.TypeOf<typeof CustomFunctionsManifest>;
 
 /**
- * Read a custom functions manifest from disk, apply variable substitution,
- * validate its shape, and load each function's source code.
- *
- * @param filePath - Path to the manifest YAML file
- * @param variables - Variables to fill into `<<parameters.x>>` placeholders
- * @returns The custom function configs, with code loaded from disk
- */
-/**
  * A custom function config from the manifest, plus CLI-level settings that
  * are not part of the SDK sync input.
  */
@@ -123,11 +138,21 @@ export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
   }[];
 };
 
+/**
+ * Read a custom functions manifest from disk, apply variable substitution,
+ * validate its shape, and load each function's source code.
+ *
+ * @param filePath - Path to the manifest YAML file
+ * @param variables - Variables to fill into `<<parameters.x>>` placeholders
+ * @param dependencies - Runtime filesystem and path operations.
+ * @returns The custom function configs, with code loaded from disk
+ */
 export function readCustomFunctionsManifest(
   filePath: string,
   variables: ObjByString = {},
+  dependencies: ReadCustomFunctionsManifestDependencies = defaultReadDependencies,
 ): CustomFunctionManifestConfig[] {
-  const fileContents = readFileSync(filePath, 'utf-8');
+  const fileContents = dependencies.fs.readFileSync(filePath, 'utf-8');
 
   const replacedVariables = replaceVariablesInYaml(
     fileContents,
@@ -160,7 +185,7 @@ export function readCustomFunctionsManifest(
     );
   }
 
-  const manifestDir = dirname(resolve(filePath));
+  const manifestDir = dependencies.path.dirname(dependencies.path.resolve(filePath));
 
   /**
    * Load and parse a JSON test payload file.
@@ -170,13 +195,13 @@ export function readCustomFunctionsManifest(
    * @returns The parsed payload object
    */
   const loadTestPayload = (entryName: string, payloadFile: string): object => {
-    const testPayloadPath = resolve(manifestDir, payloadFile);
-    if (!existsSync(testPayloadPath)) {
+    const testPayloadPath = dependencies.path.resolve(manifestDir, payloadFile);
+    if (!dependencies.fs.existsSync(testPayloadPath)) {
       throw new Error(
         `Test payload file for custom function "${entryName}" does not exist: ${testPayloadPath}`,
       );
     }
-    const rawPayload = readFileSync(testPayloadPath, 'utf-8');
+    const rawPayload = dependencies.fs.readFileSync(testPayloadPath, 'utf-8');
     try {
       return JSON.parse(rawPayload);
     } catch (err) {
@@ -188,8 +213,8 @@ export function readCustomFunctionsManifest(
   };
 
   return manifest.functions.map((entry) => {
-    const codePath = resolve(manifestDir, entry.code);
-    if (!existsSync(codePath)) {
+    const codePath = dependencies.path.resolve(manifestDir, entry.code);
+    if (!dependencies.fs.existsSync(codePath)) {
       throw new Error(`Code file for custom function "${entry.name}" does not exist: ${codePath}`);
     }
 
@@ -225,7 +250,7 @@ export function readCustomFunctionsManifest(
 
     return {
       name: entry.name,
-      code: readFileSync(codePath, 'utf-8'),
+      code: dependencies.fs.readFileSync(codePath, 'utf-8'),
       ...(entry.id !== undefined ? { id: entry.id } : {}),
       ...(entry.description !== undefined ? { description: entry.description } : {}),
       ...(entry.type !== undefined ? { type: entry.type } : {}),
@@ -269,13 +294,15 @@ export interface CustomFunctionManifestIds {
  * @param filePath - Path to the manifest YAML file
  * @param idsByIndex - IDs for each manifest entry, by array index (undefined
  *   entries are left unchanged)
+ * @param dependencies - Runtime filesystem and path operations.
  * @returns The number of entries that were updated
  */
 export function writeCustomFunctionIdsToManifest(
   filePath: string,
   idsByIndex: (CustomFunctionManifestIds | undefined)[],
+  dependencies: WriteCustomFunctionIdsToManifestDependencies = defaultWriteDependencies,
 ): number {
-  const document = parseDocument(readFileSync(filePath, 'utf-8'));
+  const document = parseDocument(dependencies.fs.readFileSync(filePath, 'utf-8'));
   const functions = document.get('functions');
   if (!isSeq(functions)) {
     throw new Error(`Expected a \`functions\` list in manifest: ${filePath}`);
@@ -305,7 +332,7 @@ export function writeCustomFunctionIdsToManifest(
   });
 
   if (updated > 0) {
-    writeFileSync(filePath, document.toString());
+    dependencies.fs.writeFileSync(filePath, document.toString());
   }
   return updated;
 }

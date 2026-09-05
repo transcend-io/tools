@@ -1,9 +1,17 @@
-import { readFileSync } from 'node:fs';
+import fs from 'node:fs';
 
 import { decodeCodec } from '@transcend-io/type-utils';
 import type { Options } from 'csv-parse';
 import { parse } from 'csv-parse/sync';
 import * as t from 'io-ts';
+
+/** Runtime dependencies used to read CSV files. */
+export interface ReadCsvDependencies {
+  /** Filesystem operations used to read CSV files. */
+  readonly fs: Pick<typeof fs, 'readFileSync'>;
+}
+
+const defaultDependencies: ReadCsvDependencies = { fs };
 
 /**
  * Read in a CSV and validate its shape
@@ -11,15 +19,17 @@ import * as t from 'io-ts';
  * @param pathToFile - Path to file
  * @param codec - The codec to validate against. This is the codec for individual, non-header, rows
  * @param options - CSV parse options
+ * @param dependencies - Runtime dependencies used to read the file
  * @returns The JSON data
  */
 export function readCsv<T extends t.Any>(
   pathToFile: string,
   codec: T,
   options: Options = { columns: true },
+  dependencies: ReadCsvDependencies = defaultDependencies,
 ): t.TypeOf<T>[] {
   // read file contents and parse
-  const fileContent = parse(readFileSync(pathToFile, 'utf-8'), options);
+  const fileContent = parse(dependencies.fs.readFileSync(pathToFile, 'utf-8'), options);
 
   // validate codec
   const data = decodeCodec(t.array(codec), fileContent);

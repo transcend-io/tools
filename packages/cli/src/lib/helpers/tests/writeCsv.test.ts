@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import fs, { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Writable } from 'node:stream';
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import {
   writeCsvSync,
@@ -91,6 +92,26 @@ describe('CSV helpers', () => {
 
   // ---- writeCsv (async) -----------------------------------------------------
   describe('writeCsv (async)', () => {
+    it('writes through injected filesystem dependencies', async () => {
+      const chunks: string[] = [];
+      const destination = new Writable({
+        write(chunk, _encoding, callback) {
+          chunks.push(chunk.toString());
+          callback();
+        },
+      });
+      const createWriteStream = vi.fn(() => destination);
+
+      await writeCsv('/ignored.csv', [{ a: 1 }], true, {
+        fs: {
+          createWriteStream: createWriteStream as unknown as typeof fs.createWriteStream,
+        },
+      });
+
+      expect(createWriteStream).toHaveBeenCalledWith('/ignored.csv');
+      expect(chunks.join('')).toBe('a\n1');
+    });
+
     it('writes with inferred headers=true', async () => {
       const file = join(dir, 'async-true.csv');
       const data = [

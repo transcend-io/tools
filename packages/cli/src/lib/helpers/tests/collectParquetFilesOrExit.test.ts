@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join as pathJoin } from 'node:path';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -95,5 +96,17 @@ describe('collectParquetFilesOrExit', () => {
 
     expect(out).toEqual([pathJoin('/root', 'real.parquet')]);
     expect(ctx.process.exit).not.toHaveBeenCalled();
+  });
+
+  it('accepts a legacy process-only context', () => {
+    const directory = fs.mkdtempSync(pathJoin(tmpdir(), 'collect-parquet-'));
+    const file = pathJoin(directory, 'input.parquet');
+    fs.writeFileSync(file, '');
+
+    try {
+      expect(collectParquetFilesOrExit(directory, { process: ctx.process })).toEqual([file]);
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
   });
 });

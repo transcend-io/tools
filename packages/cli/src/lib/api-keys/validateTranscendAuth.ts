@@ -20,36 +20,38 @@ export interface ValidateTranscendAuthDependencies {
   readonly logger: CliLogger;
 }
 
+const defaultValidateTranscendAuthDependencies: ValidateTranscendAuthDependencies = {
+  fs,
+  exit: process.exit,
+  logger,
+};
+
 /**
  * Determine if the `--auth` parameter is an API key or a path to a JSON
  * file containing a list of API keys.
  *
  * @param auth - Raw auth parameter
- * @param dependencies - Optional runtime dependency overrides
+ * @param dependencies - Runtime dependencies
  * @returns The API key or the list API keys
  */
 export function validateTranscendAuth(
   auth: string,
-  dependencies: Partial<ValidateTranscendAuthDependencies> = {},
+  dependencies: ValidateTranscendAuthDependencies = defaultValidateTranscendAuthDependencies,
 ): string | StoredApiKey[] {
-  const runtimeFs = dependencies.fs ?? fs;
-  const runtimeExit = dependencies.exit ?? process.exit;
-  const runtimeLogger = dependencies.logger ?? logger;
-
   // Ensure auth is passed
   if (!auth) {
-    runtimeLogger.error(
+    dependencies.logger.error(
       colors.red(
         'A Transcend API key must be provided. You can specify using --auth=$TRANSCEND_API_KEY',
       ),
     );
-    runtimeExit(1);
+    dependencies.exit(1);
   }
 
   // Read from disk
-  if (runtimeFs.existsSync(auth)) {
+  if (dependencies.fs.existsSync(auth)) {
     // validate that file is a list of API keys
-    return decodeCodec(t.array(StoredApiKey), runtimeFs.readFileSync(auth, 'utf-8'));
+    return decodeCodec(t.array(StoredApiKey), dependencies.fs.readFileSync(auth, 'utf-8'));
   }
 
   // Return as single API key

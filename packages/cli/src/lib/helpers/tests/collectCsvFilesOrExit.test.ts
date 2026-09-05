@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join as pathJoin } from 'node:path';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -91,5 +92,17 @@ describe('collectCsvFilesOrExit', () => {
 
     expect(out).toEqual([pathJoin('/root', 'real.csv')]);
     expect(ctx.process.exit).not.toHaveBeenCalled();
+  });
+
+  it('accepts a legacy process-only context', () => {
+    const directory = fs.mkdtempSync(pathJoin(tmpdir(), 'collect-csv-'));
+    const file = pathJoin(directory, 'input.csv');
+    fs.writeFileSync(file, 'id\n1\n');
+
+    try {
+      expect(collectCsvFilesOrExit(directory, { process: ctx.process })).toEqual([file]);
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
   });
 });

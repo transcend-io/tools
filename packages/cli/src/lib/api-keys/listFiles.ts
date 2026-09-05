@@ -1,4 +1,12 @@
-import { existsSync, readdirSync } from 'node:fs';
+import fs from 'node:fs';
+
+/** Runtime dependencies used to list files. */
+export interface ListFilesDependencies {
+  /** Filesystem operations used to inspect a directory. */
+  readonly fs: Pick<typeof fs, 'existsSync' | 'readdirSync'>;
+}
+
+const defaultDependencies: ListFilesDependencies = { fs };
 
 /**
  * List the files in a directory
@@ -13,18 +21,21 @@ import { existsSync, readdirSync } from 'node:fs';
  * @param directory - The directory to search
  * @param validExtensions - The list of valid extensions
  * @param removeExtensions - When true, remove the extensions from the listed files
+ * @param dependencies - Runtime dependencies used to inspect the directory
  * @returns The list of files in the directory
  */
 export function listFiles(
   directory: string,
   validExtensions?: string[],
   removeExtensions = false,
+  dependencies: ListFilesDependencies = defaultDependencies,
 ): string[] {
-  if (!existsSync(directory)) {
+  if (!dependencies.fs.existsSync(directory)) {
     return [];
   }
 
-  const files = readdirSync(directory)
+  const files = dependencies.fs
+    .readdirSync(directory)
     .filter((fil) =>
       validExtensions ? validExtensions.filter((ext) => fil.endsWith(ext)).length : true,
     )

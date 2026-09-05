@@ -1,7 +1,50 @@
-import { createWriteStream, writeFileSync, appendFileSync } from 'node:fs';
+import fs from 'node:fs';
 
 import { ObjByString } from '@transcend-io/type-utils';
 import * as fastcsv from 'fast-csv';
+
+/** Runtime dependencies used to write CSV files synchronously. */
+export interface WriteCsvSyncDependencies {
+  /** Filesystem operations used to write a CSV file. */
+  readonly fs: Pick<typeof fs, 'writeFileSync'>;
+}
+
+/** Runtime dependencies used to initialize CSV files. */
+export interface InitCsvFileDependencies {
+  /** Filesystem operations used to initialize a CSV file. */
+  readonly fs: Pick<typeof fs, 'writeFileSync'>;
+}
+
+/** Runtime dependencies used to append ordered CSV rows. */
+export interface AppendCsvRowsOrderedDependencies {
+  /** Filesystem operations used to append CSV rows. */
+  readonly fs: Pick<typeof fs, 'appendFileSync'>;
+}
+
+/** Runtime dependencies used to append CSV files synchronously. */
+export interface AppendCsvSyncDependencies {
+  /** Filesystem operations used to append a CSV file. */
+  readonly fs: Pick<typeof fs, 'appendFileSync'>;
+}
+
+/** Runtime dependencies used to write CSV files asynchronously. */
+export interface WriteCsvDependencies {
+  /** Filesystem operations used to create the destination stream. */
+  readonly fs: Pick<typeof fs, 'createWriteStream'>;
+}
+
+/** Runtime dependencies used to write large CSV files. */
+export interface WriteLargeCsvDependencies {
+  /** Filesystem operations used to create the destination stream. */
+  readonly fs: Pick<typeof fs, 'createWriteStream'>;
+}
+
+const defaultWriteCsvSyncDependencies: WriteCsvSyncDependencies = { fs };
+const defaultInitCsvFileDependencies: InitCsvFileDependencies = { fs };
+const defaultAppendCsvRowsOrderedDependencies: AppendCsvRowsOrderedDependencies = { fs };
+const defaultAppendCsvSyncDependencies: AppendCsvSyncDependencies = { fs };
+const defaultWriteCsvDependencies: WriteCsvDependencies = { fs };
+const defaultWriteLargeCsvDependencies: WriteLargeCsvDependencies = { fs };
 
 /**
  * Escape a CSV value
@@ -22,8 +65,14 @@ function escapeCsvValue(value: string): string {
  * @param filePath - File to write out to
  * @param data - Data to write
  * @param headers - Headers. If true, use object keys as headers. If array, use provided headers.
+ * @param dependencies - Runtime dependencies used to write the file
  */
-export function writeCsvSync(filePath: string, data: ObjByString[], headers: string[]): void {
+export function writeCsvSync(
+  filePath: string,
+  data: ObjByString[],
+  headers: string[],
+  dependencies: WriteCsvSyncDependencies = defaultWriteCsvSyncDependencies,
+): void {
   const rows: string[][] = [];
 
   rows.push(headers);
@@ -33,7 +82,7 @@ export function writeCsvSync(filePath: string, data: ObjByString[], headers: str
   const csvContent = rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n');
 
   // Write to file, overwriting existing content
-  writeFileSync(filePath, csvContent);
+  dependencies.fs.writeFileSync(filePath, csvContent);
 }
 
 /**
@@ -41,14 +90,19 @@ export function writeCsvSync(filePath: string, data: ObjByString[], headers: str
  *
  * @param filePath - CSV path
  * @param headers - Ordered list of column names; if empty, creates/empties the file
+ * @param dependencies - Runtime dependencies used to initialize the file
  */
-export function initCsvFile(filePath: string, headers: string[]): void {
+export function initCsvFile(
+  filePath: string,
+  headers: string[],
+  dependencies: InitCsvFileDependencies = defaultInitCsvFileDependencies,
+): void {
   if (!headers || headers.length === 0) {
-    writeFileSync(filePath, '');
+    dependencies.fs.writeFileSync(filePath, '');
     return;
   }
   const headerLine = headers.map(escapeCsvValue).join(',');
-  writeFileSync(filePath, `${headerLine}\n`);
+  dependencies.fs.writeFileSync(filePath, `${headerLine}\n`);
 }
 
 /**
@@ -58,11 +112,13 @@ export function initCsvFile(filePath: string, headers: string[]): void {
  * @param filePath - CSV path
  * @param data - Row objects
  * @param headerOrder - Column order to apply
+ * @param dependencies - Runtime dependencies used to append rows
  */
 export function appendCsvRowsOrdered(
   filePath: string,
   data: ObjByString[],
   headerOrder: string[],
+  dependencies: AppendCsvRowsOrderedDependencies = defaultAppendCsvRowsOrderedDependencies,
 ): void {
   if (!data.length) return;
 
@@ -74,7 +130,7 @@ export function appendCsvRowsOrdered(
     return vals.map(escapeCsvValue).join(',');
   });
 
-  appendFileSync(filePath, `${lines.join('\n')}\n`);
+  dependencies.fs.appendFileSync(filePath, `${lines.join('\n')}\n`);
 }
 
 /**
@@ -83,8 +139,13 @@ export function appendCsvRowsOrdered(
  *
  * @param filePath - File to append to
  * @param data - Data to append
+ * @param dependencies - Runtime dependencies used to append the file
  */
-export function appendCsvSync(filePath: string, data: ObjByString[]): void {
+export function appendCsvSync(
+  filePath: string,
+  data: ObjByString[],
+  dependencies: AppendCsvSyncDependencies = defaultAppendCsvSyncDependencies,
+): void {
   // Convert data to CSV rows
   const rows = data.map((row) => Object.values(row));
 
@@ -92,7 +153,7 @@ export function appendCsvSync(filePath: string, data: ObjByString[]): void {
   const csvContent = rows.map((row) => row.map(escapeCsvValue).join(',')).join('\n');
 
   // Append to file with leading newline
-  appendFileSync(filePath, `\n${csvContent}`);
+  dependencies.fs.appendFileSync(filePath, `\n${csvContent}`);
 }
 
 /**
@@ -101,13 +162,15 @@ export function appendCsvSync(filePath: string, data: ObjByString[]): void {
  * @param filePath - File to write out to
  * @param data - Data to write
  * @param headers - Headers
+ * @param dependencies - Runtime dependencies used to write the file
  */
 export async function writeCsv(
   filePath: string,
   data: ObjByString[],
   headers: boolean | string[] = true,
+  dependencies: WriteCsvDependencies = defaultWriteCsvDependencies,
 ): Promise<void> {
-  const ws = createWriteStream(filePath);
+  const ws = dependencies.fs.createWriteStream(filePath);
   await new Promise<void>((resolve, reject) => {
     try {
       const stream = fastcsv.write(data, { headers, objectMode: true }).on('error', reject);
@@ -178,12 +241,14 @@ function waitForDrain(stream: NodeJS.WritableStream): Promise<void> {
  * @param filePath - File to write out to
  * @param data - Data to write (iterated without buffering the entire file content)
  * @param headers - If true, infer from first row; if string[], use provided; if false, omit header row
+ * @param dependencies - Runtime dependencies used to write the file
  * @returns Array with a single written file path
  */
 export async function writeLargeCsv(
   filePath: string,
   data: ObjByString[],
   headers: boolean | string[] = true,
+  dependencies: WriteLargeCsvDependencies = defaultWriteLargeCsvDependencies,
 ): Promise<string[]> {
   // Determine header order
   let headerOrder: string[] | false;
@@ -195,7 +260,7 @@ export async function writeLargeCsv(
     headerOrder = false;
   }
 
-  const ws = createWriteStream(filePath);
+  const ws = dependencies.fs.createWriteStream(filePath);
   const csvStream = fastcsv.format<ObjByString, ObjByString>({
     headers: headerOrder || undefined,
     objectMode: true,

@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import fs from 'node:fs';
 
 import { decodeCodec, ObjByString } from '@transcend-io/type-utils';
 import yaml from 'js-yaml';
@@ -7,6 +7,21 @@ import { TranscendInput } from '../codecs.js';
 
 export const VARIABLE_PARAMETERS_REGEXP = /<<parameters\.(.+?)>>/;
 export const VARIABLE_PARAMETERS_NAME = 'parameters';
+
+/** Runtime dependencies used to read Transcend YAML files. */
+export interface ReadTranscendYamlDependencies {
+  /** Filesystem operations used to read YAML files. */
+  readonly fs: Pick<typeof fs, 'readFileSync'>;
+}
+
+/** Runtime dependencies used to write Transcend YAML files. */
+export interface WriteTranscendYamlDependencies {
+  /** Filesystem operations used to write YAML files. */
+  readonly fs: Pick<typeof fs, 'writeFileSync'>;
+}
+
+const defaultReadDependencies: ReadTranscendYamlDependencies = { fs };
+const defaultWriteDependencies: WriteTranscendYamlDependencies = { fs };
 
 /**
  * Function that replaces variables in a text file.
@@ -47,11 +62,16 @@ ${extraErrorMessage}`,
  *
  * @param filePath - Path to yaml file
  * @param variables - Variables to fill in
+ * @param dependencies - Runtime dependencies used to read the file
  * @returns The contents of the yaml file, type-checked
  */
-export function readTranscendYaml(filePath: string, variables: ObjByString = {}): TranscendInput {
+export function readTranscendYaml(
+  filePath: string,
+  variables: ObjByString = {},
+  dependencies: ReadTranscendYamlDependencies = defaultReadDependencies,
+): TranscendInput {
   // Read in contents
-  const fileContents = readFileSync(filePath, 'utf-8');
+  const fileContents = dependencies.fs.readFileSync(filePath, 'utf-8');
 
   // Replace variables
   const replacedVariables = replaceVariablesInYaml(
@@ -69,7 +89,12 @@ export function readTranscendYaml(filePath: string, variables: ObjByString = {})
  *
  * @param filePath - Path to yaml file
  * @param input - The input to write out
+ * @param dependencies - Runtime dependencies used to write the file
  */
-export function writeTranscendYaml(filePath: string, input: TranscendInput): void {
-  writeFileSync(filePath, yaml.dump(decodeCodec(TranscendInput, input)));
+export function writeTranscendYaml(
+  filePath: string,
+  input: TranscendInput,
+  dependencies: WriteTranscendYamlDependencies = defaultWriteDependencies,
+): void {
+  dependencies.fs.writeFileSync(filePath, yaml.dump(decodeCodec(TranscendInput, input)));
 }
