@@ -1,7 +1,10 @@
 import fastGlob from 'fast-glob';
 
-import { logger } from '../../logger.js';
-import { CodeScanningConfig } from './types.js';
+import {
+  type CodeScanningConfig,
+  type CodeScanningRuntime,
+  defaultCodeScanningRuntime,
+} from './types.js';
 
 export interface SiloDiscoveryRawResults {
   /** The name of the potential data silo entry */
@@ -19,23 +22,27 @@ export interface SiloDiscoveryRawResults {
  *
  * @deprecated TODO: https://transcend.height.app/T-32325 - use code scanning instead
  * @param options - Options
+ * @param runtime - Runtime dependencies used to scan package files
  * @returns the list of integrations
  */
-export async function findFilesToScan({
-  scanPath,
-  fileGlobs,
-  ignoreDirs,
-  config,
-}: {
-  /** Where to look for package.json files */
-  scanPath: string;
-  /** Globs to look for */
-  fileGlobs: string;
-  /** The directories to ignore (excludes node_modules and serverless-build) */
-  ignoreDirs: string;
-  /** Silo Discovery configuration */
-  config: CodeScanningConfig;
-}): Promise<SiloDiscoveryRawResults[]> {
+export async function findFilesToScan(
+  {
+    scanPath,
+    fileGlobs,
+    ignoreDirs,
+    config,
+  }: {
+    /** Where to look for package.json files */
+    scanPath: string;
+    /** Globs to look for */
+    fileGlobs: string;
+    /** The directories to ignore (excludes node_modules and serverless-build) */
+    ignoreDirs: string;
+    /** Silo Discovery configuration */
+    config: CodeScanningConfig;
+  },
+  runtime: CodeScanningRuntime = defaultCodeScanningRuntime,
+): Promise<SiloDiscoveryRawResults[]> {
   const { ignoreDirs: IGNORE_DIRS, supportedFiles, scanFunction } = config;
   const globsToSupport =
     fileGlobs === '' ? supportedFiles : supportedFiles.concat(fileGlobs.split(','));
@@ -46,14 +53,16 @@ export async function findFilesToScan({
       unique: true,
       onlyFiles: true,
     });
-    logger.info(`Scanning: ${filesToScan.length} files`);
-    const allPackages = filesToScan.map((filePath: string) => scanFunction(filePath)).flat();
+    runtime.logger.info(`Scanning: ${filesToScan.length} files`);
+    const allPackages = filesToScan
+      .map((filePath: string) => scanFunction(filePath, runtime))
+      .flat();
     const allSdks = allPackages
       .map((appPackage) => appPackage.softwareDevelopmentKits || [])
       .flat();
     const uniqueDeps = new Set(allSdks.map((sdk) => sdk.name));
     const deps = [...uniqueDeps];
-    logger.info(`Found: ${deps.length} unique dependencies`);
+    runtime.logger.info(`Found: ${deps.length} unique dependencies`);
     return deps.map((dep) => ({
       name: dep,
       resourceId: `${scanPath}/**/${dep}`,

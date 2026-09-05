@@ -52,14 +52,21 @@ export async function scanPackages(
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Scan the codebase to discovery packages
-  const results = await findCodePackagesInFolder({
-    scanPath,
-    ignoreDirs,
-    repositoryName: gitRepositoryName,
-  });
+  const results = await findCodePackagesInFolder(
+    {
+      scanPath,
+      ignoreDirs,
+      repositoryName: gitRepositoryName,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      path: this.path,
+    },
+  );
 
   // Report scan to Transcend
-  await syncCodePackages(client, results);
+  await syncCodePackages(client, results, undefined, { logger: this.logger });
 
   const newUrl = new URL(ADMIN_DASH);
   newUrl.pathname = '/code-scanning/code-packages';

@@ -36,12 +36,16 @@ export async function pullUnstructuredDiscoveryFiles(
     // Create a GraphQL client
     const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
-    const entries = await pullUnstructuredSubDataPointRecommendations(client, {
-      dataSiloIds,
-      subCategories, // TODO: https://transcend.height.app/T-40482 - do by name not ID
-      status,
-      includeEncryptedSnippets,
-    });
+    const entries = await pullUnstructuredSubDataPointRecommendations(
+      client,
+      {
+        dataSiloIds,
+        subCategories, // TODO: https://transcend.height.app/T-40482 - do by name not ID
+        status,
+        includeEncryptedSnippets,
+      },
+      { logger: this.logger },
+    );
 
     this.logger.info(colors.magenta(`Writing unstructured discovery files to file "${file}"...`));
     let headers: string[] = [];

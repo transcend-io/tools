@@ -1,11 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-
 import { CodePackageType } from '@transcend-io/privacy-types';
 import { findAllWithRegex } from '@transcend-io/type-utils';
 
 import { listFiles } from '../../api-keys/index.js';
-import { CodeScanningConfig } from '../types.js';
+import { type CodeScanningConfig, defaultCodeScanningFileRuntime } from '../types.js';
 
 const REQUIREMENTS_PACKAGE_MATCH = /(.+?)(=+)(.+)/;
 const PACKAGE_NAME = /name *= *('|")(.+?)('|")/;
@@ -14,15 +11,15 @@ const PACKAGE_DESCRIPTION = /description *= *('|")(.+?)('|")/;
 export const pythonRequirementsTxt: CodeScanningConfig = {
   supportedFiles: ['requirements.txt'],
   ignoreDirs: ['build', 'lib', 'lib64'],
-  scanFunction: (filePath) => {
-    const fileContents = readFileSync(filePath, 'utf-8');
-    const directory = dirname(filePath);
-    const filesInFolder = listFiles(directory);
+  scanFunction: (filePath, runtime = defaultCodeScanningFileRuntime) => {
+    const fileContents = runtime.fs.readFileSync(filePath, 'utf-8');
+    const directory = runtime.path.dirname(filePath);
+    const filesInFolder = listFiles(directory, undefined, false, { fs: runtime.fs });
 
     // parse setup file for name
     const setupFile = filesInFolder.find((file) => file === 'setup.py');
     const setupFileContents = setupFile
-      ? readFileSync(join(directory, setupFile), 'utf-8')
+      ? runtime.fs.readFileSync(runtime.path.join(directory, setupFile), 'utf-8')
       : undefined;
     const packageName = setupFileContents
       ? (PACKAGE_NAME.exec(setupFileContents) || [])[2]
@@ -41,7 +38,7 @@ export const pythonRequirementsTxt: CodeScanningConfig = {
 
     return [
       {
-        name: packageName || directory.split('/').pop()!,
+        name: packageName || runtime.path.basename(directory),
         description: packageDescription || undefined,
         type: CodePackageType.RequirementsTxt,
         softwareDevelopmentKits: targets.map((pkg) => ({

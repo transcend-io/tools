@@ -1,11 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
-
 import { CodePackageType } from '@transcend-io/privacy-types';
 import { findAllWithRegex } from '@transcend-io/type-utils';
 
 import { listFiles } from '../../api-keys/index.js';
-import { CodeScanningConfig } from '../types.js';
+import { type CodeScanningConfig, defaultCodeScanningFileRuntime } from '../types.js';
 
 const GEM_PACKAGE_REGEX = /gem *('|")(.+?)('|")(, *('|")(.+?)('|")|)/;
 const GEMFILE_PACKAGE_NAME_REGEX = /spec\.name *= *('|")(.+?)('|")/;
@@ -15,14 +12,16 @@ const GEMFILE_PACKAGE_SUMMARY_REGEX = /spec\.summary *= *('|")(.+?)('|")/;
 export const gemfile: CodeScanningConfig = {
   supportedFiles: ['Gemfile'],
   ignoreDirs: ['bin'],
-  scanFunction: (filePath) => {
-    const fileContents = readFileSync(filePath, 'utf-8');
-    const directory = dirname(filePath);
-    const filesInFolder = listFiles(directory);
+  scanFunction: (filePath, runtime = defaultCodeScanningFileRuntime) => {
+    const fileContents = runtime.fs.readFileSync(filePath, 'utf-8');
+    const directory = runtime.path.dirname(filePath);
+    const filesInFolder = listFiles(directory, undefined, false, { fs: runtime.fs });
 
     // parse gemspec file for name
-    const gemspec = filesInFolder.find((file) => file === '.gemspec');
-    const gemspecContents = gemspec ? readFileSync(gemspec, 'utf-8') : undefined;
+    const gemspec = filesInFolder.find((file) => file.endsWith('.gemspec'));
+    const gemspecContents = gemspec
+      ? runtime.fs.readFileSync(runtime.path.join(directory, gemspec), 'utf-8')
+      : undefined;
     const gemfileName = gemspecContents
       ? (GEMFILE_PACKAGE_NAME_REGEX.exec(gemspecContents) || [])[2]
       : undefined;
@@ -42,7 +41,7 @@ export const gemfile: CodeScanningConfig = {
 
     return [
       {
-        name: gemfileName || directory.split('/').pop()!,
+        name: gemfileName || runtime.path.basename(directory),
         description: gemfileDescription || undefined,
         type: CodePackageType.RequirementsTxt,
         softwareDevelopmentKits: targets.map((pkg) => ({

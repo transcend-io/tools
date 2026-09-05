@@ -1,7 +1,8 @@
-import { join } from 'node:path';
+import fs from 'node:fs';
+import path, { join } from 'node:path';
 
 /* eslint-disable max-lines */
-import { expect, describe, it } from 'vitest';
+import { expect, describe, it, vi } from 'vitest';
 
 import type { CodePackageInput } from '../../codecs.js';
 import { findCodePackagesInFolder } from '../code-scanning/findCodePackagesInFolder.js';
@@ -1104,12 +1105,33 @@ function sortCodePackages(codePackages: CodePackageInput[]): CodePackageInput[] 
 
 // not easy to test this but can uncomment to run against current commit
 describe('findCodePackagesInFolder', () => {
-  it('should remove links', async () => {
-    const result = await findCodePackagesInFolder({
-      repositoryName: 'transcend-io/cli',
-      scanPath: join(__dirname, '../../../examples/code-scanning'),
-    });
+  it('should discover packages with the supplied runtime', async () => {
+    const readFileSync = vi.fn((filePath: string, options: BufferEncoding) =>
+      fs.readFileSync(filePath, options),
+    );
+    const info = vi.fn();
+    const result = await findCodePackagesInFolder(
+      {
+        repositoryName: 'transcend-io/cli',
+        scanPath: join(__dirname, '../../../examples/code-scanning'),
+      },
+      {
+        fs: {
+          existsSync: fs.existsSync,
+          readFileSync,
+          readdirSync: fs.readdirSync,
+        },
+        logger: { info },
+        path: {
+          basename: path.basename,
+          dirname: path.dirname,
+          join: path.join,
+        },
+      },
+    );
     expect(sortCodePackages(result)).to.deep.equal(sortCodePackages(expected));
+    expect(readFileSync).toHaveBeenCalled();
+    expect(info).toHaveBeenCalled();
   });
 });
 /* eslint-enable max-lines */

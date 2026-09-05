@@ -45,12 +45,19 @@ export async function discoverSilos(
     this.process.exit(1);
   }
 
-  const results = await findFilesToScan({
-    scanPath,
-    fileGlobs,
-    ignoreDirs,
-    config,
-  });
+  const results = await findFilesToScan(
+    {
+      scanPath,
+      fileGlobs,
+      ignoreDirs,
+      config,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      path: this.path,
+    },
+  );
 
   await uploadSiloDiscoveryResults(client, {
     pluginId: plugin.id,

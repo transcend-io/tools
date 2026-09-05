@@ -1,10 +1,7 @@
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
-
 import { CodePackageType } from '@transcend-io/privacy-types';
 import yaml from 'js-yaml';
 
-import { CodeScanningConfig } from '../types.js';
+import { type CodeScanningConfig, defaultCodeScanningFileRuntime } from '../types.js';
 
 /**
  * Remove YAML comments from a string
@@ -36,9 +33,9 @@ function removeYAMLComments(yamlString: string): string {
 export const pubspec: CodeScanningConfig = {
   supportedFiles: ['pubspec.yml'],
   ignoreDirs: ['build'],
-  scanFunction: (filePath) => {
-    const directory = dirname(filePath);
-    const fileContents = readFileSync(filePath, 'utf-8');
+  scanFunction: (filePath, runtime = defaultCodeScanningFileRuntime) => {
+    const directory = runtime.path.dirname(filePath);
+    const fileContents = runtime.fs.readFileSync(filePath, 'utf-8');
     const {
       name,
       description,
@@ -56,7 +53,7 @@ export const pubspec: CodeScanningConfig = {
     };
     return [
       {
-        name: name || directory.split('/').pop()!,
+        name: name || runtime.path.basename(directory),
         description,
         type: CodePackageType.RequirementsTxt,
         softwareDevelopmentKits: [

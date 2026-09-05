@@ -39,13 +39,17 @@ export async function pullDatapoints(
     // Create a GraphQL client
     const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
-    const dataPoints = await pullAllDatapoints(client, {
-      dataSiloIds,
-      includeGuessedCategories,
-      parentCategories,
-      includeAttributes,
-      subCategories, // TODO: https://transcend.height.app/T-40482 - do by name not ID
-    });
+    const dataPoints = await pullAllDatapoints(
+      client,
+      {
+        dataSiloIds,
+        includeGuessedCategories,
+        parentCategories,
+        includeAttributes,
+        subCategories, // TODO: https://transcend.height.app/T-40482 - do by name not ID
+      },
+      { logger: this.logger },
+    );
 
     this.logger.info(colors.magenta(`Writing datapoints to file "${file}"...`));
     let headers: string[] = [];

@@ -1,11 +1,8 @@
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
-
 import { CodePackageType } from '@transcend-io/privacy-types';
 import { decodeCodec } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
-import { CodeScanningConfig } from '../types.js';
+import { type CodeScanningConfig, defaultCodeScanningFileRuntime } from '../types.js';
 
 const SwiftPackage = t.type({
   pins: t.array(
@@ -50,13 +47,13 @@ const SwiftPackageV1 = t.type({
 export const swift: CodeScanningConfig = {
   supportedFiles: ['Package.resolved'],
   ignoreDirs: [],
-  scanFunction: (filePath) => {
-    const fileContents = readFileSync(filePath, 'utf-8');
+  scanFunction: (filePath, runtime = defaultCodeScanningFileRuntime) => {
+    const fileContents = runtime.fs.readFileSync(filePath, 'utf-8');
 
     // Attempt latest version first
     try {
       const parsed = decodeCodec(SwiftPackage, fileContents);
-      const splitPath = dirname(filePath).split('/');
+      const splitPath = runtime.path.dirname(filePath).split('/');
       const originalName = splitPath[splitPath.length - 1];
       let name = originalName;
       if (name === 'swiftpm') {
@@ -91,7 +88,7 @@ export const swift: CodeScanningConfig = {
         const parsed = decodeCodec(SwiftPackageV1, fileContents);
         return [
           {
-            name: dirname(filePath).split('/').pop() || '', // TODO pull from Package.swift ->> name if possible
+            name: runtime.path.basename(runtime.path.dirname(filePath)),
             type: CodePackageType.Swift,
             softwareDevelopmentKits: parsed.object.pins.map((target) => ({
               name: target.package,

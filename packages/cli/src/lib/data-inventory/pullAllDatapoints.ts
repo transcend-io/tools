@@ -17,7 +17,16 @@ import { gql, type GraphQLClient } from 'graphql-request';
 import { keyBy, uniq, chunk, sortBy } from 'lodash-es';
 
 import type { DataCategoryInput, ProcessingPurposeInput } from '../../codecs.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
+
+/** Runtime dependencies used to pull data inventory datapoints. */
+export interface PullAllDatapointsDependencies {
+  /** Logger used for request retries, progress, and errors. */
+  readonly logger: Pick<CliLogger, 'debug' | 'error' | 'info' | 'warn'>;
+}
+
+const defaultDependencies: PullAllDatapointsDependencies = { logger };
 
 export interface DataSiloCsvPreview {
   /** ID of dataSilo */
@@ -101,7 +110,9 @@ async function pullSubDatapoints(
     /** Page size to pull in */
     pageSize?: number;
   } = {},
+  dependencies: PullAllDatapointsDependencies,
 ): Promise<SubDataPointCsvPreview[]> {
+  const { logger } = dependencies;
   const subDataPoints: SubDataPointCsvPreview[] = [];
 
   // Time duration
@@ -267,7 +278,9 @@ async function pullDatapoints(
     /** Page size to pull in */
     pageSize?: number;
   },
+  dependencies: PullAllDatapointsDependencies,
 ): Promise<DataPointCsvPreview[]> {
+  const { logger } = dependencies;
   const dataPoints: DataPointCsvPreview[] = [];
 
   // Time duration
@@ -344,7 +357,9 @@ async function pullDataSilos(
     /** Page size to pull in */
     pageSize?: number;
   },
+  dependencies: PullAllDatapointsDependencies,
 ): Promise<DataSiloCsvPreview[]> {
+  const { logger } = dependencies;
   const dataSilos: DataSiloCsvPreview[] = [];
 
   // Time duration
@@ -408,6 +423,7 @@ async function pullDataSilos(
  *
  * @param client - Client to use for the request
  * @param options - Options
+ * @param dependencies - Runtime dependencies used while pulling datapoints
  * @returns The datapoints and data silos
  */
 export async function pullAllDatapoints(
@@ -423,6 +439,7 @@ export async function pullAllDatapoints(
     /** Page size to pull in */
     pageSize?: number;
   } = {},
+  dependencies: PullAllDatapointsDependencies = defaultDependencies,
 ): Promise<
   (SubDataPointCsvPreview & {
     /** Data point information */
@@ -432,27 +449,39 @@ export async function pullAllDatapoints(
   })[]
 > {
   // Subdatapoint information
-  const subDatapoints = await pullSubDatapoints(client, {
-    dataSiloIds,
-    includeGuessedCategories,
-    includeAttributes,
-    parentCategories,
-    subCategories,
-    pageSize,
-  });
+  const subDatapoints = await pullSubDatapoints(
+    client,
+    {
+      dataSiloIds,
+      includeGuessedCategories,
+      includeAttributes,
+      parentCategories,
+      subCategories,
+      pageSize,
+    },
+    dependencies,
+  );
 
   // The datapoint ids to grab
   const dataPointIds = uniq(subDatapoints.map((point) => point.dataPointId));
-  const dataPoints = await pullDatapoints(client, {
-    dataPointIds,
-  });
+  const dataPoints = await pullDatapoints(
+    client,
+    {
+      dataPointIds,
+    },
+    dependencies,
+  );
   const dataPointById = keyBy(dataPoints, 'id');
 
   // The data silo IDs to grab
   const allDataSiloIds = uniq(subDatapoints.map((point) => point.dataSiloId));
-  const dataSilos = await pullDataSilos(client, {
-    dataSiloIds: allDataSiloIds,
-  });
+  const dataSilos = await pullDataSilos(
+    client,
+    {
+      dataSiloIds: allDataSiloIds,
+    },
+    dependencies,
+  );
   const dataSiloById = keyBy(dataSilos, 'id');
 
   return subDatapoints.map((subDataPoint) => ({

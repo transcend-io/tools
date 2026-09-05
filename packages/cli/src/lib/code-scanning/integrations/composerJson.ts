@@ -1,15 +1,12 @@
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
-
 import { CodePackageSdk } from '../../../codecs.js';
-import { CodeScanningConfig } from '../types.js';
+import { type CodeScanningConfig, defaultCodeScanningFileRuntime } from '../types.js';
 
 export const composerJson: CodeScanningConfig = {
   supportedFiles: ['composer.json'],
   ignoreDirs: ['vendor', 'node_modules', 'cache', 'build', 'dist'],
-  scanFunction: (filePath) => {
-    const file = readFileSync(filePath, 'utf-8');
-    const directory = dirname(filePath);
+  scanFunction: (filePath, runtime = defaultCodeScanningFileRuntime) => {
+    const file = runtime.fs.readFileSync(filePath, 'utf-8');
+    const directory = runtime.path.dirname(filePath);
     const asJson = JSON.parse(file);
     const {
       name,
@@ -20,7 +17,7 @@ export const composerJson: CodeScanningConfig = {
     return [
       {
         // name of the package
-        name: name || directory.split('/').pop()!,
+        name: name || runtime.path.basename(directory),
         description,
         softwareDevelopmentKits: [
           ...Object.entries(requireDependencies).map(

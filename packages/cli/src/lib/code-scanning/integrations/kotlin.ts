@@ -1,9 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
-
 import { findAllWithRegex } from '@transcend-io/type-utils';
 
-import { CodeScanningConfig } from '../types.js';
+import { type CodeScanningConfig, defaultCodeScanningFileRuntime } from '../types.js';
 
 /**
  * Kotlin DSL (build.gradle.kts) dependency & plugin parsing
@@ -73,9 +70,9 @@ function depEntry(name: string, version?: string): DepInput {
 export const kotlin: CodeScanningConfig = {
   supportedFiles: ['**/build.gradle.kts', '**/*.gradle.kts'],
   ignoreDirs: ['gradle-app.setting', 'gradle-wrapper.jar', 'gradle-wrapper.properties'],
-  scanFunction: (filePath) => {
-    const fileContents = readFileSync(filePath, 'utf-8');
-    const directory = dirname(filePath);
+  scanFunction: (filePath, runtime = defaultCodeScanningFileRuntime) => {
+    const fileContents = runtime.fs.readFileSync(filePath, 'utf-8');
+    const directory = runtime.path.dirname(filePath);
 
     // ---------- applicationId ----------
     const appIds = [
@@ -88,7 +85,7 @@ export const kotlin: CodeScanningConfig = {
     if (appIds.length > 1) {
       throw new Error(`Expected only one applicationId per file: ${filePath}`);
     }
-    const appName = appIds[0]?.name || directory.split('/').pop()!;
+    const appName = appIds[0]?.name || runtime.path.basename(directory);
 
     // ---------- dependencies ----------
     const deps: Array<DepInput> = [];

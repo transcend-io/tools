@@ -1,9 +1,6 @@
-import { readFileSync } from 'node:fs';
-import { dirname } from 'node:path';
-
 import { findAllWithRegex } from '@transcend-io/type-utils';
 
-import { CodeScanningConfig } from '../types.js';
+import { type CodeScanningConfig, defaultCodeScanningFileRuntime } from '../types.js';
 
 const GRADLE_IMPLEMENTATION_REGEX = /implementation( *)('|")(.+?):(.+?):(.+?|)('|")/;
 const GRADLE_PLUGIN_REGEX = /apply plugin: *('|")(.+?)(:(.+?)|)('|")/;
@@ -24,9 +21,9 @@ const GRADLE_APPLICATION_NAME_REGEX = /applicationId( *)"(.+?)"/;
 export const gradle: CodeScanningConfig = {
   supportedFiles: ['build.gradle**'],
   ignoreDirs: ['gradle-app.setting', 'gradle-wrapper.jar', 'gradle-wrapper.properties'],
-  scanFunction: (filePath) => {
-    const fileContents = readFileSync(filePath, 'utf-8');
-    const directory = dirname(filePath);
+  scanFunction: (filePath, runtime = defaultCodeScanningFileRuntime) => {
+    const fileContents = runtime.fs.readFileSync(filePath, 'utf-8');
+    const directory = runtime.path.dirname(filePath);
 
     const targets = findAllWithRegex(
       {
@@ -77,7 +74,7 @@ export const gradle: CodeScanningConfig = {
 
     return [
       {
-        name: applications[0]?.name || directory.split('/').pop()!,
+        name: applications[0]?.name || runtime.path.basename(directory),
         softwareDevelopmentKits: [...targets, ...targetGroups, ...targetPlugins].map((target) => ({
           name: target.name,
           version: target.version || undefined,

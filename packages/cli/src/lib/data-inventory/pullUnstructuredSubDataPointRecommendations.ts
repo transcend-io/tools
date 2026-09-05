@@ -6,8 +6,17 @@ import { gql, type GraphQLClient } from 'graphql-request';
 import { sortBy } from 'lodash-es';
 
 import type { DataCategoryInput } from '../../codecs.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { ENTRY_COUNT } from '../graphql/index.js';
+
+/** Runtime dependencies used to pull unstructured recommendations. */
+export interface PullUnstructuredSubDataPointRecommendationsDependencies {
+  /** Logger used for request retries, progress, and errors. */
+  readonly logger: Pick<CliLogger, 'debug' | 'error' | 'info' | 'warn'>;
+}
+
+const defaultDependencies: PullUnstructuredSubDataPointRecommendationsDependencies = { logger };
 
 interface UnstructuredSubDataPointRecommendationCsvPreview {
   /** ID of subDatapoint */
@@ -57,6 +66,7 @@ interface EntryFilterOptions {
  * @param options.includeEncryptedSnippets - Include entry and snippet
  * @param options.includeEncryptedSamplesS3Key - Include encryptedSamplesS3Key
  * @param options.pageSize - Page size to pull in
+ * @param dependencies - Runtime dependencies used while pulling recommendations
  * @returns A promise that resolves to an array of unstructured subdatapoint recommendations
  */
 export async function pullUnstructuredSubDataPointRecommendations(
@@ -71,7 +81,9 @@ export async function pullUnstructuredSubDataPointRecommendations(
     /** Page size to pull in */
     pageSize?: number;
   } = {},
+  dependencies: PullUnstructuredSubDataPointRecommendationsDependencies = defaultDependencies,
 ): Promise<UnstructuredSubDataPointRecommendationCsvPreview[]> {
+  const { logger } = dependencies;
   const unstructuredSubDataPointRecommendations: UnstructuredSubDataPointRecommendationCsvPreview[] =
     [];
 
