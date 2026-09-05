@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import * as nodeFs from 'node:fs';
 /* eslint-disable no-continue */
 import { resolve } from 'node:path';
 
@@ -15,11 +15,20 @@ import { readSafe } from '../../../../lib/helpers/index.js';
 import { copyToClipboard, openPath, revealInFileManager } from '../../../../lib/pooling/index.js';
 import { artifactAbsPath, type ExportKindWithCsv } from './artifactAbsPath.js';
 
+/** Dependencies used to persist exported artifacts. */
+export interface ExportManagerDependencies {
+  /** Filesystem operations used to create and write artifacts. */
+  filesystem?: Pick<typeof nodeFs, 'mkdirSync' | 'writeFileSync'>;
+}
+
 /**
  * Write the exports index file with the latest paths for each export kind.
  */
 export class ExportManager {
-  constructor(public exportsDir: string) {}
+  constructor(
+    public exportsDir: string,
+    private readonly dependencies: ExportManagerDependencies = {},
+  ) {}
 
   /**
    * Get the absolute path for an export artifact based on its kind.
@@ -90,7 +99,8 @@ export class ExportManager {
   ): string {
     if (!this.exportsDir) throw new Error('exportsDir not set');
 
-    mkdirSync(this.exportsDir, { recursive: true });
+    const filesystem = this.dependencies.filesystem ?? nodeFs;
+    filesystem.mkdirSync(this.exportsDir, { recursive: true });
     const outPath = resolve(
       this.exportsDir,
       kind === 'error'
@@ -148,7 +158,7 @@ export class ExportManager {
       return ta.localeCompare(tb);
     });
 
-    writeFileSync(outPath, `${lines.join('\n')}\n`, 'utf8');
+    filesystem.writeFileSync(outPath, `${lines.join('\n')}\n`, 'utf8');
     return outPath;
   }
 }

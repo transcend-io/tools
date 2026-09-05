@@ -2,16 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { summarizeReceipt } from '../summarizeReceipt.js';
 
-// --- Hoisted fs mock ----------------------------------------------------------
-const H = vi.hoisted(() => ({
-  readFileSync: vi.fn() as unknown as (path: string, enc: string) => string,
-}));
-
-// Mock BEFORE SUT import
-vi.mock('node:fs', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readFileSync: (...a: unknown[]) => (H.readFileSync as any)(...a),
-}));
+const readFileSync = vi.fn();
+const dependencies = {
+  filesystem: {
+    readFileSync,
+  },
+};
 
 describe('summarizeReceipt', () => {
   beforeEach(() => {
@@ -19,7 +15,7 @@ describe('summarizeReceipt', () => {
   });
 
   it('upload mode: counts success/error/skipped and aggregates errors by message', () => {
-    H.readFileSync = vi.fn().mockReturnValueOnce(
+    readFileSync.mockReturnValueOnce(
       JSON.stringify({
         successfulUpdates: {
           a: {},
@@ -39,9 +35,9 @@ describe('summarizeReceipt', () => {
       }),
     );
 
-    const out = summarizeReceipt('/r/receipt.json', /* dryRun */ false);
+    const out = summarizeReceipt('/r/receipt.json', /* dryRun */ false, dependencies);
 
-    expect(H.readFileSync).toHaveBeenCalledWith('/r/receipt.json', 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith('/r/receipt.json', 'utf8');
 
     expect(out).toEqual({
       mode: 'upload',
@@ -57,9 +53,9 @@ describe('summarizeReceipt', () => {
   });
 
   it('upload mode: missing sections are treated as empty', () => {
-    H.readFileSync = vi.fn().mockReturnValueOnce(JSON.stringify({}));
+    readFileSync.mockReturnValueOnce(JSON.stringify({}));
 
-    const out = summarizeReceipt('/r/empty.json', false);
+    const out = summarizeReceipt('/r/empty.json', false, dependencies);
 
     expect(out).toEqual({
       mode: 'upload',
@@ -71,7 +67,7 @@ describe('summarizeReceipt', () => {
   });
 
   it('check mode: counts pending, conflicts, safe, and skipped', () => {
-    H.readFileSync = vi.fn().mockReturnValueOnce(
+    readFileSync.mockReturnValueOnce(
       JSON.stringify({
         pendingUpdates: { p1: {}, p2: {}, p3: {} },
         pendingConflictUpdates: { c1: {}, c2: {} },
@@ -80,9 +76,9 @@ describe('summarizeReceipt', () => {
       }),
     );
 
-    const out = summarizeReceipt('/r/check.json', /* dryRun */ true);
+    const out = summarizeReceipt('/r/check.json', /* dryRun */ true, dependencies);
 
-    expect(H.readFileSync).toHaveBeenCalledWith('/r/check.json', 'utf8');
+    expect(readFileSync).toHaveBeenCalledWith('/r/check.json', 'utf8');
 
     expect(out).toEqual({
       mode: 'check',
@@ -94,9 +90,9 @@ describe('summarizeReceipt', () => {
   });
 
   it('check mode: missing sections are treated as empty', () => {
-    H.readFileSync = vi.fn().mockReturnValueOnce(JSON.stringify({}));
+    readFileSync.mockReturnValueOnce(JSON.stringify({}));
 
-    const out = summarizeReceipt('/r/empty.json', true);
+    const out = summarizeReceipt('/r/empty.json', true, dependencies);
 
     expect(out).toEqual({
       mode: 'check',
@@ -108,9 +104,9 @@ describe('summarizeReceipt', () => {
   });
 
   it('returns zeroed defaults on invalid JSON (upload mode)', () => {
-    H.readFileSync = vi.fn().mockReturnValueOnce('{not json');
+    readFileSync.mockReturnValueOnce('{not json');
 
-    const out = summarizeReceipt('/r/bad.json', false);
+    const out = summarizeReceipt('/r/bad.json', false, dependencies);
 
     expect(out).toEqual({
       mode: 'upload',
@@ -122,9 +118,9 @@ describe('summarizeReceipt', () => {
   });
 
   it('returns zeroed defaults on invalid JSON (check mode)', () => {
-    H.readFileSync = vi.fn().mockReturnValueOnce('{not json');
+    readFileSync.mockReturnValueOnce('{not json');
 
-    const out = summarizeReceipt('/r/bad.json', true);
+    const out = summarizeReceipt('/r/bad.json', true, dependencies);
 
     expect(out).toEqual({
       mode: 'check',
@@ -136,12 +132,11 @@ describe('summarizeReceipt', () => {
   });
 
   it('returns zeroed defaults when readFileSync throws (both modes)', () => {
-    H.readFileSync = vi.fn(() => {
+    readFileSync.mockImplementation(() => {
       throw new Error('ENOENT');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    }) as any;
+    });
 
-    const upload = summarizeReceipt('/r/missing.json', false);
+    const upload = summarizeReceipt('/r/missing.json', false, dependencies);
     expect(upload).toEqual({
       mode: 'upload',
       success: 0,
@@ -150,7 +145,7 @@ describe('summarizeReceipt', () => {
       errors: {},
     });
 
-    const check = summarizeReceipt('/r/missing.json', true);
+    const check = summarizeReceipt('/r/missing.json', true, dependencies);
     expect(check).toEqual({
       mode: 'check',
       totalPending: 0,

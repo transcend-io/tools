@@ -1,20 +1,15 @@
-import * as fs from 'node:fs';
-
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { writeFailingUpdatesCsv, type FailingUpdateRow } from '../writeFailingUpdatesCsv.js';
 
-/**
- * Mock fs BEFORE importing the SUT.
- * Use a factory that returns vi.fn()s to keep it hoist-safe.
- */
-vi.mock('node:fs', () => ({
-  mkdirSync: vi.fn(),
-  writeFileSync: vi.fn(),
-}));
-
-const mMkdir = vi.mocked(fs.mkdirSync);
-const mWrite = vi.mocked(fs.writeFileSync);
+const mMkdir = vi.fn();
+const mWrite = vi.fn();
+const dependencies = {
+  filesystem: {
+    mkdirSync: mMkdir,
+    writeFileSync: mWrite,
+  },
+};
 
 describe('writeFailingUpdatesCsv', () => {
   beforeEach(() => {
@@ -46,7 +41,7 @@ describe('writeFailingUpdatesCsv', () => {
       },
     ];
 
-    const ret = writeFailingUpdatesCsv(rows, outPath);
+    const ret = writeFailingUpdatesCsv(rows, outPath, dependencies);
     expect(ret).toBe(outPath);
 
     // mkdirSync called for parent directory with recursive: true
@@ -85,7 +80,7 @@ describe('writeFailingUpdatesCsv', () => {
 
   it('writes just a newline when rows is empty (no headers, no data)', () => {
     const outPath = '/var/tmp/empty.csv';
-    const ret = writeFailingUpdatesCsv([], outPath);
+    const ret = writeFailingUpdatesCsv([], outPath, dependencies);
     expect(ret).toBe(outPath);
 
     expect(mMkdir).toHaveBeenCalledWith('/var/tmp', { recursive: true });

@@ -1,27 +1,18 @@
-import * as fs from 'node:fs';
-import * as nodeUrl from 'node:url';
-
 import type { ExportStatusMap } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { writeExportsIndex } from '../writeExportsIndex.js';
 
-/**
- * Mock fs & url BEFORE importing the SUT.
- * Use factories that return vi.fn()s to keep mocks hoist-safe.
- */
-vi.mock('node:fs', () => ({
-  mkdirSync: vi.fn(),
-  writeFileSync: vi.fn(),
-}));
-vi.mock('node:url', () => ({
-  // Minimal pathToFileURL stub that yields a predictable href
-  pathToFileURL: vi.fn((p: string) => ({ href: `file://${p}` })),
-}));
-
-const mMkdir = vi.mocked(fs.mkdirSync);
-const mWrite = vi.mocked(fs.writeFileSync);
-const mPathToFileURL = vi.mocked(nodeUrl.pathToFileURL);
+const mMkdir = vi.fn();
+const mWrite = vi.fn();
+const mPathToFileURL = vi.fn((path: string) => new URL(`file://${path}`));
+const dependencies = {
+  filesystem: {
+    mkdirSync: mMkdir,
+    writeFileSync: mWrite,
+  },
+  pathToFileURL: mPathToFileURL,
+};
 
 describe('writeExportsIndex', () => {
   beforeEach(() => {
@@ -29,7 +20,7 @@ describe('writeExportsIndex', () => {
   });
 
   it('returns undefined when exportsDir is not provided (no side effects)', () => {
-    const out = writeExportsIndex(undefined, undefined, 'exports.index.txt');
+    const out = writeExportsIndex(undefined, undefined, 'exports.index.txt', dependencies);
     expect(out).toBeUndefined();
     expect(mMkdir).not.toHaveBeenCalled();
     expect(mWrite).not.toHaveBeenCalled();
@@ -50,7 +41,7 @@ describe('writeExportsIndex', () => {
       failuresCsv: undefined,
     };
 
-    const outPath = writeExportsIndex(exportsDir, status, 'custom.index.txt');
+    const outPath = writeExportsIndex(exportsDir, status, 'custom.index.txt', dependencies);
     expect(outPath).toBe('/exp/custom.index.txt');
 
     // directory creation & write
@@ -102,7 +93,7 @@ describe('writeExportsIndex', () => {
     expect(calledHrefs).not.toContain('(n/a)');
 
     // Call again with identical inputs → memoization prevents a second write
-    const outPath2 = writeExportsIndex(exportsDir, status, 'custom.index.txt');
+    const outPath2 = writeExportsIndex(exportsDir, status, 'custom.index.txt', dependencies);
     expect(outPath2).toBe('/exp/custom.index.txt');
     expect(mWrite).toHaveBeenCalledTimes(1);
 
@@ -111,7 +102,7 @@ describe('writeExportsIndex', () => {
       ...status,
       error: { path: '/x/errors-changed.log' },
     };
-    const outPath3 = writeExportsIndex(exportsDir, statusChanged, 'custom.index.txt');
+    const outPath3 = writeExportsIndex(exportsDir, statusChanged, 'custom.index.txt', dependencies);
     expect(outPath3).toBe('/exp/custom.index.txt');
     expect(mWrite).toHaveBeenCalledTimes(2);
     const secondWrite = String(mWrite.mock.calls[1]?.[1]);

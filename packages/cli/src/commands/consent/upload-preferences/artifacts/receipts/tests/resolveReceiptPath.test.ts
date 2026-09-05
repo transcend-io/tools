@@ -29,12 +29,6 @@ const H = vi.hoisted(() => {
   return { existsSync, readdirSync, statSync, getFilePrefix, resetFs, resetCF };
 });
 
-vi.mock('node:fs', () => ({
-  existsSync: (...a: unknown[]) => H.existsSync(...a),
-  readdirSync: (...a: unknown[]) => H.readdirSync(...a),
-  statSync: (...a: unknown[]) => H.statSync(...a),
-}));
-
 vi.mock('../../computeFiles.js', () => ({
   // forward the arguments so the spy records them
   getFilePrefix: (...a: Parameters<typeof getFilePrefix>) => H.getFilePrefix(...a),
@@ -45,6 +39,13 @@ vi.mock('../../computeFiles.js', () => ({
 describe('resolveReceiptPath', () => {
   const folder = '/receipts';
   const file = '/some/path/input.csv';
+  const dependencies = {
+    filesystem: {
+      existsSync: H.existsSync,
+      readdirSync: H.readdirSync,
+      statSync: H.statSync,
+    },
+  };
 
   beforeEach(() => {
     H.resetFs();
@@ -57,7 +58,7 @@ describe('resolveReceiptPath', () => {
 
     H.existsSync.mockReturnValueOnce(true);
 
-    const out = resolveReceiptPath(folder, file);
+    const out = resolveReceiptPath(folder, file, dependencies);
 
     expect(H.getFilePrefix).toHaveBeenCalledWith(file);
     expect(H.existsSync).toHaveBeenCalledWith(expected);
@@ -89,7 +90,7 @@ describe('resolveReceiptPath', () => {
       return { mtimeMs } as unknown as import('node:fs').Stats;
     });
 
-    const out = resolveReceiptPath(folder, file);
+    const out = resolveReceiptPath(folder, file, dependencies);
 
     expect(H.readdirSync).toHaveBeenCalledWith(folder);
     expect(out).toBe(join(folder, 'FILE-receipts__3.json'));
@@ -110,7 +111,7 @@ describe('resolveReceiptPath', () => {
       return { mtimeMs: 9999 } as unknown as import('node:fs').Stats;
     });
 
-    const out = resolveReceiptPath(folder, file);
+    const out = resolveReceiptPath(folder, file, dependencies);
     expect(out).toBe(join(folder, 'FILE-receipts__new.json'));
   });
 
@@ -122,7 +123,7 @@ describe('resolveReceiptPath', () => {
       'FILE-not-a-receipt.json',
     ]);
 
-    const out = resolveReceiptPath(folder, file);
+    const out = resolveReceiptPath(folder, file, dependencies);
     expect(out).toBeNull();
     expect(H.statSync).not.toHaveBeenCalled();
   });
@@ -133,7 +134,7 @@ describe('resolveReceiptPath', () => {
       throw new Error('ENOENT');
     });
 
-    const out = resolveReceiptPath(folder, file);
+    const out = resolveReceiptPath(folder, file, dependencies);
     expect(out).toBeNull();
   });
 
@@ -147,7 +148,7 @@ describe('resolveReceiptPath', () => {
       mtimeMs: 1,
     } as unknown as import('node:fs').Stats);
 
-    const out = resolveReceiptPath(folder, file);
+    const out = resolveReceiptPath(folder, file, dependencies);
     expect(out).toBe(join(folder, 'DYNAMIC-receipts__42.json'));
   });
 });

@@ -1,17 +1,28 @@
-import { readFileSync } from 'node:fs';
+import * as nodeFs from 'node:fs';
 
 import type { AnyTotals } from '../../ui/index.js';
+
+/** Dependencies used to summarize a receipt. */
+export interface SummarizeReceiptDependencies {
+  /** Filesystem operation used to read the receipt. */
+  filesystem?: Pick<typeof nodeFs, 'readFileSync'>;
+}
 
 /**
  * Summarize a receipts JSON into dashboard counters.
  *
  * @param receiptPath - The path to the receipt file
  * @param dryRun - Whether this is a dry run (no actual upload)
+ * @param dependencies - Optional runtime dependencies
  * @returns An object summarizing the receipt data
  */
-export function summarizeReceipt(receiptPath: string, dryRun: boolean): AnyTotals {
+export function summarizeReceipt(
+  receiptPath: string,
+  dryRun: boolean,
+  dependencies: SummarizeReceiptDependencies = {},
+): AnyTotals {
   try {
-    const raw = readFileSync(receiptPath, 'utf8');
+    const raw = (dependencies.filesystem ?? nodeFs).readFileSync(receiptPath, 'utf8');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const json = JSON.parse(raw) as any;
 

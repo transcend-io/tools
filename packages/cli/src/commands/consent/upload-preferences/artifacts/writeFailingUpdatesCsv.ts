@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import * as nodeFs from 'node:fs';
 import { dirname } from 'node:path';
 
 /** A single failing update row we will output to CSV */
@@ -15,15 +15,27 @@ export interface FailingUpdateRow {
   sourceFile?: string;
 }
 
+/** Dependencies used to write failing updates. */
+export interface WriteFailingUpdatesCsvDependencies {
+  /** Filesystem operations used to create and write the CSV. */
+  filesystem?: Pick<typeof nodeFs, 'mkdirSync' | 'writeFileSync'>;
+}
+
 /**
  * Write a CSV file for failing updates.
  *
  * @param rows - The rows to write to the CSV file
  * @param outPath - The output path for the CSV file
+ * @param dependencies - Optional runtime dependencies
  * @returns The absolute path to the written CSV file
  */
-export function writeFailingUpdatesCsv(rows: FailingUpdateRow[], outPath: string): string {
-  mkdirSync(dirname(outPath), { recursive: true });
+export function writeFailingUpdatesCsv(
+  rows: FailingUpdateRow[],
+  outPath: string,
+  dependencies: WriteFailingUpdatesCsvDependencies = {},
+): string {
+  const filesystem = dependencies.filesystem ?? nodeFs;
+  filesystem.mkdirSync(dirname(outPath), { recursive: true });
   const headers = Array.from(
     rows.reduce<Set<string>>((acc, row) => {
       Object.keys(row || {}).forEach((k) => acc.add(k));
@@ -40,6 +52,6 @@ export function writeFailingUpdatesCsv(rows: FailingUpdateRow[], outPath: string
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...rows.map((r) => headers.map((h) => esc((r as any)[h])).join(',')),
   ];
-  writeFileSync(outPath, `${lines.join('\n')}\n`, 'utf8');
+  filesystem.writeFileSync(outPath, `${lines.join('\n')}\n`, 'utf8');
   return outPath;
 }

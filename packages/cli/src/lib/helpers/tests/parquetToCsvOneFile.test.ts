@@ -1,14 +1,12 @@
 import { join as pathJoin, dirname as pathDirname } from 'node:path';
 
-import { DuckDBInstance } from '@duckdb/node-api';
+import type { DuckDBInstance } from '@duckdb/node-api';
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Now import the SUT
 import { parquetToCsvOneFile } from '../parquetToCsvOneFile.js';
 
-// Hoisted spies & fakes so the mock factories can close over them safely
-const H = vi.hoisted(() => {
+const H = (() => {
   // Logger spies
   const loggerSpies = {
     error: vi.fn(),
@@ -60,26 +58,16 @@ const H = vi.hoisted(() => {
       mkResult,
     },
   };
-});
+})();
 
-/** Mock fs BEFORE importing the SUT */
-vi.mock('node:fs', () => ({
-  mkdirSync: H.fsSpies.mkdirSync,
-  rmSync: H.fsSpies.rmSync,
-  existsSync: H.fsSpies.existsSync,
-}));
+const duckDb = {
+  create: H.duck.create,
+} as unknown as typeof DuckDBInstance;
 
-/** Mock the SAME module id the SUT imports for logging */
-vi.mock('../../../logger.js', () => ({
+const dependencies = {
+  ...H.fsSpies,
   logger: H.loggerSpies,
-}));
-
-/** Mock DuckDB API */
-vi.mock('@duckdb/node-api', () => ({
-  DuckDBInstance: {
-    create: H.duck.create,
-  },
-}));
+};
 
 describe('parquetToCsvOneFile', () => {
   beforeEach(() => {
@@ -93,12 +81,6 @@ describe('parquetToCsvOneFile', () => {
       // No-op
     });
     H.fsSpies.existsSync.mockImplementation(() => false);
-
-    // Default DuckDB behavior set in hoisted fakes
-  });
-
-  afterEach(() => {
-    vi.resetModules();
   });
 
   it('creates output dir, runs PRAGMA + COPY, calls onProgress, and logs success', async () => {
@@ -115,7 +97,8 @@ describe('parquetToCsvOneFile', () => {
         clearOutputDir: true,
         onProgress,
       },
-      DuckDBInstance,
+      duckDb,
+      dependencies,
     );
 
     // Ensures output dir exists
@@ -175,7 +158,8 @@ describe('parquetToCsvOneFile', () => {
         outputDir: outDir,
         clearOutputDir: true,
       },
-      DuckDBInstance,
+      duckDb,
+      dependencies,
     );
 
     expect(H.fsSpies.existsSync).toHaveBeenCalledWith(outCsv);
@@ -198,7 +182,8 @@ describe('parquetToCsvOneFile', () => {
         outputDir: outDir,
         clearOutputDir: true,
       },
-      DuckDBInstance,
+      duckDb,
+      dependencies,
     );
 
     expect(H.loggerSpies.warn).toHaveBeenCalled();
@@ -217,7 +202,8 @@ describe('parquetToCsvOneFile', () => {
         filePath,
         clearOutputDir: false,
       },
-      DuckDBInstance,
+      duckDb,
+      dependencies,
     );
 
     // mkdirSync called on inferred dir
@@ -248,7 +234,8 @@ describe('parquetToCsvOneFile', () => {
         outputDir: outDir,
         clearOutputDir: false,
       },
-      DuckDBInstance,
+      duckDb,
+      dependencies,
     );
 
     // Should still run COPY successfully

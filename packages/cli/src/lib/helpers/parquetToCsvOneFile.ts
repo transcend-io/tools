@@ -32,6 +32,25 @@ export type ParquetToCsvOneFileOptions = {
   onProgress?: OnProgress;
 };
 
+/** Optional runtime dependencies used by the conversion helper. */
+export interface ParquetToCsvOneFileDependencies {
+  /** Creates the output directory. */
+  mkdirSync: typeof mkdirSync;
+  /** Checks whether the output file already exists. */
+  existsSync: typeof existsSync;
+  /** Removes an existing output file. */
+  rmSync: typeof rmSync;
+  /** Emits conversion status messages. */
+  logger: Pick<typeof logger, 'info' | 'warn'>;
+}
+
+const defaultDependencies: ParquetToCsvOneFileDependencies = {
+  mkdirSync,
+  existsSync,
+  rmSync,
+  logger,
+};
+
 /**
  * Convert a single Parquet file to a single CSV file (1:1) using DuckDB.
  *
@@ -63,27 +82,30 @@ export type ParquetToCsvOneFileOptions = {
  *
  * @param opts - Conversion options
  * @param DuckDb - DuckDB instance to use
+ * @param dependencies - Optional runtime dependency overrides
  * @returns Promise<void> when the CSV has been written
  */
 export async function parquetToCsvOneFile(
   opts: ParquetToCsvOneFileOptions,
   DuckDb: typeof DuckDBInstance,
+  dependencies: Partial<ParquetToCsvOneFileDependencies> = {},
 ): Promise<void> {
   const { filePath, outputDir, clearOutputDir, onProgress } = opts;
+  const deps = { ...defaultDependencies, ...dependencies };
 
   const baseDir = outputDir || dirname(filePath);
   const { name: baseName } = parse(filePath);
   const outPath = join(baseDir, `${baseName}.csv`);
 
   // Ensure output directory exists
-  mkdirSync(baseDir, { recursive: true });
+  deps.mkdirSync(baseDir, { recursive: true });
 
   // Remove any pre-existing output file if requested
-  if (clearOutputDir && existsSync(outPath)) {
+  if (clearOutputDir && deps.existsSync(outPath)) {
     try {
-      rmSync(outPath, { force: true });
+      deps.rmSync(outPath, { force: true });
     } catch (err) {
-      logger.warn(
+      deps.logger.warn(
         colors.yellow(
           `Could not remove existing output file ${outPath}: ${(err as Error).message}`,
         ),
@@ -120,7 +142,7 @@ export async function parquetToCsvOneFile(
     // Best-effort progress notification (DuckDB JS API doesn't expose progress for COPY)
     onProgress?.(0, undefined);
 
-    logger.info(colors.green(`Wrote CSV → ${outPath}`));
+    deps.logger.info(colors.green(`Wrote CSV → ${outPath}`));
   } finally {
     // Close connection + db handles gracefully
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

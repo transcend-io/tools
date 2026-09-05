@@ -1,7 +1,4 @@
-// --- Imports (safe after mocks are set up) ---
-import { mkdirSync, writeFileSync } from 'node:fs';
-
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import {
   copyToClipboard,
@@ -17,6 +14,8 @@ const H = vi.hoisted(() => {
     files: {} as Record<string, string>,
     extractBlocksQueue: [] as string[][],
     fns: {
+      mkdirSync: vi.fn(),
+      writeFileSync: vi.fn(),
       copyToClipboard: vi.fn(() => true),
       openPath: vi.fn(() => true),
       revealInFileManager: vi.fn(() => true),
@@ -31,11 +30,6 @@ const H = vi.hoisted(() => {
 });
 
 // --- Mocks ---
-vi.mock('node:fs', () => ({
-  mkdirSync: vi.fn(),
-  writeFileSync: vi.fn(),
-}));
-
 vi.mock('../artifactAbsPath.js', () => ({
   artifactAbsPath: vi.fn(
     (kind: string, dir?: string, status?: { path?: string }) =>
@@ -61,8 +55,8 @@ vi.mock('../../../../../lib/helpers/index.js', () => ({
 
 // --- Test Suite ---
 describe('ExportManager', () => {
-  const mMkdir = vi.mocked(mkdirSync);
-  const mWrite = vi.mocked(writeFileSync);
+  const mMkdir = H.fns.mkdirSync;
+  const mWrite = H.fns.writeFileSync;
   const mAbs = vi.mocked(artifactAbsPath);
   const mCopy = vi.mocked(copyToClipboard);
   const mOpen = vi.mocked(openPath);
@@ -70,14 +64,8 @@ describe('ExportManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2024-01-02T03:04:05.678Z'));
     H.files = {};
     H.extractBlocksQueue = [];
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   function lastWrittenText(): string {
@@ -124,7 +112,12 @@ describe('ExportManager', () => {
   });
 
   it('exportCombinedLogs(all) concatenates logs in order', () => {
-    const mgr = new ExportManager('/exports');
+    const mgr = new ExportManager('/exports', {
+      filesystem: {
+        mkdirSync: H.fns.mkdirSync,
+        writeFileSync: H.fns.writeFileSync,
+      },
+    });
     H.files['/o1'] = '2024-01-01T00:00:02Z OUT1';
     H.files['/e1'] = '2024-01-01T00:00:01Z ERR1';
     H.files['/s1'] = '2024-01-01T00:00:03Z STR1';

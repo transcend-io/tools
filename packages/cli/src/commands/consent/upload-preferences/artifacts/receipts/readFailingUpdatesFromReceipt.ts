@@ -1,6 +1,12 @@
-import { readFileSync } from 'node:fs';
+import * as nodeFs from 'node:fs';
 
 import type { FailingUpdateRow } from '..';
+
+/** Dependencies used to read failing updates from a receipt. */
+export interface ReadFailingUpdatesFromReceiptDependencies {
+  /** Filesystem operation used to read the receipt. */
+  filesystem?: Pick<typeof nodeFs, 'readFileSync'>;
+}
 
 /**
  * Parse failing updates out of a receipts.json file.
@@ -8,14 +14,16 @@ import type { FailingUpdateRow } from '..';
  *
  * @param receiptPath - The path to the receipts.json file
  * @param sourceFile - Optional source file for context
+ * @param dependencies - Optional runtime dependencies
  * @returns An array of FailingUpdateRow objects
  */
 export function readFailingUpdatesFromReceipt(
   receiptPath: string,
   sourceFile?: string,
+  dependencies: ReadFailingUpdatesFromReceiptDependencies = {},
 ): FailingUpdateRow[] {
   try {
-    const raw = readFileSync(receiptPath, 'utf8');
+    const raw = (dependencies.filesystem ?? nodeFs).readFileSync(receiptPath, 'utf8');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const json = JSON.parse(raw) as any;
     const failing = json?.failingUpdates ?? {};

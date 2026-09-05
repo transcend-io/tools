@@ -1,5 +1,11 @@
-import { mkdirSync } from 'node:fs';
+import * as nodeFs from 'node:fs';
 import { join, basename } from 'node:path';
+
+/** Dependencies used while computing artifact files. */
+export interface ComputeFilesDependencies {
+  /** Filesystem operation used to create the receipts folder. */
+  filesystem?: Pick<typeof nodeFs, 'mkdirSync'>;
+}
 
 /**
  * Derive a "prefix" for a CSV file (basename without ".csv"),
@@ -18,15 +24,17 @@ export function getFilePrefix(file: string): string {
  *
  * @param receiptFileDir - Optional directory for receipt files
  * @param directory - Optional directory containing CSV files
+ * @param dependencies - Optional runtime dependencies
  * @returns The receipts folder path
  */
 export function computeReceiptsFolder(
   receiptFileDir: string | undefined,
   directory: string | undefined,
+  dependencies: ComputeFilesDependencies = {},
 ): string {
   const receiptsFolder =
     receiptFileDir || (directory ? join(directory, '../receipts') : './receipts');
-  mkdirSync(receiptsFolder, { recursive: true });
+  (dependencies.filesystem ?? nodeFs).mkdirSync(receiptsFolder, { recursive: true });
   return receiptsFolder;
 }
 

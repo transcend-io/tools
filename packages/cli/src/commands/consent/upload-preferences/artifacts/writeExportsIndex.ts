@@ -1,7 +1,7 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import * as nodeFs from 'node:fs';
 // artifacts/indexWriter.ts
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL as nodePathToFileURL } from 'node:url';
 
 import type { ExportStatusMap } from '@transcend-io/utils';
 
@@ -9,20 +9,32 @@ import { artifactAbsPath, type ExportKindWithCsv } from './artifactAbsPath.js';
 
 let lastIndexFileContents = '';
 
+/** Dependencies used to write the exports index. */
+export interface WriteExportsIndexDependencies {
+  /** Filesystem operations used to create and write the index. */
+  filesystem?: Pick<typeof nodeFs, 'mkdirSync' | 'writeFileSync'>;
+  /** Converts an artifact path to a file URL. */
+  pathToFileURL?: typeof nodePathToFileURL;
+}
+
 /**
  * Get the absolute path for an export artifact based on its kind.
  *
  * @param exportsDir - Optional directory where exports are stored
  * @param exportStatus - Optional status of the export artifact
  * @param exportsFile - The name of the exports index file
+ * @param dependencies - Optional runtime dependencies
  * @returns The absolute path to the export artifact
  */
 export function writeExportsIndex(
   exportsDir?: string,
   exportStatus?: ExportStatusMap,
   exportsFile = 'exports.index.txt',
+  dependencies: WriteExportsIndexDependencies = {},
 ): string | undefined {
   if (!exportsDir) return undefined;
+  const filesystem = dependencies.filesystem ?? nodeFs;
+  const pathToFileURL = dependencies.pathToFileURL ?? nodePathToFileURL;
   const lines: string[] = ['# Export artifacts — latest paths', ''];
 
   const kinds: Array<
@@ -47,8 +59,8 @@ export function writeExportsIndex(
   const content = lines.join('\n');
   const out = join(exportsDir, exportsFile);
   if (content !== lastIndexFileContents) {
-    mkdirSync(exportsDir, { recursive: true });
-    writeFileSync(out, `${content}\n`, 'utf8');
+    filesystem.mkdirSync(exportsDir, { recursive: true });
+    filesystem.writeFileSync(out, `${content}\n`, 'utf8');
     lastIndexFileContents = content;
   }
   return out;

@@ -1,4 +1,3 @@
-import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -6,10 +5,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Adjust this relative import path as needed
 import { getFilePrefix, computeReceiptsFolder, computeSchemaFile } from '../computeFiles.js';
 
-// Mock fs BEFORE importing SUT
-vi.mock('node:fs', () => ({
-  mkdirSync: vi.fn(),
-}));
+const mkdirSync = vi.fn();
+const dependencies = {
+  filesystem: {
+    mkdirSync,
+  },
+};
 
 describe('computeFiles helpers', () => {
   beforeEach(() => {
@@ -38,7 +39,7 @@ describe('computeFiles helpers', () => {
   describe('computeReceiptsFolder', () => {
     it('returns the provided receiptFileDir and creates it', () => {
       const dir = '/var/tmp/receipts';
-      const out = computeReceiptsFolder(dir, '/ignored');
+      const out = computeReceiptsFolder(dir, '/ignored', dependencies);
       expect(out).toBe(dir);
       expect(mkdirSync).toHaveBeenCalledWith(dir, { recursive: true });
     });
@@ -46,13 +47,13 @@ describe('computeFiles helpers', () => {
     it('derives sibling "../receipts" when directory is provided and receiptFileDir is undefined', () => {
       const directory = '/data/csvs';
       const expected = join(directory, '../receipts'); // => '/data/receipts'
-      const out = computeReceiptsFolder(undefined, directory);
+      const out = computeReceiptsFolder(undefined, directory, dependencies);
       expect(out).toBe(expected);
       expect(mkdirSync).toHaveBeenCalledWith(expected, { recursive: true });
     });
 
     it('defaults to "./receipts" when both params are undefined', () => {
-      const out = computeReceiptsFolder(undefined, undefined);
+      const out = computeReceiptsFolder(undefined, undefined, dependencies);
       expect(out).toBe('./receipts');
       expect(mkdirSync).toHaveBeenCalledWith('./receipts', { recursive: true });
     });
