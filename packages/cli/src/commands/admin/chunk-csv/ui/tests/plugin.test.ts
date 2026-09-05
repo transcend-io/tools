@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const mMakeHeader = vi.fn<(ctx: unknown, extras?: string[]) => string[]>();
-const mMakeWorkerRows = vi.fn<(ctx: unknown) => string[]>();
+const mMakeWorkerRows =
+  vi.fn<(ctx: unknown, getFileLabel: undefined, now: () => number) => string[]>();
 
 vi.mock('../../../../../lib/pooling/index.js', () => ({
   makeHeader: (...args: unknown[]) => mMakeHeader(...(args as [unknown, string[]?])),
-  makeWorkerRows: (ctx: unknown) => mMakeWorkerRows(ctx),
+  makeWorkerRows: (ctx: unknown, getFileLabel: undefined, now: () => number) =>
+    mMakeWorkerRows(ctx, getFileLabel, now),
   // the plugin only uses the two above; other exports unnecessary for this test
 }));
 
@@ -42,14 +44,15 @@ describe('chunkCsvPlugin delegator', () => {
     expect(out).toEqual(['H1', 'H2']);
   });
 
-  it('renderWorkers calls makeWorkerRows(ctx) and returns its result', () => {
+  it('renderWorkers forwards the injected clock to makeWorkerRows', () => {
     const ctx = makeCtx();
+    const now = vi.fn(() => 123);
     mMakeWorkerRows.mockReturnValue(['R1', 'R2', 'R3']);
 
-    const rows = chunkCsvPlugin.renderWorkers(ctx as never);
+    const rows = chunkCsvPlugin.renderWorkers(ctx as never, now);
 
     expect(mMakeWorkerRows).toHaveBeenCalledTimes(1);
-    expect(mMakeWorkerRows).toHaveBeenCalledWith(ctx);
+    expect(mMakeWorkerRows).toHaveBeenCalledWith(ctx, undefined, now);
     expect(rows).toEqual(['R1', 'R2', 'R3']);
   });
 

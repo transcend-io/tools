@@ -6,7 +6,10 @@ import { describe, it, expect, vi, beforeEach, type MockedFunction } from 'vites
 
 import { installInteractiveSwitcher } from '../installInteractiveSwitcher.js';
 import { keymap } from '../keymap.js';
-import { replayFileTailToStdout } from '../replayFileTailToStdout.js';
+import {
+  replayFileTailToStdout,
+  type ReplayFileTailToStdoutDependencies,
+} from '../replayFileTailToStdout.js';
 import { getWorkerIds, cycleWorkers } from '../workerIds.js';
 
 /**
@@ -16,10 +19,17 @@ vi.mock('../keymap.js', () => ({
   keymap: vi.fn(),
 }));
 vi.mock('../replayFileTailToStdout.js', () => ({
-  replayFileTailToStdout: vi.fn((_p: string, _n: number, write: (s: string) => void) => {
-    // simulate writing some bytes during replay
-    write('[replayed]');
-  }),
+  replayFileTailToStdout: vi.fn(
+    (
+      _p: string,
+      _n: number,
+      write: (s: string) => void,
+      _dependencies: ReplayFileTailToStdoutDependencies,
+    ) => {
+      // simulate writing some bytes during replay
+      write('[replayed]');
+    },
+  ),
 }));
 vi.mock('../workerIds.js', () => ({
   getWorkerIds: vi.fn(() => [1, 2]),
@@ -55,6 +65,8 @@ function makePorts(tty = true): {
   stderr: NodeJS.WriteStream;
   /** Fake keypress event initializer */
   emitKeypressEvents: MockedFunction<typeof import('node:readline').emitKeypressEvents>;
+  /** Fake filesystem operations for replaying log tails. */
+  replayFileTailToStdoutDependencies: ReplayFileTailToStdoutDependencies;
 } {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlers = new Map<string, any[]>();
@@ -98,6 +110,11 @@ function makePorts(tty = true): {
       write: vi.fn(() => true),
     } as unknown as NodeJS.WriteStream,
     emitKeypressEvents: vi.fn<typeof import('node:readline').emitKeypressEvents>(),
+    replayFileTailToStdoutDependencies: {
+      createReadStream:
+        vi.fn() as unknown as ReplayFileTailToStdoutDependencies['createReadStream'],
+      statSync: vi.fn(() => ({ size: 0 })),
+    },
   };
 
   return ports;
@@ -218,8 +235,18 @@ describe('installInteractiveSwitcher', () => {
     // replay called for out/err (default = ['out','err'])
     expect(onEnterAttachScreen).toHaveBeenCalledWith(1);
     expect(mReplay).toHaveBeenCalledTimes(2);
-    expect(mReplay).toHaveBeenCalledWith('/o.log', expect.any(Number), expect.any(Function));
-    expect(mReplay).toHaveBeenCalledWith('/e.log', expect.any(Number), expect.any(Function));
+    expect(mReplay).toHaveBeenCalledWith(
+      '/o.log',
+      expect.any(Number),
+      expect.any(Function),
+      ports.replayFileTailToStdoutDependencies,
+    );
+    expect(mReplay).toHaveBeenCalledWith(
+      '/e.log',
+      expect.any(Number),
+      expect.any(Function),
+      ports.replayFileTailToStdoutDependencies,
+    );
 
     // replay header printed
     expect(ports.stdout.write).toHaveBeenCalledWith('\n------------ replay ------------\n');

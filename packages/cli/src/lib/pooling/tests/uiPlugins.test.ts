@@ -1,6 +1,5 @@
-import type { ObjByString } from '@transcend-io/type-utils';
 import type { SlotState } from '@transcend-io/utils';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import type { CommonCtx } from '../dashboardPlugin.js';
 import { fmtNum, pctBar, poolProgress, makeHeader, makeWorkerRows } from '../uiPlugins.js';
@@ -22,7 +21,14 @@ vi.mock('colors', () => ({
 /**
  * Test slot type for our tests.
  */
-type TestSlot = Partial<SlotState<ObjByString>>;
+type TestProgress = {
+  /** Number of rows processed. */
+  processed?: number;
+  /** Total rows to process. */
+  total?: number;
+};
+
+type TestSlot = Partial<SlotState<TestProgress>>;
 
 /**
  * Build a CommonCtx the helpers expect, with sane defaults.
@@ -31,11 +37,11 @@ type TestSlot = Partial<SlotState<ObjByString>>;
  * @returns a test context
  */
 function ctx(
-  partial: Omit<Partial<CommonCtx<unknown, TestSlot>>, 'workerState'> & {
+  partial: Omit<Partial<CommonCtx<unknown, TestProgress>>, 'workerState'> & {
     /** Worker state map */
     workerState?: Map<number, TestSlot>;
   } = {},
-): CommonCtx<unknown, TestSlot> {
+): CommonCtx<unknown, TestProgress> {
   return {
     title: 'Chunk CSV',
     poolSize: 4,
@@ -43,12 +49,21 @@ function ctx(
     filesTotal: 10,
     filesCompleted: 0,
     filesFailed: 0,
-    workerState: new Map<number, TestSlot>(),
-    throughput: undefined,
+    totals: undefined,
+    throughput: {
+      successSoFar: 0,
+      r10s: 0,
+      r60s: 0,
+      jobsR10s: 0,
+      jobsR60s: 0,
+    },
+    final: false,
     ...partial,
-    // ensure startedAt comparisons work if caller forgot to fake timers
-    // (we still fake timers in tests that need elapsed output)
-  } as CommonCtx<unknown, TestSlot>;
+    workerState: (partial.workerState ?? new Map<number, TestSlot>()) as Map<
+      number,
+      SlotState<TestProgress>
+    >,
+  };
 }
 
 describe('fmtNum', () => {
@@ -107,14 +122,6 @@ describe('poolProgress', () => {
 });
 
 describe('makeHeader', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('composes the basic header without throughput', () => {
     const workerState = new Map<number, TestSlot>([[0, { busy: true }]]);
     const c = ctx({
@@ -162,16 +169,9 @@ describe('makeHeader', () => {
 });
 
 describe('makeWorkerRows', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-01-01T00:10:00Z')); // fixed "now"
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it('renders rows with badges, file labels, elapsed, and mini bars', () => {
-    const started50sAgo = new Date('2025-01-01T00:09:10Z').getTime();
+    const now = new Date('2025-01-01T00:10:00Z').getTime();
+    const started50sAgo = now - 50_000;
 
     const workerState = new Map<number, TestSlot>([
       // idle slot
@@ -203,8 +203,7 @@ describe('makeWorkerRows', () => {
     const c = ctx({ workerState });
 
     // Default labeler uses basename(file)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = makeWorkerRows(c as any);
+    const rows = makeWorkerRows(c, undefined, () => now);
     expect(rows).toHaveLength(3);
 
     // [w0] IDLE
@@ -245,8 +244,7 @@ describe('makeWorkerRows', () => {
     ]);
     const c = ctx({ workerState });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = makeWorkerRows(c as any, (f) => (f ? `LABEL:${f}` : 'NONE'));
+    const rows = makeWorkerRows(c, (f) => (f ? `LABEL:${f}` : 'NONE'));
 
     expect(rows[0]).toContain('LABEL:/tmp/x.csv');
   });

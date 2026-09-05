@@ -55,6 +55,7 @@ function makePorts(): {
       stdout,
       cursorTo,
       clearScreenDown,
+      now: () => 1_735_689_600_000,
     },
     writes,
     cursorTo,

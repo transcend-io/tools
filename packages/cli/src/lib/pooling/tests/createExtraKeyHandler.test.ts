@@ -2,7 +2,7 @@ import type { ExportStatusMap, SlotPaths } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { ShowCombinedLogsPorts } from '../showCombinedLogs.js';
+import type { CreateExtraKeyHandlerPorts } from '../createExtraKeyHandler.js';
 
 /**
  * Mock the combined logs viewer. We assert calls and control resolution/rejection.
@@ -36,18 +36,27 @@ function loadSutFresh(): Promise<SutModule> {
  */
 function makeStdout(): {
   /** Standard output port passed to the handler. */
-  stdout: ShowCombinedLogsPorts['stdout'];
+  stdout: CreateExtraKeyHandlerPorts['stdout'];
+  /** Complete runtime ports passed to the handler. */
+  ports: CreateExtraKeyHandlerPorts;
   /** Recorded write payloads. */
   writes: string[];
 } {
   const writes: string[] = [];
+  const stdout = {
+    write: vi.fn((chunk) => {
+      writes.push(String(chunk));
+      return true;
+    }),
+  } as unknown as CreateExtraKeyHandlerPorts['stdout'];
+  const ports: CreateExtraKeyHandlerPorts = {
+    readFile: vi.fn(() => ''),
+    stdout,
+    now: Date.now,
+  };
   return {
-    stdout: {
-      write: vi.fn((chunk) => {
-        writes.push(String(chunk));
-        return true;
-      }),
-    } as unknown as ShowCombinedLogsPorts['stdout'],
+    stdout,
+    ports,
     writes,
   };
 }
@@ -133,18 +142,18 @@ describe('createExtraKeyHandler: viewers', () => {
     const { createExtraKeyHandler } = await loadSutFresh();
     const logs = makeLogs();
     const { repaint, setPaused, repaintSpy, pausedSpy } = makeUiSpies();
-    const { stdout } = makeStdout();
+    const { ports } = makeStdout();
 
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
-      stdout,
+      ports,
     });
 
     // e => ['err'], 'error'
     handler(key('e'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['err'], 'error', { stdout });
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['err'], 'error', ports);
     expect(pausedSpy).toHaveBeenCalledWith(true);
 
     // While viewing, another key should not stack a new viewer
@@ -159,35 +168,38 @@ describe('createExtraKeyHandler: viewers', () => {
 
     // w => ['warn','err'], 'warn'
     handler(key('w'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['warn', 'err'], 'warn', { stdout });
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['warn', 'err'], 'warn', ports);
 
     // exit before opening another viewer
     handler(key('\x1b'));
 
     // i => ['info'], 'all'
     handler(key('i'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['info'], 'all', { stdout });
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['info'], 'all', ports);
 
     // exit before opening another viewer
     handler(key('\x1b'));
 
     // l => ['out','err','structured'], 'all'
     handler(key('l'));
-    expect(mShowCombinedLogs).toHaveBeenCalledWith(logs, ['out', 'err', 'structured'], 'all', {
-      stdout,
-    });
+    expect(mShowCombinedLogs).toHaveBeenCalledWith(
+      logs,
+      ['out', 'err', 'structured'],
+      'all',
+      ports,
+    );
   });
 
   it('Ctrl+] also exits viewer and repaints', async () => {
     const { createExtraKeyHandler } = await loadSutFresh();
     const logs = makeLogs();
     const { repaint, setPaused, repaintSpy, pausedSpy } = makeUiSpies();
-    const { stdout } = makeStdout();
+    const { ports } = makeStdout();
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
-      stdout,
+      ports,
     });
 
     handler(key('e')); // open viewer
@@ -203,12 +215,12 @@ describe('createExtraKeyHandler: viewers', () => {
 
     const logs = makeLogs();
     const { repaint, setPaused, repaintSpy, pausedSpy } = makeUiSpies();
-    const { stdout } = makeStdout();
+    const { ports } = makeStdout();
     const handler = createExtraKeyHandler({
       logsBySlot: logs,
       repaint,
       setPaused,
-      stdout,
+      ports,
     });
 
     handler(key('e'));
@@ -232,7 +244,7 @@ describe('createExtraKeyHandler: exports', () => {
     const exportStatus = makeExportStatus();
     const mgr = makeExportMgr();
     const { repaint, setPaused, repaintSpy } = makeUiSpies();
-    const { stdout } = makeStdout();
+    const { ports } = makeStdout();
     const now = vi.fn(() => 1_735_689_600_000);
 
     const handler = createExtraKeyHandler({
@@ -241,8 +253,7 @@ describe('createExtraKeyHandler: exports', () => {
       setPaused,
       exportMgr: mgr,
       exportStatus,
-      stdout,
-      now,
+      ports: { ...ports, now },
     });
 
     const seq: Array<[string, 'error' | 'warn' | 'info' | 'all', string]> = [
@@ -277,7 +288,7 @@ describe('createExtraKeyHandler: exports', () => {
       logsBySlot: logs,
       repaint,
       setPaused,
-      stdout: terminal.stdout,
+      ports: terminal.ports,
     });
 
     handler(key('E'));
@@ -305,8 +316,7 @@ describe('createExtraKeyHandler: custom keys', () => {
       repaint,
       setPaused,
       exportStatus,
-      stdout: terminal.stdout,
-      now: () => 123,
+      ports: { ...terminal.ports, now: () => 123 },
       custom: {
         F: ({ say, noteExport }): void => {
           say('Hello from custom');

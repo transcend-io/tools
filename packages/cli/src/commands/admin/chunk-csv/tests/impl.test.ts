@@ -22,6 +22,22 @@ const H = vi.hoisted(() => {
     hooks?: PoolHooks<ChunkTask, ChunkProgress, ChunkResult, Record<string, never>>;
     viewerMode?: boolean;
     render?: (input: unknown) => unknown;
+    installInteractiveSwitcher?: (args: {
+      /** Worker registry. */
+      workers: Map<number, never>;
+      /** Graceful shutdown callback. */
+      onCtrlC: () => void;
+      /** Resolve worker log paths. */
+      getLogPaths: (id: number) => undefined;
+      /** Number of bytes to replay. */
+      replayBytes: number;
+      /** Log streams to replay. */
+      replayWhich: ('out' | 'err')[];
+      /** Pause dashboard rendering. */
+      setPaused: (p: boolean) => void;
+      /** Repaint the dashboard. */
+      repaint: () => void;
+    }) => unknown;
     extraKeyHandler?: (args: {
       logsBySlot: Map<number, string[]>;
       repaint: () => void;
@@ -39,22 +55,14 @@ const H = vi.hoisted(() => {
     runPool: vi.fn(async (args: typeof lastRunPoolArgs): Promise<void> => {
       Object.assign(lastRunPoolArgs, args);
     }),
-    dashboardPlugin: vi.fn((input: unknown, plugin: unknown, viewerMode: boolean) => ({
-      input,
-      plugin,
-      viewerMode,
-      tag: 'dashboard-plugin-result',
+    render: vi.fn(),
+    installInteractiveSwitcher: vi.fn(),
+    extraKeyHandler: vi.fn(),
+    createPoolingCommandUi: vi.fn(() => ({
+      render: pooling.render,
+      installInteractiveSwitcher: pooling.installInteractiveSwitcher,
+      extraKeyHandler: pooling.extraKeyHandler,
     })),
-    createExtraKeyHandler: vi.fn(
-      (o: {
-        logsBySlot: Map<number, string[]>;
-        repaint: () => void;
-        setPaused: (p: boolean) => void;
-      }) => ({
-        ...o,
-        tag: 'extra-key-handler',
-      }),
-    ),
   };
 
   const helpers = {
@@ -107,8 +115,7 @@ vi.mock('../../../../lib/pooling/index.js', async () => {
     );
   return {
     ...actual,
-    dashboardPlugin: H.pooling.dashboardPlugin,
-    createExtraKeyHandler: H.pooling.createExtraKeyHandler,
+    createPoolingCommandUi: H.pooling.createPoolingCommandUi,
   };
 });
 
@@ -193,71 +200,54 @@ describe('chunkCsv', () => {
     expect(seen).toEqual(H.files); // FIFO order
 
     // totals are an empty record
-    const totals = hooks.initTotals?.();
+    const totals = hooks.initTotals?.() ?? {};
     expect(totals).toEqual({});
 
     // onProgress returns same totals object (identity)
-    const progressed = hooks.onProgress?.(
-      totals as Record<string, never>,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      {} as any,
-    );
+    const progressed = hooks.onProgress?.(totals, {
+      filePath: '/abs/a.csv',
+      processed: 1,
+    });
     expect(progressed).toBe(totals);
 
     // onResult sets ok based on res.ok
-    const r1 = hooks.onResult?.(totals as Record<string, never>, { ok: true } as ChunkResult);
+    const r1 = hooks.onResult?.(totals, {
+      ok: true,
+      filePath: '/abs/a.csv',
+    });
     expect(r1?.ok).toBe(true);
-    const r2 = hooks.onResult?.(totals as Record<string, never>, { ok: false } as ChunkResult);
+    const r2 = hooks.onResult?.(totals, {
+      ok: false,
+      filePath: '/abs/b.csv',
+    });
     expect(r2?.ok).toBe(false);
 
     // postProcess is a no-op
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await hooks.postProcess?.({} as any);
-  });
-
-  it('render delegates to dashboardPlugin with chunkCsvPlugin and viewerMode', async () => {
-    await chunkCsv.call(ctx, baseFlags);
-    const render = H.lastRunPoolArgs.render!;
-    const input = { pretend: 'frame' };
-    const result = render(input);
-
-    expect(H.pooling.dashboardPlugin).toHaveBeenCalledTimes(1);
-    const call = H.pooling.dashboardPlugin.mock.calls[0];
-    expect(call?.[0]).toBe(input);
-    expect(call?.[1]).toBe(chunkCsvPlugin);
-    expect(call?.[2]).toBe(true);
-
-    // just assert passthrough of whatever dashboardPlugin returns
-    expect(result).toEqual({
-      input,
-      plugin: chunkCsvPlugin,
+    await hooks.postProcess?.({
+      slots: new Map(),
+      totals,
+      logDir: '/logs',
+      logsBySlot: new Map(),
+      startedAt: 1,
+      finishedAt: 2,
+      getLogPathsForSlot: () => undefined,
       viewerMode: true,
-      tag: 'dashboard-plugin-result',
     });
   });
 
-  it('extraKeyHandler is built via createExtraKeyHandler and passes through logs/repaint/setPaused', async () => {
+  it('spreads context-bound pooling UI callbacks into runPool', async () => {
     await chunkCsv.call(ctx, baseFlags);
-    const ek = H.lastRunPoolArgs.extraKeyHandler!;
-    const logsBySlot = new Map<number, string[]>();
-    const repaint = vi.fn();
-    const setPaused = vi.fn();
 
-    const out = ek({ logsBySlot, repaint, setPaused });
+    expect(H.pooling.createPoolingCommandUi).toHaveBeenCalledWith(ctx, chunkCsvPlugin, true);
+    expect(H.lastRunPoolArgs.render).toBe(H.pooling.render);
+    expect(H.lastRunPoolArgs.installInteractiveSwitcher).toBe(H.pooling.installInteractiveSwitcher);
+    expect(H.lastRunPoolArgs.extraKeyHandler).toBe(H.pooling.extraKeyHandler);
+  });
 
-    expect(H.pooling.createExtraKeyHandler).toHaveBeenCalledTimes(1);
-    const call = H.pooling.createExtraKeyHandler.mock.calls[0]?.[0];
-    expect(call.logsBySlot).toBe(logsBySlot);
-    expect(call.repaint).toBe(repaint);
-    expect(call.setPaused).toBe(setPaused);
+  it('passes non-viewer mode to the pooling UI factory', async () => {
+    await chunkCsv.call(ctx, { ...baseFlags, viewerMode: false });
 
-    // passthrough object from our mock
-    expect(out).toEqual({
-      logsBySlot,
-      repaint,
-      setPaused,
-      tag: 'extra-key-handler',
-    });
+    expect(H.pooling.createPoolingCommandUi).toHaveBeenCalledWith(ctx, chunkCsvPlugin, false);
   });
 
   it('uses outputDir as baseDir when directory is empty', async () => {

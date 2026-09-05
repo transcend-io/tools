@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 
 /* colors → identity (include magenta for ETA) */
 vi.mock('colors', () => ({
@@ -79,11 +79,7 @@ function baseCtx<TTotals>(over: Partial<Ctx<TTotals>> & { totals: TTotals }): Ct
 }
 
 describe('uploadPreferencesPlugin', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
   afterEach(() => {
-    vi.useRealTimers();
     vi.clearAllMocks();
   });
 
@@ -137,8 +133,9 @@ describe('uploadPreferencesPlugin', () => {
       },
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const lines = uploadPreferencesPlugin.renderHeader(ctx as any);
+    const lines = uploadPreferencesPlugin.renderHeader(
+      ctx as Parameters<typeof uploadPreferencesPlugin.renderHeader>[0],
+    );
 
     // Real header starts with the title + workers / CPU; don’t depend on exact styling
     expect(lines[0]).toMatch(/^Upload Prefs — 2 workers/);
@@ -172,8 +169,9 @@ describe('uploadPreferencesPlugin', () => {
       filesFailed: 0,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const lines = uploadPreferencesPlugin.renderHeader(ctx as any);
+    const lines = uploadPreferencesPlugin.renderHeader(
+      ctx as Parameters<typeof uploadPreferencesPlugin.renderHeader>[0],
+    );
 
     // Real header’s line 0 is the formatted title line
     expect(lines[0]).toMatch(/^Upload Prefs — 2 workers/);
@@ -191,6 +189,7 @@ describe('uploadPreferencesPlugin', () => {
   });
 
   it('renderWorkers: renders real worker rows (no delegation mock)', () => {
+    const now = 1_735_689_600_000;
     // One idle, one working with known totals
     const workers = new Map<number, SlotState<SlotProgress>>([
       [
@@ -207,7 +206,7 @@ describe('uploadPreferencesPlugin', () => {
         {
           busy: true,
           file: '/abs/a.csv',
-          startedAt: Date.now() - 5000,
+          startedAt: now - 5000,
           lastLevel: 'ok',
           progress: { processed: 3, total: 6 },
         },
@@ -225,8 +224,10 @@ describe('uploadPreferencesPlugin', () => {
       workerState: workers,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const rows = uploadPreferencesPlugin.renderWorkers(ctx as any);
+    const rows = uploadPreferencesPlugin.renderWorkers(
+      ctx as Parameters<typeof uploadPreferencesPlugin.renderWorkers>[0],
+      () => now,
+    );
     expect(Array.isArray(rows)).toBe(true);
     expect(rows.length).toBe(2);
 
@@ -267,8 +268,10 @@ describe('uploadPreferencesPlugin', () => {
       exportStatus: status,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const lines = uploadPreferencesPlugin.renderExtras?.(ctx as any) || [];
+    const lines =
+      uploadPreferencesPlugin.renderExtras?.(
+        ctx as Parameters<NonNullable<typeof uploadPreferencesPlugin.renderExtras>>[0],
+      ) || [];
     expect(lines[0]).toContain('Exports (Cmd/Ctrl-click “open”');
 
     const eLine = lines[1];
