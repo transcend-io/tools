@@ -116,7 +116,7 @@ describe('pullConsentPreferences', () => {
     ctx.reset();
   });
 
-  it('runs input validation using the context process', async () => {
+  it('exits before doing work in validation-only mode', async () => {
     const flags: PullConsentPreferencesCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -130,23 +130,17 @@ describe('pullConsentPreferences', () => {
       maxLookbackDays: 90,
       windowConcurrency: 50,
     };
+    const validationContext = buildContextForTest({
+      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
+    });
 
-    // streaming path: no accumulation; just ensure we can call onItems zero times
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, require-await
-    H.fetchConsentPreferences.mockImplementationOnce(
-      async (_sombra, _opts) =>
-        // don't call onItems → no rows
-        [],
-    );
+    await expect(pullConsentPreferences.call(validationContext, flags)).rejects.toMatchObject({
+      code: 0,
+    });
 
-    await pullConsentPreferences.call(ctx, flags);
-
-    expect(ctx.exit).not.toHaveBeenCalled();
-
-    // logs include mode and preparing/finished
-    expect(ctx.stdout).toContain('using mode=paged-stream');
-    expect(ctx.stdout).toContain('Preparing CSV at: /tmp/out.csv');
-    expect(ctx.stdout).toContain('Finished writing CSV to /tmp/out.csv');
+    expect(validationContext.exit).toHaveBeenCalledWith(0);
+    expect(H.fetchConsentPreferences).not.toHaveBeenCalled();
+    expect(H.initCsvFile).not.toHaveBeenCalled();
   });
 
   it('parses identifiers, builds filter, passes limit=concurrency, streams pages, initializes header once, and appends rows', async () => {

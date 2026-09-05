@@ -74,7 +74,7 @@ describe('deletePreferenceRecordsImpl', () => {
     ctx.reset();
   });
 
-  it('runs input validation using the context process', async () => {
+  it('exits before doing work in validation-only mode', async () => {
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -87,10 +87,18 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
+    const validationContext = buildContextForTest({
+      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
+      fs: ctx.fs,
+    });
 
-    await deletePreferenceRecords.call(ctx, flags);
+    await expect(deletePreferenceRecords.call(validationContext, flags)).rejects.toMatchObject({
+      code: 0,
+    });
 
-    expect(ctx.exit).not.toHaveBeenCalled();
+    expect(validationContext.exit).toHaveBeenCalledWith(0);
+    expect(H.bulkDeletePreferenceRecords).not.toHaveBeenCalled();
+    expect(H.writeCsv).not.toHaveBeenCalled();
   });
 
   it('errors if both file and directory are provided', async () => {

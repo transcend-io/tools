@@ -150,9 +150,18 @@ describe('parquetToCsv', () => {
     expect(ctx.process.argv.includes(H.pooling.CHILD_FLAG)).toBe(false);
   });
 
-  it('runs input validation using the context process', async () => {
-    await parquetToCsv.call(ctx, baseFlags);
-    expect(ctx.exit).not.toHaveBeenCalled();
+  it('exits before doing work in validation-only mode', async () => {
+    const validationContext = buildContextForTest({
+      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
+    });
+
+    await expect(parquetToCsv.call(validationContext, baseFlags)).rejects.toMatchObject({
+      code: 0,
+    });
+
+    expect(validationContext.exit).toHaveBeenCalledWith(0);
+    expect(H.helpers.collectParquetFilesOrExit).not.toHaveBeenCalled();
+    expect(H.pooling.runPool).not.toHaveBeenCalled();
   });
 
   it('discovers files, sizes the pool, logs, builds queue, and invokes runPool with expected args', async () => {
