@@ -2,8 +2,7 @@ import fs from 'node:fs';
 
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
-import { logger } from '../../../../logger.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { publish } from '../impl.js';
 
 const buildOpaBundleTarballMock = vi.hoisted(() => vi.fn());
@@ -41,21 +40,20 @@ const sampleVersion = {
 };
 
 describe('publish', () => {
-  const exit = vi.fn();
-  const stdout = { write: vi.fn() };
-  const context = {
-    process: { exit, stdout, stdin: { isTTY: true } },
-  } as unknown as LocalContext;
+  const existsSync = vi.fn<typeof fs.existsSync>(() => true);
+  const unlinkSync = vi.fn<typeof fs.unlinkSync>();
+  const testFs = { ...fs, existsSync, unlinkSync };
+  const context = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+    exitBehavior: 'record',
+    fs: testFs,
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-    vi.spyOn(logger, 'warn').mockImplementation(() => undefined);
-    vi.spyOn(logger, 'error').mockImplementation(() => undefined);
-    process.env.DEVELOPMENT_MODE_VALIDATE_ONLY = 'false';
+    context.reset();
     buildOpaBundleTarballMock.mockResolvedValue('/tmp/bundle.tar.gz');
-    vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-    vi.spyOn(fs, 'unlinkSync').mockImplementation(() => undefined);
+    existsSync.mockReturnValue(true);
     inquirerConfirmBooleanMock.mockResolvedValue(true);
   });
 
@@ -88,16 +86,12 @@ describe('publish', () => {
 
     expect(post).toHaveBeenCalledWith('v1/policy-engine/policy-bundles', expect.any(Object));
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
-    expect(stdout.write).toHaveBeenCalled();
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Publishing a policy does not activate it. To activate this version, run:',
-      ),
+    expect(context.stdout).toContain('"version": "abc123"');
+    expect(context.stdout).toContain(
+      'Publishing a policy does not activate it. To activate this version, run:',
     );
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /transcend policy activate[\s\S]*--version=abc123[\s\S]*--bundle-name=main/,
-      ),
+    expect(context.stdout).toMatch(
+      /transcend policy activate[\s\S]*--version=abc123[\s\S]*--bundle-name=main/,
     );
   });
 
@@ -177,16 +171,19 @@ describe('publish', () => {
     });
 
     expect(post).not.toHaveBeenCalled();
-    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('Publish cancelled.'));
+    expect(context.stdout).toContain('Publish cancelled.');
   });
 
   it('fails in a non-interactive environment when creating a new bundle without --yes', async () => {
     const post = vi.fn();
     buildPolicyEngineClientMock.mockReturnValue({ post });
     resolveBundleIdByNameMock.mockResolvedValue(undefined);
-    const nonInteractiveContext = {
-      process: { exit, stdout, stdin: { isTTY: false } },
-    } as unknown as LocalContext;
+    const nonInteractiveContext = buildContextForTest({
+      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+      exitBehavior: 'record',
+      fs: testFs,
+      stdinIsTTY: false,
+    });
 
     await publish.call(nonInteractiveContext, {
       dir: './policies',
@@ -198,11 +195,9 @@ describe('publish', () => {
     });
 
     expect(post).not.toHaveBeenCalled();
-    expect(exit).toHaveBeenCalledWith(1);
-    expect(logger.error).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'Cannot create a new bundle in a non-interactive environment; pass --yes to confirm.',
-      ),
+    expect(nonInteractiveContext.exit).toHaveBeenCalledWith(1);
+    expect(nonInteractiveContext.stderr).toContain(
+      'Cannot create a new bundle in a non-interactive environment; pass --yes to confirm.',
     );
   });
 });

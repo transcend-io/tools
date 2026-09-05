@@ -2,7 +2,6 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
   buildPolicyEngineClient,
@@ -39,12 +38,12 @@ export async function bundles(
   this: LocalContext,
   { auth, 'transcend-url': transcendUrl, limit, offset, json, debug = false }: BundlesCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
 
-  logger.info(colors.green('Listing policy bundles...'));
+  this.logger.info(colors.green('Listing policy bundles...'));
 
   const body = await policyEngineRequest(
     client

@@ -36,7 +36,7 @@ export async function notifyAdditionalTime(
     concurrency,
   }: NotifyAdditionalTimeCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await notifyPrivacyRequestsAdditionalTime({
     transcendUrl,

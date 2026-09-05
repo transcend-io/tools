@@ -11,7 +11,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { findFilesToScan } from '../../../lib/code-scanning/findFilesToScan.js';
 import { SILO_DISCOVERY_CONFIGS } from '../../../lib/code-scanning/index.js';
-import { logger } from '../../../logger.js';
 
 export interface DiscoverSilosCommandFlags {
   scanPath: string;
@@ -26,19 +25,19 @@ export async function discoverSilos(
   this: LocalContext,
   { scanPath, dataSiloId, auth, fileGlobs, ignoreDirs, transcendUrl }: DiscoverSilosCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Create a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   const plugin = await fetchActiveSiloDiscoPlugin(client, {
-    logger,
+    logger: this.logger,
     filterBy: { dataSiloId },
   });
 
   const config = SILO_DISCOVERY_CONFIGS[plugin.dataSilo.type];
   if (!config) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `This plugin "${plugin.dataSilo.type}" is not supported for offline silo discovery.`,
       ),
@@ -56,7 +55,7 @@ export async function discoverSilos(
   await uploadSiloDiscoveryResults(client, {
     pluginId: plugin.id,
     results,
-    logger,
+    logger: this.logger,
   });
 
   const newUrl = new URL(ADMIN_DASH);
@@ -66,7 +65,7 @@ export async function discoverSilos(
   });
 
   // Indicate success
-  logger.info(
+  this.logger.info(
     colors.green(
       `Scan found ${results.length} potential data silos at ${scanPath}! ` +
         `View at '${newUrl.href}' ` +

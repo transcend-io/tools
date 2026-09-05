@@ -2,19 +2,17 @@ import { createReadStream, statSync } from 'node:fs';
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { replayFileTailToStdout } from '../replayFileTailToStdout.js';
+import {
+  replayFileTailToStdout,
+  type ReplayFileTailToStdoutDependencies,
+} from '../replayFileTailToStdout.js';
 
-/**
- * Mock fs BEFORE importing the SUT.
- * Inline factory avoids hoisting pitfalls.
- */
-vi.mock('node:fs', () => ({
-  createReadStream: vi.fn(),
-  statSync: vi.fn(),
-}));
-
-const mCRS = vi.mocked(createReadStream);
-const mStat = vi.mocked(statSync);
+const mCRS = vi.fn<typeof createReadStream>();
+const mStat = vi.fn<typeof statSync>();
+const dependencies: ReplayFileTailToStdoutDependencies = {
+  createReadStream: mCRS,
+  statSync: mStat as ReplayFileTailToStdoutDependencies['statSync'],
+};
 
 /**
  * Type for createReadStream return value.
@@ -156,7 +154,7 @@ describe('replayFileTailToStdout', () => {
     const writes: string[] = [];
     const write = (s: string): number => writes.push(s);
 
-    await replayFileTailToStdout('/file.txt', 4, write);
+    await replayFileTailToStdout('/file.txt', 4, write, dependencies);
 
     // expect createReadStream called with start = 10 - 4 = 6
     expect(mCRS).toHaveBeenCalledWith(
@@ -171,7 +169,7 @@ describe('replayFileTailToStdout', () => {
     const writes: string[] = [];
     const write = (s: string): number => writes.push(s);
 
-    await replayFileTailToStdout('/short.log', 100, write);
+    await replayFileTailToStdout('/short.log', 100, write, dependencies);
 
     expect(mCRS).toHaveBeenCalledWith(
       '/short.log',
@@ -184,7 +182,7 @@ describe('replayFileTailToStdout', () => {
     installFs({}); // no files
     const write = vi.fn();
 
-    await replayFileTailToStdout('/missing.txt', 50, write);
+    await replayFileTailToStdout('/missing.txt', 50, write, dependencies);
 
     expect(write).not.toHaveBeenCalled();
   });
@@ -207,7 +205,7 @@ describe('replayFileTailToStdout', () => {
     });
 
     const write = vi.fn();
-    await replayFileTailToStdout('/err.txt', 3, write);
+    await replayFileTailToStdout('/err.txt', 3, write, dependencies);
 
     expect(write).not.toHaveBeenCalled();
   });
@@ -242,7 +240,7 @@ describe('replayFileTailToStdout', () => {
     const writes: string[] = [];
     const write = (s: string): number => writes.push(s);
 
-    await replayFileTailToStdout('/multi.txt', 6, write);
+    await replayFileTailToStdout('/multi.txt', 6, write, dependencies);
 
     expect(writes).toEqual(['AA', 'BB']);
   });

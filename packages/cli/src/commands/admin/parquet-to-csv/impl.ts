@@ -11,12 +11,7 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { collectParquetFilesOrExit } from '../../../lib/helpers/index.js';
-import {
-  createExtraKeyHandler,
-  dashboardPlugin,
-  installInteractiveSwitcher,
-} from '../../../lib/pooling/index.js';
-import { logger } from '../../../logger.js';
+import { createPoolingCommandUi } from '../../../lib/pooling/index.js';
 import { parquetToCsvPlugin } from './ui/index.js';
 import type { ParquetProgress, ParquetResult, ParquetTask } from './worker.js';
 
@@ -40,9 +35,10 @@ export async function parquetToCsv(
   this: LocalContext,
   flags: ParquetToCsvCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const { directory, outputDir, clearOutputDir, concurrency, viewerMode } = flags;
+  const poolingUi = createPoolingCommandUi(this, parquetToCsvPlugin, viewerMode);
 
   /* 1) Discover .parquet inputs */
   const files = collectParquetFilesOrExit(directory, this);
@@ -50,7 +46,7 @@ export async function parquetToCsv(
   /* 2) Size the pool */
   const { poolSize, cpuCount } = computePoolSize(concurrency, files.length);
 
-  logger.info(
+  this.logger.info(
     colors.green(
       `Converting ${files.length} Parquet file(s) → CSV with pool size ${poolSize} (CPU=${cpuCount})`,
     ),
@@ -78,7 +74,7 @@ export async function parquetToCsv(
   /* 5) Launch the pool runner with custom dashboard plugin */
   await runPool({
     title: `Parquet → CSV - ${directory}`,
-    baseDir: directory || outputDir || process.cwd(),
+    baseDir: directory || outputDir || this.process.cwd(),
     childFlag: CHILD_FLAG,
     childModulePath: resolveWorkerPath(import.meta.url, 'commands/admin/parquet-to-csv/worker.mjs'),
     poolSize,
@@ -86,42 +82,10 @@ export async function parquetToCsv(
     filesTotal: files.length,
     hooks,
     viewerMode,
-    render: (input) => dashboardPlugin(input, parquetToCsvPlugin, viewerMode),
-    installInteractiveSwitcher: viewerMode
-      ? undefined
-      : ({
-          workers,
-          onCtrlC,
-          getLogPaths,
-          replayBytes: rb,
-          replayWhich: rw,
-          setPaused,
-          repaint: rp,
-        }) =>
-          installInteractiveSwitcher({
-            workers,
-            onCtrlC,
-            getLogPaths,
-            replayBytes: rb,
-            replayWhich: rw,
-            onAttach: () => setPaused(true),
-            onDetach: () => {
-              setPaused(false);
-              rp();
-            },
-            onEnterAttachScreen: (id) => {
-              setPaused(true);
-              process.stdout.write('\x1b[2J\x1b[H');
-              process.stdout.write(
-                `Attached to worker ${id}. (Esc/Ctrl+] detach \u2022 Ctrl+D EOF \u2022 Ctrl+C SIGINT)\n`,
-              );
-            },
-          }),
-    extraKeyHandler: ({ logsBySlot, repaint, setPaused }) =>
-      createExtraKeyHandler({ logsBySlot, repaint, setPaused }),
+    ...poolingUi,
   }).catch((err) => {
     if (err instanceof PoolCancelledError) {
-      process.exit(130);
+      this.process.exit(130);
     }
     throw err;
   });
