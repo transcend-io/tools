@@ -20,19 +20,21 @@ const H = vi.hoisted(() => {
   const sombra = { tag: 'sombra' };
 
   // spies for preference-management exports
-  const bulkDeletePreferenceRecords = vi.fn(); // we'll .mockImplementationOnce per test to drive streaming
+  const bulkDeletePreferenceRecordsFromRows = vi.fn();
 
   // // CSV helpers (new code path)
   const writeCsv = vi.fn();
 
   const reaDirSync = vi.fn((): string[] => []);
+  const readFileSync = vi.fn(() => 'name,value\nemail,test@example.com\n');
 
   return {
     colors,
     sombra,
-    bulkDeletePreferenceRecords,
+    bulkDeletePreferenceRecordsFromRows,
     writeCsv,
     reaDirSync,
+    readFileSync,
   };
 });
 
@@ -43,7 +45,8 @@ vi.mock('colors', () => ({
   ...H.colors,
 }));
 
-vi.mock('@transcend-io/sdk', () => ({
+vi.mock('@transcend-io/sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   // eslint-disable-next-line require-await
   createSombraGotInstance: vi.fn(async () => H.sombra),
 }));
@@ -56,8 +59,8 @@ vi.mock('../../../../lib/helpers/index.js', () => ({
 // preference-management: forward and record args, then delegate to our spies
 vi.mock('../../../../lib/preference-management/index.js', () => ({
   // eslint-disable-next-line require-await
-  bulkDeletePreferenceRecords: async (sombra: unknown, opts: any) =>
-    H.bulkDeletePreferenceRecords(sombra, opts),
+  bulkDeletePreferenceRecordsFromRows: async (sombra: unknown, opts: any) =>
+    H.bulkDeletePreferenceRecordsFromRows(sombra, opts),
 }));
 
 describe('deletePreferenceRecordsImpl', () => {
@@ -66,6 +69,7 @@ describe('deletePreferenceRecordsImpl', () => {
     fs: {
       ...fs,
       readdirSync: H.reaDirSync as unknown as typeof fs.readdirSync,
+      readFileSync: H.readFileSync as unknown as typeof fs.readFileSync,
     },
   });
 
@@ -97,7 +101,7 @@ describe('deletePreferenceRecordsImpl', () => {
     });
 
     expect(validationContext.exit).toHaveBeenCalledWith(0);
-    expect(H.bulkDeletePreferenceRecords).not.toHaveBeenCalled();
+    expect(H.bulkDeletePreferenceRecordsFromRows).not.toHaveBeenCalled();
     expect(H.writeCsv).not.toHaveBeenCalled();
   });
 
@@ -179,7 +183,7 @@ describe('deletePreferenceRecordsImpl', () => {
   });
 
   it('processes a single CSV file successfully', async () => {
-    H.bulkDeletePreferenceRecords.mockResolvedValueOnce([]);
+    H.bulkDeletePreferenceRecordsFromRows.mockResolvedValueOnce([]);
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -193,9 +197,11 @@ describe('deletePreferenceRecordsImpl', () => {
       fileConcurrency: 5,
     };
     await deletePreferenceRecords.call(ctx, flags);
-    expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledWith(
+    expect(H.bulkDeletePreferenceRecordsFromRows).toHaveBeenCalledWith(
       H.sombra,
-      expect.objectContaining({ filePath: '/tmp/out.csv' }),
+      expect.objectContaining({
+        anchorIdentifiers: [{ name: 'email', value: 'test@example.com' }],
+      }),
     );
     expect(ctx.stdout).toContain('Deletion Summary Report');
     expect(H.writeCsv).not.toHaveBeenCalled();
@@ -218,16 +224,18 @@ describe('deletePreferenceRecordsImpl', () => {
     };
     H.reaDirSync.mockReturnValueOnce(['a.csv', 'b.csv', 'c.csv']);
     await deletePreferenceRecords.call(ctx, flags);
-    expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledTimes(3);
-    expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledWith(
+    expect(H.bulkDeletePreferenceRecordsFromRows).toHaveBeenCalledTimes(3);
+    expect(H.bulkDeletePreferenceRecordsFromRows).toHaveBeenCalledWith(
       H.sombra,
-      expect.objectContaining({ filePath: expect.stringContaining('a.csv') }),
+      expect.objectContaining({
+        anchorIdentifiers: [{ name: 'email', value: 'test@example.com' }],
+      }),
     );
     expect(ctx.stdout).toContain('Deletion Summary Report');
   });
 
   it('writes a receipt if there are failed deletions', async () => {
-    H.bulkDeletePreferenceRecords.mockResolvedValueOnce([{ id: 1, error: 'fail' }]);
+    H.bulkDeletePreferenceRecordsFromRows.mockResolvedValueOnce([{ id: 1, error: 'fail' }]);
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',

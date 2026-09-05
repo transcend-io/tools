@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-import { createSombraGotInstance } from '@transcend-io/sdk';
+import { createSombraGotInstance, DeletePreferenceRecordCliCsvRow } from '@transcend-io/sdk';
 import { map } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -8,7 +8,8 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { writeCsv } from '../../../lib/helpers/index.js';
-import { bulkDeletePreferenceRecords } from '../../../lib/preference-management/index.js';
+import { bulkDeletePreferenceRecordsFromRows } from '../../../lib/preference-management/index.js';
+import { parseCsv } from '../../../lib/requests/readCsv.js';
 
 export interface DeletePreferenceRecordsCommandFlags {
   /** Transcend API key for authentication */
@@ -129,9 +130,13 @@ export async function deletePreferenceRecords(
   const failedResultsArrays = await map(
     files,
     async (filePath) => {
-      const result = await bulkDeletePreferenceRecords(sombra, {
+      const anchorIdentifiers = parseCsv(
+        this.fs.readFileSync(filePath, 'utf8'),
+        DeletePreferenceRecordCliCsvRow,
+      );
+      const result = await bulkDeletePreferenceRecordsFromRows(sombra, {
         partition,
-        filePath,
+        anchorIdentifiers,
         timestamp,
         maxItemsInChunk,
         maxConcurrency,

@@ -11,7 +11,7 @@ import * as t from 'io-ts';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { writeCsv } from '../../../lib/helpers/index.js';
-import { readCsv } from '../../../lib/requests/index.js';
+import { parseCsv } from '../../../lib/requests/readCsv.js';
 
 /**
  * CLI flags accepted by the `generate-access-tokens` command.
@@ -67,7 +67,7 @@ export async function generateAccessTokens(
       [emailColumnName]: t.string,
       ...(coreIdentifierColumnName ? { [coreIdentifierColumnName]: t.string } : {}),
     });
-    const rows: Array<Record<string, string>> = readCsv(file, codec);
+    const rows: Array<Record<string, string>> = parseCsv(this.fs.readFileSync(file, 'utf8'), codec);
     if (!rows.length) {
       throw new Error('Input CSV is empty.');
     }
