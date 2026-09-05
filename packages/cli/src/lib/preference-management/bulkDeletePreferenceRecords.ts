@@ -9,6 +9,7 @@ import colors from 'colors';
 import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/index.js';
 
@@ -24,6 +25,8 @@ interface DeletePreferenceRecordsRepositoryOptions {
   identifierChunk: DeletePreferenceRecordCliCsvRow[];
   /** the timestamp for the deletion operation */
   timestamp: Date;
+  /** Command logger */
+  logger: CliLogger;
 }
 
 /**
@@ -31,7 +34,7 @@ interface DeletePreferenceRecordsRepositoryOptions {
  */
 type DeletePreferenceRecordsOptions = Omit<
   DeletePreferenceRecordsRepositoryOptions,
-  'identifierChunk'
+  'identifierChunk' | 'logger'
 > & {
   /** The file path to read CSV rows from */
   filePath: string;
@@ -44,6 +47,8 @@ type DeletePreferenceRecordsOptions = Omit<
 type DeletePreferenceRecordRowsOptions = Omit<DeletePreferenceRecordsOptions, 'filePath'> & {
   /** Decoded identifiers to delete */
   anchorIdentifiers: DeletePreferenceRecordCliCsvRow[];
+  /** Command logger */
+  logger: CliLogger;
 };
 
 /**
@@ -59,7 +64,12 @@ type DeletePreferenceRecordRowsOptions = Omit<DeletePreferenceRecordsOptions, 'f
  */
 async function deletePreferenceRecordsRepository(
   sombra: Got,
-  { partition, identifierChunk: chunk, timestamp }: DeletePreferenceRecordsRepositoryOptions,
+  {
+    partition,
+    identifierChunk: chunk,
+    timestamp,
+    logger: commandLogger,
+  }: DeletePreferenceRecordsRepositoryOptions,
 ): Promise<FailedResult[]> {
   try {
     const response = await withTransientRetry(
@@ -76,10 +86,10 @@ async function deletePreferenceRecordsRepository(
           })
           .json(),
       {
-        logger,
+        logger: commandLogger,
         maxAttempts: 3,
         onRetry: (attempt, _err, msg) => {
-          logger.warn(
+          commandLogger.warn(
             colors.yellow(`Attempt ${attempt} to delete preference records failed: ${msg}`),
           );
         },
@@ -128,6 +138,7 @@ export async function bulkDeletePreferenceRecords(
     timestamp,
     maxItemsInChunk,
     maxConcurrency,
+    logger,
   });
 }
 
@@ -146,6 +157,7 @@ export async function bulkDeletePreferenceRecordsFromRows(
     timestamp,
     maxItemsInChunk,
     maxConcurrency,
+    logger,
   }: DeletePreferenceRecordRowsOptions,
 ): Promise<FailedResult[]> {
   const chunks = chunk(anchorIdentifiers, maxItemsInChunk);
@@ -157,6 +169,7 @@ export async function bulkDeletePreferenceRecordsFromRows(
         partition,
         identifierChunk,
         timestamp,
+        logger,
       });
       return failedResults;
     },

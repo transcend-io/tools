@@ -201,6 +201,7 @@ describe('deletePreferenceRecordsImpl', () => {
       H.sombra,
       expect.objectContaining({
         anchorIdentifiers: [{ name: 'email', value: 'test@example.com' }],
+        logger: ctx.logger,
       }),
     );
     expect(ctx.stdout).toContain('Deletion Summary Report');
