@@ -40,7 +40,7 @@ import { GraphQLClient } from 'graphql-request';
 
 /* eslint-disable max-lines */
 import { TranscendInput } from '../../codecs.js';
-import { logger } from '../../logger.js';
+import { logger as defaultLogger } from '../../logger.js';
 import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
 import { normalizeDeletionDependencies } from './normalizeDeletionDependencies.js';
@@ -48,12 +48,23 @@ import { syncDataSilos } from './syncDataSilos.js';
 
 const CONCURRENCY = 10;
 
+/** Runtime dependencies for synchronizing Transcend configuration. */
+export interface SyncConfigurationToTranscendDependencies {
+  /** Default logger used when the options do not provide one. */
+  readonly logger: Logger;
+}
+
+const defaultDependencies: SyncConfigurationToTranscendDependencies = {
+  logger: defaultLogger,
+};
+
 /**
  * Sync the yaml input back to Transcend using the GraphQL APIs
  *
  * @param input - The yml input
  * @param client - GraphQL client
- * @param pageSize - Page size
+ * @param options - Sync options
+ * @param dependencies - Runtime dependencies
  * @returns Structured sync result with per-resource errors
  */
 export async function syncConfigurationToTranscend(
@@ -81,8 +92,9 @@ export async function syncConfigurationToTranscend(
     /** Non-fatal warnings to include in the result */
     warnings?: string[];
   },
+  dependencies: SyncConfigurationToTranscendDependencies = defaultDependencies,
 ): Promise<SyncResult> {
-  const activeLogger = syncLogger ?? logger;
+  const logger = syncLogger ?? dependencies.logger;
   const errors: SyncError[] = [];
   let encounteredError = false;
 
@@ -91,7 +103,7 @@ export async function syncConfigurationToTranscend(
     encounteredError = true;
   };
 
-  activeLogger.info(colors.magenta(`Fetching data with page size ${pageSize}...`));
+  logger.info(colors.magenta(`Fetching data with page size ${pageSize}...`));
 
   const {
     templates,
@@ -146,7 +158,7 @@ export async function syncConfigurationToTranscend(
       : ({} as { [k in string]: Identifier }),
     // Grab all data subjects in the organization
     dataSilos || dataSubjects || enrichers || processingActivities
-      ? ensureAllDataSubjectsExist(input, client)
+      ? ensureAllDataSubjectsExist(input, client, false, { logger })
       : {},
     // Grab API keys
     dataSilos &&
@@ -162,7 +174,7 @@ export async function syncConfigurationToTranscend(
       client,
       preferenceWorkflowConfigs,
       {
-        logger: activeLogger,
+        logger,
         pageSize,
       },
     );
@@ -173,7 +185,7 @@ export async function syncConfigurationToTranscend(
 
   if (workflowConfigs?.length) {
     const workflowConfigsSuccess = await syncWorkflowConfigs(client, workflowConfigs, {
-      logger: activeLogger,
+      logger,
     });
     if (!workflowConfigsSuccess) {
       recordError('workflow-configs', 'Failed to sync workflow configs');
@@ -182,7 +194,7 @@ export async function syncConfigurationToTranscend(
 
   if (preferenceOptions?.length) {
     const preferenceOptionsSuccess = await syncPreferenceOptionValues(client, preferenceOptions, {
-      logger: activeLogger,
+      logger,
     });
     if (!preferenceOptionsSuccess) {
       recordError('preference-options', 'Failed to sync preference option values');
@@ -196,7 +208,7 @@ export async function syncConfigurationToTranscend(
     const { success: purposesSuccess, purposeIdByTrackingType } = await syncPurposes(
       client,
       purposes,
-      { logger: activeLogger },
+      { logger },
     );
     if (!purposesSuccess) {
       recordError('purposes', 'Failed to sync one or more purposes');
@@ -210,7 +222,7 @@ export async function syncConfigurationToTranscend(
     );
     if (topics.length > 0) {
       const topicsSuccess = await syncPreferenceTopics(client, topics, {
-        logger: activeLogger,
+        logger,
         purposeIdByTrackingType,
       });
       if (!topicsSuccess) {
@@ -221,13 +233,13 @@ export async function syncConfigurationToTranscend(
 
   // Sync consent manager
   if (consentManager) {
-    activeLogger.info(colors.magenta('Syncing consent manager...'));
+    logger.info(colors.magenta('Syncing consent manager...'));
     try {
-      await syncConsentManager(client, consentManager, { logger: activeLogger });
-      activeLogger.info(colors.green('Successfully synced consent manager!'));
+      await syncConsentManager(client, consentManager, { logger });
+      logger.info(colors.green('Successfully synced consent manager!'));
     } catch (err) {
       recordError('consent-manager', (err as Error).message);
-      activeLogger.error(colors.red(`Failed to sync consent manager! - ${(err as Error).message}`));
+      logger.error(colors.red(`Failed to sync consent manager! - ${(err as Error).message}`));
     }
   }
 
@@ -532,11 +544,18 @@ export async function syncConfigurationToTranscend(
   const dependencyUpdates: [string, DependedOnDataSiloInput[]][] = [];
   // Sync data silos
   if (dataSilos) {
-    const { success, dataSiloTitleToId } = await syncDataSilos(dataSilos, client, {
-      dataSubjectsByName,
-      apiKeysByTitle: apiKeyTitleMap,
-      pageSize,
-    });
+    const { success, dataSiloTitleToId } = await syncDataSilos(
+      dataSilos,
+      client,
+      {
+        dataSubjectsByName,
+        apiKeysByTitle: apiKeyTitleMap,
+        pageSize,
+      },
+      {
+        logger,
+      },
+    );
     dataSilos?.forEach((dataSilo) => {
       // Queue up dependency update
       const dependencies = dataSilo['deletion-dependencies'];
@@ -548,7 +567,7 @@ export async function syncConfigurationToTranscend(
           ]);
         } catch (err) {
           recordError('data-silos', (err as Error).message, dataSilo.title);
-          activeLogger.error(colors.red((err as Error).message));
+          logger.error(colors.red((err as Error).message));
         }
       }
     });

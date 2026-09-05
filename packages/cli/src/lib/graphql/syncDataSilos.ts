@@ -10,7 +10,7 @@ import {
   UPDATE_OR_CREATE_DATA_POINT,
 } from '@transcend-io/sdk';
 import { apply } from '@transcend-io/type-utils';
-import { mapSeries, map } from '@transcend-io/utils';
+import { mapSeries, map, type Logger } from '@transcend-io/utils';
 /* eslint-disable max-lines */
 import cliProgress from 'cli-progress';
 import colors from 'colors';
@@ -22,12 +22,23 @@ import { logger } from '../../logger.js';
 
 const BATCH_SILOS_LIMIT = 20;
 
+/** Runtime dependencies for synchronizing data silos. */
+export interface SyncDataSilosDependencies {
+  /** Logger used for progress and GraphQL request diagnostics. */
+  readonly logger: Logger;
+}
+
+const defaultDependencies: SyncDataSilosDependencies = {
+  logger,
+};
+
 /**
  * Sync a data silo configuration
  *
  * @param dataSilos - Data silos to sync
  * @param client - GraphQL client
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  * @returns Data silo info
  */
 export async function syncDataSilos(
@@ -45,23 +56,25 @@ export async function syncDataSilos(
     /** API key title to API key */
     apiKeysByTitle: { [title in string]: ApiKey };
   },
+  dependencies: SyncDataSilosDependencies = defaultDependencies,
 ): Promise<{
   /** Whether successfully updated */
   success: boolean;
   /** A mapping between data silo title to data silo ID */
   dataSiloTitleToId: { [k in string]: string };
 }> {
+  const { logger: activeLogger } = dependencies;
   let encounteredError = false;
 
   // Time duration
   const t0 = new Date().getTime();
-  logger.info(colors.magenta(`Syncing "${dataSilos.length}" data silos...`));
+  activeLogger.info(colors.magenta(`Syncing "${dataSilos.length}" data silos...`));
 
   // Determine the set of data silos that already exist
   const existingDataSilos = await fetchAllDataSilos(client, {
     titles: dataSilos.map(({ title }) => title),
     pageSize,
-    logger,
+    logger: activeLogger,
   });
 
   // Create a mapping of title -> existing silo, if it exists
@@ -70,7 +83,7 @@ export async function syncDataSilos(
   // Create new silos that do not exist
   const newDataSiloInputs = dataSilos.filter(({ title }) => !existingDataSiloByTitle[title]);
   if (newDataSiloInputs.length > 0) {
-    logger.info(
+    activeLogger.info(
       colors.magenta(`Creating "${newDataSiloInputs.length}" data silos that did not exist...`),
     );
 
@@ -95,7 +108,7 @@ export async function syncDataSilos(
             sombraId: input['sombra-id'],
           })),
         },
-        logger,
+        logger: activeLogger,
       });
 
       // save mapping of title and id
@@ -104,13 +117,15 @@ export async function syncDataSilos(
       });
     });
 
-    logger.info(colors.green(`Successfully created "${newDataSiloInputs.length}" data silos!`));
+    activeLogger.info(
+      colors.green(`Successfully created "${newDataSiloInputs.length}" data silos!`),
+    );
   }
 
   // Batch the updates
   const chunkedUpdates = chunk(dataSilos, BATCH_SILOS_LIMIT);
   await mapSeries(chunkedUpdates, async (dataSiloUpdateChunk, ind) => {
-    logger.info(
+    activeLogger.info(
       colors.magenta(
         `[Batch ${ind + 1}/${chunkedUpdates.length}] Syncing "${
           dataSiloUpdateChunk.length
@@ -160,9 +175,9 @@ export async function syncDataSilos(
           })),
         },
       },
-      logger,
+      logger: activeLogger,
     });
-    logger.info(
+    activeLogger.info(
       colors.green(
         `[Batch ${ind + 1}/${chunkedUpdates.length}] Synced "${
           dataSiloUpdateChunk.length
@@ -179,7 +194,7 @@ export async function syncDataSilos(
   const totalDataPoints = dataSilos
     .map(({ datapoints = [] }) => datapoints.length)
     .reduce((acc, count) => acc + count, 0);
-  logger.info(
+  activeLogger.info(
     colors.magenta(
       `Syncing "${totalDataPoints}" datapoints from "${dataSilosWithDataPoints.length}" data silos...`,
     ),
@@ -253,7 +268,7 @@ export async function syncDataSilos(
             (name, index) => subDataPointsToUpdate.indexOf(name) !== index,
           );
           if (duplicateDataPoints.length > 0) {
-            logger.info(
+            activeLogger.info(
               colors.red(
                 `\nCannot update datapoint "${
                   datapoint.key
@@ -267,10 +282,10 @@ export async function syncDataSilos(
             try {
               await makeGraphQLRequest(client, UPDATE_OR_CREATE_DATA_POINT, {
                 variables: payload,
-                logger,
+                logger: activeLogger,
               });
             } catch (err) {
-              logger.info(
+              activeLogger.info(
                 colors.red(
                   `\nFailed to update datapoint "${datapoint.key}" for data silo "${title}"! - \n${err.message}`,
                 ),
@@ -292,7 +307,7 @@ export async function syncDataSilos(
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  activeLogger.info(
     colors.green(
       `Synced "${dataSilos.length}" data silos and "${totalDataPoints}" datapoints in "${
         totalTime / 1000

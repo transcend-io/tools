@@ -1,5 +1,5 @@
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import colors from 'colors';
 
 import { TranscendInput } from '../../../codecs.js';
@@ -43,7 +43,7 @@ async function syncConfiguration({
   /** Delete attributes when syncing */
   deleteExtraAttributeValues?: boolean;
   /** Logger for reporting sync progress and errors */
-  logger: LocalContext['logger'];
+  logger: Logger;
 }): Promise<boolean> {
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 

@@ -8,10 +8,21 @@ import {
   type RetentionSchedule,
   type UserPreview,
 } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
 import { ASSESSMENT_TEMPLATES } from './gqls/index.js';
+
+/** Runtime dependencies for fetching assessment templates. */
+export interface FetchAllAssessmentTemplatesDependencies {
+  /** Logger used for GraphQL request diagnostics. */
+  readonly logger: Logger;
+}
+
+const defaultDependencies: FetchAllAssessmentTemplatesDependencies = {
+  logger,
+};
 
 /**
  * Represents an assessment template with various properties and metadata.
@@ -53,10 +64,12 @@ const PAGE_SIZE = 20;
  * Fetch all assessment templates in the organization
  *
  * @param client - GraphQL client
+ * @param dependencies - Runtime dependencies
  * @returns All assessment templates in the organization
  */
 export async function fetchAllAssessmentTemplates(
   client: GraphQLClient,
+  dependencies: FetchAllAssessmentTemplatesDependencies = defaultDependencies,
 ): Promise<AssessmentTemplate[]> {
   const assessmentTemplates: AssessmentTemplate[] = [];
   let offset = 0;
@@ -73,7 +86,7 @@ export async function fetchAllAssessmentTemplates(
       };
     }>(client, ASSESSMENT_TEMPLATES, {
       variables: { first: PAGE_SIZE, offset },
-      logger,
+      logger: dependencies.logger,
     });
     assessmentTemplates.push(...nodes);
     offset += PAGE_SIZE;

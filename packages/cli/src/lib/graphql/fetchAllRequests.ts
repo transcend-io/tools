@@ -8,6 +8,7 @@ import {
 } from '@transcend-io/privacy-types';
 import { makeGraphQLRequest } from '@transcend-io/sdk';
 import { valuesOf } from '@transcend-io/type-utils';
+import type { Logger } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
@@ -15,6 +16,16 @@ import * as t from 'io-ts';
 
 import { logger } from '../../logger.js';
 import { REQUESTS, REQUESTS_COUNT } from './gqls/index.js';
+
+/** Runtime dependencies for fetching privacy requests. */
+export interface FetchAllRequestsDependencies {
+  /** Logger used for progress and GraphQL request diagnostics. */
+  readonly logger: Logger;
+}
+
+const defaultDependencies: FetchAllRequestsDependencies = {
+  logger,
+};
 
 export const RequestPurposeTrigger = t.type({
   title: t.string,
@@ -119,11 +130,13 @@ const PAGE_SIZE = 100;
  *
  * @param client - GraphQL client
  * @param filterBy - Filter object (already serialized to ISO strings)
+ * @param dependencies - Runtime dependencies
  * @returns The total count
  */
 export async function fetchRequestsTotalCount(
   client: GraphQLClient,
   filterBy: Record<string, unknown>,
+  dependencies: FetchAllRequestsDependencies = defaultDependencies,
 ): Promise<number> {
   const {
     requests: { totalCount },
@@ -133,7 +146,10 @@ export async function fetchRequestsTotalCount(
       /** Total count */
       totalCount: number;
     };
-  }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger });
+  }>(client, REQUESTS_COUNT, {
+    variables: { filterBy },
+    logger: dependencies.logger,
+  });
   return totalCount;
 }
 
@@ -147,6 +163,7 @@ export async function fetchRequestsTotalCount(
  *
  * @param client - GraphQL client
  * @param options - Filter options
+ * @param dependencies - Runtime dependencies
  * @returns List of requests (empty when using onPage)
  */
 export async function fetchAllRequests(
@@ -196,7 +213,9 @@ export async function fetchAllRequests(
     /** When provided, called with each page of nodes instead of accumulating in memory */
     onPage?: (nodes: PrivacyRequest[]) => void | Promise<void>;
   } = {},
+  dependencies: FetchAllRequestsDependencies = defaultDependencies,
 ): Promise<PrivacyRequest[]> {
+  const { logger: activeLogger } = dependencies;
   const streaming = !!onPage;
 
   const filterBy = {
@@ -218,7 +237,7 @@ export async function fetchAllRequests(
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   if (!streaming) {
-    logger.info(colors.magenta('Fetching requests...'));
+    activeLogger.info(colors.magenta('Fetching requests...'));
     const {
       requests: { totalCount },
     } = await makeGraphQLRequest<{
@@ -227,10 +246,13 @@ export async function fetchAllRequests(
         /** Total count */
         totalCount: number;
       };
-    }>(client, REQUESTS_COUNT, { variables: { filterBy }, logger });
+    }>(client, REQUESTS_COUNT, {
+      variables: { filterBy },
+      logger: activeLogger,
+    });
 
     if (totalCount > PAGE_SIZE) {
-      logger.info(colors.magenta(`Fetching ${totalCount} requests`));
+      activeLogger.info(colors.magenta(`Fetching ${totalCount} requests`));
       progressBar.start(totalCount, 0);
     }
   }
@@ -259,7 +281,7 @@ export async function fetchAllRequests(
       };
     }>(client, REQUESTS, {
       variables: { first: PAGE_SIZE, after: cursor, filterBy },
-      logger,
+      logger: activeLogger,
     });
 
     if (streaming) {
@@ -281,7 +303,7 @@ export async function fetchAllRequests(
     const t1 = new Date().getTime();
     const totalTime = t1 - t0;
 
-    logger.info(
+    activeLogger.info(
       colors.green(
         `Completed fetching of ${fetchedCount} request in "${totalTime / 1000}" seconds.`,
       ),
@@ -296,7 +318,7 @@ export async function fetchAllRequests(
   let allRequests = requests;
   if (requestIds && requestIds.length > 0) {
     allRequests = allRequests.filter((request) => requestIds.includes(request.id));
-    logger.info(
+    activeLogger.info(
       colors.green(
         `Filtered down to ${allRequests.length} requests based on ${requestIds.length} provided IDs.`,
       ),

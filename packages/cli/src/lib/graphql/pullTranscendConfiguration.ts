@@ -53,6 +53,7 @@ import {
   workflowConfigMatchKey,
   type AssessmentRule,
 } from '@transcend-io/sdk';
+import type { Logger } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { flatten, groupBy, keyBy, mapValues } from 'lodash-es';
@@ -94,7 +95,7 @@ import {
   type SiloDiscoveryResultInput,
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
-import { logger } from '../../logger.js';
+import { logger as defaultLogger } from '../../logger.js';
 import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 
@@ -126,11 +127,22 @@ export interface TranscendPullConfigurationInput {
   includeGuessedCategories?: boolean;
 }
 
+/** Runtime dependencies for pulling Transcend configuration. */
+export interface PullTranscendConfigurationDependencies {
+  /** Logger used for progress and GraphQL request diagnostics. */
+  readonly logger: Logger;
+}
+
+const defaultDependencies: PullTranscendConfigurationDependencies = {
+  logger: defaultLogger,
+};
+
 /**
  * Pull a yaml configuration from Transcend
  *
  * @param client - GraphQL client
- * @param dataSiloIds - The data silos to sync. If empty list, pull all.
+ * @param input - Pull configuration
+ * @param dependencies - Runtime dependencies
  * @returns The configuration
  */
 export async function pullTranscendConfiguration(
@@ -146,7 +158,9 @@ export async function pullTranscendConfiguration(
     skipSubDatapoints,
     trackerStatuses = Object.values(ConsentTrackerStatus),
   }: TranscendPullConfigurationInput,
+  dependencies: PullTranscendConfigurationDependencies = defaultDependencies,
 ): Promise<TranscendInput> {
+  const { logger } = dependencies;
   if (dataSiloIds.length > 0 && integrationNames.length > 0) {
     throw new Error('Only 1 of integrationNames OR dataSiloIds can be provided');
   }
@@ -326,7 +340,7 @@ export async function pullTranscendConfiguration(
       : [],
     // Fetch assessmentTemplates
     resources.includes(TranscendPullResource.AssessmentTemplates)
-      ? fetchAllAssessmentTemplates(client)
+      ? fetchAllAssessmentTemplates(client, dependencies)
       : [],
     // Fetch purpose and preferences
     resources.includes(TranscendPullResource.Purposes)

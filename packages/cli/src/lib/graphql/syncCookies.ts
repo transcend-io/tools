@@ -4,7 +4,7 @@ import {
   makeGraphQLRequest,
   UPDATE_OR_CREATE_COOKIES,
 } from '@transcend-io/sdk';
-import { mapSeries } from '@transcend-io/utils';
+import { mapSeries, type Logger } from '@transcend-io/utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 import { chunk } from 'lodash-es';
@@ -14,17 +14,30 @@ import { logger } from '../../logger.js';
 
 const MAX_PAGE_SIZE = 100;
 
+/** Runtime dependencies for synchronizing cookies. */
+export interface SyncCookiesDependencies {
+  /** Logger used for progress and GraphQL request diagnostics. */
+  readonly logger: Logger;
+}
+
+const defaultDependencies: SyncCookiesDependencies = {
+  logger,
+};
+
 /**
  * Update or create cookies that already existed
  *
  * @param client - GraphQL client
  * @param cookieInputs - List of cookie input
+ * @param dependencies - Runtime dependencies
  */
 export async function updateOrCreateCookies(
   client: GraphQLClient,
   cookieInputs: CookieInput[],
+  dependencies: SyncCookiesDependencies = defaultDependencies,
 ): Promise<void> {
-  const airgapBundleId = await fetchConsentManagerId(client, { logger });
+  const { logger: activeLogger } = dependencies;
+  const airgapBundleId = await fetchConsentManagerId(client, { logger: activeLogger });
 
   // TODO: https://transcend.height.app/T-19841 - add with custom purposes
   // const purposes = await fetchAllPurposes(client);
@@ -56,7 +69,7 @@ export async function updateOrCreateCookies(
           // teams,
         })),
       },
-      logger,
+      logger: activeLogger,
     });
   });
 }
@@ -66,11 +79,17 @@ export async function updateOrCreateCookies(
  *
  * @param client - GraphQL client
  * @param cookies - Cookies to sync
+ * @param dependencies - Runtime dependencies
  * @returns True upon success, false upon failure
  */
-export async function syncCookies(client: GraphQLClient, cookies: CookieInput[]): Promise<boolean> {
+export async function syncCookies(
+  client: GraphQLClient,
+  cookies: CookieInput[],
+  dependencies: SyncCookiesDependencies = defaultDependencies,
+): Promise<boolean> {
+  const { logger: activeLogger } = dependencies;
   let encounteredError = false;
-  logger.info(colors.magenta(`Syncing "${cookies.length}" cookies...`));
+  activeLogger.info(colors.magenta(`Syncing "${cookies.length}" cookies...`));
 
   // Ensure no duplicates are being uploaded
   const notUnique = cookies.filter(
@@ -87,12 +106,12 @@ export async function syncCookies(client: GraphQLClient, cookies: CookieInput[])
   }
 
   try {
-    logger.info(colors.magenta(`Upserting "${cookies.length}" new cookies...`));
-    await updateOrCreateCookies(client, cookies);
-    logger.info(colors.green(`Successfully synced ${cookies.length} cookies!`));
+    activeLogger.info(colors.magenta(`Upserting "${cookies.length}" new cookies...`));
+    await updateOrCreateCookies(client, cookies, dependencies);
+    activeLogger.info(colors.green(`Successfully synced ${cookies.length} cookies!`));
   } catch (err) {
     encounteredError = true;
-    logger.error(colors.red(`Failed to create cookies! - ${err.message}`));
+    activeLogger.error(colors.red(`Failed to create cookies! - ${err.message}`));
   }
 
   return !encounteredError;

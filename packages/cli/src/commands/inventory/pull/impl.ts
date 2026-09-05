@@ -63,17 +63,23 @@ export async function pull(
       // Create a GraphQL client
       const client = buildTranscendGraphQLClient(transcendUrl, apiKeyOrList);
 
-      const configuration = await pullTranscendConfiguration(client, {
-        dataSiloIds,
-        integrationNames,
-        resources: resourcesToPull,
-        pageSize,
-        debug,
-        skipDatapoints,
-        skipSubDatapoints,
-        includeGuessedCategories,
-        trackerStatuses,
-      });
+      const configuration = await pullTranscendConfiguration(
+        client,
+        {
+          dataSiloIds,
+          integrationNames,
+          resources: resourcesToPull,
+          pageSize,
+          debug,
+          skipDatapoints,
+          skipSubDatapoints,
+          includeGuessedCategories,
+          trackerStatuses,
+        },
+        {
+          logger: this.logger,
+        },
+      );
 
       this.logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
       writeTranscendYaml(file, configuration, { fs: this.fs });
@@ -108,17 +114,23 @@ export async function pull(
       const client = buildTranscendGraphQLClient(transcendUrl, apiKey.apiKey);
 
       try {
-        const configuration = await pullTranscendConfiguration(client, {
-          dataSiloIds,
-          integrationNames,
-          resources: resourcesToPull,
-          pageSize,
-          debug,
-          skipDatapoints,
-          skipSubDatapoints,
-          includeGuessedCategories,
-          trackerStatuses,
-        });
+        const configuration = await pullTranscendConfiguration(
+          client,
+          {
+            dataSiloIds,
+            integrationNames,
+            resources: resourcesToPull,
+            pageSize,
+            debug,
+            skipDatapoints,
+            skipSubDatapoints,
+            includeGuessedCategories,
+            trackerStatuses,
+          },
+          {
+            logger: this.logger,
+          },
+        );
 
         const filePath = this.path.join(file, `${apiKey.organizationName}.yml`);
         this.logger.info(colors.magenta(`Writing configuration to file "${filePath}"...`));
