@@ -8,7 +8,49 @@ import fg from 'fast-glob';
 
 import { MAX_BUNDLE_COMPRESSED_BYTES, MAX_BUNDLE_DECOMPRESSED_BYTES } from '../constants.js';
 import { assertOpaInstalled } from './assertOpaInstalled.js';
-import { runOPACapture } from './runOpa.js';
+import { runOPACapture, type RunOpaCaptureResult, type RunOpaOptions } from './runOpa.js';
+
+/** OPA operations used while validating a policy bundle. */
+export interface OpaBundleRuntime {
+  /** Ensure that the OPA CLI is available. */
+  readonly assertInstalled: () => void;
+  /** Invoke OPA and capture its output. */
+  readonly runCapture: (args: string[], options?: RunOpaOptions) => Promise<RunOpaCaptureResult>;
+}
+
+/** Runtime dependencies used to build a policy bundle tarball. */
+export interface BuildOpaBundleTarballDependencies {
+  /** Filesystem operations used to inspect and package policy files. */
+  readonly fs: Pick<typeof fs, 'existsSync' | 'readFileSync' | 'statSync' | 'unlinkSync'>;
+  /** Path operations used to resolve policy and temporary paths. */
+  readonly path: Pick<typeof path, 'join' | 'resolve'>;
+  /** Operating system operations used to locate temporary storage. */
+  readonly os: Pick<typeof os, 'tmpdir'>;
+  /** Environment variables passed to the tar process. */
+  readonly env: NodeJS.ProcessEnv;
+  /** Synchronous child process launcher used to create the tar archive. */
+  readonly tarSpawnSync: typeof spawnSync;
+  /** Glob implementation used to discover Rego files. */
+  readonly fastGlob: Pick<typeof fg, 'sync'>;
+  /** Gzip implementation used to enforce the decompressed size limit. */
+  readonly gunzipSync: typeof gunzipSync;
+  /** OPA runtime used to validate and compile the bundle. */
+  readonly opa: OpaBundleRuntime;
+}
+
+const defaultDependencies: BuildOpaBundleTarballDependencies = {
+  fs,
+  path,
+  os,
+  env: process.env,
+  tarSpawnSync: spawnSync,
+  fastGlob: fg,
+  gunzipSync,
+  opa: {
+    assertInstalled: assertOpaInstalled,
+    runCapture: runOPACapture,
+  },
+};
 
 /**
  * Returns whether a relative path is a publishable Rego policy file.
@@ -39,15 +81,19 @@ interface PolicyBundleManifest {
  * fail-closed footgun.
  *
  * @param dir - Absolute path to the policy bundle directory
+ * @param dependencies - Runtime dependencies used to read the manifest
  * @returns The parsed manifest
  */
-function readPolicyBundleManifest(dir: string): PolicyBundleManifest {
-  const manifestPath = path.join(dir, 'manifest.json');
-  if (!fs.existsSync(manifestPath)) {
+function readPolicyBundleManifest(
+  dir: string,
+  dependencies: BuildOpaBundleTarballDependencies,
+): PolicyBundleManifest {
+  const manifestPath = dependencies.path.join(dir, 'manifest.json');
+  if (!dependencies.fs.existsSync(manifestPath)) {
     throw new Error('Policy bundle directory must contain a manifest.json file.');
   }
 
-  const raw = fs.readFileSync(manifestPath, 'utf8');
+  const raw = dependencies.fs.readFileSync(manifestPath, 'utf8');
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -88,12 +134,16 @@ interface PolicyBundleArchiveContents {
  * Collects `manifest.json` and publishable `.rego` files from a policy directory.
  *
  * @param dir - Absolute path to the policy bundle directory
+ * @param dependencies - Runtime dependencies used to discover bundle entries
  * @returns Archive entries and the parsed manifest
  */
-function collectPolicyBundleArchiveEntries(dir: string): PolicyBundleArchiveContents {
-  const manifest = readPolicyBundleManifest(dir);
+function collectPolicyBundleArchiveEntries(
+  dir: string,
+  dependencies: BuildOpaBundleTarballDependencies,
+): PolicyBundleArchiveContents {
+  const manifest = readPolicyBundleManifest(dir, dependencies);
 
-  const regoFiles = fg
+  const regoFiles = dependencies.fastGlob
     .sync('**/*.rego', {
       cwd: dir,
       onlyFiles: true,
@@ -128,10 +178,14 @@ function normalizeRootToPackagePrefix(root: string): string {
  * Reads the Rego package path declared in a `.rego` file.
  *
  * @param filePath - Absolute path to the `.rego` file
+ * @param dependencies - Runtime dependencies used to read the policy file
  * @returns The dotted package path, or `undefined` if no `package` declaration
  */
-function readRegoPackagePath(filePath: string): string | undefined {
-  const contents = fs.readFileSync(filePath, 'utf8');
+function readRegoPackagePath(
+  filePath: string,
+  dependencies: BuildOpaBundleTarballDependencies,
+): string | undefined {
+  const contents = dependencies.fs.readFileSync(filePath, 'utf8');
   const match = PACKAGE_DECLARATION_PATTERN.exec(contents);
   return match?.[1];
 }
@@ -146,13 +200,19 @@ function readRegoPackagePath(filePath: string): string | undefined {
  * @param dir - Absolute path to the policy bundle directory
  * @param regoFiles - Relative paths to publishable `.rego` files
  * @param roots - Manifest roots
+ * @param dependencies - Runtime dependencies used to read policy files
  */
-function assertRootsCoverPackages(dir: string, regoFiles: string[], roots: string[]): void {
+function assertRootsCoverPackages(
+  dir: string,
+  regoFiles: string[],
+  roots: string[],
+  dependencies: BuildOpaBundleTarballDependencies,
+): void {
   const rootPrefixes = roots.map(normalizeRootToPackagePrefix);
 
   const uncovered: string[] = [];
   for (const relativeRego of regoFiles) {
-    const pkg = readRegoPackagePath(path.join(dir, relativeRego));
+    const pkg = readRegoPackagePath(dependencies.path.join(dir, relativeRego), dependencies);
     if (!pkg) {
       continue;
     }
@@ -184,16 +244,20 @@ function assertRootsCoverPackages(dir: string, regoFiles: string[], roots: strin
  * errors (syntax, missing imports, undefined references, etc.) before upload.
  *
  * @param dir - Absolute path to the policy bundle directory
+ * @param dependencies - Runtime dependencies used to compile the bundle
  */
-async function assertBundleCompiles(dir: string): Promise<void> {
-  const buildOutputPath = path.join(
-    os.tmpdir(),
+async function assertBundleCompiles(
+  dir: string,
+  dependencies: BuildOpaBundleTarballDependencies,
+): Promise<void> {
+  const buildOutputPath = dependencies.path.join(
+    dependencies.os.tmpdir(),
     `transcend-policy-bundle-build-${Date.now()}-${Math.random().toString(36).slice(2)}.tar.gz`,
   );
   try {
     // Run with `cwd` set to the bundle directory and pass `.` so `opa build`
     // resolves the bundle root correctly. `*_test.rego` files are local-only.
-    const { code, stderr } = await runOPACapture(
+    const { code, stderr } = await dependencies.opa.runCapture(
       ['build', '--v0-compatible', '--ignore', '*_test.rego', '-o', buildOutputPath, '.'],
       { cwd: dir },
     );
@@ -201,8 +265,8 @@ async function assertBundleCompiles(dir: string): Promise<void> {
       throw new Error(stderr.trim() || `opa build failed with exit code ${code}`);
     }
   } finally {
-    if (fs.existsSync(buildOutputPath)) {
-      fs.unlinkSync(buildOutputPath);
+    if (dependencies.fs.existsSync(buildOutputPath)) {
+      dependencies.fs.unlinkSync(buildOutputPath);
     }
   }
 }
@@ -237,25 +301,35 @@ function formatBytes(bytes: number): string {
  * after upload.
  *
  * @param dir - Directory containing `manifest.json` and `.rego` policy files
+ * @param dependencies - Runtime dependencies used to build the archive
  * @returns Absolute path to the generated `.tar.gz` bundle
  */
-export async function buildOpaBundleTarball(dir: string): Promise<string> {
-  assertOpaInstalled();
+export async function buildOpaBundleTarball(
+  dir: string,
+  dependencies: BuildOpaBundleTarballDependencies = defaultDependencies,
+): Promise<string> {
+  dependencies.opa.assertInstalled();
 
-  const resolvedDir = path.resolve(dir);
-  if (!fs.existsSync(resolvedDir) || !fs.statSync(resolvedDir).isDirectory()) {
+  const resolvedDir = dependencies.path.resolve(dir);
+  if (
+    !dependencies.fs.existsSync(resolvedDir) ||
+    !dependencies.fs.statSync(resolvedDir).isDirectory()
+  ) {
     throw new Error(`Policy directory does not exist or is not a directory: ${resolvedDir}`);
   }
 
   // Validate the manifest shape and that roots cover every Rego package before
   // invoking OPA, so invalid manifests surface a clear error instead of an
   // opaque `opa build failed with exit code 1`.
-  const { entries: archiveEntries, manifest } = collectPolicyBundleArchiveEntries(resolvedDir);
+  const { entries: archiveEntries, manifest } = collectPolicyBundleArchiveEntries(
+    resolvedDir,
+    dependencies,
+  );
   const regoFiles = archiveEntries.filter((entry) => entry !== 'manifest.json');
-  assertRootsCoverPackages(resolvedDir, regoFiles, manifest.roots);
+  assertRootsCoverPackages(resolvedDir, regoFiles, manifest.roots, dependencies);
 
   // Match the Rego v1 validation the Policy Engine API runs on upload.
-  const { code: checkCode, stderr: checkStderr } = await runOPACapture([
+  const { code: checkCode, stderr: checkStderr } = await dependencies.opa.runCapture([
     'check',
     '--strict',
     '--v0-compatible',
@@ -266,26 +340,30 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
   }
 
   // Ensure the bundle compiles end-to-end before packaging for upload.
-  await assertBundleCompiles(resolvedDir);
+  await assertBundleCompiles(resolvedDir, dependencies);
 
-  const outputPath = path.join(
-    os.tmpdir(),
+  const outputPath = dependencies.path.join(
+    dependencies.os.tmpdir(),
     `transcend-policy-bundle-${Date.now()}-${Math.random().toString(36).slice(2)}.tar.gz`,
   );
 
-  const tarResult = spawnSync('tar', ['-czf', outputPath, '-C', resolvedDir, ...archiveEntries], {
-    env: { ...process.env, COPYFILE_DISABLE: '1' },
-    encoding: 'utf8',
-  });
+  const tarResult = dependencies.tarSpawnSync(
+    'tar',
+    ['-czf', outputPath, '-C', resolvedDir, ...archiveEntries],
+    {
+      env: { ...dependencies.env, COPYFILE_DISABLE: '1' },
+      encoding: 'utf8',
+    },
+  );
   if (tarResult.status !== 0) {
     throw new Error(
       `Failed to create policy bundle archive: ${tarResult.stderr.trim() || 'tar failed'}`,
     );
   }
 
-  const compressedBytes = fs.readFileSync(outputPath);
+  const compressedBytes = dependencies.fs.readFileSync(outputPath);
   if (compressedBytes.byteLength > MAX_BUNDLE_COMPRESSED_BYTES) {
-    fs.unlinkSync(outputPath);
+    dependencies.fs.unlinkSync(outputPath);
     throw new Error(
       `Policy bundle exceeds the ${formatBytes(MAX_BUNDLE_COMPRESSED_BYTES)} compressed upload limit ` +
         `(bundle is ${formatBytes(compressedBytes.byteLength)}). ` +
@@ -293,9 +371,9 @@ export async function buildOpaBundleTarball(dir: string): Promise<string> {
     );
   }
 
-  const decompressedBytes = gunzipSync(compressedBytes);
+  const decompressedBytes = dependencies.gunzipSync(compressedBytes);
   if (decompressedBytes.byteLength > MAX_BUNDLE_DECOMPRESSED_BYTES) {
-    fs.unlinkSync(outputPath);
+    dependencies.fs.unlinkSync(outputPath);
     throw new Error(
       `Policy bundle exceeds the ${formatBytes(MAX_BUNDLE_DECOMPRESSED_BYTES)} decompressed upload limit ` +
         `(bundle is ${formatBytes(decompressedBytes.byteLength)} decompressed).`,

@@ -2,7 +2,12 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { assertOpaInstalled, runOpa } from '../helpers/index.js';
+import {
+  assertOpaInstalled,
+  policyDependenciesFromContext,
+  runOpa,
+  type PolicyDependencies,
+} from '../helpers/index.js';
 
 /** CLI flags for `transcend policy eval`. */
 export interface EvalCommandFlags {
@@ -19,14 +24,19 @@ export interface EvalCommandFlags {
  *
  * @param this - CLI context
  * @param flags - Command flags
+ * @param dependencies - Context-derived policy helper dependencies
  */
 export async function _eval(
   this: LocalContext,
   { pkg, input, bundle }: EvalCommandFlags,
+  dependencies: Pick<
+    PolicyDependencies,
+    'assertOpaInstalled' | 'runOpa'
+  > = policyDependenciesFromContext(this),
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  assertOpaInstalled();
+  assertOpaInstalled(dependencies.assertOpaInstalled);
 
   const inputPath = this.path.resolve(input);
   if (!this.fs.existsSync(inputPath)) {
@@ -41,7 +51,7 @@ export async function _eval(
 
   this.logger.info(colors.green(`Evaluating ${pkg} with input ${inputPath}...`));
 
-  const exitCode = await runOpa(args);
+  const exitCode = await runOpa(args, {}, dependencies.runOpa);
   if (exitCode !== 0) {
     this.process.exit(exitCode);
   }

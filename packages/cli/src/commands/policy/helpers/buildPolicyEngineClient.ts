@@ -1,5 +1,15 @@
 import got, { type Got } from 'got';
 
+/** HTTP dependency used to create a Policy Engine client. */
+export interface BuildPolicyEngineClientDependencies {
+  /** Creates a configured got client from the supplied options. */
+  readonly extend: typeof got.extend;
+}
+
+const defaultDependencies: BuildPolicyEngineClientDependencies = {
+  extend: got.extend,
+};
+
 /**
  * Creates a got client for Policy Engine REST endpoints on the monolith.
  *
@@ -9,9 +19,14 @@ import got, { type Got } from 'got';
  *
  * @param transcendUrl - Transcend API base URL (without `/v1`)
  * @param auth - Transcend API key
+ * @param dependencies - HTTP dependency used to create the client
  * @returns Configured got instance
  */
-export function buildPolicyEngineClient(transcendUrl: string, auth: string): Got {
+export function buildPolicyEngineClient(
+  transcendUrl: string,
+  auth: string,
+  dependencies: BuildPolicyEngineClientDependencies = defaultDependencies,
+): Got {
   const normalized = transcendUrl.replace(/\/$/, '');
   if (/(^|\/)v1$/i.test(normalized)) {
     throw new Error(
@@ -19,7 +34,7 @@ export function buildPolicyEngineClient(transcendUrl: string, auth: string): Got
         `Got "${transcendUrl}"; use "${normalized.replace(/\/v1$/i, '')}" instead.`,
     );
   }
-  return got.extend({
+  return dependencies.extend({
     prefixUrl: normalized,
     headers: {
       Authorization: `Bearer ${auth}`,

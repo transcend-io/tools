@@ -1,11 +1,11 @@
 import colors from 'colors';
-import got from 'got';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
   buildPolicyEngineClient,
+  downloadPolicyBundleBytes,
   policyEngineRequest,
   printResult,
   resolveBundleByName,
@@ -34,6 +34,16 @@ export interface DownloadCommandFlags {
   /** Include technical error details when a command fails */
   debug?: boolean;
 }
+
+/** Runtime dependencies used by the policy download command. */
+export interface DownloadCommandDependencies {
+  /** Downloads policy bundle bytes from a presigned URL. */
+  readonly downloadPolicyBundleBytes: typeof downloadPolicyBundleBytes;
+}
+
+const defaultDependencies: DownloadCommandDependencies = {
+  downloadPolicyBundleBytes,
+};
 
 /**
  * Builds the default output path for a downloaded policy bundle.
@@ -77,6 +87,7 @@ function formatDownloadSummary(body: GetPolicyBundleVersionResponse, outputPath:
  *
  * @param this - CLI context
  * @param flags - Command flags
+ * @param dependencies - Command-local runtime dependencies
  */
 export async function download(
   this: LocalContext,
@@ -89,6 +100,7 @@ export async function download(
     json,
     debug = false,
   }: DownloadCommandFlags,
+  dependencies: DownloadCommandDependencies = defaultDependencies,
 ): Promise<void> {
   doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
@@ -139,17 +151,7 @@ export async function download(
 
   this.logger.info(colors.green(`Downloading policy bundle to ${outputPath}...`));
 
-  let bundleBytes: Uint8Array;
-  try {
-    bundleBytes = await got(body.downloadUrl).buffer();
-  } catch (err) {
-    throw new Error(
-      `Failed to download policy bundle from the presigned URL: ${
-        err instanceof Error ? err.message : String(err)
-      }`,
-      { cause: err },
-    );
-  }
+  const bundleBytes = await dependencies.downloadPolicyBundleBytes(body.downloadUrl);
 
   const outputDir = this.path.dirname(outputPath);
   this.fs.mkdirSync(outputDir, { recursive: true });

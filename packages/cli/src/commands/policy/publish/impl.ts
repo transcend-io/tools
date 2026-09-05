@@ -11,10 +11,12 @@ import {
   buildOpaBundleTarball,
   defaultPolicyVersionLabel,
   formatPolicyBundleVersionSummary,
+  policyDependenciesFromContext,
   policyEngineRequest,
   printResult,
   resolveBundleIdByName,
   setPolicyEngineCliDebug,
+  type PolicyDependencies,
 } from '../helpers/index.js';
 import type { CreatePolicyBundleResponse, CreatePolicyBundleVersionResponse } from '../types.js';
 
@@ -45,6 +47,7 @@ export interface PublishCommandFlags {
  *
  * @param this - CLI context
  * @param flags - Command flags
+ * @param dependencies - Context-derived policy helper dependencies
  */
 export async function publish(
   this: LocalContext,
@@ -59,6 +62,10 @@ export async function publish(
     yes,
     debug = false,
   }: PublishCommandFlags,
+  dependencies: Pick<
+    PolicyDependencies,
+    'buildOpaBundleTarball' | 'buildPolicyBundleFormData'
+  > = policyDependenciesFromContext(this),
 ): Promise<void> {
   doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
@@ -70,7 +77,7 @@ export async function publish(
   let bundlePath: string | undefined;
   try {
     this.logger.info(colors.green(`Building policy bundle from ${resolvedDir}...`));
-    bundlePath = await buildOpaBundleTarball(resolvedDir);
+    bundlePath = await buildOpaBundleTarball(resolvedDir, dependencies.buildOpaBundleTarball);
 
     const existingBundleId = await resolveBundleIdByName(client, bundleName);
 
@@ -78,11 +85,14 @@ export async function publish(
 
     if (existingBundleId) {
       this.logger.info(colors.green(`Uploading new version for bundle "${bundleName}"...`));
-      const form = buildPolicyBundleFormData({
-        bundlePath,
-        version: versionLabel,
-        description,
-      });
+      const form = buildPolicyBundleFormData(
+        {
+          bundlePath,
+          version: versionLabel,
+          description,
+        },
+        dependencies.buildPolicyBundleFormData,
+      );
       responseBody = await policyEngineRequest(
         client
           .post(`v1/policy-engine/policy-bundles/${existingBundleId}/versions`, { body: form })
@@ -115,12 +125,15 @@ export async function publish(
       this.logger.info(
         colors.green(`Creating bundle "${bundleName}" and uploading first version...`),
       );
-      const createForm = buildPolicyBundleFormData({
-        bundlePath,
-        version: versionLabel,
-        description,
-        bundleName,
-      });
+      const createForm = buildPolicyBundleFormData(
+        {
+          bundlePath,
+          version: versionLabel,
+          description,
+          bundleName,
+        },
+        dependencies.buildPolicyBundleFormData,
+      );
       responseBody = await policyEngineRequest(
         client
           .post('v1/policy-engine/policy-bundles', {
