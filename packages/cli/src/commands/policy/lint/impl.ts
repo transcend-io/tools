@@ -1,11 +1,8 @@
-import path from 'node:path';
-
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
-import { logger } from '../../../logger.js';
 import { assertOpaInstalled, runOpa, runOPACapture } from '../helpers/index.js';
 
 /** CLI flags for `transcend policy lint`. */
@@ -21,12 +18,12 @@ export interface LintCommandFlags {
  * @param flags - Command flags
  */
 export async function lint(this: LocalContext, { dir }: LintCommandFlags): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   assertOpaInstalled();
-  const resolvedDir = path.resolve(dir);
+  const resolvedDir = this.path.resolve(dir);
 
-  logger.info(colors.green(`Linting policy bundle in ${resolvedDir}...`));
+  this.logger.info(colors.green(`Linting policy bundle in ${resolvedDir}...`));
 
   const checkCode = await runOpa(['check', '--strict', resolvedDir]);
   if (checkCode !== 0) {
@@ -40,15 +37,15 @@ export async function lint(this: LocalContext, { dir }: LintCommandFlags): Promi
     .filter((file) => file.length > 0);
 
   if (unformattedFiles.length > 0) {
-    logger.error(colors.red('Policy files are not formatted:'));
+    this.logger.error(colors.red('Policy files are not formatted:'));
     unformattedFiles.forEach((file) => {
-      logger.error(colors.red(`  - ${file}`));
+      this.logger.error(colors.red(`  - ${file}`));
     });
-    logger.error('');
+    this.logger.error('');
     await runOpa(['fmt', '--diff', resolvedDir]);
 
     if (!this.process.stdin.isTTY) {
-      logger.error(colors.red('Cannot format policy files in a non-interactive environment.'));
+      this.logger.error(colors.red('Cannot format policy files in a non-interactive environment.'));
       this.process.exit(1);
     }
 
@@ -64,10 +61,10 @@ export async function lint(this: LocalContext, { dir }: LintCommandFlags): Promi
       this.process.exit(fmtWriteCode);
     }
 
-    logger.info(colors.green('Policy files formatted.'));
-    logger.info(colors.green('Policy lint passed.'));
+    this.logger.info(colors.green('Policy files formatted.'));
+    this.logger.info(colors.green('Policy lint passed.'));
     return;
   }
 
-  logger.info(colors.green('Policy lint passed.'));
+  this.logger.info(colors.green('Policy lint passed.'));
 }

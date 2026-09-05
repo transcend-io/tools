@@ -16,7 +16,6 @@ import {
   dashboardPlugin,
   installInteractiveSwitcher,
 } from '../../../lib/pooling/index.js';
-import { logger } from '../../../logger.js';
 import { chunkCsvPlugin } from './ui/index.js';
 import type { ChunkProgress, ChunkResult, ChunkTask } from './worker.js';
 
@@ -55,7 +54,7 @@ export type ChunkCsvCommandFlags = {
  * @param flags - CLI options for the run.
  */
 export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const { directory, outputDir, clearOutputDir, chunkSizeMB, concurrency, viewerMode } = flags;
 
@@ -65,7 +64,7 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
   /* 2) Size the pool */
   const { poolSize, cpuCount } = computePoolSize(concurrency, files.length);
 
-  logger.info(
+  this.logger.info(
     colors.green(
       `Chunking ${files.length} CSV file(s) with pool size ${poolSize} (CPU=${cpuCount})`,
     ),
@@ -94,7 +93,7 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
   /* 5) Launch the pool runner with our hooks and custom dashboard plugin. */
   await runPool({
     title: `Chunk CSV - ${directory}`,
-    baseDir: directory || outputDir || process.cwd(),
+    baseDir: directory || outputDir || this.process.cwd(),
     childFlag: CHILD_FLAG,
     childModulePath: resolveWorkerPath(import.meta.url, 'commands/admin/chunk-csv/worker.mjs'),
     poolSize,
@@ -127,8 +126,8 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
             },
             onEnterAttachScreen: (id) => {
               setPaused(true);
-              process.stdout.write('\x1b[2J\x1b[H');
-              process.stdout.write(
+              this.process.stdout.write('\x1b[2J\x1b[H');
+              this.process.stdout.write(
                 `Attached to worker ${id}. (Esc/Ctrl+] detach \u2022 Ctrl+D EOF \u2022 Ctrl+C SIGINT)\n`,
               );
             },
@@ -141,7 +140,7 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
       }),
   }).catch((err) => {
     if (err instanceof PoolCancelledError) {
-      process.exit(130);
+      this.process.exit(130);
     }
     throw err;
   });

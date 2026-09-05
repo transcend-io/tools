@@ -2,7 +2,6 @@ import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import {
   buildPolicyEngineClient,
   formatPolicyBundleVersionSummary,
@@ -48,7 +47,7 @@ export async function deactivate(
     debug = false,
   }: DeactivateCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
@@ -58,7 +57,7 @@ export async function deactivate(
     throw new Error(`Policy bundle "${bundleName}" was not found for this organization.`);
   }
 
-  logger.info(colors.green(`Deactivating active version for bundle "${bundleName}"...`));
+  this.logger.info(colors.green(`Deactivating active version for bundle "${bundleName}"...`));
 
   let body: DeactivatePolicyBundleResponse;
   try {
@@ -88,5 +87,5 @@ export async function deactivate(
       ].join('\n'),
   });
 
-  logger.info(colors.green('Policy bundle version deactivated.'));
+  this.logger.info(colors.green('Policy bundle version deactivated.'));
 }

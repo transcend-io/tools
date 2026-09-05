@@ -16,7 +16,6 @@ import {
   dashboardPlugin,
   installInteractiveSwitcher,
 } from '../../../lib/pooling/index.js';
-import { logger } from '../../../logger.js';
 import { parquetToCsvPlugin } from './ui/index.js';
 import type { ParquetProgress, ParquetResult, ParquetTask } from './worker.js';
 
@@ -40,7 +39,7 @@ export async function parquetToCsv(
   this: LocalContext,
   flags: ParquetToCsvCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const { directory, outputDir, clearOutputDir, concurrency, viewerMode } = flags;
 
@@ -50,7 +49,7 @@ export async function parquetToCsv(
   /* 2) Size the pool */
   const { poolSize, cpuCount } = computePoolSize(concurrency, files.length);
 
-  logger.info(
+  this.logger.info(
     colors.green(
       `Converting ${files.length} Parquet file(s) → CSV with pool size ${poolSize} (CPU=${cpuCount})`,
     ),
@@ -78,7 +77,7 @@ export async function parquetToCsv(
   /* 5) Launch the pool runner with custom dashboard plugin */
   await runPool({
     title: `Parquet → CSV - ${directory}`,
-    baseDir: directory || outputDir || process.cwd(),
+    baseDir: directory || outputDir || this.process.cwd(),
     childFlag: CHILD_FLAG,
     childModulePath: resolveWorkerPath(import.meta.url, 'commands/admin/parquet-to-csv/worker.mjs'),
     poolSize,
@@ -111,8 +110,8 @@ export async function parquetToCsv(
             },
             onEnterAttachScreen: (id) => {
               setPaused(true);
-              process.stdout.write('\x1b[2J\x1b[H');
-              process.stdout.write(
+              this.process.stdout.write('\x1b[2J\x1b[H');
+              this.process.stdout.write(
                 `Attached to worker ${id}. (Esc/Ctrl+] detach \u2022 Ctrl+D EOF \u2022 Ctrl+C SIGINT)\n`,
               );
             },
@@ -121,7 +120,7 @@ export async function parquetToCsv(
       createExtraKeyHandler({ logsBySlot, repaint, setPaused }),
   }).catch((err) => {
     if (err instanceof PoolCancelledError) {
-      process.exit(130);
+      this.process.exit(130);
     }
     throw err;
   });

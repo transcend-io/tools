@@ -1,18 +1,13 @@
 import type { PoolHooks } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { parquetToCsv, type ParquetToCsvCommandFlags } from '../impl.js';
 import { parquetToCsvPlugin } from '../ui/index.js';
 import type { ParquetTask, ParquetProgress, ParquetResult } from '../worker.js';
 
 const H = vi.hoisted(() => {
   const files = ['/abs/a.parquet', '/abs/b.parquet', '/abs/c.parquet'];
-
-  const logger = {
-    info: vi.fn(),
-    error: vi.fn(),
-  };
 
   // capture the last runPool args so tests can assert hooks later
   const lastRunPoolArgs: {
@@ -65,8 +60,6 @@ const H = vi.hoisted(() => {
     collectParquetFilesOrExit: vi.fn(() => files.slice()),
   };
 
-  const doneInputValidation = vi.fn();
-
   // colors.* passthrough so assertions don’t deal with ANSI codes
   const colors = {
     green: (s: string) => s,
@@ -79,18 +72,14 @@ const H = vi.hoisted(() => {
 
   return {
     files,
-    logger,
     pooling,
     helpers,
     colors,
     lastRunPoolArgs,
-    doneInputValidation,
   };
 });
 
 // --- Module mocks (MUST be before importing the SUT code paths) -------------------------------
-vi.mock('../../../../logger.js', () => ({ logger: H.logger }));
-
 // single colors mock with default export (SUT does `import colors from 'colors'`)
 vi.mock('colors', () => ({
   __esModule: true,
@@ -128,20 +117,13 @@ vi.mock('../../../../lib/pooling/index.js', async () => {
   };
 });
 
-vi.mock('../../../../lib/cli/done-input-validation.js', () => ({
-  doneInputValidation: H.doneInputValidation,
-}));
-
 // -------------------------------------------------------------------------------------------------
 
 describe('parquetToCsv', () => {
-  const ctx: LocalContext = {
-    exit: vi.fn(),
-    log: vi.fn(),
-    process: {
-      exit: vi.fn(), // used by doneInputValidation
-    },
-  } as unknown as LocalContext;
+  const ctx = buildContextForTest({
+    cwd: '/test/cwd',
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   const baseFlags: ParquetToCsvCommandFlags = {
     directory: '/abs',
@@ -153,17 +135,17 @@ describe('parquetToCsv', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ctx.reset();
   });
 
   afterEach(() => {
     // ensure CHILD_FLAG branch didn’t accidentally run
-    expect(process.argv.includes(H.pooling.CHILD_FLAG)).toBe(false);
+    expect(ctx.process.argv.includes(H.pooling.CHILD_FLAG)).toBe(false);
   });
 
-  it('calls doneInputValidation with ctx.process.exit', async () => {
+  it('runs input validation using the context process', async () => {
     await parquetToCsv.call(ctx, baseFlags);
-    expect(H.doneInputValidation).toHaveBeenCalledTimes(1);
-    expect(H.doneInputValidation).toHaveBeenCalledWith(ctx.process.exit);
+    expect(ctx.exit).not.toHaveBeenCalled();
   });
 
   it('discovers files, sizes the pool, logs, builds queue, and invokes runPool with expected args', async () => {
@@ -176,11 +158,9 @@ describe('parquetToCsv', () => {
     expect(H.pooling.computePoolSize).toHaveBeenCalledWith(undefined, H.files.length);
 
     // info log includes file count and pool size text (unstyled)
-    expect(H.logger.info).toHaveBeenCalledTimes(1);
-    const msg = H.logger.info.mock.calls[0]?.[0];
-    expect(msg).toContain(`Converting ${H.files.length} Parquet file(s)`);
-    expect(msg).toContain('pool size 5');
-    expect(msg).toContain('CPU=8');
+    expect(ctx.stdout).toContain(`Converting ${H.files.length} Parquet file(s)`);
+    expect(ctx.stdout).toContain('pool size 5');
+    expect(ctx.stdout).toContain('CPU=8');
 
     // runPool called once
     expect(H.pooling.runPool).toHaveBeenCalledTimes(1);
@@ -300,7 +280,7 @@ describe('parquetToCsv', () => {
       directory: '',
       outputDir: '',
     });
-    expect(H.lastRunPoolArgs.baseDir).toBe(process.cwd());
+    expect(H.lastRunPoolArgs.baseDir).toBe(ctx.process.cwd());
   });
 
   it('passes an explicit concurrency override to computePoolSize', async () => {

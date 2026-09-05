@@ -1,13 +1,11 @@
 import { spawn } from 'node:child_process';
-import fs from 'node:fs';
-import path from 'node:path';
 
 import colors from 'colors';
 import fg from 'fast-glob';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
+import { fileContainsExactBytes } from './helpers.js';
 
 /** CLI flags accepted by the `find-text-in-folder` command. */
 export type FindTextInFolderCommandFlags = {
@@ -24,63 +22,6 @@ export type FindTextInFolderCommandFlags = {
   /** Stop scanning each file after N bytes */
   maxBytes?: number;
 };
-
-/**
- * Streams through a file checking if it contains the needle (case-insensitive).
- *
- * @param filePath - Absolute path to the file to scan
- * @param needle - Lowercased needle as a Buffer
- * @param maxBytes - Optional byte limit per file
- * @returns Whether the file contains the needle
- */
-export function fileContainsExactBytes(
-  filePath: string,
-  needle: Buffer,
-  maxBytes?: number,
-): Promise<boolean> {
-  return new Promise<boolean>((resolve, reject) => {
-    const stream = fs.createReadStream(filePath);
-    let carry = Buffer.alloc(0);
-    const n = needle.length;
-    let seen = 0;
-
-    stream.on('data', (raw) => {
-      let chunk = typeof raw === 'string' ? Buffer.from(raw) : raw;
-
-      if (maxBytes) {
-        const remaining = maxBytes - seen;
-        if (remaining <= 0) {
-          stream.destroy();
-          resolve(false);
-          return;
-        }
-        if (chunk.length > remaining) {
-          chunk = chunk.subarray(0, remaining);
-        }
-        seen += chunk.length;
-      }
-
-      const buf = carry.length ? Buffer.concat([carry, chunk]) : chunk;
-      const haystack = buf.toString('utf8').toLowerCase();
-      if (haystack.includes(needle.toString('utf8'))) {
-        stream.destroy();
-        resolve(true);
-        return;
-      }
-
-      // Keep last n-1 bytes to catch boundary matches
-      if (n > 1) {
-        carry = Buffer.from(buf.subarray(Math.max(0, buf.length - (n - 1))));
-      } else {
-        carry = Buffer.alloc(0);
-      }
-    });
-
-    stream.on('error', reject);
-    stream.on('close', () => resolve(false));
-    stream.on('end', () => resolve(false));
-  });
-}
 
 /**
  * Run async workers over items with bounded concurrency.
@@ -209,10 +150,10 @@ export async function findTextInFolder(
   this: LocalContext,
   flags: FindTextInFolderCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const { needle, root, exts, noParquet, concurrency, maxBytes } = flags;
-  const rootAbs = path.resolve(root);
+  const rootAbs = this.path.resolve(root);
 
   const extSet = new Set(
     exts
@@ -222,7 +163,7 @@ export async function findTextInFolder(
   );
   const patterns = Array.from(extSet).map((e) => `**/*.${e}`);
 
-  logger.info(
+  this.logger.info(
     colors.green(`Searching for "${needle}" in ${rootAbs} (exts: ${[...extSet].join(', ')})`),
   );
 
@@ -239,7 +180,9 @@ export async function findTextInFolder(
 
   await runWithConcurrency(normalFiles, concurrency, async (file) => {
     try {
-      const ok = await fileContainsExactBytes(file, needleBuf, maxBytes);
+      const ok = await fileContainsExactBytes(file, needleBuf, maxBytes, {
+        createReadStream: this.fs.createReadStream,
+      });
       if (ok) {
         hits.push(file);
         this.process.stdout.write(`${file}\n`);
@@ -259,7 +202,9 @@ export async function findTextInFolder(
     });
 
     if (parquetFiles.length > 0) {
-      logger.info(colors.green(`Scanning ${parquetFiles.length} parquet file(s) via DuckDB...`));
+      this.logger.info(
+        colors.green(`Scanning ${parquetFiles.length} parquet file(s) via DuckDB...`),
+      );
 
       await runWithConcurrency(
         parquetFiles,
@@ -279,5 +224,5 @@ export async function findTextInFolder(
     }
   }
 
-  logger.info(colors.green(`Done. Found ${hits.length} matching file(s).`));
+  this.logger.info(colors.green(`Done. Found ${hits.length} matching file(s).`));
 }

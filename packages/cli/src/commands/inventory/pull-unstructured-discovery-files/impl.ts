@@ -7,7 +7,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullUnstructuredSubDataPointRecommendations } from '../../../lib/data-inventory/index.js';
 import { writeLargeCsv } from '../../../lib/helpers/index.js';
-import { logger } from '../../../logger.js';
 
 export interface PullUnstructuredDiscoveryFilesCommandFlags {
   auth: string;
@@ -31,7 +30,7 @@ export async function pullUnstructuredDiscoveryFiles(
     includeEncryptedSnippets,
   }: PullUnstructuredDiscoveryFilesCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   try {
     // Create a GraphQL client
@@ -44,7 +43,7 @@ export async function pullUnstructuredDiscoveryFiles(
       includeEncryptedSnippets,
     });
 
-    logger.info(colors.magenta(`Writing unstructured discovery files to file "${file}"...`));
+    this.logger.info(colors.magenta(`Writing unstructured discovery files to file "${file}"...`));
     let headers: string[] = [];
     const inputs = entries.map((entry) => {
       const result = {
@@ -66,12 +65,14 @@ export async function pullUnstructuredDiscoveryFiles(
     });
     await writeLargeCsv(file, inputs, headers);
   } catch (err) {
-    logger.error(
+    this.logger.error(
       colors.red(`An error occurred syncing the unstructured discovery files: ${err.message}`),
     );
     this.process.exit(1);
   }
 
   // Indicate success
-  logger.info(colors.green(`Successfully synced unstructured discovery files to disk at ${file}!`));
+  this.logger.info(
+    colors.green(`Successfully synced unstructured discovery files to disk at ${file}!`),
+  );
 }

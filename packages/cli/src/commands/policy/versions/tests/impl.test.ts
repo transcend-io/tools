@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { versions } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
@@ -16,15 +16,13 @@ vi.mock('../../helpers/index.js', async (importOriginal) => {
 });
 
 describe('versions', () => {
-  const exit = vi.fn();
-  const stdout = { write: vi.fn() };
-  const context = {
-    process: { exit, stdout },
-  } as unknown as LocalContext;
+  const context = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.DEVELOPMENT_MODE_VALIDATE_ONLY = 'false';
+    context.reset();
     resolveBundleIdByNameMock.mockResolvedValue('resolved-bundle-id');
   });
 
@@ -59,8 +57,8 @@ describe('versions', () => {
         searchParams: { limit: 50 },
       },
     );
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('abc123'));
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('after: cursor-0'));
+    expect(context.stdout).toContain('abc123');
+    expect(context.stdout).toContain('after: cursor-0');
   });
 
   it('forwards the --after cursor as a search param', async () => {
@@ -107,9 +105,7 @@ describe('versions', () => {
       json: false,
     });
 
-    expect(stdout.write).toHaveBeenCalledWith(
-      expect.stringContaining('No more versions for bundle "main" (end of results).'),
-    );
+    expect(context.stdout).toContain('No more versions for bundle "main" (end of results).');
   });
 
   it('prints "No versions found" when the first page is empty without --after', async () => {
@@ -129,9 +125,7 @@ describe('versions', () => {
       json: false,
     });
 
-    expect(stdout.write).toHaveBeenCalledWith(
-      expect.stringContaining('No versions found for bundle "main".'),
-    );
+    expect(context.stdout).toContain('No versions found for bundle "main".');
   });
 
   it('throws a CLI-side error when the bundle name is unknown', async () => {

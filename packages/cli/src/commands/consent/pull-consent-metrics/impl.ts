@@ -1,6 +1,3 @@
-import fs, { existsSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { ConsentManagerMetricBin } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
@@ -12,7 +9,6 @@ import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullConsentManagerMetrics } from '../../../lib/consent-manager/index.js';
 import { writeCsv } from '../../../lib/helpers/index.js';
-import { logger } from '../../../logger.js';
 
 export interface PullConsentMetricsCommandFlags {
   auth: string;
@@ -30,7 +26,7 @@ export async function pullConsentMetrics(
   // Validate bin
   const parsedBin = bin as ConsentManagerMetricBin;
   if (!Object.values(ConsentManagerMetricBin).includes(parsedBin)) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `Failed to parse argument "bin" with value "${bin}"\n` +
           `Expected one of: \n${Object.values(ConsentManagerMetricBin).join('\n')}`,
@@ -43,7 +39,7 @@ export async function pullConsentMetrics(
   const startDate = new Date(start);
   const endDate = end ? new Date(end) : new Date();
   if (Number.isNaN(startDate.getTime())) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `Start date provided is invalid date. Got --start="${start}" expected --start="01/01/2023"`,
       ),
@@ -51,7 +47,7 @@ export async function pullConsentMetrics(
     this.process.exit(1);
   }
   if (Number.isNaN(endDate.getTime())) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `End date provided is invalid date. Got --end="${end}" expected --end="01/01/2023"`,
       ),
@@ -59,7 +55,7 @@ export async function pullConsentMetrics(
     this.process.exit(1);
   }
   if (startDate > endDate) {
-    logger.error(
+    this.logger.error(
       colors.red(
         `Got a start date "${startDate.toISOString()}" that was larger than the end date "${endDate.toISOString()}". ` +
           'Start date must be before end date.',
@@ -68,14 +64,18 @@ export async function pullConsentMetrics(
     this.process.exit(1);
   }
 
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Parse authentication as API key or path to list of API keys
-  const apiKeyOrList = await validateTranscendAuth(auth);
+  const apiKeyOrList = await validateTranscendAuth(auth, {
+    fs: this.fs,
+    exit: this.process.exit,
+    logger: this.logger,
+  });
 
   // Ensure folder either does not exist or is not a file
-  if (fs.existsSync(folder) && !fs.lstatSync(folder).isDirectory()) {
-    logger.error(
+  if (this.fs.existsSync(folder) && !this.fs.lstatSync(folder).isDirectory()) {
+    this.logger.error(
       colors.red(
         'The provided argument "folder" was passed a file. expected: folder="./consent-metrics/"',
       ),
@@ -84,11 +84,11 @@ export async function pullConsentMetrics(
   }
 
   // Create the folder if it does not exist
-  if (!existsSync(folder)) {
-    mkdirSync(folder);
+  if (!this.fs.existsSync(folder)) {
+    this.fs.mkdirSync(folder);
   }
 
-  logger.info(
+  this.logger.info(
     colors.magenta(
       `Pulling consent metrics from start=${startDate.toString()} to end=${endDate.toISOString()} with bin size "${bin}"`,
     ),
@@ -114,8 +114,8 @@ export async function pullConsentMetrics(
           await map(
             metrics,
             async ({ points, name }) => {
-              const file = join(folder, `${metricName}_${name}.csv`);
-              logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
+              const file = this.path.join(folder, `${metricName}_${name}.csv`);
+              this.logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
               await writeCsv(
                 file,
                 points.map(({ key, value }: { key: string; value: string }) => ({
@@ -132,12 +132,12 @@ export async function pullConsentMetrics(
         { concurrency: 5 },
       );
     } catch (err) {
-      logger.error(colors.red(`An error occurred syncing the schema: ${err.message}`));
+      this.logger.error(colors.red(`An error occurred syncing the schema: ${err.message}`));
       this.process.exit(1);
     }
 
     // Indicate success
-    logger.info(
+    this.logger.info(
       colors.green(
         `Successfully synced consent metrics to disk in folder "${folder}"! View at ${ADMIN_DASH_INTEGRATIONS}`,
       ),
@@ -146,7 +146,9 @@ export async function pullConsentMetrics(
     const encounteredErrors: string[] = [];
     await mapSeries(apiKeyOrList, async (apiKey, ind) => {
       const prefix = `[${ind + 1}/${apiKeyOrList.length}][${apiKey.organizationName}] `;
-      logger.info(colors.magenta(`~~~\n\n${prefix}Attempting to pull consent metrics...\n\n~~~`));
+      this.logger.info(
+        colors.magenta(`~~~\n\n${prefix}Attempting to pull consent metrics...\n\n~~~`),
+      );
 
       // Create a GraphQL client
       const client = buildTranscendGraphQLClient(transcendUrl, apiKey.apiKey);
@@ -159,16 +161,16 @@ export async function pullConsentMetrics(
         });
 
         // ensure folder exists for that organization
-        const subFolder = join(folder, apiKey.organizationName);
-        if (!existsSync(subFolder)) {
-          mkdirSync(subFolder);
+        const subFolder = this.path.join(folder, apiKey.organizationName);
+        if (!this.fs.existsSync(subFolder)) {
+          this.fs.mkdirSync(subFolder);
         }
 
         // Write to file
         Object.entries(configuration).forEach(([metricName, metrics]) => {
           metrics.forEach(({ points, name }) => {
-            const file = join(subFolder, `${metricName}_${name}.csv`);
-            logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
+            const file = this.path.join(subFolder, `${metricName}_${name}.csv`);
+            this.logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
             writeCsv(
               file,
               points.map(({ key, value }: { key: string; value: string }) => ({
@@ -179,15 +181,15 @@ export async function pullConsentMetrics(
           });
         });
 
-        logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
+        this.logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
       } catch (err) {
-        logger.error(colors.red(`${prefix}Failed to sync configuration.`), err);
+        this.logger.error(colors.red(`${prefix}Failed to sync configuration.`), err);
         encounteredErrors.push(apiKey.organizationName);
       }
     });
 
     if (encounteredErrors.length > 0) {
-      logger.info(
+      this.logger.info(
         colors.red(
           `Sync encountered errors for "${encounteredErrors.join(
             ',',

@@ -8,7 +8,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullAllDatapoints } from '../../../lib/data-inventory/index.js';
 import { writeLargeCsv } from '../../../lib/helpers/index.js';
-import { logger } from '../../../logger.js';
 
 export interface PullDatapointsCommandFlags {
   auth: string;
@@ -34,7 +33,7 @@ export async function pullDatapoints(
     subCategories = [],
   }: PullDatapointsCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   try {
     // Create a GraphQL client
@@ -48,7 +47,7 @@ export async function pullDatapoints(
       subCategories, // TODO: https://transcend.height.app/T-40482 - do by name not ID
     });
 
-    logger.info(colors.magenta(`Writing datapoints to file "${file}"...`));
+    this.logger.info(colors.magenta(`Writing datapoints to file "${file}"...`));
     let headers: string[] = [];
     const inputs = dataPoints.map((point) => {
       const result = {
@@ -84,12 +83,12 @@ export async function pullDatapoints(
     });
     await writeLargeCsv(file, inputs, headers);
   } catch (err) {
-    logger.error(colors.red(`An error occurred syncing the datapoints: ${err.message}`));
+    this.logger.error(colors.red(`An error occurred syncing the datapoints: ${err.message}`));
     this.process.exit(1);
   }
 
   // Indicate success
-  logger.info(
+  this.logger.info(
     colors.green(
       `Successfully synced datapoints to disk at ${file}! View at ${ADMIN_DASH_DATAPOINTS}`,
     ),

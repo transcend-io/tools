@@ -1,6 +1,3 @@
-import { existsSync, lstatSync } from 'node:fs';
-import { join } from 'node:path';
-
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
 import colors from 'colors';
@@ -14,7 +11,6 @@ import { syncConfigurationToTranscend } from '../../../lib/graphql/index.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 import { mergeTranscendInputs } from '../../../lib/mergeTranscendInputs.js';
 import { readTranscendYaml } from '../../../lib/readTranscendYaml.js';
-import { logger } from '../../../logger.js';
 
 /**
  * Sync configuration to Transcend
@@ -30,6 +26,7 @@ async function syncConfiguration({
   contents,
   deleteExtraAttributeValues = false,
   classifyService = false,
+  logger,
 }: {
   /** Transcend YAML */
   contents: TranscendInput;
@@ -45,6 +42,8 @@ async function syncConfiguration({
   classifyService?: boolean;
   /** Delete attributes when syncing */
   deleteExtraAttributeValues?: boolean;
+  /** Logger for reporting sync progress and errors */
+  logger: LocalContext['logger'];
 }): Promise<boolean> {
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -95,18 +94,22 @@ export async function push(
     deleteExtraAttributeValues,
   }: PushCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Parse authentication as API key or path to list of API keys
-  const apiKeyOrList = await validateTranscendAuth(auth);
+  const apiKeyOrList = await validateTranscendAuth(auth, {
+    fs: this.fs,
+    exit: this.process.exit,
+    logger: this.logger,
+  });
 
   // Parse out the variables
   const vars = parseVariablesFromString(variables);
 
   // check if we are being passed a list of API keys and a list of files
   let fileList: string[];
-  if (Array.isArray(apiKeyOrList) && lstatSync(file).isDirectory()) {
-    fileList = listFiles(file).map((filePath) => join(file, filePath));
+  if (Array.isArray(apiKeyOrList) && this.fs.lstatSync(file).isDirectory()) {
+    fileList = listFiles(file).map((filePath) => this.path.join(file, filePath));
   } else {
     fileList = file.split(',');
   }
@@ -119,27 +122,27 @@ export async function push(
   // eslint-disable-next-line array-callback-return,consistent-return
   const transcendInputs = fileList.map((filePath) => {
     // Ensure yaml file exists on disk
-    if (!existsSync(filePath)) {
-      logger.error(
+    if (!this.fs.existsSync(filePath)) {
+      this.logger.error(
         colors.red(
           `The file path does not exist on disk: ${filePath}. You can specify the filepath using --file=./examples/transcend.yml`,
         ),
       );
       this.process.exit(1);
     } else {
-      logger.info(colors.magenta(`Reading file "${filePath}"...`));
+      this.logger.info(colors.magenta(`Reading file "${filePath}"...`));
     }
 
     try {
       // Read in the yaml file and validate it's shape
       const newContents = readTranscendYaml(filePath, vars);
-      logger.info(colors.green(`Successfully read in "${filePath}"`));
+      this.logger.info(colors.green(`Successfully read in "${filePath}"`));
       return {
         content: newContents,
         name: filePath.split('/').pop()!.replace('.yml', ''),
       };
     } catch (err) {
-      logger.error(
+      this.logger.error(
         colors.red(
           `The shape of your yaml file is invalid with the following errors: ${err.message}`,
         ),
@@ -163,11 +166,12 @@ export async function push(
       deleteExtraAttributeValues,
       pageSize,
       classifyService: !!classifyService,
+      logger: this.logger,
     });
 
     // exist with error code
     if (!success) {
-      logger.info(
+      this.logger.info(
         colors.red(
           `Sync encountered errors. View output above for more information, or check out ${ADMIN_DASH_INTEGRATIONS}`,
         ),
@@ -189,7 +193,9 @@ export async function push(
     const encounteredErrors: string[] = [];
     await mapSeries(apiKeyOrList, async (apiKey, ind) => {
       const prefix = `[${ind + 1}/${apiKeyOrList.length}][${apiKey.organizationName}] `;
-      logger.info(colors.magenta(`~~~\n\n${prefix}Attempting to push configuration...\n\n~~~`));
+      this.logger.info(
+        colors.magenta(`~~~\n\n${prefix}Attempting to push configuration...\n\n~~~`),
+      );
 
       // use the merged contents if 1 yml passed, else use the contents that map to that organization
       const useContents =
@@ -199,7 +205,7 @@ export async function push(
 
       // Throw error if cannot find a yml file matching that organization name
       if (!useContents) {
-        logger.error(
+        this.logger.error(
           colors.red(
             `${prefix}Failed to find transcend.yml file for organization: "${apiKey.organizationName}".`,
           ),
@@ -216,18 +222,19 @@ export async function push(
         publishToPrivacyCenter,
         deleteExtraAttributeValues,
         classifyService,
+        logger: this.logger,
       });
 
       if (success) {
-        logger.info(colors.green(`${prefix}Successfully pushed configuration!`));
+        this.logger.info(colors.green(`${prefix}Successfully pushed configuration!`));
       } else {
-        logger.error(colors.red(`${prefix}Failed to sync configuration.`));
+        this.logger.error(colors.red(`${prefix}Failed to sync configuration.`));
         encounteredErrors.push(apiKey.organizationName);
       }
     });
 
     if (encounteredErrors.length > 0) {
-      logger.info(
+      this.logger.info(
         colors.red(
           `Sync encountered errors for "${encounteredErrors.join(
             ',',
@@ -240,7 +247,7 @@ export async function push(
   }
 
   // Indicate success
-  logger.info(
+  this.logger.info(
     colors.green(`Successfully synced yaml file to Transcend! View at ${ADMIN_DASH_INTEGRATIONS}`),
   );
 }

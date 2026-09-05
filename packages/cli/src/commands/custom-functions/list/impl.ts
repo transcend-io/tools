@@ -4,7 +4,6 @@ import colors from 'colors';
 import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 
 export interface CustomFunctionsListCommandFlags {
   auth: string;
@@ -15,11 +14,15 @@ export async function list(
   this: LocalContext,
   { auth, transcendUrl }: CustomFunctionsListCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
-  const apiKeyOrList = validateTranscendAuth(auth);
+  const apiKeyOrList = validateTranscendAuth(auth, {
+    fs: this.fs,
+    exit: this.process.exit,
+    logger: this.logger,
+  });
   if (Array.isArray(apiKeyOrList)) {
-    logger.error(
+    this.logger.error(
       colors.red(
         'transcend custom-functions list does not support a list of API keys — pass a single API key.',
       ),
@@ -28,14 +31,14 @@ export async function list(
   }
 
   const client = buildTranscendGraphQLClient(transcendUrl, apiKeyOrList as string);
-  const customFunctions = await fetchAllCustomFunctions(client, { logger });
+  const customFunctions = await fetchAllCustomFunctions(client, { logger: this.logger });
 
   if (customFunctions.length === 0) {
-    logger.info(colors.yellow('No custom functions found in this organization.'));
+    this.logger.info(colors.yellow('No custom functions found in this organization.'));
     return;
   }
 
-  logger.info(colors.magenta(`Found ${customFunctions.length} custom function(s):`));
+  this.logger.info(colors.magenta(`Found ${customFunctions.length} custom function(s):`));
   customFunctions.forEach((customFunction) => {
     const active = customFunction.activeVersion
       ? `active v${customFunction.activeVersion.versionNumber}`
@@ -44,7 +47,7 @@ export async function list(
       customFunction.hasPendingDraft && customFunction.draftVersion
         ? `, pending draft v${customFunction.draftVersion.versionNumber}`
         : '';
-    logger.info(
+    this.logger.info(
       `  - ${colors.green(customFunction.name)} [${customFunction.type}] ` +
         `(${customFunction.lifecycleState.toLowerCase()}, ${active}${draft}) ` +
         colors.dim(`id: ${customFunction.id}`),

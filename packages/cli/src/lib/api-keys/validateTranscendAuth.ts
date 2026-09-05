@@ -1,34 +1,55 @@
-import { existsSync, readFileSync } from 'node:fs';
+import fs from 'node:fs';
 
 import { decodeCodec } from '@transcend-io/type-utils';
 import colors from 'colors';
 import * as t from 'io-ts';
 
 import { StoredApiKey } from '../../codecs.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
+
+/**
+ * Runtime dependencies used to validate a Transcend auth argument.
+ */
+export interface ValidateTranscendAuthDependencies {
+  /** Filesystem methods used to inspect and read API key files */
+  readonly fs: Pick<typeof fs, 'existsSync' | 'readFileSync'>;
+  /** Exit the current runtime after a validation failure */
+  readonly exit: (code?: number) => never;
+  /** Logger used to report validation failures */
+  readonly logger: CliLogger;
+}
 
 /**
  * Determine if the `--auth` parameter is an API key or a path to a JSON
  * file containing a list of API keys.
  *
  * @param auth - Raw auth parameter
+ * @param dependencies - Optional runtime dependency overrides
  * @returns The API key or the list API keys
  */
-export function validateTranscendAuth(auth: string): string | StoredApiKey[] {
+export function validateTranscendAuth(
+  auth: string,
+  dependencies: Partial<ValidateTranscendAuthDependencies> = {},
+): string | StoredApiKey[] {
+  const runtimeFs = dependencies.fs ?? fs;
+  const runtimeExit = dependencies.exit ?? process.exit;
+  const runtimeLogger = dependencies.logger ?? logger;
+
   // Ensure auth is passed
   if (!auth) {
-    logger.error(
+    runtimeLogger.error(
       colors.red(
         'A Transcend API key must be provided. You can specify using --auth=$TRANSCEND_API_KEY',
       ),
     );
-    process.exit(1);
+    runtimeExit(1);
   }
 
   // Read from disk
-  if (existsSync(auth)) {
+  if (runtimeFs.existsSync(auth)) {
     // validate that file is a list of API keys
-    return decodeCodec(t.array(StoredApiKey), readFileSync(auth, 'utf-8'));
+    return decodeCodec(t.array(StoredApiKey), runtimeFs.readFileSync(auth, 'utf-8'));
   }
 
   // Return as single API key

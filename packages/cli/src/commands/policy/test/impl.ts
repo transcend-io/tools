@@ -1,10 +1,7 @@
-import path from 'node:path';
-
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import { assertOpaInstalled, runOpa } from '../helpers/index.js';
 
 /** CLI flags for `transcend policy test`. */
@@ -20,17 +17,17 @@ export interface TestCommandFlags {
  * @param flags - Command flags
  */
 export async function test(this: LocalContext, { dir }: TestCommandFlags): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   assertOpaInstalled();
-  const resolvedDir = path.resolve(dir);
+  const resolvedDir = this.path.resolve(dir);
 
-  logger.info(colors.green(`Running policy tests in ${resolvedDir}...`));
+  this.logger.info(colors.green(`Running policy tests in ${resolvedDir}...`));
 
   const exitCode = await runOpa(['test', resolvedDir]);
   if (exitCode !== 0) {
     this.process.exit(exitCode);
   }
 
-  logger.info(colors.green('Policy tests passed.'));
+  this.logger.info(colors.green('Policy tests passed.'));
 }

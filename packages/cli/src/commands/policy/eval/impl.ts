@@ -1,11 +1,7 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import { assertOpaInstalled, runOpa } from '../helpers/index.js';
 
 /** CLI flags for `transcend policy eval`. */
@@ -28,22 +24,22 @@ export async function _eval(
   this: LocalContext,
   { pkg, input, bundle }: EvalCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   assertOpaInstalled();
 
-  const inputPath = path.resolve(input);
-  if (!fs.existsSync(inputPath)) {
+  const inputPath = this.path.resolve(input);
+  if (!this.fs.existsSync(inputPath)) {
     throw new Error(`Input file not found: ${inputPath}`);
   }
 
   const args = ['eval', '--format', 'pretty', '--input', inputPath];
   if (bundle) {
-    args.push('-b', path.resolve(bundle));
+    args.push('-b', this.path.resolve(bundle));
   }
   args.push(pkg);
 
-  logger.info(colors.green(`Evaluating ${pkg} with input ${inputPath}...`));
+  this.logger.info(colors.green(`Evaluating ${pkg} with input ${inputPath}...`));
 
   const exitCode = await runOpa(args);
   if (exitCode !== 0) {

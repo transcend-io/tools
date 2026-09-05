@@ -1,7 +1,7 @@
 import { PoolHooks } from '@transcend-io/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { chunkCsv, type ChunkCsvCommandFlags } from '../impl.js';
 // ⬇️ SUT imports AFTER mocks
 import { chunkCsvPlugin } from '../ui/index.js';
@@ -9,11 +9,6 @@ import type { ChunkProgress, ChunkResult, ChunkTask } from '../worker.js';
 
 const H = vi.hoisted(() => {
   const files = ['/abs/a.csv', '/abs/b.csv', '/abs/c.csv'];
-
-  const logger = {
-    info: vi.fn(),
-    error: vi.fn(),
-  };
 
   // capture the last runPool args so tests can assert hooks later
   const lastRunPoolArgs: {
@@ -76,12 +71,10 @@ const H = vi.hoisted(() => {
     yellow: (s: string) => s,
   };
 
-  return { files, logger, pooling, helpers, colors, lastRunPoolArgs };
+  return { files, pooling, helpers, colors, lastRunPoolArgs };
 });
 
 // --- Module mocks (MUST be before importing the SUT) ---------------------------------------------
-vi.mock('../../../../logger.js', () => ({ logger: H.logger }));
-
 // single colors mock with default export (SUT does `import colors from 'colors'`)
 vi.mock('colors', () => ({
   __esModule: true,
@@ -122,14 +115,10 @@ vi.mock('../../../../lib/pooling/index.js', async () => {
 // -------------------------------------------------------------------------------------------------
 
 describe('chunkCsv', () => {
-  const ctx: LocalContext = {
-    exit: vi.fn(),
-    log: vi.fn(),
-    // whatever else you already had...
-    process: {
-      exit: vi.fn(), // <- this is what the SUT needs
-    },
-  } as unknown as LocalContext;
+  const ctx = buildContextForTest({
+    cwd: '/test/cwd',
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   const baseFlags: ChunkCsvCommandFlags = {
     directory: '/abs',
@@ -142,11 +131,12 @@ describe('chunkCsv', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ctx.reset();
   });
 
   afterEach(() => {
     // ensure CHILD_FLAG branch didn’t accidentally run
-    expect(process.argv.includes(H.pooling.CHILD_FLAG)).toBe(false);
+    expect(ctx.process.argv.includes(H.pooling.CHILD_FLAG)).toBe(false);
   });
 
   it('discovers files, sizes the pool, logs, builds queue, and invokes runPool with expected args', async () => {
@@ -159,11 +149,9 @@ describe('chunkCsv', () => {
     expect(H.pooling.computePoolSize).toHaveBeenCalledWith(undefined, H.files.length);
 
     // info log includes file count and pool size text (unstyled)
-    expect(H.logger.info).toHaveBeenCalledTimes(1);
-    const msg = H.logger.info.mock.calls[0]?.[0];
-    expect(msg).toContain(`Chunking ${H.files.length} CSV file(s)`);
-    expect(msg).toContain('pool size 7');
-    expect(msg).toContain('CPU=10');
+    expect(ctx.stdout).toContain(`Chunking ${H.files.length} CSV file(s)`);
+    expect(ctx.stdout).toContain('pool size 7');
+    expect(ctx.stdout).toContain('CPU=10');
 
     // runPool called once
     expect(H.pooling.runPool).toHaveBeenCalledTimes(1);
@@ -278,6 +266,6 @@ describe('chunkCsv', () => {
       directory: '',
       outputDir: '',
     });
-    expect(H.lastRunPoolArgs.baseDir).toBe(process.cwd());
+    expect(H.lastRunPoolArgs.baseDir).toBe(ctx.process.cwd());
   });
 });

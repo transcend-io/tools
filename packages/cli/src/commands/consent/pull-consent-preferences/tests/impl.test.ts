@@ -1,22 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { pullConsentPreferences, type PullConsentPreferencesCommandFlags } from '../impl.js';
 
 const H = vi.hoisted(() => {
-  const logger = {
-    info: vi.fn(),
-  };
-
   // colors passthrough so assertions don’t include ANSI codes
   const colors = {
     green: (s: string) => s,
     yellow: (s: string) => s,
     magenta: (s: string) => s,
   };
-
-  const doneInputValidation = vi.fn();
 
   // Sombra GOT instance returned by factory
   const sombra = { tag: 'sombra' };
@@ -63,9 +57,7 @@ const H = vi.hoisted(() => {
   ];
 
   return {
-    logger,
     colors,
-    doneInputValidation,
     sombra,
     fetchConsentPreferences,
     fetchConsentPreferencesChunked,
@@ -80,16 +72,10 @@ const H = vi.hoisted(() => {
 });
 
 /* ----------------- Mocks (must be declared before importing SUT) ----------------- */
-vi.mock('../../../../logger.js', () => ({ logger: H.logger }));
-
 vi.mock('colors', () => ({
   __esModule: true,
   default: H.colors,
   ...H.colors,
-}));
-
-vi.mock('../../../../lib/cli/done-input-validation.js', () => ({
-  doneInputValidation: H.doneInputValidation,
 }));
 
 vi.mock('@transcend-io/sdk', () => ({
@@ -121,19 +107,16 @@ vi.mock('../../../../lib/helpers/index.js', () => ({
 }));
 
 describe('pullConsentPreferences', () => {
-  const ctx: LocalContext = {
-    exit: vi.fn(),
-    log: vi.fn(),
-    process: {
-      exit: vi.fn(),
-    },
-  } as unknown as LocalContext;
+  const ctx = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ctx.reset();
   });
 
-  it('calls doneInputValidation with ctx.process.exit', async () => {
+  it('runs input validation using the context process', async () => {
     const flags: PullConsentPreferencesCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -158,21 +141,12 @@ describe('pullConsentPreferences', () => {
 
     await pullConsentPreferences.call(ctx, flags);
 
-    expect(H.doneInputValidation).toHaveBeenCalledTimes(1);
-    expect(H.doneInputValidation).toHaveBeenCalledWith(ctx.process.exit);
+    expect(ctx.exit).not.toHaveBeenCalled();
 
     // logs include mode and preparing/finished
-    expect(
-      H.logger.info.mock.calls.some((c) => String(c[0]).includes('using mode=paged-stream')),
-    ).toBe(true);
-    expect(
-      H.logger.info.mock.calls.some((c) => String(c[0]).includes('Preparing CSV at: /tmp/out.csv')),
-    ).toBe(true);
-    expect(
-      H.logger.info.mock.calls.some((c) =>
-        String(c[0]).includes('Finished writing CSV to /tmp/out.csv'),
-      ),
-    ).toBe(true);
+    expect(ctx.stdout).toContain('using mode=paged-stream');
+    expect(ctx.stdout).toContain('Preparing CSV at: /tmp/out.csv');
+    expect(ctx.stdout).toContain('Finished writing CSV to /tmp/out.csv');
   });
 
   it('parses identifiers, builds filter, passes limit=concurrency, streams pages, initializes header once, and appends rows', async () => {
@@ -241,23 +215,11 @@ describe('pullConsentPreferences', () => {
     });
 
     // Logs: mode + preparing + finished (no aggregate count anymore)
-    expect(
-      H.logger.info.mock.calls.some((c) =>
-        String(c[0]).includes(
-          'Fetching consent preferences from partition part-xyz, using mode=paged-stream',
-        ),
-      ),
-    ).toBe(true);
-    expect(
-      H.logger.info.mock.calls.some((c) =>
-        String(c[0]).includes('Preparing CSV at: /abs/prefs.csv'),
-      ),
-    ).toBe(true);
-    expect(
-      H.logger.info.mock.calls.some((c) =>
-        String(c[0]).includes('Finished writing CSV to /abs/prefs.csv'),
-      ),
-    ).toBe(true);
+    expect(ctx.stdout).toContain(
+      'Fetching consent preferences from partition part-xyz, using mode=paged-stream',
+    );
+    expect(ctx.stdout).toContain('Preparing CSV at: /abs/prefs.csv');
+    expect(ctx.stdout).toContain('Finished writing CSV to /abs/prefs.csv');
 
     // The transformer is called for each item in streaming order
     const allItems = [...page1, ...page2];
@@ -350,17 +312,9 @@ describe('pullConsentPreferences', () => {
     expect(H.appendCsvRowsOrdered).not.toHaveBeenCalled();
 
     // Logs show mode + preparing + finished
-    expect(
-      H.logger.info.mock.calls.some((c) => String(c[0]).includes('using mode=paged-stream')),
-    ).toBe(true);
-    expect(
-      H.logger.info.mock.calls.some((c) => String(c[0]).includes('Preparing CSV at: /tmp/x.csv')),
-    ).toBe(true);
-    expect(
-      H.logger.info.mock.calls.some((c) =>
-        String(c[0]).includes('Finished writing CSV to /tmp/x.csv'),
-      ),
-    ).toBe(true);
+    expect(ctx.stdout).toContain('using mode=paged-stream');
+    expect(ctx.stdout).toContain('Preparing CSV at: /tmp/x.csv');
+    expect(ctx.stdout).toContain('Finished writing CSV to /tmp/x.csv');
   });
 });
 /* eslint-enable @typescript-eslint/no-explicit-any */
