@@ -6,20 +6,19 @@ import { parse } from 'csv-parse/sync';
 import * as t from 'io-ts';
 
 /**
- * Read in a CSV and validate its shape
+ * Parse CSV contents and validate their shape.
  *
- * @param pathToFile - Path to file
+ * @param contents - CSV contents.
  * @param codec - The codec to validate against. This is the codec for individual, non-header, rows
  * @param options - CSV parse options
  * @returns The JSON data
  */
-export function readCsv<T extends t.Any>(
-  pathToFile: string,
+export function parseCsv<T extends t.Any>(
+  contents: string,
   codec: T,
   options: Options = { columns: true },
 ): t.TypeOf<T>[] {
-  // read file contents and parse
-  const fileContent = parse(readFileSync(pathToFile, 'utf-8'), options);
+  const fileContent = parse(contents, options);
 
   // validate codec
   const data = decodeCodec(t.array(codec), fileContent);
@@ -35,4 +34,20 @@ export function readCsv<T extends t.Any>(
     ),
   );
   return parsed;
+}
+
+/**
+ * Read in a CSV and validate its shape.
+ *
+ * @param pathToFile - Path to file.
+ * @param codec - The codec to validate against. This is the codec for individual, non-header, rows.
+ * @param options - CSV parse options.
+ * @returns The JSON data.
+ */
+export function readCsv<T extends t.Any>(
+  pathToFile: string,
+  codec: T,
+  options: Options = { columns: true },
+): t.TypeOf<T>[] {
+  return parseCsv(readFileSync(pathToFile, 'utf-8'), codec, options);
 }
