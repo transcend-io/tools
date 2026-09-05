@@ -41,6 +41,11 @@ type DeletePreferenceRecordsOptions = Omit<
   maxConcurrency: number;
 };
 
+type DeletePreferenceRecordRowsOptions = Omit<DeletePreferenceRecordsOptions, 'filePath'> & {
+  /** Decoded identifiers to delete */
+  anchorIdentifiers: DeletePreferenceRecordCliCsvRow[];
+};
+
 /**
  *
  * Delete a chunk of preference records
@@ -117,6 +122,32 @@ export async function bulkDeletePreferenceRecords(
   }: DeletePreferenceRecordsOptions,
 ): Promise<FailedResult[]> {
   const anchorIdentifiers = readCsv(filePath, DeletePreferenceRecordCliCsvRow);
+  return bulkDeletePreferenceRecordsFromRows(sombra, {
+    anchorIdentifiers,
+    partition,
+    timestamp,
+    maxItemsInChunk,
+    maxConcurrency,
+  });
+}
+
+/**
+ * Delete decoded consent preference identifiers from the managed consent database.
+ *
+ * @param sombra - Sombra instance with authentication headers.
+ * @param options - Decoded rows and deletion options.
+ * @returns Failed deletions.
+ */
+export async function bulkDeletePreferenceRecordsFromRows(
+  sombra: Got,
+  {
+    anchorIdentifiers,
+    partition,
+    timestamp,
+    maxItemsInChunk,
+    maxConcurrency,
+  }: DeletePreferenceRecordRowsOptions,
+): Promise<FailedResult[]> {
   const chunks = chunk(anchorIdentifiers, maxItemsInChunk);
 
   const failedResults = await map(
