@@ -6,6 +6,16 @@ import { uniq, groupBy, difference } from 'lodash-es';
 import { logger } from '../../logger.js';
 import { inquirerConfirmBoolean } from '../helpers/index.js';
 
+/** Runtime dependencies for parsing preference identifiers. */
+export interface ParsePreferenceIdentifiersFromCsvDependencies {
+  /** Logger used for parsing decisions and warnings. */
+  logger: Pick<typeof logger, 'info' | 'warn'>;
+}
+
+const defaultDependencies: ParsePreferenceIdentifiersFromCsvDependencies = {
+  logger,
+};
+
 /* eslint-disable no-param-reassign */
 
 /**
@@ -16,11 +26,13 @@ import { inquirerConfirmBoolean } from '../helpers/index.js';
  *
  * @param preferences - List of preferences
  * @param currentState - The current file metadata state for parsing this list
+ * @param dependencies - Runtime dependencies
  * @returns The updated file metadata state
  */
 export async function parsePreferenceIdentifiersFromCsv(
   preferences: Record<string, string>[],
   currentState: FileMetadataState,
+  dependencies: ParsePreferenceIdentifiersFromCsvDependencies = defaultDependencies,
 ): Promise<{
   /** The updated state */
   currentState: FileMetadataState;
@@ -55,7 +67,9 @@ export async function parsePreferenceIdentifiersFromCsv(
     ]);
     currentState.identifierColumn = identifierName;
   }
-  logger.info(colors.magenta(`Using identifier column "${currentState.identifierColumn}"`));
+  dependencies.logger.info(
+    colors.magenta(`Using identifier column "${currentState.identifierColumn}"`),
+  );
 
   // Validate that the identifier column is present for all rows and unique
   const identifierColumnsMissing = preferences
@@ -66,7 +80,7 @@ export async function parsePreferenceIdentifiersFromCsv(
     const msg = `The identifier column "${
       currentState.identifierColumn
     }" is missing a value for the following rows: ${identifierColumnsMissing.join(', ')}`;
-    logger.warn(colors.yellow(msg));
+    dependencies.logger.warn(colors.yellow(msg));
 
     // Ask user if they would like to skip rows missing an identifier
     const skip = await inquirerConfirmBoolean({
@@ -79,11 +93,11 @@ export async function parsePreferenceIdentifiersFromCsv(
     // Filter out rows missing an identifier
     const previous = preferences.length;
     preferences = preferences.filter((pref) => pref[currentState.identifierColumn!]);
-    logger.info(
+    dependencies.logger.info(
       colors.yellow(`Skipped ${previous - preferences.length} rows missing an identifier`),
     );
   }
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `The identifier column "${currentState.identifierColumn}" is present for all rows`,
     ),
@@ -99,7 +113,7 @@ export async function parsePreferenceIdentifiersFromCsv(
       .slice(0, 10)
       .map(([userId, rows]) => `${userId} (${rows.length})`)
       .join('\n')}`;
-    logger.warn(colors.yellow(msg));
+    dependencies.logger.warn(colors.yellow(msg));
 
     // Ask user if they would like to take the most recent update
     // for each duplicate identifier

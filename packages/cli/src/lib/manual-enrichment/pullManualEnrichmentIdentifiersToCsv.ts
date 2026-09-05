@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import process from 'node:process';
+
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
@@ -13,6 +16,7 @@ import colors from 'colors';
 import { groupBy, uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { type PrivacyRequest, fetchAllRequests } from '../graphql/index.js';
 import { writeCsv } from '../helpers/writeCsv.js';
@@ -24,42 +28,62 @@ export interface PrivacyRequestWithIdentifiers extends PrivacyRequest {
   requestIdentifiers: RequestIdentifier[];
 }
 
+/** Runtime dependencies used while pulling manual enrichment identifiers. */
+export interface PullManualEnrichmentIdentifiersToCsvDependencies {
+  /** Filesystem implementation used to write the output CSV. */
+  readonly fs: typeof fs;
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+  /** Process implementation used for environment access. */
+  readonly process: NodeJS.Process;
+}
+
+const defaultDependencies: PullManualEnrichmentIdentifiersToCsvDependencies = {
+  fs,
+  logger,
+  process,
+};
+
 /**
  * Pull the set of manual enrichment jobs to CSV
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns List of requests with identifiers
  */
-export async function pullManualEnrichmentIdentifiersToCsv({
-  file,
-  auth,
-  sombraAuth,
-  requestActions = [],
-  concurrency = 100,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** CSV file path */
-  file: string;
-  /** Transcend API key authentication */
-  auth: string;
-  /** Sombra API key */
-  sombraAuth?: string;
-  /** Concurrency */
-  concurrency?: number;
-  /** The request actions to fetch */
-  requestActions?: RequestAction[];
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<PrivacyRequestWithIdentifiers[]> {
+export async function pullManualEnrichmentIdentifiersToCsv(
+  {
+    file,
+    auth,
+    sombraAuth,
+    requestActions = [],
+    concurrency = 100,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** CSV file path */
+    file: string;
+    /** Transcend API key authentication */
+    auth: string;
+    /** Sombra API key */
+    sombraAuth?: string;
+    /** Concurrency */
+    concurrency?: number;
+    /** The request actions to fetch */
+    requestActions?: RequestAction[];
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: PullManualEnrichmentIdentifiersToCsvDependencies = defaultDependencies,
+): Promise<PrivacyRequestWithIdentifiers[]> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
   const sombra = await createSombraGotInstance(transcendUrl, auth, {
-    logger,
+    logger: dependencies.logger,
     sombraApiKey: sombraAuth,
-    sombraUrl: process.env.SOMBRA_URL,
+    sombraUrl: dependencies.process.env.SOMBRA_URL,
   });
 
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Pulling manual enrichment requests, filtered for actions: ${requestActions.join(',')}`,
     ),
@@ -71,7 +95,7 @@ export async function pullManualEnrichmentIdentifiersToCsv({
     statuses: [RequestStatus.Enriching],
   });
 
-  await validateSombraVersion(client, { logger });
+  await validateSombraVersion(client, { logger: dependencies.logger });
 
   // Requests to save
   const savedRequests: PrivacyRequestWithIdentifiers[] = [];
@@ -83,7 +107,7 @@ export async function pullManualEnrichmentIdentifiersToCsv({
       // Fetch enrichers
       const requestEnrichers = await fetchAllRequestEnrichers(client, {
         filterBy: { requestId: request.id },
-        logger,
+        logger: dependencies.logger,
       });
 
       // Check if manual enrichment exists for that request
@@ -96,7 +120,7 @@ export async function pullManualEnrichmentIdentifiersToCsv({
         const requestIdentifiers = await fetchAllRequestIdentifiers(client, sombra, {
           filterBy: { requestId: request.id },
           skipSombraCheck: true,
-          logger,
+          logger: dependencies.logger,
         });
         savedRequests.push({
           ...request,
@@ -139,9 +163,9 @@ export async function pullManualEnrichmentIdentifiersToCsv({
 
   // Write out to CSV
   const headers = uniq(data.map((d) => Object.keys(d)).flat());
-  await writeCsv(file, data, headers);
+  await writeCsv(file, data, headers, { fs: dependencies.fs });
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(`Successfully wrote ${savedRequests.length} requests to file "${file}"`),
   );
 

@@ -27,20 +27,30 @@ export function consentManagersToBusinessEntities(
   }
 
   // Read in each consent manager configuration
-  const inputs = listFiles(consentManagerYmlFolder).map((directory) => {
-    const { 'consent-manager': consentManager } = readTranscendYaml(
-      this.path.join(consentManagerYmlFolder, directory),
-    );
-    return { name: directory, input: consentManager };
-  });
+  const inputs = listFiles(consentManagerYmlFolder, undefined, false, { fs: this.fs }).map(
+    (directory) => {
+      const { 'consent-manager': consentManager } = readTranscendYaml(
+        this.path.join(consentManagerYmlFolder, directory),
+        {},
+        { fs: this.fs },
+      );
+      return { name: directory, input: consentManager };
+    },
+  );
 
   // Convert to business entities
-  const businessEntities = consentManagersToBusinessEntitiesHelper(inputs);
+  const businessEntities = consentManagersToBusinessEntitiesHelper(inputs, {
+    logger: this.logger,
+  });
 
   // write to disk
-  writeTranscendYaml(output, {
-    'business-entities': businessEntities,
-  });
+  writeTranscendYaml(
+    output,
+    {
+      'business-entities': businessEntities,
+    },
+    { fs: this.fs },
+  );
 
   this.logger.info(
     colors.green(

@@ -45,22 +45,29 @@ export async function _export(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  const { filePaths, totalCount } = await streamPrivacyRequestsToCsv({
-    transcendUrl,
-    concurrency,
-    pageLimit,
-    actions,
-    statuses,
-    auth,
-    sombraAuth,
-    skipRequestIdentifiers,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    isTest: showTests,
-    file,
-  });
+  const { filePaths, totalCount } = await streamPrivacyRequestsToCsv(
+    {
+      transcendUrl,
+      concurrency,
+      pageLimit,
+      actions,
+      statuses,
+      auth,
+      sombraAuth,
+      skipRequestIdentifiers,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      isTest: showTests,
+      file,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 
   this.logger.info(
     colors.green(

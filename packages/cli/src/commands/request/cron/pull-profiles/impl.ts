@@ -115,14 +115,14 @@ export async function pullProfiles(
     const headers = uniq(chunkToSave.map((d) => Object.keys(d)).flat());
     const numberedFileName = `${baseName}-${fileCount}${extension}`;
     const numberedFileNameTarget = `${baseNameTarget}-${fileCount}${extensionTarget}`;
-    await writeLargeCsv(numberedFileName, chunkToSave, headers);
+    await writeLargeCsv(numberedFileName, chunkToSave, headers, { fs: this.fs });
     this.logger.info(
       colors.green(`Successfully wrote ${chunkToSave.length} identifiers to file "${file}"`),
     );
 
     const targetIdentifiers = results.flat();
     const headers2 = uniq(targetIdentifiers.map((d) => Object.keys(d)).flat());
-    await writeLargeCsv(numberedFileNameTarget, targetIdentifiers, headers2);
+    await writeLargeCsv(numberedFileNameTarget, targetIdentifiers, headers2, { fs: this.fs });
     this.logger.info(
       colors.green(
         `Successfully wrote ${targetIdentifiers.length} identifiers to file "${fileTarget}"`,
@@ -138,17 +138,23 @@ export async function pullProfiles(
   };
 
   // Pull down outstanding identifiers using the new chunked function
-  await pullChunkedCustomSiloOutstandingIdentifiers({
-    dataSiloId: cronDataSiloId,
-    auth,
-    sombraAuth,
-    actions,
-    apiPageSize: pageLimit,
-    savePageSize: chunkSize,
-    onSave,
-    transcendUrl,
-    skipRequestCount,
-  });
+  await pullChunkedCustomSiloOutstandingIdentifiers(
+    {
+      dataSiloId: cronDataSiloId,
+      auth,
+      sombraAuth,
+      actions,
+      apiPageSize: pageLimit,
+      savePageSize: chunkSize,
+      onSave,
+      transcendUrl,
+      skipRequestCount,
+    },
+    {
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 
   this.logger.info(
     colors.green(`Successfully wrote ${allIdentifiersCount} identifiers to file "${file}"`),

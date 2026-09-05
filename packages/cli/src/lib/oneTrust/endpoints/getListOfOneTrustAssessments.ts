@@ -5,21 +5,35 @@ import {
 import { decodeCodec } from '@transcend-io/type-utils';
 import { Got } from 'got';
 
-import { logger } from '../../../logger.js';
+import type { CliLogger } from '../../../context.js';
+
+/** Runtime dependencies used to list OneTrust assessments. */
+export interface GetListOfOneTrustAssessmentsDependencies {
+  /** Logger used to report pagination progress. */
+  readonly logger: Pick<CliLogger, 'info'>;
+}
+
+const defaultDependencies: GetListOfOneTrustAssessmentsDependencies = {
+  logger: console,
+};
 
 /**
  * Fetch a list of all assessments from the OneTrust client.
  * ref: https://developer.onetrust.com/onetrust/reference/getallassessmentbasicdetailsusingget
  *
  * @param param - the information about the OneTrust client
+ * @param dependencies - Runtime operations used while listing assessments.
  * @returns a list of OneTrustAssessment
  */
-export const getListOfOneTrustAssessments = async ({
-  oneTrust,
-}: {
-  /** The OneTrust client instance */
-  oneTrust: Got;
-}): Promise<OneTrustAssessment[]> => {
+export const getListOfOneTrustAssessments = async (
+  {
+    oneTrust,
+  }: {
+    /** The OneTrust client instance */
+    oneTrust: Got;
+  },
+  dependencies: GetListOfOneTrustAssessmentsDependencies = defaultDependencies,
+): Promise<OneTrustAssessment[]> => {
   let currentPage = 0;
   let totalPages = 1;
   let totalElements = 0;
@@ -40,7 +54,7 @@ export const getListOfOneTrustAssessments = async ({
     currentPage += 1;
 
     // log progress
-    logger.info(`Fetched ${allAssessments.length} of ${totalElements} assessments.`);
+    dependencies.logger.info(`Fetched ${allAssessments.length} of ${totalElements} assessments.`);
   }
 
   return allAssessments;

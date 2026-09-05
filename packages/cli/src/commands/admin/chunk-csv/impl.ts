@@ -59,7 +59,12 @@ export async function chunkCsv(this: LocalContext, flags: ChunkCsvCommandFlags):
   const { directory, outputDir, clearOutputDir, chunkSizeMB, concurrency, viewerMode } = flags;
 
   /* 1) Discover CSV inputs */
-  const files = collectCsvFilesOrExit(directory, this);
+  const files = collectCsvFilesOrExit(directory, {
+    fs: this.fs,
+    path: this.path,
+    logger: this.logger,
+    process: this.process,
+  });
 
   /* 2) Size the pool */
   const { poolSize, cpuCount } = computePoolSize(concurrency, files.length);

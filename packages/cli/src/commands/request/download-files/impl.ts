@@ -37,17 +37,25 @@ export async function downloadFiles(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await downloadPrivacyRequestFiles({
-    transcendUrl,
-    auth,
-    folderPath,
-    requestIds,
-    statuses,
-    concurrency,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    approveAfterDownload,
-  });
+  await downloadPrivacyRequestFiles(
+    {
+      transcendUrl,
+      auth,
+      folderPath,
+      requestIds,
+      statuses,
+      concurrency,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      approveAfterDownload,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      path: this.path,
+      ['process']: this.process,
+    },
+  );
 }

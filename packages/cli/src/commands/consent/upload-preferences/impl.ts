@@ -111,21 +111,28 @@ export async function uploadPreferences(
     files,
     async (filePath) => {
       const fileName = this.path.basename(filePath).replace('.csv', '');
-      await uploadPreferenceManagementPreferencesInteractive({
-        receiptFilepath: this.path.join(receiptFileDir, `${fileName}-receipts.json`),
-        auth,
-        sombraAuth,
-        file: filePath,
-        partition,
-        transcendUrl,
-        skipConflictUpdates,
-        skipWorkflowTriggers,
-        skipExistingRecordCheck,
-        isSilent,
-        dryRun,
-        attributes: splitCsvToList(attributes),
-        forceTriggerWorkflows,
-      });
+      await uploadPreferenceManagementPreferencesInteractive(
+        {
+          receiptFilepath: this.path.join(receiptFileDir, `${fileName}-receipts.json`),
+          auth,
+          sombraAuth,
+          file: filePath,
+          partition,
+          transcendUrl,
+          skipConflictUpdates,
+          skipWorkflowTriggers,
+          skipExistingRecordCheck,
+          isSilent,
+          dryRun,
+          attributes: splitCsvToList(attributes),
+          forceTriggerWorkflows,
+        },
+        {
+          fs: this.fs,
+          logger: this.logger,
+          ['process']: this.process,
+        },
+      );
     },
     { concurrency },
   );

@@ -34,16 +34,19 @@ export async function markSilent(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await markSilentPrivacyRequests({
-    transcendUrl,
-    requestActions: actions,
-    auth,
-    requestIds,
-    statuses,
-    concurrency,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-  });
+  await markSilentPrivacyRequests(
+    {
+      transcendUrl,
+      requestActions: actions,
+      auth,
+      requestIds,
+      statuses,
+      concurrency,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+    },
+    { logger: this.logger },
+  );
 }

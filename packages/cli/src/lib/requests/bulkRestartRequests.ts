@@ -1,4 +1,5 @@
-import { join, resolve } from 'node:path';
+import path from 'node:path';
+import process from 'node:process';
 
 import { PersistedState } from '@transcend-io/persisted-state';
 import {
@@ -19,6 +20,7 @@ import * as t from 'io-ts';
 import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests } from '../graphql/index.js';
 import { SuccessfulRequest } from './constants.js';
@@ -42,71 +44,91 @@ const CachedRequestState = t.type({
   failingRequests: t.array(ErrorRequest),
 });
 
+/** Runtime dependencies used while restarting privacy requests. */
+export interface BulkRestartRequestsDependencies {
+  /** Logger used for request and error output. */
+  readonly logger: CliLogger;
+  /** Path implementation used to construct receipt paths. */
+  readonly path: typeof path;
+  /** Process implementation used for environment and exit handling. */
+  readonly process: NodeJS.Process;
+}
+
+const defaultDependencies: BulkRestartRequestsDependencies = {
+  logger,
+  path,
+  process,
+};
+
 /**
  * Upload a set of privacy requests from CSV
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  */
-export async function bulkRestartRequests({
-  requestReceiptFolder,
-  auth,
-  sombraAuth,
-  requestActions,
-  requestStatuses,
-  createdAtBefore,
-  createdAtAfter,
-  updatedAtBefore,
-  updatedAtAfter,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  requestIds = [],
-  createdAt = new Date(),
-  silentModeBefore,
-  sendEmailReceipt = false,
-  emailIsVerified = true,
-  copyIdentifiers = false,
-  restartIdentifierStrategy,
-  skipWaitingPeriod = false,
-  concurrency = 20,
-}: {
-  /** Actions to filter for */
-  requestActions: RequestAction[];
-  /** Statues to filter for */
-  requestStatuses: RequestStatus[];
-  /** File where request receipts are stored */
-  requestReceiptFolder: string;
-  /** Transcend API key authentication */
-  auth: string;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Sombra API key authentication */
-  sombraAuth?: string;
-  /** Request IDs to filter for */
-  requestIds?: string[];
-  /** Whether to re-verify the email when restarting the request */
-  emailIsVerified?: boolean;
-  /** Filter for requests that were submitted before this date */
-  createdAt?: Date;
-  /** Requests that have been open for this length of time should be marked as silent mode */
-  silentModeBefore?: Date;
-  /** Send an email receipt to the restarted requests */
-  sendEmailReceipt?: boolean;
-  /** Copy over all identifiers rather than restarting the request only with the core identifier */
-  copyIdentifiers?: boolean;
-  /** How request identifiers should be handled when restarting */
-  restartIdentifierStrategy?: RestartIdentifierStrategy;
-  /** Skip the waiting period when restarting requests */
-  skipWaitingPeriod?: boolean;
-  /** Filter for requests created before this date */
-  createdAtBefore?: Date;
-  /** Filter for requests created after this date */
-  createdAtAfter?: Date;
-  /** Filter for requests updated before this date */
-  updatedAtBefore?: Date;
-  /** Filter for requests updated after this date */
-  updatedAtAfter?: Date;
-  /** Concurrency to upload requests at */
-  concurrency?: number;
-}): Promise<void> {
+export async function bulkRestartRequests(
+  {
+    requestReceiptFolder,
+    auth,
+    sombraAuth,
+    requestActions,
+    requestStatuses,
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    requestIds = [],
+    createdAt = new Date(),
+    silentModeBefore,
+    sendEmailReceipt = false,
+    emailIsVerified = true,
+    copyIdentifiers = false,
+    restartIdentifierStrategy,
+    skipWaitingPeriod = false,
+    concurrency = 20,
+  }: {
+    /** Actions to filter for */
+    requestActions: RequestAction[];
+    /** Statues to filter for */
+    requestStatuses: RequestStatus[];
+    /** File where request receipts are stored */
+    requestReceiptFolder: string;
+    /** Transcend API key authentication */
+    auth: string;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Sombra API key authentication */
+    sombraAuth?: string;
+    /** Request IDs to filter for */
+    requestIds?: string[];
+    /** Whether to re-verify the email when restarting the request */
+    emailIsVerified?: boolean;
+    /** Filter for requests that were submitted before this date */
+    createdAt?: Date;
+    /** Requests that have been open for this length of time should be marked as silent mode */
+    silentModeBefore?: Date;
+    /** Send an email receipt to the restarted requests */
+    sendEmailReceipt?: boolean;
+    /** Copy over all identifiers rather than restarting the request only with the core identifier */
+    copyIdentifiers?: boolean;
+    /** How request identifiers should be handled when restarting */
+    restartIdentifierStrategy?: RestartIdentifierStrategy;
+    /** Skip the waiting period when restarting requests */
+    skipWaitingPeriod?: boolean;
+    /** Filter for requests created before this date */
+    createdAtBefore?: Date;
+    /** Filter for requests created after this date */
+    createdAtAfter?: Date;
+    /** Filter for requests updated before this date */
+    updatedAtBefore?: Date;
+    /** Filter for requests updated after this date */
+    updatedAtAfter?: Date;
+    /** Concurrency to upload requests at */
+    concurrency?: number;
+  },
+  dependencies: BulkRestartRequestsDependencies = defaultDependencies,
+): Promise<void> {
   // Time duration
   const t0 = new Date().getTime();
   // create a new progress bar instance and use shades_classic theme
@@ -116,7 +138,7 @@ export async function bulkRestartRequests({
   // `toISOString()` contains colons (e.g. 2026-07-06T04:33:12.345Z) which are
   // illegal characters in Windows filenames, so strip them out to keep the
   // auto-generated receipt filename cross-platform.
-  const cacheFile = join(
+  const cacheFile = dependencies.path.join(
     requestReceiptFolder,
     `tr-request-restart-${new Date().toISOString().replace(/:/g, '-')}.json`,
   );
@@ -127,9 +149,9 @@ export async function bulkRestartRequests({
 
   // Create sombra instance to communicate with
   const sombra = await createSombraGotInstance(transcendUrl, auth, {
-    logger,
+    logger: dependencies.logger,
     sombraApiKey: sombraAuth,
-    sombraUrl: process.env.SOMBRA_URL,
+    sombraUrl: dependencies.process.env.SOMBRA_URL,
   });
 
   // Find all requests made before createdAt that are in a removing data state
@@ -144,21 +166,21 @@ export async function bulkRestartRequests({
     updatedAtAfter,
   });
   const requests = allRequests.filter((request) => new Date(request.createdAt) < createdAt);
-  logger.info(`Found ${requests.length} requests to restart`);
+  dependencies.logger.info(`Found ${requests.length} requests to restart`);
 
   if (copyIdentifiers) {
-    logger.info('copyIdentifiers detected - All Identifiers will be copied.');
+    dependencies.logger.info('copyIdentifiers detected - All Identifiers will be copied.');
   }
   if (restartIdentifierStrategy) {
-    logger.info(
+    dependencies.logger.info(
       `restartIdentifierStrategy detected - Using "${restartIdentifierStrategy}" strategy.`,
     );
   }
   if (sendEmailReceipt) {
-    logger.info('sendEmailReceipt detected - Email receipts will be sent.');
+    dependencies.logger.info('sendEmailReceipt detected - Email receipts will be sent.');
   }
   if (skipWaitingPeriod) {
-    logger.info('skipWaitingPeriod detected - Waiting period will be skipped.');
+    dependencies.logger.info('skipWaitingPeriod detected - Waiting period will be skipped.');
   }
 
   // Validate request IDs
@@ -168,15 +190,15 @@ export async function bulkRestartRequests({
       requests.map(({ id }) => id),
     );
     if (missingRequests.length > 0) {
-      logger.error(
+      dependencies.logger.error(
         colors.red(`Failed to find the following requests by ID: ${missingRequests.join(',')}.`),
       );
-      process.exit(1);
+      dependencies.process.exit(1);
     }
   }
 
   if (copyIdentifiers) {
-    await validateSombraVersion(client, { logger });
+    await validateSombraVersion(client, { logger: dependencies.logger });
   }
 
   // Map over the requests
@@ -191,7 +213,7 @@ export async function bulkRestartRequests({
           ? await fetchAllRequestIdentifiers(client, sombra, {
               filterBy: { requestId: request.id },
               skipSombraCheck: true,
-              logger,
+              logger: dependencies.logger,
             })
           : [];
 
@@ -251,16 +273,18 @@ export async function bulkRestartRequests({
   const totalTime = t1 - t0;
 
   // Log completion time
-  logger.info(colors.green(`Completed restarting of requests in "${totalTime / 1000}" seconds.`));
+  dependencies.logger.info(
+    colors.green(`Completed restarting of requests in "${totalTime / 1000}" seconds.`),
+  );
 
   // Log errors
   if (state.getValue('failingRequests').length > 0) {
-    logger.error(
+    dependencies.logger.error(
       colors.red(
         `Encountered "${state.getValue('failingRequests').length}" errors. ` +
-          `See "${resolve(cacheFile)}" to review the error messages and inputs.`,
+          `See "${dependencies.path.resolve(cacheFile)}" to review the error messages and inputs.`,
       ),
     );
-    process.exit(1);
+    dependencies.process.exit(1);
   }
 }

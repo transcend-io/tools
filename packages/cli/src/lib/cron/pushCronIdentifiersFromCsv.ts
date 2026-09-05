@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import process from 'node:process';
+
 import { createSombraGotInstance } from '@transcend-io/sdk';
 import { map, mapSeries } from '@transcend-io/utils';
 import cliProgress from 'cli-progress';
@@ -5,53 +8,76 @@ import colors from 'colors';
 import { chunk } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/index.js';
 import { markCronIdentifierCompleted, CronIdentifierPush } from './markCronIdentifierCompleted.js';
+
+/** Runtime dependencies used while pushing cron identifiers. */
+export interface PushCronIdentifiersFromCsvDependencies {
+  /** Filesystem implementation used to read the source CSV. */
+  readonly fs: typeof fs;
+  /** Logger used for progress and error output. */
+  readonly logger: CliLogger;
+  /** Process implementation used for environment access. */
+  readonly process: NodeJS.Process;
+}
+
+const defaultDependencies: PushCronIdentifiersFromCsvDependencies = {
+  fs,
+  logger,
+  process,
+};
 
 /**
  * Given a CSV of cron job outputs, mark all requests as completed in Transcend
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns Number of items marked as completed
  */
-export async function pushCronIdentifiersFromCsv({
-  file,
-  dataSiloId,
-  auth,
-  sombraAuth,
-  concurrency = 100,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  sleepSeconds = 10,
-}: {
-  /** CSV file path */
-  file: string;
-  /** Transcend API key authentication */
-  auth: string;
-  /** Data Silo ID to pull down jobs for */
-  dataSiloId: string;
-  /** Upload concurrency */
-  concurrency?: number;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Sombra API key authentication */
-  sombraAuth?: string;
-  /** Sleep time in seconds between chunks of concurrent calls */
-  sleepSeconds?: number;
-}): Promise<number> {
+export async function pushCronIdentifiersFromCsv(
+  {
+    file,
+    dataSiloId,
+    auth,
+    sombraAuth,
+    concurrency = 100,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    sleepSeconds = 10,
+  }: {
+    /** CSV file path */
+    file: string;
+    /** Transcend API key authentication */
+    auth: string;
+    /** Data Silo ID to pull down jobs for */
+    dataSiloId: string;
+    /** Upload concurrency */
+    concurrency?: number;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Sombra API key authentication */
+    sombraAuth?: string;
+    /** Sleep time in seconds between chunks of concurrent calls */
+    sleepSeconds?: number;
+  },
+  dependencies: PushCronIdentifiersFromCsvDependencies = defaultDependencies,
+): Promise<number> {
   // Create sombra instance to communicate with
   const sombra = await createSombraGotInstance(transcendUrl, auth, {
-    logger,
+    logger: dependencies.logger,
     sombraApiKey: sombraAuth,
-    sombraUrl: process.env.SOMBRA_URL,
+    sombraUrl: dependencies.process.env.SOMBRA_URL,
   });
 
   // Read from CSV
-  logger.info(colors.magenta(`Reading "${file}" from disk`));
-  const activeResults = readCsv(file, CronIdentifierPush);
+  dependencies.logger.info(colors.magenta(`Reading "${file}" from disk`));
+  const activeResults = readCsv(file, CronIdentifierPush, undefined, {
+    fs: dependencies.fs,
+  });
 
   // Notify Transcend
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Notifying Transcend for data silo "${dataSiloId}" marking "${activeResults.length}" identifiers as completed.`,
     ),
@@ -71,7 +97,7 @@ export async function pushCronIdentifiersFromCsv({
   const chunks = chunk(activeResults, concurrency);
   const totalChunks = chunks.length;
   const processChunk = async (items: CronIdentifierPush[], chunkIndex: number): Promise<void> => {
-    logger.info(
+    dependencies.logger.info(
       colors.blue(`Processing chunk ${chunkIndex + 1}/${totalChunks} (${chunk.length} items)`),
     );
 
@@ -85,7 +111,7 @@ export async function pushCronIdentifiersFromCsv({
           failureCount += 1;
         }
       } catch (e) {
-        logger.error(
+        dependencies.logger.error(
           colors.red(
             `Error notifying Transcend for identifier "${identifier.identifier}" - ${e?.message}`,
           ),
@@ -97,7 +123,7 @@ export async function pushCronIdentifiersFromCsv({
 
     // Sleep between chunks (except for the last chunk)
     if (sleepSeconds > 0 && chunkIndex < totalChunks - 1) {
-      logger.info(colors.yellow(`Sleeping for ${sleepSeconds}s before next chunk...`));
+      dependencies.logger.info(colors.yellow(`Sleeping for ${sleepSeconds}s before next chunk...`));
 
       await new Promise((resolve) => {
         setTimeout(resolve, sleepSeconds * 1000);
@@ -112,7 +138,7 @@ export async function pushCronIdentifiersFromCsv({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully notified Transcend for ${successCount} identifiers in "${
         totalTime / 1000
@@ -120,7 +146,7 @@ export async function pushCronIdentifiersFromCsv({
     ),
   );
   if (failureCount) {
-    logger.info(
+    dependencies.logger.info(
       colors.magenta(
         `There were ${failureCount} identifiers that were not in a state to be updated.` +
           'They likely have already been resolved.',
@@ -128,7 +154,7 @@ export async function pushCronIdentifiersFromCsv({
     );
   }
   if (errorCount) {
-    logger.error(
+    dependencies.logger.error(
       colors.red(
         `There were ${errorCount} identifiers that failed to be updated. Please review the logs for more information.`,
       ),

@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import process from 'node:process';
+
 import { RequestAction, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
@@ -11,11 +14,28 @@ import colors from 'colors';
 import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests, fetchRequestsTotalCount } from '../graphql/index.js';
 import { initCsvFile, appendCsvRowsOrdered, parseFilePath } from '../helpers/index.js';
 import { formatRequestForCsv, ExportedPrivacyRequest } from './formatRequestForCsv.js';
 import { splitDateRange } from './splitDateRange.js';
+
+/** Runtime dependencies used while streaming privacy requests to CSV. */
+export interface StreamPrivacyRequestsToCsvDependencies {
+  /** Filesystem implementation used to initialize and append CSV files. */
+  readonly fs: typeof fs;
+  /** Logger used for progress and error output. */
+  readonly logger: CliLogger;
+  /** Process implementation used for environment access. */
+  readonly process: NodeJS.Process;
+}
+
+const defaultDependencies: StreamPrivacyRequestsToCsvDependencies = {
+  fs,
+  logger,
+  process,
+};
 
 /**
  * Stream privacy requests directly to CSV files, one file per date-range chunk.
@@ -23,56 +43,60 @@ import { splitDateRange } from './splitDateRange.js';
  * Supports both with and without request identifier enrichment.
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns The list of written file paths and total row count
  */
-export async function streamPrivacyRequestsToCsv({
-  auth,
-  sombraAuth,
-  actions = [],
-  statuses = [],
-  identifierSearch,
-  concurrency = 1,
-  pageLimit = 100,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  createdAtBefore,
-  createdAtAfter,
-  updatedAtBefore,
-  updatedAtAfter,
-  isTest,
-  skipRequestIdentifiers = false,
-  file,
-}: {
-  /** Transcend API key authentication */
-  auth: string;
-  /** Search for a specific identifier */
-  identifierSearch?: string;
-  /** Sombra API key authentication */
-  sombraAuth?: string;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Statuses to filter on */
-  statuses?: RequestStatus[];
-  /** The request action to fetch */
-  actions?: RequestAction[];
-  /** Number of parallel date-range chunks */
-  concurrency?: number;
-  /** Concurrency for fetching identifiers per page */
-  pageLimit?: number;
-  /** Filter for requests created before this date */
-  createdAtBefore?: Date;
-  /** Filter for requests created after this date */
-  createdAtAfter?: Date;
-  /** Filter for requests updated before this date */
-  updatedAtBefore?: Date;
-  /** Filter for requests updated after this date */
-  updatedAtAfter?: Date;
-  /** Return test requests */
-  isTest?: boolean;
-  /** Skip fetching request identifiers */
-  skipRequestIdentifiers?: boolean;
-  /** Output CSV file path */
-  file: string;
-}): Promise<{
+export async function streamPrivacyRequestsToCsv(
+  {
+    auth,
+    sombraAuth,
+    actions = [],
+    statuses = [],
+    identifierSearch,
+    concurrency = 1,
+    pageLimit = 100,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    isTest,
+    skipRequestIdentifiers = false,
+    file,
+  }: {
+    /** Transcend API key authentication */
+    auth: string;
+    /** Search for a specific identifier */
+    identifierSearch?: string;
+    /** Sombra API key authentication */
+    sombraAuth?: string;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Statuses to filter on */
+    statuses?: RequestStatus[];
+    /** The request action to fetch */
+    actions?: RequestAction[];
+    /** Number of parallel date-range chunks */
+    concurrency?: number;
+    /** Concurrency for fetching identifiers per page */
+    pageLimit?: number;
+    /** Filter for requests created before this date */
+    createdAtBefore?: Date;
+    /** Filter for requests created after this date */
+    createdAtAfter?: Date;
+    /** Filter for requests updated before this date */
+    updatedAtBefore?: Date;
+    /** Filter for requests updated after this date */
+    updatedAtAfter?: Date;
+    /** Return test requests */
+    isTest?: boolean;
+    /** Skip fetching request identifiers */
+    skipRequestIdentifiers?: boolean;
+    /** Output CSV file path */
+    file: string;
+  },
+  dependencies: StreamPrivacyRequestsToCsvDependencies = defaultDependencies,
+): Promise<{
   /** Paths to written CSV files */
   filePaths: string[];
   /** Total rows written */
@@ -82,9 +106,9 @@ export async function streamPrivacyRequestsToCsv({
   const sombra = skipRequestIdentifiers
     ? undefined
     : await createSombraGotInstance(transcendUrl, auth, {
-        logger,
+        logger: dependencies.logger,
         sombraApiKey: sombraAuth,
-        sombraUrl: process.env.SOMBRA_URL,
+        sombraUrl: dependencies.process.env.SOMBRA_URL,
       });
 
   // Log date range
@@ -95,7 +119,7 @@ export async function streamPrivacyRequestsToCsv({
   if (createdAtAfter) {
     dateRange += `${dateRange ? ', and' : ''} after ${createdAtAfter.toISOString()}`;
   }
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `${
         actions.length > 0
@@ -112,7 +136,9 @@ export async function streamPrivacyRequestsToCsv({
     : [{ createdAtAfter, createdAtBefore }];
 
   if (useChunks) {
-    logger.info(colors.magenta(`Splitting date range into ${concurrency} parallel chunks`));
+    dependencies.logger.info(
+      colors.magenta(`Splitting date range into ${concurrency} parallel chunks`),
+    );
   }
 
   // Fetch total count once for the shared progress bar
@@ -130,11 +156,11 @@ export async function streamPrivacyRequestsToCsv({
 
   // Validate Sombra version once before bulk-fetching identifiers
   if (!skipRequestIdentifiers) {
-    await validateSombraVersion(client, { logger });
+    await validateSombraVersion(client, { logger: dependencies.logger });
   }
 
   const totalExpected = await fetchRequestsTotalCount(client, filterBy);
-  logger.info(colors.magenta(`Fetching ${totalExpected} requests`));
+  dependencies.logger.info(colors.magenta(`Fetching ${totalExpected} requests`));
 
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
   progressBar.start(totalExpected, 0);
@@ -190,7 +216,7 @@ export async function streamPrivacyRequestsToCsv({
                     requestIdentifiers: await fetchAllRequestIdentifiers(client, sombra!, {
                       filterBy: { requestId: n.id },
                       skipSombraCheck: true,
-                      logger,
+                      logger: dependencies.logger,
                     }),
                   }),
                   { concurrency: pageLimit },
@@ -201,10 +227,10 @@ export async function streamPrivacyRequestsToCsv({
 
             if (!headers) {
               headers = uniq(rows.map((r: Record<string, unknown>) => Object.keys(r)).flat());
-              initCsvFile(chunkFile, headers);
+              initCsvFile(chunkFile, headers, { fs: dependencies.fs });
             }
 
-            appendCsvRowsOrdered(chunkFile, rows, headers);
+            appendCsvRowsOrdered(chunkFile, rows, headers, { fs: dependencies.fs });
             rowCount += rows.length;
             globalFetched += rows.length;
             progressBar.update(globalFetched);
@@ -212,7 +238,7 @@ export async function streamPrivacyRequestsToCsv({
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        logger.error(
+        dependencies.logger.error(
           colors.red(
             `Chunk ${i} failed (${
               chunk.createdAtAfter?.toISOString() ?? 'start'
@@ -228,7 +254,7 @@ export async function streamPrivacyRequestsToCsv({
       }
 
       if (!headers) {
-        initCsvFile(chunkFile, []);
+        initCsvFile(chunkFile, [], { fs: dependencies.fs });
       }
 
       return rowCount;
@@ -241,14 +267,14 @@ export async function streamPrivacyRequestsToCsv({
   const elapsed = (Date.now() - t0) / 1000;
 
   if (failedChunks.length > 0) {
-    logger.error(
+    dependencies.logger.error(
       colors.red(
         `\n${failedChunks.length} chunk(s) failed. ` +
           'Re-run with these date ranges to fill the gaps:',
       ),
     );
     for (const fc of failedChunks) {
-      logger.error(
+      dependencies.logger.error(
         colors.red(
           `  Chunk ${fc.index}: --createdAtAfter=${
             fc.createdAtAfter?.toISOString() ?? ''
@@ -258,7 +284,7 @@ export async function streamPrivacyRequestsToCsv({
     }
   }
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(`Streamed ${totalCount} requests to ${filePaths.length} file(s) in ${elapsed}s`),
   );
 

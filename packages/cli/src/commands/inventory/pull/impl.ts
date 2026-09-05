@@ -76,7 +76,7 @@ export async function pull(
       });
 
       this.logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
-      writeTranscendYaml(file, configuration);
+      writeTranscendYaml(file, configuration, { fs: this.fs });
     } catch (err) {
       this.logger.error(
         colors.red(`An error occurred syncing the schema: ${debug ? err.stack : err.message}`),
@@ -122,7 +122,7 @@ export async function pull(
 
         const filePath = this.path.join(file, `${apiKey.organizationName}.yml`);
         this.logger.info(colors.magenta(`Writing configuration to file "${filePath}"...`));
-        writeTranscendYaml(filePath, configuration);
+        writeTranscendYaml(filePath, configuration, { fs: this.fs });
 
         this.logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
       } catch (err) {

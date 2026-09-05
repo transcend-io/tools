@@ -152,7 +152,12 @@ describe('parquetToCsv', () => {
     await parquetToCsv.call(ctx, baseFlags);
 
     // discovery
-    expect(H.helpers.collectParquetFilesOrExit).toHaveBeenCalledWith(baseFlags.directory, ctx);
+    expect(H.helpers.collectParquetFilesOrExit).toHaveBeenCalledWith(baseFlags.directory, {
+      fs: ctx.fs,
+      path: ctx.path,
+      logger: ctx.logger,
+      process: ctx.process,
+    });
 
     // sizing
     expect(H.pooling.computePoolSize).toHaveBeenCalledWith(undefined, H.files.length);

@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import { PersistedState } from '@transcend-io/persisted-state';
 import {
   checkIfPendingPreferenceUpdatesAreNoOp,
@@ -20,12 +22,26 @@ import { parsePreferenceAndPurposeValuesFromCsv } from './parsePreferenceAndPurp
 import { parsePreferenceIdentifiersFromCsv } from './parsePreferenceIdentifiersFromCsv.js';
 import { parsePreferenceTimestampsFromCsv } from './parsePreferenceTimestampsFromCsv.js';
 
+/** Runtime dependencies for preference-management CSV parsing. */
+export interface ParsePreferenceManagementCsvDependencies {
+  /** Filesystem implementation used to read the CSV. */
+  fs: Pick<typeof fs, 'readFileSync'>;
+  /** Logger used for parsing status and SDK requests. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'log' | 'warn'>;
+}
+
+const defaultDependencies: ParsePreferenceManagementCsvDependencies = {
+  fs,
+  logger,
+};
+
 /**
  * Parse a file into the cache
  *
  *
  * @param options - Options
  * @param cache - The cache to store the parsed file in
+ * @param dependencies - Runtime dependencies
  * @returns The cache with the parsed file
  */
 export async function parsePreferenceManagementCsvWithCache(
@@ -54,6 +70,7 @@ export async function parsePreferenceManagementCsvWithCache(
     forceTriggerWorkflows: boolean;
   },
   cache: PersistedState<typeof PreferenceState>,
+  dependencies: ParsePreferenceManagementCsvDependencies = defaultDependencies,
 ): Promise<void> {
   // Start the timer
   const t0 = new Date().getTime();
@@ -62,8 +79,10 @@ export async function parsePreferenceManagementCsvWithCache(
   const fileMetadata = cache.getValue('fileMetadata');
 
   // Read in the file
-  logger.info(colors.magenta(`Reading in file: "${file}"`));
-  let preferences = readCsv(file, t.record(t.string, t.string));
+  dependencies.logger.info(colors.magenta(`Reading in file: "${file}"`));
+  let preferences = readCsv(file, t.record(t.string, t.string), undefined, {
+    fs: dependencies.fs,
+  });
 
   // start building the cache, can use previous cache as well
   let currentState: FileMetadataState = {
@@ -77,12 +96,16 @@ export async function parsePreferenceManagementCsvWithCache(
   };
 
   // Validate that all timestamps are present in the file
-  currentState = await parsePreferenceTimestampsFromCsv(preferences, currentState);
+  currentState = await parsePreferenceTimestampsFromCsv(preferences, currentState, {
+    logger: dependencies.logger,
+  });
   fileMetadata[file] = currentState;
   await cache.setValue(fileMetadata, 'fileMetadata');
 
   // Validate that all identifiers are present and unique
-  const result = await parsePreferenceIdentifiersFromCsv(preferences, currentState);
+  const result = await parsePreferenceIdentifiersFromCsv(preferences, currentState, {
+    logger: dependencies.logger,
+  });
   currentState = result.currentState;
   preferences = result.preferences;
   fileMetadata[file] = currentState;
@@ -90,11 +113,18 @@ export async function parsePreferenceManagementCsvWithCache(
 
   // Ensure all other columns are mapped to purpose and preference
   // slug values
-  currentState = await parsePreferenceAndPurposeValuesFromCsv(preferences, currentState, {
-    preferenceTopics,
-    purposeSlugs,
-    forceTriggerWorkflows,
-  });
+  currentState = await parsePreferenceAndPurposeValuesFromCsv(
+    preferences,
+    currentState,
+    {
+      preferenceTopics,
+      purposeSlugs,
+      forceTriggerWorkflows,
+    },
+    {
+      logger: dependencies.logger,
+    },
+  );
   fileMetadata[file] = currentState;
   await cache.setValue(fileMetadata, 'fileMetadata');
 
@@ -109,7 +139,7 @@ export async function parsePreferenceManagementCsvWithCache(
     : await getPreferencesForIdentifiers(sombra, {
         identifiers: identifiers.map((x) => ({ value: x })),
         partitionKey,
-        logger,
+        logger: dependencies.logger,
         onProgress: (completed, total) => progressBar.update(completed, { total }),
       });
   progressBar.stop();
@@ -181,5 +211,7 @@ export async function parsePreferenceManagementCsvWithCache(
   fileMetadata[file] = currentState;
   await cache.setValue(fileMetadata, 'fileMetadata');
   const t1 = new Date().getTime();
-  logger.info(colors.green(`Successfully pre-processed file: "${file}" in ${(t1 - t0) / 1000}s`));
+  dependencies.logger.info(
+    colors.green(`Successfully pre-processed file: "${file}" in ${(t1 - t0) / 1000}s`),
+  );
 }

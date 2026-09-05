@@ -1,10 +1,21 @@
 import { BusinessEntityInput, ConsentManagerInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 
+/** Runtime dependencies for converting Consent Manager configurations. */
+export interface ConsentManagersToBusinessEntitiesDependencies {
+  /** Logger used to report generated Airgap script URLs. */
+  logger: Pick<typeof logger, 'info'>;
+}
+
+const defaultDependencies: ConsentManagersToBusinessEntitiesDependencies = {
+  logger,
+};
+
 /**
  * Combine multiple consent manager configurations into a list of business entity configurations
  *
  * @param inputs - Consent manager configurations to combine
+ * @param dependencies - Runtime dependencies
  * @returns Business entity configuration input
  */
 export function consentManagersToBusinessEntities(
@@ -14,6 +25,7 @@ export function consentManagersToBusinessEntities(
     /** Consent manager input */
     input?: ConsentManagerInput;
   }[],
+  dependencies: ConsentManagersToBusinessEntitiesDependencies = defaultDependencies,
 ): BusinessEntityInput[] {
   // Construct the business entities YAML definition
   const businessEntities = inputs.map(
@@ -61,12 +73,12 @@ export function consentManagersToBusinessEntities(
   );
 
   // Log out info on airgap scripts to host
-  logger.info('\n\n~~~~~~~~~~~\nAirgap scripts to host:');
+  dependencies.logger.info('\n\n~~~~~~~~~~~\nAirgap scripts to host:');
   businessEntities.forEach(({ attributes, title }, ind) => {
     attributes
       ?.find((attr) => attr.key === 'Airgap Production URL')
       ?.values?.forEach((url) => {
-        logger.info(`${ind}) ${title} - ${url}`);
+        dependencies.logger.info(`${ind}) ${title} - ${url}`);
       });
   });
 

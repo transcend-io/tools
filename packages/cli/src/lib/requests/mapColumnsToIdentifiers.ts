@@ -3,6 +3,7 @@ import { INITIALIZER, type Initializer, makeGraphQLRequest } from '@transcend-io
 import type { GraphQLClient } from 'graphql-request';
 import inquirer from 'inquirer';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { CachedFileState, IDENTIFIER_BLOCK_LIST } from './constants.js';
 import { fuzzyMatchColumns } from './fuzzyMatchColumns.js';
@@ -14,6 +15,16 @@ export type IdentifierNameMap = {
   [k in string]: string;
 };
 
+/** Runtime dependencies used while mapping identifier columns. */
+export interface MapColumnsToIdentifiersDependencies {
+  /** Logger forwarded to GraphQL requests. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: MapColumnsToIdentifiersDependencies = {
+  logger,
+};
+
 /**
  * Create a mapping from the identifier names that can be included
  * at request submission, to the names of the columns that map to those
@@ -22,18 +33,20 @@ export type IdentifierNameMap = {
  * @param client - GraphQL client
  * @param columnNames - The set of all column names
  * @param state - Cached state of this mapping
+ * @param dependencies - Runtime dependencies.
  * @returns Mapping from identifier name to column name
  */
 export async function mapColumnsToIdentifiers(
   client: GraphQLClient,
   columnNames: string[],
   state: PersistedState<typeof CachedFileState>,
+  dependencies: MapColumnsToIdentifiersDependencies = defaultDependencies,
 ): Promise<IdentifierNameMap> {
   // Grab the initializer
   const { initializer } = await makeGraphQLRequest<{
     /** Query response */
     initializer: Initializer;
-  }>(client, INITIALIZER, { logger });
+  }>(client, INITIALIZER, { logger: dependencies.logger });
 
   // Determine the columns that should be mapped
   const columnQuestions = initializer.identifiers.filter(

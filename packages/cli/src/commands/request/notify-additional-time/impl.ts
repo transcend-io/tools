@@ -38,18 +38,21 @@ export async function notifyAdditionalTime(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await notifyPrivacyRequestsAdditionalTime({
-    transcendUrl,
-    requestActions: actions,
-    auth,
-    emailTemplate,
-    days,
-    daysLeft,
-    requestIds,
-    concurrency,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-  });
+  await notifyPrivacyRequestsAdditionalTime(
+    {
+      transcendUrl,
+      requestActions: actions,
+      auth,
+      emailTemplate,
+      days,
+      daysLeft,
+      requestIds,
+      concurrency,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+    },
+    { logger: this.logger },
+  );
 }

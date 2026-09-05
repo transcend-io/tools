@@ -10,33 +10,48 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests } from '../graphql/index.js';
+
+/** Runtime dependencies used while removing unverified identifiers. */
+export interface RemoveUnverifiedRequestIdentifiersDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: RemoveUnverifiedRequestIdentifiersDependencies = {
+  logger,
+};
 
 /**
  * Remove a set of unverified request identifier
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns Number of items marked as completed
  */
-export async function removeUnverifiedRequestIdentifiers({
-  requestActions,
-  identifierNames,
-  auth,
-  concurrency = 20,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** The request actions that should be restarted */
-  requestActions: RequestAction[];
-  /** Transcend API key authentication */
-  auth: string;
-  /** The set of identifier names to remove */
-  identifierNames: string[];
-  /** Concurrency to upload requests in parallel */
-  concurrency?: number;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<number> {
+export async function removeUnverifiedRequestIdentifiers(
+  {
+    requestActions,
+    identifierNames,
+    auth,
+    concurrency = 20,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** The request actions that should be restarted */
+    requestActions: RequestAction[];
+    /** Transcend API key authentication */
+    auth: string;
+    /** The set of identifier names to remove */
+    identifierNames: string[];
+    /** Concurrency to upload requests in parallel */
+    concurrency?: number;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: RemoveUnverifiedRequestIdentifiersDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -52,7 +67,7 @@ export async function removeUnverifiedRequestIdentifiers({
   });
 
   // Notify Transcend
-  logger.info(colors.magenta('Fetched requests in preflight/enriching state.'));
+  dependencies.logger.info(colors.magenta('Fetched requests in preflight/enriching state.'));
 
   let total = 0;
   let processed = 0;
@@ -62,7 +77,7 @@ export async function removeUnverifiedRequestIdentifiers({
     async (requestToRestart) => {
       const requestIdentifiers = await fetchAllRequestIdentifierMetadata(client, {
         filterBy: { requestId: requestToRestart.id },
-        logger,
+        logger: dependencies.logger,
       });
       const clearOut = requestIdentifiers
         .filter(
@@ -82,7 +97,7 @@ export async function removeUnverifiedRequestIdentifiers({
               requestIdentifierIds: clearOut,
             },
           },
-          logger,
+          logger: dependencies.logger,
         });
         processed += clearOut.length;
       }
@@ -97,7 +112,7 @@ export async function removeUnverifiedRequestIdentifiers({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully cleared out unverified identifiers "${
         totalTime / 1000

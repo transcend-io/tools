@@ -109,7 +109,9 @@ export async function push(
   // check if we are being passed a list of API keys and a list of files
   let fileList: string[];
   if (Array.isArray(apiKeyOrList) && this.fs.lstatSync(file).isDirectory()) {
-    fileList = listFiles(file).map((filePath) => this.path.join(file, filePath));
+    fileList = listFiles(file, undefined, false, { fs: this.fs }).map((filePath) =>
+      this.path.join(file, filePath),
+    );
   } else {
     fileList = file.split(',');
   }
@@ -135,7 +137,7 @@ export async function push(
 
     try {
       // Read in the yaml file and validate it's shape
-      const newContents = readTranscendYaml(filePath, vars);
+      const newContents = readTranscendYaml(filePath, vars, { fs: this.fs });
       this.logger.info(colors.green(`Successfully read in "${filePath}"`));
       return {
         content: newContents,

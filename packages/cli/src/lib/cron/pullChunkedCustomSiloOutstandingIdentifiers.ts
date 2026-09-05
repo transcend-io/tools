@@ -1,3 +1,5 @@
+import process from 'node:process';
+
 import { RequestAction } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, createSombraGotInstance } from '@transcend-io/sdk';
 import { mapSeries } from '@transcend-io/utils';
@@ -5,6 +7,7 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchRequestDataSiloActiveCount } from '../graphql/index.js';
 import { pullCronPageOfIdentifiers, CronIdentifier } from './pullCronPageOfIdentifiers.js';
@@ -21,6 +24,19 @@ export interface CronIdentifierWithAction extends CronIdentifier {
   action: RequestAction;
 }
 
+/** Runtime dependencies used while pulling chunked cron identifiers. */
+export interface PullChunkedCustomSiloOutstandingIdentifiersDependencies {
+  /** Logger used for status output and retry handling. */
+  readonly logger: CliLogger;
+  /** Process implementation used for environment access. */
+  readonly process: NodeJS.Process;
+}
+
+const defaultDependencies: PullChunkedCustomSiloOutstandingIdentifiersDependencies = {
+  logger,
+  process,
+};
+
 /**
  * Pull the set of identifiers outstanding for a cron or AVC integration
  *
@@ -28,38 +44,42 @@ export interface CronIdentifierWithAction extends CronIdentifier {
  * with a chunk of identifiers when the savePageSize is reached.
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns The identifiers and identifiers formatted for CSV
  */
-export async function pullChunkedCustomSiloOutstandingIdentifiers({
-  dataSiloId,
-  auth,
-  sombraAuth,
-  actions,
-  apiPageSize = 100,
-  savePageSize = 1000,
-  onSave,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  skipRequestCount = false,
-}: {
-  /** Transcend API key authentication */
-  auth: string;
-  /** Data Silo ID to pull down jobs for */
-  dataSiloId: string;
-  /** The request actions to fetch */
-  actions: RequestAction[];
-  /** How many identifiers to pull in a single call to the backend */
-  apiPageSize: number;
-  /** How many identifiers to save at a time (usually to a CSV file, should be a multiple of apiPageSize) */
-  savePageSize: number;
-  /** Callback function called when a chunk of identifiers is ready to be saved */
-  onSave: (chunk: CsvFormattedIdentifier[]) => Promise<void>;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Sombra API key authentication */
-  sombraAuth?: string;
-  /** Skip request count */
-  skipRequestCount?: boolean;
-}): Promise<{
+export async function pullChunkedCustomSiloOutstandingIdentifiers(
+  {
+    dataSiloId,
+    auth,
+    sombraAuth,
+    actions,
+    apiPageSize = 100,
+    savePageSize = 1000,
+    onSave,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    skipRequestCount = false,
+  }: {
+    /** Transcend API key authentication */
+    auth: string;
+    /** Data Silo ID to pull down jobs for */
+    dataSiloId: string;
+    /** The request actions to fetch */
+    actions: RequestAction[];
+    /** How many identifiers to pull in a single call to the backend */
+    apiPageSize: number;
+    /** How many identifiers to save at a time (usually to a CSV file, should be a multiple of apiPageSize) */
+    savePageSize: number;
+    /** Callback function called when a chunk of identifiers is ready to be saved */
+    onSave: (chunk: CsvFormattedIdentifier[]) => Promise<void>;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Sombra API key authentication */
+    sombraAuth?: string;
+    /** Skip request count */
+    skipRequestCount?: boolean;
+  },
+  dependencies: PullChunkedCustomSiloOutstandingIdentifiersDependencies = defaultDependencies,
+): Promise<{
   /** Raw Identifiers */
   identifiers: CronIdentifierWithAction[];
 }> {
@@ -72,9 +92,9 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
 
   // Create sombra instance to communicate with
   const sombra = await createSombraGotInstance(transcendUrl, auth, {
-    logger,
+    logger: dependencies.logger,
     sombraApiKey: sombraAuth,
-    sombraUrl: process.env.SOMBRA_URL,
+    sombraUrl: dependencies.process.env.SOMBRA_URL,
   });
 
   // Create GraphQL client to connect to Transcend backend
@@ -87,7 +107,7 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
     });
   }
 
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Pulling ${skipRequestCount ? 'all' : totalRequestCount} outstanding request identifiers ` +
         `for data silo: "${dataSiloId}" for requests of types "${actions.join('", "')}"`,
@@ -115,12 +135,16 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
 
     // Fetch a page of identifiers
     while (shouldContinue) {
-      const pageIdentifiers = await pullCronPageOfIdentifiers(sombra, {
-        dataSiloId,
-        limit: apiPageSize,
-        offset,
-        requestType: action,
-      });
+      const pageIdentifiers = await pullCronPageOfIdentifiers(
+        sombra,
+        {
+          dataSiloId,
+          limit: apiPageSize,
+          offset,
+          requestType: action,
+        },
+        { logger: dependencies.logger },
+      );
 
       const identifiersWithAction: CronIdentifierWithAction[] = pageIdentifiers.map(
         (identifier) => {
@@ -166,7 +190,7 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
       if (!skipRequestCount) {
         progressBar.update(foundRequestIds.size);
       } else {
-        logger.info(
+        dependencies.logger.info(
           colors.magenta(
             `Pulled ${pageIdentifiers.length} outstanding identifiers for ${foundRequestIds.size} requests`,
           ),
@@ -186,7 +210,7 @@ export async function pullChunkedCustomSiloOutstandingIdentifiers({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully pulled ${identifiers.length} outstanding identifiers from ${
         foundRequestIds.size

@@ -27,15 +27,20 @@ export async function uploadConsentPreferences(
   doneInputValidation(this.process);
 
   // Load in preferences from csv
-  const preferences = readCsv(file, ConsentPreferenceUpload);
+  const preferences = readCsv(file, ConsentPreferenceUpload, undefined, { fs: this.fs });
 
   // Upload cookies
-  await uploadConsents({
-    base64EncryptionKey,
-    base64SigningKey,
-    preferences,
-    partition,
-    concurrency,
-    transcendUrl: consentUrl,
-  });
+  await uploadConsents(
+    {
+      base64EncryptionKey,
+      base64SigningKey,
+      preferences,
+      partition,
+      concurrency,
+      transcendUrl: consentUrl,
+    },
+    {
+      logger: this.logger,
+    },
+  );
 }

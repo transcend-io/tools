@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, syncDataFlows } from '@transcend-io/sdk';
 import { splitCsvToList } from '@transcend-io/utils';
@@ -7,6 +9,22 @@ import { DataFlowInput, DataFlowCsvInput } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/readCsv.js';
+
+/** Runtime dependencies for uploading data flows from CSV. */
+export interface UploadDataFlowsFromCsvDependencies {
+  /** Filesystem implementation used to read the CSV. */
+  fs: Pick<typeof fs, 'readFileSync'>;
+  /** Logger used for upload status and errors. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'warn'>;
+  /** Process implementation used to report an unsuccessful sync. */
+  process: Pick<NodeJS.Process, 'exit'>;
+}
+
+const defaultDependencies: UploadDataFlowsFromCsvDependencies = {
+  fs,
+  logger,
+  process,
+};
 
 const OMIT_COLUMNS = [
   'ID',
@@ -24,31 +42,35 @@ const OMIT_COLUMNS = [
  * Upload a set of data flows from CSV
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  */
-export async function uploadDataFlowsFromCsv({
-  auth,
-  trackerStatus,
-  file,
-  classifyService = false,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** CSV file path */
-  file: string;
-  /** Transcend API key authentication */
-  auth: string;
-  /** Sombra API key authentication */
-  trackerStatus: ConsentTrackerStatus;
-  /** classify data flow service if missing */
-  classifyService?: boolean;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<void> {
+export async function uploadDataFlowsFromCsv(
+  {
+    auth,
+    trackerStatus,
+    file,
+    classifyService = false,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** CSV file path */
+    file: string;
+    /** Transcend API key authentication */
+    auth: string;
+    /** Sombra API key authentication */
+    trackerStatus: ConsentTrackerStatus;
+    /** classify data flow service if missing */
+    classifyService?: boolean;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: UploadDataFlowsFromCsvDependencies = defaultDependencies,
+): Promise<void> {
   // Build a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Read from CSV the set of data flow inputs
-  logger.info(colors.magenta(`Reading "${file}" from disk`));
-  const dataFlowInputs = readCsv(file, DataFlowCsvInput);
+  dependencies.logger.info(colors.magenta(`Reading "${file}" from disk`));
+  const dataFlowInputs = readCsv(file, DataFlowCsvInput, undefined, { fs: dependencies.fs });
 
   // Convert these data flow inputs into a format that the other function can use
   const validatedDataFlowInputs = dataFlowInputs.map(
@@ -91,16 +113,16 @@ export async function uploadDataFlowsFromCsv({
   // Upload the data flows into Transcend dashboard
   const syncedDataFlows = await syncDataFlows(client, validatedDataFlowInputs, {
     classifyService,
-    logger,
+    logger: dependencies.logger,
   });
 
   // Log errors
   if (!syncedDataFlows) {
-    logger.error(
+    dependencies.logger.error(
       colors.red(
         'Encountered error(s) syncing data flows from CSV, see logs above for more info. ',
       ),
     );
-    process.exit(1);
+    dependencies.process.exit(1);
   }
 }

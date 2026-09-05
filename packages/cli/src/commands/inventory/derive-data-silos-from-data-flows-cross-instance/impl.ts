@@ -42,27 +42,31 @@ export async function deriveDataSilosFromDataFlowsCrossInstance(
   const instancesToIgnore = ignoreYmls.map((x) => x.split('.')[0]);
 
   // Map over each data flow yml file and convert to data silo configurations
-  const dataSiloInputs = listFiles(dataFlowsYmlFolder).map((directory) => {
-    // read in the data flows for a specific instance
-    const { 'data-flows': dataFlows = [] } = readTranscendYaml(
-      this.path.join(dataFlowsYmlFolder, directory),
-    );
+  const dataSiloInputs = listFiles(dataFlowsYmlFolder, undefined, false, { fs: this.fs }).map(
+    (directory) => {
+      // read in the data flows for a specific instance
+      const { 'data-flows': dataFlows = [] } = readTranscendYaml(
+        this.path.join(dataFlowsYmlFolder, directory),
+        {},
+        { fs: this.fs },
+      );
 
-    // map the data flows to data silos
-    const { adTechDataSilos, siteTechDataSilos } = dataFlowsToDataSilos(
-      dataFlows as DataFlowInput[],
-      {
-        serviceToSupportedIntegration,
-        serviceToTitle,
-      },
-    );
+      // map the data flows to data silos
+      const { adTechDataSilos, siteTechDataSilos } = dataFlowsToDataSilos(
+        dataFlows as DataFlowInput[],
+        {
+          serviceToSupportedIntegration,
+          serviceToTitle,
+        },
+      );
 
-    return {
-      adTechDataSilos,
-      siteTechDataSilos,
-      organizationName: directory.split('.')[0],
-    };
-  });
+      return {
+        adTechDataSilos,
+        siteTechDataSilos,
+        organizationName: directory.split('.')[0],
+      };
+    },
+  );
 
   // Mapping from service name to instances that have that service
   const serviceToInstance: { [k in string]: string[] } = {};
@@ -154,7 +158,11 @@ export async function deriveDataSilosFromDataFlowsCrossInstance(
   this.logger.log(`Site Tech Services: ${siteTechIntegrations.length}`);
 
   // Write to yaml
-  writeTranscendYaml(output, {
-    'data-silos': dataSilos,
-  });
+  writeTranscendYaml(
+    output,
+    {
+      'data-silos': dataSilos,
+    },
+    { fs: this.fs },
+  );
 }

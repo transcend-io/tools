@@ -6,6 +6,7 @@ import colors from 'colors';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { PrivacyRequest } from '../graphql/index.js';
 
@@ -82,6 +83,16 @@ export const RequestFileMetadataResponse = t.type({
 /** Type override */
 export type RequestFileMetadataResponse = t.TypeOf<typeof RequestFileMetadataResponse>;
 
+/** Runtime dependencies used while fetching request file metadata. */
+export interface GetFileMetadataForPrivacyRequestsDependencies {
+  /** Logger used for progress output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: GetFileMetadataForPrivacyRequestsDependencies = {
+  logger,
+};
+
 /**
  * Given a list of privacy requests, download the file metadata
  * for these requests - this is useful to prepare the files in a
@@ -89,6 +100,7 @@ export type RequestFileMetadataResponse = t.TypeOf<typeof RequestFileMetadataRes
  *
  * @param requests - The list of privacy requests to download files for
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns The number of requests canceled
  */
 export async function getFileMetadataForPrivacyRequests(
@@ -105,8 +117,9 @@ export async function getFileMetadataForPrivacyRequests(
     /** Concurrency limit for approving */
     concurrency?: number;
   },
+  dependencies: GetFileMetadataForPrivacyRequestsDependencies = defaultDependencies,
 ): Promise<[Pick<PrivacyRequest, 'id' | 'status'>, RequestFileMetadata[]][]> {
-  logger.info(colors.magenta(`Pulling file metadata for ${requests.length} requests`));
+  dependencies.logger.info(colors.magenta(`Pulling file metadata for ${requests.length} requests`));
 
   // Time duration
   const t0 = new Date().getTime();
@@ -165,7 +178,7 @@ export async function getFileMetadataForPrivacyRequests(
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully downloaded file metadata ${requests.length} requests in "${
         totalTime / 1000

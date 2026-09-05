@@ -10,35 +10,50 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
+
+/** Runtime dependencies used while completing request data silos. */
+export interface MarkRequestDataSiloIdsCompletedDependencies {
+  /** Logger used for progress and GraphQL output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: MarkRequestDataSiloIdsCompletedDependencies = {
+  logger,
+};
 
 /**
  * Given a CSV of Request IDs, mark associated RequestDataSilos as completed
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns Number of items marked as completed
  */
-export async function markRequestDataSiloIdsCompleted({
-  requestIds,
-  dataSiloId,
-  auth,
-  concurrency = 100,
-  status = RequestDataSiloStatus.Resolved,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** The list of request ids to mark as completed  */
-  requestIds: string[];
-  /** Transcend API key authentication */
-  auth: string;
-  /** Data Silo ID to pull down jobs for */
-  dataSiloId: string;
-  /** Status to update requests to */
-  status?: RequestDataSiloStatus;
-  /** Upload concurrency */
-  concurrency?: number;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<number> {
+export async function markRequestDataSiloIdsCompleted(
+  {
+    requestIds,
+    dataSiloId,
+    auth,
+    concurrency = 100,
+    status = RequestDataSiloStatus.Resolved,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** The list of request ids to mark as completed  */
+    requestIds: string[];
+    /** Transcend API key authentication */
+    auth: string;
+    /** Data Silo ID to pull down jobs for */
+    dataSiloId: string;
+    /** Status to update requests to */
+    status?: RequestDataSiloStatus;
+    /** Upload concurrency */
+    concurrency?: number;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: MarkRequestDataSiloIdsCompletedDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -48,7 +63,7 @@ export async function markRequestDataSiloIdsCompleted({
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Notify Transcend
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Notifying Transcend for data silo "${dataSiloId}" marking "${requestIds.length}" requests as completed.`,
     ),
@@ -60,7 +75,7 @@ export async function markRequestDataSiloIdsCompleted({
     requestIds,
     async (requestId) => {
       const requestDataSilo = await fetchRequestDataSilo(client, {
-        logger,
+        logger: dependencies.logger,
         filterBy: { requestId, dataSiloId },
       });
 
@@ -73,7 +88,7 @@ export async function markRequestDataSiloIdsCompleted({
             requestDataSiloId: requestDataSilo.id,
             status,
           },
-          logger,
+          logger: dependencies.logger,
         });
       } catch (err) {
         if (
@@ -94,6 +109,8 @@ export async function markRequestDataSiloIdsCompleted({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(colors.green(`Successfully notified Transcend in "${totalTime / 1000}" seconds!`));
+  dependencies.logger.info(
+    colors.green(`Successfully notified Transcend in "${totalTime / 1000}" seconds!`),
+  );
   return requestIds.length;
 }

@@ -8,6 +8,16 @@ import type { GraphQLClient } from 'graphql-request';
 
 import { logger } from '../../logger.js';
 
+/** Runtime dependencies for pulling Consent Manager metrics. */
+export interface PullConsentManagerMetricsDependencies {
+  /** Logger used for SDK requests. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'log' | 'warn'>;
+}
+
+const defaultDependencies: PullConsentManagerMetricsDependencies = {
+  logger,
+};
+
 /**
  * One second of time in ms
  */
@@ -22,6 +32,7 @@ const ONE_WEEK = 7 * ONE_DAY;
  *
  * @param client - GraphQL client
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  * @returns The consent manager metrics
  */
 export async function pullConsentManagerMetrics(
@@ -38,6 +49,7 @@ export async function pullConsentManagerMetrics(
     /** Bin size to pull metrics */
     bin: ConsentManagerMetricBin;
   },
+  dependencies: PullConsentManagerMetricsDependencies = defaultDependencies,
 ): Promise<{
   /** Privacy signal data */
   PRIVACY_SIGNAL_TIMESERIES: ConsentManagerMetric[];
@@ -47,7 +59,9 @@ export async function pullConsentManagerMetrics(
   CONSENT_SESSIONS_BY_REGIME: ConsentManagerMetric[];
 }> {
   // Grab the bundleId associated with this API key
-  const airgapBundleId = await fetchConsentManagerId(client, { logger });
+  const airgapBundleId = await fetchConsentManagerId(client, {
+    logger: dependencies.logger,
+  });
 
   // convert start and end to times
   const startTime = Math.floor(start.getTime() / 1000);
@@ -76,7 +90,7 @@ export async function pullConsentManagerMetrics(
         binInterval: bin,
         smoothTimeseries: false,
       },
-      { logger },
+      { logger: dependencies.logger },
     ),
     fetchConsentManagerAnalyticsData(
       client,
@@ -89,7 +103,7 @@ export async function pullConsentManagerMetrics(
         binInterval: bin,
         smoothTimeseries: false,
       },
-      { logger },
+      { logger: dependencies.logger },
     ),
     fetchConsentManagerAnalyticsData(
       client,
@@ -102,7 +116,7 @@ export async function pullConsentManagerMetrics(
         binInterval: bin,
         smoothTimeseries: false,
       },
-      { logger },
+      { logger: dependencies.logger },
     ),
   ]);
 

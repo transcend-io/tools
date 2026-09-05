@@ -1,3 +1,5 @@
+import process from 'node:process';
+
 import { RequestAction, RequestEnricherStatus, RequestStatus } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
@@ -10,50 +12,68 @@ import colors from 'colors';
 import { difference } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests } from '../graphql/index.js';
+
+/** Runtime dependencies used while retrying request enrichers. */
+export interface BulkRetryEnrichersDependencies {
+  /** Logger used for request and error output. */
+  readonly logger: CliLogger;
+  /** Process implementation used for exit handling. */
+  readonly process: NodeJS.Process;
+}
+
+const defaultDependencies: BulkRetryEnrichersDependencies = {
+  logger,
+  process,
+};
 
 /**
  * Restart a bunch of request enrichers
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  */
-export async function bulkRetryEnrichers({
-  auth,
-  requestActions = [],
-  createdAtBefore,
-  createdAtAfter,
-  updatedAtBefore,
-  updatedAtAfter,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  requestEnricherStatuses = Object.values(RequestEnricherStatus),
-  requestIds = [],
-  enricherId,
-  concurrency = 20,
-}: {
-  /** Actions to filter for */
-  requestActions?: RequestAction[];
-  /** Request enricher statuses to restart - defaults to all statuses */
-  requestEnricherStatuses?: RequestEnricherStatus[];
-  /** Transcend API key authentication */
-  auth: string;
-  /** The ID of the enricher to restart */
-  enricherId: string;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Request IDs to filter for */
-  requestIds?: string[];
-  /** Filter for requests created before this date */
-  createdAtBefore?: Date;
-  /** Filter for requests created after this date */
-  createdAtAfter?: Date;
-  /** Filter for requests updated before this date */
-  updatedAtBefore?: Date;
-  /** Filter for requests updated after this date */
-  updatedAtAfter?: Date;
-  /** Concurrency to upload requests at */
-  concurrency?: number;
-}): Promise<void> {
+export async function bulkRetryEnrichers(
+  {
+    auth,
+    requestActions = [],
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    requestEnricherStatuses = Object.values(RequestEnricherStatus),
+    requestIds = [],
+    enricherId,
+    concurrency = 20,
+  }: {
+    /** Actions to filter for */
+    requestActions?: RequestAction[];
+    /** Request enricher statuses to restart - defaults to all statuses */
+    requestEnricherStatuses?: RequestEnricherStatus[];
+    /** Transcend API key authentication */
+    auth: string;
+    /** The ID of the enricher to restart */
+    enricherId: string;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Request IDs to filter for */
+    requestIds?: string[];
+    /** Filter for requests created before this date */
+    createdAtBefore?: Date;
+    /** Filter for requests created after this date */
+    createdAtAfter?: Date;
+    /** Filter for requests updated before this date */
+    updatedAtBefore?: Date;
+    /** Filter for requests updated after this date */
+    updatedAtAfter?: Date;
+    /** Concurrency to upload requests at */
+    concurrency?: number;
+  },
+  dependencies: BulkRetryEnrichersDependencies = defaultDependencies,
+): Promise<void> {
   // Time duration
   const t0 = new Date().getTime();
   // create a new progress bar instance and use shades_classic theme
@@ -62,7 +82,7 @@ export async function bulkRetryEnrichers({
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
-  logger.info(colors.magenta('Fetching requests to restart...'));
+  dependencies.logger.info(colors.magenta('Fetching requests to restart...'));
 
   const requests = await fetchAllRequests(client, {
     actions: requestActions,
@@ -83,10 +103,10 @@ export async function bulkRetryEnrichers({
       requests.map(({ id }) => id),
     );
     if (missingRequests.length > 0) {
-      logger.error(
+      dependencies.logger.error(
         colors.red(`Failed to find the following requests by ID: ${missingRequests.join(',')}.`),
       );
-      process.exit(1);
+      dependencies.process.exit(1);
     }
   }
 
@@ -99,7 +119,7 @@ export async function bulkRetryEnrichers({
       // Pull the request identifiers
       const requestEnrichers = await fetchAllRequestEnrichers(client, {
         filterBy: { requestId: request.id },
-        logger,
+        logger: dependencies.logger,
       });
       const requestEnrichersToRestart = requestEnrichers.filter(
         (requestEnricher) =>
@@ -107,7 +127,10 @@ export async function bulkRetryEnrichers({
           requestEnricherStatuses.includes(requestEnricher.status),
       );
       await map(requestEnrichersToRestart, async (requestEnricher) => {
-        await retryRequestEnricher(client, { id: requestEnricher.id, logger });
+        await retryRequestEnricher(client, {
+          id: requestEnricher.id,
+          logger: dependencies.logger,
+        });
         totalRestarted += 1;
       });
 
@@ -123,7 +146,7 @@ export async function bulkRetryEnrichers({
   const totalTime = t1 - t0;
 
   // Log completion time
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Completed restarting of ${requests.length} requests and ${totalRestarted} enrichers in "${
         totalTime / 1000

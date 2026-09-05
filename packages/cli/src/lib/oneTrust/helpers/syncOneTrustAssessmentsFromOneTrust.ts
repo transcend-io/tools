@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import {
   OneTrustAssessmentQuestion,
   OneTrustAssessmentSection,
@@ -11,7 +13,7 @@ import type { Got } from 'got';
 import { GraphQLClient } from 'graphql-request';
 import { uniq } from 'lodash-es';
 
-import { logger } from '../../../logger.js';
+import type { CliLogger } from '../../../context.js';
 import {
   getListOfOneTrustAssessments,
   getOneTrustAssessment,
@@ -21,6 +23,19 @@ import {
 import { enrichOneTrustAssessment } from './enrichOneTrustAssessment.js';
 import { syncOneTrustAssessmentToDisk } from './syncOneTrustAssessmentToDisk.js';
 import { syncOneTrustAssessmentToTranscend } from './syncOneTrustAssessmentToTranscend.js';
+
+/** Runtime dependencies used to sync assessments from OneTrust. */
+export interface SyncOneTrustAssessmentsFromOneTrustDependencies {
+  /** Filesystem operations used when exporting assessments to disk. */
+  readonly fs: Pick<typeof fs, 'appendFileSync' | 'writeFileSync'>;
+  /** Logger used to report sync progress and failures. */
+  readonly logger: Pick<CliLogger, 'debug' | 'error' | 'info' | 'warn'>;
+}
+
+const defaultDependencies: SyncOneTrustAssessmentsFromOneTrustDependencies = {
+  fs,
+  logger: console,
+};
 
 export interface AssessmentForm {
   /** ID of Assessment Form */
@@ -33,25 +48,32 @@ export interface AssessmentForm {
  * Reads all the assessments from a OneTrust instance and syncs them to Transcend or to Disk.
  *
  * @param param - the information about the assessment, its OneTrust source, and destination (disk or Transcend)
+ * @param dependencies - Runtime operations used while syncing the assessments.
  */
-export const syncOneTrustAssessmentsFromOneTrust = async ({
-  oneTrust,
-  file,
-  dryRun,
-  transcend,
-}: {
-  /** the OneTrust client instance */
-  oneTrust: Got;
-  /** the Transcend client instance */
-  transcend?: GraphQLClient;
-  /** Whether to write to file instead of syncing to Transcend */
-  dryRun: boolean;
-  /** the path to the file in case dryRun is true */
-  file?: string;
-}): Promise<void> => {
+export const syncOneTrustAssessmentsFromOneTrust = async (
+  {
+    oneTrust,
+    file,
+    dryRun,
+    transcend,
+  }: {
+    /** the OneTrust client instance */
+    oneTrust: Got;
+    /** the Transcend client instance */
+    transcend?: GraphQLClient;
+    /** Whether to write to file instead of syncing to Transcend */
+    dryRun: boolean;
+    /** the path to the file in case dryRun is true */
+    file?: string;
+  },
+  dependencies: SyncOneTrustAssessmentsFromOneTrustDependencies = defaultDependencies,
+): Promise<void> => {
   // fetch the list of all assessments in the OneTrust organization
-  logger.info('Getting list of all assessments from OneTrust...');
-  const assessments = await getListOfOneTrustAssessments({ oneTrust });
+  dependencies.logger.info('Getting list of all assessments from OneTrust...');
+  const assessments = await getListOfOneTrustAssessments(
+    { oneTrust },
+    { logger: dependencies.logger },
+  );
 
   // a cache of OneTrust users so we avoid requesting already fetched users
   const oneTrustCachedUsers: Record<string, OneTrustGetUserResponse> = {};
@@ -74,7 +96,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
       assessmentBatch,
       async (assessment, index) => {
         const assessmentNumber = BATCH_SIZE * batch + index + 1;
-        logger.info(
+        dependencies.logger.info(
           `[assessment ${assessmentNumber} of ${assessments.length}]: fetching details...`,
         );
         const { templateName, assessmentId } = assessment;
@@ -86,7 +108,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
         const creatorId = assessmentDetails.createdBy.id;
         let creator = oneTrustCachedUsers[creatorId];
         if (!creator) {
-          logger.info(
+          dependencies.logger.info(
             `[assessment ${assessmentNumber} of ${assessments.length}]: fetching creator...`,
           );
           try {
@@ -96,7 +118,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
             });
             oneTrustCachedUsers[creatorId] = creator;
           } catch (error) {
-            logger.warn(
+            dependencies.logger.warn(
               colors.yellow(
                 `[assessment ${assessmentNumber} of ${assessments.length}]: failed to fetch form creator.` +
                   `\tcreatorId: ${creatorId}. Assessment Title: ${assessment.name}. Template Title: ${templateName}`,
@@ -110,7 +132,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
         const { approvers } = assessmentDetails;
         let approversDetails: OneTrustGetUserResponse[][] = [];
         if (approvers.length > 0) {
-          logger.info(
+          dependencies.logger.info(
             `[assessment ${assessmentNumber} of ${assessments.length}]: fetching approvers...`,
           );
           approversDetails = await map(
@@ -124,7 +146,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
                 }
                 return [approver];
               } catch (error) {
-                logger.warn(
+                dependencies.logger.warn(
                   colors.yellow(
                     `[assessment ${assessmentNumber} of ${assessments.length}]: failed to fetch a form approver.` +
                       `\tapproverId: ${userId}. Assessment Title: ${assessment.name}. Template Title: ${templateName}`,
@@ -144,7 +166,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
         const internalRespondents = respondents.filter((r) => !r.name.includes('@'));
         let respondentsDetails: OneTrustGetUserResponse[][] = [];
         if (internalRespondents.length > 0) {
-          logger.info(
+          dependencies.logger.info(
             `[assessment ${assessmentNumber} of ${assessments.length}]: fetching respondents...`,
           );
           respondentsDetails = await map(
@@ -158,7 +180,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
                 }
                 return [respondent];
               } catch (error) {
-                logger.warn(
+                dependencies.logger.warn(
                   colors.yellow(
                     `[assessment ${assessmentNumber} of ${assessments.length}]: failed to fetch a respondent.` +
                       `\trespondentId: ${userId}. Assessment Title: ${assessment.name}. Template Title: ${templateName}`,
@@ -182,7 +204,7 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
           ),
         );
         if (riskIds.length > 0) {
-          logger.info(
+          dependencies.logger.info(
             `[assessment ${assessmentNumber} of ${assessments.length}]: fetching risks...`,
           );
           riskDetails = await map(
@@ -216,20 +238,31 @@ export const syncOneTrustAssessmentsFromOneTrust = async ({
 
       if (dryRun && file) {
         // sync to file
-        syncOneTrustAssessmentToDisk({
-          assessment: enrichedAssessment,
-          index: globalIndex,
-          total: assessments.length,
-          file,
-        });
+        syncOneTrustAssessmentToDisk(
+          {
+            assessment: enrichedAssessment,
+            index: globalIndex,
+            total: assessments.length,
+            file,
+          },
+          {
+            fs: dependencies.fs,
+            logger: dependencies.logger,
+          },
+        );
       } else if (transcend) {
         // sync to transcend
-        await syncOneTrustAssessmentToTranscend({
-          assessment: enrichedAssessment,
-          transcend,
-          total: assessments.length,
-          index: globalIndex,
-        });
+        await syncOneTrustAssessmentToTranscend(
+          {
+            assessment: enrichedAssessment,
+            transcend,
+            total: assessments.length,
+            index: globalIndex,
+          },
+          {
+            logger: dependencies.logger,
+          },
+        );
       }
     });
   });

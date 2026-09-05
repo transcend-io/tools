@@ -24,12 +24,15 @@ export async function markRequestDataSilosCompleted(
   doneInputValidation(this.process);
 
   this.logger.info(colors.magenta(`Reading "${file}" from disk`));
-  const activeResults = readCsv(file, RequestIdRow);
+  const activeResults = readCsv(file, RequestIdRow, undefined, { fs: this.fs });
 
-  await markRequestDataSiloIdsCompleted({
-    requestIds: activeResults.map((request) => request['Request Id']),
-    transcendUrl,
-    auth,
-    dataSiloId,
-  });
+  await markRequestDataSiloIdsCompleted(
+    {
+      requestIds: activeResults.map((request) => request['Request Id']),
+      transcendUrl,
+      auth,
+      dataSiloId,
+    },
+    { logger: this.logger },
+  );
 }

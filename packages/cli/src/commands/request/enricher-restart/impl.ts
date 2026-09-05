@@ -36,17 +36,23 @@ export async function enricherRestart(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await bulkRetryEnrichers({
-    auth,
-    enricherId,
-    requestActions: actions,
-    requestEnricherStatuses,
-    requestIds,
-    createdAtBefore: createdAtBefore ? new Date(createdAtBefore) : undefined,
-    createdAtAfter: createdAtAfter ? new Date(createdAtAfter) : undefined,
-    updatedAtBefore: updatedAtBefore ? new Date(updatedAtBefore) : undefined,
-    updatedAtAfter: updatedAtAfter ? new Date(updatedAtAfter) : undefined,
-    concurrency,
-    transcendUrl,
-  });
+  await bulkRetryEnrichers(
+    {
+      auth,
+      enricherId,
+      requestActions: actions,
+      requestEnricherStatuses,
+      requestIds,
+      createdAtBefore: createdAtBefore ? new Date(createdAtBefore) : undefined,
+      createdAtAfter: createdAtAfter ? new Date(createdAtAfter) : undefined,
+      updatedAtBefore: updatedAtBefore ? new Date(updatedAtBefore) : undefined,
+      updatedAtAfter: updatedAtAfter ? new Date(updatedAtAfter) : undefined,
+      concurrency,
+      transcendUrl,
+    },
+    {
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 }

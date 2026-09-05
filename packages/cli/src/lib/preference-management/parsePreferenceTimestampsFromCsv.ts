@@ -5,6 +5,16 @@ import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 
+/** Runtime dependencies for parsing preference timestamps. */
+export interface ParsePreferenceTimestampsFromCsvDependencies {
+  /** Logger used for parsing decisions. */
+  logger: Pick<typeof logger, 'info'>;
+}
+
+const defaultDependencies: ParsePreferenceTimestampsFromCsvDependencies = {
+  logger,
+};
+
 export const NONE_PREFERENCE_MAP = '[NONE]';
 
 /* eslint-disable no-param-reassign */
@@ -19,11 +29,13 @@ export const NONE_PREFERENCE_MAP = '[NONE]';
  *
  * @param preferences - List of preferences
  * @param currentState - The current file metadata state for parsing this list
+ * @param dependencies - Runtime dependencies
  * @returns The updated file metadata state
  */
 export async function parsePreferenceTimestampsFromCsv(
   preferences: Record<string, string>[],
   currentState: FileMetadataState,
+  dependencies: ParsePreferenceTimestampsFromCsvDependencies = defaultDependencies,
 ): Promise<FileMetadataState> {
   // Determine columns to map
   const columnNames = uniq(preferences.map((x) => Object.keys(x)).flat());
@@ -53,7 +65,9 @@ export async function parsePreferenceTimestampsFromCsv(
     ]);
     currentState.timestampColum = timestampName;
   }
-  logger.info(colors.magenta(`Using timestamp column "${currentState.timestampColum}"`));
+  dependencies.logger.info(
+    colors.magenta(`Using timestamp column "${currentState.timestampColum}"`),
+  );
 
   // Validate that all rows have valid timestamp
   if (currentState.timestampColum !== NONE_PREFERENCE_MAP) {
@@ -68,7 +82,7 @@ export async function parsePreferenceTimestampsFromCsv(
         }" is missing a value for the following rows: ${timestampColumnsMissing.join('\n')}`,
       );
     }
-    logger.info(
+    dependencies.logger.info(
       colors.magenta(
         `The timestamp column "${currentState.timestampColum}" is present for all row`,
       ),

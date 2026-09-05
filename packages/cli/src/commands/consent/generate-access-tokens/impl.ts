@@ -67,7 +67,9 @@ export async function generateAccessTokens(
       [emailColumnName]: t.string,
       ...(coreIdentifierColumnName ? { [coreIdentifierColumnName]: t.string } : {}),
     });
-    const rows: Array<Record<string, string>> = readCsv(file, codec);
+    const rows: Array<Record<string, string>> = readCsv(file, codec, undefined, {
+      fs: this.fs,
+    });
     if (!rows.length) {
       throw new Error('Input CSV is empty.');
     }
@@ -146,7 +148,7 @@ export async function generateAccessTokens(
     });
 
     this.logger.info(colors.magenta(`Writing access tokens to file "${file}"...`));
-    await writeCsv(file, outputRows, true);
+    await writeCsv(file, outputRows, true, { fs: this.fs });
 
     const totalTimeSec = Math.round((Date.now() - t0) / 1000);
     this.logger.info(

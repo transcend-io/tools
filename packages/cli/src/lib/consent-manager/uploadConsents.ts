@@ -11,6 +11,16 @@ import { logger } from '../../logger.js';
 import { createConsentToken } from './createConsentToken.js';
 import type { ConsentPreferenceUpload } from './types.js';
 
+/** Runtime dependencies for uploading consent preferences. */
+export interface UploadConsentsDependencies {
+  /** Logger used for upload status and errors. */
+  logger: Pick<typeof logger, 'error' | 'info'>;
+}
+
+const defaultDependencies: UploadConsentsDependencies = {
+  logger,
+};
+
 export const USP_STRING_REGEX = /^[0-9][Y|N]([Y|N])[Y|N]$/;
 
 export const PurposeMap = t.record(t.string, t.union([t.boolean, t.literal('Auto')]));
@@ -19,28 +29,32 @@ export const PurposeMap = t.record(t.string, t.union([t.boolean, t.literal('Auto
  * Upload a set of consent preferences
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  */
-export async function uploadConsents({
-  base64EncryptionKey,
-  base64SigningKey,
-  preferences,
-  partition,
-  concurrency = 100,
-  transcendUrl = DEFAULT_TRANSCEND_CONSENT_API,
-}: {
-  /** base64 encryption key */
-  base64EncryptionKey: string;
-  /** base64 signing key */
-  base64SigningKey: string;
-  /** Partition key */
-  partition: string;
-  /** Sombra API key authentication */
-  preferences: ConsentPreferenceUpload[];
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Concurrency limit for approving */
-  concurrency?: number;
-}): Promise<void> {
+export async function uploadConsents(
+  {
+    base64EncryptionKey,
+    base64SigningKey,
+    preferences,
+    partition,
+    concurrency = 100,
+    transcendUrl = DEFAULT_TRANSCEND_CONSENT_API,
+  }: {
+    /** base64 encryption key */
+    base64EncryptionKey: string;
+    /** base64 signing key */
+    base64SigningKey: string;
+    /** Partition key */
+    partition: string;
+    /** Sombra API key authentication */
+    preferences: ConsentPreferenceUpload[];
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Concurrency limit for approving */
+    concurrency?: number;
+  },
+  dependencies: UploadConsentsDependencies = defaultDependencies,
+): Promise<void> {
   // Create connection to API
   const transcendConsentApi = createTranscendConsentGotInstance(transcendUrl);
 
@@ -84,7 +98,7 @@ export async function uploadConsents({
     );
   }
 
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(`Uploading ${preferences.length} user preferences to partition ${partition}`),
   );
 
@@ -131,7 +145,7 @@ export async function uploadConsents({
         try {
           const parsed = JSON.parse(err?.response?.body || '{}');
           if (parsed.error) {
-            logger.error(colors.red(`Error: ${parsed.error}`));
+            dependencies.logger.error(colors.red(`Error: ${parsed.error}`));
           }
         } catch {
           // continue
@@ -149,7 +163,7 @@ export async function uploadConsents({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully uploaded ${preferences.length} user preferences to partition ${partition} in "${
         totalTime / 1000

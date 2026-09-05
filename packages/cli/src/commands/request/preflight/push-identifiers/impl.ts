@@ -26,13 +26,20 @@ export async function pushIdentifiers(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await pushManualEnrichmentIdentifiersFromCsv({
-    file,
-    transcendUrl,
-    enricherId,
-    concurrency,
-    markSilent,
-    auth,
-    sombraAuth,
-  });
+  await pushManualEnrichmentIdentifiersFromCsv(
+    {
+      file,
+      transcendUrl,
+      enricherId,
+      concurrency,
+      markSilent,
+      auth,
+      sombraAuth,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 }

@@ -38,18 +38,21 @@ export async function cancel(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await cancelPrivacyRequests({
-    transcendUrl,
-    requestActions: actions,
-    auth,
-    cancellationTitle,
-    requestIds,
-    statuses,
-    concurrency,
-    silentModeBefore: silentModeBefore ? new Date(silentModeBefore) : undefined,
-    createdAtBefore: createdAtBefore ? new Date(createdAtBefore) : undefined,
-    createdAtAfter: createdAtAfter ? new Date(createdAtAfter) : undefined,
-    updatedAtBefore: updatedAtBefore ? new Date(updatedAtBefore) : undefined,
-    updatedAtAfter: updatedAtAfter ? new Date(updatedAtAfter) : undefined,
-  });
+  await cancelPrivacyRequests(
+    {
+      transcendUrl,
+      requestActions: actions,
+      auth,
+      cancellationTitle,
+      requestIds,
+      statuses,
+      concurrency,
+      silentModeBefore: silentModeBefore ? new Date(silentModeBefore) : undefined,
+      createdAtBefore: createdAtBefore ? new Date(createdAtBefore) : undefined,
+      createdAtAfter: createdAtAfter ? new Date(createdAtAfter) : undefined,
+      updatedAtBefore: updatedAtBefore ? new Date(updatedAtBefore) : undefined,
+      updatedAtAfter: updatedAtAfter ? new Date(updatedAtAfter) : undefined,
+    },
+    { logger: this.logger },
+  );
 }

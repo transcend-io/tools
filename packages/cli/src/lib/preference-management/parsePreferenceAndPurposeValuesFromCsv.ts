@@ -7,6 +7,16 @@ import { uniq, difference } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 
+/** Runtime dependencies for parsing preference and purpose values. */
+export interface ParsePreferenceAndPurposeValuesFromCsvDependencies {
+  /** Logger used for parsing decisions and errors. */
+  logger: Pick<typeof logger, 'error' | 'info'>;
+}
+
+const defaultDependencies: ParsePreferenceAndPurposeValuesFromCsvDependencies = {
+  logger,
+};
+
 /* eslint-disable no-param-reassign */
 
 /**
@@ -15,6 +25,7 @@ import { logger } from '../../logger.js';
  * @param preferences - List of preferences
  * @param currentState - The current file metadata state for parsing this list
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  * @returns The updated file metadata state
  */
 export async function parsePreferenceAndPurposeValuesFromCsv(
@@ -32,6 +43,7 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
     /** Force workflow triggers */
     forceTriggerWorkflows: boolean;
   },
+  dependencies: ParsePreferenceAndPurposeValuesFromCsvDependencies = defaultDependencies,
 ): Promise<FileMetadataState> {
   // Determine columns to map
   const columnNames = uniq(preferences.map((x) => Object.keys(x)).flat());
@@ -62,7 +74,7 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
     // Map the column to a purpose
     let purposeMapping = currentState.columnToPurposeName[col];
     if (purposeMapping) {
-      logger.info(
+      dependencies.logger.info(
         colors.magenta(`Column "${col}" is associated with purpose "${purposeMapping.purpose}"`),
       );
     } else {
@@ -89,7 +101,7 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
     // map each value to the purpose value
     await mapSeries(uniqueValues, async (value) => {
       if (purposeMapping.valueMapping[value] !== undefined) {
-        logger.info(
+        dependencies.logger.info(
           colors.magenta(
             `Value "${value}" is associated with purpose value "${purposeMapping.valueMapping[value]}"`,
           ),
@@ -116,7 +128,9 @@ export async function parsePreferenceAndPurposeValuesFromCsv(
       if (purposeMapping.preference !== null) {
         const preferenceTopic = preferenceTopics.find((x) => x.slug === purposeMapping.preference);
         if (!preferenceTopic) {
-          logger.error(colors.red(`Preference topic "${purposeMapping.preference}" not found`));
+          dependencies.logger.error(
+            colors.red(`Preference topic "${purposeMapping.preference}" not found`),
+          );
           return;
         }
         const preferenceOptions = preferenceTopic.preferenceOptionValues.map(({ slug }) => slug);

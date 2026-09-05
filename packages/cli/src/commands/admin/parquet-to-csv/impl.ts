@@ -44,7 +44,12 @@ export async function parquetToCsv(
   const { directory, outputDir, clearOutputDir, concurrency, viewerMode } = flags;
 
   /* 1) Discover .parquet inputs */
-  const files = collectParquetFilesOrExit(directory, this);
+  const files = collectParquetFilesOrExit(directory, {
+    fs: this.fs,
+    path: this.path,
+    logger: this.logger,
+    process: this.process,
+  });
 
   /* 2) Size the pool */
   const { poolSize, cpuCount } = computePoolSize(concurrency, files.length);

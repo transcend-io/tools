@@ -35,12 +35,15 @@ export async function updateConsentManager(
   // Handle single update
   if (typeof apiKeyOrList === 'string') {
     // Update consent manager
-    await updateConsentManagerVersionToLatest({
-      deploy,
-      transcendUrl,
-      auth: apiKeyOrList,
-      bundleTypes,
-    });
+    await updateConsentManagerVersionToLatest(
+      {
+        deploy,
+        transcendUrl,
+        auth: apiKeyOrList,
+        bundleTypes,
+      },
+      { logger: this.logger },
+    );
     this.logger.info(colors.green('Successfully updated Consent Manager!'));
   } else {
     await mapSeries(apiKeyOrList, async (apiKey) => {
@@ -48,12 +51,15 @@ export async function updateConsentManager(
         colors.magenta(`Updating Consent Manager for organization "${apiKey.organizationName}"...`),
       );
 
-      await updateConsentManagerVersionToLatest({
-        deploy,
-        transcendUrl,
-        auth: apiKey.apiKey,
-        bundleTypes,
-      });
+      await updateConsentManagerVersionToLatest(
+        {
+          deploy,
+          transcendUrl,
+          auth: apiKey.apiKey,
+          bundleTypes,
+        },
+        { logger: this.logger },
+      );
 
       this.logger.info(
         colors.green(

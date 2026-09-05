@@ -5,57 +5,72 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { UPDATE_PRIVACY_REQUEST, fetchAllRequests } from '../graphql/index.js';
+
+/** Runtime dependencies used while marking privacy requests silent. */
+export interface MarkSilentPrivacyRequestsDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: MarkSilentPrivacyRequestsDependencies = {
+  logger,
+};
 
 /**
  * Mark a set of privacy requests to be in silent mode
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns The number of requests marked silent
  */
-export async function markSilentPrivacyRequests({
-  requestActions,
-  auth,
-  requestIds,
-  statuses = [
-    RequestStatus.Compiling,
-    RequestStatus.RequestMade,
-    RequestStatus.Delayed,
-    RequestStatus.Approving,
-    RequestStatus.Secondary,
-    RequestStatus.Enriching,
-    RequestStatus.Waiting,
-    RequestStatus.SecondaryApproving,
-  ],
-  createdAtAfter,
-  createdAtBefore,
-  updatedAtBefore,
-  updatedAtAfter,
-  concurrency = 100,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** The request actions that should be restarted */
-  requestActions: RequestAction[];
-  /** Transcend API key authentication */
-  auth: string;
-  /** Concurrency limit for approving */
-  concurrency?: number;
-  /** The request statuses to mark silent */
-  statuses?: RequestStatus[];
-  /** The set of privacy requests to mark silent */
-  requestIds?: string[];
-  /** Filter for requests created before this date */
-  createdAtBefore?: Date;
-  /** Filter for requests created after this date */
-  createdAtAfter?: Date;
-  /** Filter for requests updated before this date */
-  updatedAtBefore?: Date;
-  /** Filter for requests updated after this date */
-  updatedAtAfter?: Date;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<number> {
+export async function markSilentPrivacyRequests(
+  {
+    requestActions,
+    auth,
+    requestIds,
+    statuses = [
+      RequestStatus.Compiling,
+      RequestStatus.RequestMade,
+      RequestStatus.Delayed,
+      RequestStatus.Approving,
+      RequestStatus.Secondary,
+      RequestStatus.Enriching,
+      RequestStatus.Waiting,
+      RequestStatus.SecondaryApproving,
+    ],
+    createdAtAfter,
+    createdAtBefore,
+    updatedAtBefore,
+    updatedAtAfter,
+    concurrency = 100,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** The request actions that should be restarted */
+    requestActions: RequestAction[];
+    /** Transcend API key authentication */
+    auth: string;
+    /** Concurrency limit for approving */
+    concurrency?: number;
+    /** The request statuses to mark silent */
+    statuses?: RequestStatus[];
+    /** The set of privacy requests to mark silent */
+    requestIds?: string[];
+    /** Filter for requests created before this date */
+    createdAtBefore?: Date;
+    /** Filter for requests created after this date */
+    createdAtAfter?: Date;
+    /** Filter for requests updated before this date */
+    updatedAtBefore?: Date;
+    /** Filter for requests updated after this date */
+    updatedAtAfter?: Date;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: MarkSilentPrivacyRequestsDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -77,7 +92,7 @@ export async function markSilentPrivacyRequests({
   });
 
   // Notify Transcend
-  logger.info(colors.magenta(`Marking "${allRequests.length}" as silent mode.`));
+  dependencies.logger.info(colors.magenta(`Marking "${allRequests.length}" as silent mode.`));
 
   let total = 0;
   progressBar.start(allRequests.length, 0);
@@ -91,7 +106,7 @@ export async function markSilentPrivacyRequests({
             isSilent: true,
           },
         },
-        logger,
+        logger: dependencies.logger,
       });
 
       total += 1;
@@ -104,7 +119,7 @@ export async function markSilentPrivacyRequests({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully marked ${total} requests as silent mode in "${totalTime / 1000}" seconds!`,
     ),

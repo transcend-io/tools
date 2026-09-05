@@ -56,25 +56,32 @@ export async function restart(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await bulkRestartRequests({
-    requestReceiptFolder,
-    auth,
-    sombraAuth,
-    requestActions: actions,
-    requestStatuses: statuses,
-    requestIds,
-    createdAt,
-    emailIsVerified,
-    silentModeBefore,
-    sendEmailReceipt,
-    copyIdentifiers,
-    restartIdentifierStrategy,
-    skipWaitingPeriod,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-    concurrency,
-    transcendUrl,
-  });
+  await bulkRestartRequests(
+    {
+      requestReceiptFolder,
+      auth,
+      sombraAuth,
+      requestActions: actions,
+      requestStatuses: statuses,
+      requestIds,
+      createdAt,
+      emailIsVerified,
+      silentModeBefore,
+      sendEmailReceipt,
+      copyIdentifiers,
+      restartIdentifierStrategy,
+      skipWaitingPeriod,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+      concurrency,
+      transcendUrl,
+    },
+    {
+      logger: this.logger,
+      path: this.path,
+      ['process']: this.process,
+    },
+  );
 }

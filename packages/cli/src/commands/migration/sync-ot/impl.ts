@@ -116,18 +116,25 @@ export async function syncOt(
     transcendUrl && transcendAuth
       ? buildTranscendGraphQLClient(transcendUrl, transcendAuth)
       : undefined;
+  const dependencies = {
+    fs: this.fs,
+    logger: this.logger,
+  };
 
   try {
     if (resource === OneTrustPullResource.Assessments) {
       if (source === OneTrustPullSource.OneTrust && oneTrust) {
-        await syncOneTrustAssessmentsFromOneTrust({
-          oneTrust,
-          file,
-          dryRun,
-          ...(transcend && { transcend }),
-        });
+        await syncOneTrustAssessmentsFromOneTrust(
+          {
+            oneTrust,
+            file,
+            dryRun,
+            ...(transcend && { transcend }),
+          },
+          dependencies,
+        );
       } else if (source === OneTrustPullSource.File && file && transcend) {
-        await syncOneTrustAssessmentsFromFile({ file, transcend });
+        await syncOneTrustAssessmentsFromFile({ file, transcend }, dependencies);
       }
     }
   } catch (err) {

@@ -56,8 +56,8 @@ vi.mock('../../../../lib/helpers/index.js', () => ({
 // preference-management: forward and record args, then delegate to our spies
 vi.mock('../../../../lib/preference-management/index.js', () => ({
   // eslint-disable-next-line require-await
-  bulkDeletePreferenceRecords: async (sombra: unknown, opts: any) =>
-    H.bulkDeletePreferenceRecords(sombra, opts),
+  bulkDeletePreferenceRecords: async (sombra: unknown, opts: any, dependencies: any) =>
+    H.bulkDeletePreferenceRecords(sombra, opts, dependencies),
 }));
 
 describe('deletePreferenceRecordsImpl', () => {
@@ -188,6 +188,10 @@ describe('deletePreferenceRecordsImpl', () => {
     expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledWith(
       H.sombra,
       expect.objectContaining({ filePath: '/tmp/out.csv' }),
+      {
+        fs: ctx.fs,
+        logger: ctx.logger,
+      },
     );
     expect(ctx.stdout).toContain('Deletion Summary Report');
     expect(H.writeCsv).not.toHaveBeenCalled();
@@ -214,6 +218,10 @@ describe('deletePreferenceRecordsImpl', () => {
     expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledWith(
       H.sombra,
       expect.objectContaining({ filePath: expect.stringContaining('a.csv') }),
+      {
+        fs: ctx.fs,
+        logger: ctx.logger,
+      },
     );
     expect(ctx.stdout).toContain('Deletion Summary Report');
   });
@@ -237,6 +245,7 @@ describe('deletePreferenceRecordsImpl', () => {
       expect.stringContaining('/tmp/receipts/deletion-failures-'),
       [{ id: 1, error: 'fail' }],
       true,
+      { fs: ctx.fs },
     );
     expect(ctx.stdout).toContain('Receipt Path:');
   });

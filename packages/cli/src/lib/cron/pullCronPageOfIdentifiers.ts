@@ -4,6 +4,7 @@ import { decodeCodec } from '@transcend-io/type-utils';
 import type { Got } from 'got';
 import * as t from 'io-ts';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 
 /** Consent partition metadata when a DSR is scoped to a partition */
@@ -54,12 +55,23 @@ export const CronIdentifier = t.intersection([
 /** Type override */
 export type CronIdentifier = t.TypeOf<typeof CronIdentifier>;
 
+/** Runtime dependencies used while pulling a page of cron identifiers. */
+export interface PullCronPageOfIdentifiersDependencies {
+  /** Logger forwarded to transient retry handling. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: PullCronPageOfIdentifiersDependencies = {
+  logger,
+};
+
 /**
  * Pull a offset of identifiers for a cron job
  *
  * @see https://docs.transcend.io/docs/api-reference/GET/v1/data-silo/(id)/pending-requests/(type)
  * @param sombra - Sombra instance configured to make requests
  * @param options - Additional options
+ * @param dependencies - Runtime dependencies.
  * @returns Successfully submitted request
  */
 export async function pullCronPageOfIdentifiers(
@@ -79,6 +91,7 @@ export async function pullCronPageOfIdentifiers(
     /** Page to pull in */
     offset?: number;
   },
+  dependencies: PullCronPageOfIdentifiersDependencies = defaultDependencies,
 ): Promise<CronIdentifier[]> {
   try {
     // `GET pending-requests` is a read and therefore safe to retry on transient
@@ -96,7 +109,7 @@ export async function pullCronPageOfIdentifiers(
             },
           })
           .json(),
-      { logger, maxAttempts: 6, baseDelayMs: 500 },
+      { logger: dependencies.logger, maxAttempts: 6, baseDelayMs: 500 },
     );
 
     const { items } = decodeCodec(

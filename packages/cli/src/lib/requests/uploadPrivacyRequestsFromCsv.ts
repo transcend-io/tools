@@ -1,4 +1,6 @@
-import { join } from 'node:path';
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
 
 import { PersistedState } from '@transcend-io/persisted-state';
 import {
@@ -14,6 +16,7 @@ import * as t from 'io-ts';
 import { uniq } from 'lodash-es';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { CachedRequestState, CachedFileState } from './constants.js';
 import { extractClientError } from './extractClientError.js';
@@ -27,69 +30,94 @@ import { parseAttributesFromString } from './parseAttributesFromString.js';
 import { readCsv } from './readCsv.js';
 import { submitPrivacyRequest } from './submitPrivacyRequest.js';
 
+/** Runtime dependencies used while uploading privacy requests. */
+export interface UploadPrivacyRequestsFromCsvDependencies {
+  /** Filesystem implementation used to read the source CSV. */
+  readonly fs: typeof fs;
+  /** Logger used for status and error output. */
+  readonly logger: CliLogger;
+  /** Path implementation used to construct receipt paths. */
+  readonly path: typeof path;
+  /** Process implementation used for environment and exit handling. */
+  readonly process: NodeJS.Process;
+}
+
+const defaultDependencies: UploadPrivacyRequestsFromCsvDependencies = {
+  fs,
+  logger,
+  path,
+  process,
+};
+
 /**
  * Upload a set of privacy requests from CSV
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  */
-export async function uploadPrivacyRequestsFromCsv({
-  cacheFilepath,
-  requestReceiptFolder,
-  file,
-  auth,
-  sombraAuth,
-  concurrency = 100,
-  defaultPhoneCountryCode = '1', // USA
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  attributes = [],
-  emailIsVerified = true,
-  skipFilterStep = false,
-  skipSendingReceipt = true,
-  isTest = false,
-  isSilent = true,
-  debug = false,
-  dryRun = false,
-}: {
-  /** File to cache metadata about mapping of CSV shape to script */
-  cacheFilepath: string;
-  /** File where request receipts are stored */
-  requestReceiptFolder: string;
-  /** CSV file path */
-  file: string;
-  /** Transcend API key authentication */
-  auth: string;
-  /** Default country code for phone numbers */
-  defaultPhoneCountryCode?: string;
-  /** Concurrency to upload in */
-  concurrency?: number;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Sombra API key authentication */
-  sombraAuth?: string;
-  /** Include debug logs */
-  debug?: boolean;
-  /** Skip the step where requests are filtered */
-  skipFilterStep?: boolean;
-  /** Whether test requests are being uploaded */
-  isTest?: boolean;
-  /** Whether requests are uploaded in silent mode */
-  isSilent?: boolean;
-  /** Whether to send the email receipt */
-  skipSendingReceipt?: boolean;
-  /** Whether the email was verified up front */
-  emailIsVerified?: boolean;
-  /** Attributes string pre-parse */
-  attributes?: string[];
-  /** Whether a dry run is happening */
-  dryRun?: boolean;
-}): Promise<void> {
+export async function uploadPrivacyRequestsFromCsv(
+  {
+    cacheFilepath,
+    requestReceiptFolder,
+    file,
+    auth,
+    sombraAuth,
+    concurrency = 100,
+    defaultPhoneCountryCode = '1', // USA
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    attributes = [],
+    emailIsVerified = true,
+    skipFilterStep = false,
+    skipSendingReceipt = true,
+    isTest = false,
+    isSilent = true,
+    debug = false,
+    dryRun = false,
+  }: {
+    /** File to cache metadata about mapping of CSV shape to script */
+    cacheFilepath: string;
+    /** File where request receipts are stored */
+    requestReceiptFolder: string;
+    /** CSV file path */
+    file: string;
+    /** Transcend API key authentication */
+    auth: string;
+    /** Default country code for phone numbers */
+    defaultPhoneCountryCode?: string;
+    /** Concurrency to upload in */
+    concurrency?: number;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Sombra API key authentication */
+    sombraAuth?: string;
+    /** Include debug logs */
+    debug?: boolean;
+    /** Skip the step where requests are filtered */
+    skipFilterStep?: boolean;
+    /** Whether test requests are being uploaded */
+    isTest?: boolean;
+    /** Whether requests are uploaded in silent mode */
+    isSilent?: boolean;
+    /** Whether to send the email receipt */
+    skipSendingReceipt?: boolean;
+    /** Whether the email was verified up front */
+    emailIsVerified?: boolean;
+    /** Attributes string pre-parse */
+    attributes?: string[];
+    /** Whether a dry run is happening */
+    dryRun?: boolean;
+  },
+  dependencies: UploadPrivacyRequestsFromCsvDependencies = defaultDependencies,
+): Promise<void> {
   // Time duration
   const t0 = new Date().getTime();
   // create a new progress bar instance and use shades_classic theme
   const progressBar = new cliProgress.SingleBar({}, cliProgress.Presets.shades_classic);
 
   // Parse out the extra attributes to apply to all requests uploaded
-  const parsedAttributes = parseAttributesFromString(attributes);
+  const parsedAttributes = parseAttributesFromString(attributes, {
+    logger: dependencies.logger,
+  });
 
   // Create a new state to persist the metadata that
   // maps the request inputs to the Transcend API shape
@@ -109,7 +137,7 @@ export async function uploadPrivacyRequestsFromCsv({
   // `toISOString()` contains colons (e.g. 2026-07-06T04:33:12.345Z) which are
   // illegal characters in Windows filenames, so strip them out to keep the
   // auto-generated receipt filename cross-platform.
-  const requestCacheFile = join(
+  const requestCacheFile = dependencies.path.join(
     requestReceiptFolder,
     `tr-request-upload-${new Date()
       .toISOString()
@@ -123,13 +151,15 @@ export async function uploadPrivacyRequestsFromCsv({
 
   // Create sombra instance to communicate with
   const sombra = await createSombraGotInstance(transcendUrl, auth, {
-    logger,
+    logger: dependencies.logger,
     sombraApiKey: sombraAuth,
-    sombraUrl: process.env.SOMBRA_URL,
+    sombraUrl: dependencies.process.env.SOMBRA_URL,
   });
 
   // Read in the list of integration requests
-  const requestsList = readCsv(file, t.record(t.string, t.string));
+  const requestsList = readCsv(file, t.record(t.string, t.string), undefined, {
+    fs: dependencies.fs,
+  });
   const columnNames = uniq(requestsList.map((x) => Object.keys(x)).flat());
 
   // Log out an example request
@@ -140,29 +170,44 @@ export async function uploadPrivacyRequestsFromCsv({
   }
   if (debug) {
     const firstRequest = requestsList[0];
-    logger.info(colors.magenta(`First request: ${JSON.stringify(firstRequest, null, 2)}`));
+    dependencies.logger.info(
+      colors.magenta(`First request: ${JSON.stringify(firstRequest, null, 2)}`),
+    );
   }
   // Determine what rows in the CSV should be imported
   // Choose columns that contain metadata to filter the requests
-  const filteredRequestList = skipFilterStep ? requestsList : await filterRows(requestsList);
+  const filteredRequestList = skipFilterStep
+    ? requestsList
+    : await filterRows(requestsList, { logger: dependencies.logger });
 
   // Build a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
   // Grab the request attributes
-  const requestAttributeKeys = await fetchAllRequestAttributeKeys(client, { logger });
+  const requestAttributeKeys = await fetchAllRequestAttributeKeys(client, {
+    logger: dependencies.logger,
+  });
   // Determine the columns that should be mapped
   const columnNameMap = await mapCsvColumnsToApi(columnNames, state);
-  const identifierNameMap = await mapColumnsToIdentifiers(client, columnNames, state);
+  const identifierNameMap = await mapColumnsToIdentifiers(client, columnNames, state, {
+    logger: dependencies.logger,
+  });
   const attributeNameMap = await mapColumnsToAttributes(
     client,
     columnNames,
     state,
     requestAttributeKeys,
   );
-  await mapRequestEnumValues(client, filteredRequestList, {
-    state,
-    columnNameMap,
-  });
+  await mapRequestEnumValues(
+    client,
+    filteredRequestList,
+    {
+      state,
+      columnNameMap,
+    },
+    {
+      logger: dependencies.logger,
+    },
+  );
 
   // map the CSV to request input
   const requestInputs = mapCsvRowsToRequestInputs(filteredRequestList, state, {
@@ -188,7 +233,7 @@ export async function uploadPrivacyRequestsFromCsv({
         : `row:${ind.toString()}`;
 
       if (debug) {
-        logger.info(
+        dependencies.logger.info(
           colors.magenta(
             `[${ind + 1}/${requestInputs.length}] Importing: ${JSON.stringify(
               requestInput,
@@ -201,7 +246,7 @@ export async function uploadPrivacyRequestsFromCsv({
 
       // Skip on dry run
       if (dryRun) {
-        logger.info(colors.magenta('Bailing out on dry run because dryRun is set'));
+        dependencies.logger.info(colors.magenta('Bailing out on dry run because dryRun is set'));
         return;
       }
 
@@ -222,14 +267,14 @@ export async function uploadPrivacyRequestsFromCsv({
 
         // Log success
         if (debug) {
-          logger.info(
+          dependencies.logger.info(
             colors.green(
               `[${ind + 1}/${
                 requestInputs.length
               }] Successfully submitted the test data subject request: "${requestLogId}"`,
             ),
           );
-          logger.info(
+          dependencies.logger.info(
             colors.green(
               `[${ind + 1}/${requestInputs.length}] View it at: "${requestResponse.link}"`,
             ),
@@ -252,7 +297,7 @@ export async function uploadPrivacyRequestsFromCsv({
 
         if (clientError === 'Client error: You have already made this request.') {
           if (debug) {
-            logger.info(
+            dependencies.logger.info(
               colors.yellow(
                 `[${ind + 1}/${requestInputs.length}] Skipping request as it is a duplicate`,
               ),
@@ -275,8 +320,8 @@ export async function uploadPrivacyRequestsFromCsv({
           });
           await requestState.setValue(failingRequests, 'failingRequests');
           if (debug) {
-            logger.error(colors.red(clientError || msg));
-            logger.error(
+            dependencies.logger.error(colors.red(clientError || msg));
+            dependencies.logger.error(
               colors.red(
                 `[${ind + 1}/${
                   requestInputs.length
@@ -302,11 +347,11 @@ export async function uploadPrivacyRequestsFromCsv({
   const totalTime = t1 - t0;
 
   // Log completion time
-  logger.info(colors.green(`Completed upload in "${totalTime / 1000}" seconds.`));
+  dependencies.logger.info(colors.green(`Completed upload in "${totalTime / 1000}" seconds.`));
 
   // Log duplicates
   if (requestState.getValue('duplicateRequests').length > 0) {
-    logger.info(
+    dependencies.logger.info(
       colors.yellow(
         `Encountered "${requestState.getValue('duplicateRequests').length}" duplicate requests. ` +
           `See "${requestCacheFile}" to review the core identifiers for these requests.`,
@@ -316,13 +361,13 @@ export async function uploadPrivacyRequestsFromCsv({
 
   // Log errors
   if (requestState.getValue('failingRequests').length > 0) {
-    logger.error(
+    dependencies.logger.error(
       colors.red(
         `Encountered "${requestState.getValue('failingRequests').length}" errors. ` +
           `See "${requestCacheFile}" to review the error messages and inputs.`,
       ),
     );
-    process.exit(1);
+    dependencies.process.exit(1);
   }
 }
 /* eslint-enable max-lines */

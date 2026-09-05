@@ -46,22 +46,30 @@ export async function upload(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await uploadPrivacyRequestsFromCsv({
-    cacheFilepath,
-    requestReceiptFolder,
-    file,
-    auth,
-    sombraAuth,
-    concurrency,
-    transcendUrl,
-    defaultPhoneCountryCode,
-    attributes: splitCsvToList(attributes),
-    debug,
-    skipFilterStep,
-    isSilent,
-    skipSendingReceipt,
-    emailIsVerified,
-    isTest,
-    dryRun,
-  });
+  await uploadPrivacyRequestsFromCsv(
+    {
+      cacheFilepath,
+      requestReceiptFolder,
+      file,
+      auth,
+      sombraAuth,
+      concurrency,
+      transcendUrl,
+      defaultPhoneCountryCode,
+      attributes: splitCsvToList(attributes),
+      debug,
+      skipFilterStep,
+      isSilent,
+      skipSendingReceipt,
+      emailIsVerified,
+      isTest,
+      dryRun,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      path: this.path,
+      ['process']: this.process,
+    },
+  );
 }

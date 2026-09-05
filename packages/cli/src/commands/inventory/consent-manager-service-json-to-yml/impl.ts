@@ -56,10 +56,14 @@ export function consentManagerServiceJsonToYml(
   });
 
   // write to disk
-  writeTranscendYaml(output, {
-    'data-flows': dataFlows,
-    cookies,
-  });
+  writeTranscendYaml(
+    output,
+    {
+      'data-flows': dataFlows,
+      cookies,
+    },
+    { fs: this.fs },
+  );
 
   this.logger.info(
     colors.green(

@@ -10,32 +10,47 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests } from '../graphql/index.js';
+
+/** Runtime dependencies used while skipping preflight jobs. */
+export interface SkipPreflightJobsDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: SkipPreflightJobsDependencies = {
+  logger,
+};
 
 /**
  * Given an enricher ID, mark all open request enrichers as skipped
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns Number of items skipped
  */
-export async function skipPreflightJobs({
-  enricherIds,
-  auth,
-  concurrency = 100,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** Transcend API key authentication */
-  auth: string;
-  /** Enricher IDs to pull down jobs for */
-  enricherIds: string[];
-  /** Upload concurrency */
-  concurrency?: number;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Request statuses to mark as completed */
-  requestStatuses?: RequestStatus[];
-}): Promise<number> {
+export async function skipPreflightJobs(
+  {
+    enricherIds,
+    auth,
+    concurrency = 100,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** Transcend API key authentication */
+    auth: string;
+    /** Enricher IDs to pull down jobs for */
+    enricherIds: string[];
+    /** Upload concurrency */
+    concurrency?: number;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Request statuses to mark as completed */
+    requestStatuses?: RequestStatus[];
+  },
+  dependencies: SkipPreflightJobsDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -48,7 +63,7 @@ export async function skipPreflightJobs({
   });
 
   // Notify Transcend
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Processing enricher: "${enricherIds.join(',')}" fetched "${
         requests.length
@@ -68,7 +83,7 @@ export async function skipPreflightJobs({
       // TODO dont pull all in
       const requestEnrichers = await fetchAllRequestEnrichers(client, {
         filterBy: { requestId: request.id },
-        logger,
+        logger: dependencies.logger,
       });
       const requestEnrichersFiltered = requestEnrichers.filter(
         (enricher) =>
@@ -89,7 +104,7 @@ export async function skipPreflightJobs({
               success: boolean;
             }>(client, SKIP_REQUEST_ENRICHER, {
               variables: { requestEnricherId: requestEnricher.id },
-              logger,
+              logger: dependencies.logger,
             });
             totalSkipped += 1;
           } catch (err) {
@@ -113,7 +128,7 @@ export async function skipPreflightJobs({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully skipped "${totalSkipped}" for  "${
         requests.length

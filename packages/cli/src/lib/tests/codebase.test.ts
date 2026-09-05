@@ -183,7 +183,9 @@ describe('CLI Command Structure', () => {
               ts.isPropertyAccessExpression(node.parent) &&
               node.parent.name === node &&
               node.parent.expression.kind === ts.SyntaxKind.ThisKeyword;
-            if (!isContextProperty) {
+            const isDependencyPropertyName =
+              ts.isPropertyAssignment(node.parent) && node.parent.name === node;
+            if (!isContextProperty && !isDependencyPropertyName) {
               const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
               violations.push(`${implFile}:${position.line + 1}: uses global process`);
             }

@@ -2,8 +2,19 @@ import { map } from '@transcend-io/utils';
 import colors from 'colors';
 import type { Got } from 'got';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { RequestFileMetadata } from './getFileMetadataForPrivacyRequests.js';
+
+/** Runtime dependencies used while streaming privacy request files. */
+export interface StreamPrivacyRequestFilesDependencies {
+  /** Logger used to report skipped downloads. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: StreamPrivacyRequestFilesDependencies = {
+  logger,
+};
 
 /**
  * This function will take in a set of file metadata for privacy requests
@@ -12,6 +23,7 @@ import { RequestFileMetadata } from './getFileMetadataForPrivacyRequests.js';
  *
  * @param fileMetadata - Metadata to download
  * @param options - Options for the request
+ * @param dependencies - Runtime dependencies.
  */
 export async function streamPrivacyRequestFiles(
   fileMetadata: RequestFileMetadata[],
@@ -30,6 +42,7 @@ export async function streamPrivacyRequestFiles(
     /** Concurrent downloads at once */
     concurrency?: number;
   },
+  dependencies: StreamPrivacyRequestFilesDependencies = defaultDependencies,
 ): Promise<void> {
   // Loop over each file
   await map(
@@ -47,7 +60,7 @@ export async function streamPrivacyRequestFiles(
           .then((fileResponse) => onFileDownloaded(metadata, fileResponse));
       } catch (err) {
         if (err?.response?.body?.includes('fileMetadata#verify')) {
-          logger.error(
+          dependencies.logger.error(
             colors.red(
               `Failed to pull file for: ${metadata.fileName} (request:${requestId}) - JWT expired. ` +
                 'This likely means that the file is no longer available. ' +

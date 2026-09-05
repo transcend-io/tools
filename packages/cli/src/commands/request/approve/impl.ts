@@ -34,16 +34,19 @@ export async function approve(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await approvePrivacyRequests({
-    transcendUrl,
-    requestActions: actions,
-    auth,
-    requestOrigins: origins,
-    concurrency,
-    silentModeBefore,
-    createdAtBefore,
-    createdAtAfter,
-    updatedAtBefore,
-    updatedAtAfter,
-  });
+  await approvePrivacyRequests(
+    {
+      transcendUrl,
+      requestActions: actions,
+      auth,
+      requestOrigins: origins,
+      concurrency,
+      silentModeBefore,
+      createdAtBefore,
+      createdAtAfter,
+      updatedAtBefore,
+      updatedAtAfter,
+    },
+    { logger: this.logger },
+  );
 }

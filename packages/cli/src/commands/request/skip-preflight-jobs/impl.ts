@@ -14,9 +14,12 @@ export async function skipPreflightJobs(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await skipPreflightJobsHelper({
-    transcendUrl,
-    auth,
-    enricherIds,
-  });
+  await skipPreflightJobsHelper(
+    {
+      transcendUrl,
+      auth,
+      enricherIds,
+    },
+    { logger: this.logger },
+  );
 }

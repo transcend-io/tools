@@ -8,6 +8,16 @@ import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { domainToHost } from './domainToHost.js';
 
+/** Runtime dependencies for building an XDI sync endpoint. */
+export interface BuildXdiSyncEndpointDependencies {
+  /** Logger used for status and SDK requests. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'log' | 'warn'>;
+}
+
+const defaultDependencies: BuildXdiSyncEndpointDependencies = {
+  logger,
+};
+
 /**
  * Sync group configuration mapping
  * e.g.
@@ -32,6 +42,7 @@ export const IP_ADDRESS_REGEX =
  *
  * @param apiKeys - The API keys that will be used to pull down configurations for
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  * @returns The XDI configuration
  */
 export async function buildXdiSyncEndpoint(
@@ -54,6 +65,7 @@ export async function buildXdiSyncEndpoint(
     /** Allows XDI commands */
     xdiAllowedCommands?: string;
   },
+  dependencies: BuildXdiSyncEndpointDependencies = defaultDependencies,
 ): Promise<{
   /** Sync group configurations */
   syncGroups: XdiSyncGroups;
@@ -69,7 +81,7 @@ export async function buildXdiSyncEndpoint(
   const consentManagers = await map(
     apiKeysAsList,
     async (apiKey) => {
-      logger.info(
+      dependencies.logger.info(
         colors.magenta(`Pulling consent metadata for organization - ${apiKey.organizationName}`),
       );
 
@@ -77,7 +89,9 @@ export async function buildXdiSyncEndpoint(
       const client = buildTranscendGraphQLClient(transcendUrl, apiKey.apiKey);
 
       // Grab consent manager
-      const consentManager = await fetchConsentManager(client, { logger });
+      const consentManager = await fetchConsentManager(client, {
+        logger: dependencies.logger,
+      });
       return consentManager;
     },
     { concurrency: 5 },

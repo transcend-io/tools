@@ -37,13 +37,17 @@ export async function buildXdiSyncEndpoint(
   });
 
   // Build the sync endpoint
-  const { syncGroups, html } = await buildXdiSyncEndpointHelper(apiKeyOrList, {
-    xdiLocation,
-    transcendUrl,
-    removeIpAddresses,
-    domainBlockList: domainBlockList.length > 0 ? domainBlockList : undefined,
-    xdiAllowedCommands,
-  });
+  const { syncGroups, html } = await buildXdiSyncEndpointHelper(
+    apiKeyOrList,
+    {
+      xdiLocation,
+      transcendUrl,
+      removeIpAddresses,
+      domainBlockList: domainBlockList.length > 0 ? domainBlockList : undefined,
+      xdiAllowedCommands,
+    },
+    { logger: this.logger },
+  );
 
   // Log success
   this.logger.info(

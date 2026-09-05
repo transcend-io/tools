@@ -53,10 +53,12 @@ export async function deriveDataSilosFromDataFlows(
   });
 
   // List of each data flow yml file
-  listFiles(dataFlowsYmlFolder).forEach((directory) => {
+  listFiles(dataFlowsYmlFolder, undefined, false, { fs: this.fs }).forEach((directory) => {
     // read in the data flows for a specific instance
     const { 'data-flows': dataFlows = [] } = readTranscendYaml(
       this.path.join(dataFlowsYmlFolder, directory),
+      {},
+      { fs: this.fs },
     );
 
     // map the data flows to data silos
@@ -73,8 +75,12 @@ export async function deriveDataSilosFromDataFlows(
     this.logger.log(`Total Services: ${dataSilos.length}`);
     this.logger.log(`Ad Tech Services: ${adTechDataSilos.length}`);
     this.logger.log(`Site Tech Services: ${siteTechDataSilos.length}`);
-    writeTranscendYaml(this.path.join(dataSilosYmlFolder, directory), {
-      'data-silos': ignoreYmls.includes(directory) ? [] : dataSilos,
-    });
+    writeTranscendYaml(
+      this.path.join(dataSilosYmlFolder, directory),
+      {
+        'data-silos': ignoreYmls.includes(directory) ? [] : dataSilos,
+      },
+      { fs: this.fs },
+    );
   });
 }

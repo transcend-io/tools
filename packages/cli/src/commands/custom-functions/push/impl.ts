@@ -79,8 +79,12 @@ export async function push(
     this.process.exit(1);
   }
   const vars = parseVariablesFromString(variables);
+  const manifestDependencies = {
+    fs: this.fs,
+    path: this.path,
+  };
   this.logger.info(colors.magenta(`Reading manifest "${file}"...`));
-  const configs = readCustomFunctionsManifest(file, vars);
+  const configs = readCustomFunctionsManifest(file, vars, manifestDependencies);
   this.logger.info(colors.green(`Found ${configs.length} custom function(s) in "${file}"`));
 
   const client = buildTranscendGraphQLClient(transcendUrl, apiKey);
@@ -335,7 +339,7 @@ export async function push(
       };
       return Object.keys(ids).length > 0 ? ids : undefined;
     });
-    const updatedCount = writeCustomFunctionIdsToManifest(file, idsByIndex);
+    const updatedCount = writeCustomFunctionIdsToManifest(file, idsByIndex, manifestDependencies);
     if (updatedCount > 0) {
       this.logger.info(
         colors.green(

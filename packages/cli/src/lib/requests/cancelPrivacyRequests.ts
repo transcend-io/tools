@@ -10,6 +10,7 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import {
   UPDATE_PRIVACY_REQUEST,
@@ -17,60 +18,74 @@ import {
   CANCEL_PRIVACY_REQUEST,
 } from '../graphql/index.js';
 
+/** Runtime dependencies used while canceling privacy requests. */
+export interface CancelPrivacyRequestsDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: CancelPrivacyRequestsDependencies = {
+  logger,
+};
+
 /**
  * Cancel a set of privacy requests
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns The number of requests canceled
  */
-export async function cancelPrivacyRequests({
-  requestActions,
-  cancellationTitle,
-  auth,
-  requestIds,
-  silentModeBefore,
-  createdAtBefore,
-  createdAtAfter,
-  updatedAtBefore,
-  updatedAtAfter,
-  statuses = [
-    RequestStatus.Compiling,
-    RequestStatus.RequestMade,
-    RequestStatus.Delayed,
-    RequestStatus.Approving,
-    RequestStatus.Secondary,
-    RequestStatus.Enriching,
-    RequestStatus.Waiting,
-    RequestStatus.SecondaryApproving,
-  ],
-  concurrency = 50,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** The request actions that should be restarted */
-  requestActions: RequestAction[];
-  /** Transcend API key authentication */
-  auth: string;
-  /** Concurrency limit for approving */
-  concurrency?: number;
-  /** The request statuses to cancel */
-  statuses?: RequestStatus[];
-  /** The set of privacy requests to cancel */
-  requestIds?: string[];
-  /** Mark these requests as silent mode if they were created before this date */
-  silentModeBefore?: Date;
-  /** Filter for requests created before this date */
-  createdAtBefore?: Date;
-  /** Filter for requests created after this date */
-  createdAtAfter?: Date;
-  /** Filter for requests updated before this date */
-  updatedAtBefore?: Date;
-  /** Filter for requests updated after this date */
-  updatedAtAfter?: Date;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** The email template to use when canceling the requests */
-  cancellationTitle?: string;
-}): Promise<number> {
+export async function cancelPrivacyRequests(
+  {
+    requestActions,
+    cancellationTitle,
+    auth,
+    requestIds,
+    silentModeBefore,
+    createdAtBefore,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    statuses = [
+      RequestStatus.Compiling,
+      RequestStatus.RequestMade,
+      RequestStatus.Delayed,
+      RequestStatus.Approving,
+      RequestStatus.Secondary,
+      RequestStatus.Enriching,
+      RequestStatus.Waiting,
+      RequestStatus.SecondaryApproving,
+    ],
+    concurrency = 50,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** The request actions that should be restarted */
+    requestActions: RequestAction[];
+    /** Transcend API key authentication */
+    auth: string;
+    /** Concurrency limit for approving */
+    concurrency?: number;
+    /** The request statuses to cancel */
+    statuses?: RequestStatus[];
+    /** The set of privacy requests to cancel */
+    requestIds?: string[];
+    /** Mark these requests as silent mode if they were created before this date */
+    silentModeBefore?: Date;
+    /** Filter for requests created before this date */
+    createdAtBefore?: Date;
+    /** Filter for requests created after this date */
+    createdAtAfter?: Date;
+    /** Filter for requests updated before this date */
+    updatedAtBefore?: Date;
+    /** Filter for requests updated after this date */
+    updatedAtAfter?: Date;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** The email template to use when canceling the requests */
+    cancellationTitle?: string;
+  },
+  dependencies: CancelPrivacyRequestsDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -83,7 +98,7 @@ export async function cancelPrivacyRequests({
   let cancelationTemplate: Template | undefined;
   if (cancellationTitle) {
     const matchingTemplates = await fetchAllTemplates(client, {
-      logger,
+      logger: dependencies.logger,
       filterBy: { title: cancellationTitle },
     });
     const exactTitleMatch = matchingTemplates.find(
@@ -107,7 +122,7 @@ export async function cancelPrivacyRequests({
   });
 
   // Notify Transcend
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Canceling "${allRequests.length}" requests${
         cancelationTemplate ? ` Using template: ${cancelationTemplate.title}` : ''
@@ -130,7 +145,7 @@ export async function cancelPrivacyRequests({
               isSilent: true,
             },
           },
-          logger,
+          logger: dependencies.logger,
         });
       }
 
@@ -147,7 +162,7 @@ export async function cancelPrivacyRequests({
               : {}),
           },
         },
-        logger,
+        logger: dependencies.logger,
       });
 
       total += 1;
@@ -160,7 +175,7 @@ export async function cancelPrivacyRequests({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(`Successfully canceled ${total} requests in "${totalTime / 1000}" seconds!`),
   );
   return allRequests.length;

@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import { PersistedState } from '@transcend-io/persisted-state';
 import { PreferenceUpdateItem } from '@transcend-io/privacy-types';
 import {
@@ -19,58 +21,80 @@ import { parseAttributesFromString } from '../requests/index.js';
 import { parsePreferenceManagementCsvWithCache } from './parsePreferenceManagementCsv.js';
 import { NONE_PREFERENCE_MAP } from './parsePreferenceTimestampsFromCsv.js';
 
+/** Runtime dependencies for interactive preference uploads. */
+export interface UploadPreferenceManagementPreferencesInteractiveDependencies {
+  /** Filesystem implementation forwarded to CSV parsing. */
+  fs: Pick<typeof fs, 'readFileSync'>;
+  /** Logger used for upload status, errors, and SDK requests. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'log' | 'warn'>;
+  /** Process implementation used to read environment configuration. */
+  process: Pick<NodeJS.Process, 'env'>;
+}
+
+const defaultDependencies: UploadPreferenceManagementPreferencesInteractiveDependencies = {
+  fs,
+  logger,
+  process,
+};
+
 /**
  * Upload a set of consent preferences
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  */
-export async function uploadPreferenceManagementPreferencesInteractive({
-  auth,
-  sombraAuth,
-  receiptFilepath,
-  file,
-  partition,
-  isSilent = true,
-  dryRun = false,
-  skipWorkflowTriggers = false,
-  skipConflictUpdates = false,
-  skipExistingRecordCheck = false,
-  attributes = [],
-  transcendUrl,
-  forceTriggerWorkflows = false,
-}: {
-  /** The Transcend API key */
-  auth: string;
-  /** Sombra API key authentication */
-  sombraAuth?: string;
-  /** Partition key */
-  partition: string;
-  /** File where to store receipt and continue from where left off */
-  receiptFilepath: string;
-  /** The file to process */
-  file: string;
-  /** API URL for Transcend backend */
-  transcendUrl: string;
-  /** Whether to do a dry run */
-  dryRun?: boolean;
-  /** Whether to upload as isSilent */
-  isSilent?: boolean;
-  /** Attributes string pre-parse. In format Key:Value */
-  attributes?: string[];
-  /** Skip workflow triggers */
-  skipWorkflowTriggers?: boolean;
-  /**
-   * When true, only update preferences that do not conflict with existing
-   * preferences. When false, update all preferences in CSV based on timestamp.
-   */
-  skipConflictUpdates?: boolean;
-  /** Whether to skip the check for existing records. SHOULD ONLY BE USED FOR INITIAL UPLOAD */
-  skipExistingRecordCheck?: boolean;
-  /** Whether to force trigger workflows */
-  forceTriggerWorkflows?: boolean;
-}): Promise<void> {
+export async function uploadPreferenceManagementPreferencesInteractive(
+  {
+    auth,
+    sombraAuth,
+    receiptFilepath,
+    file,
+    partition,
+    isSilent = true,
+    dryRun = false,
+    skipWorkflowTriggers = false,
+    skipConflictUpdates = false,
+    skipExistingRecordCheck = false,
+    attributes = [],
+    transcendUrl,
+    forceTriggerWorkflows = false,
+  }: {
+    /** The Transcend API key */
+    auth: string;
+    /** Sombra API key authentication */
+    sombraAuth?: string;
+    /** Partition key */
+    partition: string;
+    /** File where to store receipt and continue from where left off */
+    receiptFilepath: string;
+    /** The file to process */
+    file: string;
+    /** API URL for Transcend backend */
+    transcendUrl: string;
+    /** Whether to do a dry run */
+    dryRun?: boolean;
+    /** Whether to upload as isSilent */
+    isSilent?: boolean;
+    /** Attributes string pre-parse. In format Key:Value */
+    attributes?: string[];
+    /** Skip workflow triggers */
+    skipWorkflowTriggers?: boolean;
+    /**
+     * When true, only update preferences that do not conflict with existing
+     * preferences. When false, update all preferences in CSV based on timestamp.
+     */
+    skipConflictUpdates?: boolean;
+    /** Whether to skip the check for existing records. SHOULD ONLY BE USED FOR INITIAL UPLOAD */
+    skipExistingRecordCheck?: boolean;
+    /** Whether to force trigger workflows */
+    forceTriggerWorkflows?: boolean;
+  },
+  dependencies: UploadPreferenceManagementPreferencesInteractiveDependencies = defaultDependencies,
+): Promise<void> {
   // Parse out the extra attributes to apply to all requests uploaded
-  const parsedAttributes = parseAttributesFromString(attributes);
+  const parsedAttributes = parseAttributesFromString(attributes, {
+    logger: dependencies.logger,
+  });
 
   // Create a new state file to store the requests from this run
   const preferenceState = new PersistedState(receiptFilepath, PreferenceState, {
@@ -82,7 +106,7 @@ export async function uploadPreferenceManagementPreferencesInteractive({
   const pendingRequests = preferenceState.getValue('pendingUpdates');
   let fileMetadata = preferenceState.getValue('fileMetadata');
 
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       'Restored cache, there are: \n' +
         `${Object.values(failingRequests).length} failing requests to be retried\n` +
@@ -100,13 +124,13 @@ export async function uploadPreferenceManagementPreferencesInteractive({
   const [sombra, purposes, preferenceTopics] = await Promise.all([
     // Create sombra instance to communicate with
     createSombraGotInstance(transcendUrl, auth, {
-      logger,
+      logger: dependencies.logger,
       sombraApiKey: sombraAuth,
-      sombraUrl: process.env.SOMBRA_URL,
+      sombraUrl: dependencies.process.env.SOMBRA_URL,
     }),
     // get all purposes and topics
-    fetchAllPurposes(client, { logger }),
-    fetchAllPreferenceTopics(client, { logger }),
+    fetchAllPurposes(client, { logger: dependencies.logger }),
+    fetchAllPreferenceTopics(client, { logger: dependencies.logger }),
   ]);
 
   // Process the file
@@ -121,6 +145,10 @@ export async function uploadPreferenceManagementPreferencesInteractive({
       forceTriggerWorkflows,
     },
     preferenceState,
+    {
+      fs: dependencies.fs,
+      logger: dependencies.logger,
+    },
   );
 
   // Construct the pending updates
@@ -128,17 +156,17 @@ export async function uploadPreferenceManagementPreferencesInteractive({
   fileMetadata = preferenceState.getValue('fileMetadata');
   const metadata = fileMetadata[file];
 
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Found ${Object.entries(metadata.pendingSafeUpdates).length} safe updates in ${file}`,
     ),
   );
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Found ${Object.entries(metadata.pendingConflictUpdates).length} conflict updates in ${file}`,
     ),
   );
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Found ${Object.entries(metadata.skippedUpdates).length} skipped updates in ${file}`,
     ),
@@ -183,7 +211,7 @@ export async function uploadPreferenceManagementPreferencesInteractive({
 
   // Exist early if dry run
   if (dryRun) {
-    logger.info(
+    dependencies.logger.info(
       colors.green(
         `Dry run complete, exiting. ${
           Object.values(pendingUpdates).length
@@ -193,7 +221,7 @@ export async function uploadPreferenceManagementPreferencesInteractive({
     return;
   }
 
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Uploading ${Object.values(pendingUpdates).length} preferences to partition: ${partition}`,
     ),
@@ -227,12 +255,12 @@ export async function uploadPreferenceManagementPreferencesInteractive({
         try {
           const parsed = JSON.parse(err?.response?.body || '{}');
           if (parsed.error) {
-            logger.error(colors.red(`Error: ${parsed.error}`));
+            dependencies.logger.error(colors.red(`Error: ${parsed.error}`));
           }
         } catch {
           // continue
         }
-        logger.error(
+        dependencies.logger.error(
           colors.red(
             `Failed to upload ${currentChunk.length} user preferences to partition ${partition}: ${
               err?.response?.body || err?.message
@@ -261,7 +289,7 @@ export async function uploadPreferenceManagementPreferencesInteractive({
   progressBar.stop();
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully uploaded ${
         updatesToRun.length

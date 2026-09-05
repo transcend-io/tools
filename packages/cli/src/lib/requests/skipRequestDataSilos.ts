@@ -11,38 +11,53 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
+
+/** Runtime dependencies used while skipping request data silos. */
+export interface SkipRequestDataSilosDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: SkipRequestDataSilosDependencies = {
+  logger,
+};
 
 /**
  * Given a data silo ID, mark all open request data silos as skipped
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns Number of items skipped
  */
-export async function skipRequestDataSilos({
-  dataSiloId,
-  auth,
-  concurrency = 50,
-  status = 'SKIPPED',
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  requestStatuses = [RequestStatus.Compiling, RequestStatus.Secondary],
-  actionTypes = [],
-}: {
-  /** Transcend API key authentication */
-  auth: string;
-  /** Data Silo ID to pull down jobs for */
-  dataSiloId: string;
-  /** Status to set */
-  status?: 'SKIPPED' | 'RESOLVED';
-  /** Upload concurrency */
-  concurrency?: number;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Request statuses to mark as completed */
-  requestStatuses?: RequestStatus[];
-  /** Request action types to filter on */
-  actionTypes?: RequestAction[];
-}): Promise<number> {
+export async function skipRequestDataSilos(
+  {
+    dataSiloId,
+    auth,
+    concurrency = 50,
+    status = 'SKIPPED',
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    requestStatuses = [RequestStatus.Compiling, RequestStatus.Secondary],
+    actionTypes = [],
+  }: {
+    /** Transcend API key authentication */
+    auth: string;
+    /** Data Silo ID to pull down jobs for */
+    dataSiloId: string;
+    /** Status to set */
+    status?: 'SKIPPED' | 'RESOLVED';
+    /** Upload concurrency */
+    concurrency?: number;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Request statuses to mark as completed */
+    requestStatuses?: RequestStatus[];
+    /** Request action types to filter on */
+    actionTypes?: RequestAction[];
+  },
+  dependencies: SkipRequestDataSilosDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -51,10 +66,10 @@ export async function skipRequestDataSilos({
 
   // Determine total number of request data silos
   const requestDataSiloCount = await fetchRequestDataSilosCount(client, {
-    logger,
+    logger: dependencies.logger,
     filterBy: { dataSiloId, requestStatuses },
   });
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Marking ${requestDataSiloCount} request data silos as completed${actionTypes.length > 0 ? ` for action types: ${actionTypes.join(',')}` : ''}`,
     ),
@@ -68,7 +83,7 @@ export async function skipRequestDataSilos({
 
   // Fetch all matching request data silos, updating progress as pages are fetched
   const requestDataSilos = await fetchRequestDataSilos(client, {
-    logger,
+    logger: dependencies.logger,
     filterBy: { dataSiloId, requestStatuses },
     onProgress: (numFetched) => {
       total += numFetched / 2;
@@ -86,7 +101,7 @@ export async function skipRequestDataSilos({
             success: boolean;
           }>(client, CHANGE_REQUEST_DATA_SILO_STATUS, {
             variables: { requestDataSiloId: requestDataSilo.id, status },
-            logger,
+            logger: dependencies.logger,
           });
         } catch (err) {
           if (!err.message.includes('Client error: Request must be active:')) {
@@ -105,7 +120,7 @@ export async function skipRequestDataSilos({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully skipped "${requestDataSiloCount}" requests in "${totalTime / 1000}" seconds!`,
     ),

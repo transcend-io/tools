@@ -18,11 +18,18 @@ export async function uploadDataFlowsFromCsv(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await uploadDataFlowsFromCsvHelper({
-    auth,
-    trackerStatus,
-    file,
-    classifyService,
-    transcendUrl,
-  });
+  await uploadDataFlowsFromCsvHelper(
+    {
+      auth,
+      trackerStatus,
+      file,
+      classifyService,
+      transcendUrl,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 }

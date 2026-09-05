@@ -4,6 +4,7 @@ import type { Got } from 'got';
 import * as t from 'io-ts';
 import { uniq } from 'lodash-es';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 
 const ADMIN_URL = 'https://app.transcend.io/privacy-requests/incoming-requests/';
@@ -15,6 +16,16 @@ export const EnrichPrivacyRequest = t.record(t.string, t.string);
 /** Type override */
 export type EnrichPrivacyRequest = t.TypeOf<typeof EnrichPrivacyRequest>;
 
+/** Runtime dependencies used while enriching a privacy request. */
+export interface EnrichPrivacyRequestDependencies {
+  /** Logger used for success, skip, and error output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: EnrichPrivacyRequestDependencies = {
+  logger,
+};
+
 /**
  * Upload identifiers to a privacy request or mark request as
  *
@@ -22,6 +33,7 @@ export type EnrichPrivacyRequest = t.TypeOf<typeof EnrichPrivacyRequest>;
  * @param request - Request to enricher
  * @param enricherId - The ID of the enricher being uploaded to
  * @param index - Index of request ID
+ * @param dependencies - Runtime dependencies.
  * @returns True if enriched successfully, false if skipped, throws error if failed
  */
 export async function enrichPrivacyRequest(
@@ -29,13 +41,14 @@ export async function enrichPrivacyRequest(
   { id: rawId, ...rest }: EnrichPrivacyRequest,
   enricherId: string,
   index?: number,
+  dependencies: EnrichPrivacyRequestDependencies = defaultDependencies,
 ): Promise<boolean> {
   if (!rawId) {
     // error
     const msg = `Request ID must be provided to enricher request.${
       index ? ` Found error in row: ${index}` : ''
     }`;
-    logger.error(colors.red(msg));
+    dependencies.logger.error(colors.red(msg));
     throw new Error(msg);
   }
 
@@ -70,7 +83,7 @@ export async function enrichPrivacyRequest(
       })
       .json();
 
-    logger.error(colors.green(`Successfully enriched request: ${ADMIN_URL}${id}`));
+    dependencies.logger.error(colors.green(`Successfully enriched request: ${ADMIN_URL}${id}`));
     return true;
   } catch (err) {
     // skip if already enriched
@@ -78,7 +91,7 @@ export async function enrichPrivacyRequest(
       typeof err.response.body === 'string' &&
       err.response.body.includes('Cannot update a resolved RequestEnricher')
     ) {
-      logger.warn(
+      dependencies.logger.warn(
         colors.magenta(
           `Skipped enrichment for request: ${ADMIN_URL}${id}, request is no longer in the enriching phase.`,
         ),
@@ -87,7 +100,7 @@ export async function enrichPrivacyRequest(
     }
 
     // error
-    logger.error(
+    dependencies.logger.error(
       colors.red(
         `Failed to enricher identifiers for request with id: ${ADMIN_URL}${id} - ${err.message} - ${err.response.body}`,
       ),

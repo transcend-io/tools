@@ -3,18 +3,33 @@ import colors from 'colors';
 import inquirer from 'inquirer';
 import { uniq } from 'lodash-es';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { NONE } from './constants.js';
 import { getUniqueValuesForColumn } from './getUniqueValuesForColumn.js';
+
+/** Runtime dependencies used while filtering request rows. */
+export interface FilterRowsDependencies {
+  /** Logger used to report the number of selected rows. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: FilterRowsDependencies = {
+  logger,
+};
 
 /**
  * Filter a list of CSV rows by column values
  * Choose columns that contain metadata to filter the requests
  *
  * @param rows - Rows to filter
+ * @param dependencies - Runtime dependencies.
  * @returns Filtered rows
  */
-export async function filterRows(rows: ObjByString[]): Promise<ObjByString[]> {
+export async function filterRows(
+  rows: ObjByString[],
+  dependencies: FilterRowsDependencies = defaultDependencies,
+): Promise<ObjByString[]> {
   // Determine set of column names
   const columnNames = uniq(rows.map((x) => Object.keys(x)).flat());
 
@@ -64,6 +79,6 @@ export async function filterRows(rows: ObjByString[]): Promise<ObjByString[]> {
     }
   }
 
-  logger.info(colors.magenta(`Importing ${filteredRows.length} requests`));
+  dependencies.logger.info(colors.magenta(`Importing ${filteredRows.length} requests`));
   return filteredRows;
 }

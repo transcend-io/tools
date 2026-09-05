@@ -11,11 +11,22 @@ import { ObjByString } from '@transcend-io/type-utils';
 import colors from 'colors';
 import { GraphQLClient } from 'graphql-request';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { CachedFileState, NONE, ColumnName } from './constants.js';
 import { getUniqueValuesForColumn } from './getUniqueValuesForColumn.js';
 import { ColumnNameMap } from './mapCsvColumnsToApi.js';
 import { mapEnumValues } from './mapEnumValues.js';
+
+/** Runtime dependencies used while mapping request enum values. */
+export interface MapRequestEnumValuesDependencies {
+  /** Logger used for mapping status and GraphQL output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: MapRequestEnumValuesDependencies = {
+  logger,
+};
 
 /**
  * Map the values in a CSV to the enum values in Transcend
@@ -23,6 +34,7 @@ import { mapEnumValues } from './mapEnumValues.js';
  * @param client - GraphQL client
  * @param requests - Set of privacy requests
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  */
 export async function mapRequestEnumValues(
   client: GraphQLClient,
@@ -36,6 +48,7 @@ export async function mapRequestEnumValues(
     /** Mapping of column names */
     columnNameMap: ColumnNameMap;
   },
+  dependencies: MapRequestEnumValuesDependencies = defaultDependencies,
 ): Promise<void> {
   // Get mapped value
   const getMappedName = (attribute: ColumnName): string =>
@@ -45,10 +58,10 @@ export async function mapRequestEnumValues(
   const { internalSubjects } = await makeGraphQLRequest<{
     /** Query response */
     internalSubjects: DataSubject[];
-  }>(client, DATA_SUBJECTS, { logger });
+  }>(client, DATA_SUBJECTS, { logger: dependencies.logger });
 
   // Map RequestAction
-  logger.info(colors.magenta('Determining mapping of columns for request action'));
+  dependencies.logger.info(colors.magenta('Determining mapping of columns for request action'));
   const requestTypeToRequestAction: { [k in string]: RequestAction } = await mapEnumValues(
     getUniqueValuesForColumn(requests, getMappedName(ColumnName.RequestType)),
     Object.values(RequestAction),
@@ -57,7 +70,7 @@ export async function mapRequestEnumValues(
   await state.setValue(requestTypeToRequestAction, 'requestTypeToRequestAction');
 
   // Map data subject type
-  logger.info(colors.magenta('Determining mapping of columns for subject'));
+  dependencies.logger.info(colors.magenta('Determining mapping of columns for subject'));
   const subjectTypeToSubjectName: { [k in string]: string } = await mapEnumValues(
     getUniqueValuesForColumn(requests, getMappedName(ColumnName.SubjectType)),
     internalSubjects.map(({ type }) => type),
@@ -66,17 +79,17 @@ export async function mapRequestEnumValues(
   await state.setValue(subjectTypeToSubjectName, 'subjectTypeToSubjectName');
 
   // Map locale
-  logger.info(colors.magenta('Determining mapping of columns for locale'));
+  dependencies.logger.info(colors.magenta('Determining mapping of columns for locale'));
   const languageToLocale: { [k in string]: LocaleValue } = await mapEnumValues(
     getUniqueValuesForColumn(requests, getMappedName(ColumnName.Locale)),
     Object.values(LOCALE_KEY),
     state.getValue('languageToLocale'),
   );
   await state.setValue(languageToLocale, 'languageToLocale');
-  logger.info(colors.magenta('Determining mapping of columns for request status'));
+  dependencies.logger.info(colors.magenta('Determining mapping of columns for request status'));
 
   // Map request status
-  logger.info(colors.magenta('Determining mapping of columns for request status'));
+  dependencies.logger.info(colors.magenta('Determining mapping of columns for request status'));
   const requestStatusColumn = getMappedName(ColumnName.RequestStatus);
   const statusToRequestStatus: {
     [k in string]: CompletedRequestStatus | typeof NONE;
@@ -91,7 +104,7 @@ export async function mapRequestEnumValues(
   await state.setValue(statusToRequestStatus, 'statusToRequestStatus');
 
   // Map country
-  logger.info(colors.magenta('Determining mapping of columns for country'));
+  dependencies.logger.info(colors.magenta('Determining mapping of columns for country'));
   const countryColumn = getMappedName(ColumnName.Country);
   const regionToCountry: {
     [k in string]: IsoCountryCode | typeof NONE;
@@ -106,7 +119,9 @@ export async function mapRequestEnumValues(
   await state.setValue(regionToCountry, 'regionToCountry');
 
   // Map country sub division
-  logger.info(colors.magenta('Determining mapping of columns for country sub division'));
+  dependencies.logger.info(
+    colors.magenta('Determining mapping of columns for country sub division'),
+  );
   const countrySubDivisionColumn = getMappedName(ColumnName.CountrySubDivision);
   const regionToCountrySubDivision: {
     [k in string]: IsoCountrySubdivisionCode | typeof NONE;

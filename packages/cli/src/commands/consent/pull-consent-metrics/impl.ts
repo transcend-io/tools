@@ -101,11 +101,15 @@ export async function pullConsentMetrics(
       const client = buildTranscendGraphQLClient(transcendUrl, apiKeyOrList);
 
       // Pull the metrics
-      const configuration = await pullConsentManagerMetrics(client, {
-        bin: parsedBin,
-        start: startDate,
-        end: endDate,
-      });
+      const configuration = await pullConsentManagerMetrics(
+        client,
+        {
+          bin: parsedBin,
+          start: startDate,
+          end: endDate,
+        },
+        { logger: this.logger },
+      );
 
       // Write to file
       await map(
@@ -122,6 +126,8 @@ export async function pullConsentMetrics(
                   timestamp: key,
                   value,
                 })),
+                undefined,
+                { fs: this.fs },
               );
             },
             {
@@ -154,11 +160,15 @@ export async function pullConsentMetrics(
       const client = buildTranscendGraphQLClient(transcendUrl, apiKey.apiKey);
 
       try {
-        const configuration = await pullConsentManagerMetrics(client, {
-          bin: parsedBin,
-          start: startDate,
-          end: endDate,
-        });
+        const configuration = await pullConsentManagerMetrics(
+          client,
+          {
+            bin: parsedBin,
+            start: startDate,
+            end: endDate,
+          },
+          { logger: this.logger },
+        );
 
         // ensure folder exists for that organization
         const subFolder = this.path.join(folder, apiKey.organizationName);
@@ -177,6 +187,8 @@ export async function pullConsentMetrics(
                 timestamp: key,
                 value,
               })),
+              undefined,
+              { fs: this.fs },
             );
           });
         });

@@ -17,10 +17,13 @@ export async function retryRequestDataSilos(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await retryRequestDataSilosHelper({
-    requestActions: actions,
-    transcendUrl,
-    auth,
-    dataSiloId,
-  });
+  await retryRequestDataSilosHelper(
+    {
+      requestActions: actions,
+      transcendUrl,
+      auth,
+      dataSiloId,
+    },
+    { logger: this.logger },
+  );
 }

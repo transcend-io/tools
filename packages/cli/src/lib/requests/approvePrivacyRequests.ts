@@ -5,6 +5,7 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import {
   UPDATE_PRIVACY_REQUEST,
@@ -12,45 +13,59 @@ import {
   APPROVE_PRIVACY_REQUEST,
 } from '../graphql/index.js';
 
+/** Runtime dependencies used while approving privacy requests. */
+export interface ApprovePrivacyRequestsDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: ApprovePrivacyRequestsDependencies = {
+  logger,
+};
+
 /**
  * Approve a set of privacy requests
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns The number of requests approved
  */
-export async function approvePrivacyRequests({
-  requestActions,
-  requestOrigins,
-  auth,
-  silentModeBefore,
-  createdAtAfter,
-  createdAtBefore,
-  updatedAtBefore,
-  updatedAtAfter,
-  concurrency = 50,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** The request actions that should be restarted */
-  requestActions: RequestAction[];
-  /** The request origins that should be restarted */
-  requestOrigins?: RequestOrigin[];
-  /** Transcend API key authentication */
-  auth: string;
-  /** Concurrency limit for approving */
-  concurrency?: number;
-  /** Mark these requests as silent mode if they were created before this date */
-  silentModeBefore?: Date;
-  /** Filter for requests created before this date */
-  createdAtBefore?: Date;
-  /** Filter for requests created after this date */
-  createdAtAfter?: Date;
-  /** Filter for requests updated before this date */
-  updatedAtBefore?: Date;
-  /** Filter for requests updated after this date */
-  updatedAtAfter?: Date;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<number> {
+export async function approvePrivacyRequests(
+  {
+    requestActions,
+    requestOrigins,
+    auth,
+    silentModeBefore,
+    createdAtAfter,
+    createdAtBefore,
+    updatedAtBefore,
+    updatedAtAfter,
+    concurrency = 50,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** The request actions that should be restarted */
+    requestActions: RequestAction[];
+    /** The request origins that should be restarted */
+    requestOrigins?: RequestOrigin[];
+    /** Transcend API key authentication */
+    auth: string;
+    /** Concurrency limit for approving */
+    concurrency?: number;
+    /** Mark these requests as silent mode if they were created before this date */
+    silentModeBefore?: Date;
+    /** Filter for requests created before this date */
+    createdAtBefore?: Date;
+    /** Filter for requests created after this date */
+    createdAtAfter?: Date;
+    /** Filter for requests updated before this date */
+    updatedAtBefore?: Date;
+    /** Filter for requests updated after this date */
+    updatedAtAfter?: Date;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: ApprovePrivacyRequestsDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -71,7 +86,7 @@ export async function approvePrivacyRequests({
   });
 
   // Notify Transcend
-  logger.info(colors.magenta(`Approving "${allRequests.length}" requests.`));
+  dependencies.logger.info(colors.magenta(`Approving "${allRequests.length}" requests.`));
 
   let total = 0;
   let skipped = 0;
@@ -89,7 +104,7 @@ export async function approvePrivacyRequests({
               isSilent: true,
             },
           },
-          logger,
+          logger: dependencies.logger,
         });
       }
 
@@ -97,7 +112,7 @@ export async function approvePrivacyRequests({
         // approve the request
         await makeGraphQLRequest(client, APPROVE_PRIVACY_REQUEST, {
           variables: { input: { requestId: requestToApprove.id } },
-          logger,
+          logger: dependencies.logger,
         });
       } catch (err) {
         if (err.message.includes('Request must be in an approving state,')) {
@@ -115,9 +130,9 @@ export async function approvePrivacyRequests({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
   if (skipped > 0) {
-    logger.info(colors.yellow(`${skipped} requests were skipped.`));
+    dependencies.logger.info(colors.yellow(`${skipped} requests were skipped.`));
   }
-  logger.info(
+  dependencies.logger.info(
     colors.green(`Successfully approved ${total} requests in "${totalTime / 1000}" seconds!`),
   );
   return allRequests.length;

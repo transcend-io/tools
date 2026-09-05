@@ -17,10 +17,13 @@ export async function rejectUnverifiedIdentifiers(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await removeUnverifiedRequestIdentifiers({
-    requestActions: actions,
-    transcendUrl,
-    auth,
-    identifierNames,
-  });
+  await removeUnverifiedRequestIdentifiers(
+    {
+      requestActions: actions,
+      transcendUrl,
+      auth,
+      identifierNames,
+    },
+    { logger: this.logger },
+  );
 }

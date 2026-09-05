@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import {
   DeletePreferenceRecordCliCsvRow,
   DeletePreferenceRecordsResponse,
@@ -11,6 +13,19 @@ import { chunk } from 'lodash-es';
 
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/index.js';
+
+/** Runtime dependencies for deleting preference records. */
+export interface BulkDeletePreferenceRecordsDependencies {
+  /** Filesystem implementation used to read identifier CSV files. */
+  fs: Pick<typeof fs, 'readFileSync'>;
+  /** Logger used for retry diagnostics. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'log' | 'warn'>;
+}
+
+const defaultDependencies: BulkDeletePreferenceRecordsDependencies = {
+  fs,
+  logger,
+};
 
 interface FailedResult extends DeletePreferenceRecordCliCsvRow {
   /** Error message describing the failure */
@@ -47,6 +62,7 @@ type DeletePreferenceRecordsOptions = Omit<
  *
  * @param sombra - Sombra instance (must include auth headers)
  * @param options - Options for deletion
+ * @param dependencies - Runtime dependencies
  * @param options.partition - The partition to delete from
  * @param options.identifierChunk - Chunk of identifiers to delete
  * @param options.timestamp - The timestamp for the deletion operation
@@ -55,6 +71,7 @@ type DeletePreferenceRecordsOptions = Omit<
 async function deletePreferenceRecordsRepository(
   sombra: Got,
   { partition, identifierChunk: chunk, timestamp }: DeletePreferenceRecordsRepositoryOptions,
+  dependencies: BulkDeletePreferenceRecordsDependencies,
 ): Promise<FailedResult[]> {
   try {
     const response = await withTransientRetry(
@@ -71,10 +88,10 @@ async function deletePreferenceRecordsRepository(
           })
           .json(),
       {
-        logger,
+        logger: dependencies.logger,
         maxAttempts: 3,
         onRetry: (attempt, _err, msg) => {
-          logger.warn(
+          dependencies.logger.warn(
             colors.yellow(`Attempt ${attempt} to delete preference records failed: ${msg}`),
           );
         },
@@ -104,6 +121,7 @@ async function deletePreferenceRecordsRepository(
  *
  * @param sombra - Sombra instance (must include auth headers)
  * @param options - Query options
+ * @param dependencies - Runtime dependencies
  * @returns All nodes (only when onItems is not provided)
  */
 export async function bulkDeletePreferenceRecords(
@@ -115,18 +133,25 @@ export async function bulkDeletePreferenceRecords(
     maxItemsInChunk,
     maxConcurrency,
   }: DeletePreferenceRecordsOptions,
+  dependencies: BulkDeletePreferenceRecordsDependencies = defaultDependencies,
 ): Promise<FailedResult[]> {
-  const anchorIdentifiers = readCsv(filePath, DeletePreferenceRecordCliCsvRow);
+  const anchorIdentifiers = readCsv(filePath, DeletePreferenceRecordCliCsvRow, undefined, {
+    fs: dependencies.fs,
+  });
   const chunks = chunk(anchorIdentifiers, maxItemsInChunk);
 
   const failedResults = await map(
     chunks,
     async (identifierChunk) => {
-      const failedResults = await deletePreferenceRecordsRepository(sombra, {
-        partition,
-        identifierChunk,
-        timestamp,
-      });
+      const failedResults = await deletePreferenceRecordsRepository(
+        sombra,
+        {
+          partition,
+          identifierChunk,
+          timestamp,
+        },
+        dependencies,
+      );
       return failedResults;
     },
     { concurrency: maxConcurrency },

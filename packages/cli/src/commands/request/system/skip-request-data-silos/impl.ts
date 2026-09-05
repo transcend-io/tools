@@ -30,12 +30,15 @@ export async function skipRequestDataSilos(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await skipRequestDataSilosHelper({
-    transcendUrl,
-    auth,
-    status,
-    dataSiloId,
-    requestStatuses: statuses,
-    actionTypes,
-  });
+  await skipRequestDataSilosHelper(
+    {
+      transcendUrl,
+      auth,
+      status,
+      dataSiloId,
+      requestStatuses: statuses,
+      actionTypes,
+    },
+    { logger: this.logger },
+  );
 }

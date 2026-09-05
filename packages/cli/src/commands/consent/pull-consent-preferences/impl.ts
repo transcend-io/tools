@@ -159,10 +159,10 @@ export async function pullConsentPreferences(
         seen.add(k);
         return true;
       });
-      initCsvFile(file, headerOrder);
+      initCsvFile(file, headerOrder, { fs: this.fs });
       wroteHeader = true;
     }
-    appendCsvRowsOrdered(file, rows, headerOrder!);
+    appendCsvRowsOrdered(file, rows, headerOrder!, { fs: this.fs });
   };
 
   if (shouldChunk) {

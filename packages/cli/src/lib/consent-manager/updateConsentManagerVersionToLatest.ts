@@ -11,35 +11,51 @@ import colors from 'colors';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 
+/** Runtime dependencies for updating Consent Manager bundles. */
+export interface UpdateConsentManagerVersionToLatestDependencies {
+  /** Logger used for status and SDK requests. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'log' | 'warn'>;
+}
+
+const defaultDependencies: UpdateConsentManagerVersionToLatestDependencies = {
+  logger,
+};
+
 /**
  * Update the consent manager to latest version
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  */
-export async function updateConsentManagerVersionToLatest({
-  auth,
-  deploy = false,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-  bundleTypes = Object.values(ConsentBundleType),
-}: {
-  /** Transcend API key authentication */
-  auth: string;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-  /** Deploy consent manager with this update */
-  deploy?: boolean;
-  /** The bundle types to update and deploy */
-  bundleTypes?: ConsentBundleType[];
-}): Promise<void> {
+export async function updateConsentManagerVersionToLatest(
+  {
+    auth,
+    deploy = false,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+    bundleTypes = Object.values(ConsentBundleType),
+  }: {
+    /** Transcend API key authentication */
+    auth: string;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+    /** Deploy consent manager with this update */
+    deploy?: boolean;
+    /** The bundle types to update and deploy */
+    bundleTypes?: ConsentBundleType[];
+  },
+  dependencies: UpdateConsentManagerVersionToLatestDependencies = defaultDependencies,
+): Promise<void> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Grab Consent Manager ID
-  const consentManagerId = await fetchConsentManagerId(client, { logger });
+  const consentManagerId = await fetchConsentManagerId(client, {
+    logger: dependencies.logger,
+  });
 
   // Update each bundle type to latest version
   await mapSeries(bundleTypes, async (bundleType) => {
-    logger.info(
+    dependencies.logger.info(
       colors.magenta(
         `Update Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}" to latest version...`,
       ),
@@ -49,9 +65,9 @@ export async function updateConsentManagerVersionToLatest({
         id: consentManagerId,
         bundleType,
       },
-      logger,
+      logger: dependencies.logger,
     });
-    logger.info(
+    dependencies.logger.info(
       colors.green(
         `Updated Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}" to latest version!`,
       ),
@@ -62,7 +78,7 @@ export async function updateConsentManagerVersionToLatest({
   if (deploy) {
     // Update each bundle type to latest version
     await mapSeries(bundleTypes, async (bundleType) => {
-      logger.info(
+      dependencies.logger.info(
         colors.magenta(
           `Deploying Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}"...`,
         ),
@@ -73,9 +89,9 @@ export async function updateConsentManagerVersionToLatest({
           id: consentManagerId,
           bundleType,
         },
-        { logger },
+        { logger: dependencies.logger },
       );
-      logger.info(
+      dependencies.logger.info(
         colors.green(
           `Deployed Consent Manager bundle with ID "${consentManagerId}" and type "${bundleType}"!`,
         ),

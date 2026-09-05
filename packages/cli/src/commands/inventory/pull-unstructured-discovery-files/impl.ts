@@ -63,7 +63,7 @@ export async function pullUnstructuredDiscoveryFiles(
       headers = uniq([...headers, ...Object.keys(result)]);
       return result;
     });
-    await writeLargeCsv(file, inputs, headers);
+    await writeLargeCsv(file, inputs, headers, { fs: this.fs });
   } catch (err) {
     this.logger.error(
       colors.red(`An error occurred syncing the unstructured discovery files: ${err.message}`),

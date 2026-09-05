@@ -9,58 +9,73 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { NOTIFY_ADDITIONAL_TIME, fetchAllRequests } from '../graphql/index.js';
+
+/** Runtime dependencies used while notifying privacy requests. */
+export interface NotifyPrivacyRequestsAdditionalTimeDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: NotifyPrivacyRequestsAdditionalTimeDependencies = {
+  logger,
+};
 
 /**
  * Mark a set of privacy requests to be in silent mode.
  * Note requests in silent mode are ignored
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns The number of requests marked silent
  */
-export async function notifyPrivacyRequestsAdditionalTime({
-  requestActions = Object.values(RequestAction),
-  auth,
-  requestIds,
-  createdAtBefore,
-  days = 45,
-  daysLeft = 10,
-  createdAtAfter,
-  updatedAtBefore,
-  updatedAtAfter,
-  emailTemplate = 'Additional Time Needed',
-  concurrency = 100,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** The request actions that should be restarted */
-  requestActions?: RequestAction[];
-  /** Filter for requests created before this date */
-  createdAtBefore: Date;
-  /** Filter for requests created after this date */
-  createdAtAfter?: Date;
-  /** Filter for requests updated before this date */
-  updatedAtBefore?: Date;
-  /** Filter for requests updated after this date */
-  updatedAtAfter?: Date;
-  /** Email template */
-  emailTemplate?: string;
-  /** Transcend API key authentication */
-  auth: string;
-  /** Number of days to extend request by */
-  days?: number;
-  /**
-   * Only notify requests that have less than this number of days until they are considered expired.
-   * This allows for re-running the command without notifying the same users multiple times
-   */
-  daysLeft?: number;
-  /** Concurrency limit for approving */
-  concurrency?: number;
-  /** The set of privacy requests to notify */
-  requestIds?: string[];
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<number> {
+export async function notifyPrivacyRequestsAdditionalTime(
+  {
+    requestActions = Object.values(RequestAction),
+    auth,
+    requestIds,
+    createdAtBefore,
+    days = 45,
+    daysLeft = 10,
+    createdAtAfter,
+    updatedAtBefore,
+    updatedAtAfter,
+    emailTemplate = 'Additional Time Needed',
+    concurrency = 100,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** The request actions that should be restarted */
+    requestActions?: RequestAction[];
+    /** Filter for requests created before this date */
+    createdAtBefore: Date;
+    /** Filter for requests created after this date */
+    createdAtAfter?: Date;
+    /** Filter for requests updated before this date */
+    updatedAtBefore?: Date;
+    /** Filter for requests updated after this date */
+    updatedAtAfter?: Date;
+    /** Email template */
+    emailTemplate?: string;
+    /** Transcend API key authentication */
+    auth: string;
+    /** Number of days to extend request by */
+    days?: number;
+    /**
+     * Only notify requests that have less than this number of days until they are considered expired.
+     * This allows for re-running the command without notifying the same users multiple times
+     */
+    daysLeft?: number;
+    /** Concurrency limit for approving */
+    concurrency?: number;
+    /** The set of privacy requests to notify */
+    requestIds?: string[];
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: NotifyPrivacyRequestsAdditionalTimeDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -71,7 +86,7 @@ export async function notifyPrivacyRequestsAdditionalTime({
 
   // Grab the template with that title
   const matchingTemplates = await fetchAllTemplates(client, {
-    logger,
+    logger: dependencies.logger,
     filterBy: { title: emailTemplate },
   });
   const exactTemplateMatch = matchingTemplates.find((template) => template.title === emailTemplate);
@@ -97,7 +112,9 @@ export async function notifyPrivacyRequestsAdditionalTime({
   );
 
   // Notify Transcend
-  logger.info(colors.magenta(`Notifying "${allRequests.length}" that more time is needed.`));
+  dependencies.logger.info(
+    colors.magenta(`Notifying "${allRequests.length}" that more time is needed.`),
+  );
 
   let total = 0;
   progressBar.start(allRequests.length, 0);
@@ -113,7 +130,7 @@ export async function notifyPrivacyRequestsAdditionalTime({
             additionalTime: days,
           },
         },
-        logger,
+        logger: dependencies.logger,
       });
 
       total += 1;
@@ -126,7 +143,7 @@ export async function notifyPrivacyRequestsAdditionalTime({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully marked ${total} requests as silent mode in "${totalTime / 1000}" seconds!`,
     ),

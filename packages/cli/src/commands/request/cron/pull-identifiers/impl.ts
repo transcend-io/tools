@@ -63,7 +63,7 @@ export async function pullIdentifiers(
     );
 
     const headers = uniq(chunk.map((d) => Object.keys(d)).flat());
-    await writeLargeCsv(numberedFileName, chunk, headers);
+    await writeLargeCsv(numberedFileName, chunk, headers, { fs: this.fs });
     this.logger.info(
       colors.green(`Successfully wrote ${chunk.length} identifiers to file "${numberedFileName}"`),
     );
@@ -72,15 +72,21 @@ export async function pullIdentifiers(
   };
 
   // Pull down outstanding identifiers
-  await pullChunkedCustomSiloOutstandingIdentifiers({
-    transcendUrl,
-    apiPageSize: pageLimit,
-    savePageSize: chunkSize,
-    onSave,
-    actions,
-    auth,
-    sombraAuth,
-    dataSiloId,
-    skipRequestCount,
-  });
+  await pullChunkedCustomSiloOutstandingIdentifiers(
+    {
+      transcendUrl,
+      apiPageSize: pageLimit,
+      savePageSize: chunkSize,
+      onSave,
+      actions,
+      auth,
+      sombraAuth,
+      dataSiloId,
+      skipRequestCount,
+    },
+    {
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 }

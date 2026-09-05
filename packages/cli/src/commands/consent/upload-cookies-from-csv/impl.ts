@@ -18,10 +18,17 @@ export async function uploadCookiesFromCsv(
   doneInputValidation(this.process);
 
   // Upload cookies
-  await uploadCookiesFromCsvHelper({
-    auth,
-    trackerStatus,
-    file,
-    transcendUrl,
-  });
+  await uploadCookiesFromCsvHelper(
+    {
+      auth,
+      trackerStatus,
+      file,
+      transcendUrl,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 }

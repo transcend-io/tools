@@ -10,33 +10,48 @@ import cliProgress from 'cli-progress';
 import colors from 'colors';
 
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { fetchAllRequests } from '../graphql/index.js';
+
+/** Runtime dependencies used while retrying request data silos. */
+export interface RetryRequestDataSilosDependencies {
+  /** Logger used for progress and SDK output. */
+  readonly logger: CliLogger;
+}
+
+const defaultDependencies: RetryRequestDataSilosDependencies = {
+  logger,
+};
 
 /**
  * Retry a set of RequestDataSilos
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies.
  * @returns Number of items marked as completed
  */
-export async function retryRequestDataSilos({
-  requestActions,
-  dataSiloId,
-  auth,
-  concurrency = 20,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** The request actions that should be restarted */
-  requestActions: RequestAction[];
-  /** Transcend API key authentication */
-  auth: string;
-  /** Data Silo ID to pull down jobs for */
-  dataSiloId: string;
-  /** Concurrency to upload requests in parallel */
-  concurrency?: number;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<number> {
+export async function retryRequestDataSilos(
+  {
+    requestActions,
+    dataSiloId,
+    auth,
+    concurrency = 20,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** The request actions that should be restarted */
+    requestActions: RequestAction[];
+    /** Transcend API key authentication */
+    auth: string;
+    /** Data Silo ID to pull down jobs for */
+    dataSiloId: string;
+    /** Concurrency to upload requests in parallel */
+    concurrency?: number;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: RetryRequestDataSilosDependencies = defaultDependencies,
+): Promise<number> {
   // Find all requests made before createdAt that are in a removing data state
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
@@ -52,7 +67,7 @@ export async function retryRequestDataSilos({
   });
 
   // Notify Transcend
-  logger.info(
+  dependencies.logger.info(
     colors.magenta(
       `Retrying requests for Data Silo: "${dataSiloId}", restarting "${allRequests.length}" requests.`,
     ),
@@ -66,7 +81,7 @@ export async function retryRequestDataSilos({
     async (requestToRestart) => {
       try {
         const requestDataSilo = await fetchRequestDataSilo(client, {
-          logger,
+          logger: dependencies.logger,
           filterBy: { requestId: requestToRestart.id, dataSiloId },
         });
 
@@ -75,7 +90,7 @@ export async function retryRequestDataSilos({
           success: boolean;
         }>(client, RETRY_REQUEST_DATA_SILO, {
           variables: { requestDataSiloId: requestDataSilo.id },
-          logger,
+          logger: dependencies.logger,
         });
       } catch (err) {
         // some requests may not have this data silo connected
@@ -95,7 +110,7 @@ export async function retryRequestDataSilos({
   const t1 = new Date().getTime();
   const totalTime = t1 - t0;
 
-  logger.info(
+  dependencies.logger.info(
     colors.green(
       `Successfully notified Transcend in "${
         totalTime / 1000

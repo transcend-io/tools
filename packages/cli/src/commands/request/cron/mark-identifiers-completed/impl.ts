@@ -16,11 +16,18 @@ export async function markIdentifiersCompleted(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await pushCronIdentifiersFromCsv({
-    file,
-    transcendUrl,
-    auth,
-    sombraAuth,
-    dataSiloId,
-  });
+  await pushCronIdentifiersFromCsv(
+    {
+      file,
+      transcendUrl,
+      auth,
+      sombraAuth,
+      dataSiloId,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 }

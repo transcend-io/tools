@@ -142,8 +142,13 @@ describe('chunkCsv', () => {
   it('discovers files, sizes the pool, logs, builds queue, and invokes runPool with expected args', async () => {
     await chunkCsv.call(ctx, baseFlags);
 
-    // collectCsvFilesOrExit called with directory + ctx
-    expect(H.helpers.collectCsvFilesOrExit).toHaveBeenCalledWith(baseFlags.directory, ctx);
+    // collectCsvFilesOrExit receives only its context-derived runtime dependencies
+    expect(H.helpers.collectCsvFilesOrExit).toHaveBeenCalledWith(baseFlags.directory, {
+      fs: ctx.fs,
+      path: ctx.path,
+      logger: ctx.logger,
+      process: ctx.process,
+    });
 
     // pool sizing called with concurrency + number of files
     expect(H.pooling.computePoolSize).toHaveBeenCalledWith(undefined, H.files.length);

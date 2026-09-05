@@ -127,13 +127,20 @@ export async function deletePreferenceRecords(
   const failedResultsArrays = await map(
     files,
     async (filePath) => {
-      const result = await bulkDeletePreferenceRecords(sombra, {
-        partition,
-        filePath,
-        timestamp,
-        maxItemsInChunk,
-        maxConcurrency,
-      });
+      const result = await bulkDeletePreferenceRecords(
+        sombra,
+        {
+          partition,
+          filePath,
+          timestamp,
+          maxItemsInChunk,
+          maxConcurrency,
+        },
+        {
+          fs: this.fs,
+          logger: this.logger,
+        },
+      );
       globalProgressBar.increment();
       return result;
     },
@@ -146,7 +153,7 @@ export async function deletePreferenceRecords(
   let receiptPath = '';
   if (failedResults.length > 0) {
     receiptPath = this.path.join(receiptDirectory, `deletion-failures-${Date.now()}.csv`);
-    writeCsv(receiptPath, failedResults, true);
+    writeCsv(receiptPath, failedResults, true, { fs: this.fs });
   }
 
   this.logger.info(colors.green('\n\n ================================== \n\n'));

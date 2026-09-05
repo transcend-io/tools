@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient, syncCookies } from '@transcend-io/sdk';
 import { splitCsvToList } from '@transcend-io/utils';
@@ -7,6 +9,22 @@ import { CookieInput, CookieCsvInput } from '../../codecs.js';
 import { DEFAULT_TRANSCEND_API } from '../../constants.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/readCsv.js';
+
+/** Runtime dependencies for uploading cookies from CSV. */
+export interface UploadCookiesFromCsvDependencies {
+  /** Filesystem implementation used to read the CSV. */
+  fs: Pick<typeof fs, 'readFileSync'>;
+  /** Logger used for upload status and errors. */
+  logger: Pick<typeof logger, 'debug' | 'error' | 'info' | 'warn'>;
+  /** Process implementation used to report an unsuccessful sync. */
+  process: Pick<NodeJS.Process, 'exit'>;
+}
+
+const defaultDependencies: UploadCookiesFromCsvDependencies = {
+  fs,
+  logger,
+  process,
+};
 
 const OMIT_COLUMNS = [
   'ID',
@@ -24,28 +42,32 @@ const OMIT_COLUMNS = [
  * Upload a set of cookies from CSV
  *
  * @param options - Options
+ * @param dependencies - Runtime dependencies
  */
-export async function uploadCookiesFromCsv({
-  auth,
-  trackerStatus,
-  file,
-  transcendUrl = DEFAULT_TRANSCEND_API,
-}: {
-  /** CSV file path */
-  file: string;
-  /** Transcend API key authentication */
-  auth: string;
-  /** Sombra API key authentication */
-  trackerStatus: ConsentTrackerStatus;
-  /** API URL for Transcend backend */
-  transcendUrl?: string;
-}): Promise<void> {
+export async function uploadCookiesFromCsv(
+  {
+    auth,
+    trackerStatus,
+    file,
+    transcendUrl = DEFAULT_TRANSCEND_API,
+  }: {
+    /** CSV file path */
+    file: string;
+    /** Transcend API key authentication */
+    auth: string;
+    /** Sombra API key authentication */
+    trackerStatus: ConsentTrackerStatus;
+    /** API URL for Transcend backend */
+    transcendUrl?: string;
+  },
+  dependencies: UploadCookiesFromCsvDependencies = defaultDependencies,
+): Promise<void> {
   // Build a GraphQL client
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
 
   // Read from CSV the set of cookie inputs
-  logger.info(colors.magenta(`Reading "${file}" from disk`));
-  const cookieInputs = readCsv(file, CookieCsvInput);
+  dependencies.logger.info(colors.magenta(`Reading "${file}" from disk`));
+  const cookieInputs = readCsv(file, CookieCsvInput, undefined, { fs: dependencies.fs });
 
   // Convert these  inputs into a format that the other function can use
   const validatedCookieInputs = cookieInputs.map(
@@ -86,13 +108,15 @@ export async function uploadCookiesFromCsv({
   );
 
   // Upload the cookies into Transcend dashboard
-  const syncedCookies = await syncCookies(client, validatedCookieInputs, { logger });
+  const syncedCookies = await syncCookies(client, validatedCookieInputs, {
+    logger: dependencies.logger,
+  });
 
   // Log errors
   if (!syncedCookies) {
-    logger.error(
+    dependencies.logger.error(
       colors.red('Encountered error(s) syncing cookies from CSV, see logs above for more info. '),
     );
-    process.exit(1);
+    dependencies.process.exit(1);
   }
 }

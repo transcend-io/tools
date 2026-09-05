@@ -81,7 +81,7 @@ export async function pullDatapoints(
       headers = uniq([...headers, ...Object.keys(result)]);
       return result;
     });
-    await writeLargeCsv(file, inputs, headers);
+    await writeLargeCsv(file, inputs, headers, { fs: this.fs });
   } catch (err) {
     this.logger.error(colors.red(`An error occurred syncing the datapoints: ${err.message}`));
     this.process.exit(1);

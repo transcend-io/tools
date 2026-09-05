@@ -19,12 +19,19 @@ export async function pullIdentifiers(
 ): Promise<void> {
   doneInputValidation(this.process);
 
-  await pullManualEnrichmentIdentifiersToCsv({
-    file,
-    transcendUrl,
-    concurrency,
-    requestActions: actions,
-    auth,
-    sombraAuth,
-  });
+  await pullManualEnrichmentIdentifiersToCsv(
+    {
+      file,
+      transcendUrl,
+      concurrency,
+      requestActions: actions,
+      auth,
+      sombraAuth,
+    },
+    {
+      fs: this.fs,
+      logger: this.logger,
+      ['process']: this.process,
+    },
+  );
 }
