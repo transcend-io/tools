@@ -2,7 +2,7 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { ConsentPreferenceUpload } from '../../../lib/consent-manager/types.js';
 import { uploadConsents } from '../../../lib/consent-manager/uploadConsents.js';
-import { readCsv } from '../../../lib/requests/index.js';
+import { parseCsv } from '../../../lib/requests/readCsv.js';
 
 export interface UploadConsentPreferencesCommandFlags {
   base64EncryptionKey: string;
@@ -27,7 +27,7 @@ export async function uploadConsentPreferences(
   doneInputValidation(this.process);
 
   // Load in preferences from csv
-  const preferences = readCsv(file, ConsentPreferenceUpload);
+  const preferences = parseCsv(this.fs.readFileSync(file, 'utf8'), ConsentPreferenceUpload);
 
   // Upload cookies
   await uploadConsents({

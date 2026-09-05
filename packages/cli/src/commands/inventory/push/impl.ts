@@ -7,12 +7,12 @@ import colors from 'colors';
 import { TranscendInput } from '../../../codecs.js';
 import { ADMIN_DASH_INTEGRATIONS } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
-import { validateTranscendAuth, listFiles } from '../../../lib/api-keys/index.js';
+import { validateTranscendAuth, filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { syncConfigurationToTranscend } from '../../../lib/graphql/index.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 import { mergeTranscendInputs } from '../../../lib/mergeTranscendInputs.js';
-import { readTranscendYaml } from '../../../lib/readTranscendYaml.js';
+import { parseTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
 /**
  * Sync configuration to Transcend
@@ -107,7 +107,9 @@ export async function push(
   // check if we are being passed a list of API keys and a list of files
   let fileList: string[];
   if (Array.isArray(apiKeyOrList) && this.fs.lstatSync(file).isDirectory()) {
-    fileList = listFiles(file).map((filePath) => path.join(file, filePath));
+    fileList = filterFileNames(this.fs.readdirSync(file)).map((filePath) =>
+      path.join(file, filePath),
+    );
   } else {
     fileList = file.split(',');
   }
@@ -133,7 +135,11 @@ export async function push(
 
     try {
       // Read in the yaml file and validate it's shape
-      const newContents = readTranscendYaml(filePath, vars);
+      const newContents = parseTranscendYaml(
+        this.fs.readFileSync(filePath, 'utf8'),
+        vars,
+        filePath,
+      );
       this.logger.info(colors.green(`Successfully read in "${filePath}"`));
       return {
         content: newContents,
