@@ -1,7 +1,7 @@
 export default `#### Scaffold without prompts
 
 \`\`\`sh
-transcend custom-functions new \\
+transcend custom-functions new ./transcend/custom-functions \\
   --name="Customer CRM access" \\
   --template=dsr-both \\
   --setup=recommended \\
