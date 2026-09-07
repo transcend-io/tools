@@ -47,6 +47,26 @@ afterEach(() => {
 });
 
 describe('custom-functions init', () => {
+  it('uses transcend/custom-functions when no directory is provided', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildContextForTest({
+      cwd: root,
+      env: { HOME: root },
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags());
+
+    const target = join(root, 'transcend', 'custom-functions');
+    expect(readFileSync(join(target, 'transcend-functions.yml'), 'utf8')).toBe(
+      '# Custom Functions managed as code.\nfunctions: []\n',
+    );
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      targetDirectory: target,
+      manifestPath: join(target, 'transcend-functions.yml'),
+    });
+  });
+
   it('previews an empty target without writing anything', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'project');

@@ -7,6 +7,9 @@ import type { LocalContext } from '../../../context.js';
 import { AGENT_SKILL_TARGETS, type AgentSkillTarget } from './config.js';
 import type { ProjectFileSnapshot } from './model.js';
 
+/** Default local Custom Function project directory. */
+export const DEFAULT_CUSTOM_FUNCTION_DIRECTORY = join('transcend', 'custom-functions');
+
 /** Repository and target state collected before planning. */
 export interface CustomFunctionProjectState {
   /** Absolute user-selected target directory. */
@@ -27,6 +30,8 @@ export interface CustomFunctionProjectState {
   pnpmWorkspaceRoot: boolean;
   /** Detected coding-agent targets. */
   detectedAgents: AgentSkillTarget[];
+  /** Unique detected project skill directories that already exist. */
+  existingSkillDirectories: string[];
   /** Whether the repository appears to use GitHub. */
   usesGithub: boolean;
   /** Case-preserving relative paths below the manifest directory. */
@@ -153,6 +158,27 @@ function detectAgentTargets(context: LocalContext, repositoryRoot: string): Agen
 }
 
 /**
+ * Find detected project skill directories that already exist.
+ *
+ * @param context - CLI context
+ * @param repositoryRoot - Repository root or target
+ * @param detectedAgents - Detected coding agents
+ * @returns Unique existing skill-directory paths relative to the repository
+ */
+function detectExistingSkillDirectories(
+  context: LocalContext,
+  repositoryRoot: string,
+  detectedAgents: readonly AgentSkillTarget[],
+): string[] {
+  return [...new Set(detectedAgents.map(({ skillsDirectory }) => skillsDirectory))].filter(
+    (skillsDirectory) => {
+      const path = join(repositoryRoot, skillsDirectory);
+      return context.fs.existsSync(path) && context.fs.statSync(path).isDirectory();
+    },
+  );
+}
+
+/**
  * Detect whether a git repository points at GitHub.
  *
  * @param context - CLI context
@@ -198,11 +224,18 @@ export async function discoverCustomFunctionProject(
   },
 ): Promise<CustomFunctionProjectState> {
   const cwd = context.process.cwd();
-  const targetDirectory = resolveCliPath(cwd, options.directory ?? '.');
   const manifestPath = options.manifest
     ? resolveCliPath(cwd, options.manifest)
-    : join(targetDirectory, 'transcend-functions.yml');
+    : join(
+        resolveCliPath(cwd, options.directory ?? DEFAULT_CUSTOM_FUNCTION_DIRECTORY),
+        'transcend-functions.yml',
+      );
   const manifestDirectory = dirname(manifestPath);
+  const targetDirectory = options.directory
+    ? resolveCliPath(cwd, options.directory)
+    : options.manifest
+      ? manifestDirectory
+      : resolveCliPath(cwd, DEFAULT_CUSTOM_FUNCTION_DIRECTORY);
   const existingAncestor = findExistingAncestor(context, targetDirectory);
   const repositoryRoot = findRepositoryRoot(context, existingAncestor);
   const denoJsonc = join(manifestDirectory, 'deno.jsonc');
@@ -223,6 +256,8 @@ export async function discoverCustomFunctionProject(
   const pnpmWorkspaceRoot =
     packageManager?.name === 'pnpm' &&
     context.fs.existsSync(join(packageRoot, 'pnpm-workspace.yaml'));
+  const agentRoot = repositoryRoot ?? targetDirectory;
+  const detectedAgents = detectAgentTargets(context, agentRoot);
 
   return {
     targetDirectory,
@@ -233,7 +268,8 @@ export async function discoverCustomFunctionProject(
     ...(packageJsonPath ? { packageJsonPath } : {}),
     ...(packageManager ? { packageManager } : {}),
     pnpmWorkspaceRoot,
-    detectedAgents: detectAgentTargets(context, repositoryRoot ?? targetDirectory),
+    detectedAgents,
+    existingSkillDirectories: detectExistingSkillDirectories(context, agentRoot, detectedAgents),
     usesGithub: repositoryUsesGithub(context, repositoryRoot),
     relativePaths: collectRelativePaths(context, manifestDirectory),
   };

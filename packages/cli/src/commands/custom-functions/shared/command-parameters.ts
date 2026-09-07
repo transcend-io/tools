@@ -76,7 +76,7 @@ export const customFunctionDirectoryPositionalParameters = {
   kind: 'tuple',
   parameters: [
     {
-      brief: 'Custom Function project directory',
+      brief: 'Custom Function project directory; defaults to transcend/custom-functions',
       placeholder: 'directory',
       parse: String,
       optional: true,

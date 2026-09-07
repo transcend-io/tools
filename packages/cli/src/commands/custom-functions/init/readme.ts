@@ -1,11 +1,12 @@
-export default `#### Start in an empty directory
+export default `#### Start with the isolated default layout
 
 \`\`\`sh
-mkdir transcend-functions
-transcend custom-functions init ./transcend-functions
+transcend custom-functions init
 \`\`\`
 
-The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when a supported coding agent is detected.
+This creates the manifest, Deno configuration, functions, and fixtures under \`transcend/custom-functions\`, leaving room for files such as \`transcend/transcend.yml\`. Pass a directory explicitly to use another layout.
+
+The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when a supported coding agent is detected. One existing skill directory receives a managed file directly; multiple existing skill directories share one portable \`.agents/skills\` copy through links.
 
 #### Add support to an existing repository
 

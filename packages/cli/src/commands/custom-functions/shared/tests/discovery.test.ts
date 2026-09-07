@@ -59,6 +59,32 @@ describe('readProjectFileSnapshot', () => {
 });
 
 describe('discoverCustomFunctionProject', () => {
+  it('defaults to an isolated transcend/custom-functions directory', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildContextForTest({ cwd: root, env: { HOME: root } });
+
+    const state = await discoverCustomFunctionProject(context, {});
+
+    expect(state.targetDirectory).toBe(join(root, 'transcend', 'custom-functions'));
+    expect(state.manifestDirectory).toBe(state.targetDirectory);
+    expect(state.manifestPath).toBe(
+      join(root, 'transcend', 'custom-functions', 'transcend-functions.yml'),
+    );
+  });
+
+  it('uses an explicit manifest directory as the implicit target', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildContextForTest({ cwd: root, env: { HOME: root } });
+
+    const state = await discoverCustomFunctionProject(context, {
+      manifest: './config/functions.yml',
+    });
+
+    expect(state.targetDirectory).toBe(join(root, 'config'));
+    expect(state.manifestDirectory).toBe(join(root, 'config'));
+    expect(state.manifestPath).toBe(join(root, 'config', 'functions.yml'));
+  });
+
   it('discovers repository, Deno, GitHub, agent, and collision state deterministically', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'custom-functions');
@@ -66,6 +92,7 @@ describe('discoverCustomFunctionProject', () => {
     mkdirSync(join(root, '.git'), { recursive: true });
     mkdirSync(join(root, '.cursor'), { recursive: true });
     mkdirSync(join(root, '.cline'), { recursive: true });
+    mkdirSync(join(root, '.agents', 'skills'), { recursive: true });
     mkdirSync(join(target, 'Functions'), { recursive: true });
     mkdirSync(join(target, 'node_modules', 'ignored'), { recursive: true });
     mkdirSync(isolatedHome, { recursive: true });
@@ -100,6 +127,7 @@ describe('discoverCustomFunctionProject', () => {
       packageJsonPath: join(root, 'package.json'),
       packageManager: { name: 'pnpm', agent: 'pnpm' },
       pnpmWorkspaceRoot: true,
+      existingSkillDirectories: ['.agents/skills'],
       usesGithub: true,
     });
     expect(first.detectedAgents.map(({ id }) => id)).toEqual(['universal', 'cline']);

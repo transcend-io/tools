@@ -30,6 +30,7 @@ function buildState(root: string): CustomFunctionProjectState {
     denoConfigPath: join(targetDirectory, 'deno.json'),
     pnpmWorkspaceRoot: false,
     detectedAgents: [],
+    existingSkillDirectories: [],
     usesGithub: true,
     relativePaths: [],
   };
@@ -272,6 +273,7 @@ describe('agent skill planning', () => {
     state.detectedAgents = ['universal', 'cline', 'claude-code'].map(
       (id) => AGENT_SKILL_TARGETS.find((target) => target.id === id)!,
     );
+    state.existingSkillDirectories = ['.agents/skills', '.claude/skills'];
     const features = [CustomFunctionSetupFeature.Skill];
     const paths = getPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
@@ -286,6 +288,28 @@ describe('agent skill planning', () => {
     const rerun = buildInitPlan(buildInput(state, snapshotsAfterPlan(paths, first)), { features });
     expect(rerun.changes).toEqual([]);
     expect(rerun.unchanged).toContain(links[0]!.path);
+  });
+
+  it('writes directly to one existing skill directory without creating aliases', () => {
+    const state = buildState('/repo');
+    state.detectedAgents = ['universal', 'claude-code'].map(
+      (id) => AGENT_SKILL_TARGETS.find((target) => target.id === id)!,
+    );
+    state.existingSkillDirectories = ['.claude/skills'];
+    const features = [CustomFunctionSetupFeature.Skill];
+    const paths = getPlanningCandidatePaths(state, { features });
+    const plan = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
+    const skillChanges = plan.changes.filter(
+      (change) => change.kind !== 'command' && change.path.includes('/skills/'),
+    );
+
+    expect(skillChanges).toEqual([
+      expect.objectContaining({
+        kind: 'file',
+        path: join('/repo', '.claude', 'skills', 'transcend-custom-functions', 'SKILL.md'),
+      }),
+    ]);
+    expect(paths.some((path) => path.includes('.agents/skills'))).toBe(false);
   });
 
   it('refuses a user-modified managed skill instead of overwriting it', () => {

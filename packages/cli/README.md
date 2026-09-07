@@ -2508,17 +2508,18 @@ FLAGS
   -h  --help                                Print help information and exit
 
 ARGUMENTS
-  [directory]  Custom Function project directory
+  [directory]  Custom Function project directory; defaults to transcend/custom-functions
 ```
 
-#### Start in an empty directory
+#### Start with the isolated default layout
 
 ```sh
-mkdir transcend-functions
-transcend custom-functions init ./transcend-functions
+transcend custom-functions init
 ```
 
-The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when a supported coding agent is detected.
+This creates the manifest, Deno configuration, functions, and fixtures under `transcend/custom-functions`, leaving room for files such as `transcend/transcend.yml`. Pass a directory explicitly to use another layout.
+
+The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when a supported coding agent is detected. One existing skill directory receives a managed file directly; multiple existing skill directories share one portable `.agents/skills` copy through links.
 
 #### Add support to an existing repository
 
@@ -2561,13 +2562,13 @@ FLAGS
   -h  --help                                Print help information and exit
 
 ARGUMENTS
-  [directory]  Custom Function project directory
+  [directory]  Custom Function project directory; defaults to transcend/custom-functions
 ```
 
 #### Scaffold without prompts
 
 ```sh
-transcend custom-functions new ./packages/transcend-functions \
+transcend custom-functions new \
   --name="Customer CRM access" \
   --template=dsr-both \
   --setup=recommended \
@@ -2575,7 +2576,7 @@ transcend custom-functions new ./packages/transcend-functions \
   --yes
 ```
 
-The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. If the manifest does not exist, `new` composes initialization into the same preview and transaction.
+The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. Without a directory argument, output goes to `transcend/custom-functions`. If the manifest does not exist, `new` composes initialization into the same preview and transaction.
 
 Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill.
 
@@ -2596,7 +2597,7 @@ FLAGS
   -h  --help            Print help information and exit
 
 ARGUMENTS
-  [directory]  Custom Function project directory
+  [directory]  Custom Function project directory; defaults to transcend/custom-functions
 ```
 
 #### Validate before pushing

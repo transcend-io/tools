@@ -129,6 +129,31 @@ function packageManagerLockfiles(state: CustomFunctionProjectState): string[] {
 }
 
 /**
+ * Select the canonical skill directory and any existing alias directories.
+ *
+ * @param state - Discovery state
+ * @returns Canonical and alias skill directories
+ */
+function skillDirectories(state: CustomFunctionProjectState): {
+  /** Directory containing the managed skill file. */
+  canonical: string;
+  /** Existing directories that should link to the canonical skill. */
+  aliases: string[];
+} {
+  const universal = AGENT_SKILL_TARGETS.find(({ id }) => id === 'universal')!.skillsDirectory;
+  if (state.existingSkillDirectories.length === 1) {
+    return { canonical: state.existingSkillDirectories[0]!, aliases: [] };
+  }
+  return {
+    canonical: universal,
+    aliases:
+      state.existingSkillDirectories.length > 1
+        ? state.existingSkillDirectories.filter((directory) => directory !== universal)
+        : [],
+  };
+}
+
+/**
  * Enumerate all paths that could be included in a plan.
  *
  * @param state - Discovery state
@@ -158,9 +183,10 @@ export function getPlanningCandidatePaths(
     paths.add(join(root, '.vscode', 'extensions.json'));
   }
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
-    paths.add(join(root, '.agents', 'skills', 'transcend-custom-functions', 'SKILL.md'));
-    state.detectedAgents.forEach((agent) => {
-      paths.add(join(root, agent.skillsDirectory, 'transcend-custom-functions'));
+    const directories = skillDirectories(state);
+    paths.add(join(root, directories.canonical, 'transcend-custom-functions', 'SKILL.md'));
+    directories.aliases.forEach((directory) => {
+      paths.add(join(root, directory, 'transcend-custom-functions'));
     });
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
@@ -362,14 +388,15 @@ function isUnmodifiedManagedSkill(contents: string): boolean {
 }
 
 /**
- * Plan canonical skill installation and detected agent links.
+ * Plan one direct skill installation and links into other existing directories.
  *
  * @param plan - Plan being assembled
  * @param input - Planning input
  */
 function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlanningInput): void {
   const root = setupRoot(input.state);
-  const canonicalDirectory = join(root, '.agents', 'skills', 'transcend-custom-functions');
+  const directories = skillDirectories(input.state);
+  const canonicalDirectory = join(root, directories.canonical, 'transcend-custom-functions');
   const canonicalPath = join(canonicalDirectory, 'SKILL.md');
   const skillContents = managedSkillContents();
   const canonicalSnapshot = fileSnapshotAt(input, canonicalPath);
@@ -385,20 +412,11 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
   addFileChange(plan, input, {
     path: canonicalPath,
     contents: skillContents,
-    description: 'Install the canonical Transcend Custom Function authoring skill',
+    description: 'Install the Transcend Custom Function authoring skill',
   });
 
-  const targets =
-    input.state.detectedAgents.length > 0
-      ? input.state.detectedAgents
-      : [AGENT_SKILL_TARGETS.find(({ id }) => id === 'universal')!];
-  const seenDirectories = new Set<string>(['.agents/skills']);
-  targets.forEach((agent) => {
-    if (seenDirectories.has(agent.skillsDirectory)) {
-      return;
-    }
-    seenDirectories.add(agent.skillsDirectory);
-    const targetDirectory = join(root, agent.skillsDirectory, 'transcend-custom-functions');
+  directories.aliases.forEach((directory) => {
+    const targetDirectory = join(root, directory, 'transcend-custom-functions');
     const snapshot = snapshotAt(input, targetDirectory);
     const relativeTarget = relative(dirname(targetDirectory), canonicalDirectory);
     if (snapshot.kind === 'link' && snapshot.target === relativeTarget) {
@@ -406,16 +424,14 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
       return;
     }
     if (snapshot.kind !== 'absent') {
-      throw new Error(
-        `Refusing to replace unexpected skill target for ${agent.displayName}: ${targetDirectory}`,
-      );
+      throw new Error(`Refusing to replace unexpected skill target: ${targetDirectory}`);
     }
     const change: PlannedLinkChange = {
       kind: 'link',
       path: targetDirectory,
       target: relativeTarget,
       fallbackContents: skillContents,
-      description: `Expose the canonical skill to ${agent.displayName}`,
+      description: `Expose the canonical skill in ${directory}`,
     };
     plan.changes.push(change);
   });

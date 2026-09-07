@@ -162,7 +162,7 @@ Handlers receive \`payload\`, \`environment\`, \`sdk\`, and \`kv\`. Use the payl
 
 Keep source and test-payload paths relative to \`transcend-functions.yml\`. Match every DSR export with its \`DATA_POINT\` or \`REQUEST_ENRICHER\` payload. Never commit secrets: use \`<<parameters.name>>\` manifest placeholders locally and secret stores in CI.
 
-Run \`transcend custom-functions check .\`, then \`transcend custom-functions push --auth="$TRANSCEND_API_KEY" --dryRun\`. Use \`--promote=false\` when a revision should remain a draft; promote deliberately, and use \`--updateManifest\` on the first push to record assigned IDs.
+Run \`transcend custom-functions check <custom-function-directory>\`, then \`transcend custom-functions push --file=<custom-function-directory>/transcend-functions.yml --auth="$TRANSCEND_API_KEY" --dryRun\`. Use \`--promote=false\` when a revision should remain a draft; promote deliberately, and use \`--updateManifest\` on the first push to record assigned IDs.
 
 Custom Functions run on Deno. Avoid Node-only APIs and undeclared third-party imports. Add every external network destination to \`allowed-hosts\`; Transcend SDK routes do not require an allowed-host entry.
 `;
