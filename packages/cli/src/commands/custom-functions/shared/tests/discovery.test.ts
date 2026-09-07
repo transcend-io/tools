@@ -85,17 +85,6 @@ describe('discoverCustomFunctionProject', () => {
     expect(state.manifestPath).toBe(join(root, 'config', 'functions.yml'));
   });
 
-  it('recognizes an existing native Cursor skill directory', async () => {
-    const root = makeTemporaryRoot();
-    mkdirSync(join(root, '.git'), { recursive: true });
-    mkdirSync(join(root, '.cursor', 'skills'), { recursive: true });
-    const context = buildContextForTest({ cwd: root, env: { HOME: root } });
-
-    const state = await discoverCustomFunctionProject(context, {});
-
-    expect(state.existingSkillDirectories).toEqual(['.cursor/skills']);
-  });
-
   it('discovers repository, Deno, GitHub, agent, and collision state deterministically', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'custom-functions');

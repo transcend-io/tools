@@ -129,8 +129,8 @@ async function resolveFeatures(
   options: {
     /** Whether a setup answer is required. */
     requireAnswer: boolean;
-    /** Whether the project already has a supported skill directory. */
-    hasExistingSkillDirectory: boolean;
+    /** Whether a coding agent is detected. */
+    hasDetectedAgent: boolean;
     /** Whether GitHub Actions is applicable. */
     usesGithub: boolean;
     /** Whether a package manager is available. */
@@ -141,7 +141,7 @@ async function resolveFeatures(
   let features: CustomFunctionSetupFeatureType[];
   if (flags.setup) {
     features = resolveSetupFeatures(flags.setup, {
-      hasExistingSkillDirectory: interactive && options.hasExistingSkillDirectory,
+      hasDetectedAgent: interactive && options.hasDetectedAgent,
     });
   } else if (options.requireAnswer) {
     if (!interactive) {
@@ -151,7 +151,7 @@ async function resolveFeatures(
     }
     const recommended = new Set(
       resolveSetupFeatures('recommended', {
-        hasExistingSkillDirectory: options.hasExistingSkillDirectory,
+        hasDetectedAgent: options.hasDetectedAgent,
       }),
     );
     const choices: PromptChoice<CustomFunctionSetupFeatureType>[] = ALL_SETUP_FEATURES.map(
@@ -256,7 +256,7 @@ export async function runCustomFunctionInit(
   const prompts = new CustomFunctionPrompts(context);
   const features = await resolveFeatures(context, prompts, flags, {
     requireAnswer: true,
-    hasExistingSkillDirectory: state.existingSkillDirectories.length > 0,
+    hasDetectedAgent: state.detectedAgents.length > 0,
     usesGithub: state.usesGithub,
     hasPackageManager: Boolean(state.packageManager),
   });
@@ -322,7 +322,7 @@ export async function runCustomFunctionNew(
   const manifestExists = context.fs.existsSync(state.manifestPath);
   const features = await resolveFeatures(context, prompts, flags, {
     requireAnswer: !manifestExists,
-    hasExistingSkillDirectory: state.existingSkillDirectories.length > 0,
+    hasDetectedAgent: state.detectedAgents.length > 0,
     usesGithub: state.usesGithub,
     hasPackageManager: Boolean(state.packageManager),
   });

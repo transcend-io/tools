@@ -133,8 +133,8 @@ export const ALL_SETUP_FEATURES = Object.values(CustomFunctionSetupFeature);
 export function resolveSetupFeatures(
   setup: CustomFunctionSetup,
   options: {
-    /** Whether the project already has a supported skill directory. */
-    hasExistingSkillDirectory: boolean;
+    /** Whether a supported coding agent was detected. */
+    hasDetectedAgent: boolean;
   },
 ): CustomFunctionSetupFeatureType[] {
   if (setup === 'none') {
@@ -145,7 +145,7 @@ export function resolveSetupFeatures(
   }
   return [
     ...BASE_RECOMMENDED_FEATURES,
-    ...(options.hasExistingSkillDirectory ? [CustomFunctionSetupFeature.Skill] : []),
+    ...(options.hasDetectedAgent ? [CustomFunctionSetupFeature.Skill] : []),
   ];
 }
 

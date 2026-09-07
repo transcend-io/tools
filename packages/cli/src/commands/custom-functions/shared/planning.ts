@@ -139,10 +139,7 @@ function skillDirectories(state: CustomFunctionProjectState): {
   canonical: string;
   /** Existing directories that should link to the canonical skill. */
   aliases: string[];
-} | null {
-  if (state.existingSkillDirectories.length === 0) {
-    return null;
-  }
+} {
   const universal = AGENT_SKILL_TARGETS.find(({ id }) => id === 'universal')!.skillsDirectory;
   if (state.existingSkillDirectories.length === 1) {
     return { canonical: state.existingSkillDirectories[0]!, aliases: [] };
@@ -187,12 +184,10 @@ export function getPlanningCandidatePaths(
   }
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
     const directories = skillDirectories(state);
-    if (directories) {
-      paths.add(join(root, directories.canonical, 'transcend-custom-functions', 'SKILL.md'));
-      directories.aliases.forEach((directory) => {
-        paths.add(join(root, directory, 'transcend-custom-functions'));
-      });
-    }
+    paths.add(join(root, directories.canonical, 'transcend-custom-functions', 'SKILL.md'));
+    directories.aliases.forEach((directory) => {
+      paths.add(join(root, directory, 'transcend-custom-functions'));
+    });
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     paths.add(join(root, '.github', 'workflows', 'transcend-custom-functions.yml'));
@@ -401,12 +396,6 @@ function isUnmodifiedManagedSkill(contents: string): boolean {
 function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlanningInput): void {
   const root = setupRoot(input.state);
   const directories = skillDirectories(input.state);
-  if (!directories) {
-    plan.warnings.push(
-      'Skipped the coding-agent skill because this repository has no existing skill directory.',
-    );
-    return;
-  }
   const canonicalDirectory = join(root, directories.canonical, 'transcend-custom-functions');
   const canonicalPath = join(canonicalDirectory, 'SKILL.md');
   const skillContents = managedSkillContents();
