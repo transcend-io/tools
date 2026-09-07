@@ -14,7 +14,7 @@ import { CustomFunctionSetupFeature } from '../model.js';
 describe('setup feature resolution', () => {
   it('applies explicit overrides in stable feature order', () => {
     const recommended = resolveSetupFeatures('recommended', {
-      hasDetectedAgent: true,
+      hasExistingSkillDirectory: true,
     });
 
     expect(
@@ -27,6 +27,14 @@ describe('setup feature resolution', () => {
       CustomFunctionSetupFeature.Skill,
       CustomFunctionSetupFeature.Ci,
     ]);
+  });
+
+  it('does not create a skill directory in the recommended setup', () => {
+    expect(
+      resolveSetupFeatures('recommended', {
+        hasExistingSkillDirectory: false,
+      }),
+    ).not.toContain(CustomFunctionSetupFeature.Skill);
   });
 });
 

@@ -162,20 +162,20 @@ function detectAgentTargets(context: LocalContext, repositoryRoot: string): Agen
  *
  * @param context - CLI context
  * @param repositoryRoot - Repository root or target
- * @param detectedAgents - Detected coding agents
  * @returns Unique existing skill-directory paths relative to the repository
  */
-function detectExistingSkillDirectories(
-  context: LocalContext,
-  repositoryRoot: string,
-  detectedAgents: readonly AgentSkillTarget[],
-): string[] {
-  return [...new Set(detectedAgents.map(({ skillsDirectory }) => skillsDirectory))].filter(
-    (skillsDirectory) => {
-      const path = join(repositoryRoot, skillsDirectory);
-      return context.fs.existsSync(path) && context.fs.statSync(path).isDirectory();
-    },
-  );
+function detectExistingSkillDirectories(context: LocalContext, repositoryRoot: string): string[] {
+  const candidates = new Set([
+    ...AGENT_SKILL_TARGETS.map(({ skillsDirectory }) => skillsDirectory),
+    '.cursor/skills',
+    '.github/skills',
+    '.gemini/skills',
+    '.opencode/skills',
+  ]);
+  return [...candidates].filter((skillsDirectory) => {
+    const path = join(repositoryRoot, skillsDirectory);
+    return context.fs.existsSync(path) && context.fs.statSync(path).isDirectory();
+  });
 }
 
 /**
@@ -269,7 +269,7 @@ export async function discoverCustomFunctionProject(
     ...(packageManager ? { packageManager } : {}),
     pnpmWorkspaceRoot,
     detectedAgents,
-    existingSkillDirectories: detectExistingSkillDirectories(context, agentRoot, detectedAgents),
+    existingSkillDirectories: detectExistingSkillDirectories(context, agentRoot),
     usesGithub: repositoryUsesGithub(context, repositoryRoot),
     relativePaths: collectRelativePaths(context, manifestDirectory),
   };
