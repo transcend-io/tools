@@ -6,9 +6,9 @@ import type { CustomFunctionProjectPlan, PlannedChange } from './model.js';
 
 /** Stable public description of one planned mutation. */
 export interface PublicPlannedChange {
-  /** Create, merge, link, or command. */
-  kind: 'create' | 'merge' | 'link' | 'command';
-  /** Display path or command. */
+  /** Create, merge, or link. */
+  kind: 'create' | 'merge' | 'link';
+  /** Display path. */
   target: string;
   /** Human-readable reason. */
   description: string;
@@ -49,26 +49,6 @@ export function displayPath(cwd: string, path: string): string {
 }
 
 /**
- * Quote one shell argument for display.
- *
- * @param value - Argument value
- * @returns Safely quoted display value
- */
-function quoteArgument(value: string): string {
-  return /^[A-Za-z0-9_./:@=-]+$/u.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
-}
-
-/**
- * Render one subprocess for preview.
- *
- * @param change - Command change
- * @returns Display command
- */
-function renderCommand(change: Extract<PlannedChange, { kind: 'command' }>): string {
-  return [change.command, ...change.args].map(quoteArgument).join(' ');
-}
-
-/**
  * Convert an internal mutation to its stable public shape.
  *
  * @param cwd - Working directory
@@ -76,13 +56,6 @@ function renderCommand(change: Extract<PlannedChange, { kind: 'command' }>): str
  * @returns Public mutation
  */
 function publicChange(cwd: string, change: PlannedChange): PublicPlannedChange {
-  if (change.kind === 'command') {
-    return {
-      kind: 'command',
-      target: renderCommand(change),
-      description: change.description,
-    };
-  }
   if (change.kind === 'link') {
     return {
       kind: 'link',

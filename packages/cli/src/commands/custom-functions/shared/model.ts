@@ -92,32 +92,8 @@ export interface PlannedLinkChange {
   description: string;
 }
 
-/** A source-controlled file to restore if a command fails. */
-export interface CommandRollbackFile {
-  /** Absolute file path. */
-  path: string;
-  /** Contents before the command, or null when absent. */
-  before: string | null;
-}
-
-/** An explicit planned subprocess. */
-export interface PlannedCommandChange {
-  /** Discriminator. */
-  kind: 'command';
-  /** Executable. */
-  command: string;
-  /** Executable arguments. */
-  args: string[];
-  /** Working directory. */
-  cwd: string;
-  /** Human-readable reason. */
-  description: string;
-  /** Files restored if the process fails. */
-  rollbackFiles: CommandRollbackFile[];
-}
-
 /** One staged project mutation. */
-export type PlannedChange = PlannedFileChange | PlannedLinkChange | PlannedCommandChange;
+export type PlannedChange = PlannedFileChange | PlannedLinkChange;
 
 /** A complete, validated scaffold plan. */
 export interface CustomFunctionProjectPlan {

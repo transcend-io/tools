@@ -237,9 +237,7 @@ describe('agent skill planning', () => {
     const features = [CustomFunctionSetupFeature.Skill];
     const paths = getPlanningCandidatePaths(state, { features });
     const plan = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
-    const skillChanges = plan.changes.filter(
-      (change) => change.kind !== 'command' && change.path.includes('/skills/'),
-    );
+    const skillChanges = plan.changes.filter((change) => change.path.includes('/skills/'));
 
     expect(skillChanges).toEqual([
       expect.objectContaining({

@@ -24,14 +24,6 @@ const PLAN: CustomFunctionProjectPlan = {
       fallbackContents: 'private skill contents\n',
       description: 'Expose the canonical skill to Claude Code',
     },
-    {
-      kind: 'command',
-      command: 'deno',
-      args: ['fmt', 'functions/score-lead.ts'],
-      cwd: '/repo',
-      description: 'format generated sources',
-      rollbackFiles: [],
-    },
   ],
   unchanged: [],
   warnings: ['Commit generated files before deploying.'],
@@ -71,11 +63,6 @@ describe('buildPlanResult', () => {
           target:
             '.claude/skills/transcend-custom-functions -> ../../.agents/skills/transcend-custom-functions',
           description: 'Expose the canonical skill to Claude Code',
-        },
-        {
-          kind: 'command',
-          target: 'deno fmt functions/score-lead.ts',
-          description: 'format generated sources',
         },
       ],
       warnings: ['Commit generated files before deploying.'],

@@ -20,7 +20,6 @@ import {
   type CustomFunctionProjectPlan,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
   type PlannedChange,
-  type PlannedCommandChange,
   type PlannedLinkChange,
   type ProjectFileSnapshot,
 } from './model.js';
@@ -517,12 +516,7 @@ export function buildInitPlan(
 
   validatePlanDestinations(
     state,
-    plan.changes
-      .filter(
-        (change): change is Exclude<PlannedChange, PlannedCommandChange> =>
-          change.kind !== 'command',
-      )
-      .map(({ path }) => path),
+    plan.changes.map(({ path }) => path),
   );
   return plan;
 }
@@ -592,12 +586,7 @@ export function buildNewPlan(
   }
   validatePlanDestinations(
     state,
-    plan.changes
-      .filter(
-        (change): change is Exclude<PlannedChange, PlannedCommandChange> =>
-          change.kind !== 'command',
-      )
-      .map(({ path }) => path),
+    plan.changes.map(({ path }) => path),
   );
   return plan;
 }

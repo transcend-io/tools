@@ -1,26 +1,7 @@
-import { spawn } from 'node:child_process';
 import { basename, dirname, join } from 'node:path';
 
 import type { LocalContext } from '../../../context.js';
-import type {
-  CommandRollbackFile,
-  CustomFunctionProjectPlan,
-  PlannedCommandChange,
-  PlannedFileChange,
-  PlannedLinkChange,
-} from './model.js';
-
-/** Result of one planned subprocess. */
-export interface PlannedCommandResult {
-  /** Process exit code. */
-  code: number;
-}
-
-/** Executes a planned subprocess. */
-export type PlannedCommandRunner = (
-  change: PlannedCommandChange,
-  context: LocalContext,
-) => Promise<PlannedCommandResult>;
+import type { CustomFunctionProjectPlan, PlannedFileChange, PlannedLinkChange } from './model.js';
 
 /** Original state retained for rollback. */
 type RollbackSnapshot =
@@ -48,24 +29,6 @@ type RollbackSnapshot =
       /** Original link target. */
       target: string;
     };
-
-/**
- * Execute a subprocess with context-owned streams.
- *
- * @param change - Planned command
- * @param context - CLI context
- * @returns Exit code
- */
-export const runPlannedCommand: PlannedCommandRunner = (change, context) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(change.command, change.args, {
-      cwd: change.cwd,
-      env: context.process.env,
-      stdio: [context.process.stdin, context.process.stdout, context.process.stderr],
-    });
-    child.once('error', reject);
-    child.once('close', (code) => resolve({ code: code ?? 1 }));
-  });
 
 /**
  * Read one path for rollback.
@@ -184,42 +147,22 @@ function applyLink(context: LocalContext, change: PlannedLinkChange): void {
 }
 
 /**
- * Convert a command rollback declaration into a verified snapshot.
- *
- * @param context - CLI context
- * @param file - Declared rollback file
- * @returns Original state
- */
-function snapshotCommandFile(context: LocalContext, file: CommandRollbackFile): RollbackSnapshot {
-  const snapshot = snapshotPath(context, file.path);
-  const actual = snapshot.kind === 'file' ? snapshot.contents : null;
-  if (actual !== file.before) {
-    throw new Error(`File changed after preview: ${file.path}`);
-  }
-  return snapshot;
-}
-
-/**
  * Apply an approved project plan and restore source-controlled files on error.
  *
  * @param context - CLI context
  * @param plan - Approved plan
- * @param runCommand - Subprocess runner
  */
 export async function applyCustomFunctionProjectPlan(
   context: LocalContext,
   plan: CustomFunctionProjectPlan,
-  runCommand: PlannedCommandRunner = runPlannedCommand,
 ): Promise<void> {
   for (const change of plan.changes) {
     if (change.kind === 'file') {
       preflightFile(context, change);
-    } else if (change.kind === 'link') {
+    } else {
       if (context.fs.existsSync(change.path)) {
         throw new Error(`Skill target appeared after preview: ${change.path}`);
       }
-    } else {
-      change.rollbackFiles.forEach((file) => snapshotCommandFile(context, file));
     }
   }
 
@@ -229,18 +172,9 @@ export async function applyCustomFunctionProjectPlan(
       if (change.kind === 'file') {
         applied.push(snapshotPath(context, change.path));
         writeAtomic(context, change.path, change.after, change.mode);
-      } else if (change.kind === 'link') {
+      } else {
         applied.push({ kind: 'absent', path: change.path });
         applyLink(context, change);
-      } else {
-        const snapshots = change.rollbackFiles.map((file) => snapshotCommandFile(context, file));
-        applied.push(...snapshots);
-        const result = await runCommand(change, context);
-        if (result.code !== 0) {
-          throw new Error(
-            `${change.command} exited with code ${result.code} while ${change.description}`,
-          );
-        }
       }
     }
   } catch (error) {

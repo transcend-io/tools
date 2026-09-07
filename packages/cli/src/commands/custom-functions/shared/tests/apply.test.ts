@@ -13,7 +13,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import { applyCustomFunctionProjectPlan, type PlannedCommandRunner } from '../apply.js';
+import { applyCustomFunctionProjectPlan } from '../apply.js';
 import type { CustomFunctionProjectPlan, PlannedChange } from '../model.js';
 
 const temporaryRoots: string[] = [];
@@ -131,45 +131,6 @@ describe('applyCustomFunctionProjectPlan rollback', () => {
     ).rejects.toThrow('simulated atomic rename failure');
     expect(readFileSync(first, 'utf8')).toBe('first before\n');
     expect(readFileSync(second, 'utf8')).toBe('second before\n');
-  });
-
-  it('restores command-owned files and prior writes after a command fails', async () => {
-    const root = makeTemporaryRoot();
-    const created = join(root, 'deno.json');
-    const source = join(root, 'source.ts');
-    writeFileSync(source, 'export default 1;\n');
-    const plan = buildPlan(root, [
-      {
-        kind: 'file',
-        path: created,
-        before: null,
-        after: '{"compilerOptions":{"strict":true}}\n',
-        description: 'Create Deno configuration',
-      },
-      {
-        kind: 'command',
-        command: 'deno',
-        args: ['fmt', 'source.ts'],
-        cwd: root,
-        description: 'format generated sources',
-        rollbackFiles: [
-          {
-            path: source,
-            before: 'export default 1;\n',
-          },
-        ],
-      },
-    ]);
-    const runCommand: PlannedCommandRunner = () => {
-      writeFileSync(source, 'export default 1\n');
-      return Promise.resolve({ code: 17 });
-    };
-
-    await expect(
-      applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root }), plan, runCommand),
-    ).rejects.toThrow('deno exited with code 17 while format generated sources');
-    expect(existsSync(created)).toBe(false);
-    expect(readFileSync(source, 'utf8')).toBe('export default 1;\n');
   });
 });
 
