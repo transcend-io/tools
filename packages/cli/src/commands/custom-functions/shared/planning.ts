@@ -486,7 +486,7 @@ export function buildInitPlan(
           targetDirectory: target,
           manifestPath: manifest,
         }),
-        description: 'Add credential-free checks and an explicitly gated deployment',
+        description: 'Add credential-free Custom Function checks',
       });
     }
   }

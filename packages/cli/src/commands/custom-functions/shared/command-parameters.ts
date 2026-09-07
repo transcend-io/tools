@@ -31,7 +31,7 @@ export const customFunctionScaffoldFlagParameters = {
   },
   ci: {
     kind: 'boolean',
-    brief: 'Generate secure GitHub Actions checks and gated deployment',
+    brief: 'Generate credential-free GitHub Actions checks',
     optional: true,
   },
   noInteractive: {

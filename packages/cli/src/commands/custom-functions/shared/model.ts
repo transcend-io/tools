@@ -40,7 +40,7 @@ export const CustomFunctionSetupFeature = {
   Editor: 'editor',
   /** Coding-agent authoring skill. */
   Skill: 'skill',
-  /** GitHub Actions check/deploy workflow. */
+  /** GitHub Actions validation workflow. */
   Ci: 'ci',
 } as const;
 

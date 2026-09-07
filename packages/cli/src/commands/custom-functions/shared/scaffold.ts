@@ -94,7 +94,7 @@ const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
   [CustomFunctionSetupFeature.Deno]: 'Deno imports, strict settings, and check task',
   [CustomFunctionSetupFeature.Editor]: 'VS Code-compatible Deno recommendations',
   [CustomFunctionSetupFeature.Skill]: 'Transcend Custom Function coding-agent skill',
-  [CustomFunctionSetupFeature.Ci]: 'Secure GitHub Actions checks and gated deployment',
+  [CustomFunctionSetupFeature.Ci]: 'Credential-free GitHub Actions checks',
 };
 
 /**
