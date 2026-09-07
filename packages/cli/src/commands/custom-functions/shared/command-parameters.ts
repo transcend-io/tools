@@ -1,4 +1,4 @@
-import { CustomFunctionSetup, CustomFunctionTemplate } from './model.js';
+import { CustomFunctionSetup } from './model.js';
 
 /** Common init/new scaffold flags. */
 export const customFunctionScaffoldFlagParameters = {
@@ -67,21 +67,4 @@ export const customFunctionDirectoryPositionalParameters = {
       optional: true,
     },
   ],
-} as const;
-
-/** New-command-only flags. */
-export const customFunctionNewFlagParameters = {
-  ...customFunctionScaffoldFlagParameters,
-  name: {
-    kind: 'parsed',
-    parse: String,
-    brief: 'Customer-visible Custom Function display name',
-    optional: true,
-  },
-  template: {
-    kind: 'enum',
-    values: Object.values(CustomFunctionTemplate),
-    brief: 'Generated handler and fixture shape',
-    optional: true,
-  },
 } as const;

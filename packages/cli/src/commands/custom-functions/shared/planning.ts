@@ -15,7 +15,6 @@ import {
   planFileChange,
   type CustomFunctionProjectPlan,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
-  type PlannedChange,
   type PlannedLinkChange,
   type ProjectFileSnapshot,
 } from './model.js';
@@ -166,6 +165,24 @@ export function getPlanningCandidatePaths(
     );
   }
   return [...paths].sort((left, right) => left.localeCompare(right));
+}
+
+/**
+ * Enumerate paths touched when adding one function to an initialized project.
+ *
+ * @param state - Project discovery state
+ * @param generated - Generated function files
+ * @returns Absolute candidate paths
+ */
+export function getAddFunctionPlanningCandidatePaths(
+  state: CustomFunctionProjectState,
+  generated: GeneratedCustomFunctionTemplate,
+): string[] {
+  return [
+    state.manifestPath,
+    join(state.manifestDirectory, generated.sourceFile.path),
+    ...generated.payloadFiles.map((file) => join(state.manifestDirectory, file.path)),
+  ].sort((left, right) => left.localeCompare(right));
 }
 
 /**
@@ -498,44 +515,43 @@ export function buildInitPlan(
 }
 
 /**
- * Compose a new function with any missing initialization in one transaction.
+ * Add a new function to an initialized project in one transaction.
  *
  * @param input - Collected project state
- * @param options - Template and setup choices
+ * @param options - Generated function
  * @returns Validated project plan
  */
-export function buildNewPlan(
+export function buildAddFunctionPlan(
   input: CustomFunctionPlanningInput,
-  options: InitPlanOptions & {
+  options: {
     /** Generated function scaffold. */
     generated: GeneratedCustomFunctionTemplate;
   },
 ): CustomFunctionProjectPlan {
-  const plan = buildInitPlan(input, options);
-  plan.command = 'new';
   const { state } = input;
-  const manifestChangeIndex = plan.changes.findIndex(
-    (change) => change.kind === 'file' && change.path === state.manifestPath,
-  );
-  const currentManifest =
-    manifestChangeIndex >= 0
-      ? (plan.changes[manifestChangeIndex] as Extract<PlannedChange, { kind: 'file' }>).after
-      : fileSnapshotAt(input, state.manifestPath).contents!;
+  const currentManifest = fileSnapshotAt(input, state.manifestPath).contents;
+  if (currentManifest === null) {
+    throw new Error(`Custom Function manifest does not exist: ${state.manifestPath}`);
+  }
+  const plan: CustomFunctionProjectPlan = {
+    version: CUSTOM_FUNCTION_RESULT_VERSION,
+    command: 'new',
+    targetDirectory: state.targetDirectory,
+    manifestPath: state.manifestPath,
+    changes: [],
+    unchanged: [],
+    warnings: [],
+    nextSteps: [],
+  };
   const updatedManifest = insertCustomFunctionManifestEntry(
     currentManifest,
     options.generated.manifestEntry,
   );
-  if (manifestChangeIndex >= 0) {
-    const current = plan.changes[manifestChangeIndex] as Extract<PlannedChange, { kind: 'file' }>;
-    plan.changes[manifestChangeIndex] = { ...current, after: updatedManifest };
-  } else {
-    plan.unchanged = plan.unchanged.filter((path) => path !== state.manifestPath);
-    addFileChange(plan, input, {
-      path: state.manifestPath,
-      contents: updatedManifest,
-      description: `Register ${options.generated.displayName} in the manifest`,
-    });
-  }
+  addFileChange(plan, input, {
+    path: state.manifestPath,
+    contents: updatedManifest,
+    description: `Register ${options.generated.displayName} in the manifest`,
+  });
 
   const generatedFiles = [options.generated.sourceFile, ...options.generated.payloadFiles];
   generatedFiles.forEach((file) => {

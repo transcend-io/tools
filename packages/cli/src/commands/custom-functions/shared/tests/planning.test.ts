@@ -5,8 +5,10 @@ import { describe, expect, it } from 'vitest';
 import type { CustomFunctionProjectState } from '../discovery.js';
 import { CustomFunctionSetupFeature } from '../model.js';
 import {
+  buildAddFunctionPlan,
   buildInitPlan,
-  buildNewPlan,
+  EMPTY_CUSTOM_FUNCTION_MANIFEST,
+  getAddFunctionPlanningCandidatePaths,
   getPlanningCandidatePaths,
   prepareGeneratedCustomFunction,
   type CustomFunctionPlanningInput,
@@ -41,6 +43,28 @@ function buildState(root: string): CustomFunctionProjectState {
  */
 function absentSnapshots(paths: readonly string[]): Record<string, PlanningPathSnapshot> {
   return Object.fromEntries(paths.map((path) => [path, { kind: 'absent', path }]));
+}
+
+/**
+ * Make snapshots with an initialized empty manifest.
+ *
+ * @param paths - Candidate absolute paths
+ * @param state - Project state containing the manifest path
+ * @returns Snapshot record
+ */
+function initializedSnapshots(
+  paths: readonly string[],
+  state: CustomFunctionProjectState,
+): Record<string, PlanningPathSnapshot> {
+  return {
+    ...absentSnapshots(paths),
+    [state.manifestPath]: {
+      kind: 'file',
+      path: state.manifestPath,
+      contents: EMPTY_CUSTOM_FUNCTION_MANIFEST,
+      mode: 0o100644,
+    },
+  };
 }
 
 /**
@@ -123,16 +147,15 @@ describe('buildInitPlan', () => {
   });
 });
 
-describe('buildNewPlan', () => {
+describe('buildAddFunctionPlan', () => {
   it('builds a deterministic manifest, source, and payload plan', () => {
     const state = buildState('/repo');
     const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
-    const features: readonly [] = [];
-    const paths = getPlanningCandidatePaths(state, { features, generated });
-    const input = buildInput(state, absentSnapshots(paths));
+    const paths = getAddFunctionPlanningCandidatePaths(state, generated);
+    const input = buildInput(state, initializedSnapshots(paths, state));
 
-    const first = buildNewPlan(input, { features, generated });
-    const second = buildNewPlan(input, { features, generated });
+    const first = buildAddFunctionPlan(input, { generated });
+    const second = buildAddFunctionPlan(input, { generated });
 
     expect(second).toEqual(first);
     expect(
@@ -149,9 +172,8 @@ describe('buildNewPlan', () => {
     (kind) => {
       const state = buildState('/repo');
       const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
-      const features: readonly [] = [];
-      const paths = getPlanningCandidatePaths(state, { features, generated });
-      const snapshots = absentSnapshots(paths);
+      const paths = getAddFunctionPlanningCandidatePaths(state, generated);
+      const snapshots = initializedSnapshots(paths, state);
       const file = kind === 'source' ? generated.sourceFile : generated.payloadFiles[0]!;
       const destination = join(state.manifestDirectory, file.path);
       snapshots[destination] = {
@@ -161,7 +183,7 @@ describe('buildNewPlan', () => {
         mode: 0o100644,
       };
 
-      expect(() => buildNewPlan(buildInput(state, snapshots), { features, generated })).toThrow(
+      expect(() => buildAddFunctionPlan(buildInput(state, snapshots), { generated })).toThrow(
         `Refusing to overwrite existing file: ${destination}`,
       );
     },
@@ -170,10 +192,8 @@ describe('buildNewPlan', () => {
   it('gives self-contained secret guidance when no skill is installed', () => {
     const state = buildState('/repo');
     const generated = prepareGeneratedCustomFunction('DSR Lookup', 'dsr-datapoint');
-    const features: readonly [] = [];
-    const paths = getPlanningCandidatePaths(state, { features, generated });
-    const plan = buildNewPlan(buildInput(state, absentSnapshots(paths)), {
-      features,
+    const paths = getAddFunctionPlanningCandidatePaths(state, generated);
+    const plan = buildAddFunctionPlan(buildInput(state, initializedSnapshots(paths, state)), {
       generated,
     });
 
@@ -188,17 +208,25 @@ describe('buildNewPlan', () => {
       relativePaths: ['Functions/score-lead.ts'],
     };
     const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
-    const features: readonly [] = [];
-    const paths = getPlanningCandidatePaths(state, { features, generated });
+    const paths = getAddFunctionPlanningCandidatePaths(state, generated);
 
     expect(() =>
-      buildNewPlan(buildInput(state, absentSnapshots(paths)), {
-        features,
+      buildAddFunctionPlan(buildInput(state, initializedSnapshots(paths, state)), {
         generated,
       }),
     ).toThrow(
       'Case-insensitive path collision: "functions/score-lead.ts" conflicts with "Functions/score-lead.ts".',
     );
+  });
+
+  it('requires an existing manifest snapshot', () => {
+    const state = buildState('/repo');
+    const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
+    const paths = getAddFunctionPlanningCandidatePaths(state, generated);
+
+    expect(() =>
+      buildAddFunctionPlan(buildInput(state, absentSnapshots(paths)), { generated }),
+    ).toThrow(`Custom Function manifest does not exist: ${state.manifestPath}`);
   });
 });
 

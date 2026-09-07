@@ -1,10 +1,12 @@
+import { dirname, relative } from 'node:path';
+
 import { CUSTOM_FUNCTION_TYPES_VERSION } from '@transcend-io/custom-function-types';
 
 import { version as CLI_VERSION } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { applyCustomFunctionProjectPlan } from './apply.js';
 import { ALL_SETUP_FEATURES, applySetupFeatureOverrides, resolveSetupFeatures } from './config.js';
-import { discoverCustomFunctionProject } from './discovery.js';
+import { discoverCustomFunctionManifests, discoverCustomFunctionProject } from './discovery.js';
 import {
   CustomFunctionSetupFeature,
   type CustomFunctionProjectPlan,
@@ -13,9 +15,10 @@ import {
 } from './model.js';
 import { buildPlanResult, renderProjectPlan } from './output.js';
 import {
+  buildAddFunctionPlan,
   buildInitPlan,
-  buildNewPlan,
   collectPlanningSnapshots,
+  getAddFunctionPlanningCandidatePaths,
   getPlanningCandidatePaths,
   prepareGeneratedCustomFunction,
 } from './planning.js';
@@ -47,11 +50,21 @@ export interface CustomFunctionScaffoldFlags {
 }
 
 /** Flags specific to `custom-functions new`. */
-export interface CustomFunctionNewFlags extends CustomFunctionScaffoldFlags {
+export interface CustomFunctionNewFlags {
+  /** Explicit existing manifest path. */
+  manifest?: string;
   /** Custom Function display name. */
   name?: string;
   /** Starter handler shape. */
   template?: CustomFunctionTemplateName;
+  /** Disable prompts. */
+  noInteractive: boolean;
+  /** Render but do not apply. */
+  dryRun: boolean;
+  /** Approve the final displayed plan. */
+  yes: boolean;
+  /** Emit one stable JSON result on stdout. */
+  json: boolean;
 }
 
 /**
@@ -272,6 +285,34 @@ export async function runCustomFunctionNew(
     ...(directory ? { directory } : {}),
     ...(flags.manifest ? { manifest: flags.manifest } : {}),
   });
+  if (!context.fs.existsSync(state.manifestPath)) {
+    const cwd = context.process.cwd();
+    const requested = relative(cwd, state.manifestPath) || 'transcend-functions.yml';
+    const discovered = discoverCustomFunctionManifests(context, cwd).filter(
+      (candidate) => candidate !== state.manifestPath,
+    );
+    if (discovered.length === 1) {
+      const discoveredDirectory = relative(cwd, dirname(discovered[0]!)) || '.';
+      const argument = /\s/u.test(discoveredDirectory)
+        ? JSON.stringify(discoveredDirectory)
+        : discoveredDirectory;
+      throw new Error(
+        `Custom Function manifest does not exist at ${requested}. ` +
+          `Did you mean \`transcend custom-functions new ${argument}\`?`,
+      );
+    }
+    if (discovered.length > 1) {
+      const paths = discovered.map((path) => relative(cwd, path)).join(', ');
+      throw new Error(
+        `Custom Function manifest does not exist at ${requested}. ` +
+          `Found manifests at: ${paths}. Pass a directory or --manifest explicitly.`,
+      );
+    }
+    throw new Error(
+      `Custom Function manifest does not exist at ${requested}. ` +
+        'Run `transcend custom-functions init` first.',
+    );
+  }
   const prompts = new CustomFunctionPrompts(context);
   const interactive = isInteractiveInvocation(context, flags);
   const name =
@@ -299,24 +340,18 @@ export async function runCustomFunctionNew(
     );
   }
   const generated = prepareGeneratedCustomFunction(name, template);
-  const manifestExists = context.fs.existsSync(state.manifestPath);
-  const features = await resolveFeatures(context, prompts, flags, {
-    requireAnswer: !manifestExists,
-    hasProjectSkillDirectory: state.existingSkillDirectories.length > 0,
-    usesGithub: state.usesGithub,
-  });
   const snapshots = collectPlanningSnapshots(
     context,
-    getPlanningCandidatePaths(state, { features, generated }),
+    getAddFunctionPlanningCandidatePaths(state, generated),
   );
-  const plan = buildNewPlan(
+  const plan = buildAddFunctionPlan(
     {
       state,
       snapshots,
       contractVersion: CUSTOM_FUNCTION_TYPES_VERSION,
       cliVersion: CLI_VERSION,
     },
-    { features, generated },
+    { generated },
   );
   await executePlan(context, flags, prompts, plan);
 }

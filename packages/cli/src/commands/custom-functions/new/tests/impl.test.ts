@@ -34,7 +34,6 @@ function makeTemporaryRoot(): string {
  */
 function buildFlags(overrides: Partial<CustomFunctionNewFlags> = {}): CustomFunctionNewFlags {
   return {
-    setup: 'none',
     name: 'Example Function',
     template: 'general',
     noInteractive: true,
@@ -43,6 +42,19 @@ function buildFlags(overrides: Partial<CustomFunctionNewFlags> = {}): CustomFunc
     json: true,
     ...overrides,
   };
+}
+
+/**
+ * Create the manifest required by `new`.
+ *
+ * @param target - Custom Function project directory
+ */
+function initializeProject(target: string): void {
+  mkdirSync(target, { recursive: true });
+  writeFileSync(
+    join(target, 'transcend-functions.yml'),
+    '# Custom Functions managed as code.\nfunctions: []\n',
+  );
 }
 
 /**
@@ -67,10 +79,11 @@ afterEach(() => {
 
 describe('custom-functions new', () => {
   it.each(CUSTOM_FUNCTION_TEMPLATE_NAMES)(
-    'implicitly initializes and writes deterministic %s output',
+    'writes deterministic %s output to an initialized project',
     async (template) => {
       const root = makeTemporaryRoot();
       const target = join(root, 'project');
+      initializeProject(target);
       const generated = generateCustomFunctionTemplate('Example Function', template);
       const context = buildTestContext(root);
 
@@ -103,6 +116,7 @@ describe('custom-functions new', () => {
     async (kind) => {
       const root = makeTemporaryRoot();
       const target = join(root, 'project');
+      initializeProject(target);
       const generated = generateCustomFunctionTemplate('Example Function', 'general');
       const collision =
         kind === 'source' ? generated.sourceFile.path : generated.payloadFiles[0]!.path;
@@ -116,7 +130,9 @@ describe('custom-functions new', () => {
       );
 
       expect(readFileSync(collisionPath, 'utf8')).toBe('existing contents\n');
-      expect(existsSync(join(target, 'transcend-functions.yml'))).toBe(false);
+      expect(readFileSync(join(target, 'transcend-functions.yml'), 'utf8')).toBe(
+        '# Custom Functions managed as code.\nfunctions: []\n',
+      );
       if (kind === 'payload') {
         expect(existsSync(join(target, generated.sourceFile.path))).toBe(false);
       }
@@ -125,34 +141,39 @@ describe('custom-functions new', () => {
 
   it('requires a name in non-interactive mode', async () => {
     const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    initializeProject(target);
     const context = buildTestContext(root);
 
     await expect(
-      newCustomFunction.call(context, buildFlags({ name: undefined }), join(root, 'project')),
+      newCustomFunction.call(context, buildFlags({ name: undefined }), target),
     ).rejects.toThrow('Missing Custom Function name. Pass --name in a non-interactive invocation.');
   });
 
   it('requires a template in non-interactive mode', async () => {
     const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    initializeProject(target);
     const context = buildTestContext(root);
 
     await expect(
-      newCustomFunction.call(context, buildFlags({ template: undefined }), join(root, 'project')),
+      newCustomFunction.call(context, buildFlags({ template: undefined }), target),
     ).rejects.toThrow('Missing Custom Function template.');
   });
 
-  it('requires a setup choice for implicit initialization in non-interactive mode', async () => {
+  it('requires initialization before adding a function', async () => {
     const root = makeTemporaryRoot();
     const context = buildTestContext(root);
 
     await expect(
-      newCustomFunction.call(context, buildFlags({ setup: undefined }), join(root, 'project')),
-    ).rejects.toThrow('Missing setup choice in a non-interactive invocation.');
+      newCustomFunction.call(context, buildFlags(), join(root, 'project')),
+    ).rejects.toThrow('Run `transcend custom-functions init` first.');
   });
 
   it('does not treat JSON output as approval to mutate', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'project');
+    initializeProject(target);
     const context = buildTestContext(root);
 
     await expect(
@@ -161,7 +182,9 @@ describe('custom-functions new', () => {
       'The plan requires approval in a non-interactive invocation. Review with --dryRun, then pass --yes.',
     );
 
-    expect(existsSync(target)).toBe(false);
+    expect(readFileSync(join(target, 'transcend-functions.yml'), 'utf8')).toBe(
+      '# Custom Functions managed as code.\nfunctions: []\n',
+    );
     expect(context.stdout).toBe('');
     expect(context.stderr).toBe('');
   });
@@ -169,6 +192,7 @@ describe('custom-functions new', () => {
   it('emits one stable JSON result on stdout', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'project');
+    initializeProject(target);
     const context = buildTestContext(root);
     const flags = buildFlags({ dryRun: true, yes: false });
 
@@ -186,7 +210,10 @@ describe('custom-functions new', () => {
       applied: false,
       dryRun: true,
     });
-    expect(existsSync(target)).toBe(false);
+    expect(readFileSync(join(target, 'transcend-functions.yml'), 'utf8')).toBe(
+      '# Custom Functions managed as code.\nfunctions: []\n',
+    );
+    expect(existsSync(join(target, 'functions'))).toBe(false);
     expect(context.stderr).toBe('');
   });
 });

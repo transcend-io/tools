@@ -1,9 +1,49 @@
 import { buildCommand } from '@stricli/core';
 
-import {
-  customFunctionDirectoryPositionalParameters,
-  customFunctionNewFlagParameters,
-} from '../shared/command-parameters.js';
+import { customFunctionDirectoryPositionalParameters } from '../shared/command-parameters.js';
+import { CustomFunctionTemplate } from '../shared/model.js';
+
+/** Flags accepted when adding a function to an initialized project. */
+const customFunctionNewFlagParameters = {
+  manifest: {
+    kind: 'parsed',
+    parse: String,
+    brief: 'Path to an existing transcend-functions.yml',
+    optional: true,
+  },
+  name: {
+    kind: 'parsed',
+    parse: String,
+    brief: 'Customer-visible Custom Function display name',
+    optional: true,
+  },
+  template: {
+    kind: 'enum',
+    values: Object.values(CustomFunctionTemplate),
+    brief: 'Generated handler and fixture shape',
+    optional: true,
+  },
+  noInteractive: {
+    kind: 'boolean',
+    brief: 'Disable prompts and require every missing answer as a flag',
+    default: false,
+  },
+  dryRun: {
+    kind: 'boolean',
+    brief: 'Preview all changes without writing files',
+    default: false,
+  },
+  yes: {
+    kind: 'boolean',
+    brief: 'Skip only the final plan confirmation',
+    default: false,
+  },
+  json: {
+    kind: 'boolean',
+    brief: 'Emit a stable JSON result and imply non-interactive output',
+    default: false,
+  },
+} as const;
 
 export const newCommand = buildCommand({
   loader: async () => {
@@ -17,6 +57,6 @@ export const newCommand = buildCommand({
   docs: {
     brief: 'Scaffold one local Custom Function and its test fixtures',
     fullDescription:
-      'Creates a deterministic General or DSR starter, composes missing initialization into the same preview, and safely appends the manifest entry without credentials.',
+      'Adds a deterministic General or DSR starter to an initialized Custom Function project and safely appends its manifest entry without credentials.',
   },
 });
