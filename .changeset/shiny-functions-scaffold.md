@@ -3,12 +3,8 @@
 '@transcend-io/custom-function-types': minor
 ---
 
-Add transactional, credential-free `custom-functions init`, `new`, and `check` workflows with deterministic General and DSR starters, safe optional repository setup, and a portable AI authoring skill.
+Add a guided local workflow for developing Custom Functions without Transcend credentials.
 
-Initialize once with `custom-functions init`; `custom-functions new` now has a focused interface that only adds functions to an existing manifest.
+`custom-functions init` creates a project and can set up Deno, editor recommendations, an AI authoring skill, and CI checks. `custom-functions new` adds a General or DSR starter with test payloads. `custom-functions check` validates the project locally with Deno 2.x before it is pushed.
 
-Choose init integrations directly with individual flags; interactive setup starts with every option selected.
-
-Require Deno 2.x for local checks, warn without installing runtimes during setup, and print compact AI handoffs for implementation and CI follow-up.
-
-Allow raw DSR datapoint fixtures to omit the data-silo identity that `push` injects, and export the exact authoring-contract package version for generated Deno imports.
+The guided setup previews its changes and finishes with clear next steps and a compact prompt for handing remaining implementation or CI work to an AI coding agent.
