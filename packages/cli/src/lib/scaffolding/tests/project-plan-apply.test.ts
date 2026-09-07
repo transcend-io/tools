@@ -127,7 +127,7 @@ describe('applyProjectPlan rollback', () => {
 describe('applyProjectPlan skill links', () => {
   it('copies the canonical skill when directory links are unavailable', async () => {
     const root = makeTemporaryRoot();
-    const linkPath = join(root, '.claude', 'skills', 'transcend-io-custom-functions');
+    const linkPath = join(root, '.claude', 'skills', 'transcend-custom-functions');
     mkdirSync(join(root, '.claude', 'skills'), { recursive: true });
     const linklessFs = new Proxy(fs, {
       get(target, property, receiver) {
@@ -143,7 +143,7 @@ describe('applyProjectPlan skill links', () => {
       {
         kind: 'link',
         path: linkPath,
-        target: '../../.agents/skills/transcend-io-custom-functions',
+        target: '../../.agents/skills/transcend-custom-functions',
         fallbackFiles: [
           { path: 'SKILL.md', contents: '# Transcend Custom Functions\n' },
           { path: 'references/setup.md', contents: '# Setup\n' },

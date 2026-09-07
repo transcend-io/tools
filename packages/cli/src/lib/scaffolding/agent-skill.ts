@@ -4,18 +4,18 @@ import { createHash } from 'node:crypto';
 export const UNIVERSAL_AGENT_SKILLS_DIRECTORY = '.agents/skills';
 
 /**
- * Project skill directories from vercel-labs/skills at
- * 1682051d48c34f5eb135e6475c1a965dce05e820.
+ * Unambiguous agent-owned project directories from vercel-labs/skills at
+ * 1682051d48c34f5eb135e6475c1a965dce05e820. Generic skill catalog paths such
+ * as `skills` and `data/skills` are excluded because they do not prove that a
+ * project has configured an agent.
  */
 export const PROJECT_SKILL_DIRECTORIES = [
   '.aider-desk/skills',
   UNIVERSAL_AGENT_SKILLS_DIRECTORY,
-  'data/skills',
   '.autohand/skills',
   '.augment/skills',
   '.bob/skills',
   '.claude/skills',
-  'skills',
   '.codeartsdoer/skills',
   '.codebuddy/skills',
   '.codemaker/skills',

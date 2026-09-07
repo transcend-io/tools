@@ -2515,6 +2515,12 @@ transcend custom-functions init
 
 This creates the manifest under `transcend/custom-functions`, leaving room for files such as `transcend/transcend.yml`. Selected setup options can add Deno configuration and repository integrations; use `transcend custom-functions new` to create functions and fixtures. Pass a directory explicitly to use another layout.
 
+To give an agent the same Custom Function guidance before initialization, install the standalone skill directly from this repository:
+
+```sh
+npx skills add transcend-io/tools --skill transcend-custom-functions
+```
+
 The interactive checklist selects Deno configuration, VS Code settings, the Agent Skill, and GitHub Actions by default, followed by one complete filesystem preview. When Deno setup is selected, `init` warns if local Deno is missing or is not 2.x; it never installs runtimes automatically. One existing skill directory receives a managed file directly. With multiple existing directories, `.agents/skills` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
 
 #### Add support to an existing repository
@@ -2565,7 +2571,7 @@ transcend custom-functions new ./transcend/custom-functions \
 
 Run `transcend custom-functions init` once before adding functions. The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
 
-Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-io-custom-functions` skill. The final output includes a short, copyable AI handoff naming the generated source, fixtures, and validation command.
+Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill. The final output includes a short, copyable AI handoff naming the generated source and validation command.
 
 ### `transcend custom-functions check`
 

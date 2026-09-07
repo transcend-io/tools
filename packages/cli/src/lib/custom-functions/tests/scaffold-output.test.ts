@@ -19,8 +19,8 @@ const PLAN: CustomFunctionProjectPlan = {
     },
     {
       kind: 'link',
-      path: '/repo/.claude/skills/transcend-io-custom-functions',
-      target: '../../.agents/skills/transcend-io-custom-functions',
+      path: '/repo/.claude/skills/transcend-custom-functions',
+      target: '../../.agents/skills/transcend-custom-functions',
       fallbackFiles: [{ path: 'SKILL.md', contents: 'private skill contents\n' }],
       description: 'Expose the canonical skill to Claude Code',
     },
@@ -61,7 +61,7 @@ describe('buildPlanResult', () => {
         {
           kind: 'link',
           target:
-            '.claude/skills/transcend-io-custom-functions -> ../../.agents/skills/transcend-io-custom-functions',
+            '.claude/skills/transcend-custom-functions -> ../../.agents/skills/transcend-custom-functions',
           description: 'Expose the canonical skill to Claude Code',
         },
       ],

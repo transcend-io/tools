@@ -34,6 +34,6 @@ describe('buildNewFunctionAiHandoff', () => {
         targetDirectory: 'transcend/custom-functions',
         hasSkill: true,
       }),
-    ).toContain('Use the `transcend-io-custom-functions` skill');
+    ).toContain('Use the `transcend-custom-functions` skill');
   });
 });

@@ -9,16 +9,14 @@ import {
 } from '../agent-skill.js';
 
 describe('project skill directory registry', () => {
-  it('matches the pinned vercel-labs/skills project paths', () => {
+  it('tracks unambiguous agent-owned paths from vercel-labs/skills', () => {
     expect(PROJECT_SKILL_DIRECTORIES).toEqual([
       '.aider-desk/skills',
       '.agents/skills',
-      'data/skills',
       '.autohand/skills',
       '.augment/skills',
       '.bob/skills',
       '.claude/skills',
-      'skills',
       '.codeartsdoer/skills',
       '.codebuddy/skills',
       '.codemaker/skills',
@@ -68,6 +66,8 @@ describe('project skill directory registry', () => {
       '.pochi/skills',
       '.adal/skills',
     ]);
+    expect(PROJECT_SKILL_DIRECTORIES).not.toContain('skills');
+    expect(PROJECT_SKILL_DIRECTORIES).not.toContain('data/skills');
     expect(AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES).toContain('.cursor/skills');
   });
 });
