@@ -141,6 +141,37 @@ function collectRelativePaths(context: LocalContext, root: string): string[] {
 }
 
 /**
+ * Find Custom Function manifests below the surrounding repository.
+ *
+ * @param context - CLI context
+ * @param startDirectory - Existing directory from which to locate the repository
+ * @returns Absolute manifest paths in stable order
+ */
+export function discoverCustomFunctionManifests(
+  context: LocalContext,
+  startDirectory: string,
+): string[] {
+  const existingAncestor = findExistingAncestor(context, startDirectory);
+  const root = findRepositoryRoot(context, existingAncestor) ?? existingAncestor;
+  const manifests: string[] = [];
+  const visit = (directory: string): void => {
+    context.fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => {
+      if (entry.name === '.git' || entry.name === '.worktrees' || entry.name === 'node_modules') {
+        return;
+      }
+      const absolute = join(directory, entry.name);
+      if (entry.isFile() && entry.name === 'transcend-functions.yml') {
+        manifests.push(absolute);
+      } else if (entry.isDirectory() && !entry.isSymbolicLink()) {
+        visit(absolute);
+      }
+    });
+  };
+  visit(root);
+  return manifests.sort((left, right) => left.localeCompare(right));
+}
+
+/**
  * Determine whether a skill container has a SKILL.md within three levels.
  *
  * @param context - CLI context

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -27,6 +27,108 @@ afterEach(() => {
 });
 
 describe('custom-functions check', () => {
+  it('defaults to transcend/custom-functions', async () => {
+    const root = makeTemporaryRoot();
+    const directory = join(root, 'transcend', 'custom-functions');
+    const manifestPath = join(directory, 'transcend-functions.yml');
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(manifestPath, 'functions: []\n');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { PATH: '' },
+      stdinIsTTY: false,
+    });
+
+    await check.call(context, {
+      fix: false,
+      noInteractive: true,
+      json: true,
+    });
+
+    const result = JSON.parse(context.stdout);
+    expect(result.manifestPath).toBe(manifestPath);
+    expect(result.checks).toContainEqual({ name: 'manifest', status: 'passed' });
+  });
+
+  it('suggests the only discovered manifest when the default is missing', async () => {
+    const root = makeTemporaryRoot();
+    const discoveredDirectory = join(root, 'packages', 'privacy-functions');
+    mkdirSync(join(root, '.git'), { recursive: true });
+    mkdirSync(discoveredDirectory, { recursive: true });
+    writeFileSync(join(discoveredDirectory, 'transcend-functions.yml'), 'functions: []\n');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { PATH: '' },
+      stdinIsTTY: false,
+    });
+
+    await check.call(context, {
+      fix: false,
+      noInteractive: true,
+      json: true,
+    });
+
+    expect(JSON.parse(context.stdout).diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'manifest.missing',
+        message:
+          'Custom Function manifest does not exist at transcend/custom-functions/transcend-functions.yml. ' +
+          'Did you mean `transcend custom-functions check packages/privacy-functions`?',
+      }),
+    );
+  });
+
+  it('lists discovered manifests when the default is ambiguous', async () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, '.git'), { recursive: true });
+    ['first', 'second'].forEach((directory) => {
+      mkdirSync(join(root, directory), { recursive: true });
+      writeFileSync(join(root, directory, 'transcend-functions.yml'), 'functions: []\n');
+    });
+    const context = buildContextForTest({
+      cwd: root,
+      env: { PATH: '' },
+      stdinIsTTY: false,
+    });
+
+    await check.call(context, {
+      fix: false,
+      noInteractive: true,
+      json: true,
+    });
+
+    expect(JSON.parse(context.stdout).diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'manifest.missing',
+        message: expect.stringContaining(
+          'Found manifests at: first/transcend-functions.yml, second/transcend-functions.yml.',
+        ),
+      }),
+    );
+  });
+
+  it('suggests init when no manifest exists', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildContextForTest({
+      cwd: root,
+      env: { PATH: '' },
+      stdinIsTTY: false,
+    });
+
+    await check.call(context, {
+      fix: false,
+      noInteractive: true,
+      json: true,
+    });
+
+    expect(JSON.parse(context.stdout).diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'manifest.missing',
+        message: expect.stringContaining('`transcend custom-functions init`'),
+      }),
+    );
+  });
+
   it('emits one stable JSON result while keeping diagnostics off stderr', async () => {
     const root = makeTemporaryRoot();
     const manifestPath = join(root, 'transcend-functions.yml');

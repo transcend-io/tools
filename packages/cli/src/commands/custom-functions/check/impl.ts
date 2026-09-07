@@ -1,9 +1,13 @@
-import { join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { runCustomFunctionChecks } from '../shared/check.js';
-import { resolveCliPath } from '../shared/discovery.js';
+import {
+  DEFAULT_CUSTOM_FUNCTION_DIRECTORY,
+  discoverCustomFunctionManifests,
+  resolveCliPath,
+} from '../shared/discovery.js';
 import { CustomFunctionPrompts, PromptCancelledError } from '../shared/prompts.js';
 import { isInteractiveInvocation } from '../shared/scaffold.js';
 
@@ -20,6 +24,40 @@ export interface CustomFunctionsCheckFlags {
 }
 
 /**
+ * Build an actionable diagnostic for a missing manifest.
+ *
+ * @param context - CLI context
+ * @param manifestPath - Requested manifest
+ * @param cwd - Command working directory
+ * @returns Missing-manifest explanation
+ */
+function missingManifestMessage(context: LocalContext, manifestPath: string, cwd: string): string {
+  const requested = relative(cwd, manifestPath) || 'transcend-functions.yml';
+  const discovered = discoverCustomFunctionManifests(context, cwd).filter(
+    (candidate) => candidate !== manifestPath,
+  );
+  if (discovered.length === 1) {
+    const directory = relative(cwd, dirname(discovered[0]!)) || '.';
+    const argument = /\s/u.test(directory) ? JSON.stringify(directory) : directory;
+    return (
+      `Custom Function manifest does not exist at ${requested}. ` +
+      `Did you mean \`transcend custom-functions check ${argument}\`?`
+    );
+  }
+  if (discovered.length > 1) {
+    const paths = discovered.map((path) => relative(cwd, path)).join(', ');
+    return (
+      `Custom Function manifest does not exist at ${requested}. ` +
+      `Found manifests at: ${paths}. Pass a directory or --manifest explicitly.`
+    );
+  }
+  return (
+    `Custom Function manifest does not exist at ${requested}. ` +
+    'Run `transcend custom-functions init` to create the default project.'
+  );
+}
+
+/**
  * Validate a local Custom Function project without credentials.
  *
  * @param this - CLI context
@@ -32,10 +70,16 @@ export async function check(
   directory?: string,
 ): Promise<void> {
   doneInputValidation(this.process);
-  const targetDirectory = resolveCliPath(this.process.cwd(), directory ?? '.');
+  const targetDirectory = resolveCliPath(
+    this.process.cwd(),
+    directory ?? DEFAULT_CUSTOM_FUNCTION_DIRECTORY,
+  );
   const manifestPath = flags.manifest
     ? resolveCliPath(this.process.cwd(), flags.manifest)
     : join(targetDirectory, 'transcend-functions.yml');
+  const missingMessage = this.fs.existsSync(manifestPath)
+    ? undefined
+    : missingManifestMessage(this, manifestPath, this.process.cwd());
   const interactive = isInteractiveInvocation(this, {
     json: flags.json,
     noInteractive: flags.noInteractive,
@@ -56,6 +100,13 @@ export async function check(
           }
         : {}),
     });
+    if (missingMessage) {
+      result.diagnostics.forEach((diagnostic) => {
+        if (diagnostic.code === 'manifest.missing') {
+          diagnostic.message = missingMessage;
+        }
+      });
+    }
     if (flags.json) {
       this.process.stdout.write(`${JSON.stringify(result)}\n`);
     } else {
