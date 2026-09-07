@@ -2515,7 +2515,7 @@ transcend custom-functions init
 
 This creates the manifest under `transcend/custom-functions`, leaving room for files such as `transcend/transcend.yml`. Selected setup options can add Deno configuration and repository integrations; use `transcend custom-functions new` to create functions and fixtures. Pass a directory explicitly to use another layout.
 
-The interactive checklist selects Deno configuration, VS Code settings, the Agent Skill, and GitHub Actions by default, followed by one complete filesystem preview. One existing skill directory receives a managed file directly. With multiple existing directories, `.agents/skills` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
+The interactive checklist selects Deno configuration, VS Code settings, the Agent Skill, and GitHub Actions by default, followed by one complete filesystem preview. When Deno setup is selected, `init` warns if local Deno is missing or is not 2.x; it never installs runtimes automatically. One existing skill directory receives a managed file directly. With multiple existing directories, `.agents/skills` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
 
 #### Add support to an existing repository
 
@@ -2528,7 +2528,7 @@ transcend custom-functions init ./packages/transcend-functions \
   --yes
 ```
 
-Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Use `--dryRun` to review the same transactional plan without applying it.
+Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Use `--dryRun` to review the same transactional plan without applying it. After a successful setup, the CLI prints a compact AI handoff for reviewing the generated files and adapting validation to the repository's CI.
 
 ### `transcend custom-functions new`
 
@@ -2565,7 +2565,7 @@ transcend custom-functions new ./transcend/custom-functions \
 
 Run `transcend custom-functions init` once before adding functions. The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
 
-Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-io-custom-functions` skill.
+Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-io-custom-functions` skill. The final output includes a short, copyable AI handoff naming the generated source, fixtures, and validation command.
 
 ### `transcend custom-functions check`
 
@@ -2574,7 +2574,7 @@ USAGE
   transcend custom-functions check [--manifest value] [--fix] [--noInteractive] [--json] [<directory>]
   transcend custom-functions check --help
 
-Checks manifest semantics and published payload schemas, then uses Deno without executing user modules to inspect exports, type-check, lint, and verify formatting.
+Checks manifest semantics and published payload schemas, then uses Deno 2.x without executing user modules to inspect exports, type-check, lint, and verify formatting.
 
 FLAGS
      [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
@@ -2593,7 +2593,7 @@ ARGUMENTS
 transcend custom-functions check
 ```
 
-`check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. It validates unresolved manifest placeholders and every test fixture against the published authoring schemas, then asks Deno to inspect exports, type-check, lint, and check formatting without executing the modules.
+`check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. It validates unresolved manifest placeholders and every test fixture against the published authoring schemas, then asks Deno 2.x to inspect exports, type-check, lint, and check formatting without executing the modules. Missing and unsupported Deno versions produce focused installation or upgrade guidance.
 
 In CI, use `--noInteractive --json`. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
 

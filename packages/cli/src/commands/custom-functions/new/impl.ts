@@ -1,5 +1,8 @@
+import { join } from 'node:path';
+
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
+import { buildNewFunctionAiHandoff } from '../../../lib/custom-functions/ai-handoff.js';
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
 import {
   collectPlanningSnapshots,
@@ -12,6 +15,7 @@ import {
 } from '../../../lib/custom-functions/prompts.js';
 import {
   buildPlanResult,
+  displayPath,
   renderProjectPlan,
 } from '../../../lib/custom-functions/scaffold-output.js';
 import {
@@ -20,6 +24,7 @@ import {
   prepareGeneratedCustomFunction,
 } from '../../../lib/custom-functions/scaffold-planning.js';
 import {
+  CUSTOM_FUNCTION_SKILL_NAME,
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   type CustomFunctionTemplateName,
 } from '../../../lib/custom-functions/scaffold-templates.js';
@@ -174,6 +179,22 @@ export async function _new(
         this.logger.info(`  ${index + 1}. ${step}`);
       });
     }
+    const skillRoot = state.repositoryRoot ?? state.targetDirectory;
+    const hasSkill = state.existingSkillDirectories.some(({ path }) =>
+      this.fs.existsSync(join(skillRoot, path, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md')),
+    );
+    this.logger.info('\nAI handoff:');
+    this.logger.info(
+      `  ${buildNewFunctionAiHandoff({
+        displayName: generated.displayName,
+        sourcePath: displayPath(
+          this.process.cwd(),
+          join(state.manifestDirectory, generated.sourceFile.path),
+        ),
+        targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
+        hasSkill,
+      })}`,
+    );
   } catch (error) {
     if (error instanceof PromptCancelledError) {
       this.process.exit(130);

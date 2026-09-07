@@ -3,6 +3,12 @@ import { CUSTOM_FUNCTION_TYPES_VERSION } from '@transcend-io/custom-function-typ
 import { version as CLI_VERSION } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
+import { runCapturedProcess } from '../../../lib/cli/run-captured-process.js';
+import { buildInitAiHandoff } from '../../../lib/custom-functions/ai-handoff.js';
+import {
+  DENO_INSTALL_URL,
+  unsupportedDenoVersionMessage,
+} from '../../../lib/custom-functions/deno-runtime.js';
 import {
   collectPlanningSnapshots,
   discoverCustomFunctionProject,
@@ -18,6 +24,7 @@ import {
 } from '../../../lib/custom-functions/scaffold-model.js';
 import {
   buildPlanResult,
+  displayPath,
   renderProjectPlan,
 } from '../../../lib/custom-functions/scaffold-output.js';
 import {
@@ -148,6 +155,26 @@ export async function init(
       },
       { features },
     );
+    if (features.includes(CustomFunctionSetupFeature.Deno)) {
+      const denoVersion = await runCapturedProcess(
+        'deno',
+        ['--version'],
+        { cwd: this.process.cwd() },
+        this,
+      );
+      if (denoVersion.error?.code === 'ENOENT') {
+        plan.warnings.push(`Deno 2.x is not installed. Install it from ${DENO_INSTALL_URL}`);
+      } else if (denoVersion.code !== 0) {
+        plan.warnings.push(
+          `Deno was found, but its version could not be determined. Deno 2.x is required. See ${DENO_INSTALL_URL}`,
+        );
+      } else {
+        const unsupportedVersion = unsupportedDenoVersionMessage(denoVersion.stdout);
+        if (unsupportedVersion) {
+          plan.warnings.push(unsupportedVersion);
+        }
+      }
+    }
     if (!flags.json) {
       this.logger.info(renderProjectPlan(plan, this.process.cwd()));
     }
@@ -197,6 +224,18 @@ export async function init(
         this.logger.info(`  ${index + 1}. ${step}`);
       });
     }
+    this.logger.info('\nAI handoff:');
+    this.logger.info(
+      `  ${buildInitAiHandoff({
+        targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
+        manifestPath: displayPath(this.process.cwd(), state.manifestPath),
+        cliVersion: CLI_VERSION,
+        hasSkill: features.includes(CustomFunctionSetupFeature.Skill),
+        hasGithubWorkflow:
+          features.includes(CustomFunctionSetupFeature.Ci) &&
+          Boolean(state.repositoryRoot && state.usesGithub),
+      })}`,
+    );
   } catch (error) {
     if (error instanceof PromptCancelledError) {
       this.process.exit(130);

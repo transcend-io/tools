@@ -9,4 +9,6 @@ Initialize once with `custom-functions init`; `custom-functions new` now has a f
 
 Choose init integrations directly with individual flags; interactive setup starts with every option selected.
 
+Require Deno 2.x for local checks, warn without installing runtimes during setup, and print compact AI handoffs for implementation and CI follow-up.
+
 Allow raw DSR datapoint fixtures to omit the data-silo identity that `push` injects, and export the exact authoring-contract package version for generated Deno imports.

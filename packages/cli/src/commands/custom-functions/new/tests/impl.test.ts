@@ -77,6 +77,19 @@ afterEach(() => {
 });
 
 describe('custom-functions new', () => {
+  it('prints a compact implementation handoff', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    initializeProject(target);
+    const context = buildTestContext(root);
+
+    await newCustomFunction.call(context, buildFlags({ json: false }), target);
+
+    expect(context.stdout).toContain('AI handoff:');
+    expect(context.stdout).toContain('implement `Example Function`');
+    expect(context.stdout).toContain('replace the example fixtures with realistic cases');
+  });
+
   it.each(CUSTOM_FUNCTION_TEMPLATE_NAMES)(
     'writes deterministic %s output to an initialized project',
     async (template) => {

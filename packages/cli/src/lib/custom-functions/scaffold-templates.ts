@@ -169,7 +169,9 @@ Keep source and test-payload paths relative to \`transcend-functions.yml\`. Matc
 
 Run \`transcend custom-functions check <custom-function-directory>\`, then \`transcend custom-functions push --file=<custom-function-directory>/transcend-functions.yml --auth="$TRANSCEND_API_KEY" --dryRun\`. Use \`--promote=false\` when a revision should remain a draft; promote deliberately, and use \`--updateManifest\` on the first push to record assigned IDs.
 
-Custom Functions run on Deno. Avoid Node-only APIs and undeclared third-party imports. Add every external network destination to \`allowed-hosts\`; Transcend SDK routes do not require an allowed-host entry.
+Custom Functions run on Deno 2.x. Avoid Node-only APIs and undeclared third-party imports. Add every external network destination to \`allowed-hosts\`; Transcend SDK routes do not require an allowed-host entry.
+
+For CI, install Deno 2.x and the pinned Transcend CLI version, then run \`transcend custom-functions check <custom-function-directory> --manifest=<manifest-path> --noInteractive\`. Adapt the generated GitHub Actions workflow to the repository's conventions or translate that validation recipe to its existing CI system.
 `;
 
 /**

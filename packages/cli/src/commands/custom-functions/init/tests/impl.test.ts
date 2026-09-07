@@ -109,6 +109,22 @@ describe('custom-functions init', () => {
     expect(existsSync(join(target, '.github', 'workflows'))).toBe(false);
   });
 
+  it('prints a compact AI handoff after interactive-format output', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { HOME: root },
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags({ json: false }), target);
+
+    expect(context.stdout).toContain('AI handoff:');
+    expect(context.stdout).toContain('add equivalent CI for this repository');
+    expect(context.stdout).toContain('install Deno 2.x');
+  });
+
   it('applies initialization once and reports a no-op on rerun', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'project');
