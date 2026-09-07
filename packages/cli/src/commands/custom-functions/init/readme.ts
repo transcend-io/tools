@@ -6,7 +6,7 @@ transcend custom-functions init
 
 This creates the manifest, Deno configuration, functions, and fixtures under \`transcend/custom-functions\`, leaving room for files such as \`transcend/transcend.yml\`. Pass a directory explicitly to use another layout.
 
-The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when the repository already has a supported skill directory. One existing skill directory receives a managed file directly; multiple existing skill directories share one portable \`.agents/skills\` copy through links.
+The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when the repository already has a supported skill directory. One existing skill directory receives a managed file directly; multiple existing skill directories share one portable \`.agents/skills\` copy through links. If none exist, skill installation is skipped—even when all setup options are selected.
 
 #### Add support to an existing repository
 

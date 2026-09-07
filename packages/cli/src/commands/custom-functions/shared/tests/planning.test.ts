@@ -268,6 +268,22 @@ describe('buildNewPlan', () => {
 });
 
 describe('agent skill planning', () => {
+  it('does not create a skill directory when none exists', () => {
+    const state = buildState('/repo');
+    const features = [CustomFunctionSetupFeature.Skill];
+    const paths = getPlanningCandidatePaths(state, { features });
+    const plan = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
+
+    expect(paths.some((path) => path.includes('/skills/'))).toBe(false);
+    expect(plan.changes.some((change) => change.kind === 'link')).toBe(false);
+    expect(
+      plan.changes.some((change) => change.kind === 'file' && change.path.endsWith('/SKILL.md')),
+    ).toBe(false);
+    expect(plan.warnings).toContain(
+      'Skipped the coding-agent skill because this repository has no existing skill directory.',
+    );
+  });
+
   it('deduplicates shared target directories and recognizes an existing link', () => {
     const state = buildState('/repo');
     state.detectedAgents = ['universal', 'cline', 'claude-code'].map(
@@ -315,6 +331,7 @@ describe('agent skill planning', () => {
   it('refuses a user-modified managed skill instead of overwriting it', () => {
     const state = buildState('/repo');
     state.detectedAgents = [];
+    state.existingSkillDirectories = ['.agents/skills'];
     const features = [CustomFunctionSetupFeature.Skill];
     const paths = getPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
