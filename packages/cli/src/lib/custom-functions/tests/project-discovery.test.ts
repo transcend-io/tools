@@ -4,8 +4,8 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { resolveCliPath } from '../../../lib/custom-functions/paths.js';
-import { buildContextForTest } from '../../../lib/tests/helpers/buildContextForTest.js';
+import { buildContextForTest } from '../../tests/helpers/buildContextForTest.js';
+import { resolveCliPath } from '../paths.js';
 import { discoverCustomFunctionProject } from '../project-discovery.js';
 
 const temporaryRoots: string[] = [];

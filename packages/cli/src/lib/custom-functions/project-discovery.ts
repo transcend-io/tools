@@ -1,19 +1,16 @@
 import { dirname, join, relative, resolve, sep } from 'node:path';
 
 import type { LocalContext } from '../../context.js';
-import {
-  DEFAULT_CUSTOM_FUNCTION_DIRECTORY,
-  resolveCliPath,
-} from '../../lib/custom-functions/paths.js';
+import { DEFAULT_CUSTOM_FUNCTION_DIRECTORY, resolveCliPath } from './paths.js';
 import {
   AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES,
   PROJECT_SKILL_DIRECTORIES,
-} from '../../lib/custom-functions/scaffold-config.js';
+} from './scaffold-config.js';
 import type {
   CustomFunctionProjectState,
   ExistingProjectSkillDirectory,
-} from '../../lib/custom-functions/scaffold-model.js';
-import type { PlanningPathSnapshot } from '../../lib/custom-functions/scaffold-planning.js';
+} from './scaffold-model.js';
+import type { PlanningPathSnapshot } from './scaffold-planning.js';
 
 /**
  * Collect candidate paths once, before preview.

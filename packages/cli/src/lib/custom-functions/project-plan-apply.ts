@@ -5,7 +5,7 @@ import type {
   CustomFunctionProjectPlan,
   PlannedFileChange,
   PlannedLinkChange,
-} from '../../lib/custom-functions/scaffold-model.js';
+} from './scaffold-model.js';
 
 /** Original state retained for rollback. */
 type RollbackSnapshot =

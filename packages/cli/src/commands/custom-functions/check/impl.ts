@@ -7,9 +7,12 @@ import {
   DEFAULT_CUSTOM_FUNCTION_DIRECTORY,
   resolveCliPath,
 } from '../../../lib/custom-functions/paths.js';
-import { discoverCustomFunctionManifests } from '../project-discovery.js';
-import { CustomFunctionPrompts, PromptCancelledError } from '../prompts.js';
-import { runCustomFunctionChecks } from './runner.js';
+import { discoverCustomFunctionManifests } from '../../../lib/custom-functions/project-discovery.js';
+import {
+  CustomFunctionPrompts,
+  PromptCancelledError,
+} from '../../../lib/custom-functions/prompts.js';
+import { runCustomFunctionChecks } from './helpers.js';
 
 /** CLI flags for `transcend custom-functions check`. */
 export interface CustomFunctionsCheckFlags {

@@ -4,13 +4,22 @@ import { version as CLI_VERSION } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
+  collectPlanningSnapshots,
+  discoverCustomFunctionProject,
+} from '../../../lib/custom-functions/project-discovery.js';
+import { applyCustomFunctionProjectPlan } from '../../../lib/custom-functions/project-plan-apply.js';
+import {
+  CustomFunctionPrompts,
+  PromptCancelledError,
+  type PromptChoice,
+} from '../../../lib/custom-functions/prompts.js';
+import {
   ALL_SETUP_FEATURES,
   applySetupFeatureOverrides,
   resolveSetupFeatures,
 } from '../../../lib/custom-functions/scaffold-config.js';
 import {
   CustomFunctionSetupFeature,
-  type CustomFunctionProjectPlan,
   type CustomFunctionSetup,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
 } from '../../../lib/custom-functions/scaffold-model.js';
@@ -22,9 +31,6 @@ import {
   buildInitPlan,
   getInitPlanningCandidatePaths,
 } from '../../../lib/custom-functions/scaffold-planning.js';
-import { collectPlanningSnapshots, discoverCustomFunctionProject } from '../project-discovery.js';
-import { applyCustomFunctionProjectPlan } from '../project-plan-apply.js';
-import { CustomFunctionPrompts, PromptCancelledError, type PromptChoice } from '../prompts.js';
 
 /** Flags for `custom-functions init`. */
 export interface CustomFunctionInitFlags {
@@ -66,14 +72,11 @@ const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
  * @returns Whether prompts are enabled
  */
 function isInteractiveInvocation(
-  context: LocalContext,
   flags: Pick<CustomFunctionInitFlags, 'json' | 'noInteractive'>,
+  stdinIsTTY: boolean | undefined,
+  stderrIsTTY: boolean | undefined,
 ): boolean {
-  return (
-    !flags.json &&
-    !flags.noInteractive &&
-    Boolean(context.process.stdin.isTTY && context.process.stderr.isTTY)
-  );
+  return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
 }
 
 /**
@@ -103,24 +106,24 @@ function setupOverrides(
  * @returns Selected setup features
  */
 async function resolveFeatures(
-  context: LocalContext,
   prompts: CustomFunctionPrompts,
   flags: CustomFunctionInitFlags,
   options: {
+    /** Whether prompts are available. */
+    interactive: boolean;
     /** Whether a project-level skill directory exists. */
     hasProjectSkillDirectory: boolean;
     /** Whether GitHub Actions is applicable. */
     usesGithub: boolean;
   },
 ): Promise<CustomFunctionSetupFeatureType[]> {
-  const interactive = isInteractiveInvocation(context, flags);
   let features: CustomFunctionSetupFeatureType[];
   if (flags.setup) {
     features = resolveSetupFeatures(flags.setup, {
-      hasProjectSkillDirectory: interactive && options.hasProjectSkillDirectory,
+      hasProjectSkillDirectory: options.interactive && options.hasProjectSkillDirectory,
     });
   } else {
-    if (!interactive) {
+    if (!options.interactive) {
       throw new Error(
         'Missing setup choice in a non-interactive invocation. Pass --setup=none, --setup=recommended, or --setup=all.',
       );
@@ -145,72 +148,6 @@ async function resolveFeatures(
 }
 
 /**
- * Preview, approve, apply, and report an initialization plan.
- *
- * @param context - CLI context
- * @param flags - Interaction flags
- * @param prompts - Prompt adapters
- * @param plan - Validated plan
- */
-async function executePlan(
-  context: LocalContext,
-  flags: CustomFunctionInitFlags,
-  prompts: CustomFunctionPrompts,
-  plan: CustomFunctionProjectPlan,
-): Promise<void> {
-  const interactive = isInteractiveInvocation(context, flags);
-  if (!flags.json) {
-    context.logger.info(renderProjectPlan(plan, context.process.cwd()));
-  }
-
-  let approved = plan.changes.length === 0 || flags.dryRun;
-  if (plan.changes.length > 0 && !flags.dryRun) {
-    if (flags.yes) {
-      approved = true;
-    } else if (interactive) {
-      approved = await prompts.confirm('Apply this complete plan?', true);
-    } else {
-      throw new Error(
-        'The plan requires approval in a non-interactive invocation. Review with --dryRun, then pass --yes.',
-      );
-    }
-  }
-
-  if (approved && !flags.dryRun && plan.changes.length > 0) {
-    await applyCustomFunctionProjectPlan(context, plan);
-  }
-  const applied = approved && !flags.dryRun && plan.changes.length > 0;
-  const result = buildPlanResult(plan, {
-    applied,
-    dryRun: flags.dryRun,
-    cwd: context.process.cwd(),
-  });
-  if (flags.json) {
-    context.process.stdout.write(`${JSON.stringify(result)}\n`);
-    return;
-  }
-  if (flags.dryRun) {
-    context.logger.info('Dry run complete. No changes were written.');
-    return;
-  }
-  if (!approved) {
-    context.logger.info('No changes applied.');
-    return;
-  }
-  if (plan.changes.length === 0) {
-    context.logger.info('Custom Function project is already initialized.');
-    return;
-  }
-  context.logger.info('Custom Function project initialized.');
-  if (plan.nextSteps.length > 0) {
-    context.logger.info('\nNext steps:');
-    plan.nextSteps.forEach((step, index) => {
-      context.logger.info(`  ${index + 1}. ${step}`);
-    });
-  }
-}
-
-/**
  * Initialize a credential-free local Custom Function project.
  *
  * @param this - CLI context
@@ -229,7 +166,13 @@ export async function init(
       ...(flags.manifest ? { manifest: flags.manifest } : {}),
     });
     const prompts = new CustomFunctionPrompts(this);
-    const features = await resolveFeatures(this, prompts, flags, {
+    const interactive = isInteractiveInvocation(
+      flags,
+      this.process.stdin.isTTY,
+      this.process.stderr.isTTY,
+    );
+    const features = await resolveFeatures(prompts, flags, {
+      interactive,
       hasProjectSkillDirectory: state.existingSkillDirectories.length > 0,
       usesGithub: state.usesGithub,
     });
@@ -246,7 +189,55 @@ export async function init(
       },
       { features },
     );
-    await executePlan(this, flags, prompts, plan);
+    if (!flags.json) {
+      this.logger.info(renderProjectPlan(plan, this.process.cwd()));
+    }
+
+    let approved = plan.changes.length === 0 || flags.dryRun;
+    if (plan.changes.length > 0 && !flags.dryRun) {
+      if (flags.yes) {
+        approved = true;
+      } else if (interactive) {
+        approved = await prompts.confirm('Apply this complete plan?', true);
+      } else {
+        throw new Error(
+          'The plan requires approval in a non-interactive invocation. Review with --dryRun, then pass --yes.',
+        );
+      }
+    }
+
+    if (approved && !flags.dryRun && plan.changes.length > 0) {
+      await applyCustomFunctionProjectPlan(this, plan);
+    }
+    const applied = approved && !flags.dryRun && plan.changes.length > 0;
+    const result = buildPlanResult(plan, {
+      applied,
+      dryRun: flags.dryRun,
+      cwd: this.process.cwd(),
+    });
+    if (flags.json) {
+      this.process.stdout.write(`${JSON.stringify(result)}\n`);
+      return;
+    }
+    if (flags.dryRun) {
+      this.logger.info('Dry run complete. No changes were written.');
+      return;
+    }
+    if (!approved) {
+      this.logger.info('No changes applied.');
+      return;
+    }
+    if (plan.changes.length === 0) {
+      this.logger.info('Custom Function project is already initialized.');
+      return;
+    }
+    this.logger.info('Custom Function project initialized.');
+    if (plan.nextSteps.length > 0) {
+      this.logger.info('\nNext steps:');
+      plan.nextSteps.forEach((step, index) => {
+        this.logger.info(`  ${index + 1}. ${step}`);
+      });
+    }
   } catch (error) {
     if (error instanceof PromptCancelledError) {
       this.process.exit(130);

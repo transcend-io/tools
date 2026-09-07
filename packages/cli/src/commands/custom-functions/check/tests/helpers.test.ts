@@ -9,7 +9,7 @@ import {
   runCustomFunctionChecks,
   type CapturedProcessRunner,
   type CapturedProcessResult,
-} from '../runner.js';
+} from '../helpers.js';
 
 const temporaryRoots: string[] = [];
 
