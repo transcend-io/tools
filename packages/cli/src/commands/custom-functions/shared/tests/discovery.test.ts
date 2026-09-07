@@ -73,6 +73,8 @@ describe('discoverCustomFunctionProject', () => {
       join(root, '.git', 'config'),
       '[remote "origin"]\n  url = git@github.com:transcend-io/tools.git\n',
     );
+    writeFileSync(join(root, 'package.json'), '{"packageManager":"pnpm@10.34.4"}\n');
+    writeFileSync(join(root, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
     writeFileSync(join(target, 'deno.jsonc'), '{}\n');
     writeFileSync(join(target, 'Functions', 'Existing.ts'), 'export default 1;\n');
     writeFileSync(join(target, 'node_modules', 'ignored', 'package.json'), '{}\n');
@@ -95,6 +97,9 @@ describe('discoverCustomFunctionProject', () => {
       manifestPath: join(target, 'transcend-functions.yml'),
       repositoryRoot: root,
       denoConfigPath: join(target, 'deno.jsonc'),
+      packageJsonPath: join(root, 'package.json'),
+      packageManager: { name: 'pnpm', agent: 'pnpm' },
+      pnpmWorkspaceRoot: true,
       usesGithub: true,
     });
     expect(first.detectedAgents.map(({ id }) => id)).toEqual(['universal', 'cline']);

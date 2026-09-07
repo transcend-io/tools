@@ -471,6 +471,7 @@ function planPackageManager(
     return;
   }
   const resolved = resolveCommand(packageManager.agent, 'add', [
+    ...(input.state.pnpmWorkspaceRoot ? ['--workspace-root'] : []),
     '--save-dev',
     `${dependencyName}@${input.contractVersion}`,
   ]);

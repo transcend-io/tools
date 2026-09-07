@@ -28,6 +28,7 @@ function buildState(root: string): CustomFunctionProjectState {
     manifestPath: join(targetDirectory, 'transcend-functions.yml'),
     repositoryRoot: root,
     denoConfigPath: join(targetDirectory, 'deno.json'),
+    pnpmWorkspaceRoot: false,
     detectedAgents: [],
     usesGithub: true,
     relativePaths: [],
@@ -148,6 +149,38 @@ describe('buildInitPlan', () => {
         kind: 'command',
         command,
         args,
+        cwd: '/repo',
+      }),
+    );
+  });
+
+  it('makes a pnpm workspace-root install explicit', () => {
+    const state = buildState('/repo');
+    state.packageJsonPath = join('/repo', 'package.json');
+    state.packageManager = { name: 'pnpm', agent: 'pnpm' };
+    state.pnpmWorkspaceRoot = true;
+    const features = [CustomFunctionSetupFeature.PackageManager];
+    const paths = getPlanningCandidatePaths(state, { features });
+    const snapshots = absentSnapshots(paths);
+    snapshots[state.packageJsonPath] = {
+      kind: 'file',
+      path: state.packageJsonPath,
+      contents: '{"name":"example","private":true}\n',
+      mode: 0o100644,
+    };
+
+    const plan = buildInitPlan(buildInput(state, snapshots), { features });
+
+    expect(plan.changes).toContainEqual(
+      expect.objectContaining({
+        kind: 'command',
+        command: 'pnpm',
+        args: [
+          'add',
+          '--workspace-root',
+          '--save-dev',
+          '@transcend-io/custom-function-types@1.2.3',
+        ],
         cwd: '/repo',
       }),
     );

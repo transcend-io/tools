@@ -23,6 +23,8 @@ export interface CustomFunctionProjectState {
   packageJsonPath?: string;
   /** Detected package manager. */
   packageManager?: DetectResult;
+  /** Whether pnpm requires an explicit workspace-root install. */
+  pnpmWorkspaceRoot: boolean;
   /** Detected coding-agent targets. */
   detectedAgents: AgentSkillTarget[];
   /** Whether the repository appears to use GitHub. */
@@ -218,6 +220,9 @@ export async function discoverCustomFunctionProject(
         strategies: ['lockfile', 'packageManager-field', 'devEngines-field'],
       })) ?? undefined)
     : undefined;
+  const pnpmWorkspaceRoot =
+    packageManager?.name === 'pnpm' &&
+    context.fs.existsSync(join(packageRoot, 'pnpm-workspace.yaml'));
 
   return {
     targetDirectory,
@@ -227,6 +232,7 @@ export async function discoverCustomFunctionProject(
     denoConfigPath,
     ...(packageJsonPath ? { packageJsonPath } : {}),
     ...(packageManager ? { packageManager } : {}),
+    pnpmWorkspaceRoot,
     detectedAgents: detectAgentTargets(context, repositoryRoot ?? targetDirectory),
     usesGithub: repositoryUsesGithub(context, repositoryRoot),
     relativePaths: collectRelativePaths(context, manifestDirectory),
