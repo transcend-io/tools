@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import type { CustomFunctionConfigInput } from '@transcend-io/sdk';
@@ -100,43 +100,24 @@ export const CustomFunctionsManifest = t.type({
 export type CustomFunctionsManifest = t.TypeOf<typeof CustomFunctionsManifest>;
 
 /**
- * Read a custom functions manifest from disk, apply variable substitution,
- * validate its shape, and load each function's source code.
+ * Determine whether a relative manifest path stays inside the manifest's
+ * directory after normalization.
  *
- * @param filePath - Path to the manifest YAML file
- * @param variables - Variables to fill into `<<parameters.x>>` placeholders
- * @returns The custom function configs, with code loaded from disk
+ * @param filePath - Path from a custom function manifest entry
+ * @returns Whether the normalized path is contained by the manifest directory
  */
+export function isCustomFunctionManifestPathContained(filePath: string): boolean {
+  const manifestDirectory = resolve('/', '__custom-function-manifest__');
+  const relativePath = relative(manifestDirectory, resolve(manifestDirectory, filePath));
+  return relativePath !== '..' && !relativePath.startsWith(`..${sep}`) && !isAbsolute(relativePath);
+}
+
 /**
- * A custom function config from the manifest, plus CLI-level settings that
- * are not part of the SDK sync input.
+ * Validate semantic constraints shared by manifest readers and editors.
+ *
+ * @param manifest - Shape-validated custom function manifest
  */
-export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
-  /** Env variable name holding the internal key of the function's Sombra gateway */
-  sombraAuthEnv?: string;
-  /** Parsed JSON test payloads to run the function with before pushing */
-  testPayloads?: {
-    /** The parsed JSON payload */
-    payload: object;
-    /** Which export the payload invokes when test-running a DSR function */
-    payloadType?: Exclude<CustomFunctionPayloadType, typeof CustomFunctionPayloadType.Maestro>;
-  }[];
-};
-
-export function readCustomFunctionsManifest(
-  filePath: string,
-  variables: ObjByString = {},
-): CustomFunctionManifestConfig[] {
-  const fileContents = readFileSync(filePath, 'utf-8');
-
-  const replacedVariables = replaceVariablesInYaml(
-    fileContents,
-    variables,
-    `Also check that there are no extra variables defined in your manifest: ${filePath}`,
-  );
-
-  const manifest = decodeCodec(CustomFunctionsManifest, yaml.load(replacedVariables));
-
+export function validateCustomFunctionsManifest(manifest: CustomFunctionsManifest): void {
   // IDs must be unique — two entries cannot target the same function
   const duplicateIds = manifest.functions
     .map(({ id }) => id)
@@ -159,6 +140,97 @@ export function readCustomFunctionsManifest(
         'Add an `id` field to each duplicated entry to disambiguate.',
     );
   }
+
+  manifest.functions.forEach((entry) => {
+    if (entry['test-payload'] !== undefined && entry['test-payloads'] !== undefined) {
+      throw new Error(
+        `Custom function "${entry.name}" sets both test-payload and test-payloads — ` +
+          'use test-payloads alone to define multiple payloads.',
+      );
+    }
+    if (entry['test-payload-type'] !== undefined && entry['test-payload'] === undefined) {
+      throw new Error(
+        `Custom function "${entry.name}" sets test-payload-type without test-payload — ` +
+          'set payload-type per item in test-payloads instead.',
+      );
+    }
+
+    const referencedPaths = [
+      { field: 'code', path: entry.code },
+      ...(entry['test-payload'] === undefined
+        ? []
+        : [{ field: 'test-payload', path: entry['test-payload'] }]),
+      ...(entry['test-payloads'] ?? []).map(({ payload }, index) => ({
+        field: `test-payloads[${index}].payload`,
+        path: payload,
+      })),
+    ];
+    referencedPaths.forEach(({ field, path }) => {
+      if (!isCustomFunctionManifestPathContained(path)) {
+        throw new Error(
+          `Custom function "${entry.name}" has a ${field} path outside the manifest directory: ${path}`,
+        );
+      }
+    });
+  });
+}
+
+/**
+ * Parse and validate a custom functions manifest without resolving variables
+ * or reading any referenced files.
+ *
+ * Unresolved `<<parameters.*>>` values remain plain strings in the returned
+ * manifest.
+ *
+ * @param contents - Custom function manifest YAML
+ * @returns The parsed, shape-validated, and semantically valid manifest
+ */
+export function parseCustomFunctionsManifest(contents: string): CustomFunctionsManifest {
+  const manifest = decodeCodec(CustomFunctionsManifest, yaml.load(contents));
+  validateCustomFunctionsManifest(manifest);
+  return manifest;
+}
+
+/**
+ * A custom function config from the manifest, plus CLI-level settings that
+ * are not part of the SDK sync input.
+ */
+export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
+  /** Env variable name holding the internal key of the function's Sombra gateway */
+  sombraAuthEnv?: string;
+  /** Parsed JSON test payloads to run the function with before pushing */
+  testPayloads?: {
+    /** The parsed JSON payload */
+    payload: object;
+    /** Which export the payload invokes when test-running a DSR function */
+    payloadType?: Exclude<CustomFunctionPayloadType, typeof CustomFunctionPayloadType.Maestro>;
+  }[];
+};
+
+/**
+ * Read a custom functions manifest from disk, apply variable substitution,
+ * validate it, and hydrate its referenced code and payload files.
+ *
+ * Variable substitution deliberately happens before parsing and hydration to
+ * preserve push behavior.
+ *
+ * @param filePath - Path to the manifest YAML file
+ * @param variables - Variables to fill into `<<parameters.x>>` placeholders
+ * @returns The custom function configs, with code loaded from disk
+ */
+export function readCustomFunctionsManifest(
+  filePath: string,
+  variables: ObjByString = {},
+): CustomFunctionManifestConfig[] {
+  const fileContents = readFileSync(filePath, 'utf-8');
+
+  const replacedVariables = replaceVariablesInYaml(
+    fileContents,
+    variables,
+    `Also check that there are no extra variables defined in your manifest: ${filePath}`,
+  );
+
+  const manifest = parseCustomFunctionsManifest(replacedVariables);
 
   const manifestDir = dirname(resolve(filePath));
 
@@ -194,18 +266,6 @@ export function readCustomFunctionsManifest(
     }
 
     // `test-payload` is shorthand for a single-item `test-payloads` list
-    if (entry['test-payload'] !== undefined && entry['test-payloads'] !== undefined) {
-      throw new Error(
-        `Custom function "${entry.name}" sets both test-payload and test-payloads — ` +
-          'use test-payloads alone to define multiple payloads.',
-      );
-    }
-    if (entry['test-payload-type'] !== undefined && entry['test-payload'] === undefined) {
-      throw new Error(
-        `Custom function "${entry.name}" sets test-payload-type without test-payload — ` +
-          'set payload-type per item in test-payloads instead.',
-      );
-    }
     let testPayloads: CustomFunctionManifestConfig['testPayloads'];
     if (entry['test-payload'] !== undefined) {
       testPayloads = [
@@ -243,6 +303,40 @@ export function readCustomFunctionsManifest(
       ...(testPayloads !== undefined ? { testPayloads } : {}),
     };
   });
+}
+
+/**
+ * Append an entry to a manifest YAML document while preserving the existing
+ * document's comments, ordering, scalar styles, and unresolved placeholders.
+ *
+ * The complete result is parsed and validated with the same codec and
+ * semantic rules used by {@link readCustomFunctionsManifest}.
+ *
+ * @param contents - Existing custom function manifest YAML
+ * @param entry - Manifest entry to append
+ * @returns Updated manifest YAML
+ */
+export function insertCustomFunctionManifestEntry(
+  contents: string,
+  entry: CustomFunctionManifestEntry,
+): string {
+  const document = parseDocument(contents);
+  if (document.errors.length > 0) {
+    throw document.errors[0];
+  }
+
+  const functions = document.get('functions');
+  if (!isSeq(functions)) {
+    throw new Error('Expected a `functions` list in custom function manifest');
+  }
+
+  if (functions.items.length === 0) {
+    functions.flow = false;
+  }
+  functions.add(document.createNode(entry));
+  const updatedContents = document.toString();
+  parseCustomFunctionsManifest(updatedContents);
+  return updatedContents;
 }
 
 /**
