@@ -21,7 +21,7 @@ const PLAN: CustomFunctionProjectPlan = {
       kind: 'link',
       path: '/repo/.claude/skills/transcend-io-custom-functions',
       target: '../../.agents/skills/transcend-io-custom-functions',
-      fallbackContents: 'private skill contents\n',
+      fallbackFiles: [{ path: 'SKILL.md', contents: 'private skill contents\n' }],
       description: 'Expose the canonical skill to Claude Code',
     },
   ],

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildNewFunctionAiHandoff } from '../../../lib/custom-functions/ai-handoff.js';
+import { CUSTOM_FUNCTION_SKILL_NAME } from '../../../lib/custom-functions/custom-function-skill.js';
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
 import {
   collectPlanningSnapshots,
@@ -24,7 +25,6 @@ import {
   prepareGeneratedCustomFunction,
 } from '../../../lib/custom-functions/scaffold-planning.js';
 import {
-  CUSTOM_FUNCTION_SKILL_NAME,
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   type CustomFunctionTemplateName,
 } from '../../../lib/custom-functions/scaffold-templates.js';

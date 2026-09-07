@@ -34,8 +34,13 @@ export interface PlannedLinkChange {
   path: string;
   /** Relative link target. */
   target: string;
-  /** Managed contents to copy when links are unavailable. */
-  fallbackContents: string;
+  /** Managed files to copy when links are unavailable. */
+  fallbackFiles: {
+    /** Destination relative to the link path. */
+    path: string;
+    /** Complete desired contents. */
+    contents: string;
+  }[];
   /** Human-readable reason. */
   description: string;
 }

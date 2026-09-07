@@ -147,34 +147,6 @@ export function generateCustomFunctionTemplate(
 }
 
 /**
- * Namespaced directory and frontmatter name for the installed Agent Skill.
- */
-export const CUSTOM_FUNCTION_SKILL_NAME = 'transcend-io-custom-functions';
-
-/**
- * Canonical customer-facing Agent Skill installed by Custom Function setup.
- */
-export const CUSTOM_FUNCTION_SKILL_MD = `---
-name: ${CUSTOM_FUNCTION_SKILL_NAME}
-description: Build, validate, and deploy Transcend Custom Functions safely.
----
-
-# Transcend Custom Functions
-
-Import \`CustomFunction\` as a type from \`@transcend-io/custom-function-types\`. General functions default-export a handler using \`CustomFunction.GeneralArgument\`. DSR datapoints default-export \`CustomFunction.Argument\`; DSR request enrichers export \`enricher\` using \`CustomFunction.EnricherArgument\`.
-
-Handlers receive \`payload\`, \`environment\`, \`sdk\`, and \`kv\`. Use the payload for trigger data, environment for configured values, the SDK for Transcend calls, and the key-value store for small persistent strings. Check \`response.ok\` for every \`sdk.fetch\` call and include useful response details in failures.
-
-Keep source and test-payload paths relative to \`transcend-functions.yml\`. Match every DSR export with its \`DATA_POINT\` or \`REQUEST_ENRICHER\` payload. Never commit secrets: use \`<<parameters.name>>\` manifest placeholders locally and secret stores in CI.
-
-Run \`transcend custom-functions check <custom-function-directory>\`, then \`transcend custom-functions push --file=<custom-function-directory>/transcend-functions.yml --auth="$TRANSCEND_API_KEY" --dryRun\`. Use \`--promote=false\` when a revision should remain a draft; promote deliberately, and use \`--updateManifest\` on the first push to record assigned IDs.
-
-Custom Functions run on Deno 2.x. Avoid Node-only APIs and undeclared third-party imports. Add every external network destination to \`allowed-hosts\`; Transcend SDK routes do not require an allowed-host entry.
-
-For CI, install Deno 2.x and the pinned Transcend CLI version, then run \`transcend custom-functions check <custom-function-directory> --manifest=<manifest-path> --noInteractive\`. Adapt the generated GitHub Actions workflow to the repository's conventions or translate that validation recipe to its existing CI system.
-`;
-
-/**
  * Normalize the display name before validating its path-related properties.
  *
  * @param displayName - Proposed display name

@@ -144,7 +144,10 @@ describe('applyProjectPlan skill links', () => {
         kind: 'link',
         path: linkPath,
         target: '../../.agents/skills/transcend-io-custom-functions',
-        fallbackContents: '# Transcend Custom Functions\n',
+        fallbackFiles: [
+          { path: 'SKILL.md', contents: '# Transcend Custom Functions\n' },
+          { path: 'references/setup.md', contents: '# Setup\n' },
+        ],
         description: 'Expose the canonical skill',
       },
     ]);
@@ -152,5 +155,6 @@ describe('applyProjectPlan skill links', () => {
     await applyProjectPlan(buildContextForTest({ cwd: root, fs: linklessFs }), plan);
 
     expect(readFileSync(join(linkPath, 'SKILL.md'), 'utf8')).toBe('# Transcend Custom Functions\n');
+    expect(readFileSync(join(linkPath, 'references', 'setup.md'), 'utf8')).toBe('# Setup\n');
   });
 });

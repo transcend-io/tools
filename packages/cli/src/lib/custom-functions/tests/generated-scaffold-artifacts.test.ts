@@ -10,11 +10,9 @@ import {
 } from '@transcend-io/custom-function-types';
 import Ajv from 'ajv';
 import { afterEach, describe, expect, it } from 'vitest';
-import { parse } from 'yaml';
 
 import { mergeDenoConfiguration } from '../scaffold-config.js';
 import {
-  CUSTOM_FUNCTION_SKILL_MD,
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   generateCustomFunctionTemplate,
 } from '../scaffold-templates.js';
@@ -94,20 +92,4 @@ describe('generated Custom Function artifacts', () => {
       });
     },
   );
-
-  it('conforms to the portable Agent Skills frontmatter contract', () => {
-    const frontmatter = CUSTOM_FUNCTION_SKILL_MD.match(/^---\n([\s\S]*?)\n---\n/u);
-    expect(frontmatter).not.toBeNull();
-    const metadata = parse(frontmatter![1]!) as Record<string, unknown>;
-
-    expect(Object.keys(metadata).sort()).toEqual(['description', 'name']);
-    expect(metadata.name).toBe('transcend-io-custom-functions');
-    expect(metadata.name).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u);
-    expect((metadata.name as string).length).toBeLessThanOrEqual(64);
-    expect(typeof metadata.description).toBe('string');
-    expect((metadata.description as string).length).toBeGreaterThan(0);
-    expect((metadata.description as string).length).toBeLessThanOrEqual(1024);
-    expect(CUSTOM_FUNCTION_SKILL_MD.slice(frontmatter![0].length).trim().length).toBeGreaterThan(0);
-    expect(CUSTOM_FUNCTION_SKILL_MD.split('\n').length).toBeLessThanOrEqual(500);
-  });
 });

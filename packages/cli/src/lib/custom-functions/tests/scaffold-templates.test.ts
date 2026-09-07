@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  CUSTOM_FUNCTION_SKILL_MD,
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   deriveCustomFunctionSlug,
   generateCustomFunctionTemplate,
@@ -166,25 +165,5 @@ describe('generateCustomFunctionTemplate', () => {
       name: 'email',
       type: 'email',
     });
-  });
-});
-
-describe('CUSTOM_FUNCTION_SKILL_MD', () => {
-  it('is one canonical Agent Skills document covering safe authoring and deployment', () => {
-    expect(CUSTOM_FUNCTION_SKILL_MD).toMatch(
-      /^---\nname: transcend-io-custom-functions\ndescription: .+\n---\n/,
-    );
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('CustomFunction.GeneralArgument');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('CustomFunction.Argument');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('CustomFunction.EnricherArgument');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('`payload`, `environment`, `sdk`, and `kv`');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('response.ok');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('<<parameters.name>>');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('custom-functions check');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('--dryRun');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('--promote=false');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('--updateManifest');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('Deno');
-    expect(CUSTOM_FUNCTION_SKILL_MD).toContain('allowed-hosts');
   });
 });

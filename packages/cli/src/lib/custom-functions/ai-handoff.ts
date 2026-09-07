@@ -1,4 +1,4 @@
-import { CUSTOM_FUNCTION_SKILL_NAME } from './scaffold-templates.js';
+import { CUSTOM_FUNCTION_SKILL_NAME } from './custom-function-skill.js';
 
 /**
  * Build a compact AI handoff after project initialization.

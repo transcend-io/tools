@@ -249,6 +249,9 @@ describe('agent skill planning', () => {
     expect(paths).toContain(
       join('/repo', '.agents', 'skills', 'transcend-io-custom-functions', 'SKILL.md'),
     );
+    expect(paths).toContain(
+      join('/repo', '.agents', 'skills', 'transcend-io-custom-functions', 'references', 'setup.md'),
+    );
     expect(
       paths.some((path) => path.includes('.cursor/skills/transcend-io-custom-functions')),
     ).toBe(false);
@@ -256,6 +259,20 @@ describe('agent skill planning', () => {
     const rerun = buildInitPlan(buildInput(state, snapshotsAfterPlan(paths, first)), { features });
     expect(rerun.changes).toEqual([]);
     expect(rerun.unchanged).toContain(links[0]!.path);
+
+    const copiedSnapshots = snapshotsAfterPlan(paths, first);
+    copiedSnapshots[links[0]!.path] = { kind: 'directory', path: links[0]!.path };
+    links[0]!.fallbackFiles.forEach((file) => {
+      const path = join(links[0]!.path, file.path);
+      copiedSnapshots[path] = {
+        kind: 'file',
+        path,
+        contents: file.contents,
+        mode: 0o100644,
+      };
+    });
+    const copiedRerun = buildInitPlan(buildInput(state, copiedSnapshots), { features });
+    expect(copiedRerun.changes).toEqual([]);
   });
 
   it('writes directly to one existing skill directory without creating aliases', () => {
@@ -266,12 +283,19 @@ describe('agent skill planning', () => {
     const plan = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
     const skillChanges = plan.changes.filter((change) => change.path.includes('/skills/'));
 
-    expect(skillChanges).toEqual([
-      expect.objectContaining({
-        kind: 'file',
-        path: join('/repo', '.claude', 'skills', 'transcend-io-custom-functions', 'SKILL.md'),
-      }),
+    expect(skillChanges.map(({ path }) => path)).toEqual([
+      join('/repo', '.claude', 'skills', 'transcend-io-custom-functions', 'SKILL.md'),
+      join('/repo', '.claude', 'skills', 'transcend-io-custom-functions', 'references', 'setup.md'),
+      join(
+        '/repo',
+        '.claude',
+        'skills',
+        'transcend-io-custom-functions',
+        'references',
+        'writing-custom-functions.md',
+      ),
     ]);
+    expect(skillChanges.every((change) => change.kind === 'file')).toBe(true);
     expect(paths.some((path) => path.includes('.agents/skills'))).toBe(false);
   });
 
@@ -294,7 +318,7 @@ describe('agent skill planning', () => {
     }
     snapshots[skillPath] = {
       ...skill,
-      contents: skill.contents.replace('Build, validate', 'Customize, validate'),
+      contents: skill.contents.replace('Sets up, implements', 'Customizes, implements'),
     };
 
     expect(() => buildInitPlan(buildInput(state, snapshots), { features })).toThrow(

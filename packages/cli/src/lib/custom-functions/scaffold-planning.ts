@@ -10,6 +10,10 @@ import {
   type PlannedLinkChange,
   type ProjectFileSnapshot,
 } from '../scaffolding/project-plan.js';
+import {
+  CUSTOM_FUNCTION_SKILL_FILES,
+  CUSTOM_FUNCTION_SKILL_NAME,
+} from './custom-function-skill.js';
 import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
 import { generateGithubActionsWorkflow } from './scaffold-artifacts.js';
 import {
@@ -25,8 +29,6 @@ import {
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
 } from './scaffold-model.js';
 import {
-  CUSTOM_FUNCTION_SKILL_NAME,
-  CUSTOM_FUNCTION_SKILL_MD,
   generateCustomFunctionTemplate,
   type GeneratedCustomFunctionTemplate,
 } from './scaffold-templates.js';
@@ -127,9 +129,15 @@ export function getInitPlanningCandidatePaths(
   }
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
     const directories = resolveAgentSkillDirectories(state.existingSkillDirectories);
-    paths.add(join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md'));
+    CUSTOM_FUNCTION_SKILL_FILES.forEach(({ path }) => {
+      paths.add(join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME, path));
+    });
     directories.aliases.forEach((directory) => {
-      paths.add(join(root, directory, CUSTOM_FUNCTION_SKILL_NAME));
+      const aliasDirectory = join(root, directory, CUSTOM_FUNCTION_SKILL_NAME);
+      paths.add(aliasDirectory);
+      CUSTOM_FUNCTION_SKILL_FILES.forEach(({ path }) => {
+        paths.add(join(aliasDirectory, path));
+      });
     });
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
@@ -275,23 +283,31 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
   const root = setupRoot(input.state);
   const directories = resolveAgentSkillDirectories(input.state.existingSkillDirectories);
   const canonicalDirectory = join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME);
-  const canonicalPath = join(canonicalDirectory, 'SKILL.md');
-  const skillContents = buildManagedAgentSkill(CUSTOM_FUNCTION_SKILL_MD, '@transcend-io/cli');
-  const canonicalSnapshot = fileSnapshotAt(input, canonicalPath);
-  if (
-    canonicalSnapshot.contents !== null &&
-    canonicalSnapshot.contents !== skillContents &&
-    !isUnmodifiedManagedAgentSkill(canonicalSnapshot.contents, '@transcend-io/cli')
-  ) {
-    throw new Error(
-      `Refusing to replace user-managed skill: ${canonicalPath}. Apply the skill update manually.`,
-    );
-  }
-  addFileChange(plan, input, {
-    path: canonicalPath,
-    contents: skillContents,
-    description: 'Install the Transcend Custom Function authoring skill',
-  });
+  const managedFiles = CUSTOM_FUNCTION_SKILL_FILES.map((file) => ({
+    path: file.path,
+    contents: buildManagedAgentSkill(file.contents, '@transcend-io/cli'),
+  }));
+  const planManagedFiles = (directory: string, description: string): void => {
+    managedFiles.forEach((file) => {
+      const path = join(directory, file.path);
+      const snapshot = fileSnapshotAt(input, path);
+      if (
+        snapshot.contents !== null &&
+        snapshot.contents !== file.contents &&
+        !isUnmodifiedManagedAgentSkill(snapshot.contents, '@transcend-io/cli')
+      ) {
+        throw new Error(
+          `Refusing to replace user-managed skill: ${path}. Apply the skill update manually.`,
+        );
+      }
+      addFileChange(plan, input, {
+        path,
+        contents: file.contents,
+        description: `${description}: ${file.path}`,
+      });
+    });
+  };
+  planManagedFiles(canonicalDirectory, 'Install Custom Function skill file');
 
   directories.aliases.forEach((directory) => {
     const targetDirectory = join(root, directory, CUSTOM_FUNCTION_SKILL_NAME);
@@ -301,6 +317,10 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
       plan.unchanged.push(targetDirectory);
       return;
     }
+    if (snapshot.kind === 'directory') {
+      planManagedFiles(targetDirectory, `Update Custom Function skill copy in ${directory}`);
+      return;
+    }
     if (snapshot.kind !== 'absent') {
       throw new Error(`Refusing to replace unexpected skill target: ${targetDirectory}`);
     }
@@ -308,7 +328,7 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
       kind: 'link',
       path: targetDirectory,
       target: relativeTarget,
-      fallbackContents: skillContents,
+      fallbackFiles: managedFiles,
       description: `Expose the canonical skill in ${directory}`,
     };
     plan.changes.push(change);

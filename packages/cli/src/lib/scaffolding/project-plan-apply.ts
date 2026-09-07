@@ -141,8 +141,11 @@ function applyLink(context: LocalContext, change: PlannedLinkChange): void {
     if (!['EPERM', 'EACCES', 'ENOTSUP', 'UNKNOWN'].includes(code ?? '')) {
       throw error;
     }
-    context.fs.mkdirSync(change.path, { recursive: true });
-    context.fs.writeFileSync(join(change.path, 'SKILL.md'), change.fallbackContents);
+    change.fallbackFiles.forEach((file) => {
+      const path = join(change.path, file.path);
+      context.fs.mkdirSync(dirname(path), { recursive: true });
+      context.fs.writeFileSync(path, file.contents);
+    });
   }
 }
 
