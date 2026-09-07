@@ -1,0 +1,176 @@
+import fs, {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  type PathLike,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
+import { applyCustomFunctionProjectPlan, type PlannedCommandRunner } from '../apply.js';
+import type { CustomFunctionProjectPlan, PlannedChange } from '../model.js';
+
+const temporaryRoots: string[] = [];
+
+/**
+ * Create and register an isolated temporary directory.
+ *
+ * @returns Temporary directory
+ */
+function makeTemporaryRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), 'custom-function-apply-'));
+  temporaryRoots.push(root);
+  return root;
+}
+
+/**
+ * Wrap staged changes in a complete project plan.
+ *
+ * @param root - Project root
+ * @param changes - Staged mutations
+ * @returns Complete project plan
+ */
+function buildPlan(root: string, changes: PlannedChange[]): CustomFunctionProjectPlan {
+  return {
+    version: 1,
+    command: 'init',
+    targetDirectory: root,
+    manifestPath: join(root, 'transcend-functions.yml'),
+    changes,
+    unchanged: [],
+    warnings: [],
+    nextSteps: [],
+  };
+}
+
+afterEach(() => {
+  temporaryRoots.splice(0).forEach((root) => {
+    rmSync(root, { recursive: true, force: true });
+  });
+});
+
+describe('applyCustomFunctionProjectPlan preflight', () => {
+  it('rejects changed-since-preview input before writing any plan entry', async () => {
+    const root = makeTemporaryRoot();
+    const appeared = join(root, 'created.ts');
+    const changed = join(root, 'deno.json');
+    writeFileSync(changed, '{"strict": false}\n');
+    const plan = buildPlan(root, [
+      {
+        kind: 'file',
+        path: appeared,
+        before: null,
+        after: 'export default 1;\n',
+        description: 'Create source',
+      },
+      {
+        kind: 'file',
+        path: changed,
+        before: '{"strict": false}\n',
+        after: '{"strict": true}\n',
+        description: 'Merge Deno configuration',
+      },
+    ]);
+    writeFileSync(changed, '{"strict": "changed after preview"}\n');
+
+    await expect(
+      applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root }), plan),
+    ).rejects.toThrow(`File changed after preview: ${changed}`);
+    expect(existsSync(appeared)).toBe(false);
+    expect(readFileSync(changed, 'utf8')).toBe('{"strict": "changed after preview"}\n');
+  });
+});
+
+describe('applyCustomFunctionProjectPlan rollback', () => {
+  it('restores earlier files after a later atomic write fails', async () => {
+    const root = makeTemporaryRoot();
+    const first = join(root, 'first.json');
+    const second = join(root, 'second.json');
+    writeFileSync(first, 'first before\n');
+    writeFileSync(second, 'second before\n');
+    let failed = false;
+    const failingFs = new Proxy(fs, {
+      get(target, property, receiver) {
+        if (property === 'renameSync') {
+          return (oldPath: PathLike, newPath: PathLike): void => {
+            if (!failed && String(newPath) === second) {
+              failed = true;
+              throw new Error('simulated atomic rename failure');
+            }
+            target.renameSync(oldPath, newPath);
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const plan = buildPlan(root, [
+      {
+        kind: 'file',
+        path: first,
+        before: 'first before\n',
+        after: 'first after\n',
+        description: 'Update first file',
+      },
+      {
+        kind: 'file',
+        path: second,
+        before: 'second before\n',
+        after: 'second after\n',
+        description: 'Update second file',
+      },
+    ]);
+
+    await expect(
+      applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root, fs: failingFs }), plan),
+    ).rejects.toThrow('simulated atomic rename failure');
+    expect(readFileSync(first, 'utf8')).toBe('first before\n');
+    expect(readFileSync(second, 'utf8')).toBe('second before\n');
+  });
+
+  it('restores command-owned files and prior writes after a command fails', async () => {
+    const root = makeTemporaryRoot();
+    const created = join(root, 'deno.json');
+    const packageJson = join(root, 'package.json');
+    writeFileSync(packageJson, '{"devDependencies": {}}\n');
+    const plan = buildPlan(root, [
+      {
+        kind: 'file',
+        path: created,
+        before: null,
+        after: '{"compilerOptions":{"strict":true}}\n',
+        description: 'Create Deno configuration',
+      },
+      {
+        kind: 'command',
+        command: 'pnpm',
+        args: ['add', '--save-dev', '@transcend-io/custom-function-types@1.2.3'],
+        cwd: root,
+        description: 'install authoring types',
+        rollbackFiles: [
+          {
+            path: packageJson,
+            before: '{"devDependencies": {}}\n',
+          },
+        ],
+      },
+    ]);
+    const runCommand: PlannedCommandRunner = () => {
+      writeFileSync(
+        packageJson,
+        '{"devDependencies":{"@transcend-io/custom-function-types":"1.2.3"}}\n',
+      );
+      return Promise.resolve({ code: 17 });
+    };
+
+    await expect(
+      applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root }), plan, runCommand),
+    ).rejects.toThrow('pnpm exited with code 17 while install authoring types');
+    expect(existsSync(created)).toBe(false);
+    expect(readFileSync(packageJson, 'utf8')).toBe('{"devDependencies": {}}\n');
+  });
+});
