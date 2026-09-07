@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import {
   applySetupFeatureOverrides,
   mergeDenoConfiguration,
+  mergeEditorExtensions,
+  mergeEditorSettings,
   mergeJsonc,
   resolveSetupFeatures,
 } from '../config.js';
@@ -79,5 +81,28 @@ describe('JSONC configuration merging', () => {
     expect(() => mergeDenoConfiguration('{\n  "compilerOptions":,\n}\n', '1.2.3', false)).toThrow(
       'Cannot safely merge Deno configuration; fix its JSONC syntax or apply the patch manually.',
     );
+  });
+
+  it('merges editor support without disturbing unrelated settings', () => {
+    const settings = mergeEditorSettings(
+      `{
+  // Keep the repository formatter.
+  "editor.defaultFormatter": "example.formatter"
+}
+`,
+      '/repo',
+      '/repo/packages/functions',
+    );
+    const extensions = mergeEditorExtensions('{"recommendations":["example.extension"]}\n');
+
+    expect(settings).toContain('// Keep the repository formatter.');
+    expect(parse(settings)).toEqual({
+      'editor.defaultFormatter': 'example.formatter',
+      'deno.enable': true,
+      'deno.enablePaths': ['packages/functions'],
+    });
+    expect(parse(extensions)).toEqual({
+      recommendations: ['example.extension', 'denoland.vscode-deno'],
+    });
   });
 });

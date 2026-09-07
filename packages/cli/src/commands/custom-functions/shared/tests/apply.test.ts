@@ -174,3 +174,33 @@ describe('applyCustomFunctionProjectPlan rollback', () => {
     expect(readFileSync(packageJson, 'utf8')).toBe('{"devDependencies": {}}\n');
   });
 });
+
+describe('applyCustomFunctionProjectPlan skill links', () => {
+  it('copies the canonical skill when directory links are unavailable', async () => {
+    const root = makeTemporaryRoot();
+    const linkPath = join(root, '.claude', 'skills', 'transcend-custom-functions');
+    const linklessFs = new Proxy(fs, {
+      get(target, property, receiver) {
+        if (property === 'symlinkSync') {
+          return (): never => {
+            throw Object.assign(new Error('links unavailable'), { code: 'EPERM' });
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const plan = buildPlan(root, [
+      {
+        kind: 'link',
+        path: linkPath,
+        target: '../../.agents/skills/transcend-custom-functions',
+        fallbackContents: '# Transcend Custom Functions\n',
+        description: 'Expose the canonical skill',
+      },
+    ]);
+
+    await applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root, fs: linklessFs }), plan);
+
+    expect(readFileSync(join(linkPath, 'SKILL.md'), 'utf8')).toBe('# Transcend Custom Functions\n');
+  });
+});

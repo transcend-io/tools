@@ -122,6 +122,36 @@ describe('buildInitPlan', () => {
       ]),
     );
   });
+
+  it.each([
+    ['npm', 'npm', ['i', '--save-dev', '@transcend-io/custom-function-types@1.2.3']],
+    ['pnpm', 'pnpm', ['add', '--save-dev', '@transcend-io/custom-function-types@1.2.3']],
+    ['yarn', 'yarn', ['add', '--save-dev', '@transcend-io/custom-function-types@1.2.3']],
+    ['bun', 'bun', ['add', '--save-dev', '@transcend-io/custom-function-types@1.2.3']],
+  ] as const)('uses the detected %s command without PATH inference', (agent, command, args) => {
+    const state = buildState('/repo');
+    state.packageJsonPath = join('/repo', 'package.json');
+    state.packageManager = { name: agent, agent };
+    const features = [CustomFunctionSetupFeature.PackageManager];
+    const paths = getPlanningCandidatePaths(state, { features });
+    const snapshots = absentSnapshots(paths);
+    snapshots[state.packageJsonPath] = {
+      kind: 'file',
+      path: state.packageJsonPath,
+      contents: '{"name":"example"}\n',
+      mode: 0o100644,
+    };
+    const plan = buildInitPlan(buildInput(state, snapshots), { features });
+
+    expect(plan.changes).toContainEqual(
+      expect.objectContaining({
+        kind: 'command',
+        command,
+        args,
+        cwd: '/repo',
+      }),
+    );
+  });
 });
 
 describe('buildNewPlan', () => {

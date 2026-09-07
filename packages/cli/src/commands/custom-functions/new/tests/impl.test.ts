@@ -1,0 +1,192 @@
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
+
+import { afterEach, describe, expect, it } from 'vitest';
+
+import { parseCustomFunctionsManifest } from '../../../../lib/custom-functions/manifest.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
+import type { CustomFunctionNewFlags } from '../../shared/scaffold.js';
+import {
+  CUSTOM_FUNCTION_TEMPLATE_NAMES,
+  generateCustomFunctionTemplate,
+} from '../../shared/templates.js';
+import { newCustomFunction } from '../impl.js';
+
+const temporaryRoots: string[] = [];
+
+/**
+ * Create and register an isolated temporary directory.
+ *
+ * @returns Temporary directory
+ */
+function makeTemporaryRoot(): string {
+  const root = mkdtempSync(join(tmpdir(), 'custom-function-new-'));
+  temporaryRoots.push(root);
+  return root;
+}
+
+/**
+ * Build non-interactive new-command flags.
+ *
+ * @param overrides - Flag values to replace
+ * @returns Complete new-command flags
+ */
+function buildFlags(overrides: Partial<CustomFunctionNewFlags> = {}): CustomFunctionNewFlags {
+  return {
+    setup: 'none',
+    name: 'Example Function',
+    template: 'general',
+    noInteractive: true,
+    dryRun: false,
+    yes: true,
+    json: true,
+    ...overrides,
+  };
+}
+
+/**
+ * Build a context rooted at a temporary project.
+ *
+ * @param root - Temporary working directory
+ * @returns Test command context
+ */
+function buildTestContext(root: string): ReturnType<typeof buildContextForTest> {
+  return buildContextForTest({
+    cwd: root,
+    env: { HOME: root },
+    stdinIsTTY: false,
+  });
+}
+
+afterEach(() => {
+  temporaryRoots.splice(0).forEach((root) => {
+    rmSync(root, { recursive: true, force: true });
+  });
+});
+
+describe('custom-functions new', () => {
+  it.each(CUSTOM_FUNCTION_TEMPLATE_NAMES)(
+    'implicitly initializes and writes deterministic %s output',
+    async (template) => {
+      const root = makeTemporaryRoot();
+      const target = join(root, 'project');
+      const generated = generateCustomFunctionTemplate('Example Function', template);
+      const context = buildTestContext(root);
+
+      await newCustomFunction.call(context, buildFlags({ template }), target);
+
+      const manifestPath = join(target, 'transcend-functions.yml');
+      expect(parseCustomFunctionsManifest(readFileSync(manifestPath, 'utf8')).functions).toEqual([
+        generated.manifestEntry,
+      ]);
+      expect(readFileSync(join(target, generated.sourceFile.path), 'utf8')).toBe(
+        generated.sourceFile.contents,
+      );
+      generated.payloadFiles.forEach((file) => {
+        expect(readFileSync(join(target, file.path), 'utf8')).toBe(file.contents);
+      });
+      expect(JSON.parse(context.stdout)).toMatchObject({
+        version: 1,
+        command: 'new',
+        applied: true,
+        dryRun: false,
+        targetDirectory: target,
+        manifestPath,
+      });
+      expect(context.stderr).toBe('');
+    },
+  );
+
+  it.each(['source', 'payload'] as const)(
+    'refuses an existing generated %s without partial initialization',
+    async (kind) => {
+      const root = makeTemporaryRoot();
+      const target = join(root, 'project');
+      const generated = generateCustomFunctionTemplate('Example Function', 'general');
+      const collision =
+        kind === 'source' ? generated.sourceFile.path : generated.payloadFiles[0]!.path;
+      const collisionPath = join(target, collision);
+      mkdirSync(dirname(collisionPath), { recursive: true });
+      writeFileSync(collisionPath, 'existing contents\n');
+      const context = buildTestContext(root);
+
+      await expect(newCustomFunction.call(context, buildFlags(), target)).rejects.toThrow(
+        `Refusing to overwrite existing file: ${collisionPath}`,
+      );
+
+      expect(readFileSync(collisionPath, 'utf8')).toBe('existing contents\n');
+      expect(existsSync(join(target, 'transcend-functions.yml'))).toBe(false);
+      if (kind === 'payload') {
+        expect(existsSync(join(target, generated.sourceFile.path))).toBe(false);
+      }
+    },
+  );
+
+  it('requires a name in non-interactive mode', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildTestContext(root);
+
+    await expect(
+      newCustomFunction.call(context, buildFlags({ name: undefined }), join(root, 'project')),
+    ).rejects.toThrow('Missing Custom Function name. Pass --name in a non-interactive invocation.');
+  });
+
+  it('requires a template in non-interactive mode', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildTestContext(root);
+
+    await expect(
+      newCustomFunction.call(context, buildFlags({ template: undefined }), join(root, 'project')),
+    ).rejects.toThrow('Missing Custom Function template.');
+  });
+
+  it('requires a setup choice for implicit initialization in non-interactive mode', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildTestContext(root);
+
+    await expect(
+      newCustomFunction.call(context, buildFlags({ setup: undefined }), join(root, 'project')),
+    ).rejects.toThrow('Missing setup choice in a non-interactive invocation.');
+  });
+
+  it('does not treat JSON output as approval to mutate', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    const context = buildTestContext(root);
+
+    await expect(
+      newCustomFunction.call(context, buildFlags({ yes: false }), target),
+    ).rejects.toThrow(
+      'The plan requires approval in a non-interactive invocation. Review with --dryRun, then pass --yes.',
+    );
+
+    expect(existsSync(target)).toBe(false);
+    expect(context.stdout).toBe('');
+    expect(context.stderr).toBe('');
+  });
+
+  it('emits one stable JSON result on stdout', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    const context = buildTestContext(root);
+    const flags = buildFlags({ dryRun: true, yes: false });
+
+    await newCustomFunction.call(context, flags, target);
+    const first = context.stdout;
+    context.reset();
+    await newCustomFunction.call(context, flags, target);
+
+    expect(context.stdout).toBe(first);
+    expect(first.endsWith('\n')).toBe(true);
+    expect(first.trim().split('\n')).toHaveLength(1);
+    expect(JSON.parse(first)).toMatchObject({
+      version: 1,
+      command: 'new',
+      applied: false,
+      dryRun: true,
+    });
+    expect(existsSync(target)).toBe(false);
+    expect(context.stderr).toBe('');
+  });
+});
