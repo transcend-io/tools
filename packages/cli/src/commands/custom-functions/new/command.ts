@@ -7,8 +7,8 @@ import {
 
 export const newCommand = buildCommand({
   loader: async () => {
-    const { newCustomFunction } = await import('./impl.js');
-    return newCustomFunction;
+    const { _new } = await import('./impl.js');
+    return _new;
   },
   parameters: {
     flags: customFunctionNewFlagParameters,

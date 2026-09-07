@@ -10,7 +10,7 @@ import { runCustomFunctionNew, type CustomFunctionNewFlags } from '../shared/sca
  * @param flags - Template, setup, and interaction flags
  * @param directory - Optional target directory
  */
-export async function newCustomFunction(
+export async function _new(
   this: LocalContext,
   flags: CustomFunctionNewFlags,
   directory?: string,
@@ -25,3 +25,5 @@ export async function newCustomFunction(
     throw error;
   }
 }
+
+export { _new as newCustomFunction };

@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { run } from '@stricli/core';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { app } from '../../app.js';
-import { buildContextForTest } from '../../lib/tests/helpers/buildContextForTest.js';
+import { app } from '../../../app.js';
+import { buildContextForTest } from '../../../lib/tests/helpers/buildContextForTest.js';
 
 const temporaryRoots: string[] = [];
 
