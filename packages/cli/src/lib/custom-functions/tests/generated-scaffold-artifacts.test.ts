@@ -12,12 +12,12 @@ import Ajv from 'ajv';
 import { afterEach, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-import { mergeDenoConfiguration } from '../config.js';
+import { mergeDenoConfiguration } from '../scaffold-config.js';
 import {
   CUSTOM_FUNCTION_SKILL_MD,
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   generateCustomFunctionTemplate,
-} from '../templates.js';
+} from '../scaffold-templates.js';
 
 const temporaryRoots: string[] = [];
 

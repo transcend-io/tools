@@ -11,16 +11,16 @@ import { createTwoFilesPatch } from 'diff';
 
 import type { LocalContext } from '../../../context.js';
 import {
+  type CustomFunctionCheckResult,
+  type CustomFunctionCheckStatus,
+  type CustomFunctionDiagnostic,
+} from '../../../lib/custom-functions/check-model.js';
+import {
   isCustomFunctionManifestPathContained,
   parseCustomFunctionsManifest,
   type CustomFunctionManifestEntry,
 } from '../../../lib/custom-functions/manifest.js';
-import {
-  CUSTOM_FUNCTION_RESULT_VERSION,
-  type CustomFunctionCheckResult,
-  type CustomFunctionCheckStatus,
-  type CustomFunctionDiagnostic,
-} from './model.js';
+import { CUSTOM_FUNCTION_RESULT_VERSION } from '../../../lib/custom-functions/scaffold-model.js';
 
 /** Captured process result. */
 export interface CapturedProcessResult {

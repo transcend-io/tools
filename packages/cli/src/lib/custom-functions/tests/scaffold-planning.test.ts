@@ -2,18 +2,17 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import type { CustomFunctionProjectState } from '../discovery.js';
-import { CustomFunctionSetupFeature } from '../model.js';
+import { CustomFunctionSetupFeature, type CustomFunctionProjectState } from '../scaffold-model.js';
 import {
   buildAddFunctionPlan,
   buildInitPlan,
   EMPTY_CUSTOM_FUNCTION_MANIFEST,
   getAddFunctionPlanningCandidatePaths,
-  getPlanningCandidatePaths,
+  getInitPlanningCandidatePaths,
   prepareGeneratedCustomFunction,
-  type CustomFunctionPlanningInput,
+  type CustomFunctionInitPlanningInput,
   type PlanningPathSnapshot,
-} from '../planning.js';
+} from '../scaffold-planning.js';
 
 /**
  * Build deterministic discovery state without filesystem access.
@@ -77,7 +76,7 @@ function initializedSnapshots(
 function buildInput(
   state: CustomFunctionProjectState,
   snapshots: Readonly<Record<string, PlanningPathSnapshot>>,
-): CustomFunctionPlanningInput {
+): CustomFunctionInitPlanningInput {
   return {
     state,
     snapshots,
@@ -121,7 +120,7 @@ describe('buildInitPlan', () => {
   it('builds deterministic plans from immutable snapshots', () => {
     const state = buildState('/repo');
     const features = [CustomFunctionSetupFeature.Deno, CustomFunctionSetupFeature.Ci];
-    const paths = getPlanningCandidatePaths(state, { features });
+    const paths = getInitPlanningCandidatePaths(state, { features });
     const input = buildInput(state, absentSnapshots(paths));
     const before = structuredClone(input);
 
@@ -132,7 +131,7 @@ describe('buildInitPlan', () => {
   it('produces a no-op plan when rerun against its own desired files', () => {
     const state = buildState('/repo');
     const features = [CustomFunctionSetupFeature.Deno, CustomFunctionSetupFeature.Ci];
-    const paths = getPlanningCandidatePaths(state, { features });
+    const paths = getInitPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
     const rerun = buildInitPlan(buildInput(state, snapshotsAfterPlan(paths, first)), { features });
 
@@ -238,7 +237,7 @@ describe('agent skill planning', () => {
       { path: '.claude/skills', supportsAgentsSkills: false },
     ];
     const features = [CustomFunctionSetupFeature.Skill];
-    const paths = getPlanningCandidatePaths(state, { features });
+    const paths = getInitPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
     const links = first.changes.filter((change) => change.kind === 'link');
 
@@ -263,7 +262,7 @@ describe('agent skill planning', () => {
     const state = buildState('/repo');
     state.existingSkillDirectories = [{ path: '.claude/skills', supportsAgentsSkills: false }];
     const features = [CustomFunctionSetupFeature.Skill];
-    const paths = getPlanningCandidatePaths(state, { features });
+    const paths = getInitPlanningCandidatePaths(state, { features });
     const plan = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
     const skillChanges = plan.changes.filter((change) => change.path.includes('/skills/'));
 
@@ -279,7 +278,7 @@ describe('agent skill planning', () => {
   it('refuses a user-modified managed skill instead of overwriting it', () => {
     const state = buildState('/repo');
     const features = [CustomFunctionSetupFeature.Skill];
-    const paths = getPlanningCandidatePaths(state, { features });
+    const paths = getInitPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
     const snapshots = snapshotsAfterPlan(paths, first);
     const skillPath = join('/repo', '.agents', 'skills', 'transcend-custom-functions', 'SKILL.md');

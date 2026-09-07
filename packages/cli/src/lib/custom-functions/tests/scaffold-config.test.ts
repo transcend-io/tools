@@ -10,8 +10,8 @@ import {
   mergeJsonc,
   PROJECT_SKILL_DIRECTORIES,
   resolveSetupFeatures,
-} from '../config.js';
-import { CustomFunctionSetupFeature } from '../model.js';
+} from '../scaffold-config.js';
+import { CustomFunctionSetupFeature } from '../scaffold-model.js';
 
 describe('project skill directory registry', () => {
   it('matches the pinned vercel-labs/skills project paths', () => {

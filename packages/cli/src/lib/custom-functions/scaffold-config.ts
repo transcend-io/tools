@@ -6,7 +6,7 @@ import {
   CustomFunctionSetupFeature,
   type CustomFunctionSetup,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
-} from './model.js';
+} from './scaffold-model.js';
 
 /**
  * Runtime values of jsonc-parser's ambient const enum, repeated locally

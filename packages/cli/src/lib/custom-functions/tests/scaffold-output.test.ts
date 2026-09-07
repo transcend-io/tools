@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CustomFunctionProjectPlan } from '../model.js';
-import { buildPlanResult, renderProjectPlan } from '../output.js';
+import type { CustomFunctionProjectPlan } from '../scaffold-model.js';
+import { buildPlanResult, renderProjectPlan } from '../scaffold-output.js';
 
 const PLAN: CustomFunctionProjectPlan = {
   version: 1,

@@ -1,74 +1,61 @@
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, join, relative, resolve, sep } from 'node:path';
 
-import type { LocalContext } from '../../../context.js';
+import type { LocalContext } from '../../context.js';
+import {
+  DEFAULT_CUSTOM_FUNCTION_DIRECTORY,
+  resolveCliPath,
+} from '../../lib/custom-functions/paths.js';
 import {
   AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES,
   PROJECT_SKILL_DIRECTORIES,
-} from './config.js';
-import type { ProjectFileSnapshot } from './model.js';
-
-/** Default local Custom Function project directory. */
-export const DEFAULT_CUSTOM_FUNCTION_DIRECTORY = join('transcend', 'custom-functions');
-
-/** One existing project-level skill container. */
-export interface ExistingProjectSkillDirectory {
-  /** Repository-relative directory. */
-  path: string;
-  /** Whether its agent can read the portable `.agents/skills` directory. */
-  supportsAgentsSkills: boolean;
-}
-
-/** Repository and target state collected before planning. */
-export interface CustomFunctionProjectState {
-  /** Absolute user-selected target directory. */
-  targetDirectory: string;
-  /** Directory relative to which manifest file references resolve. */
-  manifestDirectory: string;
-  /** Absolute manifest path. */
-  manifestPath: string;
-  /** Nearest repository root, when present. */
-  repositoryRoot?: string;
-  /** Existing Deno configuration path, or desired deno.json path. */
-  denoConfigPath: string;
-  /** Existing project-level skill directories; home state is deliberately ignored. */
-  existingSkillDirectories: ExistingProjectSkillDirectory[];
-  /** Whether the repository appears to use GitHub. */
-  usesGithub: boolean;
-  /** Case-preserving relative paths below the manifest directory. */
-  relativePaths: string[];
-}
+} from '../../lib/custom-functions/scaffold-config.js';
+import type {
+  CustomFunctionProjectState,
+  ExistingProjectSkillDirectory,
+} from '../../lib/custom-functions/scaffold-model.js';
+import type { PlanningPathSnapshot } from '../../lib/custom-functions/scaffold-planning.js';
 
 /**
- * Resolve a possibly relative input against the context working directory.
- *
- * @param cwd - Process working directory
- * @param input - User path
- * @returns Absolute path
- */
-export function resolveCliPath(cwd: string, input: string): string {
-  return isAbsolute(input) ? resolve(input) : resolve(cwd, input);
-}
-
-/**
- * Read a UTF-8 file snapshot through the command context.
+ * Collect candidate paths once, before preview.
  *
  * @param context - CLI context
- * @param path - Absolute path
- * @returns Snapshot
+ * @param paths - Absolute paths
+ * @returns In-memory path snapshots
  */
-export function readProjectFileSnapshot(context: LocalContext, path: string): ProjectFileSnapshot {
-  if (!context.fs.existsSync(path)) {
-    return { path, contents: null };
-  }
-  const stat = context.fs.lstatSync(path);
-  if (!stat.isFile()) {
-    throw new Error(`Expected a regular file: ${path}`);
-  }
-  return {
-    path,
-    contents: context.fs.readFileSync(path, 'utf8'),
-    mode: stat.mode,
-  };
+export function collectPlanningSnapshots(
+  context: LocalContext,
+  paths: readonly string[],
+): Readonly<Record<string, PlanningPathSnapshot>> {
+  return Object.fromEntries(
+    paths.map((path): [string, PlanningPathSnapshot] => {
+      try {
+        const stat = context.fs.lstatSync(path);
+        if (stat.isSymbolicLink()) {
+          return [path, { kind: 'link', path, target: context.fs.readlinkSync(path) }];
+        }
+        if (stat.isDirectory()) {
+          return [path, { kind: 'directory', path }];
+        }
+        if (!stat.isFile()) {
+          throw new Error(`Unsupported filesystem entry: ${path}`);
+        }
+        return [
+          path,
+          {
+            kind: 'file',
+            path,
+            contents: context.fs.readFileSync(path, 'utf8'),
+            mode: stat.mode,
+          },
+        ];
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+          return [path, { kind: 'absent', path }];
+        }
+        throw error;
+      }
+    }),
+  );
 }
 
 /**

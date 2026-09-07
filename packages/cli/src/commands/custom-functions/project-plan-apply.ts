@@ -1,7 +1,11 @@
 import { basename, dirname, join } from 'node:path';
 
-import type { LocalContext } from '../../../context.js';
-import type { CustomFunctionProjectPlan, PlannedFileChange, PlannedLinkChange } from './model.js';
+import type { LocalContext } from '../../context.js';
+import type {
+  CustomFunctionProjectPlan,
+  PlannedFileChange,
+  PlannedLinkChange,
+} from '../../lib/custom-functions/scaffold-model.js';
 
 /** Original state retained for rollback. */
 type RollbackSnapshot =

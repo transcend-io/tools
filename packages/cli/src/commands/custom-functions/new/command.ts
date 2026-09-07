@@ -1,7 +1,6 @@
 import { buildCommand } from '@stricli/core';
 
-import { customFunctionDirectoryPositionalParameters } from '../shared/command-parameters.js';
-import { CustomFunctionTemplate } from '../shared/model.js';
+import { CUSTOM_FUNCTION_TEMPLATE_NAMES } from '../../../lib/custom-functions/scaffold-templates.js';
 
 /** Flags accepted when adding a function to an initialized project. */
 const customFunctionNewFlagParameters = {
@@ -19,7 +18,7 @@ const customFunctionNewFlagParameters = {
   },
   template: {
     kind: 'enum',
-    values: Object.values(CustomFunctionTemplate),
+    values: CUSTOM_FUNCTION_TEMPLATE_NAMES,
     brief: 'Generated handler and fixture shape',
     optional: true,
   },
@@ -52,7 +51,17 @@ export const newCommand = buildCommand({
   },
   parameters: {
     flags: customFunctionNewFlagParameters,
-    positional: customFunctionDirectoryPositionalParameters,
+    positional: {
+      kind: 'tuple',
+      parameters: [
+        {
+          brief: 'Custom Function project directory; defaults to transcend/custom-functions',
+          placeholder: 'directory',
+          parse: String,
+          optional: true,
+        },
+      ],
+    },
   },
   docs: {
     brief: 'Scaffold one local Custom Function and its test fixtures',

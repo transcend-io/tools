@@ -4,12 +4,9 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import {
-  discoverCustomFunctionProject,
-  readProjectFileSnapshot,
-  resolveCliPath,
-} from '../discovery.js';
+import { resolveCliPath } from '../../../lib/custom-functions/paths.js';
+import { buildContextForTest } from '../../../lib/tests/helpers/buildContextForTest.js';
+import { discoverCustomFunctionProject } from '../project-discovery.js';
 
 const temporaryRoots: string[] = [];
 
@@ -34,27 +31,6 @@ describe('resolveCliPath', () => {
   it('resolves relative paths against the supplied working directory', () => {
     expect(resolveCliPath('/repo/packages', '../custom-functions')).toBe('/repo/custom-functions');
     expect(resolveCliPath('/repo/packages', '/tmp/project/../functions')).toBe('/tmp/functions');
-  });
-});
-
-describe('readProjectFileSnapshot', () => {
-  it('reads regular files and rejects directories through the context filesystem', () => {
-    const root = makeTemporaryRoot();
-    const file = join(root, 'deno.json');
-    writeFileSync(file, '{}\n', { mode: 0o640 });
-    const context = buildContextForTest({ cwd: root });
-
-    expect(readProjectFileSnapshot(context, file)).toMatchObject({
-      path: file,
-      contents: '{}\n',
-    });
-    expect(readProjectFileSnapshot(context, join(root, 'missing.json'))).toEqual({
-      path: join(root, 'missing.json'),
-      contents: null,
-    });
-    expect(() => readProjectFileSnapshot(context, root)).toThrow(
-      `Expected a regular file: ${root}`,
-    );
   });
 });
 

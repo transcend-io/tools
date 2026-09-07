@@ -7,7 +7,7 @@ import {
   generateCustomFunctionTemplate,
   validateCustomFunctionDisplayName,
   type CustomFunctionTemplateName,
-} from '../templates.js';
+} from '../scaffold-templates.js';
 
 describe('Custom Function scaffold names', () => {
   it('normalizes safe display names and derives portable kebab-case slugs', () => {

@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
 
-import type { LocalContext } from '../../../context.js';
+import type { LocalContext } from '../../context.js';
 
 /** One select/checkbox option. */
 export interface PromptChoice<T extends string> {

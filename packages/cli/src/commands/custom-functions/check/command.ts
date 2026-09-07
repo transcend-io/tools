@@ -1,7 +1,5 @@
 import { buildCommand } from '@stricli/core';
 
-import { customFunctionDirectoryPositionalParameters } from '../shared/command-parameters.js';
-
 export const checkCommand = buildCommand({
   loader: async () => {
     const { check } = await import('./impl.js');
@@ -31,7 +29,17 @@ export const checkCommand = buildCommand({
         default: false,
       },
     },
-    positional: customFunctionDirectoryPositionalParameters,
+    positional: {
+      kind: 'tuple',
+      parameters: [
+        {
+          brief: 'Custom Function project directory; defaults to transcend/custom-functions',
+          placeholder: 'directory',
+          parse: String,
+          optional: true,
+        },
+      ],
+    },
   },
   docs: {
     brief: 'Validate a local Custom Function project without credentials',

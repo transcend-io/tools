@@ -12,9 +12,12 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import { applyCustomFunctionProjectPlan } from '../apply.js';
-import type { CustomFunctionProjectPlan, PlannedChange } from '../model.js';
+import type {
+  CustomFunctionProjectPlan,
+  PlannedChange,
+} from '../../../lib/custom-functions/scaffold-model.js';
+import { buildContextForTest } from '../../../lib/tests/helpers/buildContextForTest.js';
+import { applyCustomFunctionProjectPlan } from '../project-plan-apply.js';
 
 const temporaryRoots: string[] = [];
 

@@ -1,4 +1,4 @@
-import type { CustomFunctionManifestEntry } from '../../../lib/custom-functions/manifest.js';
+import type { CustomFunctionManifestEntry } from './manifest.js';
 
 /** Supported Custom Function scaffold templates. */
 export const CUSTOM_FUNCTION_TEMPLATE_NAMES = [

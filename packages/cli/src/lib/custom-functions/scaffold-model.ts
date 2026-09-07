@@ -3,22 +3,6 @@ import { createHash } from 'node:crypto';
 /** Version of the stable scaffold/check JSON result contract. */
 export const CUSTOM_FUNCTION_RESULT_VERSION = 1 as const;
 
-/** Supported Custom Function scaffold templates. */
-export const CustomFunctionTemplate = {
-  /** General workflow function. */
-  General: 'general',
-  /** DSR datapoint/default export only. */
-  DsrDataPoint: 'dsr-datapoint',
-  /** DSR request-enricher export only. */
-  DsrEnricher: 'dsr-enricher',
-  /** DSR datapoint and request-enricher exports. */
-  DsrBoth: 'dsr-both',
-} as const;
-
-/** Supported Custom Function scaffold template. */
-export type CustomFunctionTemplate =
-  (typeof CustomFunctionTemplate)[keyof typeof CustomFunctionTemplate];
-
 /** Optional repository setup presets. */
 export const CustomFunctionSetup = {
   /** Do not add optional repository support. */
@@ -47,6 +31,34 @@ export const CustomFunctionSetupFeature = {
 /** One repository setup capability. */
 export type CustomFunctionSetupFeature =
   (typeof CustomFunctionSetupFeature)[keyof typeof CustomFunctionSetupFeature];
+
+/** One existing project-level skill container. */
+export interface ExistingProjectSkillDirectory {
+  /** Repository-relative directory. */
+  path: string;
+  /** Whether its agent can read the portable `.agents/skills` directory. */
+  supportsAgentsSkills: boolean;
+}
+
+/** Repository and target state collected before planning. */
+export interface CustomFunctionProjectState {
+  /** Absolute user-selected target directory. */
+  targetDirectory: string;
+  /** Directory relative to which manifest file references resolve. */
+  manifestDirectory: string;
+  /** Absolute manifest path. */
+  manifestPath: string;
+  /** Nearest repository root, when present. */
+  repositoryRoot?: string;
+  /** Existing Deno configuration path, or desired deno.json path. */
+  denoConfigPath: string;
+  /** Existing project-level skill directories; home state is deliberately ignored. */
+  existingSkillDirectories: ExistingProjectSkillDirectory[];
+  /** Whether the repository appears to use GitHub. */
+  usesGithub: boolean;
+  /** Case-preserving relative paths below the manifest directory. */
+  relativePaths: string[];
+}
 
 /** A file observed while collecting repository state. */
 export interface ProjectFileSnapshot {
@@ -111,48 +123,6 @@ export interface CustomFunctionProjectPlan {
   warnings: string[];
   /** Commands shown after a successful apply. */
   nextSteps: string[];
-}
-
-/** Severity attached to a local check diagnostic. */
-export type CustomFunctionDiagnosticSeverity = 'error' | 'warning';
-
-/** A stable file-scoped local validation diagnostic. */
-export interface CustomFunctionDiagnostic {
-  /** Stable machine-readable diagnostic code. */
-  code: string;
-  /** Error or warning. */
-  severity: CustomFunctionDiagnosticSeverity;
-  /** Human-readable explanation. */
-  message: string;
-  /** File path, relative to the manifest when possible. */
-  path?: string;
-  /** Manifest entry display name. */
-  functionName?: string;
-}
-
-/** Status of one local validation check. */
-export type CustomFunctionCheckStatus = 'passed' | 'failed' | 'skipped';
-
-/** Summary of one validation category. */
-export interface CustomFunctionCheckSummary {
-  /** Stable check name. */
-  name: string;
-  /** Check status. */
-  status: CustomFunctionCheckStatus;
-}
-
-/** Stable result emitted by `custom-functions check --json`. */
-export interface CustomFunctionCheckResult {
-  /** JSON contract version. */
-  version: typeof CUSTOM_FUNCTION_RESULT_VERSION;
-  /** Overall status. */
-  status: 'passed' | 'failed';
-  /** Absolute manifest path. */
-  manifestPath: string;
-  /** Checks that ran or were skipped. */
-  checks: CustomFunctionCheckSummary[];
-  /** File-scoped diagnostics. */
-  diagnostics: CustomFunctionDiagnostic[];
 }
 
 /**

@@ -1,28 +1,28 @@
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
-import type { LocalContext } from '../../../context.js';
+import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
+import { generateGithubActionsWorkflow } from './scaffold-artifacts.js';
 import {
-  insertCustomFunctionManifestEntry,
-  parseCustomFunctionsManifest,
-} from '../../../lib/custom-functions/manifest.js';
-import { generateGithubActionsWorkflow } from './artifacts.js';
-import { mergeDenoConfiguration, mergeEditorExtensions, mergeEditorSettings } from './config.js';
-import type { CustomFunctionProjectState } from './discovery.js';
+  mergeDenoConfiguration,
+  mergeEditorExtensions,
+  mergeEditorSettings,
+} from './scaffold-config.js';
 import {
   CUSTOM_FUNCTION_RESULT_VERSION,
   CustomFunctionSetupFeature,
   hashContents,
   planFileChange,
   type CustomFunctionProjectPlan,
+  type CustomFunctionProjectState,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
   type PlannedLinkChange,
   type ProjectFileSnapshot,
-} from './model.js';
+} from './scaffold-model.js';
 import {
   CUSTOM_FUNCTION_SKILL_MD,
   generateCustomFunctionTemplate,
   type GeneratedCustomFunctionTemplate,
-} from './templates.js';
+} from './scaffold-templates.js';
 
 /** Marker prefix used to identify canonical skill files owned by this CLI. */
 const MANAGED_SKILL_MARKER_PREFIX = '<!-- managed-by: @transcend-io/cli; content-sha256: ';
@@ -71,6 +71,10 @@ export interface CustomFunctionPlanningInput {
   state: CustomFunctionProjectState;
   /** Potential mutation paths keyed by absolute path. */
   snapshots: Readonly<Record<string, PlanningPathSnapshot>>;
+}
+
+/** In-memory input required only by project initialization. */
+export interface CustomFunctionInitPlanningInput extends CustomFunctionPlanningInput {
   /** Exact authoring contract version. */
   contractVersion: string;
   /** Exact CLI version. */
@@ -129,13 +133,11 @@ function skillDirectories(state: CustomFunctionProjectState): {
  * @param options - Selected setup and optional scaffold
  * @returns Absolute candidate paths
  */
-export function getPlanningCandidatePaths(
+export function getInitPlanningCandidatePaths(
   state: CustomFunctionProjectState,
   options: {
     /** Selected setup features. */
     features: readonly CustomFunctionSetupFeatureType[];
-    /** Optional generated function. */
-    generated?: GeneratedCustomFunctionTemplate;
   },
 ): string[] {
   const root = setupRoot(state);
@@ -158,12 +160,6 @@ export function getPlanningCandidatePaths(
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     paths.add(join(root, '.github', 'workflows', 'transcend-custom-functions.yml'));
   }
-  if (options.generated) {
-    paths.add(join(state.manifestDirectory, options.generated.sourceFile.path));
-    options.generated.payloadFiles.forEach((file) =>
-      paths.add(join(state.manifestDirectory, file.path)),
-    );
-  }
   return [...paths].sort((left, right) => left.localeCompare(right));
 }
 
@@ -183,49 +179,6 @@ export function getAddFunctionPlanningCandidatePaths(
     join(state.manifestDirectory, generated.sourceFile.path),
     ...generated.payloadFiles.map((file) => join(state.manifestDirectory, file.path)),
   ].sort((left, right) => left.localeCompare(right));
-}
-
-/**
- * Collect candidate paths once, before preview.
- *
- * @param context - CLI context
- * @param paths - Absolute paths
- * @returns In-memory path snapshots
- */
-export function collectPlanningSnapshots(
-  context: LocalContext,
-  paths: readonly string[],
-): Readonly<Record<string, PlanningPathSnapshot>> {
-  return Object.fromEntries(
-    paths.map((path): [string, PlanningPathSnapshot] => {
-      try {
-        const stat = context.fs.lstatSync(path);
-        if (stat.isSymbolicLink()) {
-          return [path, { kind: 'link', path, target: context.fs.readlinkSync(path) }];
-        }
-        if (stat.isDirectory()) {
-          return [path, { kind: 'directory', path }];
-        }
-        if (!stat.isFile()) {
-          throw new Error(`Unsupported filesystem entry: ${path}`);
-        }
-        return [
-          path,
-          {
-            kind: 'file',
-            path,
-            contents: context.fs.readFileSync(path, 'utf8'),
-            mode: stat.mode,
-          },
-        ];
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-          return [path, { kind: 'absent', path }];
-        }
-        throw error;
-      }
-    }),
-  );
 }
 
 /**
@@ -421,7 +374,7 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
  * @returns Validated project plan
  */
 export function buildInitPlan(
-  input: CustomFunctionPlanningInput,
+  input: CustomFunctionInitPlanningInput,
   options: InitPlanOptions,
 ): CustomFunctionProjectPlan {
   const { state } = input;

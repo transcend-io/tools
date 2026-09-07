@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { generateGithubActionsWorkflow } from '../artifacts.js';
+import { generateGithubActionsWorkflow } from '../scaffold-artifacts.js';
 
 describe('generateGithubActionsWorkflow', () => {
   it('generates pinned, least-privilege, credential-free checks', () => {

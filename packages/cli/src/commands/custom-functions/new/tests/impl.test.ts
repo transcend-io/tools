@@ -5,13 +5,12 @@ import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { parseCustomFunctionsManifest } from '../../../../lib/custom-functions/manifest.js';
-import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import type { CustomFunctionNewFlags } from '../../shared/scaffold.js';
 import {
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   generateCustomFunctionTemplate,
-} from '../../shared/templates.js';
-import { newCustomFunction } from '../impl.js';
+} from '../../../../lib/custom-functions/scaffold-templates.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
+import { newCustomFunction, type CustomFunctionNewFlags } from '../impl.js';
 
 const temporaryRoots: string[] = [];
 
@@ -167,7 +166,17 @@ describe('custom-functions new', () => {
 
     await expect(
       newCustomFunction.call(context, buildFlags(), join(root, 'project')),
-    ).rejects.toThrow('Run `transcend custom-functions init` first.');
+    ).rejects.toThrow('Run `transcend custom-functions init` to create the default project.');
+  });
+
+  it('suggests the only initialized Custom Function project it discovers', async () => {
+    const root = makeTemporaryRoot();
+    initializeProject(join(root, 'other-functions'));
+    const context = buildTestContext(root);
+
+    await expect(
+      newCustomFunction.call(context, buildFlags(), join(root, 'missing-project')),
+    ).rejects.toThrow('Did you mean `transcend custom-functions new other-functions`?');
   });
 
   it('does not treat JSON output as approval to mutate', async () => {

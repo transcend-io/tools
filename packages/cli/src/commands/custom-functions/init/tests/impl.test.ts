@@ -5,8 +5,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import type { CustomFunctionScaffoldFlags } from '../../shared/scaffold.js';
-import { init } from '../impl.js';
+import { init, type CustomFunctionInitFlags } from '../impl.js';
 
 const temporaryRoots: string[] = [];
 
@@ -27,9 +26,7 @@ function makeTemporaryRoot(): string {
  * @param overrides - Flag values to replace
  * @returns Complete init flags
  */
-function buildFlags(
-  overrides: Partial<CustomFunctionScaffoldFlags> = {},
-): CustomFunctionScaffoldFlags {
+function buildFlags(overrides: Partial<CustomFunctionInitFlags> = {}): CustomFunctionInitFlags {
   return {
     setup: 'none',
     noInteractive: true,
