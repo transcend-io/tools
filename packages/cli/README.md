@@ -40,6 +40,9 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend consent upload-data-flows-from-csv`](#transcend-consent-upload-data-flows-from-csv)
   - [`transcend consent upload-preferences`](#transcend-consent-upload-preferences)
   - [`transcend consent delete-preference-records`](#transcend-consent-delete-preference-records)
+  - [`transcend custom-functions init`](#transcend-custom-functions-init)
+  - [`transcend custom-functions new`](#transcend-custom-functions-new)
+  - [`transcend custom-functions check`](#transcend-custom-functions-check)
   - [`transcend custom-functions push`](#transcend-custom-functions-push)
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
@@ -2478,6 +2481,133 @@ transcend consent delete-preference-records \
   --receiptDirectory=./receipts \
   --timestamp=2025-08-26T00:00:00.000Z
 ```
+
+### `transcend custom-functions init`
+
+```txt
+USAGE
+  transcend custom-functions init [--manifest value] [--setup none|recommended|all] [--deno] [--tasks] [--packageManager] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend custom-functions init --help
+
+Discovers the surrounding repository, previews one safe transactional plan, and creates only the selected local authoring setup. No Transcend credentials are needed.
+
+FLAGS
+     [--manifest]                           Path to transcend-functions.yml; defaults inside the target directory
+     [--setup]                              Optional repository setup preset                                           [none|recommended|all]
+     [--deno/--noDeno]                      Create or merge target-scoped Deno configuration
+     [--tasks/--noTasks]                    Add target-scoped Deno check, lint, and format tasks
+     [--packageManager/--noPackageManager]  Install the exact authoring type package with the detected package manager
+     [--editor/--noEditor]                  Merge target-scoped Deno editor settings and recommendations
+     [--skill/--noSkill]                    Install the canonical Custom Function coding-agent skill
+     [--ci/--noCi]                          Generate secure GitHub Actions checks and gated deployment
+     [--secretDocs/--noSecretDocs]          Document secret names and ignore the local secret file
+     [--noInteractive]                      Disable prompts and require every missing answer as a flag                 [default = false]
+     [--dryRun]                             Preview all changes without writing files or running commands              [default = false]
+     [--yes]                                Skip only the final plan confirmation                                      [default = false]
+     [--json]                               Emit a stable JSON result and imply non-interactive output                 [default = false]
+  -h  --help                                Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory
+```
+
+#### Start in an empty directory
+
+```sh
+mkdir transcend-functions
+transcend custom-functions init ./transcend-functions
+```
+
+The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when a supported coding agent is detected.
+
+#### Add support to an existing repository
+
+```sh
+transcend custom-functions init ./packages/transcend-functions \
+  --setup=none \
+  --deno \
+  --tasks \
+  --editor \
+  --skill
+```
+
+Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Use `--dryRun` to review the same transactional plan without applying it.
+
+### `transcend custom-functions new`
+
+```txt
+USAGE
+  transcend custom-functions new [--manifest value] [--setup none|recommended|all] [--deno] [--tasks] [--packageManager] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [<directory>]
+  transcend custom-functions new --help
+
+Creates a deterministic General or DSR starter, composes missing initialization into the same preview, and safely appends the manifest entry without credentials.
+
+FLAGS
+     [--manifest]                           Path to transcend-functions.yml; defaults inside the target directory
+     [--setup]                              Optional repository setup preset                                           [none|recommended|all]
+     [--deno/--noDeno]                      Create or merge target-scoped Deno configuration
+     [--tasks/--noTasks]                    Add target-scoped Deno check, lint, and format tasks
+     [--packageManager/--noPackageManager]  Install the exact authoring type package with the detected package manager
+     [--editor/--noEditor]                  Merge target-scoped Deno editor settings and recommendations
+     [--skill/--noSkill]                    Install the canonical Custom Function coding-agent skill
+     [--ci/--noCi]                          Generate secure GitHub Actions checks and gated deployment
+     [--secretDocs/--noSecretDocs]          Document secret names and ignore the local secret file
+     [--noInteractive]                      Disable prompts and require every missing answer as a flag                 [default = false]
+     [--dryRun]                             Preview all changes without writing files or running commands              [default = false]
+     [--yes]                                Skip only the final plan confirmation                                      [default = false]
+     [--json]                               Emit a stable JSON result and imply non-interactive output                 [default = false]
+     [--name]                               Customer-visible Custom Function display name
+     [--template]                           Generated handler and fixture shape                                        [general|dsr-datapoint|dsr-enricher|dsr-both]
+  -h  --help                                Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory
+```
+
+#### Scaffold without prompts
+
+```sh
+transcend custom-functions new ./packages/transcend-functions \
+  --name="Customer CRM access" \
+  --template=dsr-both \
+  --setup=recommended \
+  --noInteractive \
+  --yes
+```
+
+The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. If the manifest does not exist, `new` composes initialization into the same preview and transaction.
+
+Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill.
+
+### `transcend custom-functions check`
+
+```txt
+USAGE
+  transcend custom-functions check [--manifest value] [--fix] [--noInteractive] [--json] [<directory>]
+  transcend custom-functions check --help
+
+Checks manifest semantics and published payload schemas, then uses Deno without executing user modules to inspect exports, type-check, lint, and verify formatting.
+
+FLAGS
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--fix]            Apply Deno formatting to manifest-referenced files                    [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation                          [default = false]
+     [--json]           Emit a stable JSON result and imply non-interactive behavior          [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory
+```
+
+#### Validate before pushing
+
+```sh
+transcend custom-functions check ./packages/transcend-functions
+```
+
+`check` needs no API key. It validates unresolved manifest placeholders and every test fixture against the published authoring schemas, then asks Deno to inspect exports, type-check, lint, and check formatting without executing the modules.
+
+In CI, use `--noInteractive --json`. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
 
 ### `transcend custom-functions push`
 
