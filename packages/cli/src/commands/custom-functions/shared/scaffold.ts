@@ -141,8 +141,8 @@ async function resolveFeatures(
         name: SETUP_LABELS[feature],
         value: feature,
         checked:
-          (recommended.has(feature) && feature !== CustomFunctionSetupFeature.Ci) ||
-          options.usesGithub,
+          recommended.has(feature) ||
+          (feature === CustomFunctionSetupFeature.Ci && options.usesGithub),
       }),
     );
     features = await prompts.checkbox('Choose optional repository setup:', choices);

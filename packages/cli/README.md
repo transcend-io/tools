@@ -2486,24 +2486,23 @@ transcend consent delete-preference-records \
 
 ```txt
 USAGE
-  transcend custom-functions init [--manifest value] [--setup none|recommended|all] [--deno] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend custom-functions init [--manifest value] [--setup none|recommended|all] [--deno] [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
   transcend custom-functions init --help
 
 Discovers the surrounding repository, previews one safe transactional plan, and creates only the selected local authoring setup. No Transcend credentials are needed.
 
 FLAGS
-     [--manifest]                   Path to transcend-functions.yml; defaults inside the target directory
-     [--setup]                      Optional repository setup preset                                      [none|recommended|all]
-     [--deno/--noDeno]              Create or merge target-scoped Deno configuration and check task
-     [--editor/--noEditor]          Merge target-scoped Deno editor settings and recommendations
-     [--skill/--noSkill]            Install the canonical Custom Function coding-agent skill
-     [--ci/--noCi]                  Generate secure GitHub Actions checks and gated deployment
-     [--secretDocs/--noSecretDocs]  Document secret names and ignore the local secret file
-     [--noInteractive]              Disable prompts and require every missing answer as a flag            [default = false]
-     [--dryRun]                     Preview all changes without writing files or running commands         [default = false]
-     [--yes]                        Skip only the final plan confirmation                                 [default = false]
-     [--json]                       Emit a stable JSON result and imply non-interactive output            [default = false]
-  -h  --help                        Print help information and exit
+     [--manifest]           Path to transcend-functions.yml; defaults inside the target directory
+     [--setup]              Optional repository setup preset                                      [none|recommended|all]
+     [--deno/--noDeno]      Create or merge target-scoped Deno configuration and check task
+     [--editor/--noEditor]  Merge target-scoped Deno editor settings and recommendations
+     [--skill/--noSkill]    Install the canonical Custom Function coding-agent skill
+     [--ci/--noCi]          Generate credential-free GitHub Actions checks
+     [--noInteractive]      Disable prompts and require every missing answer as a flag            [default = false]
+     [--dryRun]             Preview all changes without writing files or running commands         [default = false]
+     [--yes]                Skip only the final plan confirmation                                 [default = false]
+     [--json]               Emit a stable JSON result and imply non-interactive output            [default = false]
+  -h  --help                Print help information and exit
 
 ARGUMENTS
   [directory]  Custom Function project directory; defaults to transcend/custom-functions
@@ -2515,9 +2514,9 @@ ARGUMENTS
 transcend custom-functions init
 ```
 
-This creates the manifest, Deno configuration, functions, and fixtures under `transcend/custom-functions`, leaving room for files such as `transcend/transcend.yml`. Pass a directory explicitly to use another layout.
+This creates the manifest under `transcend/custom-functions`, leaving room for files such as `transcend/transcend.yml`. Selected setup options can add Deno configuration and repository integrations; use `transcend custom-functions new` to create functions and fixtures. Pass a directory explicitly to use another layout.
 
-The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration and offers the portable authoring skill when a project skill directory exists. One existing skill directory receives a managed file directly. With multiple existing directories, `.agents/skills` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
+The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration, offers the portable authoring skill when a project skill directory exists, and enables credential-free checks for GitHub repositories. One existing skill directory receives a managed file directly. With multiple existing directories, `.agents/skills` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
 
 #### Add support to an existing repository
 
@@ -2535,26 +2534,25 @@ Existing JSONC and YAML comments are retained. A collision or unsafe merge stops
 
 ```txt
 USAGE
-  transcend custom-functions new [--manifest value] [--setup none|recommended|all] [--deno] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [<directory>]
+  transcend custom-functions new [--manifest value] [--setup none|recommended|all] [--deno] [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [<directory>]
   transcend custom-functions new --help
 
 Creates a deterministic General or DSR starter, composes missing initialization into the same preview, and safely appends the manifest entry without credentials.
 
 FLAGS
-     [--manifest]                   Path to transcend-functions.yml; defaults inside the target directory
-     [--setup]                      Optional repository setup preset                                      [none|recommended|all]
-     [--deno/--noDeno]              Create or merge target-scoped Deno configuration and check task
-     [--editor/--noEditor]          Merge target-scoped Deno editor settings and recommendations
-     [--skill/--noSkill]            Install the canonical Custom Function coding-agent skill
-     [--ci/--noCi]                  Generate secure GitHub Actions checks and gated deployment
-     [--secretDocs/--noSecretDocs]  Document secret names and ignore the local secret file
-     [--noInteractive]              Disable prompts and require every missing answer as a flag            [default = false]
-     [--dryRun]                     Preview all changes without writing files or running commands         [default = false]
-     [--yes]                        Skip only the final plan confirmation                                 [default = false]
-     [--json]                       Emit a stable JSON result and imply non-interactive output            [default = false]
-     [--name]                       Customer-visible Custom Function display name
-     [--template]                   Generated handler and fixture shape                                   [general|dsr-datapoint|dsr-enricher|dsr-both]
-  -h  --help                        Print help information and exit
+     [--manifest]           Path to transcend-functions.yml; defaults inside the target directory
+     [--setup]              Optional repository setup preset                                      [none|recommended|all]
+     [--deno/--noDeno]      Create or merge target-scoped Deno configuration and check task
+     [--editor/--noEditor]  Merge target-scoped Deno editor settings and recommendations
+     [--skill/--noSkill]    Install the canonical Custom Function coding-agent skill
+     [--ci/--noCi]          Generate credential-free GitHub Actions checks
+     [--noInteractive]      Disable prompts and require every missing answer as a flag            [default = false]
+     [--dryRun]             Preview all changes without writing files or running commands         [default = false]
+     [--yes]                Skip only the final plan confirmation                                 [default = false]
+     [--json]               Emit a stable JSON result and imply non-interactive output            [default = false]
+     [--name]               Customer-visible Custom Function display name
+     [--template]           Generated handler and fixture shape                                   [general|dsr-datapoint|dsr-enricher|dsr-both]
+  -h  --help                Print help information and exit
 
 ARGUMENTS
   [directory]  Custom Function project directory; defaults to transcend/custom-functions
