@@ -131,6 +131,26 @@ describe('parseCustomFunctionsManifest', () => {
     ).toThrow();
   });
 
+  it('rejects DSR payload types on General functions', () => {
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: General With Typed Payload
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/a.json
+    test-payload-type: DATA_POINT
+`),
+    ).toThrow(/sets a DSR payload type but is not type DSR/);
+    expect(() =>
+      parseCustomFunctionsManifest(`functions:
+  - name: General With Typed Payload List
+    code: ./functions/a.ts
+    test-payloads:
+      - payload: ./test-payloads/a.json
+        payload-type: REQUEST_ENRICHER
+`),
+    ).toThrow(/sets a DSR payload type but is not type DSR/);
+  });
+
   it('rejects referenced paths outside the manifest directory', () => {
     expect(() =>
       parseCustomFunctionsManifest(`functions:
@@ -205,6 +225,7 @@ describe('readCustomFunctionsManifest', () => {
     const filePath = writeFixture(`functions:
   - name: With Test
     code: ./functions/a.ts
+    type: DSR
     test-payload: ./test-payloads/with-test.json
     test-payload-type: REQUEST_ENRICHER
   - name: Without Test

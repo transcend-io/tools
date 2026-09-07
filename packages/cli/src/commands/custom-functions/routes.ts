@@ -1,10 +1,16 @@
 import { buildRouteMap } from '@stricli/core';
 
+import { checkCommand } from './check/command.js';
+import { initCommand } from './init/command.js';
 import { listCommand } from './list/command.js';
+import { newCommand } from './new/command.js';
 import { pushCommand } from './push/command.js';
 
 export const customFunctionsRoutes = buildRouteMap({
   routes: {
+    init: initCommand,
+    new: newCommand,
+    check: checkCommand,
     push: pushCommand,
     list: listCommand,
   },

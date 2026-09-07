@@ -154,6 +154,17 @@ export function validateCustomFunctionsManifest(manifest: CustomFunctionsManifes
           'set payload-type per item in test-payloads instead.',
       );
     }
+    if (
+      entry.type !== CustomFunctionType.Dsr &&
+      (entry['test-payload-type'] !== undefined ||
+        entry['test-payloads']?.some(
+          ({ ['payload-type']: payloadType }) => payloadType !== undefined,
+        ))
+    ) {
+      throw new Error(
+        `Custom function "${entry.name}" sets a DSR payload type but is not type DSR.`,
+      );
+    }
 
     const referencedPaths = [
       { field: 'code', path: entry.code },
