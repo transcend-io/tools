@@ -6,16 +6,17 @@ transcend custom-functions init
 
 This creates the manifest under \`transcend/custom-functions\`, leaving room for files such as \`transcend/transcend.yml\`. Selected setup options can add Deno configuration and repository integrations; use \`transcend custom-functions new\` to create functions and fixtures. Pass a directory explicitly to use another layout.
 
-The interactive setup presents one checklist and one complete filesystem preview. The recommended selection adds strict, target-scoped Deno configuration, offers the portable authoring skill when a project skill directory exists, and enables credential-free checks for GitHub repositories. One existing skill directory receives a managed file directly. With multiple existing directories, \`.agents/skills\` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
+The interactive checklist selects Deno configuration, VS Code settings, the Agent Skill, and GitHub Actions by default, followed by one complete filesystem preview. One existing skill directory receives a managed file directly. With multiple existing directories, \`.agents/skills\` holds the canonical copy and only directories whose agents cannot read that portable location receive links. Home-directory agent configuration is ignored.
 
 #### Add support to an existing repository
 
 \`\`\`sh
 transcend custom-functions init ./packages/transcend-functions \\
-  --setup=none \\
   --deno \\
   --editor \\
-  --skill
+  --skill \\
+  --noInteractive \\
+  --yes
 \`\`\`
 
 Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Use \`--dryRun\` to review the same transactional plan without applying it.

@@ -7,20 +7,13 @@ import {
   collectPlanningSnapshots,
   discoverCustomFunctionProject,
 } from '../../../lib/custom-functions/project-discovery.js';
-import { applyCustomFunctionProjectPlan } from '../../../lib/custom-functions/project-plan-apply.js';
 import {
   CustomFunctionPrompts,
   PromptCancelledError,
   type PromptChoice,
 } from '../../../lib/custom-functions/prompts.js';
 import {
-  ALL_SETUP_FEATURES,
-  applySetupFeatureOverrides,
-  resolveSetupFeatures,
-} from '../../../lib/custom-functions/scaffold-config.js';
-import {
   CustomFunctionSetupFeature,
-  type CustomFunctionSetup,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
 } from '../../../lib/custom-functions/scaffold-model.js';
 import {
@@ -31,13 +24,12 @@ import {
   buildInitPlan,
   getInitPlanningCandidatePaths,
 } from '../../../lib/custom-functions/scaffold-planning.js';
+import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 
 /** Flags for `custom-functions init`. */
 export interface CustomFunctionInitFlags {
   /** Explicit manifest path. */
   manifest?: string;
-  /** Setup preset. */
-  setup?: CustomFunctionSetup;
   /** Install Deno configuration. */
   deno?: boolean;
   /** Install editor recommendations. */
@@ -58,11 +50,14 @@ export interface CustomFunctionInitFlags {
 
 /** User-facing setup labels. */
 const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
-  [CustomFunctionSetupFeature.Deno]: 'Deno imports, strict settings, and check task',
-  [CustomFunctionSetupFeature.Editor]: 'VS Code-compatible Deno recommendations',
-  [CustomFunctionSetupFeature.Skill]: 'Transcend Custom Function coding-agent skill',
-  [CustomFunctionSetupFeature.Ci]: 'Credential-free GitHub Actions checks',
+  [CustomFunctionSetupFeature.Deno]: 'Deno configuration',
+  [CustomFunctionSetupFeature.Editor]: 'VS Code settings',
+  [CustomFunctionSetupFeature.Skill]: 'Agent skill',
+  [CustomFunctionSetupFeature.Ci]: 'GitHub Actions',
 };
+
+/** All optional setup features in stable prompt order. */
+const ALL_SETUP_FEATURES = Object.values(CustomFunctionSetupFeature);
 
 /**
  * Whether this invocation can ask questions.
@@ -80,29 +75,12 @@ function isInteractiveInvocation(
 }
 
 /**
- * Resolve explicit per-feature flags.
- *
- * @param flags - CLI flags
- * @returns Explicit overrides only
- */
-function setupOverrides(
-  flags: CustomFunctionInitFlags,
-): Partial<Record<CustomFunctionSetupFeatureType, boolean>> {
-  return {
-    ...(flags.deno === undefined ? {} : { [CustomFunctionSetupFeature.Deno]: flags.deno }),
-    ...(flags.editor === undefined ? {} : { [CustomFunctionSetupFeature.Editor]: flags.editor }),
-    ...(flags.skill === undefined ? {} : { [CustomFunctionSetupFeature.Skill]: flags.skill }),
-    ...(flags.ci === undefined ? {} : { [CustomFunctionSetupFeature.Ci]: flags.ci }),
-  };
-}
-
-/**
- * Resolve setup from flags or one checkbox prompt.
+ * Resolve setup directly from individual flags or one checkbox prompt.
  *
  * @param context - CLI context
  * @param prompts - Prompt adapters
  * @param flags - Setup flags
- * @param options - Project state relevant to setup defaults
+ * @param options - Interaction state
  * @returns Selected setup features
  */
 async function resolveFeatures(
@@ -111,40 +89,25 @@ async function resolveFeatures(
   options: {
     /** Whether prompts are available. */
     interactive: boolean;
-    /** Whether a project-level skill directory exists. */
-    hasProjectSkillDirectory: boolean;
-    /** Whether GitHub Actions is applicable. */
-    usesGithub: boolean;
   },
 ): Promise<CustomFunctionSetupFeatureType[]> {
-  let features: CustomFunctionSetupFeatureType[];
-  if (flags.setup) {
-    features = resolveSetupFeatures(flags.setup, {
-      hasProjectSkillDirectory: options.interactive && options.hasProjectSkillDirectory,
-    });
-  } else {
-    if (!options.interactive) {
-      throw new Error(
-        'Missing setup choice in a non-interactive invocation. Pass --setup=none, --setup=recommended, or --setup=all.',
-      );
-    }
-    const recommended = new Set(
-      resolveSetupFeatures('recommended', {
-        hasProjectSkillDirectory: options.hasProjectSkillDirectory,
-      }),
-    );
-    const choices: PromptChoice<CustomFunctionSetupFeatureType>[] = ALL_SETUP_FEATURES.map(
-      (feature) => ({
-        name: SETUP_LABELS[feature],
-        value: feature,
-        checked:
-          recommended.has(feature) ||
-          (feature === CustomFunctionSetupFeature.Ci && options.usesGithub),
-      }),
-    );
-    features = await prompts.checkbox('Choose optional repository setup:', choices);
+  const enabled: Readonly<Record<CustomFunctionSetupFeatureType, boolean | undefined>> = {
+    [CustomFunctionSetupFeature.Deno]: flags.deno,
+    [CustomFunctionSetupFeature.Editor]: flags.editor,
+    [CustomFunctionSetupFeature.Skill]: flags.skill,
+    [CustomFunctionSetupFeature.Ci]: flags.ci,
+  };
+  if (!options.interactive) {
+    return ALL_SETUP_FEATURES.filter((feature) => enabled[feature] === true);
   }
-  return applySetupFeatureOverrides(features, setupOverrides(flags));
+  const choices: PromptChoice<CustomFunctionSetupFeatureType>[] = ALL_SETUP_FEATURES.map(
+    (feature) => ({
+      name: SETUP_LABELS[feature],
+      value: feature,
+      checked: enabled[feature] !== false,
+    }),
+  );
+  return prompts.checkbox('Choose repository setup:', choices);
 }
 
 /**
@@ -171,11 +134,7 @@ export async function init(
       this.process.stdin.isTTY,
       this.process.stderr.isTTY,
     );
-    const features = await resolveFeatures(prompts, flags, {
-      interactive,
-      hasProjectSkillDirectory: state.existingSkillDirectories.length > 0,
-      usesGithub: state.usesGithub,
-    });
+    const features = await resolveFeatures(prompts, flags, { interactive });
     const snapshots = collectPlanningSnapshots(
       this,
       getInitPlanningCandidatePaths(state, { features }),
@@ -207,7 +166,7 @@ export async function init(
     }
 
     if (approved && !flags.dryRun && plan.changes.length > 0) {
-      await applyCustomFunctionProjectPlan(this, plan);
+      await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
     const result = buildPlanResult(plan, {

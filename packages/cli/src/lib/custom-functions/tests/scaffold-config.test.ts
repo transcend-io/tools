@@ -2,95 +2,11 @@ import { parse } from 'jsonc-parser';
 import { describe, expect, it } from 'vitest';
 
 import {
-  AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES,
-  applySetupFeatureOverrides,
   mergeDenoConfiguration,
   mergeEditorExtensions,
   mergeEditorSettings,
   mergeJsonc,
-  PROJECT_SKILL_DIRECTORIES,
-  resolveSetupFeatures,
 } from '../scaffold-config.js';
-import { CustomFunctionSetupFeature } from '../scaffold-model.js';
-
-describe('project skill directory registry', () => {
-  it('matches the pinned vercel-labs/skills project paths', () => {
-    expect(PROJECT_SKILL_DIRECTORIES).toEqual([
-      '.aider-desk/skills',
-      '.agents/skills',
-      'data/skills',
-      '.autohand/skills',
-      '.augment/skills',
-      '.bob/skills',
-      '.claude/skills',
-      'skills',
-      '.codeartsdoer/skills',
-      '.codebuddy/skills',
-      '.codemaker/skills',
-      '.codestudio/skills',
-      '.commandcode/skills',
-      '.continue/skills',
-      '.cortex/skills',
-      '.crush/skills',
-      '.devin/skills',
-      '.factory/skills',
-      'agent/skills',
-      '.forge/skills',
-      '.goose/skills',
-      '.grok/skills',
-      '.hermes/skills',
-      '.inferencesh/skills',
-      '.jazz/skills',
-      '.junie/skills',
-      '.iflow/skills',
-      '.kilocode/skills',
-      '.kimchi/skills',
-      '.kiro/skills',
-      '.kode/skills',
-      '.lingma/skills',
-      '.mcpjam/skills',
-      '.minimax/skills',
-      '.vibe/skills',
-      '.moxby/skills',
-      '.mux/skills',
-      '.openhands/skills',
-      '.ona/skills',
-      '.pi/skills',
-      '.posit/assistant/skills',
-      '.qoder/skills',
-      '.qwen/skills',
-      '.reasonix/skills',
-      '.rovodev/skills',
-      '.roo/skills',
-      '.tabnine/agent/skills',
-      '.terramind/skills',
-      '.tinycloud/skills',
-      '.trae/skills',
-      '.windsurf/skills',
-      '.zcode/skills',
-      '.zencoder/skills',
-      '.neovate/skills',
-      '.pochi/skills',
-      '.adal/skills',
-    ]);
-    expect(AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES).toContain('.cursor/skills');
-  });
-});
-
-describe('setup feature resolution', () => {
-  it('applies explicit overrides in stable feature order', () => {
-    const recommended = resolveSetupFeatures('recommended', {
-      hasProjectSkillDirectory: true,
-    });
-
-    expect(
-      applySetupFeatureOverrides(recommended, {
-        [CustomFunctionSetupFeature.Deno]: false,
-        [CustomFunctionSetupFeature.Ci]: true,
-      }),
-    ).toEqual([CustomFunctionSetupFeature.Skill, CustomFunctionSetupFeature.Ci]);
-  });
-});
 
 describe('JSONC configuration merging', () => {
   it('preserves comments and is a no-op when rerun', () => {

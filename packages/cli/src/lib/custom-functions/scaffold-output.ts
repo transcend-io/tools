@@ -2,7 +2,8 @@ import { relative, sep } from 'node:path';
 
 import { createTwoFilesPatch } from 'diff';
 
-import type { CustomFunctionProjectPlan, PlannedChange } from './scaffold-model.js';
+import type { PlannedChange } from '../scaffolding/project-plan.js';
+import type { CustomFunctionProjectPlan } from './scaffold-model.js';
 
 /** Stable public description of one planned mutation. */
 export interface PublicPlannedChange {

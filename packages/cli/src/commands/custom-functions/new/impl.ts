@@ -6,7 +6,6 @@ import {
   discoverCustomFunctionManifests,
   discoverCustomFunctionProject,
 } from '../../../lib/custom-functions/project-discovery.js';
-import { applyCustomFunctionProjectPlan } from '../../../lib/custom-functions/project-plan-apply.js';
 import {
   CustomFunctionPrompts,
   PromptCancelledError,
@@ -24,6 +23,7 @@ import {
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   type CustomFunctionTemplateName,
 } from '../../../lib/custom-functions/scaffold-templates.js';
+import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 
 /** Flags for `custom-functions new`. */
 export interface CustomFunctionNewFlags {
@@ -147,7 +147,7 @@ export async function _new(
     }
 
     if (approved && !flags.dryRun && plan.changes.length > 0) {
-      await applyCustomFunctionProjectPlan(this, plan);
+      await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
     const result = buildPlanResult(plan, {

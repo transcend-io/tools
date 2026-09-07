@@ -55,10 +55,11 @@ export const newCommand = buildCommand({
       kind: 'tuple',
       parameters: [
         {
-          brief: 'Custom Function project directory; defaults to transcend/custom-functions',
+          brief: 'Custom Function project directory',
           placeholder: 'directory',
           parse: String,
           optional: true,
+          default: 'transcend/custom-functions',
         },
       ],
     },

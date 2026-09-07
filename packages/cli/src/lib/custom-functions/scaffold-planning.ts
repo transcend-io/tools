@@ -1,5 +1,15 @@
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
+import {
+  buildManagedAgentSkill,
+  isUnmodifiedManagedAgentSkill,
+  resolveAgentSkillDirectories,
+} from '../scaffolding/agent-skill.js';
+import {
+  planFileChange,
+  type PlannedLinkChange,
+  type ProjectFileSnapshot,
+} from '../scaffolding/project-plan.js';
 import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
 import { generateGithubActionsWorkflow } from './scaffold-artifacts.js';
 import {
@@ -10,13 +20,9 @@ import {
 import {
   CUSTOM_FUNCTION_RESULT_VERSION,
   CustomFunctionSetupFeature,
-  hashContents,
-  planFileChange,
   type CustomFunctionProjectPlan,
   type CustomFunctionProjectState,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
-  type PlannedLinkChange,
-  type ProjectFileSnapshot,
 } from './scaffold-model.js';
 import {
   CUSTOM_FUNCTION_SKILL_NAME,
@@ -24,9 +30,6 @@ import {
   generateCustomFunctionTemplate,
   type GeneratedCustomFunctionTemplate,
 } from './scaffold-templates.js';
-
-/** Marker prefix used to identify canonical skill files owned by this CLI. */
-const MANAGED_SKILL_MARKER_PREFIX = '<!-- managed-by: @transcend-io/cli; content-sha256: ';
 
 /** Empty manifest used for first initialization. */
 export const EMPTY_CUSTOM_FUNCTION_MANIFEST = `# Custom Functions managed as code.
@@ -99,35 +102,6 @@ function setupRoot(state: CustomFunctionProjectState): string {
 }
 
 /**
- * Select the canonical skill directory and any existing alias directories.
- *
- * @param state - Discovery state
- * @returns Canonical and alias skill directories
- */
-function skillDirectories(state: CustomFunctionProjectState): {
-  /** Directory containing the managed skill file. */
-  canonical: string;
-  /** Existing directories that should link to the canonical skill. */
-  aliases: string[];
-} {
-  const universal = '.agents/skills';
-  if (state.existingSkillDirectories.length === 1) {
-    return { canonical: state.existingSkillDirectories[0]!.path, aliases: [] };
-  }
-  return {
-    canonical: universal,
-    aliases:
-      state.existingSkillDirectories.length > 1
-        ? state.existingSkillDirectories
-            .filter(({ path, supportsAgentsSkills }) => {
-              return path !== universal && !supportsAgentsSkills;
-            })
-            .map(({ path }) => path)
-        : [],
-  };
-}
-
-/**
  * Enumerate all paths that could be included in a plan.
  *
  * @param state - Discovery state
@@ -152,7 +126,7 @@ export function getInitPlanningCandidatePaths(
     paths.add(join(root, '.vscode', 'extensions.json'));
   }
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
-    const directories = skillDirectories(state);
+    const directories = resolveAgentSkillDirectories(state.existingSkillDirectories);
     paths.add(join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md'));
     directories.aliases.forEach((directory) => {
       paths.add(join(root, directory, CUSTOM_FUNCTION_SKILL_NAME));
@@ -292,32 +266,6 @@ function addFileChange(
 }
 
 /**
- * Ensure a generated skill contains its management marker.
- *
- * @returns Managed skill contents
- */
-function managedSkillContents(): string {
-  const body = CUSTOM_FUNCTION_SKILL_MD.trimEnd();
-  return `${body}\n\n${MANAGED_SKILL_MARKER_PREFIX}${hashContents(body)} -->\n`;
-}
-
-/**
- * Verify that a previously managed skill still matches its recorded digest.
- *
- * @param contents - Existing skill contents
- * @returns Whether an automatic managed update is safe
- */
-function isUnmodifiedManagedSkill(contents: string): boolean {
-  const marker = contents.match(
-    /<!-- managed-by: @transcend-io\/cli; content-sha256: ([a-f0-9]{64}) -->\s*$/u,
-  );
-  if (!marker || marker.index === undefined) {
-    return false;
-  }
-  return hashContents(contents.slice(0, marker.index).trimEnd()) === marker[1];
-}
-
-/**
  * Plan one direct skill installation and links into other existing directories.
  *
  * @param plan - Plan being assembled
@@ -325,15 +273,15 @@ function isUnmodifiedManagedSkill(contents: string): boolean {
  */
 function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlanningInput): void {
   const root = setupRoot(input.state);
-  const directories = skillDirectories(input.state);
+  const directories = resolveAgentSkillDirectories(input.state.existingSkillDirectories);
   const canonicalDirectory = join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME);
   const canonicalPath = join(canonicalDirectory, 'SKILL.md');
-  const skillContents = managedSkillContents();
+  const skillContents = buildManagedAgentSkill(CUSTOM_FUNCTION_SKILL_MD, '@transcend-io/cli');
   const canonicalSnapshot = fileSnapshotAt(input, canonicalPath);
   if (
     canonicalSnapshot.contents !== null &&
     canonicalSnapshot.contents !== skillContents &&
-    !isUnmodifiedManagedSkill(canonicalSnapshot.contents)
+    !isUnmodifiedManagedAgentSkill(canonicalSnapshot.contents, '@transcend-io/cli')
   ) {
     throw new Error(
       `Refusing to replace user-managed skill: ${canonicalPath}. Apply the skill update manually.`,

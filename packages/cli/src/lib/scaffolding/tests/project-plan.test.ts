@@ -1,14 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { hashContents, planFileChange } from '../scaffold-model.js';
-
-describe('hashContents', () => {
-  it('returns a deterministic SHA-256 digest', () => {
-    expect(hashContents('custom function')).toBe(hashContents('custom function'));
-    expect(hashContents('custom function')).toMatch(/^[a-f0-9]{64}$/u);
-    expect(hashContents('custom function')).not.toBe(hashContents('different'));
-  });
-});
+import { planFileChange } from '../project-plan.js';
 
 describe('planFileChange', () => {
   it('returns no change for identical managed contents without mutating the snapshot', () => {

@@ -13,8 +13,8 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildContextForTest } from '../../tests/helpers/buildContextForTest.js';
-import { applyCustomFunctionProjectPlan } from '../project-plan-apply.js';
-import type { CustomFunctionProjectPlan, PlannedChange } from '../scaffold-model.js';
+import { applyProjectPlan } from '../project-plan-apply.js';
+import type { PlannedChange, ProjectPlan } from '../project-plan.js';
 
 const temporaryRoots: string[] = [];
 
@@ -32,21 +32,11 @@ function makeTemporaryRoot(): string {
 /**
  * Wrap staged changes in a complete project plan.
  *
- * @param root - Project root
  * @param changes - Staged mutations
  * @returns Complete project plan
  */
-function buildPlan(root: string, changes: PlannedChange[]): CustomFunctionProjectPlan {
-  return {
-    version: 1,
-    command: 'init',
-    targetDirectory: root,
-    manifestPath: join(root, 'transcend-functions.yml'),
-    changes,
-    unchanged: [],
-    warnings: [],
-    nextSteps: [],
-  };
+function buildPlan(changes: PlannedChange[]): ProjectPlan {
+  return { changes };
 }
 
 afterEach(() => {
@@ -55,13 +45,13 @@ afterEach(() => {
   });
 });
 
-describe('applyCustomFunctionProjectPlan preflight', () => {
+describe('applyProjectPlan preflight', () => {
   it('rejects changed-since-preview input before writing any plan entry', async () => {
     const root = makeTemporaryRoot();
     const appeared = join(root, 'created.ts');
     const changed = join(root, 'deno.json');
     writeFileSync(changed, '{"strict": false}\n');
-    const plan = buildPlan(root, [
+    const plan = buildPlan([
       {
         kind: 'file',
         path: appeared,
@@ -79,15 +69,15 @@ describe('applyCustomFunctionProjectPlan preflight', () => {
     ]);
     writeFileSync(changed, '{"strict": "changed after preview"}\n');
 
-    await expect(
-      applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root }), plan),
-    ).rejects.toThrow(`File changed after preview: ${changed}`);
+    await expect(applyProjectPlan(buildContextForTest({ cwd: root }), plan)).rejects.toThrow(
+      `File changed after preview: ${changed}`,
+    );
     expect(existsSync(appeared)).toBe(false);
     expect(readFileSync(changed, 'utf8')).toBe('{"strict": "changed after preview"}\n');
   });
 });
 
-describe('applyCustomFunctionProjectPlan rollback', () => {
+describe('applyProjectPlan rollback', () => {
   it('restores earlier files after a later atomic write fails', async () => {
     const root = makeTemporaryRoot();
     const first = join(root, 'first.json');
@@ -109,7 +99,7 @@ describe('applyCustomFunctionProjectPlan rollback', () => {
         return Reflect.get(target, property, receiver);
       },
     });
-    const plan = buildPlan(root, [
+    const plan = buildPlan([
       {
         kind: 'file',
         path: first,
@@ -127,14 +117,14 @@ describe('applyCustomFunctionProjectPlan rollback', () => {
     ]);
 
     await expect(
-      applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root, fs: failingFs }), plan),
+      applyProjectPlan(buildContextForTest({ cwd: root, fs: failingFs }), plan),
     ).rejects.toThrow('simulated atomic rename failure');
     expect(readFileSync(first, 'utf8')).toBe('first before\n');
     expect(readFileSync(second, 'utf8')).toBe('second before\n');
   });
 });
 
-describe('applyCustomFunctionProjectPlan skill links', () => {
+describe('applyProjectPlan skill links', () => {
   it('copies the canonical skill when directory links are unavailable', async () => {
     const root = makeTemporaryRoot();
     const linkPath = join(root, '.claude', 'skills', 'transcend-io-custom-functions');
@@ -149,7 +139,7 @@ describe('applyCustomFunctionProjectPlan skill links', () => {
         return Reflect.get(target, property, receiver);
       },
     });
-    const plan = buildPlan(root, [
+    const plan = buildPlan([
       {
         kind: 'link',
         path: linkPath,
@@ -159,7 +149,7 @@ describe('applyCustomFunctionProjectPlan skill links', () => {
       },
     ]);
 
-    await applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root, fs: linklessFs }), plan);
+    await applyProjectPlan(buildContextForTest({ cwd: root, fs: linklessFs }), plan);
 
     expect(readFileSync(join(linkPath, 'SKILL.md'), 'utf8')).toBe('# Transcend Custom Functions\n');
   });

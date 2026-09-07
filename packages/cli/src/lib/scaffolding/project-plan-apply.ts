@@ -1,11 +1,7 @@
 import { basename, dirname, join } from 'node:path';
 
 import type { LocalContext } from '../../context.js';
-import type {
-  CustomFunctionProjectPlan,
-  PlannedFileChange,
-  PlannedLinkChange,
-} from './scaffold-model.js';
+import type { PlannedFileChange, PlannedLinkChange, ProjectPlan } from './project-plan.js';
 
 /** Original state retained for rollback. */
 type RollbackSnapshot =
@@ -156,10 +152,7 @@ function applyLink(context: LocalContext, change: PlannedLinkChange): void {
  * @param context - CLI context
  * @param plan - Approved plan
  */
-export async function applyCustomFunctionProjectPlan(
-  context: LocalContext,
-  plan: CustomFunctionProjectPlan,
-): Promise<void> {
+export async function applyProjectPlan(context: LocalContext, plan: ProjectPlan): Promise<void> {
   for (const change of plan.changes) {
     if (change.kind === 'file') {
       preflightFile(context, change);

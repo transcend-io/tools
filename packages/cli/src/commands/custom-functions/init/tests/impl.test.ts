@@ -28,7 +28,6 @@ function makeTemporaryRoot(): string {
  */
 function buildFlags(overrides: Partial<CustomFunctionInitFlags> = {}): CustomFunctionInitFlags {
   return {
-    setup: 'none',
     noInteractive: true,
     dryRun: false,
     yes: true,
@@ -91,6 +90,23 @@ describe('custom-functions init', () => {
       ],
     });
     expect(context.stderr).toBe('');
+  });
+
+  it('applies only explicitly enabled setup flags without prompts', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { HOME: root },
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags({ deno: true }), target);
+
+    expect(existsSync(join(target, 'deno.json'))).toBe(true);
+    expect(existsSync(join(target, '.vscode'))).toBe(false);
+    expect(existsSync(join(target, '.agents', 'skills'))).toBe(false);
+    expect(existsSync(join(target, '.github', 'workflows'))).toBe(false);
   });
 
   it('applies initialization once and reports a no-op on rerun', async () => {

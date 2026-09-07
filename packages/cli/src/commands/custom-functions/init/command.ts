@@ -1,19 +1,11 @@
 import { buildCommand } from '@stricli/core';
 
-import { CustomFunctionSetup } from '../../../lib/custom-functions/scaffold-model.js';
-
 /** Flags accepted when initializing Custom Function authoring. */
 const customFunctionInitFlagParameters = {
   manifest: {
     kind: 'parsed',
     parse: String,
     brief: 'Path to transcend-functions.yml; defaults inside the target directory',
-    optional: true,
-  },
-  setup: {
-    kind: 'enum',
-    values: Object.values(CustomFunctionSetup),
-    brief: 'Optional repository setup preset',
     optional: true,
   },
   deno: {
@@ -69,10 +61,11 @@ export const initCommand = buildCommand({
       kind: 'tuple',
       parameters: [
         {
-          brief: 'Custom Function project directory; defaults to transcend/custom-functions',
+          brief: 'Custom Function project directory',
           placeholder: 'directory',
           parse: String,
           optional: true,
+          default: 'transcend/custom-functions',
         },
       ],
     },
