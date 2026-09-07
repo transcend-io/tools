@@ -55,6 +55,10 @@ const schema = getCustomFunctionPayloadSchema(CustomFunctionSchemaType.DsrDataPo
 The generated draft-07 JSON Schemas are also available from the package's
 `./schemas/*` exports.
 
+DSR test payload contracts describe raw test files before `push` prepares the
+runtime payload. Both DSR schemas therefore allow `extras.dataSilo` to be
+omitted when `push` will inject the resolved integration.
+
 ## Compatibility and versioning
 
 The package follows semantic versioning:
