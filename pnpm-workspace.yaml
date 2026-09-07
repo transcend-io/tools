@@ -33,7 +33,6 @@ catalog:
   lru-cache: ^11.5.1
   oxfmt: ^0.54.0
   oxlint: ^1.53.0
-  package-manager-detector: ^1.8.0
   publint: ^0.3.18
   react: ^19.2.8
   react-dom: ^19.2.8

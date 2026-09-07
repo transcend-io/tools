@@ -120,7 +120,6 @@
     "monocle-ts": "^2.3.13",
     "ms": "3.0.0-canary.202508261828",
     "newtype-ts": "^0.3.5",
-    "package-manager-detector": "catalog:",
     "query-string": "=7.0.0",
     "semver": "catalog:",
     "undici": "6.28.0",

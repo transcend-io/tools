@@ -136,8 +136,8 @@ describe('applyCustomFunctionProjectPlan rollback', () => {
   it('restores command-owned files and prior writes after a command fails', async () => {
     const root = makeTemporaryRoot();
     const created = join(root, 'deno.json');
-    const packageJson = join(root, 'package.json');
-    writeFileSync(packageJson, '{"devDependencies": {}}\n');
+    const source = join(root, 'source.ts');
+    writeFileSync(source, 'export default 1;\n');
     const plan = buildPlan(root, [
       {
         kind: 'file',
@@ -148,31 +148,28 @@ describe('applyCustomFunctionProjectPlan rollback', () => {
       },
       {
         kind: 'command',
-        command: 'pnpm',
-        args: ['add', '--save-dev', '@transcend-io/custom-function-types@1.2.3'],
+        command: 'deno',
+        args: ['fmt', 'source.ts'],
         cwd: root,
-        description: 'install authoring types',
+        description: 'format generated sources',
         rollbackFiles: [
           {
-            path: packageJson,
-            before: '{"devDependencies": {}}\n',
+            path: source,
+            before: 'export default 1;\n',
           },
         ],
       },
     ]);
     const runCommand: PlannedCommandRunner = () => {
-      writeFileSync(
-        packageJson,
-        '{"devDependencies":{"@transcend-io/custom-function-types":"1.2.3"}}\n',
-      );
+      writeFileSync(source, 'export default 1\n');
       return Promise.resolve({ code: 17 });
     };
 
     await expect(
       applyCustomFunctionProjectPlan(buildContextForTest({ cwd: root }), plan, runCommand),
-    ).rejects.toThrow('pnpm exited with code 17 while install authoring types');
+    ).rejects.toThrow('deno exited with code 17 while format generated sources');
     expect(existsSync(created)).toBe(false);
-    expect(readFileSync(packageJson, 'utf8')).toBe('{"devDependencies": {}}\n');
+    expect(readFileSync(source, 'utf8')).toBe('export default 1;\n');
   });
 });
 

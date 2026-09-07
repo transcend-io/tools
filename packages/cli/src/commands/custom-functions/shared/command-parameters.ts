@@ -24,11 +24,6 @@ export const customFunctionScaffoldFlagParameters = {
     brief: 'Add target-scoped Deno check, lint, and format tasks',
     optional: true,
   },
-  packageManager: {
-    kind: 'boolean',
-    brief: 'Install the exact authoring type package with the detected package manager',
-    optional: true,
-  },
   editor: {
     kind: 'boolean',
     brief: 'Merge target-scoped Deno editor settings and recommendations',

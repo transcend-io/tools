@@ -1,7 +1,5 @@
 import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
-import { resolveCommand } from 'package-manager-detector/commands';
-
 import type { LocalContext } from '../../../context.js';
 import {
   insertCustomFunctionManifestEntry,
@@ -102,28 +100,6 @@ function setupRoot(state: CustomFunctionProjectState): string {
 }
 
 /**
- * Candidate lockfiles for command rollback.
- *
- * @param state - Discovery state
- * @returns Absolute paths
- */
-function packageManagerLockfiles(state: CustomFunctionProjectState): string[] {
-  const root = setupRoot(state);
-  switch (state.packageManager?.name) {
-    case 'npm':
-      return [join(root, 'package-lock.json'), join(root, 'npm-shrinkwrap.json')];
-    case 'pnpm':
-      return [join(root, 'pnpm-lock.yaml')];
-    case 'yarn':
-      return [join(root, 'yarn.lock')];
-    case 'bun':
-      return [join(root, 'bun.lock'), join(root, 'bun.lockb')];
-    default:
-      return [];
-  }
-}
-
-/**
  * Select the canonical skill directory and any existing alias directories.
  *
  * @param state - Discovery state
@@ -194,10 +170,6 @@ export function getPlanningCandidatePaths(
   if (selected.has(CustomFunctionSetupFeature.SecretDocs)) {
     paths.add(join(state.manifestDirectory, '.env.custom-functions.example'));
     paths.add(join(state.manifestDirectory, '.gitignore'));
-  }
-  if (selected.has(CustomFunctionSetupFeature.PackageManager) && state.packageJsonPath) {
-    paths.add(state.packageJsonPath);
-    packageManagerLockfiles(state).forEach((path) => paths.add(path));
   }
   if (options.generated) {
     paths.add(join(state.manifestDirectory, options.generated.sourceFile.path));
@@ -437,81 +409,6 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
 }
 
 /**
- * Read parsed package metadata.
- *
- * @param input - Planning input
- * @returns Package metadata
- */
-function readPackageJson(input: CustomFunctionPlanningInput): Record<string, unknown> | undefined {
-  if (!input.state.packageJsonPath) {
-    return undefined;
-  }
-  const snapshot = fileSnapshotAt(input, input.state.packageJsonPath);
-  if (snapshot.contents === null) {
-    return undefined;
-  }
-  try {
-    return JSON.parse(snapshot.contents) as Record<string, unknown>;
-  } catch (error) {
-    throw new Error(`Cannot read ${input.state.packageJsonPath}: ${(error as Error).message}`);
-  }
-}
-
-/**
- * Plan a package-manager command using only repository evidence.
- *
- * @param plan - Plan being assembled
- * @param input - Planning input
- */
-function planPackageManager(
-  plan: CustomFunctionProjectPlan,
-  input: CustomFunctionPlanningInput,
-): void {
-  const packageJson = readPackageJson(input);
-  const packageJsonPath = input.state.packageJsonPath;
-  const packageManager = input.state.packageManager;
-  if (!packageJson || !packageJsonPath || !packageManager) {
-    plan.warnings.push(
-      'No repository package manager was detected; install the exact custom-function-types version manually.',
-    );
-    return;
-  }
-  const dependencyName = '@transcend-io/custom-function-types';
-  const dependencies = {
-    ...((packageJson.dependencies as Record<string, unknown> | undefined) ?? {}),
-    ...((packageJson.devDependencies as Record<string, unknown> | undefined) ?? {}),
-  };
-  if (dependencies[dependencyName] === input.contractVersion) {
-    plan.unchanged.push(packageJsonPath);
-    return;
-  }
-  const resolved = resolveCommand(packageManager.agent, 'add', [
-    ...(input.state.pnpmWorkspaceRoot ? ['--workspace-root'] : []),
-    '--save-dev',
-    `${dependencyName}@${input.contractVersion}`,
-  ]);
-  if (!resolved) {
-    plan.warnings.push(
-      `Detected ${packageManager.agent}, but could not resolve its add command. Install ${dependencyName}@${input.contractVersion} manually.`,
-    );
-    return;
-  }
-  const rollbackPaths = [packageJsonPath, ...packageManagerLockfiles(input.state)];
-  const change: PlannedCommandChange = {
-    kind: 'command',
-    command: resolved.command,
-    args: resolved.args,
-    cwd: setupRoot(input.state),
-    description: `install ${dependencyName}@${input.contractVersion}`,
-    rollbackFiles: rollbackPaths.map((path) => {
-      const snapshot = fileSnapshotAt(input, path);
-      return { path, before: snapshot.contents };
-    }),
-  };
-  plan.changes.push(change);
-}
-
-/**
  * Create the base plan and optional repository setup.
  *
  * @param input - Collected project state
@@ -585,9 +482,6 @@ export function buildInitPlan(
 
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
     planSkill(plan, input);
-  }
-  if (selected.has(CustomFunctionSetupFeature.PackageManager)) {
-    planPackageManager(plan, input);
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     if (!state.repositoryRoot || !state.usesGithub) {

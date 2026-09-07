@@ -1,7 +1,5 @@
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
-import { detect, type DetectResult } from 'package-manager-detector';
-
 import type { LocalContext } from '../../../context.js';
 import {
   AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES,
@@ -32,12 +30,6 @@ export interface CustomFunctionProjectState {
   repositoryRoot?: string;
   /** Existing Deno configuration path, or desired deno.json path. */
   denoConfigPath: string;
-  /** Existing package manifest path, when found. */
-  packageJsonPath?: string;
-  /** Detected package manager. */
-  packageManager?: DetectResult;
-  /** Whether pnpm requires an explicit workspace-root install. */
-  pnpmWorkspaceRoot: boolean;
   /** Existing project-level skill directories; home state is deliberately ignored. */
   existingSkillDirectories: ExistingProjectSkillDirectory[];
   /** Whether the repository appears to use GitHub. */
@@ -254,7 +246,7 @@ function repositoryUsesGithub(context: LocalContext, repositoryRoot: string | un
  * @param options - User-selected target paths
  * @returns Project state
  */
-export async function discoverCustomFunctionProject(
+export function discoverCustomFunctionProject(
   context: LocalContext,
   options: {
     /** Optional positional directory. */
@@ -262,7 +254,7 @@ export async function discoverCustomFunctionProject(
     /** Optional explicit manifest path. */
     manifest?: string;
   },
-): Promise<CustomFunctionProjectState> {
+): CustomFunctionProjectState {
   const cwd = context.process.cwd();
   const manifestPath = options.manifest
     ? resolveCliPath(cwd, options.manifest)
@@ -281,21 +273,6 @@ export async function discoverCustomFunctionProject(
   const denoJsonc = join(manifestDirectory, 'deno.jsonc');
   const denoJson = join(manifestDirectory, 'deno.json');
   const denoConfigPath = context.fs.existsSync(denoJsonc) ? denoJsonc : denoJson;
-  const packageRoot = repositoryRoot ?? existingAncestor;
-  const packageJsonCandidate = join(packageRoot, 'package.json');
-  const packageJsonPath = context.fs.existsSync(packageJsonCandidate)
-    ? packageJsonCandidate
-    : undefined;
-  const packageManager = packageJsonPath
-    ? ((await detect({
-        cwd: manifestDirectory,
-        stopDir: packageRoot,
-        strategies: ['lockfile', 'packageManager-field', 'devEngines-field'],
-      })) ?? undefined)
-    : undefined;
-  const pnpmWorkspaceRoot =
-    packageManager?.name === 'pnpm' &&
-    context.fs.existsSync(join(packageRoot, 'pnpm-workspace.yaml'));
   const agentRoot = repositoryRoot ?? targetDirectory;
 
   return {
@@ -304,9 +281,6 @@ export async function discoverCustomFunctionProject(
     manifestPath,
     ...(repositoryRoot ? { repositoryRoot } : {}),
     denoConfigPath,
-    ...(packageJsonPath ? { packageJsonPath } : {}),
-    ...(packageManager ? { packageManager } : {}),
-    pnpmWorkspaceRoot,
     existingSkillDirectories: detectExistingSkillDirectories(context, agentRoot),
     usesGithub: repositoryUsesGithub(context, repositoryRoot),
     relativePaths: collectRelativePaths(context, manifestDirectory),

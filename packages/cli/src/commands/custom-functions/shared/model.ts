@@ -38,8 +38,6 @@ export const CustomFunctionSetupFeature = {
   Deno: 'deno',
   /** Target-scoped Deno tasks. */
   Tasks: 'tasks',
-  /** Existing package-manager development dependency. */
-  PackageManager: 'package-manager',
   /** Target-scoped editor configuration. */
   Editor: 'editor',
   /** Coding-agent authoring skill. */
@@ -104,7 +102,7 @@ export interface CommandRollbackFile {
   before: string | null;
 }
 
-/** A package-manager or other explicit planned subprocess. */
+/** An explicit planned subprocess. */
 export interface PlannedCommandChange {
   /** Discriminator. */
   kind: 'command';

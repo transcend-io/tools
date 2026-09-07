@@ -32,8 +32,6 @@ export interface CustomFunctionScaffoldFlags {
   deno?: boolean;
   /** Install target-scoped Deno tasks. */
   tasks?: boolean;
-  /** Install with the detected repository package manager. */
-  packageManager?: boolean;
   /** Install editor recommendations. */
   editor?: boolean;
   /** Install the coding-agent skill. */
@@ -90,9 +88,6 @@ function setupOverrides(
   return {
     ...(flags.deno === undefined ? {} : { [CustomFunctionSetupFeature.Deno]: flags.deno }),
     ...(flags.tasks === undefined ? {} : { [CustomFunctionSetupFeature.Tasks]: flags.tasks }),
-    ...(flags.packageManager === undefined
-      ? {}
-      : { [CustomFunctionSetupFeature.PackageManager]: flags.packageManager }),
     ...(flags.editor === undefined ? {} : { [CustomFunctionSetupFeature.Editor]: flags.editor }),
     ...(flags.skill === undefined ? {} : { [CustomFunctionSetupFeature.Skill]: flags.skill }),
     ...(flags.ci === undefined ? {} : { [CustomFunctionSetupFeature.Ci]: flags.ci }),
@@ -106,7 +101,6 @@ function setupOverrides(
 const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
   [CustomFunctionSetupFeature.Deno]: 'Deno imports and strict compiler options',
   [CustomFunctionSetupFeature.Tasks]: 'Target-scoped check/lint/format tasks',
-  [CustomFunctionSetupFeature.PackageManager]: 'Exact local authoring type dependency',
   [CustomFunctionSetupFeature.Editor]: 'VS Code-compatible Deno recommendations',
   [CustomFunctionSetupFeature.Skill]: 'Transcend Custom Function coding-agent skill',
   [CustomFunctionSetupFeature.Ci]: 'Secure GitHub Actions checks and gated deployment',
@@ -133,8 +127,6 @@ async function resolveFeatures(
     hasProjectSkillDirectory: boolean;
     /** Whether GitHub Actions is applicable. */
     usesGithub: boolean;
-    /** Whether a package manager is available. */
-    hasPackageManager: boolean;
   },
 ): Promise<CustomFunctionSetupFeatureType[]> {
   const interactive = isInteractiveInvocation(context, flags);
@@ -159,9 +151,8 @@ async function resolveFeatures(
         name: SETUP_LABELS[feature],
         value: feature,
         checked:
-          recommended.has(feature) &&
-          (feature !== CustomFunctionSetupFeature.Ci || options.usesGithub) &&
-          (feature !== CustomFunctionSetupFeature.PackageManager || options.hasPackageManager),
+          (recommended.has(feature) && feature !== CustomFunctionSetupFeature.Ci) ||
+          options.usesGithub,
       }),
     );
     features = await prompts.checkbox('Choose optional repository setup:', choices);
@@ -258,7 +249,6 @@ export async function runCustomFunctionInit(
     requireAnswer: true,
     hasProjectSkillDirectory: state.existingSkillDirectories.length > 0,
     usesGithub: state.usesGithub,
-    hasPackageManager: Boolean(state.packageManager),
   });
   const snapshots = collectPlanningSnapshots(
     context,
@@ -324,7 +314,6 @@ export async function runCustomFunctionNew(
     requireAnswer: !manifestExists,
     hasProjectSkillDirectory: state.existingSkillDirectories.length > 0,
     usesGithub: state.usesGithub,
-    hasPackageManager: Boolean(state.packageManager),
   });
   const snapshots = collectPlanningSnapshots(
     context,
