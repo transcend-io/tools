@@ -37,81 +37,84 @@ interface JsoncUpdate {
   value: unknown;
 }
 
-/** Coding-agent project skill target. */
-export interface AgentSkillTarget {
-  /** Stable CLI identifier. */
-  id: string;
-  /** Human-readable agent name. */
-  displayName: string;
-  /** Project-local skills directory. */
-  skillsDirectory: string;
-  /** Project markers used for detection. */
-  projectMarkers: string[];
-  /** Home-directory markers used for detection. */
-  homeMarkers: string[];
-}
+/**
+ * Project skill directories from vercel-labs/skills at
+ * 1682051d48c34f5eb135e6475c1a965dce05e820.
+ */
+export const PROJECT_SKILL_DIRECTORIES = [
+  '.aider-desk/skills',
+  '.agents/skills',
+  'data/skills',
+  '.autohand/skills',
+  '.augment/skills',
+  '.bob/skills',
+  '.claude/skills',
+  'skills',
+  '.codeartsdoer/skills',
+  '.codebuddy/skills',
+  '.codemaker/skills',
+  '.codestudio/skills',
+  '.commandcode/skills',
+  '.continue/skills',
+  '.cortex/skills',
+  '.crush/skills',
+  '.devin/skills',
+  '.factory/skills',
+  'agent/skills',
+  '.forge/skills',
+  '.goose/skills',
+  '.grok/skills',
+  '.hermes/skills',
+  '.inferencesh/skills',
+  '.jazz/skills',
+  '.junie/skills',
+  '.iflow/skills',
+  '.kilocode/skills',
+  '.kimchi/skills',
+  '.kiro/skills',
+  '.kode/skills',
+  '.lingma/skills',
+  '.mcpjam/skills',
+  '.minimax/skills',
+  '.vibe/skills',
+  '.moxby/skills',
+  '.mux/skills',
+  '.openhands/skills',
+  '.ona/skills',
+  '.pi/skills',
+  '.posit/assistant/skills',
+  '.qoder/skills',
+  '.qwen/skills',
+  '.reasonix/skills',
+  '.rovodev/skills',
+  '.roo/skills',
+  '.tabnine/agent/skills',
+  '.terramind/skills',
+  '.tinycloud/skills',
+  '.trae/skills',
+  '.windsurf/skills',
+  '.zcode/skills',
+  '.zencoder/skills',
+  '.neovate/skills',
+  '.pochi/skills',
+  '.adal/skills',
+] as const;
 
 /**
- * Project skill locations derived from the MIT-licensed vercel-labs/skills
- * registry. Universal agents intentionally collapse into one target.
+ * Existing legacy/native project directories for agents that the pinned
+ * registry installs through `.agents/skills`.
  */
-export const AGENT_SKILL_TARGETS: readonly AgentSkillTarget[] = [
-  {
-    id: 'universal',
-    displayName: 'Universal agents (Cursor, Codex, Copilot, Gemini, OpenCode, and others)',
-    skillsDirectory: '.agents/skills',
-    projectMarkers: ['.agents', '.cursor', '.github', '.gemini', '.opencode'],
-    homeMarkers: ['.cursor', '.codex', '.copilot', '.gemini', '.config/opencode'],
-  },
-  {
-    id: 'claude-code',
-    displayName: 'Claude Code',
-    skillsDirectory: '.claude/skills',
-    projectMarkers: ['.claude'],
-    homeMarkers: ['.claude'],
-  },
-  {
-    id: 'windsurf',
-    displayName: 'Windsurf',
-    skillsDirectory: '.windsurf/skills',
-    projectMarkers: ['.windsurf'],
-    homeMarkers: ['.codeium/windsurf'],
-  },
-  {
-    id: 'cline',
-    displayName: 'Cline',
-    skillsDirectory: '.agents/skills',
-    projectMarkers: ['.cline'],
-    homeMarkers: ['.cline'],
-  },
-  {
-    id: 'continue',
-    displayName: 'Continue',
-    skillsDirectory: '.continue/skills',
-    projectMarkers: ['.continue'],
-    homeMarkers: ['.continue'],
-  },
-  {
-    id: 'roo',
-    displayName: 'Roo Code',
-    skillsDirectory: '.roo/skills',
-    projectMarkers: ['.roo'],
-    homeMarkers: ['.roo'],
-  },
-  {
-    id: 'droid',
-    displayName: 'Factory Droid',
-    skillsDirectory: '.factory/skills',
-    projectMarkers: ['.factory'],
-    homeMarkers: ['.factory'],
-  },
-  {
-    id: 'devin',
-    displayName: 'Devin',
-    skillsDirectory: '.devin/skills',
-    projectMarkers: ['.devin'],
-    homeMarkers: ['.config/devin'],
-  },
+export const AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES = [
+  '.agents/skills',
+  '.cursor/skills',
+  '.codex/skills',
+  '.github/skills',
+  '.gemini/skills',
+  '.opencode/skills',
+  '.cline/skills',
+  '.warp/skills',
+  '.zed/skills',
+  '.replit/skills',
 ] as const;
 
 /** Recommended setup independent of repository-specific detection. */
@@ -133,8 +136,8 @@ export const ALL_SETUP_FEATURES = Object.values(CustomFunctionSetupFeature);
 export function resolveSetupFeatures(
   setup: CustomFunctionSetup,
   options: {
-    /** Whether a supported coding agent was detected. */
-    hasDetectedAgent: boolean;
+    /** Whether a project-level skill directory exists. */
+    hasProjectSkillDirectory: boolean;
   },
 ): CustomFunctionSetupFeatureType[] {
   if (setup === 'none') {
@@ -145,7 +148,7 @@ export function resolveSetupFeatures(
   }
   return [
     ...BASE_RECOMMENDED_FEATURES,
-    ...(options.hasDetectedAgent ? [CustomFunctionSetupFeature.Skill] : []),
+    ...(options.hasProjectSkillDirectory ? [CustomFunctionSetupFeature.Skill] : []),
   ];
 }
 

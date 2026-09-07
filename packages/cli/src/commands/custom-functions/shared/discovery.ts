@@ -1,14 +1,24 @@
-import { homedir } from 'node:os';
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import { detect, type DetectResult } from 'package-manager-detector';
 
 import type { LocalContext } from '../../../context.js';
-import { AGENT_SKILL_TARGETS, type AgentSkillTarget } from './config.js';
+import {
+  AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES,
+  PROJECT_SKILL_DIRECTORIES,
+} from './config.js';
 import type { ProjectFileSnapshot } from './model.js';
 
 /** Default local Custom Function project directory. */
 export const DEFAULT_CUSTOM_FUNCTION_DIRECTORY = join('transcend', 'custom-functions');
+
+/** One existing project-level skill container. */
+export interface ExistingProjectSkillDirectory {
+  /** Repository-relative directory. */
+  path: string;
+  /** Whether its agent can read the portable `.agents/skills` directory. */
+  supportsAgentsSkills: boolean;
+}
 
 /** Repository and target state collected before planning. */
 export interface CustomFunctionProjectState {
@@ -28,10 +38,8 @@ export interface CustomFunctionProjectState {
   packageManager?: DetectResult;
   /** Whether pnpm requires an explicit workspace-root install. */
   pnpmWorkspaceRoot: boolean;
-  /** Detected coding-agent targets. */
-  detectedAgents: AgentSkillTarget[];
-  /** Unique detected project skill directories that already exist. */
-  existingSkillDirectories: string[];
+  /** Existing project-level skill directories; home state is deliberately ignored. */
+  existingSkillDirectories: ExistingProjectSkillDirectory[];
   /** Whether the repository appears to use GitHub. */
   usesGithub: boolean;
   /** Case-preserving relative paths below the manifest directory. */
@@ -141,41 +149,73 @@ function collectRelativePaths(context: LocalContext, root: string): string[] {
 }
 
 /**
- * Detect coding agents from project and home markers.
+ * Determine whether a skill container has a SKILL.md within three levels.
  *
  * @param context - CLI context
- * @param repositoryRoot - Repository root or target
- * @returns Detected targets
+ * @param directory - Candidate skill container
+ * @param depth - Remaining nested directory levels
+ * @returns Whether a skill exists below the container
  */
-function detectAgentTargets(context: LocalContext, repositoryRoot: string): AgentSkillTarget[] {
-  const home = context.process.env.HOME ?? homedir();
-  return AGENT_SKILL_TARGETS.filter((target) =>
-    [
-      ...target.projectMarkers.map((marker) => join(repositoryRoot, marker)),
-      ...target.homeMarkers.map((marker) => join(home, marker)),
-    ].some((marker) => context.fs.existsSync(marker)),
-  );
+function containsSkill(context: LocalContext, directory: string, depth: number): boolean {
+  if (depth === 0) {
+    return false;
+  }
+  return context.fs.readdirSync(directory, { withFileTypes: true }).some((entry) => {
+    if (!entry.isDirectory() || entry.isSymbolicLink()) {
+      return false;
+    }
+    const child = join(directory, entry.name);
+    return (
+      context.fs.existsSync(join(child, 'SKILL.md')) || containsSkill(context, child, depth - 1)
+    );
+  });
 }
 
 /**
- * Find detected project skill directories that already exist.
+ * Find existing project skill containers without consulting home directories.
  *
  * @param context - CLI context
  * @param repositoryRoot - Repository root or target
- * @param detectedAgents - Detected coding agents
- * @returns Unique existing skill-directory paths relative to the repository
+ * @returns Existing containers and `.agents/skills` compatibility
  */
 function detectExistingSkillDirectories(
   context: LocalContext,
   repositoryRoot: string,
-  detectedAgents: readonly AgentSkillTarget[],
-): string[] {
-  return [...new Set(detectedAgents.map(({ skillsDirectory }) => skillsDirectory))].filter(
-    (skillsDirectory) => {
-      const path = join(repositoryRoot, skillsDirectory);
+): ExistingProjectSkillDirectory[] {
+  if (
+    !context.fs.existsSync(repositoryRoot) ||
+    !context.fs.statSync(repositoryRoot).isDirectory()
+  ) {
+    return [];
+  }
+  const compatible = new Set<string>(AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES);
+  const candidates = new Set<string>([
+    ...PROJECT_SKILL_DIRECTORIES,
+    ...AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES,
+  ]);
+  context.fs.readdirSync(repositoryRoot, { withFileTypes: true }).forEach((entry) => {
+    if (!entry.isDirectory() || entry.isSymbolicLink()) {
+      return;
+    }
+    const skillsDirectory = join(repositoryRoot, entry.name, 'skills');
+    if (
+      context.fs.existsSync(skillsDirectory) &&
+      context.fs.statSync(skillsDirectory).isDirectory() &&
+      containsSkill(context, skillsDirectory, 3)
+    ) {
+      candidates.add(`${entry.name}/skills`);
+    }
+  });
+  return [...candidates]
+    .filter((candidate) => {
+      const path = join(repositoryRoot, candidate);
       return context.fs.existsSync(path) && context.fs.statSync(path).isDirectory();
-    },
-  );
+    })
+    .sort((left, right) => left.localeCompare(right))
+    .map((path) => ({
+      path,
+      supportsAgentsSkills: compatible.has(path),
+    }));
 }
 
 /**
@@ -257,7 +297,6 @@ export async function discoverCustomFunctionProject(
     packageManager?.name === 'pnpm' &&
     context.fs.existsSync(join(packageRoot, 'pnpm-workspace.yaml'));
   const agentRoot = repositoryRoot ?? targetDirectory;
-  const detectedAgents = detectAgentTargets(context, agentRoot);
 
   return {
     targetDirectory,
@@ -268,8 +307,7 @@ export async function discoverCustomFunctionProject(
     ...(packageJsonPath ? { packageJsonPath } : {}),
     ...(packageManager ? { packageManager } : {}),
     pnpmWorkspaceRoot,
-    detectedAgents,
-    existingSkillDirectories: detectExistingSkillDirectories(context, agentRoot, detectedAgents),
+    existingSkillDirectories: detectExistingSkillDirectories(context, agentRoot),
     usesGithub: repositoryUsesGithub(context, repositoryRoot),
     relativePaths: collectRelativePaths(context, manifestDirectory),
   };

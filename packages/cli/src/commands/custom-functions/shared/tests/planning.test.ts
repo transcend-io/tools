@@ -2,7 +2,6 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { AGENT_SKILL_TARGETS } from '../config.js';
 import type { CustomFunctionProjectState } from '../discovery.js';
 import { CustomFunctionSetupFeature } from '../model.js';
 import {
@@ -29,7 +28,6 @@ function buildState(root: string): CustomFunctionProjectState {
     repositoryRoot: root,
     denoConfigPath: join(targetDirectory, 'deno.json'),
     pnpmWorkspaceRoot: false,
-    detectedAgents: [],
     existingSkillDirectories: [],
     usesGithub: true,
     relativePaths: [],
@@ -268,12 +266,12 @@ describe('buildNewPlan', () => {
 });
 
 describe('agent skill planning', () => {
-  it('deduplicates shared target directories and recognizes an existing link', () => {
+  it('prefers .agents and links only incompatible existing skill directories', () => {
     const state = buildState('/repo');
-    state.detectedAgents = ['universal', 'cline', 'claude-code'].map(
-      (id) => AGENT_SKILL_TARGETS.find((target) => target.id === id)!,
-    );
-    state.existingSkillDirectories = ['.agents/skills', '.claude/skills'];
+    state.existingSkillDirectories = [
+      { path: '.cursor/skills', supportsAgentsSkills: true },
+      { path: '.claude/skills', supportsAgentsSkills: false },
+    ];
     const features = [CustomFunctionSetupFeature.Skill];
     const paths = getPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
@@ -284,6 +282,12 @@ describe('agent skill planning', () => {
       path: join('/repo', '.claude', 'skills', 'transcend-custom-functions'),
       target: '../../.agents/skills/transcend-custom-functions',
     });
+    expect(paths).toContain(
+      join('/repo', '.agents', 'skills', 'transcend-custom-functions', 'SKILL.md'),
+    );
+    expect(paths.some((path) => path.includes('.cursor/skills/transcend-custom-functions'))).toBe(
+      false,
+    );
 
     const rerun = buildInitPlan(buildInput(state, snapshotsAfterPlan(paths, first)), { features });
     expect(rerun.changes).toEqual([]);
@@ -292,10 +296,7 @@ describe('agent skill planning', () => {
 
   it('writes directly to one existing skill directory without creating aliases', () => {
     const state = buildState('/repo');
-    state.detectedAgents = ['universal', 'claude-code'].map(
-      (id) => AGENT_SKILL_TARGETS.find((target) => target.id === id)!,
-    );
-    state.existingSkillDirectories = ['.claude/skills'];
+    state.existingSkillDirectories = [{ path: '.claude/skills', supportsAgentsSkills: false }];
     const features = [CustomFunctionSetupFeature.Skill];
     const paths = getPlanningCandidatePaths(state, { features });
     const plan = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
@@ -314,7 +315,6 @@ describe('agent skill planning', () => {
 
   it('refuses a user-modified managed skill instead of overwriting it', () => {
     const state = buildState('/repo');
-    state.detectedAgents = [];
     const features = [CustomFunctionSetupFeature.Skill];
     const paths = getPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });

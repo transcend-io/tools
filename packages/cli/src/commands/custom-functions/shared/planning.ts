@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, sep } from 'node:path';
 
 import { resolveCommand } from 'package-manager-detector/commands';
 
@@ -12,12 +12,7 @@ import {
   generateGithubActionsWorkflow,
   generateSecretNamesFile,
 } from './artifacts.js';
-import {
-  AGENT_SKILL_TARGETS,
-  mergeDenoConfiguration,
-  mergeEditorExtensions,
-  mergeEditorSettings,
-} from './config.js';
+import { mergeDenoConfiguration, mergeEditorExtensions, mergeEditorSettings } from './config.js';
 import type { CustomFunctionProjectState } from './discovery.js';
 import {
   CUSTOM_FUNCTION_RESULT_VERSION,
@@ -140,15 +135,19 @@ function skillDirectories(state: CustomFunctionProjectState): {
   /** Existing directories that should link to the canonical skill. */
   aliases: string[];
 } {
-  const universal = AGENT_SKILL_TARGETS.find(({ id }) => id === 'universal')!.skillsDirectory;
+  const universal = '.agents/skills';
   if (state.existingSkillDirectories.length === 1) {
-    return { canonical: state.existingSkillDirectories[0]!, aliases: [] };
+    return { canonical: state.existingSkillDirectories[0]!.path, aliases: [] };
   }
   return {
     canonical: universal,
     aliases:
       state.existingSkillDirectories.length > 1
-        ? state.existingSkillDirectories.filter((directory) => directory !== universal)
+        ? state.existingSkillDirectories
+            .filter(({ path, supportsAgentsSkills }) => {
+              return path !== universal && !supportsAgentsSkills;
+            })
+            .map(({ path }) => path)
         : [],
   };
 }

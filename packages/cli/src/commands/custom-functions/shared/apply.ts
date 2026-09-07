@@ -171,7 +171,6 @@ function preflightFile(context: LocalContext, change: PlannedFileChange): void {
  * @param change - Planned link
  */
 function applyLink(context: LocalContext, change: PlannedLinkChange): void {
-  context.fs.mkdirSync(dirname(change.path), { recursive: true });
   try {
     context.fs.symlinkSync(change.target, change.path, 'dir');
   } catch (error) {

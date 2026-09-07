@@ -1,5 +1,6 @@
 import fs, {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -179,6 +180,7 @@ describe('applyCustomFunctionProjectPlan skill links', () => {
   it('copies the canonical skill when directory links are unavailable', async () => {
     const root = makeTemporaryRoot();
     const linkPath = join(root, '.claude', 'skills', 'transcend-custom-functions');
+    mkdirSync(join(root, '.claude', 'skills'), { recursive: true });
     const linklessFs = new Proxy(fs, {
       get(target, property, receiver) {
         if (property === 'symlinkSync') {

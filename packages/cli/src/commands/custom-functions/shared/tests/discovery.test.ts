@@ -85,23 +85,28 @@ describe('discoverCustomFunctionProject', () => {
     expect(state.manifestPath).toBe(join(root, 'config', 'functions.yml'));
   });
 
-  it('discovers repository, Deno, GitHub, agent, and collision state deterministically', async () => {
+  it('discovers repository and project skill state without consulting home directories', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'custom-functions');
     const isolatedHome = join(root, 'home');
     mkdirSync(join(root, '.git'), { recursive: true });
-    mkdirSync(join(root, '.cursor'), { recursive: true });
-    mkdirSync(join(root, '.cline'), { recursive: true });
     mkdirSync(join(root, '.agents', 'skills'), { recursive: true });
+    mkdirSync(join(root, '.cursor', 'skills'), { recursive: true });
+    mkdirSync(join(root, '.claude', 'skills'), { recursive: true });
+    mkdirSync(join(root, '.custom-agent', 'skills', 'existing'), { recursive: true });
     mkdirSync(join(target, 'Functions'), { recursive: true });
     mkdirSync(join(target, 'node_modules', 'ignored'), { recursive: true });
-    mkdirSync(isolatedHome, { recursive: true });
+    mkdirSync(join(isolatedHome, '.windsurf', 'skills'), { recursive: true });
     writeFileSync(
       join(root, '.git', 'config'),
       '[remote "origin"]\n  url = git@github.com:transcend-io/tools.git\n',
     );
     writeFileSync(join(root, 'package.json'), '{"packageManager":"pnpm@10.34.4"}\n');
     writeFileSync(join(root, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n");
+    writeFileSync(
+      join(root, '.custom-agent', 'skills', 'existing', 'SKILL.md'),
+      '---\nname: existing\ndescription: Existing skill\n---\n',
+    );
     writeFileSync(join(target, 'deno.jsonc'), '{}\n');
     writeFileSync(join(target, 'Functions', 'Existing.ts'), 'export default 1;\n');
     writeFileSync(join(target, 'node_modules', 'ignored', 'package.json'), '{}\n');
@@ -127,10 +132,20 @@ describe('discoverCustomFunctionProject', () => {
       packageJsonPath: join(root, 'package.json'),
       packageManager: { name: 'pnpm', agent: 'pnpm' },
       pnpmWorkspaceRoot: true,
-      existingSkillDirectories: ['.agents/skills'],
       usesGithub: true,
     });
-    expect(first.detectedAgents.map(({ id }) => id)).toEqual(['universal', 'cline']);
+    expect(first.existingSkillDirectories).toEqual(
+      expect.arrayContaining([
+        { path: '.agents/skills', supportsAgentsSkills: true },
+        { path: '.cursor/skills', supportsAgentsSkills: true },
+        { path: '.claude/skills', supportsAgentsSkills: false },
+        { path: '.custom-agent/skills', supportsAgentsSkills: false },
+      ]),
+    );
+    expect(first.existingSkillDirectories).toHaveLength(4);
+    expect(first.existingSkillDirectories.some(({ path }) => path.includes('windsurf'))).toBe(
+      false,
+    );
     expect(first.relativePaths).toContain('Functions/Existing.ts');
     expect(first.relativePaths.some((path) => path.includes('node_modules'))).toBe(false);
   });
