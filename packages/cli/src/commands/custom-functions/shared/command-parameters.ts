@@ -34,11 +34,6 @@ export const customFunctionScaffoldFlagParameters = {
     brief: 'Generate secure GitHub Actions checks and gated deployment',
     optional: true,
   },
-  secretDocs: {
-    kind: 'boolean',
-    brief: 'Document secret names and ignore the local secret file',
-    optional: true,
-  },
   noInteractive: {
     kind: 'boolean',
     brief: 'Disable prompts and require every missing answer as a flag',

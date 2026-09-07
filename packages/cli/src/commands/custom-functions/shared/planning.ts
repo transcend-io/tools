@@ -5,11 +5,7 @@ import {
   insertCustomFunctionManifestEntry,
   parseCustomFunctionsManifest,
 } from '../../../lib/custom-functions/manifest.js';
-import {
-  appendGitignoreEntry,
-  generateGithubActionsWorkflow,
-  generateSecretNamesFile,
-} from './artifacts.js';
+import { generateGithubActionsWorkflow } from './artifacts.js';
 import { mergeDenoConfiguration, mergeEditorExtensions, mergeEditorSettings } from './config.js';
 import type { CustomFunctionProjectState } from './discovery.js';
 import {
@@ -162,10 +158,6 @@ export function getPlanningCandidatePaths(
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     paths.add(join(root, '.github', 'workflows', 'transcend-custom-functions.yml'));
-  }
-  if (selected.has(CustomFunctionSetupFeature.SecretDocs)) {
-    paths.add(join(state.manifestDirectory, '.env.custom-functions.example'));
-    paths.add(join(state.manifestDirectory, '.gitignore'));
   }
   if (options.generated) {
     paths.add(join(state.manifestDirectory, options.generated.sourceFile.path));
@@ -498,22 +490,6 @@ export function buildInitPlan(
       });
     }
   }
-  if (selected.has(CustomFunctionSetupFeature.SecretDocs)) {
-    const examplePath = join(state.manifestDirectory, '.env.custom-functions.example');
-    const gitignorePath = join(state.manifestDirectory, '.gitignore');
-    const gitignoreSnapshot = fileSnapshotAt(input, gitignorePath);
-    addFileChange(plan, input, {
-      path: examplePath,
-      contents: generateSecretNamesFile(),
-      description: 'Document required secret names without values',
-    });
-    addFileChange(plan, input, {
-      path: gitignorePath,
-      contents: appendGitignoreEntry(gitignoreSnapshot.contents, '.env.custom-functions'),
-      description: 'Ignore the local Custom Function secret file',
-    });
-  }
-
   validatePlanDestinations(
     state,
     plan.changes.map(({ path }) => path),

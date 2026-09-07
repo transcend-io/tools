@@ -42,8 +42,6 @@ export const CustomFunctionSetupFeature = {
   Skill: 'skill',
   /** GitHub Actions check/deploy workflow. */
   Ci: 'ci',
-  /** Secret-name documentation and ignore entry. */
-  SecretDocs: 'secret-docs',
 } as const;
 
 /** One repository setup capability. */

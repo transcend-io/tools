@@ -90,39 +90,3 @@ jobs:
           transcend "\${args[@]}"
 `;
 }
-
-/**
- * Generate secret-name-only local configuration documentation.
- *
- * @returns Example environment file
- */
-export function generateSecretNamesFile(): string {
-  return `# Authentication used only by explicit remote push commands.
-TRANSCEND_API_KEY=
-
-# Optional comma-separated manifest mappings, for example:
-# transcendApiKey:$TRANSCEND_API_KEY,crmApiKey:$CRM_API_KEY
-CUSTOM_FUNCTION_VARIABLES=
-
-# Optional for self-hosted Sombra.
-SOMBRA_INTERNAL_KEY=
-`;
-}
-
-/**
- * Add a line to a gitignore without disturbing existing content.
- *
- * @param contents - Existing gitignore, or null
- * @param entry - Entry to add
- * @returns Updated contents
- */
-export function appendGitignoreEntry(contents: string | null, entry: string): string {
-  const current = contents ?? '';
-  const lines = current.split(/\r?\n/u);
-  if (lines.includes(entry)) {
-    return current;
-  }
-  const eol = current.includes('\r\n') ? '\r\n' : '\n';
-  const prefix = current.length === 0 || current.endsWith('\n') ? current : `${current}${eol}`;
-  return `${prefix}${entry}${eol}`;
-}

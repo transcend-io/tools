@@ -36,8 +36,6 @@ export interface CustomFunctionScaffoldFlags {
   skill?: boolean;
   /** Install GitHub Actions validation. */
   ci?: boolean;
-  /** Install secret-name documentation. */
-  secretDocs?: boolean;
   /** Disable prompts. */
   noInteractive: boolean;
   /** Render but do not apply. */
@@ -88,9 +86,6 @@ function setupOverrides(
     ...(flags.editor === undefined ? {} : { [CustomFunctionSetupFeature.Editor]: flags.editor }),
     ...(flags.skill === undefined ? {} : { [CustomFunctionSetupFeature.Skill]: flags.skill }),
     ...(flags.ci === undefined ? {} : { [CustomFunctionSetupFeature.Ci]: flags.ci }),
-    ...(flags.secretDocs === undefined
-      ? {}
-      : { [CustomFunctionSetupFeature.SecretDocs]: flags.secretDocs }),
   };
 }
 
@@ -100,7 +95,6 @@ const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
   [CustomFunctionSetupFeature.Editor]: 'VS Code-compatible Deno recommendations',
   [CustomFunctionSetupFeature.Skill]: 'Transcend Custom Function coding-agent skill',
   [CustomFunctionSetupFeature.Ci]: 'Secure GitHub Actions checks and gated deployment',
-  [CustomFunctionSetupFeature.SecretDocs]: 'Secret-name documentation and .gitignore entry',
 };
 
 /**
