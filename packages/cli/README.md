@@ -2486,7 +2486,7 @@ transcend consent delete-preference-records \
 
 ```txt
 USAGE
-  transcend custom-functions init [--manifest value] [--setup none|recommended|all] [--deno] [--tasks] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend custom-functions init [--manifest value] [--setup none|recommended|all] [--deno] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
   transcend custom-functions init --help
 
 Discovers the surrounding repository, previews one safe transactional plan, and creates only the selected local authoring setup. No Transcend credentials are needed.
@@ -2494,8 +2494,7 @@ Discovers the surrounding repository, previews one safe transactional plan, and 
 FLAGS
      [--manifest]                   Path to transcend-functions.yml; defaults inside the target directory
      [--setup]                      Optional repository setup preset                                      [none|recommended|all]
-     [--deno/--noDeno]              Create or merge target-scoped Deno configuration
-     [--tasks/--noTasks]            Add target-scoped Deno check, lint, and format tasks
+     [--deno/--noDeno]              Create or merge target-scoped Deno configuration and check task
      [--editor/--noEditor]          Merge target-scoped Deno editor settings and recommendations
      [--skill/--noSkill]            Install the canonical Custom Function coding-agent skill
      [--ci/--noCi]                  Generate secure GitHub Actions checks and gated deployment
@@ -2526,7 +2525,6 @@ The interactive setup presents one checklist and one complete filesystem preview
 transcend custom-functions init ./packages/transcend-functions \
   --setup=none \
   --deno \
-  --tasks \
   --editor \
   --skill
 ```
@@ -2537,7 +2535,7 @@ Existing JSONC and YAML comments are retained. A collision or unsafe merge stops
 
 ```txt
 USAGE
-  transcend custom-functions new [--manifest value] [--setup none|recommended|all] [--deno] [--tasks] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [<directory>]
+  transcend custom-functions new [--manifest value] [--setup none|recommended|all] [--deno] [--editor] [--skill] [--ci] [--secretDocs] [--noInteractive] [--dryRun] [--yes] [--json] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [<directory>]
   transcend custom-functions new --help
 
 Creates a deterministic General or DSR starter, composes missing initialization into the same preview, and safely appends the manifest entry without credentials.
@@ -2545,8 +2543,7 @@ Creates a deterministic General or DSR starter, composes missing initialization 
 FLAGS
      [--manifest]                   Path to transcend-functions.yml; defaults inside the target directory
      [--setup]                      Optional repository setup preset                                      [none|recommended|all]
-     [--deno/--noDeno]              Create or merge target-scoped Deno configuration
-     [--tasks/--noTasks]            Add target-scoped Deno check, lint, and format tasks
+     [--deno/--noDeno]              Create or merge target-scoped Deno configuration and check task
      [--editor/--noEditor]          Merge target-scoped Deno editor settings and recommendations
      [--skill/--noSkill]            Install the canonical Custom Function coding-agent skill
      [--ci/--noCi]                  Generate secure GitHub Actions checks and gated deployment

@@ -36,8 +36,6 @@ export type CustomFunctionSetup = (typeof CustomFunctionSetup)[keyof typeof Cust
 export const CustomFunctionSetupFeature = {
   /** Deno import map and strict compiler configuration. */
   Deno: 'deno',
-  /** Target-scoped Deno tasks. */
-  Tasks: 'tasks',
   /** Target-scoped editor configuration. */
   Editor: 'editor',
   /** Coding-agent authoring skill. */

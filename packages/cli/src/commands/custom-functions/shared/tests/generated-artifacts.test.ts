@@ -54,7 +54,7 @@ describe('generated Custom Function artifacts', () => {
       const sourcePath = join(root, 'function.ts');
       const configPath = join(root, 'deno.json');
       writeFileSync(sourcePath, generated.sourceFile.contents);
-      writeFileSync(configPath, mergeDenoConfiguration(null, CUSTOM_FUNCTION_TYPES_VERSION, false));
+      writeFileSync(configPath, mergeDenoConfiguration(null, CUSTOM_FUNCTION_TYPES_VERSION));
 
       expect(() =>
         execFileSync('deno', ['check', `--config=${configPath}`, sourcePath], {

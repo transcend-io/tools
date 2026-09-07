@@ -14,7 +14,6 @@ The interactive setup presents one checklist and one complete filesystem preview
 transcend custom-functions init ./packages/transcend-functions \\
   --setup=none \\
   --deno \\
-  --tasks \\
   --editor \\
   --skill
 \`\`\`

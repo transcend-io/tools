@@ -147,10 +147,7 @@ export function getPlanningCandidatePaths(
   const root = setupRoot(state);
   const paths = new Set<string>([state.manifestPath]);
   const selected = new Set(options.features);
-  if (
-    selected.has(CustomFunctionSetupFeature.Deno) ||
-    selected.has(CustomFunctionSetupFeature.Tasks)
-  ) {
+  if (selected.has(CustomFunctionSetupFeature.Deno)) {
     paths.add(state.denoConfigPath);
   }
   if (selected.has(CustomFunctionSetupFeature.Editor)) {
@@ -446,18 +443,11 @@ export function buildInitPlan(
   }
 
   const selected = new Set(options.features);
-  if (
-    selected.has(CustomFunctionSetupFeature.Deno) ||
-    selected.has(CustomFunctionSetupFeature.Tasks)
-  ) {
+  if (selected.has(CustomFunctionSetupFeature.Deno)) {
     const snapshot = fileSnapshotAt(input, state.denoConfigPath);
     addFileChange(plan, input, {
       path: state.denoConfigPath,
-      contents: mergeDenoConfiguration(
-        snapshot.contents,
-        input.contractVersion,
-        selected.has(CustomFunctionSetupFeature.Tasks),
-      ),
+      contents: mergeDenoConfiguration(snapshot.contents, input.contractVersion),
       description: 'Merge strict target-scoped Deno authoring configuration',
     });
   }

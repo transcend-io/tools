@@ -88,11 +88,7 @@ describe('setup feature resolution', () => {
         [CustomFunctionSetupFeature.Deno]: false,
         [CustomFunctionSetupFeature.Ci]: true,
       }),
-    ).toEqual([
-      CustomFunctionSetupFeature.Tasks,
-      CustomFunctionSetupFeature.Skill,
-      CustomFunctionSetupFeature.Ci,
-    ]);
+    ).toEqual([CustomFunctionSetupFeature.Skill, CustomFunctionSetupFeature.Ci]);
   });
 });
 
@@ -110,8 +106,8 @@ describe('JSONC configuration merging', () => {
 }
 `;
 
-    const merged = mergeDenoConfiguration(existing, '1.2.3', true);
-    const rerun = mergeDenoConfiguration(merged, '1.2.3', true);
+    const merged = mergeDenoConfiguration(existing, '1.2.3');
+    const rerun = mergeDenoConfiguration(merged, '1.2.3');
 
     expect(merged.match(/\/\/ Keep the project-specific compiler setting\./gu)).toHaveLength(1);
     expect(merged.match(/\/\* Keep this custom task\. \*\//gu)).toHaveLength(1);
@@ -125,9 +121,22 @@ describe('JSONC configuration merging', () => {
       },
       tasks: {
         custom: 'deno task custom',
+        'custom-functions:check':
+          'deno check functions/**/*.ts && deno lint functions/ && deno fmt --check functions/ test-payloads/',
       },
     });
     expect(rerun).toBe(merged);
+  });
+
+  it('refuses to replace a conflicting Custom Function task', () => {
+    expect(() =>
+      mergeDenoConfiguration(
+        '{"tasks":{"custom-functions:check":"deno task something-else"}}\n',
+        '1.2.3',
+      ),
+    ).toThrow(
+      'Deno task "custom-functions:check" already has a different command; apply the patch manually.',
+    );
   });
 
   it('requires a manual patch when a trailing property comment cannot be preserved safely', () => {
@@ -144,7 +153,7 @@ describe('JSONC configuration merging', () => {
   });
 
   it('requires a manual patch for invalid JSONC instead of rewriting it', () => {
-    expect(() => mergeDenoConfiguration('{\n  "compilerOptions":,\n}\n', '1.2.3', false)).toThrow(
+    expect(() => mergeDenoConfiguration('{\n  "compilerOptions":,\n}\n', '1.2.3')).toThrow(
       'Cannot safely merge Deno configuration; fix its JSONC syntax or apply the patch manually.',
     );
   });

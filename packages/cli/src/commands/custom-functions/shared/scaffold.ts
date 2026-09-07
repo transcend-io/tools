@@ -30,8 +30,6 @@ export interface CustomFunctionScaffoldFlags {
   setup?: CustomFunctionSetup;
   /** Install Deno configuration. */
   deno?: boolean;
-  /** Install target-scoped Deno tasks. */
-  tasks?: boolean;
   /** Install editor recommendations. */
   editor?: boolean;
   /** Install the coding-agent skill. */
@@ -87,7 +85,6 @@ function setupOverrides(
 ): Partial<Record<CustomFunctionSetupFeatureType, boolean>> {
   return {
     ...(flags.deno === undefined ? {} : { [CustomFunctionSetupFeature.Deno]: flags.deno }),
-    ...(flags.tasks === undefined ? {} : { [CustomFunctionSetupFeature.Tasks]: flags.tasks }),
     ...(flags.editor === undefined ? {} : { [CustomFunctionSetupFeature.Editor]: flags.editor }),
     ...(flags.skill === undefined ? {} : { [CustomFunctionSetupFeature.Skill]: flags.skill }),
     ...(flags.ci === undefined ? {} : { [CustomFunctionSetupFeature.Ci]: flags.ci }),
@@ -99,8 +96,7 @@ function setupOverrides(
 
 /** User-facing setup labels. */
 const SETUP_LABELS: Readonly<Record<CustomFunctionSetupFeatureType, string>> = {
-  [CustomFunctionSetupFeature.Deno]: 'Deno imports and strict compiler options',
-  [CustomFunctionSetupFeature.Tasks]: 'Target-scoped check/lint/format tasks',
+  [CustomFunctionSetupFeature.Deno]: 'Deno imports, strict settings, and check task',
   [CustomFunctionSetupFeature.Editor]: 'VS Code-compatible Deno recommendations',
   [CustomFunctionSetupFeature.Skill]: 'Transcend Custom Function coding-agent skill',
   [CustomFunctionSetupFeature.Ci]: 'Secure GitHub Actions checks and gated deployment',

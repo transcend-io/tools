@@ -16,12 +16,7 @@ export const customFunctionScaffoldFlagParameters = {
   },
   deno: {
     kind: 'boolean',
-    brief: 'Create or merge target-scoped Deno configuration',
-    optional: true,
-  },
-  tasks: {
-    kind: 'boolean',
-    brief: 'Add target-scoped Deno check, lint, and format tasks',
+    brief: 'Create or merge target-scoped Deno configuration and check task',
     optional: true,
   },
   editor: {

@@ -120,7 +120,6 @@ export const AGENTS_SKILLS_COMPATIBLE_PROJECT_DIRECTORIES = [
 /** Recommended setup independent of repository-specific detection. */
 const BASE_RECOMMENDED_FEATURES: readonly CustomFunctionSetupFeatureType[] = [
   CustomFunctionSetupFeature.Deno,
-  CustomFunctionSetupFeature.Tasks,
 ];
 
 /** All optional setup features. */
@@ -352,14 +351,9 @@ function mergeStringArray(current: unknown, additions: readonly string[]): strin
  *
  * @param contents - Existing deno.json/jsonc contents
  * @param contractVersion - Exact authoring-contract version
- * @param includeTasks - Whether to add local tasks
  * @returns Merged configuration
  */
-export function mergeDenoConfiguration(
-  contents: string | null,
-  contractVersion: string,
-  includeTasks: boolean,
-): string {
+export function mergeDenoConfiguration(contents: string | null, contractVersion: string): string {
   const current = parseJsonc(contents ?? '{}\n', 'Deno configuration');
   const compilerOptions =
     current.compilerOptions &&
@@ -382,7 +376,7 @@ export function mergeDenoConfiguration(
   const taskName = 'custom-functions:check';
   const taskCommand =
     'deno check functions/**/*.ts && deno lint functions/ && deno fmt --check functions/ test-payloads/';
-  if (includeTasks && tasks[taskName] !== undefined && tasks[taskName] !== taskCommand) {
+  if (tasks[taskName] !== undefined && tasks[taskName] !== taskCommand) {
     throw new Error(
       `Deno task "${taskName}" already has a different command; apply the patch manually.`,
     );
@@ -408,10 +402,8 @@ export function mergeDenoConfiguration(
     },
     { path: ['fmt', 'singleQuote'], value: true },
     { path: ['fmt', 'lineWidth'], value: 100 },
+    { path: ['tasks', taskName], value: taskCommand },
   ];
-  if (includeTasks) {
-    updates.push({ path: ['tasks', taskName], value: taskCommand });
-  }
   return mergeJsonc(contents, updates, 'Deno configuration');
 }
 
