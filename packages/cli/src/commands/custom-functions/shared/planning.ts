@@ -687,7 +687,7 @@ export function buildNewPlan(
   ];
   if (options.generated.manifestEntry.env?.TRANSCEND_API_KEY) {
     plan.warnings.push(
-      'Map transcendApiKey to TRANSCEND_API_KEY when checking or pushing; the installed skill documents the workflow.',
+      'Supply transcendApiKey through --variables when pushing; never commit the API key.',
     );
   }
   validatePlanDestinations(

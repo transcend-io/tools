@@ -198,6 +198,21 @@ describe('buildNewPlan', () => {
     },
   );
 
+  it('gives self-contained secret guidance when no skill is installed', () => {
+    const state = buildState('/repo');
+    const generated = prepareGeneratedCustomFunction('DSR Lookup', 'dsr-datapoint');
+    const features: readonly [] = [];
+    const paths = getPlanningCandidatePaths(state, { features, generated });
+    const plan = buildNewPlan(buildInput(state, absentSnapshots(paths)), {
+      features,
+      generated,
+    });
+
+    expect(plan.warnings).toContain(
+      'Supply transcendApiKey through --variables when pushing; never commit the API key.',
+    );
+  });
+
   it('rejects case-insensitive collisions with existing repository paths', () => {
     const state = {
       ...buildState('/repo'),
