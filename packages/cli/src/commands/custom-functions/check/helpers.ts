@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process';
 import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 
 import {
@@ -11,41 +10,25 @@ import { createTwoFilesPatch } from 'diff';
 
 import type { LocalContext } from '../../../context.js';
 import {
+  runCapturedProcess,
+  type CapturedProcessResult,
+  type CapturedProcessRunner,
+} from '../../../lib/cli/run-captured-process.js';
+import {
   type CustomFunctionCheckResult,
   type CustomFunctionCheckStatus,
   type CustomFunctionDiagnostic,
 } from '../../../lib/custom-functions/check-model.js';
+import {
+  DENO_INSTALL_URL,
+  unsupportedDenoVersionMessage,
+} from '../../../lib/custom-functions/deno-runtime.js';
 import {
   isCustomFunctionManifestPathContained,
   parseCustomFunctionsManifest,
   type CustomFunctionManifestEntry,
 } from '../../../lib/custom-functions/manifest.js';
 import { CUSTOM_FUNCTION_RESULT_VERSION } from '../../../lib/custom-functions/scaffold-model.js';
-
-/** Captured process result. */
-export interface CapturedProcessResult {
-  /** Process exit code. */
-  code: number;
-  /** Captured standard output. */
-  stdout: string;
-  /** Captured standard error. */
-  stderr: string;
-  /** Spawn error, when the executable did not start. */
-  error?: NodeJS.ErrnoException;
-}
-
-/** Captured process runner. */
-export type CapturedProcessRunner = (
-  command: string,
-  args: readonly string[],
-  options: {
-    /** Working directory. */
-    cwd: string;
-    /** Optional standard input. */
-    input?: string;
-  },
-  context: LocalContext,
-) => Promise<CapturedProcessResult>;
 
 /** Payload file plus its validation contract. */
 interface PayloadReference {
@@ -78,45 +61,6 @@ export interface RunCustomFunctionChecksOptions {
   /** Ask for an interactive formatting repair after receiving a patch. */
   confirmFormat?: (patch: string) => Promise<boolean>;
 }
-
-/**
- * Capture a subprocess without forwarding user module output.
- *
- * @param command - Executable
- * @param args - Arguments
- * @param options - CWD and optional standard input
- * @param context - CLI context
- * @returns Captured result
- */
-export const runCapturedProcess: CapturedProcessRunner = (command, args, options, context) =>
-  new Promise((resolveResult) => {
-    const child = spawn(command, [...args], {
-      cwd: options.cwd,
-      env: { ...context.process.env, NO_COLOR: '1' },
-      stdio: 'pipe',
-    });
-    let stdout = '';
-    let stderr = '';
-    child.stdout.setEncoding('utf8');
-    child.stderr.setEncoding('utf8');
-    child.stdout.on('data', (chunk: string) => {
-      stdout += chunk;
-    });
-    child.stderr.on('data', (chunk: string) => {
-      stderr += chunk;
-    });
-    child.once('error', (error: NodeJS.ErrnoException) => {
-      resolveResult({ code: 1, stdout, stderr, error });
-    });
-    child.once('close', (code) => {
-      resolveResult({ code: code ?? 1, stdout, stderr });
-    });
-    if (options.input === undefined) {
-      child.stdin.end();
-    } else {
-      child.stdin.end(options.input);
-    }
-  });
 
 /**
  * Add one diagnostic.
@@ -520,16 +464,23 @@ export async function runCustomFunctionChecks(
   }
 
   const denoVersion = await runner('deno', ['--version'], { cwd: manifestDirectory }, context);
+  const unsupportedVersion =
+    denoVersion.code === 0 ? unsupportedDenoVersionMessage(denoVersion.stdout) : undefined;
   if (denoVersion.error?.code === 'ENOENT') {
     ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'skipped'));
     addError(diagnostics, {
       code: 'deno.missing',
-      message:
-        'Deno is required for export, type, lint, and format checks. Install it from https://docs.deno.com/runtime/getting_started/installation/',
+      message: `Deno 2.x is required for export, type, lint, and format checks. Install it from ${DENO_INSTALL_URL}`,
     });
   } else if (denoVersion.code !== 0) {
     ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'skipped'));
     recordDenoFailure(diagnostics, 'deno.unavailable', 'Deno could not be started.', denoVersion);
+  } else if (unsupportedVersion) {
+    ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'skipped'));
+    addError(diagnostics, {
+      code: 'deno.unsupported-version',
+      message: unsupportedVersion,
+    });
   } else {
     for (const source of sources) {
       const result = await runner(

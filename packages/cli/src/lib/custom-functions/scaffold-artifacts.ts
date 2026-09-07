@@ -1,11 +1,10 @@
+import { GENERATED_DENO_VERSION } from './deno-runtime.js';
+
 /** Immutable actions/checkout v6 release commit. */
 const ACTIONS_CHECKOUT_SHA = 'd23441a48e516b6c34aea4fa41551a30e30af803';
 
 /** Immutable denoland/setup-deno v2.0.5 release commit. */
 const SETUP_DENO_SHA = '22d081ff2d3a40755e97629de92e3bcbfa7cf2ed';
-
-/** Deno version used by generated validation workflows. */
-export const GENERATED_DENO_VERSION = '2.5.6';
 
 /**
  * Generate the conservative Custom Function GitHub Actions workflow.

@@ -4,12 +4,12 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type {
+  CapturedProcessResult,
+  CapturedProcessRunner,
+} from '../../../../lib/cli/run-captured-process.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import {
-  runCustomFunctionChecks,
-  type CapturedProcessRunner,
-  type CapturedProcessResult,
-} from '../helpers.js';
+import { runCustomFunctionChecks } from '../helpers.js';
 
 const temporaryRoots: string[] = [];
 
@@ -143,6 +143,31 @@ describe('runCustomFunctionChecks without Deno', () => {
       'deno.missing',
     ]);
   });
+
+  it('rejects Deno versions outside major version 2', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = () =>
+      Promise.resolve(processResult({ stdout: 'deno 1.46.3\n' }));
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.checks).toEqual(
+      expect.arrayContaining([
+        { name: 'exports', status: 'skipped' },
+        { name: 'typecheck', status: 'skipped' },
+        { name: 'lint', status: 'skipped' },
+        { name: 'format', status: 'skipped' },
+      ]),
+    );
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'deno.unsupported-version',
+        message: expect.stringContaining('Deno 2.x is required; found 1.46.3'),
+      }),
+    );
+  });
 });
 
 describe('runCustomFunctionChecks with mocked Deno', () => {
@@ -154,7 +179,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const runner: CapturedProcessRunner = (_command, args, options) => {
       calls.push([...args]);
       if (args[0] === '--version') {
-        return Promise.resolve(processResult());
+        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
       }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[]' }));
@@ -212,6 +237,9 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const confirmFormat = vi.fn<(patch: string) => Promise<boolean>>(() => Promise.resolve(true));
     const runner: CapturedProcessRunner = (_command, args, options) => {
       calls.push([...args]);
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+      }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
       }
