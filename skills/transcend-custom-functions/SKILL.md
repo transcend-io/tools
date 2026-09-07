@@ -16,6 +16,12 @@ Use the CLI for deterministic scaffolding and validation. Use this skill for the
 4. Follow existing repository conventions and preserve unrelated configuration.
 5. Run `transcend custom-functions check <custom-function-directory>` before considering the work complete.
 
+## Documentation
+
+- Every Transcend CLI command and subcommand provides contextual help with `transcend <command> --help`.
+- Use the [Transcend CLI README](https://github.com/transcend-io/tools/tree/main/packages/cli#readme) for command documentation and examples.
+- Use the [Transcend documentation index](https://docs.transcend.io/llms.txt) to find current product documentation.
+
 ## Guardrails
 
 - Never commit credentials. Keep secrets in parameter placeholders and the repository's secret store.
