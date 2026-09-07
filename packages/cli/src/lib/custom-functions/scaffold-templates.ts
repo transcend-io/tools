@@ -147,10 +147,15 @@ export function generateCustomFunctionTemplate(
 }
 
 /**
+ * Namespaced directory and frontmatter name for the installed Agent Skill.
+ */
+export const CUSTOM_FUNCTION_SKILL_NAME = 'transcend-io-custom-functions';
+
+/**
  * Canonical customer-facing Agent Skill installed by Custom Function setup.
  */
 export const CUSTOM_FUNCTION_SKILL_MD = `---
-name: transcend-custom-functions
+name: ${CUSTOM_FUNCTION_SKILL_NAME}
 description: Build, validate, and deploy Transcend Custom Functions safely.
 ---
 

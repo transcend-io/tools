@@ -19,6 +19,7 @@ import {
   type ProjectFileSnapshot,
 } from './scaffold-model.js';
 import {
+  CUSTOM_FUNCTION_SKILL_NAME,
   CUSTOM_FUNCTION_SKILL_MD,
   generateCustomFunctionTemplate,
   type GeneratedCustomFunctionTemplate,
@@ -152,9 +153,9 @@ export function getInitPlanningCandidatePaths(
   }
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
     const directories = skillDirectories(state);
-    paths.add(join(root, directories.canonical, 'transcend-custom-functions', 'SKILL.md'));
+    paths.add(join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md'));
     directories.aliases.forEach((directory) => {
-      paths.add(join(root, directory, 'transcend-custom-functions'));
+      paths.add(join(root, directory, CUSTOM_FUNCTION_SKILL_NAME));
     });
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
@@ -325,7 +326,7 @@ function isUnmodifiedManagedSkill(contents: string): boolean {
 function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlanningInput): void {
   const root = setupRoot(input.state);
   const directories = skillDirectories(input.state);
-  const canonicalDirectory = join(root, directories.canonical, 'transcend-custom-functions');
+  const canonicalDirectory = join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME);
   const canonicalPath = join(canonicalDirectory, 'SKILL.md');
   const skillContents = managedSkillContents();
   const canonicalSnapshot = fileSnapshotAt(input, canonicalPath);
@@ -345,7 +346,7 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
   });
 
   directories.aliases.forEach((directory) => {
-    const targetDirectory = join(root, directory, 'transcend-custom-functions');
+    const targetDirectory = join(root, directory, CUSTOM_FUNCTION_SKILL_NAME);
     const snapshot = snapshotAt(input, targetDirectory);
     const relativeTarget = relative(dirname(targetDirectory), canonicalDirectory);
     if (snapshot.kind === 'link' && snapshot.target === relativeTarget) {

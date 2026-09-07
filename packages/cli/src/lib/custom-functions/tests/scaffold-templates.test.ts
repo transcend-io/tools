@@ -172,7 +172,7 @@ describe('generateCustomFunctionTemplate', () => {
 describe('CUSTOM_FUNCTION_SKILL_MD', () => {
   it('is one canonical Agent Skills document covering safe authoring and deployment', () => {
     expect(CUSTOM_FUNCTION_SKILL_MD).toMatch(
-      /^---\nname: transcend-custom-functions\ndescription: .+\n---\n/,
+      /^---\nname: transcend-io-custom-functions\ndescription: .+\n---\n/,
     );
     expect(CUSTOM_FUNCTION_SKILL_MD).toContain('CustomFunction.GeneralArgument');
     expect(CUSTOM_FUNCTION_SKILL_MD).toContain('CustomFunction.Argument');

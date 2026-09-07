@@ -2499,7 +2499,7 @@ FLAGS
      [--skill/--noSkill]    Install the canonical Custom Function coding-agent skill
      [--ci/--noCi]          Generate credential-free GitHub Actions checks
      [--noInteractive]      Disable prompts and require every missing answer as a flag            [default = false]
-     [--dryRun]             Preview all changes without writing files or running commands         [default = false]
+     [--dryRun]             Preview all changes without writing files                             [default = false]
      [--yes]                Skip only the final plan confirmation                                 [default = false]
      [--json]               Emit a stable JSON result and imply non-interactive output            [default = false]
   -h  --help                Print help information and exit
@@ -2534,25 +2534,20 @@ Existing JSONC and YAML comments are retained. A collision or unsafe merge stops
 
 ```txt
 USAGE
-  transcend custom-functions new [--manifest value] [--setup none|recommended|all] [--deno] [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [<directory>]
+  transcend custom-functions new [--manifest value] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
   transcend custom-functions new --help
 
-Creates a deterministic General or DSR starter, composes missing initialization into the same preview, and safely appends the manifest entry without credentials.
+Adds a deterministic General or DSR starter to an initialized Custom Function project and safely appends its manifest entry without credentials.
 
 FLAGS
-     [--manifest]           Path to transcend-functions.yml; defaults inside the target directory
-     [--setup]              Optional repository setup preset                                      [none|recommended|all]
-     [--deno/--noDeno]      Create or merge target-scoped Deno configuration and check task
-     [--editor/--noEditor]  Merge target-scoped Deno editor settings and recommendations
-     [--skill/--noSkill]    Install the canonical Custom Function coding-agent skill
-     [--ci/--noCi]          Generate credential-free GitHub Actions checks
-     [--noInteractive]      Disable prompts and require every missing answer as a flag            [default = false]
-     [--dryRun]             Preview all changes without writing files or running commands         [default = false]
-     [--yes]                Skip only the final plan confirmation                                 [default = false]
-     [--json]               Emit a stable JSON result and imply non-interactive output            [default = false]
-     [--name]               Customer-visible Custom Function display name
-     [--template]           Generated handler and fixture shape                                   [general|dsr-datapoint|dsr-enricher|dsr-both]
-  -h  --help                Print help information and exit
+     [--manifest]       Path to an existing transcend-functions.yml
+     [--name]           Customer-visible Custom Function display name
+     [--template]       Generated handler and fixture shape                        [general|dsr-datapoint|dsr-enricher|dsr-both]
+     [--noInteractive]  Disable prompts and require every missing answer as a flag [default = false]
+     [--dryRun]         Preview all changes without writing files                  [default = false]
+     [--yes]            Skip only the final plan confirmation                      [default = false]
+     [--json]           Emit a stable JSON result and imply non-interactive output [default = false]
+  -h  --help            Print help information and exit
 
 ARGUMENTS
   [directory]  Custom Function project directory; defaults to transcend/custom-functions
@@ -2564,14 +2559,13 @@ ARGUMENTS
 transcend custom-functions new ./transcend/custom-functions \
   --name="Customer CRM access" \
   --template=dsr-both \
-  --setup=recommended \
   --noInteractive \
   --yes
 ```
 
-The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. Without a directory argument, output goes to `transcend/custom-functions`. If the manifest does not exist, `new` composes initialization into the same preview and transaction.
+Run `transcend custom-functions init` once before adding functions. The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
 
-Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill.
+Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-io-custom-functions` skill.
 
 ### `transcend custom-functions check`
 

@@ -243,15 +243,15 @@ describe('agent skill planning', () => {
 
     expect(links).toHaveLength(1);
     expect(links[0]).toMatchObject({
-      path: join('/repo', '.claude', 'skills', 'transcend-custom-functions'),
-      target: '../../.agents/skills/transcend-custom-functions',
+      path: join('/repo', '.claude', 'skills', 'transcend-io-custom-functions'),
+      target: '../../.agents/skills/transcend-io-custom-functions',
     });
     expect(paths).toContain(
-      join('/repo', '.agents', 'skills', 'transcend-custom-functions', 'SKILL.md'),
+      join('/repo', '.agents', 'skills', 'transcend-io-custom-functions', 'SKILL.md'),
     );
-    expect(paths.some((path) => path.includes('.cursor/skills/transcend-custom-functions'))).toBe(
-      false,
-    );
+    expect(
+      paths.some((path) => path.includes('.cursor/skills/transcend-io-custom-functions')),
+    ).toBe(false);
 
     const rerun = buildInitPlan(buildInput(state, snapshotsAfterPlan(paths, first)), { features });
     expect(rerun.changes).toEqual([]);
@@ -269,7 +269,7 @@ describe('agent skill planning', () => {
     expect(skillChanges).toEqual([
       expect.objectContaining({
         kind: 'file',
-        path: join('/repo', '.claude', 'skills', 'transcend-custom-functions', 'SKILL.md'),
+        path: join('/repo', '.claude', 'skills', 'transcend-io-custom-functions', 'SKILL.md'),
       }),
     ]);
     expect(paths.some((path) => path.includes('.agents/skills'))).toBe(false);
@@ -281,7 +281,13 @@ describe('agent skill planning', () => {
     const paths = getInitPlanningCandidatePaths(state, { features });
     const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
     const snapshots = snapshotsAfterPlan(paths, first);
-    const skillPath = join('/repo', '.agents', 'skills', 'transcend-custom-functions', 'SKILL.md');
+    const skillPath = join(
+      '/repo',
+      '.agents',
+      'skills',
+      'transcend-io-custom-functions',
+      'SKILL.md',
+    );
     const skill = snapshots[skillPath]!;
     if (skill.kind !== 'file') {
       throw new Error('Expected the first plan to create the canonical skill.');

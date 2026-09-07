@@ -101,7 +101,7 @@ describe('generated Custom Function artifacts', () => {
     const metadata = parse(frontmatter![1]!) as Record<string, unknown>;
 
     expect(Object.keys(metadata).sort()).toEqual(['description', 'name']);
-    expect(metadata.name).toBe('transcend-custom-functions');
+    expect(metadata.name).toBe('transcend-io-custom-functions');
     expect(metadata.name).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u);
     expect((metadata.name as string).length).toBeLessThanOrEqual(64);
     expect(typeof metadata.description).toBe('string');
