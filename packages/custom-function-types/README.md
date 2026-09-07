@@ -59,6 +59,19 @@ DSR test payload contracts describe raw test files before `push` prepares the
 runtime payload. Both DSR schemas therefore allow `extras.dataSilo` to be
 omitted when `push` will inject the resolved integration.
 
+## Pin generated imports
+
+Generators can use the runtime version export to create exact npm specifiers
+without duplicating this package's version:
+
+```ts
+import { CUSTOM_FUNCTION_TYPES_VERSION } from '@transcend-io/custom-function-types';
+
+const specifier = `npm:@transcend-io/custom-function-types@${CUSTOM_FUNCTION_TYPES_VERSION}`;
+```
+
+`CUSTOM_FUNCTION_TYPES_VERSION` is sourced from this package's own manifest.
+
 ## Compatibility and versioning
 
 The package follows semantic versioning:
