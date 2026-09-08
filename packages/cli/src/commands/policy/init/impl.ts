@@ -37,7 +37,6 @@ import {
   buildPolicyInitPlan,
   getPolicyInitPlanningCandidatePaths,
 } from '../../../lib/policy/policy-scaffold-planning.js';
-import { assertPathPhysicallyContained } from '../../../lib/scaffolding/path-safety.js';
 import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-discovery.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 import {
@@ -233,8 +232,7 @@ export async function init(
     );
     const features = await resolveFeatures(prompts, flags, { interactive });
     const candidatePaths = getPolicyInitPlanningCandidatePaths(state, { features });
-    candidatePaths.forEach((path) => assertPathPhysicallyContained(this, state.projectRoot, path));
-    const snapshots = collectPlanningSnapshots(this, candidatePaths);
+    const snapshots = collectPlanningSnapshots(this, state.projectRoot, candidatePaths);
 
     const plan = buildPolicyInitPlan(
       { state, snapshots },

@@ -495,13 +495,13 @@ describe('policy init', () => {
     let failed = false;
     const failingFs = new Proxy(fs, {
       get(targetFs, property, receiver) {
-        if (property === 'renameSync') {
-          return (oldPath: PathLike, newPath: PathLike): void => {
+        if (property === 'linkSync') {
+          return (existingPath: PathLike, newPath: PathLike): void => {
             if (!failed && String(newPath).endsWith(join('.regal', 'config.yaml'))) {
               failed = true;
               throw new Error('simulated policy write failure');
             }
-            targetFs.renameSync(oldPath, newPath);
+            targetFs.linkSync(existingPath, newPath);
           };
         }
         return Reflect.get(targetFs, property, receiver);

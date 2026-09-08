@@ -1,6 +1,6 @@
 import { dirname, relative } from 'node:path';
 
-import { quoteCliArgument } from './paths.js';
+import { quoteShellArgument } from '../scaffolding/project-plan-output.js';
 
 /** Command that can be redirected to a discovered Custom Function project. */
 export type ManifestConsumerCommand = 'check' | 'new' | 'run';
@@ -30,7 +30,7 @@ export function formatMissingManifestMessage(options: {
     const directory = relative(cwd, dirname(discovered[0]!)) || '.';
     return (
       `Custom Function manifest does not exist at ${requested}. ` +
-      `Did you mean \`transcend custom-functions ${command} ${quoteCliArgument(directory)}\`?`
+      `Did you mean \`transcend custom-functions ${command} ${quoteShellArgument(directory)}\`?`
     );
   }
   if (discovered.length > 1) {

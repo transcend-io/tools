@@ -329,6 +329,7 @@ export function buildInitPlan(
     });
     plan.changes.push(...skillPlan.changes);
     plan.unchanged.push(...skillPlan.unchanged);
+    plan.warnings.push(...skillPlan.warnings);
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     if (!state.repositoryRoot || !state.usesGithub) {

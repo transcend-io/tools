@@ -6,6 +6,7 @@ import {
   PROJECT_SKILL_DIRECTORIES,
   type ExistingProjectSkillDirectory,
 } from './agent-skill.js';
+import { assertPathPhysicallyContained } from './path-safety.js';
 import type { PlanningPathSnapshot } from './project-plan.js';
 
 /** Repository-level state shared by project scaffolds. */
@@ -24,15 +25,18 @@ export interface ProjectRepositoryState {
  * Collect candidate paths once, before preview.
  *
  * @param context - CLI context
+ * @param rootDirectory - Approved planning root
  * @param paths - Absolute paths
  * @returns In-memory path snapshots
  */
 export function collectPlanningSnapshots(
   context: LocalContext,
+  rootDirectory: string,
   paths: readonly string[],
 ): Readonly<Record<string, PlanningPathSnapshot>> {
   return Object.fromEntries(
     paths.map((path): [string, PlanningPathSnapshot] => {
+      assertPathPhysicallyContained(context, rootDirectory, path);
       try {
         const stat = context.fs.lstatSync(path);
         if (stat.isSymbolicLink()) {

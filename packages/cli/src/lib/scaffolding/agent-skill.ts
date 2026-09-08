@@ -215,6 +215,11 @@ export function getManagedAgentSkillCandidatePaths(
     paths.add(aliasDirectory);
     skill.files.forEach(({ path }) => paths.add(join(aliasDirectory, path)));
   });
+  existingDirectories.forEach(({ path: directory }) => {
+    skill.files.forEach(({ path }) => {
+      paths.add(join(rootDirectory, directory, skill.name, path));
+    });
+  });
   return [...paths].sort((left, right) => left.localeCompare(right));
 }
 
@@ -309,6 +314,29 @@ export function planManagedAgentSkill(input: {
     };
     plan.changes.push(change);
   });
+
+  existingDirectories
+    .map(({ path }) => path)
+    .filter(
+      (directory) =>
+        directory !== directories.canonical && !directories.aliases.includes(directory),
+    )
+    .forEach((directory) => {
+      const existingDirectory = join(rootDirectory, directory, skill.name);
+      const skillPath = join(existingDirectory, 'SKILL.md');
+      const snapshot = getPlanningFileSnapshot(snapshots, skillPath);
+      if (
+        snapshot.contents !== null &&
+        isUnmodifiedManagedAgentSkill(snapshot.contents, skill.owner)
+      ) {
+        planManagedFiles(existingDirectory, `Update existing managed skill in ${directory}`);
+      } else if (snapshot.contents?.includes(`managed-by: ${skill.owner}`)) {
+        plan.unchanged.push(skillPath);
+        plan.warnings.push(
+          `Existing customized managed skill was left unchanged: ${existingDirectory}`,
+        );
+      }
+    });
 
   return plan;
 }

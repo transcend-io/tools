@@ -1,47 +1,84 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { extname, join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 /** One literal Agent Skill expected in the built CLI. */
 interface BundledSkillExpectation {
   /** Human-readable skill name. */
   name: string;
-  /** Literal strings that prove every skill asset was bundled. */
-  requiredContents: readonly string[];
+  /** CLI route that installs the skill. */
+  command: readonly string[];
+  /** Repository skill directory name. */
+  directory: string;
+  /** Skill assets expected after installation. */
+  files: readonly string[];
 }
-
-const distributionDirectory = join(import.meta.dirname, '..', 'dist');
-const bundle = readdirSync(distributionDirectory, { recursive: true })
-  .filter((path): path is string => typeof path === 'string' && extname(path) === '.mjs')
-  .map((path) => readFileSync(join(distributionDirectory, path), 'utf8'))
-  .join('\n');
 
 const expectations: readonly BundledSkillExpectation[] = [
   {
     name: 'Custom Function',
-    requiredContents: [
-      'name: transcend-custom-functions',
-      'references/setup.md',
-      'references/writing-custom-functions.md',
-      'https://docs.transcend.io/llms.txt',
-    ],
+    command: ['custom-functions', 'init'],
+    directory: 'transcend-custom-functions',
+    files: ['SKILL.md', 'references/setup.md', 'references/writing-custom-functions.md'],
   },
   {
     name: 'Policy Engine',
-    requiredContents: [
-      'name: transcend-policy-engine',
+    command: ['policy', 'init'],
+    directory: 'transcend-policy-engine',
+    files: [
+      'SKILL.md',
       'references/setup-tooling.md',
       'references/authoring.md',
       'references/testing-debugging.md',
       'references/publishing.md',
-      'https://docs.transcend.io/llms.txt',
     ],
   },
 ];
 
-const failures = expectations.flatMap(({ name, requiredContents }) => {
-  const missing = requiredContents.filter((content) => !bundle.includes(content));
-  return missing.length === 0 ? [] : [`${name}: ${missing.join(', ')}`];
-});
-if (failures.length > 0) {
-  throw new Error(`The built CLI is missing Agent Skill content:\n${failures.join('\n')}`);
+const packageDirectory = join(import.meta.dirname, '..');
+const repositoryDirectory = join(packageDirectory, '..', '..');
+const cliPath = join(packageDirectory, 'dist', 'bin', 'cli.mjs');
+const temporaryDirectory = mkdtempSync(join(tmpdir(), 'agent-skill-bundles-'));
+
+try {
+  expectations.forEach(({ name, command, directory, files }) => {
+    const projectDirectory = join(temporaryDirectory, directory);
+    mkdirSync(projectDirectory, { recursive: true });
+    const result = spawnSync(
+      process.execPath,
+      [cliPath, ...command, '--skill', '--yes', '--noInteractive'],
+      {
+        cwd: projectDirectory,
+        encoding: 'utf8',
+      },
+    );
+    if (result.error || result.status !== 0) {
+      throw new Error(
+        `The built CLI could not install its ${name} skill:\n${
+          result.error?.message || result.stderr || result.stdout
+        }`,
+      );
+    }
+    files.forEach((relativePath) => {
+      const source = readFileSync(
+        join(repositoryDirectory, 'skills', directory, relativePath),
+        'utf8',
+      ).trimEnd();
+      const generated = readFileSync(
+        join(projectDirectory, '.agents', 'skills', directory, relativePath),
+        'utf8',
+      )
+        .replace(
+          /\n*<!-- managed-by: @transcend-io\/cli; content-sha256: [a-f0-9]{64} -->\s*$/u,
+          '',
+        )
+        .trimEnd();
+      if (generated !== source) {
+        throw new Error(`The built CLI contains stale ${name} skill content: ${relativePath}`);
+      }
+    });
+  });
+} finally {
+  rmSync(temporaryDirectory, { recursive: true, force: true });
 }
