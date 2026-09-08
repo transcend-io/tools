@@ -24,6 +24,8 @@ export type CustomFunctionSetupFeature =
 export interface CustomFunctionProjectState {
   /** Absolute user-selected target directory. */
   targetDirectory: string;
+  /** Root that owns repository-level editor and agent setup. */
+  projectRoot: string;
   /** Directory relative to which manifest file references resolve. */
   manifestDirectory: string;
   /** Absolute manifest path. */

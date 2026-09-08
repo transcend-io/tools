@@ -24,6 +24,7 @@ function buildState(root: string): CustomFunctionProjectState {
   const targetDirectory = join(root, 'custom-functions');
   return {
     targetDirectory,
+    projectRoot: root,
     manifestDirectory: targetDirectory,
     manifestPath: join(targetDirectory, 'transcend-functions.yml'),
     repositoryRoot: root,

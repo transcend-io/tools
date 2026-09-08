@@ -45,6 +45,7 @@ describe('discoverCustomFunctionProject', () => {
     const state = await discoverCustomFunctionProject(context, {});
 
     expect(state.targetDirectory).toBe(join(root, 'transcend', 'custom-functions'));
+    expect(state.projectRoot).toBe(root);
     expect(state.manifestDirectory).toBe(state.targetDirectory);
     expect(state.manifestPath).toBe(
       join(root, 'transcend', 'custom-functions', 'transcend-functions.yml'),
@@ -60,6 +61,7 @@ describe('discoverCustomFunctionProject', () => {
     });
 
     expect(state.targetDirectory).toBe(join(root, 'config'));
+    expect(state.projectRoot).toBe(join(root, 'config'));
     expect(state.manifestDirectory).toBe(join(root, 'config'));
     expect(state.manifestPath).toBe(join(root, 'config', 'functions.yml'));
   });
@@ -102,6 +104,7 @@ describe('discoverCustomFunctionProject', () => {
     expect(second).toEqual(first);
     expect(first).toMatchObject({
       targetDirectory: target,
+      projectRoot: root,
       manifestDirectory: target,
       manifestPath: join(target, 'transcend-functions.yml'),
       repositoryRoot: root,

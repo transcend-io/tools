@@ -101,7 +101,7 @@ export interface InitPlanOptions {
  * @returns Repository root or target
  */
 function setupRoot(state: CustomFunctionProjectState): string {
-  return state.repositoryRoot ?? state.targetDirectory;
+  return state.projectRoot;
 }
 
 /**

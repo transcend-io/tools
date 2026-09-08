@@ -7,7 +7,7 @@ import {
   type ExistingProjectSkillDirectory,
 } from '../scaffolding/agent-skill.js';
 import { parseCustomFunctionsManifest } from './manifest.js';
-import { resolveCustomFunctionProjectPaths } from './paths.js';
+import { DEFAULT_CUSTOM_FUNCTION_DIRECTORY, resolveCustomFunctionProjectPaths } from './paths.js';
 import type { CustomFunctionProjectState } from './scaffold-model.js';
 import type { PlanningPathSnapshot } from './scaffold-planning.js';
 
@@ -292,18 +292,21 @@ export function discoverCustomFunctionProject(
   );
   const existingAncestor = findExistingAncestor(context, targetDirectory);
   const repositoryRoot = findRepositoryRoot(context, existingAncestor);
+  const projectRoot =
+    repositoryRoot ??
+    (targetDirectory === resolve(cwd, DEFAULT_CUSTOM_FUNCTION_DIRECTORY) ? cwd : targetDirectory);
   const denoJsonc = join(manifestDirectory, 'deno.jsonc');
   const denoJson = join(manifestDirectory, 'deno.json');
   const denoConfigPath = context.fs.existsSync(denoJsonc) ? denoJsonc : denoJson;
-  const agentRoot = repositoryRoot ?? targetDirectory;
 
   return {
     targetDirectory,
+    projectRoot,
     manifestDirectory,
     manifestPath,
     ...(repositoryRoot ? { repositoryRoot } : {}),
     denoConfigPath,
-    existingSkillDirectories: detectExistingSkillDirectories(context, agentRoot),
+    existingSkillDirectories: detectExistingSkillDirectories(context, projectRoot),
     usesGithub: repositoryUsesGithub(context, repositoryRoot),
     relativePaths: collectRelativePaths(context, manifestDirectory),
   };

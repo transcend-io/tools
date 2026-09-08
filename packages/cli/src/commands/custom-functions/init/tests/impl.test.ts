@@ -63,6 +63,25 @@ describe('custom-functions init', () => {
     });
   });
 
+  it('places repository-level setup at the invocation root for a bare default project', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'transcend', 'custom-functions');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { HOME: root },
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags({ editor: true, skill: true }));
+
+    expect(existsSync(join(root, '.vscode', 'settings.json'))).toBe(true);
+    expect(
+      existsSync(join(root, '.agents', 'skills', 'transcend-custom-functions', 'SKILL.md')),
+    ).toBe(true);
+    expect(existsSync(join(target, '.vscode'))).toBe(false);
+    expect(existsSync(join(target, '.agents'))).toBe(false);
+  });
+
   it('previews an empty target without writing anything', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'project');

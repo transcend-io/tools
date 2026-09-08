@@ -2530,11 +2530,12 @@ transcend custom-functions init ./packages/transcend-functions \
   --deno \
   --editor \
   --skill \
+  --ci \
   --noInteractive \
   --yes
 ```
 
-Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Use `--dryRun` to review the same transactional plan without applying it. After a successful setup, the CLI prints a compact AI handoff for reviewing the generated files and adapting validation to the repository's CI.
+Non-interactive setup enables only the individual flags passed; use the example above for the full setup selected by default in the interactive checklist. Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Existing generated GitHub Actions workflows with repository-specific edits are left unchanged. Use `--dryRun` to review the same transactional plan without applying it. After a successful setup, the CLI prints a compact AI handoff for reviewing the generated files and adapting validation to the repository's CI.
 
 ### `transcend custom-functions new`
 
@@ -2601,7 +2602,7 @@ transcend custom-functions check
 
 `check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. It validates unresolved manifest placeholders and every test fixture against the published authoring schemas, then asks Deno 2.x to inspect exports, type-check, lint, and check formatting without executing the modules. Missing and unsupported Deno versions produce focused installation or upgrade guidance.
 
-In CI, use `--noInteractive --json`. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
+In CI, use `--noInteractive --json`. JSON diagnostics stay concise instead of embedding full format patches. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
 
 ### `transcend custom-functions push`
 

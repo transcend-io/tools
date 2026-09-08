@@ -176,9 +176,8 @@ export async function _new(
       await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
-    const skillRoot = state.repositoryRoot ?? state.targetDirectory;
     const hasSkill = state.existingSkillDirectories.some(({ path }) =>
-      this.fs.existsSync(join(skillRoot, path, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md')),
+      this.fs.existsSync(join(state.projectRoot, path, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md')),
     );
     const aiHandoff = buildNewFunctionAiHandoff({
       displayName: generated.displayName,
