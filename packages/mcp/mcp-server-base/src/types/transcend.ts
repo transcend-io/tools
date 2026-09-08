@@ -484,6 +484,15 @@ export interface RocUserRecordDiff {
   updated: RocPurpose[];
 }
 
+export interface RocUserRecord {
+  /** Preferences at the current time */
+  preferencesAtCurrentTime: RocPreference[];
+  /** Changes from the previous state */
+  changeFromPrevState: RocUserRecordDiff;
+  /** Raw archived Record of Consent (ROC) payload; only present if includeRawRequest is true */
+  rawRequest?: RocRawConsentRecord;
+}
+
 export interface RocQueryInput {
   /** Identifier to query */
   identifier: PreferenceStoreIdentifier;
@@ -493,10 +502,11 @@ export interface RocQueryInput {
   includeRawRequest?: boolean;
 }
 
-export interface RocUserRecord {
-  preferencesAtCurrentTime: string;
-  changeFromPrevState: string;
-  rawRequest?: string;
+export interface RocQueryResponse {
+  /** List of user records */
+  nodes: RocUserRecord[];
+  /** Whether the response contains the initial record */
+  containsInitialRecord: boolean;
 }
 
 export interface AirgapBundle {
