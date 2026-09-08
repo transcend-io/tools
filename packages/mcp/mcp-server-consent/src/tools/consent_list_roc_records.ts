@@ -1,10 +1,13 @@
 import { createToolResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
 
 export const ConsentListRocRecordsSchema = z.object({
-  // TODO: replace with the arguments this tool takes. Every field needs a
-  // description: it is what the model reads to decide how to call this, and
-  // `scripts/check-mcp-descriptions.test.ts` fails a registered tool without one.
-  query: z.string().describe('TODO: what this argument selects.'),
+  partition: z
+    .string()
+    .describe('The consent partition (airgap bundle id) the lookup is scoped to'),
+  limit: z
+    .number()
+    .describe('Maximum number of records to return (1-200); omit to return the full timeline'),
+  includeRawRequest: z.boolean().describe('Whether to include the raw request in the response'),
 });
 export type ConsentListRocRecordsInput = z.infer<typeof ConsentListRocRecordsSchema>;
 
@@ -21,18 +24,18 @@ export type ConsentListRocRecordsInput = z.infer<typeof ConsentListRocRecordsSch
 export function createConsentListRocRecordsTool(_clients?: ToolClients) {
   return defineTool({
     name: 'consent_list_roc_records',
-    description: 'TODO: what this returns, and when the model should call it.',
-    category: 'TODO',
-    // `readOnly` gates whether the tool is offered in a read-only session; the
-    // annotations are hints a host may show. Flip them together for a mutating tool.
+    description: 'List all ROC records for a given user in a partition.',
+    category: 'Consent Management',
     readOnly: true,
-    requireAuth: false,
+    requireAuth: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ConsentListRocRecordsSchema,
-    handler: async ({ query }) =>
+    handler: async ({ partition, limit, includeRawRequest }) =>
       createToolResult(true, {
         // TODO: return the data this tool exists to fetch.
-        query,
+        partition,
+        limit,
+        includeRawRequest,
       }),
   });
 }
