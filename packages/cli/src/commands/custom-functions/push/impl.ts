@@ -52,6 +52,18 @@ export async function push(
 ): Promise<void> {
   doneInputValidation(this.process);
 
+  // Read and validate the manifest before performing auth or network setup.
+  if (!this.fs.existsSync(file)) {
+    const scaffoldedManifest = './transcend/custom-functions/transcend-functions.yml';
+    const suggestion = this.fs.existsSync(scaffoldedManifest)
+      ? ` Did you mean --file=${scaffoldedManifest}?`
+      : ' You can specify the file path using --file=./transcend-functions.yml';
+    this.logger.error(
+      colors.red(`The manifest file does not exist on disk: ${file}.${suggestion}`),
+    );
+    this.process.exit(1);
+  }
+
   // This command operates on a single Transcend instance
   const apiKeyOrList = validateTranscendAuth(auth, this);
   if (Array.isArray(apiKeyOrList)) {
@@ -64,16 +76,6 @@ export async function push(
   }
   const apiKey = apiKeyOrList as string;
 
-  // Read and validate the manifest
-  if (!this.fs.existsSync(file)) {
-    this.logger.error(
-      colors.red(
-        `The manifest file does not exist on disk: ${file}. ` +
-          'You can specify the file path using --file=./transcend-functions.yml',
-      ),
-    );
-    this.process.exit(1);
-  }
   const vars = parseVariablesFromString(variables);
   this.logger.info(colors.magenta(`Reading manifest "${file}"...`));
   const configs = readCustomFunctionsManifest(file, vars);

@@ -11,6 +11,15 @@ describe('parseDenoRuntimeVersion', () => {
       major: 2,
     });
   });
+
+  it.each([
+    ['deno 2.5.6\r\nv8 14.0\r\n', { version: '2.5.6', major: 2 }],
+    ['deno 2.6.0-rc.1\n', { version: '2.6.0-rc.1', major: 2 }],
+    ['', undefined],
+    ['unexpected localized output', undefined],
+  ])('handles version output edge case %j', (output, expected) => {
+    expect(parseDenoRuntimeVersion(output)).toEqual(expected);
+  });
 });
 
 describe('unsupportedDenoVersionMessage', () => {

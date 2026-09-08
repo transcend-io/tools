@@ -184,6 +184,24 @@ describe('parseCustomFunctionsManifest', () => {
 });
 
 describe('readCustomFunctionsManifest', () => {
+  it('preserves push compatibility for parent-relative source paths', () => {
+    const root = mkdtempSync(join(tmpdir(), 'cf-external-source-'));
+    const manifestDirectory = join(root, 'config');
+    const sourcePath = join(root, 'shared.ts');
+    mkdirSync(manifestDirectory, { recursive: true });
+    writeFileSync(sourcePath, 'export default async () => 1;\n');
+    const manifestPath = join(manifestDirectory, 'transcend-functions.yml');
+    writeFileSync(
+      manifestPath,
+      `functions:
+  - name: Shared source
+    code: ../shared.ts
+`,
+    );
+
+    expect(readCustomFunctionsManifest(manifestPath)[0]!.code).toContain('export default');
+  });
+
   it('passes ids through and allows duplicate names when disambiguated by id', () => {
     const filePath = writeFixture(MANIFEST);
     const configs = readCustomFunctionsManifest(filePath, { crmApiKey: 'secret' });

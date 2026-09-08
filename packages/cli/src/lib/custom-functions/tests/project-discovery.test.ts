@@ -6,7 +6,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildContextForTest } from '../../tests/helpers/buildContextForTest.js';
 import { resolveCliPath } from '../paths.js';
-import { discoverCustomFunctionProject } from '../project-discovery.js';
+import {
+  discoverCustomFunctionManifests,
+  discoverCustomFunctionProject,
+} from '../project-discovery.js';
 
 const temporaryRoots: string[] = [];
 
@@ -119,5 +122,17 @@ describe('discoverCustomFunctionProject', () => {
     );
     expect(first.relativePaths).toContain('Functions/Existing.ts');
     expect(first.relativePaths.some((path) => path.includes('node_modules'))).toBe(false);
+  });
+});
+
+describe('discoverCustomFunctionManifests', () => {
+  it('recognizes valid manifests with custom YAML filenames', () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, '.git'));
+    writeFileSync(join(root, 'functions.yml'), 'functions: []\n');
+    writeFileSync(join(root, 'workflow.yml'), 'jobs: {}\n');
+    const context = buildContextForTest({ cwd: root });
+
+    expect(discoverCustomFunctionManifests(context, root)).toEqual([join(root, 'functions.yml')]);
   });
 });

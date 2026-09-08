@@ -1,4 +1,4 @@
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { dirname, extname, join, relative, resolve, sep } from 'node:path';
 
 import type { LocalContext } from '../../context.js';
 import {
@@ -6,7 +6,8 @@ import {
   PROJECT_SKILL_DIRECTORIES,
   type ExistingProjectSkillDirectory,
 } from '../scaffolding/agent-skill.js';
-import { DEFAULT_CUSTOM_FUNCTION_DIRECTORY, resolveCliPath } from './paths.js';
+import { parseCustomFunctionsManifest } from './manifest.js';
+import { resolveCustomFunctionProjectPaths } from './paths.js';
 import type { CustomFunctionProjectState } from './scaffold-model.js';
 import type { PlanningPathSnapshot } from './scaffold-planning.js';
 
@@ -142,10 +143,26 @@ export function discoverCustomFunctionManifests(
         return;
       }
       const absolute = join(directory, entry.name);
-      if (entry.isFile() && entry.name === 'transcend-functions.yml') {
-        manifests.push(absolute);
-      } else if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      if (entry.isDirectory() && !entry.isSymbolicLink()) {
         visit(absolute);
+      } else if (entry.isFile()) {
+        if (entry.name === 'transcend-functions.yml') {
+          manifests.push(absolute);
+          return;
+        }
+        if (['.yml', '.yaml'].includes(extname(entry.name))) {
+          try {
+            if (context.fs.statSync(absolute).size > 256_000) {
+              return;
+            }
+            parseCustomFunctionsManifest(context.fs.readFileSync(absolute, 'utf8'), {
+              allowExternalPaths: true,
+            });
+            manifests.push(absolute);
+          } catch {
+            // Most repository YAML files are not Custom Function manifests.
+          }
+        }
       }
     });
   };
@@ -269,18 +286,10 @@ export function discoverCustomFunctionProject(
   },
 ): CustomFunctionProjectState {
   const cwd = context.process.cwd();
-  const manifestPath = options.manifest
-    ? resolveCliPath(cwd, options.manifest)
-    : join(
-        resolveCliPath(cwd, options.directory ?? DEFAULT_CUSTOM_FUNCTION_DIRECTORY),
-        'transcend-functions.yml',
-      );
-  const manifestDirectory = dirname(manifestPath);
-  const targetDirectory = options.directory
-    ? resolveCliPath(cwd, options.directory)
-    : options.manifest
-      ? manifestDirectory
-      : resolveCliPath(cwd, DEFAULT_CUSTOM_FUNCTION_DIRECTORY);
+  const { manifestDirectory, manifestPath, targetDirectory } = resolveCustomFunctionProjectPaths(
+    cwd,
+    options,
+  );
   const existingAncestor = findExistingAncestor(context, targetDirectory);
   const repositoryRoot = findRepositoryRoot(context, existingAncestor);
   const denoJsonc = join(manifestDirectory, 'deno.jsonc');

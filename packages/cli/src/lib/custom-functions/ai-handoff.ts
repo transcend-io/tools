@@ -1,4 +1,5 @@
 import { CUSTOM_FUNCTION_SKILL_NAME } from './custom-function-skill.js';
+import { buildCustomFunctionProjectArguments } from './paths.js';
 
 /**
  * Build a compact AI handoff after project initialization.
@@ -21,7 +22,10 @@ export function buildInitAiHandoff(options: {
   const prefix = options.hasSkill
     ? `Use the \`${CUSTOM_FUNCTION_SKILL_NAME}\` skill to`
     : 'Ask your coding agent to';
-  const checkCommand = `transcend custom-functions check "${options.targetDirectory}" --manifest="${options.manifestPath}" --noInteractive`;
+  const checkCommand = `transcend custom-functions check ${buildCustomFunctionProjectArguments(
+    options.targetDirectory,
+    options.manifestPath,
+  )} --noInteractive`;
   if (options.hasGithubWorkflow) {
     return `${prefix} review the Custom Function setup in \`${options.targetDirectory}\`, adapt the generated GitHub Actions workflow to this repository's conventions, and run \`${checkCommand}\`.`;
   }
@@ -41,11 +45,17 @@ export function buildNewFunctionAiHandoff(options: {
   sourcePath: string;
   /** Display path to the Custom Function project. */
   targetDirectory: string;
+  /** Display path to the selected manifest. */
+  manifestPath: string;
   /** Whether the authoring skill is expected in this project. */
   hasSkill: boolean;
 }): string {
   const prefix = options.hasSkill
     ? `Use the \`${CUSTOM_FUNCTION_SKILL_NAME}\` skill to`
     : 'Ask your coding agent to';
-  return `${prefix} implement \`${options.displayName}\` in \`${options.sourcePath}\`, replace the example fixtures with realistic cases, and run \`transcend custom-functions check "${options.targetDirectory}"\`.`;
+  const checkCommand = `transcend custom-functions check ${buildCustomFunctionProjectArguments(
+    options.targetDirectory,
+    options.manifestPath,
+  )}`;
+  return `${prefix} implement \`${options.displayName}\` in \`${options.sourcePath}\`, replace the example fixtures with realistic cases, and run \`${checkCommand}\`.`;
 }

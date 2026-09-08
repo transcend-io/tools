@@ -32,8 +32,21 @@ describe('buildNewFunctionAiHandoff', () => {
         displayName: 'Customer CRM access',
         sourcePath: 'transcend/custom-functions/functions/customer-crm-access.ts',
         targetDirectory: 'transcend/custom-functions',
+        manifestPath: 'transcend/custom-functions/transcend-functions.yml',
         hasSkill: true,
       }),
     ).toContain('Use the `transcend-custom-functions` skill');
+  });
+
+  it('preserves a custom manifest path in the validation command', () => {
+    const handoff = buildNewFunctionAiHandoff({
+      displayName: 'Customer CRM access',
+      sourcePath: 'functions/customer-crm-access.ts',
+      targetDirectory: '.',
+      manifestPath: 'functions.yml',
+      hasSkill: false,
+    });
+
+    expect(handoff).toContain("--manifest='functions.yml'");
   });
 });

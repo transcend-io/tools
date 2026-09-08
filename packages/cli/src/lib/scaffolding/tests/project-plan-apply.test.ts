@@ -32,11 +32,12 @@ function makeTemporaryRoot(): string {
 /**
  * Wrap staged changes in a complete project plan.
  *
+ * @param rootDirectory - Approved mutation root
  * @param changes - Staged mutations
  * @returns Complete project plan
  */
-function buildPlan(changes: PlannedChange[]): ProjectPlan {
-  return { changes };
+function buildPlan(rootDirectory: string, changes: PlannedChange[]): ProjectPlan {
+  return { rootDirectory, changes };
 }
 
 afterEach(() => {
@@ -51,7 +52,7 @@ describe('applyProjectPlan preflight', () => {
     const appeared = join(root, 'created.ts');
     const changed = join(root, 'deno.json');
     writeFileSync(changed, '{"strict": false}\n');
-    const plan = buildPlan([
+    const plan = buildPlan(root, [
       {
         kind: 'file',
         path: appeared,
@@ -74,6 +75,29 @@ describe('applyProjectPlan preflight', () => {
     );
     expect(existsSync(appeared)).toBe(false);
     expect(readFileSync(changed, 'utf8')).toBe('{"strict": "changed after preview"}\n');
+  });
+
+  it('rejects a destination whose symlink ancestor escapes the project root', async () => {
+    const root = makeTemporaryRoot();
+    const outside = makeTemporaryRoot();
+    const linkedDirectory = join(root, 'functions');
+    const destination = join(linkedDirectory, 'example.ts');
+    fs.symlinkSync(outside, linkedDirectory, 'dir');
+    const plan = buildPlan(root, [
+      {
+        kind: 'file',
+        path: destination,
+        before: null,
+        after: 'export default 1;\n',
+        description: 'Create source',
+        createOnly: true,
+      },
+    ]);
+
+    await expect(applyProjectPlan(buildContextForTest({ cwd: root }), plan)).rejects.toThrow(
+      'outside project root through a symlink',
+    );
+    expect(existsSync(join(outside, 'example.ts'))).toBe(false);
   });
 });
 
@@ -99,7 +123,7 @@ describe('applyProjectPlan rollback', () => {
         return Reflect.get(target, property, receiver);
       },
     });
-    const plan = buildPlan([
+    const plan = buildPlan(root, [
       {
         kind: 'file',
         path: first,
@@ -139,7 +163,7 @@ describe('applyProjectPlan skill links', () => {
         return Reflect.get(target, property, receiver);
       },
     });
-    const plan = buildPlan([
+    const plan = buildPlan(root, [
       {
         kind: 'link',
         path: linkPath,

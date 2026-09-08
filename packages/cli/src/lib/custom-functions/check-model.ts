@@ -1,14 +1,11 @@
 import type { CUSTOM_FUNCTION_RESULT_VERSION } from './scaffold-model.js';
 
-/** Severity attached to a local check diagnostic. */
-export type CustomFunctionDiagnosticSeverity = 'error' | 'warning';
-
 /** A stable file-scoped local validation diagnostic. */
 export interface CustomFunctionDiagnostic {
   /** Stable machine-readable diagnostic code. */
   code: string;
-  /** Error or warning. */
-  severity: CustomFunctionDiagnosticSeverity;
+  /** Diagnostics currently represent validation errors. */
+  severity: 'error';
   /** Human-readable explanation. */
   message: string;
   /** File path, relative to the manifest when possible. */

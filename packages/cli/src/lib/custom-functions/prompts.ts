@@ -60,9 +60,14 @@ export class CustomFunctionPrompts {
    *
    * @param message - User-facing question
    * @param defaultValue - Suggested value
+   * @param validate - Optional command-specific validation
    * @returns Answer
    */
-  public async text(message: string, defaultValue?: string): Promise<string> {
+  public async text(
+    message: string,
+    defaultValue?: string,
+    validate?: (value: string) => true | string,
+  ): Promise<string> {
     try {
       const answer = await this.prompt<{ value: string }>([
         {
@@ -70,7 +75,10 @@ export class CustomFunctionPrompts {
           name: 'value',
           message,
           ...(defaultValue === undefined ? {} : { default: defaultValue }),
-          validate: (value: string) => value.trim().length > 0 || 'Enter a value.',
+          validate: (value: string) => {
+            const trimmed = value.trim();
+            return trimmed.length > 0 ? (validate?.(trimmed) ?? true) : 'Enter a value.';
+          },
         },
       ]);
       return answer.value.trim();

@@ -84,6 +84,10 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "check:skill-bundle": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "check:deps": {},
     "transit": {
       "dependsOn": ["^transit"]
@@ -164,6 +168,19 @@
         "tsdown.config.ts"
       ],
       "outputs": ["dist/**", "src/__generated__/**"]
+    },
+    "@transcend-io/cli#quality:checks": {
+      "dependsOn": [
+        "typecheck",
+        "typecheck:ui",
+        "//#typecheck:root",
+        "//#check:packages",
+        "check:deps",
+        "//#check:deps:root",
+        "check:exports",
+        "check:publint",
+        "check:skill-bundle"
+      ]
     }
   }
 }

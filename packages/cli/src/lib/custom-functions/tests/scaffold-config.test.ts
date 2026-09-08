@@ -37,11 +37,41 @@ describe('JSONC configuration merging', () => {
       },
       tasks: {
         custom: 'deno task custom',
-        'custom-functions:check':
-          'deno check functions/**/*.ts && deno lint functions/ && deno fmt --check functions/ test-payloads/',
+        'custom-functions:check': "transcend custom-functions check '.' --noInteractive",
       },
     });
     expect(rerun).toBe(merged);
+  });
+
+  it('migrates the generated task and preserves custom manifest paths', () => {
+    const legacy = `{
+  "tasks": {
+    "custom-functions:check": "deno check functions/**/*.ts && deno lint functions/ && deno fmt --check functions/ test-payloads/"
+  }
+}
+`;
+
+    expect(
+      parse(
+        mergeDenoConfiguration(legacy, '1.2.3', 'functions.yml', {
+          sources: ['./src/custom.ts'],
+          payloads: ['./fixtures/custom.json'],
+        }),
+      ),
+    ).toMatchObject({
+      tasks: {
+        'custom-functions:check':
+          "transcend custom-functions check '.' --manifest='functions.yml' --noInteractive",
+      },
+      lint: { include: expect.arrayContaining(['./src/custom.ts']) },
+      fmt: {
+        include: expect.arrayContaining([
+          'functions.yml',
+          './src/custom.ts',
+          './fixtures/custom.json',
+        ]),
+      },
+    });
   });
 
   it('refuses to replace a conflicting Custom Function task', () => {

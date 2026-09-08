@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import type { CustomFunctionProjectPlan } from '../scaffold-model.js';
-import { buildPlanResult, renderProjectPlan } from '../scaffold-output.js';
+import { buildPlanResult, displayPath, renderProjectPlan } from '../scaffold-output.js';
 
 const PLAN: CustomFunctionProjectPlan = {
   version: 1,
   command: 'new',
+  rootDirectory: '/repo/custom-functions',
   targetDirectory: '/repo/custom-functions',
   manifestPath: '/repo/custom-functions/transcend-functions.yml',
   changes: [
@@ -37,11 +38,13 @@ describe('buildPlanResult', () => {
       applied: false,
       dryRun: true,
       cwd: '/repo',
+      aiHandoff: 'Continue with the generated scaffold.',
     });
     const second = buildPlanResult(PLAN, {
       applied: false,
       dryRun: true,
       cwd: '/repo',
+      aiHandoff: 'Continue with the generated scaffold.',
     });
 
     expect(JSON.stringify(second)).toBe(JSON.stringify(first));
@@ -67,6 +70,7 @@ describe('buildPlanResult', () => {
       ],
       warnings: ['Commit generated files before deploying.'],
       nextSteps: ['transcend custom-functions check custom-functions'],
+      aiHandoff: 'Continue with the generated scaffold.',
     });
     expect(JSON.stringify(first)).not.toContain('private source contents');
     expect(JSON.stringify(first)).not.toContain('private skill contents');
@@ -85,5 +89,11 @@ describe('renderProjectPlan', () => {
     };
 
     expect(renderProjectPlan(noOpPlan, '/repo')).toContain('No changes needed.');
+  });
+});
+
+describe('displayPath', () => {
+  it('uses an absolute path instead of an ambiguous parent-relative path', () => {
+    expect(displayPath('/repo', '/outside/functions')).toBe('/outside/functions');
   });
 });

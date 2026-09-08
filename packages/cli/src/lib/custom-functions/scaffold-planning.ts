@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, join, relative, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import {
   buildManagedAgentSkill,
@@ -15,6 +15,7 @@ import {
   CUSTOM_FUNCTION_SKILL_NAME,
 } from './custom-function-skill.js';
 import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
+import { buildCustomFunctionProjectArguments, quoteCliArgument } from './paths.js';
 import { generateGithubActionsWorkflow } from './scaffold-artifacts.js';
 import {
   mergeDenoConfiguration,
@@ -347,20 +348,29 @@ export function buildInitPlan(
   options: InitPlanOptions,
 ): CustomFunctionProjectPlan {
   const { state } = input;
+  const projectArguments = buildCustomFunctionProjectArguments(
+    state.targetDirectory,
+    state.manifestPath,
+  );
   const plan: CustomFunctionProjectPlan = {
     version: CUSTOM_FUNCTION_RESULT_VERSION,
     command: 'init',
+    rootDirectory: setupRoot(state),
     targetDirectory: state.targetDirectory,
     manifestPath: state.manifestPath,
     changes: [],
     unchanged: [],
     warnings: [],
     nextSteps: [
-      `transcend custom-functions new ${state.targetDirectory}`,
-      `transcend custom-functions check ${state.targetDirectory}`,
+      `transcend custom-functions new ${projectArguments}`,
+      `transcend custom-functions check ${projectArguments}`,
     ],
   };
   const manifestSnapshot = fileSnapshotAt(input, state.manifestPath);
+  const existingManifest =
+    manifestSnapshot.contents === null
+      ? undefined
+      : parseCustomFunctionsManifest(manifestSnapshot.contents);
   if (manifestSnapshot.contents === null) {
     addFileChange(plan, input, {
       path: state.manifestPath,
@@ -368,16 +378,29 @@ export function buildInitPlan(
       description: 'Create the Custom Function manifest',
     });
   } else {
-    parseCustomFunctionsManifest(manifestSnapshot.contents);
     plan.unchanged.push(state.manifestPath);
   }
 
   const selected = new Set(options.features);
   if (selected.has(CustomFunctionSetupFeature.Deno)) {
     const snapshot = fileSnapshotAt(input, state.denoConfigPath);
+    const sourcePaths = (existingManifest?.functions ?? [])
+      .map(({ code }) => code)
+      .filter((path) => !path.includes('<<parameters.'));
+    const payloadPaths = (existingManifest?.functions ?? [])
+      .flatMap((entry) => [
+        ...(entry['test-payload'] ? [entry['test-payload']] : []),
+        ...(entry['test-payloads'] ?? []).map(({ payload }) => payload),
+      ])
+      .filter((path) => !path.includes('<<parameters.'));
     addFileChange(plan, input, {
       path: state.denoConfigPath,
-      contents: mergeDenoConfiguration(snapshot.contents, input.contractVersion),
+      contents: mergeDenoConfiguration(
+        snapshot.contents,
+        input.contractVersion,
+        basename(state.manifestPath),
+        { sources: sourcePaths, payloads: payloadPaths },
+      ),
       description: 'Merge strict target-scoped Deno authoring configuration',
     });
   }
@@ -417,16 +440,42 @@ export function buildInitPlan(
       );
       const target =
         relative(state.repositoryRoot, state.targetDirectory).split(sep).join('/') || '.';
+      const contentDirectory =
+        relative(state.repositoryRoot, state.manifestDirectory).split(sep).join('/') || '.';
       const manifest = relative(state.repositoryRoot, state.manifestPath).split(sep).join('/');
-      addFileChange(plan, input, {
-        path: workflowPath,
-        contents: generateGithubActionsWorkflow({
-          cliVersion: input.cliVersion,
-          targetDirectory: target,
-          manifestPath: manifest,
-        }),
-        description: 'Add credential-free Custom Function checks',
+      const watchedPaths = (existingManifest?.functions ?? [])
+        .flatMap((entry) => [
+          entry.code,
+          ...(entry['test-payload'] ? [entry['test-payload']] : []),
+          ...(entry['test-payloads'] ?? []).map(({ payload }) => payload),
+        ])
+        .filter((path) => !path.includes('<<parameters.'))
+        .map((path) =>
+          relative(state.repositoryRoot!, resolve(state.manifestDirectory, path))
+            .split(sep)
+            .join('/'),
+        );
+      const workflowContents = generateGithubActionsWorkflow({
+        cliVersion: input.cliVersion,
+        targetDirectory: target,
+        contentDirectory,
+        manifestPath: manifest,
+        watchedPaths,
       });
+      const workflowSnapshot = fileSnapshotAt(input, workflowPath);
+      if (workflowSnapshot.contents === null) {
+        addFileChange(plan, input, {
+          path: workflowPath,
+          contents: workflowContents,
+          description: 'Add credential-free Custom Function checks',
+          createOnly: true,
+        });
+      } else if (workflowSnapshot.contents === workflowContents) {
+        plan.unchanged.push(workflowPath);
+      } else {
+        plan.unchanged.push(workflowPath);
+        plan.warnings.push(`Existing GitHub Actions workflow was left unchanged: ${workflowPath}`);
+      }
     }
   }
   validatePlanDestinations(
@@ -455,9 +504,33 @@ export function buildAddFunctionPlan(
   if (currentManifest === null) {
     throw new Error(`Custom Function manifest does not exist: ${state.manifestPath}`);
   }
+  const sourceRelativePath = options.generated.sourceFile.path.split(sep).join('/');
+  const sourceCollision = state.relativePaths.find(
+    (path) => path.toLocaleLowerCase('en-US') === sourceRelativePath.toLocaleLowerCase('en-US'),
+  );
+  if (sourceCollision) {
+    throw new Error(
+      `Custom Function name "${options.generated.displayName}" maps to ${sourceRelativePath}, ` +
+        `which conflicts with existing path ${sourceCollision}. Choose another name.`,
+    );
+  }
+  const existingSourceEntry = parseCustomFunctionsManifest(currentManifest, {
+    allowExternalPaths: true,
+  }).functions.find(
+    (entry) =>
+      resolve(state.manifestDirectory, entry.code) ===
+      resolve(state.manifestDirectory, sourceRelativePath),
+  );
+  if (existingSourceEntry) {
+    throw new Error(
+      `Custom Function name "${options.generated.displayName}" maps to source used by ` +
+        `"${existingSourceEntry.name}". Choose another name.`,
+    );
+  }
   const plan: CustomFunctionProjectPlan = {
     version: CUSTOM_FUNCTION_RESULT_VERSION,
     command: 'new',
+    rootDirectory: state.manifestDirectory,
     targetDirectory: state.targetDirectory,
     manifestPath: state.manifestPath,
     changes: [],
@@ -488,10 +561,14 @@ export function buildAddFunctionPlan(
     });
   });
   const sourcePath = join(state.manifestDirectory, options.generated.sourceFile.path);
+  const projectArguments = buildCustomFunctionProjectArguments(
+    state.targetDirectory,
+    state.manifestPath,
+  );
   plan.nextSteps = [
-    `Edit ${sourcePath}`,
-    `transcend custom-functions check ${state.targetDirectory}`,
-    `transcend custom-functions push --file=${state.manifestPath} --dryRun`,
+    `Edit ${quoteCliArgument(sourcePath)}`,
+    `transcend custom-functions check ${projectArguments}`,
+    `transcend custom-functions push --file=${quoteCliArgument(state.manifestPath)} --dryRun`,
   ];
   if (options.generated.manifestEntry.env?.TRANSCEND_API_KEY) {
     plan.warnings.push(

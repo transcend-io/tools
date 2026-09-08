@@ -116,8 +116,15 @@ export function isCustomFunctionManifestPathContained(filePath: string): boolean
  * Validate semantic constraints shared by manifest readers and editors.
  *
  * @param manifest - Shape-validated custom function manifest
+ * @param options - Compatibility behavior
  */
-export function validateCustomFunctionsManifest(manifest: CustomFunctionsManifest): void {
+export function validateCustomFunctionsManifest(
+  manifest: CustomFunctionsManifest,
+  options: {
+    /** Preserve legacy push support for paths outside the manifest directory. */
+    allowExternalPaths?: boolean;
+  } = {},
+): void {
   // IDs must be unique — two entries cannot target the same function
   const duplicateIds = manifest.functions
     .map(({ id }) => id)
@@ -177,7 +184,7 @@ export function validateCustomFunctionsManifest(manifest: CustomFunctionsManifes
       })),
     ];
     referencedPaths.forEach(({ field, path }) => {
-      if (!isCustomFunctionManifestPathContained(path)) {
+      if (!options.allowExternalPaths && !isCustomFunctionManifestPathContained(path)) {
         throw new Error(
           `Custom function "${entry.name}" has a ${field} path outside the manifest directory: ${path}`,
         );
@@ -194,11 +201,18 @@ export function validateCustomFunctionsManifest(manifest: CustomFunctionsManifes
  * manifest.
  *
  * @param contents - Custom function manifest YAML
+ * @param options - Compatibility behavior
  * @returns The parsed, shape-validated, and semantically valid manifest
  */
-export function parseCustomFunctionsManifest(contents: string): CustomFunctionsManifest {
+export function parseCustomFunctionsManifest(
+  contents: string,
+  options: {
+    /** Preserve legacy push support for paths outside the manifest directory. */
+    allowExternalPaths?: boolean;
+  } = {},
+): CustomFunctionsManifest {
   const manifest = decodeCodec(CustomFunctionsManifest, yaml.load(contents));
-  validateCustomFunctionsManifest(manifest);
+  validateCustomFunctionsManifest(manifest, options);
   return manifest;
 }
 
@@ -241,7 +255,7 @@ export function readCustomFunctionsManifest(
     `Also check that there are no extra variables defined in your manifest: ${filePath}`,
   );
 
-  const manifest = parseCustomFunctionsManifest(replacedVariables);
+  const manifest = parseCustomFunctionsManifest(replacedVariables, { allowExternalPaths: true });
 
   const manifestDir = dirname(resolve(filePath));
 
@@ -346,7 +360,7 @@ export function insertCustomFunctionManifestEntry(
   }
   functions.add(document.createNode(entry));
   const updatedContents = document.toString();
-  parseCustomFunctionsManifest(updatedContents);
+  parseCustomFunctionsManifest(updatedContents, { allowExternalPaths: true });
   return updatedContents;
 }
 

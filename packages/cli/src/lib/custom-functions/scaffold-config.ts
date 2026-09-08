@@ -2,6 +2,8 @@ import { relative, sep } from 'node:path';
 
 import { applyEdits, createScanner, modify, parse, type ParseError } from 'jsonc-parser';
 
+import { buildCustomFunctionProjectArguments } from './paths.js';
+
 /**
  * Runtime values of jsonc-parser's ambient const enum, repeated locally
  * because isolated modules cannot access that enum directly.
@@ -209,9 +211,21 @@ function mergeStringArray(current: unknown, additions: readonly string[]): strin
  *
  * @param contents - Existing deno.json/jsonc contents
  * @param contractVersion - Exact authoring-contract version
+ * @param manifestFileName - Manifest path relative to this Deno configuration
+ * @param referencedPaths - Existing manifest-relative source and payload paths
  * @returns Merged configuration
  */
-export function mergeDenoConfiguration(contents: string | null, contractVersion: string): string {
+export function mergeDenoConfiguration(
+  contents: string | null,
+  contractVersion: string,
+  manifestFileName = 'transcend-functions.yml',
+  referencedPaths: {
+    /** Existing source paths. */
+    sources?: readonly string[];
+    /** Existing payload paths. */
+    payloads?: readonly string[];
+  } = {},
+): string {
   const current = parseJsonc(contents ?? '{}\n', 'Deno configuration');
   const compilerOptions =
     current.compilerOptions &&
@@ -232,9 +246,17 @@ export function mergeDenoConfiguration(contents: string | null, contractVersion:
       ? (current.tasks as Record<string, unknown>)
       : {};
   const taskName = 'custom-functions:check';
-  const taskCommand =
+  const legacyTaskCommand =
     'deno check functions/**/*.ts && deno lint functions/ && deno fmt --check functions/ test-payloads/';
-  if (tasks[taskName] !== undefined && tasks[taskName] !== taskCommand) {
+  const taskCommand = `transcend custom-functions check ${buildCustomFunctionProjectArguments(
+    '.',
+    manifestFileName,
+  )} --noInteractive`;
+  if (
+    tasks[taskName] !== undefined &&
+    tasks[taskName] !== legacyTaskCommand &&
+    tasks[taskName] !== taskCommand
+  ) {
     throw new Error(
       `Deno task "${taskName}" already has a different command; apply the patch manually.`,
     );
@@ -249,13 +271,18 @@ export function mergeDenoConfiguration(contents: string | null, contractVersion:
       path: ['compilerOptions', 'lib'],
       value: mergeStringArray(compilerOptions.lib, ['deno.ns', 'dom', 'dom.iterable', 'esnext']),
     },
-    { path: ['lint', 'include'], value: mergeStringArray(lint.include, ['functions/']) },
+    {
+      path: ['lint', 'include'],
+      value: mergeStringArray(lint.include, ['functions/', ...(referencedPaths.sources ?? [])]),
+    },
     {
       path: ['fmt', 'include'],
       value: mergeStringArray(fmt.include, [
         'functions/',
         'test-payloads/',
-        'transcend-functions.yml',
+        manifestFileName,
+        ...(referencedPaths.sources ?? []),
+        ...(referencedPaths.payloads ?? []),
       ]),
     },
     { path: ['fmt', 'singleQuote'], value: true },

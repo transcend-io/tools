@@ -50,6 +50,8 @@ export type PlannedChange = PlannedFileChange | PlannedLinkChange;
 
 /** Minimal plan consumed by the transactional filesystem applicator. */
 export interface ProjectPlan {
+  /** Approved physical root for every planned mutation. */
+  rootDirectory: string;
   /** Ordered staged mutations. */
   changes: PlannedChange[];
 }

@@ -5,6 +5,7 @@ import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildNewFunctionAiHandoff } from '../../../lib/custom-functions/ai-handoff.js';
 import { CUSTOM_FUNCTION_SKILL_NAME } from '../../../lib/custom-functions/custom-function-skill.js';
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
+import { buildCustomFunctionProjectArguments } from '../../../lib/custom-functions/paths.js';
 import {
   collectPlanningSnapshots,
   discoverCustomFunctionManifests,
@@ -27,6 +28,7 @@ import {
 import {
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   type CustomFunctionTemplateName,
+  validateCustomFunctionDisplayName,
 } from '../../../lib/custom-functions/scaffold-templates.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 
@@ -99,7 +101,17 @@ export async function _new(
       this.process.stderr.isTTY,
     );
     const name =
-      flags.name ?? (interactive ? await prompts.text('Custom Function display name:') : undefined);
+      flags.name ??
+      (interactive
+        ? await prompts.text('Custom Function display name:', undefined, (value) => {
+            try {
+              validateCustomFunctionDisplayName(value);
+              return true;
+            } catch (error) {
+              return error instanceof Error ? error.message : String(error);
+            }
+          })
+        : undefined);
     if (!name) {
       throw new Error('Missing Custom Function name. Pass --name in a non-interactive invocation.');
     }
@@ -134,6 +146,15 @@ export async function _new(
       },
       { generated },
     );
+    if (!this.fs.existsSync(state.denoConfigPath)) {
+      plan.warnings.push(
+        `No Deno configuration was found. Run ` +
+          `transcend custom-functions init ${buildCustomFunctionProjectArguments(
+            state.targetDirectory,
+            state.manifestPath,
+          )} --deno --noInteractive.`,
+      );
+    }
     if (!flags.json) {
       this.logger.info(renderProjectPlan(plan, this.process.cwd()));
     }
@@ -155,10 +176,25 @@ export async function _new(
       await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
+    const skillRoot = state.repositoryRoot ?? state.targetDirectory;
+    const hasSkill = state.existingSkillDirectories.some(({ path }) =>
+      this.fs.existsSync(join(skillRoot, path, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md')),
+    );
+    const aiHandoff = buildNewFunctionAiHandoff({
+      displayName: generated.displayName,
+      sourcePath: displayPath(
+        this.process.cwd(),
+        join(state.manifestDirectory, generated.sourceFile.path),
+      ),
+      targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
+      manifestPath: displayPath(this.process.cwd(), state.manifestPath),
+      hasSkill,
+    });
     const result = buildPlanResult(plan, {
       applied,
       dryRun: flags.dryRun,
       cwd: this.process.cwd(),
+      aiHandoff,
     });
     if (flags.json) {
       this.process.stdout.write(`${JSON.stringify(result)}\n`);
@@ -179,22 +215,8 @@ export async function _new(
         this.logger.info(`  ${index + 1}. ${step}`);
       });
     }
-    const skillRoot = state.repositoryRoot ?? state.targetDirectory;
-    const hasSkill = state.existingSkillDirectories.some(({ path }) =>
-      this.fs.existsSync(join(skillRoot, path, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md')),
-    );
     this.logger.info('\nAI handoff (paste this prompt to your coding agent):');
-    this.logger.info(
-      `  ${buildNewFunctionAiHandoff({
-        displayName: generated.displayName,
-        sourcePath: displayPath(
-          this.process.cwd(),
-          join(state.manifestDirectory, generated.sourceFile.path),
-        ),
-        targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
-        hasSkill,
-      })}`,
-    );
+    this.logger.info(`  ${aiHandoff}`);
   } catch (error) {
     if (error instanceof PromptCancelledError) {
       this.process.exit(130);

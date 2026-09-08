@@ -1,12 +1,7 @@
-import { join } from 'node:path';
-
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
-import {
-  DEFAULT_CUSTOM_FUNCTION_DIRECTORY,
-  resolveCliPath,
-} from '../../../lib/custom-functions/paths.js';
+import { resolveCustomFunctionProjectPaths } from '../../../lib/custom-functions/paths.js';
 import { discoverCustomFunctionManifests } from '../../../lib/custom-functions/project-discovery.js';
 import {
   CustomFunctionPrompts,
@@ -39,13 +34,10 @@ export async function check(
   directory?: string,
 ): Promise<void> {
   doneInputValidation(this.process);
-  const targetDirectory = resolveCliPath(
-    this.process.cwd(),
-    directory ?? DEFAULT_CUSTOM_FUNCTION_DIRECTORY,
-  );
-  const manifestPath = flags.manifest
-    ? resolveCliPath(this.process.cwd(), flags.manifest)
-    : join(targetDirectory, 'transcend-functions.yml');
+  const { manifestPath } = resolveCustomFunctionProjectPaths(this.process.cwd(), {
+    ...(directory ? { directory } : {}),
+    ...(flags.manifest ? { manifest: flags.manifest } : {}),
+  });
   const missingMessage = this.fs.existsSync(manifestPath)
     ? undefined
     : formatMissingManifestMessage({
@@ -63,6 +55,7 @@ export async function check(
     const result = await runCustomFunctionChecks(this, {
       manifestPath,
       fix: flags.fix,
+      includeFormatPatchInDiagnostics: !flags.json,
       ...(interactive && !flags.fix
         ? {
             confirmFormat: async (patch: string): Promise<boolean> => {

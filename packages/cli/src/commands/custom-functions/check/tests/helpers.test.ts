@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -81,6 +81,31 @@ afterEach(() => {
 });
 
 describe('runCustomFunctionChecks without Deno', () => {
+  it('rejects manifest references that escape through symbolic links', async () => {
+    const root = makeTemporaryRoot();
+    const outside = makeTemporaryRoot();
+    const manifestPath = join(root, 'transcend-functions.yml');
+    writeFileSync(join(outside, 'function.ts'), 'export default () => {};\n');
+    symlinkSync(join(outside, 'function.ts'), join(root, 'function.ts'));
+    writeFileSync(
+      manifestPath,
+      `functions:
+  - name: Escaped source
+    code: ./function.ts
+`,
+    );
+    const context = buildContextForTest({ cwd: root });
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, () =>
+      Promise.resolve(missingDenoResult()),
+    );
+
+    expect(result.checks).toContainEqual({ name: 'files', status: 'failed' });
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'source.outside-project' }),
+    );
+  });
+
   it('collects multiple payload diagnostics before reporting skipped Deno checks', async () => {
     const root = makeTemporaryRoot();
     const manifestPath = join(root, 'transcend-functions.yml');
@@ -113,6 +138,7 @@ describe('runCustomFunctionChecks without Deno', () => {
       { name: 'manifest', status: 'passed' },
       { name: 'files', status: 'passed' },
       { name: 'payloads', status: 'failed' },
+      { name: 'runtime', status: 'failed' },
       { name: 'exports', status: 'skipped' },
       { name: 'typecheck', status: 'skipped' },
       { name: 'lint', status: 'skipped' },
@@ -128,20 +154,21 @@ describe('runCustomFunctionChecks without Deno', () => {
     );
   });
 
-  it('retains manifest validation errors when Deno is missing', async () => {
+  it('skips dependent checks when the manifest is invalid', async () => {
     const root = makeTemporaryRoot();
     const manifestPath = join(root, 'transcend-functions.yml');
     writeFileSync(manifestPath, 'functions: invalid\n');
     const context = buildContextForTest({ cwd: root });
-    const runner: CapturedProcessRunner = () => Promise.resolve(missingDenoResult());
+    const runner: CapturedProcessRunner = () => {
+      throw new Error('Deno should not run for an invalid manifest.');
+    };
 
     const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
 
     expect(result.checks).toContainEqual({ name: 'manifest', status: 'failed' });
-    expect(result.diagnostics.map(({ code }) => code)).toEqual([
-      'manifest.invalid',
-      'deno.missing',
-    ]);
+    expect(result.checks).toContainEqual({ name: 'runtime', status: 'skipped' });
+    expect(result.checks).toContainEqual({ name: 'format', status: 'skipped' });
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['manifest.invalid']);
   });
 
   it('rejects Deno versions outside major version 2', async () => {
@@ -155,6 +182,7 @@ describe('runCustomFunctionChecks without Deno', () => {
 
     expect(result.checks).toEqual(
       expect.arrayContaining([
+        { name: 'runtime', status: 'failed' },
         { name: 'exports', status: 'skipped' },
         { name: 'typecheck', status: 'skipped' },
         { name: 'lint', status: 'skipped' },
@@ -171,6 +199,53 @@ describe('runCustomFunctionChecks without Deno', () => {
 });
 
 describe('runCustomFunctionChecks with mocked Deno', () => {
+  it('does not load a Deno configuration that escapes through a symlink', async () => {
+    const root = makeTemporaryRoot();
+    const outside = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    writeFileSync(join(outside, 'deno.json'), '{}\n');
+    symlinkSync(join(outside, 'deno.json'), join(root, 'deno.json'));
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args) => {
+      calls.push([...args]);
+      return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(calls).toEqual([['--version']]);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'deno.config-outside-project' }),
+    );
+    expect(result.checks).toContainEqual({ name: 'format', status: 'failed' });
+  });
+
+  it('only treats top-level Deno document nodes as exports', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = (_command, args, options) => {
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(
+          processResult({
+            stdout: '[{"name":"helper","functionDef":{"params":[{"name":"default"}]}}]',
+          }),
+        );
+      }
+      return Promise.resolve(processResult({ stdout: options.input ?? '' }));
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ code: 'exports.default-missing' }),
+    );
+  });
+
   it('reports export, typecheck, lint, and format failures independently', async () => {
     const root = makeTemporaryRoot();
     const { manifestPath, sourcePath, payloadPath } = writeGeneralProject(root);
@@ -202,6 +277,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
       { name: 'manifest', status: 'passed' },
       { name: 'files', status: 'passed' },
       { name: 'payloads', status: 'passed' },
+      { name: 'runtime', status: 'passed' },
       { name: 'exports', status: 'failed' },
       { name: 'typecheck', status: 'failed' },
       { name: 'lint', status: 'failed' },
@@ -213,6 +289,9 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
       'deno.lint',
       'deno.format',
     ]);
+    expect(result.diagnostics.find(({ code }) => code === 'deno.format')?.message).not.toContain(
+      '@@',
+    );
     expect(calls).toContainEqual(['doc', '--json', sourcePath]);
     expect(calls).toContainEqual(['check', '--no-config', sourcePath]);
     expect(calls).toContainEqual(['lint', '--no-config', sourcePath]);

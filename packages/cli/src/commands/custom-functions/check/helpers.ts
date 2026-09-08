@@ -29,6 +29,10 @@ import {
   type CustomFunctionManifestEntry,
 } from '../../../lib/custom-functions/manifest.js';
 import { CUSTOM_FUNCTION_RESULT_VERSION } from '../../../lib/custom-functions/scaffold-model.js';
+import {
+  assertPathPhysicallyContained,
+  isPathPhysicallyContained,
+} from '../../../lib/scaffolding/path-safety.js';
 
 /** Payload file plus its validation contract. */
 interface PayloadReference {
@@ -60,6 +64,8 @@ export interface RunCustomFunctionChecksOptions {
   fix: boolean;
   /** Ask for an interactive formatting repair after receiving a patch. */
   confirmFormat?: (patch: string) => Promise<boolean>;
+  /** Include a unified format patch in human-oriented diagnostics. */
+  includeFormatPatchInDiagnostics?: boolean;
 }
 
 /**
@@ -204,6 +210,13 @@ function validateReferencedFiles(
           path: entry.code,
           functionName: entry.name,
         });
+      } else if (!isPathPhysicallyContained(context, manifestDirectory, source.path)) {
+        addError(diagnostics, {
+          code: 'source.outside-project',
+          message: 'Referenced source resolves outside the manifest directory through a symlink.',
+          path: entry.code,
+          functionName: entry.name,
+        });
       } else if (!context.fs.statSync(source.path).isFile()) {
         addError(diagnostics, {
           code: 'source.not-file',
@@ -231,6 +244,16 @@ function validateReferencedFiles(
         addError(diagnostics, {
           code: 'payload.missing',
           message: 'Referenced test payload does not exist.',
+          path: reference.path,
+          functionName: entry.name,
+        });
+        return;
+      }
+      if (!isPathPhysicallyContained(context, manifestDirectory, payloadPath)) {
+        addError(diagnostics, {
+          code: 'payload.outside-project',
+          message:
+            'Referenced test payload resolves outside the manifest directory through a symlink.',
           path: reference.path,
           functionName: entry.name,
         });
@@ -286,20 +309,25 @@ function validateReferencedFiles(
 function exportedNames(output: string): Set<string> {
   try {
     const document = JSON.parse(output) as unknown;
-    const names = new Set<string>();
-    const visit = (value: unknown): void => {
-      if (Array.isArray(value)) {
-        value.forEach(visit);
-      } else if (value && typeof value === 'object') {
-        const object = value as Record<string, unknown>;
-        if (typeof object.name === 'string') {
-          names.add(object.name);
+    const nodes = Array.isArray(document)
+      ? document
+      : document &&
+          typeof document === 'object' &&
+          Array.isArray((document as Record<string, unknown>).nodes)
+        ? ((document as Record<string, unknown>).nodes as unknown[])
+        : undefined;
+    if (!nodes) {
+      return new Set();
+    }
+    return new Set(
+      nodes.flatMap((node) => {
+        if (!node || typeof node !== 'object') {
+          return [];
         }
-        Object.values(object).forEach(visit);
-      }
-    };
-    visit(document);
-    return names;
+        const name = (node as Record<string, unknown>).name;
+        return typeof name === 'string' ? [name] : [];
+      }),
+    );
   } catch {
     return new Set();
   }
@@ -346,6 +374,7 @@ async function buildFormatPatches(
 ): Promise<string> {
   const patches: string[] = [];
   for (const path of paths) {
+    assertPathPhysicallyContained(context, manifestDirectory, path);
     const before = context.fs.readFileSync(path, 'utf8');
     const result = await runner(
       'deno',
@@ -403,11 +432,19 @@ export async function runCustomFunctionChecks(
     ['manifest', 'passed'],
     ['files', 'passed'],
     ['payloads', 'passed'],
+    ['runtime', 'passed'],
     ['exports', 'passed'],
     ['typecheck', 'passed'],
     ['lint', 'passed'],
     ['format', 'passed'],
   ]);
+  const buildResult = (): CustomFunctionCheckResult => ({
+    version: CUSTOM_FUNCTION_RESULT_VERSION,
+    status: diagnostics.some(({ severity }) => severity === 'error') ? 'failed' : 'passed',
+    manifestPath,
+    checks: [...statuses].map(([name, status]) => ({ name, status })),
+    diagnostics,
+  });
   if (!context.fs.existsSync(manifestPath)) {
     addError(diagnostics, {
       code: 'manifest.missing',
@@ -415,16 +452,10 @@ export async function runCustomFunctionChecks(
       path: relativePath(context.process.cwd(), manifestPath),
     });
     statuses.set('manifest', 'failed');
-    ['files', 'payloads', 'exports', 'typecheck', 'lint', 'format'].forEach((name) =>
+    ['files', 'payloads', 'runtime', 'exports', 'typecheck', 'lint', 'format'].forEach((name) =>
       statuses.set(name, 'skipped'),
     );
-    return {
-      version: CUSTOM_FUNCTION_RESULT_VERSION,
-      status: 'failed',
-      manifestPath,
-      checks: [...statuses].map(([name, status]) => ({ name, status })),
-      diagnostics,
-    };
+    return buildResult();
   }
 
   let entries: readonly CustomFunctionManifestEntry[] = [];
@@ -437,9 +468,10 @@ export async function runCustomFunctionChecks(
       path: relativePath(manifestDirectory, manifestPath),
     });
     statuses.set('manifest', 'failed');
-    ['files', 'payloads', 'exports', 'typecheck', 'lint'].forEach((name) =>
+    ['files', 'payloads', 'runtime', 'exports', 'typecheck', 'lint', 'format'].forEach((name) =>
       statuses.set(name, 'skipped'),
     );
+    return buildResult();
   }
 
   const { sources, payloadPaths } = validateReferencedFiles(
@@ -454,6 +486,7 @@ export async function runCustomFunctionChecks(
     )
   ) {
     statuses.set('files', 'failed');
+    ['exports', 'typecheck', 'lint'].forEach((name) => statuses.set(name, 'failed'));
   }
   if (
     diagnostics.some(({ code }) =>
@@ -463,25 +496,53 @@ export async function runCustomFunctionChecks(
     statuses.set('payloads', 'failed');
   }
 
+  const denoJsonc = join(manifestDirectory, 'deno.jsonc');
+  const denoJson = join(manifestDirectory, 'deno.json');
+  const configPath = context.fs.existsSync(denoJsonc)
+    ? denoJsonc
+    : context.fs.existsSync(denoJson)
+      ? denoJson
+      : undefined;
+  const unsafeConfig =
+    configPath !== undefined && !isPathPhysicallyContained(context, manifestDirectory, configPath);
+  if (unsafeConfig) {
+    addError(diagnostics, {
+      code: 'deno.config-outside-project',
+      message: 'Deno configuration resolves outside the manifest directory through a symlink.',
+      path: relativePath(manifestDirectory, configPath),
+    });
+    ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'failed'));
+  }
+  const configArgs = configPath && !unsafeConfig ? [`--config=${configPath}`] : ['--no-config'];
+  const skipPendingDenoChecks = (): void => {
+    ['exports', 'typecheck', 'lint', 'format'].forEach((name) => {
+      if (statuses.get(name) !== 'failed') {
+        statuses.set(name, 'skipped');
+      }
+    });
+  };
   const denoVersion = await runner('deno', ['--version'], { cwd: manifestDirectory }, context);
   const unsupportedVersion =
     denoVersion.code === 0 ? unsupportedDenoVersionMessage(denoVersion.stdout) : undefined;
   if (denoVersion.error?.code === 'ENOENT') {
-    ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'skipped'));
+    statuses.set('runtime', 'failed');
+    skipPendingDenoChecks();
     addError(diagnostics, {
       code: 'deno.missing',
       message: `Deno 2.x is required for export, type, lint, and format checks. Install it from ${DENO_INSTALL_URL}`,
     });
   } else if (denoVersion.code !== 0) {
-    ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'skipped'));
+    statuses.set('runtime', 'failed');
+    skipPendingDenoChecks();
     recordDenoFailure(diagnostics, 'deno.unavailable', 'Deno could not be started.', denoVersion);
   } else if (unsupportedVersion) {
-    ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'skipped'));
+    statuses.set('runtime', 'failed');
+    skipPendingDenoChecks();
     addError(diagnostics, {
       code: 'deno.unsupported-version',
       message: unsupportedVersion,
     });
-  } else {
+  } else if (!unsafeConfig) {
     for (const source of sources) {
       const result = await runner(
         'deno',
@@ -520,14 +581,6 @@ export async function runCustomFunctionChecks(
       }
     }
 
-    const denoJsonc = join(manifestDirectory, 'deno.jsonc');
-    const denoJson = join(manifestDirectory, 'deno.json');
-    const configPath = context.fs.existsSync(denoJsonc)
-      ? denoJsonc
-      : context.fs.existsSync(denoJson)
-        ? denoJson
-        : undefined;
-    const configArgs = configPath ? [`--config=${configPath}`] : ['--no-config'];
     const sourcePaths = [...new Set(sources.map(({ path }) => path))];
     if (sourcePaths.length > 0) {
       const typecheck = await runner(
@@ -558,6 +611,7 @@ export async function runCustomFunctionChecks(
       manifestPath,
       ...(configPath ? [configPath] : []),
     ];
+    formatPaths.forEach((path) => assertPathPhysicallyContained(context, manifestDirectory, path));
     const format = await runner(
       'deno',
       ['fmt', '--check', ...configArgs, ...formatPaths],
@@ -575,6 +629,9 @@ export async function runCustomFunctionChecks(
       const shouldFix =
         options.fix || (options.confirmFormat ? await options.confirmFormat(patch) : false);
       if (shouldFix) {
+        formatPaths.forEach((path) =>
+          assertPathPhysicallyContained(context, manifestDirectory, path),
+        );
         const repair = await runner(
           'deno',
           ['fmt', ...configArgs, ...formatPaths],
@@ -594,17 +651,13 @@ export async function runCustomFunctionChecks(
         statuses.set('format', 'failed');
         addError(diagnostics, {
           code: 'deno.format',
-          message: `Referenced files are not formatted.${patch ? `\n${patch}` : ''}`,
+          message:
+            `Referenced files are not formatted.` +
+            (options.includeFormatPatchInDiagnostics && patch ? `\n${patch}` : ''),
         });
       }
     }
   }
 
-  return {
-    version: CUSTOM_FUNCTION_RESULT_VERSION,
-    status: diagnostics.some(({ severity }) => severity === 'error') ? 'failed' : 'passed',
-    manifestPath,
-    checks: [...statuses].map(([name, status]) => ({ name, status })),
-    diagnostics,
-  };
+  return buildResult();
 }

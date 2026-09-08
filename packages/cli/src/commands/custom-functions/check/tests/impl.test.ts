@@ -27,6 +27,30 @@ afterEach(() => {
 });
 
 describe('custom-functions check', () => {
+  it('uses the manifest directory when only --manifest is provided', async () => {
+    const root = makeTemporaryRoot();
+    const manifestPath = join(root, 'custom.yml');
+    writeFileSync(manifestPath, 'functions: []\n');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { PATH: '' },
+      stdinIsTTY: false,
+    });
+
+    await check.call(
+      context,
+      {
+        manifest: 'custom.yml',
+        fix: false,
+        noInteractive: true,
+        json: true,
+      },
+      'transcend/custom-functions',
+    );
+
+    expect(JSON.parse(context.stdout)).toMatchObject({ manifestPath });
+  });
+
   it('defaults to transcend/custom-functions', async () => {
     const root = makeTemporaryRoot();
     const directory = join(root, 'transcend', 'custom-functions');
@@ -165,6 +189,7 @@ describe('custom-functions check', () => {
         { name: 'manifest', status: 'passed' },
         { name: 'files', status: 'passed' },
         { name: 'payloads', status: 'passed' },
+        { name: 'runtime', status: 'failed' },
         { name: 'exports', status: 'skipped' },
         { name: 'typecheck', status: 'skipped' },
         { name: 'lint', status: 'skipped' },

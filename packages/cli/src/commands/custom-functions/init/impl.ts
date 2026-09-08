@@ -196,10 +196,20 @@ export async function init(
       await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
+    const aiHandoff = buildInitAiHandoff({
+      targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
+      manifestPath: displayPath(this.process.cwd(), state.manifestPath),
+      cliVersion: CLI_VERSION,
+      hasSkill: features.includes(CustomFunctionSetupFeature.Skill),
+      hasGithubWorkflow:
+        features.includes(CustomFunctionSetupFeature.Ci) &&
+        Boolean(state.repositoryRoot && state.usesGithub),
+    });
     const result = buildPlanResult(plan, {
       applied,
       dryRun: flags.dryRun,
       cwd: this.process.cwd(),
+      aiHandoff,
     });
     if (flags.json) {
       this.process.stdout.write(`${JSON.stringify(result)}\n`);
@@ -225,17 +235,7 @@ export async function init(
       });
     }
     this.logger.info('\nAI handoff (paste this prompt to your coding agent):');
-    this.logger.info(
-      `  ${buildInitAiHandoff({
-        targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
-        manifestPath: displayPath(this.process.cwd(), state.manifestPath),
-        cliVersion: CLI_VERSION,
-        hasSkill: features.includes(CustomFunctionSetupFeature.Skill),
-        hasGithubWorkflow:
-          features.includes(CustomFunctionSetupFeature.Ci) &&
-          Boolean(state.repositoryRoot && state.usesGithub),
-      })}`,
-    );
+    this.logger.info(`  ${aiHandoff}`);
   } catch (error) {
     if (error instanceof PromptCancelledError) {
       this.process.exit(130);

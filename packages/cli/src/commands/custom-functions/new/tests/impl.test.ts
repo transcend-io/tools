@@ -118,6 +118,7 @@ describe('custom-functions new', () => {
         dryRun: false,
         targetDirectory: target,
         manifestPath,
+        aiHandoff: expect.stringContaining('coding agent'),
       });
       expect(context.stderr).toBe('');
     },
@@ -138,7 +139,10 @@ describe('custom-functions new', () => {
       const context = buildTestContext(root);
 
       await expect(newCustomFunction.call(context, buildFlags(), target)).rejects.toThrow(
-        `Refusing to overwrite existing file: ${collisionPath}`,
+        kind === 'source'
+          ? 'Custom Function name "Example Function" maps to functions/example-function.ts, ' +
+              'which conflicts with existing path functions/example-function.ts. Choose another name.'
+          : `Refusing to overwrite existing file: ${collisionPath}`,
       );
 
       expect(readFileSync(collisionPath, 'utf8')).toBe('existing contents\n');

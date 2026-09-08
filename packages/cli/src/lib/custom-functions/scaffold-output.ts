@@ -1,4 +1,4 @@
-import { relative, sep } from 'node:path';
+import { isAbsolute, relative, sep } from 'node:path';
 
 import { createTwoFilesPatch } from 'diff';
 
@@ -35,6 +35,8 @@ export interface CustomFunctionPlanResult {
   warnings: string[];
   /** Suggested next commands. */
   nextSteps: string[];
+  /** Compact prompt for continuing with a coding agent. */
+  aiHandoff: string;
 }
 
 /**
@@ -46,7 +48,13 @@ export interface CustomFunctionPlanResult {
  */
 export function displayPath(cwd: string, path: string): string {
   const value = relative(cwd, path).split(sep).join('/');
-  return value.length === 0 ? '.' : value;
+  if (value.length === 0) {
+    return '.';
+  }
+  if (value === '..' || value.startsWith('../') || isAbsolute(value)) {
+    return path.split(sep).join('/');
+  }
+  return value;
 }
 
 /**
@@ -87,6 +95,8 @@ export function buildPlanResult(
     dryRun: boolean;
     /** Working directory for portable paths. */
     cwd: string;
+    /** Compact prompt for continuing with a coding agent. */
+    aiHandoff: string;
   },
 ): CustomFunctionPlanResult {
   return {
@@ -99,6 +109,7 @@ export function buildPlanResult(
     changes: plan.changes.map((change) => publicChange(options.cwd, change)),
     warnings: plan.warnings,
     nextSteps: plan.nextSteps,
+    aiHandoff: options.aiHandoff,
   };
 }
 

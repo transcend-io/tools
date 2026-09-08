@@ -1,6 +1,7 @@
 import { basename, dirname, join } from 'node:path';
 
 import type { LocalContext } from '../../context.js';
+import { assertPathPhysicallyContained } from './path-safety.js';
 import type { PlannedFileChange, PlannedLinkChange, ProjectPlan } from './project-plan.js';
 
 /** Original state retained for rollback. */
@@ -31,6 +32,25 @@ type RollbackSnapshot =
     };
 
 /**
+ * Check a path without following its final symbolic link.
+ *
+ * @param context - CLI context
+ * @param path - Candidate path
+ * @returns Whether any filesystem entry exists
+ */
+function pathExists(context: LocalContext, path: string): boolean {
+  try {
+    context.fs.lstatSync(path);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return false;
+    }
+    throw error;
+  }
+}
+
+/**
  * Read one path for rollback.
  *
  * @param context - CLI context
@@ -38,7 +58,7 @@ type RollbackSnapshot =
  * @returns Original state
  */
 function snapshotPath(context: LocalContext, path: string): RollbackSnapshot {
-  if (!context.fs.existsSync(path)) {
+  if (!pathExists(context, path)) {
     return { kind: 'absent', path };
   }
   const stat = context.fs.lstatSync(path);
@@ -78,7 +98,7 @@ function writeAtomic(context: LocalContext, path: string, contents: string, mode
     );
     context.fs.renameSync(temporaryPath, path);
   } finally {
-    if (context.fs.existsSync(temporaryPath)) {
+    if (pathExists(context, temporaryPath)) {
       context.fs.rmSync(temporaryPath, { force: true });
     }
   }
@@ -91,7 +111,7 @@ function writeAtomic(context: LocalContext, path: string, contents: string, mode
  * @param snapshot - Original state
  */
 function restoreSnapshot(context: LocalContext, snapshot: RollbackSnapshot): void {
-  if (context.fs.existsSync(snapshot.path)) {
+  if (pathExists(context, snapshot.path)) {
     context.fs.rmSync(snapshot.path, { recursive: true, force: true });
   }
   if (snapshot.kind === 'absent') {
@@ -112,7 +132,7 @@ function restoreSnapshot(context: LocalContext, snapshot: RollbackSnapshot): voi
  * @param change - Planned file
  */
 function preflightFile(context: LocalContext, change: PlannedFileChange): void {
-  const exists = context.fs.existsSync(change.path);
+  const exists = pathExists(context, change.path);
   if (change.before === null) {
     if (exists) {
       throw new Error(`File appeared after preview: ${change.path}`);
@@ -132,8 +152,9 @@ function preflightFile(context: LocalContext, change: PlannedFileChange): void {
  *
  * @param context - CLI context
  * @param change - Planned link
+ * @param rootDirectory - Approved mutation root
  */
-function applyLink(context: LocalContext, change: PlannedLinkChange): void {
+function applyLink(context: LocalContext, change: PlannedLinkChange, rootDirectory: string): void {
   try {
     context.fs.symlinkSync(change.target, change.path, 'dir');
   } catch (error) {
@@ -143,6 +164,7 @@ function applyLink(context: LocalContext, change: PlannedLinkChange): void {
     }
     change.fallbackFiles.forEach((file) => {
       const path = join(change.path, file.path);
+      assertPathPhysicallyContained(context, rootDirectory, path);
       context.fs.mkdirSync(dirname(path), { recursive: true });
       context.fs.writeFileSync(path, file.contents);
     });
@@ -157,10 +179,11 @@ function applyLink(context: LocalContext, change: PlannedLinkChange): void {
  */
 export async function applyProjectPlan(context: LocalContext, plan: ProjectPlan): Promise<void> {
   for (const change of plan.changes) {
+    assertPathPhysicallyContained(context, plan.rootDirectory, change.path);
     if (change.kind === 'file') {
       preflightFile(context, change);
     } else {
-      if (context.fs.existsSync(change.path)) {
+      if (pathExists(context, change.path)) {
         throw new Error(`Skill target appeared after preview: ${change.path}`);
       }
     }
@@ -169,12 +192,13 @@ export async function applyProjectPlan(context: LocalContext, plan: ProjectPlan)
   const applied: RollbackSnapshot[] = [];
   try {
     for (const change of plan.changes) {
+      assertPathPhysicallyContained(context, plan.rootDirectory, change.path);
       if (change.kind === 'file') {
         applied.push(snapshotPath(context, change.path));
         writeAtomic(context, change.path, change.after, change.mode);
       } else {
         applied.push({ kind: 'absent', path: change.path });
-        applyLink(context, change);
+        applyLink(context, change, plan.rootDirectory);
       }
     }
   } catch (error) {

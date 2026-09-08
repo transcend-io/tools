@@ -141,6 +141,7 @@ describe('custom-functions init', () => {
       command: 'init',
       applied: true,
       dryRun: false,
+      aiHandoff: expect.stringContaining('coding agent'),
     });
     expect(readFileSync(manifestPath, 'utf8')).toBe(
       '# Custom Functions managed as code.\nfunctions: []\n',

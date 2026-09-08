@@ -144,9 +144,49 @@ describe('buildInitPlan', () => {
       ]),
     );
   });
+
+  it('leaves a customized generated workflow unchanged', () => {
+    const state = buildState('/repo');
+    const features = [CustomFunctionSetupFeature.Ci];
+    const paths = getInitPlanningCandidatePaths(state, { features });
+    const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
+    const snapshots = snapshotsAfterPlan(paths, first);
+    const workflowPath = join('/repo', '.github', 'workflows', 'transcend-custom-functions.yml');
+    const workflow = snapshots[workflowPath];
+    if (workflow?.kind !== 'file') {
+      throw new Error('Expected the first plan to create the workflow.');
+    }
+    snapshots[workflowPath] = {
+      ...workflow,
+      contents: `${workflow.contents}\n# Repository-specific customization.\n`,
+    };
+
+    const rerun = buildInitPlan(buildInput(state, snapshots), { features });
+
+    expect(rerun.changes.some(({ path }) => path === workflowPath)).toBe(false);
+    expect(rerun.unchanged).toContain(workflowPath);
+    expect(rerun.warnings).toContain(
+      `Existing GitHub Actions workflow was left unchanged: ${workflowPath}`,
+    );
+  });
 });
 
 describe('buildAddFunctionPlan', () => {
+  it('preserves a custom manifest in every generated follow-up command', () => {
+    const state = buildState('/repo');
+    state.manifestPath = join(state.manifestDirectory, 'functions.yml');
+    const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
+    const paths = getAddFunctionPlanningCandidatePaths(state, generated);
+    const plan = buildAddFunctionPlan(buildInput(state, initializedSnapshots(paths, state)), {
+      generated,
+    });
+    const commands = plan.nextSteps.filter((step) => step.includes('transcend '));
+
+    expect(commands).toHaveLength(2);
+    expect(commands[0]).toContain("--manifest='/repo/custom-functions/functions.yml'");
+    expect(commands[1]).toContain("--file='/repo/custom-functions/functions.yml'");
+  });
+
   it('builds a deterministic manifest, source, and payload plan', () => {
     const state = buildState('/repo');
     const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
@@ -214,7 +254,7 @@ describe('buildAddFunctionPlan', () => {
         generated,
       }),
     ).toThrow(
-      'Case-insensitive path collision: "functions/score-lead.ts" conflicts with "Functions/score-lead.ts".',
+      'Custom Function name "Score Lead" maps to functions/score-lead.ts, which conflicts with existing path Functions/score-lead.ts. Choose another name.',
     );
   });
 
