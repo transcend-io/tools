@@ -7,6 +7,7 @@ import {
 } from '@transcend-io/custom-function-types';
 import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv';
 import { createTwoFilesPatch } from 'diff';
+import { parse as parseJsonc } from 'jsonc-parser';
 
 import type { LocalContext } from '../../../context.js';
 import {
@@ -366,6 +367,41 @@ function denoExtension(path: string): string {
 }
 
 /**
+ * Resolve the import-map input supported by `deno doc`.
+ *
+ * Deno 2.4 does not expose `--config` for `doc`. A config with inline
+ * `imports` is itself a valid import map; an `importMap` reference must be
+ * followed explicitly.
+ *
+ * @param context - CLI context
+ * @param manifestDirectory - Approved project root
+ * @param configPath - Selected Deno config
+ * @returns Import map path or URL
+ */
+function resolveDocImportMap(
+  context: LocalContext,
+  manifestDirectory: string,
+  configPath: string | undefined,
+): string | undefined {
+  if (!configPath) {
+    return undefined;
+  }
+  const config = parseJsonc(context.fs.readFileSync(configPath, 'utf8')) as {
+    /** Optional separate import map. */
+    importMap?: unknown;
+  };
+  if (typeof config?.importMap !== 'string') {
+    return configPath;
+  }
+  if (/^[a-z][a-z\d+.-]*:/iu.test(config.importMap)) {
+    return config.importMap;
+  }
+  const importMapPath = resolve(dirname(configPath), config.importMap);
+  assertPathPhysicallyContained(context, manifestDirectory, importMapPath);
+  return importMapPath;
+}
+
+/**
  * Render deterministic formatter patches without changing files.
  *
  * @param context - CLI context
@@ -551,6 +587,8 @@ export async function runCustomFunctionChecks(
       : undefined;
   const unsafeConfig =
     configPath !== undefined && !isPathPhysicallyContained(context, manifestDirectory, configPath);
+  let unsafeConfiguration = unsafeConfig;
+  let docImportMap: string | undefined;
   if (unsafeConfig) {
     addError(diagnostics, {
       code: 'deno.config-outside-project',
@@ -558,8 +596,20 @@ export async function runCustomFunctionChecks(
       path: relativePath(manifestDirectory, configPath),
     });
     ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'failed'));
+  } else {
+    try {
+      docImportMap = resolveDocImportMap(context, manifestDirectory, configPath);
+    } catch (error) {
+      unsafeConfiguration = true;
+      addError(diagnostics, {
+        code: 'deno.import-map-outside-project',
+        message: (error as Error).message,
+      });
+      ['exports', 'typecheck', 'lint', 'format'].forEach((name) => statuses.set(name, 'failed'));
+    }
   }
-  const configArgs = configPath && !unsafeConfig ? [`--config=${configPath}`] : ['--no-config'];
+  const configArgs =
+    configPath && !unsafeConfiguration ? [`--config=${configPath}`] : ['--no-config'];
   const skipPendingDenoChecks = (): void => {
     ['exports', 'typecheck', 'lint', 'format'].forEach((name) => {
       if (statuses.get(name) !== 'failed') {
@@ -588,7 +638,7 @@ export async function runCustomFunctionChecks(
       code: 'deno.unsupported-version',
       message: unsupportedVersion,
     });
-  } else if (!unsafeConfig) {
+  } else if (!unsafeConfiguration) {
     for (const source of sources) {
       const moduleGraph = await runner(
         'deno',
@@ -630,7 +680,7 @@ export async function runCustomFunctionChecks(
       }
       const result = await runner(
         'deno',
-        ['doc', '--json', ...(configPath ? ['--import-map', configPath] : []), source.path],
+        ['doc', '--json', ...(docImportMap ? ['--import-map', docImportMap] : []), source.path],
         { cwd: manifestDirectory },
         context,
       );
@@ -703,6 +753,9 @@ export async function runCustomFunctionChecks(
       ...payloadPaths,
       manifestPath,
       ...(configPath ? [configPath] : []),
+      ...(docImportMap && docImportMap !== configPath && !/^[a-z][a-z\d+.-]*:/iu.test(docImportMap)
+        ? [docImportMap]
+        : []),
     ];
     formatPaths.forEach((path) => assertPathPhysicallyContained(context, manifestDirectory, path));
     const format = await runner(

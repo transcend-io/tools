@@ -236,6 +236,40 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     expect(result.checks).toContainEqual({ name: 'format', status: 'failed' });
   });
 
+  it('follows a Deno config importMap reference for export inspection', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    const importMapPath = join(root, 'imports.json');
+    writeFileSync(join(root, 'deno.json'), '{"importMap":"./imports.json"}\n');
+    writeFileSync(importMapPath, '{"imports":{}}\n');
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args) => {
+      calls.push([...args]);
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.status).toBe('passed');
+    expect(calls).toContainEqual([
+      'doc',
+      '--json',
+      '--import-map',
+      importMapPath,
+      join(root, 'function.ts'),
+    ]);
+  });
+
   it('only treats top-level Deno document nodes as exports', async () => {
     const root = makeTemporaryRoot();
     const { manifestPath } = writeGeneralProject(root);

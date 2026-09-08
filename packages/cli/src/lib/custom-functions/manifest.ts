@@ -355,12 +355,14 @@ export function readCustomFunctionsManifest(
  * @param filePath - Path to the containing manifest
  * @param entry - Selected raw manifest entry
  * @param parameters - Values to fill into `<<parameters.x>>` placeholders
+ * @param assertPath - Optional safety check applied before referenced files are read
  * @returns Hydrated selected configuration and its source path
  */
 export function readCustomFunctionManifestEntry(
   filePath: string,
   entry: CustomFunctionManifestEntry,
   parameters: ObjByString = {},
+  assertPath?: (path: string) => void,
 ): { config: CustomFunctionManifestConfig; sourcePath: string } {
   const entryContents = yaml.dump({ functions: [entry] });
   const replacedParameters = replaceVariablesInYaml(
@@ -370,9 +372,19 @@ export function readCustomFunctionManifestEntry(
   );
   const manifest = parseCustomFunctionsManifest(replacedParameters);
   const resolvedEntry = manifest.functions[0]!;
+  const manifestDirectory = dirname(resolve(filePath));
+  const sourcePath = resolve(manifestDirectory, resolvedEntry.code);
+  [
+    sourcePath,
+    ...(resolvedEntry['test-payloads']?.map(({ payload }) => resolve(manifestDirectory, payload)) ??
+      []),
+    ...(resolvedEntry['test-payload']
+      ? [resolve(manifestDirectory, resolvedEntry['test-payload'])]
+      : []),
+  ].forEach((path) => assertPath?.(path));
   return {
     config: hydrateCustomFunctionsManifest(filePath, manifest)[0]!,
-    sourcePath: resolve(dirname(filePath), resolvedEntry.code),
+    sourcePath,
   };
 }
 

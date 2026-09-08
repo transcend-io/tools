@@ -33,6 +33,7 @@ import {
   PromptCancelledError,
 } from '../../../lib/custom-functions/prompts.js';
 import { parseParametersFromFlags } from '../../../lib/helpers/parseVariablesFromString.js';
+import { assertPathPhysicallyContained } from '../../../lib/scaffolding/path-safety.js';
 
 /** Flags accepted by `transcend custom-functions run`. */
 export interface CustomFunctionRunFlags {
@@ -140,6 +141,7 @@ export async function run(
       state.manifestPath,
       selectedEntry,
       localParameters.parameters,
+      (path) => assertPathPhysicallyContained(this, state.manifestDirectory, path),
     );
     if (!selected.testPayloads || selected.testPayloads.length === 0) {
       throw new Error(

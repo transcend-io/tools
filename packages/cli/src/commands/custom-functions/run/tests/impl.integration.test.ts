@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -112,4 +112,36 @@ export default function ({ environment, payload }: CustomFunction.GeneralArgumen
     expect(context.stdout).toContain('Passed "Multiple payloads" (payload 2)');
     expect(context.process.exitCode).toBe(1);
   }, 30_000);
+
+  it('rejects source paths that escape through a symlink', async () => {
+    const outsideSource = join(root, 'outside.ts');
+    writeFileSync(outsideSource, 'export default () => {};\n');
+    symlinkSync(outsideSource, join(project, 'functions', 'linked.ts'));
+    writeFileSync(
+      join(project, 'transcend-functions.yml'),
+      `functions:
+  - name: Linked source
+    code: ./functions/linked.ts
+    test-payload: ./test-payloads/passes.json
+`,
+    );
+    const context = buildContextForTest({
+      cwd: root,
+      stdinIsTTY: false,
+    });
+
+    await expect(
+      run.call(
+        context,
+        {
+          function: 'Linked source',
+          parameters: '',
+          variables: '',
+          noInteractive: true,
+          allowNetwork: false,
+        },
+        'transcend/custom-functions',
+      ),
+    ).rejects.toThrow('Refusing to access path outside project root through a symlink');
+  });
 });
