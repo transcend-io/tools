@@ -131,3 +131,103 @@ describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
     expect(questions[0].requireRiskEvaluation).toBe(false);
   });
 });
+
+describe('AssessmentsMixin (listAssessmentTemplates)', () => {
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
+
+  const template = {
+    id: 'tpl-1',
+    title: 'Vendor Onboarding',
+    description: 'Questions for a new vendor',
+    status: 'PUBLISHED',
+    source: 'IMPORT',
+    isArchived: false,
+    createdAt: '2024-03-01T00:00:00.000Z',
+    updatedAt: '2024-04-01T00:00:00.000Z',
+    creator: { id: 'usr-1', name: 'Daniel Sklyar', email: 'daniel@transcend.io' },
+    lastEditor: { id: 'usr-2', name: 'Ada Lovelace', email: 'ada@transcend.io' },
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends the source and people filters to the API under its own names', async () => {
+    const mockFetch = createMockFetchResponse({
+      assessmentFormTemplates: { nodes: [], totalCount: 0 },
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    await client.listAssessmentTemplates({
+      filterBy: {
+        sources: ['IMPORT'],
+        creatorIds: ['usr-1'],
+        lastEditorIds: ['usr-2'],
+      },
+    });
+
+    const { variables } = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body) as {
+      variables: Record<string, unknown>;
+    };
+    expect(variables.filterBy).toEqual({
+      sources: ['IMPORT'],
+      creatorIds: ['usr-1'],
+      lastEditorIds: ['usr-2'],
+    });
+    expect(variables.includeDetails).toBe(false);
+  });
+
+  it('carries source on every row but the people only when asked', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createMockFetchResponse({
+        assessmentFormTemplates: { nodes: [template], totalCount: 1 },
+      }),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const compact = await client.listAssessmentTemplates();
+
+    // The server answers the @include directive, so a compact row could still
+    // arrive carrying people; the mapper is what keeps them off it.
+    expect(compact.nodes[0]).toMatchObject({ source: 'IMPORT' });
+    expect(compact.nodes[0].creator).toBeUndefined();
+    expect(compact.nodes[0].lastEditor).toBeUndefined();
+  });
+
+  it('names the creator and last editor when details are requested', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createMockFetchResponse({
+        assessmentFormTemplates: { nodes: [template], totalCount: 1 },
+      }),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const detailed = await client.listAssessmentTemplates({ includeDetails: true });
+
+    expect(detailed.nodes[0]).toMatchObject({
+      creator: { id: 'usr-1', name: 'Daniel Sklyar', email: 'daniel@transcend.io' },
+      lastEditor: { id: 'usr-2', name: 'Ada Lovelace', email: 'ada@transcend.io' },
+    });
+  });
+
+  it('leaves the people undefined when the template has no creator on record', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createMockFetchResponse({
+        assessmentFormTemplates: {
+          nodes: [{ ...template, creator: null, lastEditor: null }],
+          totalCount: 1,
+        },
+      }),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const detailed = await client.listAssessmentTemplates({ includeDetails: true });
+
+    expect(detailed.nodes[0].creator).toBeUndefined();
+    expect(detailed.nodes[0].lastEditor).toBeUndefined();
+  });
+});

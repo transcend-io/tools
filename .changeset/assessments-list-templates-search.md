@@ -11,6 +11,15 @@ questionnaire" — had to scan pages it could not page through. `assessmentFormT
 accepts `offset` and an `AssessmentFormTemplateFiltersInput` all along, so the tool now takes
 `text`, `ids` and `statuses`, and pages with `offset`.
 
+It also takes the three filters the dashboard has always offered and the tool never did:
+`sources` for how a template came to exist (`MANUAL`, `DATA_INVENTORY`, or `IMPORT` for the
+ones that arrived with a OneTrust import), and `creatorIds` and `lastEditorIds` for who built
+it or last changed it. The enum values are internal nouns, so the description spells out the
+dashboard's own wording — a caller asking which templates came from OneTrust would otherwise
+match nothing in the catalog. Every row now carries `source`, which is short enough to always
+be worth it and lets a caller read back what it filtered on; the two people sit behind
+`includeDetails`, defaulting to false.
+
 More seriously, the mapper fabricated three fields it never fetched: `version: '1.0.0'`,
 `isActive: true`, and `createdAt: new Date().toISOString()`. That last one reported every
 template in the organization as created at the moment of the call, which an agent asked
@@ -18,9 +27,9 @@ template in the organization as created at the moment of the call, which an agen
 real `status`, `isArchived`, `createdAt` and `updatedAt`.
 
 BREAKING: `AssessmentTemplate` in `mcp-server-base` drops `version` and `isActive`, which
-existed only to hold those invented values and were read by nothing. It gains `status` and
-`isArchived`, and `createdAt` becomes optional because it now reflects whether the API
-returned one.
+existed only to hold those invented values and were read by nothing. It gains `status`,
+`isArchived`, `source`, and `creator`/`lastEditor`, and `createdAt` becomes optional because
+it now reflects whether the API returned one.
 
 `hasNextPage` was also `nodes.length < totalCount`, which claims another page from the last
 page of any multi-page result; it is now `offset + nodes.length < totalCount`, matching the
