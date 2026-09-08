@@ -209,13 +209,13 @@ export async function _new(
     }
     this.logger.info('Custom Function added.');
     if (plan.nextSteps.length > 0) {
-      this.logger.info('\nNext steps:');
+      this.logger.info('\nNext steps');
       plan.nextSteps.forEach((step, index) => {
         this.logger.info(`  ${index + 1}. ${step}`);
       });
     }
-    this.logger.info('\nAI handoff (paste this prompt to your coding agent):');
-    this.logger.info(`  ${aiHandoff}`);
+    this.logger.info('\nAI handoff — paste into your coding agent');
+    this.logger.info(aiHandoff);
   } catch (error) {
     if (error instanceof PromptCancelledError) {
       this.process.exit(130);

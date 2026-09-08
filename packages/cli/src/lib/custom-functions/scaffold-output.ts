@@ -122,8 +122,9 @@ export function buildPlanResult(
  */
 export function renderProjectPlan(plan: CustomFunctionProjectPlan, cwd: string): string {
   const lines = [
-    `Target:   ${displayPath(cwd, plan.targetDirectory)}`,
-    `Manifest: ${displayPath(cwd, plan.manifestPath)}`,
+    'Custom Function plan',
+    `  Target:   ${displayPath(cwd, plan.targetDirectory)}`,
+    `  Manifest: ${displayPath(cwd, plan.manifestPath)}`,
     '',
   ];
   if (plan.changes.length === 0) {

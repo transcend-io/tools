@@ -77,16 +77,23 @@ export async function check(
     if (flags.json) {
       this.process.stdout.write(`${JSON.stringify(result)}\n`);
     } else {
+      this.logger.info('Custom Function checks\n');
       result.checks.forEach(({ name, status }) => {
-        this.logger.info(`${status.padEnd(7)} ${name}`);
+        const label = status === 'passed' ? 'PASS' : status === 'failed' ? 'FAIL' : 'SKIP';
+        this.logger.info(`${label} ${name[0]!.toUpperCase()}${name.slice(1)}`);
       });
+      if (result.diagnostics.length > 0) {
+        this.logger.error('');
+      }
       result.diagnostics.forEach((diagnostic) => {
         const location = diagnostic.path ? `${diagnostic.path}: ` : '';
         const owner = diagnostic.functionName ? `[${diagnostic.functionName}] ` : '';
         this.logger.error(`${diagnostic.severity}: ${location}${owner}${diagnostic.message}`);
       });
       if (result.status === 'passed') {
-        this.logger.info('Custom Function checks passed.');
+        this.logger.info('\nCustom Function checks passed.');
+      } else {
+        this.logger.error('\nCustom Function checks failed.');
       }
     }
     if (result.status === 'failed') {
