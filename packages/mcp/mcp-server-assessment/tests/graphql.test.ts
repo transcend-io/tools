@@ -139,6 +139,33 @@ describe('AssessmentsMixin (row shapes that callers audit against)', () => {
     vi.restoreAllMocks();
   });
 
+  it('returns the group description the text filter searches', async () => {
+    // A group whose title does not contain the search term still matches on its
+    // description. Without the description on the row, the caller cannot tell
+    // that from a broken filter.
+    vi.stubGlobal(
+      'fetch',
+      createMockFetchResponse({
+        assessmentGroups: {
+          nodes: [
+            {
+              id: 'grp-1',
+              title: 'RideShare Co. IAPP DPIA Assessments',
+              description: 'ATT opt-out work for the iOS app',
+              assessmentFormTemplate: { id: 'tpl-1', title: 'IAPP DPIA' },
+            },
+          ],
+          totalCount: 1,
+        },
+      }),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const result = await client.listAssessmentGroups({ filterBy: { text: 'ATT' } });
+
+    expect(result.nodes[0].description).toBe('ATT opt-out work for the iOS app');
+  });
+
   it('reports a missing due date as null rather than dropping the key', async () => {
     // An absent key reads as "the query never asked for this", which makes the
     // dueBefore filter look broken instead of showing a form with no deadline.

@@ -1293,6 +1293,8 @@ export interface AssessmentResponse {
 export interface AssessmentGroup {
   id: string;
   title: string;
+  /** Free-text summary of the group. Searched by the `text` filter. */
+  description: string;
   assessmentFormTemplate?: {
     id: string;
     title: string;
