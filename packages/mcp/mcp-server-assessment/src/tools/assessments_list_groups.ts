@@ -1,4 +1,5 @@
 import {
+  assertOffsetInRange,
   createListResult,
   defineTool,
   describeNoMatches,
@@ -64,10 +65,13 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
         .filter(([, value]) => Boolean(value))
         .map(([name]) => name);
 
+      const totalCount = result.totalCount ?? 0;
+      assertOffsetInRange({ subject: 'assessment group', offset, totalCount, appliedFilters });
+
       return createListResult(nodesWithLinks, {
         totalCount: result.totalCount,
         hasNextPage: result.pageInfo?.hasNextPage,
-        ...(result.totalCount === 0 && {
+        ...(totalCount === 0 && {
           paginationNote: describeNoMatches('assessment groups', appliedFilters),
         }),
       });

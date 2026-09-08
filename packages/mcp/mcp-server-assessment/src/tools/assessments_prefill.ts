@@ -16,12 +16,15 @@ export const PrefillSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Template ID to create the form from. Will auto-resolve to the first matching assessment group.',
+      'Fallback for when no group is known. Lands the form in whichever group happens to be ' +
+        'first among those built from this template, so never use it when the user named a group.',
     ),
   assessmentGroupId: z
     .string()
     .optional()
-    .describe('Assessment group ID (alternative to templateId)'),
+    .describe(
+      'Group to create the form in (preferred). Resolve by name with `assessments_list_groups`.',
+    ),
   answers: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .describe(

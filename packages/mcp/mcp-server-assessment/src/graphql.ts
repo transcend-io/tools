@@ -185,6 +185,7 @@ const ListAssessmentGroupsDoc = graphql(/* GraphQL */ `
       nodes {
         id
         title
+        description
         assessmentFormTemplate {
           id
           title
@@ -390,11 +391,17 @@ export interface ListAssessmentsFilter {
    * the group ids it returns.
    */
   assessmentGroupIds?: string[];
-  /** Created strictly before this ISO 8601 date */
+  /**
+   * Created on or before this ISO 8601 date.
+   *
+   * The bounds are asymmetric, which is the API's behaviour and not a typo:
+   * verified against `createdAt`, a row whose timestamp equals the bound is
+   * included by `Before` and excluded by `After`.
+   */
   createdAtBefore?: string;
   /** Created strictly after this ISO 8601 date */
   createdAtAfter?: string;
-  /** Due strictly before this ISO 8601 date */
+  /** Due on or before this ISO 8601 date */
   dueDateBefore?: string;
   /** Due strictly after this ISO 8601 date */
   dueDateAfter?: string;
@@ -450,7 +457,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         assessmentGroupId: node.assessmentGroup?.id,
         assessmentGroupTitle: node.assessmentGroup?.title,
         ...(includeDetails && {
-          dueDate: node.dueDate ?? undefined,
+          dueDate: node.dueDate ?? null,
           updatedAt: node.updatedAt ?? undefined,
           submittedAt: node.submittedAt ?? undefined,
           isArchived: node.isArchived,
@@ -570,6 +577,10 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       nodes: nodes.map((node) => ({
         id: node.id,
         title: node.title,
+        // `text` matches the description as well as the title. Without it on
+        // the row, a caller cannot see why a group it does not recognize came
+        // back, and has no way to audit its own search.
+        description: node.description,
         assessmentFormTemplate: node.assessmentFormTemplate
           ? { id: node.assessmentFormTemplate.id, title: node.assessmentFormTemplate.title }
           : undefined,

@@ -140,6 +140,7 @@ export type {
 } from './tools/define-tool-with-capabilities.js';
 
 export {
+  assertOffsetInRange,
   createToolResult,
   createErrorResult,
   createListResult,

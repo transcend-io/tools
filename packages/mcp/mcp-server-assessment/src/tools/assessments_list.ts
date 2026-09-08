@@ -1,8 +1,8 @@
 import {
+  assertOffsetInRange,
   createListResult,
   defineTool,
-  ErrorCode,
-  ToolError,
+  describeNoMatches,
   z,
   OffsetPaginationSchema,
   type ToolClients,
@@ -66,10 +66,12 @@ export const ListAssessmentsSchema = z
     ),
     externalAssigneeEmails: idList('Email addresses of external (vendor) assignees'),
     assessmentGroupIds: idList('Groups the forms belong to; see `assessments_list_groups`'),
-    createdAfter: isoDate('createdAfter').describe('Only forms created on or after this date'),
-    createdBefore: isoDate('createdBefore').describe('Only forms created before this date'),
-    dueAfter: isoDate('dueAfter').describe('Only forms due on or after this date'),
-    dueBefore: isoDate('dueBefore').describe('Only forms due before this date. Use for overdue.'),
+    createdAfter: isoDate('createdAfter').describe('Only forms created strictly after this date'),
+    createdBefore: isoDate('createdBefore').describe('Only forms created on or before this date'),
+    dueAfter: isoDate('dueAfter').describe('Only forms due strictly after this date'),
+    dueBefore: isoDate('dueBefore').describe(
+      'Only forms due on or before this date. Use for overdue.',
+    ),
     sortBy: z
       .enum(['title', 'status', 'submittedAt'], {
         message: 'sortBy must be one of: title, status, submittedAt',
@@ -164,22 +166,7 @@ export function createAssessmentsListTool(clients: ToolClients) {
 
       const totalCount = result.totalCount ?? 0;
 
-      // An empty page from a non-zero offset is ambiguous: it looks identical to
-      // filters that matched nothing. Fail loudly so the agent corrects the
-      // offset instead of concluding no assessments exist.
-      if (offset > 0 && offset >= totalCount) {
-        throw new ToolError(
-          ErrorCode.VALIDATION_ERROR,
-          `offset ${offset} is past the end of the result set: ${totalCount} ` +
-            `assessment(s) match ${
-              appliedFilters.length > 0
-                ? `the filters (${appliedFilters.join(', ')})`
-                : 'with no filters applied'
-            }. Retry with an offset below ${totalCount}.`,
-          false,
-          { offset, totalCount, appliedFilters },
-        );
-      }
+      assertOffsetInRange({ subject: 'assessment', offset, totalCount, appliedFilters });
 
       const nodesWithLinks = result.nodes.map((node) => ({
         ...node,
@@ -224,12 +211,7 @@ function describeOutcome({
   /** Names of the filters that were forwarded to the API */
   appliedFilters: string[];
 }): string {
-  if (totalCount === 0) {
-    return appliedFilters.length > 0
-      ? `No assessments match the filters applied (${appliedFilters.join(', ')}). ` +
-          'The query succeeded; relax or drop a filter rather than retrying it unchanged.'
-      : 'This organization has no assessments. The query succeeded.';
-  }
+  if (totalCount === 0) return describeNoMatches('assessments', appliedFilters);
   if (offset + returned < totalCount) {
     return `Showing ${returned} of ${totalCount} matches. Fetch the next page with offset ${
       offset + limit

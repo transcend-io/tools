@@ -16,7 +16,8 @@ export const CreateAssessmentSchema = z.object({
     .string()
     .optional()
     .describe(
-      'ID of the assessment template. If assessmentGroupId is not provided, the first group using this template will be used.',
+      'Fallback for when no group is known. Lands the assessment in whichever group happens to ' +
+        'be first among those built from this template, so never use it when the user named a group.',
     ),
   assigneeIds: z
     .array(z.string())

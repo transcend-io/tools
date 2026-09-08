@@ -1,4 +1,5 @@
 import {
+  assertOffsetInRange,
   createListResult,
   defineTool,
   describeNoMatches,
@@ -28,7 +29,8 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
   return defineTool({
     name: 'assessments_list_templates',
-    description: 'List the blank assessment templates available to build new assessments from.',
+    description:
+      'List the blank assessment templates. Only `PUBLISHED` ones can build new assessments.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -52,10 +54,13 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
         .filter(([, value]) => Boolean(value))
         .map(([name]) => name);
 
+      const totalCount = result.totalCount ?? 0;
+      assertOffsetInRange({ subject: 'template', offset, totalCount, appliedFilters });
+
       return createListResult(result.nodes, {
         totalCount: result.totalCount,
         hasNextPage: result.pageInfo?.hasNextPage,
-        ...(result.totalCount === 0 && {
+        ...(totalCount === 0 && {
           paginationNote: describeNoMatches('templates', appliedFilters),
         }),
       });

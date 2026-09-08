@@ -1,4 +1,4 @@
-import { ToolError } from '../errors.js';
+import { ErrorCode, ToolError } from '../errors.js';
 
 export function createToolResult(
   /** Whether the tool call succeeded */
@@ -95,6 +95,48 @@ export function describeNoMatches(subject: string, appliedFilters: string[]): st
   return (
     `No ${subject} match the filters applied (${appliedFilters.join(', ')}). ` +
     'The query succeeded; relax or drop a filter rather than retrying it unchanged.'
+  );
+}
+
+/**
+ * Rejects an `offset` that starts past the end of the result set.
+ *
+ * An empty page from a non-zero offset is byte-identical to filters that
+ * matched nothing, so an agent that overshoots concludes the records do not
+ * exist rather than correcting the offset. Offset zero is deliberately left
+ * alone: an empty first page is a real "nothing matched" and belongs to
+ * `describeNoMatches`.
+ *
+ * @param subject - Singular noun for what was being listed, e.g. `data silo`
+ * @param offset - Offset the caller asked for
+ * @param totalCount - Rows matching the filters overall
+ * @param appliedFilters - Names of the filters, as the caller passed them
+ * @throws ToolError when the offset starts at or past `totalCount`
+ */
+export function assertOffsetInRange({
+  subject,
+  offset,
+  totalCount,
+  appliedFilters,
+}: {
+  subject: string;
+  offset: number | undefined;
+  totalCount: number;
+  appliedFilters: string[];
+}): void {
+  // Tolerates an absent offset: schemas default it to 0, but handlers are also
+  // called directly, and an unpaged call must never be the thing that throws.
+  if (!offset || offset < totalCount) return;
+  throw new ToolError(
+    ErrorCode.VALIDATION_ERROR,
+    `offset ${offset} is past the end of the result set: ${totalCount} ` +
+      `${subject}(s) match ${
+        appliedFilters.length > 0
+          ? `the filters (${appliedFilters.join(', ')})`
+          : 'with no filters applied'
+      }. Retry with an offset below ${totalCount}.`,
+    false,
+    { offset, totalCount, appliedFilters },
   );
 }
 

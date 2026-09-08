@@ -1200,8 +1200,14 @@ export interface Assessment {
   isArchived?: boolean;
   /** Whether the form is locked against further edits */
   isLocked?: boolean;
-  /** Optional due date (ISO 8601) */
-  dueDate?: string;
+  /**
+   * Due date (ISO 8601), or `null` where none is set.
+   *
+   * Explicitly null rather than absent: a dropped key is indistinguishable from
+   * a field the query never asked for, which reads as broken plumbing behind
+   * the `dueBefore` filter rather than as a form nobody gave a deadline.
+   */
+  dueDate?: string | null;
   /** When the form was submitted for review (ISO 8601) */
   submittedAt?: string;
   /** When the form was fully completed (ISO 8601) */
@@ -1301,6 +1307,8 @@ export interface AssessmentResponse {
 export interface AssessmentGroup {
   id: string;
   title: string;
+  /** Free-text summary of the group. Searched by the `text` filter. */
+  description: string;
   assessmentFormTemplate?: {
     id: string;
     title: string;

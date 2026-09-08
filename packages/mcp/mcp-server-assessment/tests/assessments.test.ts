@@ -302,6 +302,20 @@ describe('Assessment Tools', () => {
 
       await expect(call({ limit: 50 })).rejects.toThrow('API unavailable');
     });
+
+    it('describes the date bounds as the API actually applies them', () => {
+      // Verified against a live index: a row whose timestamp equals the bound
+      // is excluded by `After` and included by `Before`. The asymmetry is the
+      // API's, so the copy has to carry it rather than round it off.
+      const { shape } = listTool().zodSchema as unknown as {
+        shape: Record<string, { description?: string }>;
+      };
+
+      expect(shape.createdAfter.description).toContain('strictly after');
+      expect(shape.dueAfter.description).toContain('strictly after');
+      expect(shape.createdBefore.description).toContain('on or before');
+      expect(shape.dueBefore.description).toContain('on or before');
+    });
   });
 
   describe('assessments_list_templates', () => {
@@ -1059,6 +1073,30 @@ describe('Assessment Tools', () => {
       const { shape } = tool.zodSchema as unknown as { shape: Record<string, unknown> };
       expect(shape).not.toHaveProperty('cursor');
       expect(shape).toHaveProperty('offset');
+    });
+
+    it.each([
+      ['assessments_list_groups', 'listAssessmentGroups'],
+      ['assessments_list_templates', 'listAssessmentTemplates'],
+    ] as const)('%s rejects an offset past the end', async (toolName, method) => {
+      // Overshooting a catalog of thirteen returns an empty page whose
+      // totalCount is still thirteen, so it carries no empty-result note
+      // either — a bare empty array that reads as "nothing exists".
+      mockGraphql[method].mockResolvedValue({
+        nodes: [],
+        totalCount: 13,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === toolName)!;
+
+      await expect(
+        tool.handler(tool.zodSchema.parse({ offset: 500 }) as never),
+      ).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+        message: expect.stringContaining('past the end'),
+        details: { offset: 500, totalCount: 13 },
+      });
     });
 
     it('honors a caller-supplied dashboard URL on the ToolClients', async () => {
