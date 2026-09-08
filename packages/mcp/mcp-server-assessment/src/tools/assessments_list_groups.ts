@@ -29,12 +29,10 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_list_groups',
     description:
-      'Find assessment groups, the containers that hold assessments and link them to a ' +
-      'template. Use this to resolve a group by name into the `assessmentGroupId` that ' +
-      '`assessments_create` needs. Each row carries the template it was built from, so this ' +
-      'is also how you get from a form to its template: take `assessmentGroupId` off an ' +
-      '`assessments_list` row, pass it as `ids` here, and read `assessmentFormTemplate`. ' +
-      'Narrow with `text` rather than scanning pages. ' +
+      'List all assessment groups. Groups are containers for assessments and are linked to ' +
+      'templates. Use this to find the right group ID for creating assessments. To reach the ' +
+      'template behind a form, pass its `assessmentGroupId` as `ids` and read ' +
+      '`assessmentFormTemplate`. ' +
       'Surface the `groupUrl` on each row verbatim.',
     category: 'Assessments',
     readOnly: true,

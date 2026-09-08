@@ -17,10 +17,12 @@ organization where several groups share a template that quietly creates the asse
 wrong one. It now says to prefer `assessmentGroupId` and never to use `templateId` when the
 user named a specific group.
 
-`assessments_list` and `assessments_list_templates` did not say what their rows contain, so
-an agent asked for the oldest assessments, or which templates are new, concluded the tool
-could not answer. Both already return `createdAt`; neither API supports a date sort, so the
-descriptions now name the fields on each row and say to order by `createdAt` client-side.
-Naming `assessmentGroupId` on `assessments_list` rows also completes the documented path to
-`assessments_export_template`, whose first hop was previously described only from the far end
-in `assessments_list_groups`.
+An agent asked for the oldest assessments, or which templates are new, concluded the tool
+could not answer. Both already return `createdAt`, and neither API supports a date sort. That
+now lives on the parameter rather than in the description: `sortBy` on `assessments_list` says
+the API offers no creation-date sort, and `assessments_list_templates` has no sort parameter to
+mislead. Row shape is left to the first response, which carries it.
+
+`assessments_list_groups` gains the one thing no input schema can express, since it is a fact
+about the response: to reach the template behind a form, pass its `assessmentGroupId` as `ids`
+and read `assessmentFormTemplate`. Two cold-read tests gave up at exactly that step.

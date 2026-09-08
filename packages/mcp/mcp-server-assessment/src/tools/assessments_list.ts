@@ -107,10 +107,7 @@ export const ListAssessmentsSchema = z
       .boolean()
       .optional()
       .default(false)
-      .describe(
-        'Also return assignees, reviewers, due/updated/submitted dates and lock state. ' +
-          'Roughly triples the size of each row.',
-      ),
+      .describe('Also return assignees, reviewers, due/updated/submitted dates and lock state.'),
   })
   .merge(OffsetPaginationSchema);
 export type ListAssessmentsInput = z.infer<typeof ListAssessmentsSchema>;
@@ -121,15 +118,8 @@ export function createAssessmentsListTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_list',
     description:
-      'Find privacy assessments — PIAs, DPIAs, privacy reviews, vendor questionnaires — by ' +
-      'status, text, assignee, reviewer, template, group, creation or due date. Each row has ' +
-      'id, title, status, createdAt, assessmentGroupId, assessmentGroupTitle and url; ' +
-      '`includeDetails` adds ' +
-      'assignees, reviewers and further dates. There is no creation-date sort, so order by ' +
-      'createdAt yourself for oldest-first. `assessments_get` reads one form in full, ' +
-      '`assessments_list_groups` the containers, `assessments_list_templates` blank templates. ' +
-      '`totalCount` counts every match, not this page. ' +
-      'Surface each `url` verbatim; never build assessment URLs from IDs.',
+      'List all assessments in your organization. ' +
+      'Surface the `url` on each row verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

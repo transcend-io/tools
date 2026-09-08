@@ -26,9 +26,7 @@ result.
 Row shape is unchanged by default. `includeDetails` adds assignees, reviewers, external
 assignees, due/updated/submitted dates and lock state, gated with `@include` so callers who
 skip it do not pay for roughly triple the bytes per row. Every row now also carries
-`assessmentGroupTitle`, which saves a second lookup to name the group, and the description
-lists it: a probe found it by accident after following the documented route through
-`assessments_list_groups` to name the groups it already had.
+`assessmentGroupTitle`, which saves a second lookup to name the group.
 
 Errors distinguish the three ways a listing can come back empty. An `offset` past the end
 raises a `VALIDATION_ERROR` `ToolError` carrying `offset`, `totalCount` and the filters that
