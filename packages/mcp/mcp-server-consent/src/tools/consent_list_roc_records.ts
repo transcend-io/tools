@@ -6,6 +6,10 @@ export const ConsentListRocRecordsSchema = z.object({
     .describe('The consent partition (airgap bundle id) the lookup is scoped to'),
   limit: z
     .number()
+    .int()
+    .min(1)
+    .max(200)
+    .optional()
     .describe('Maximum number of records to return (1-200); omit to return the full timeline'),
   includeRawRequest: z.boolean().describe('Whether to include the raw request in the response'),
 });
