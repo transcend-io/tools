@@ -104,6 +104,8 @@ describe('generated Custom Function artifacts', () => {
 
     expect(generalSchema.required ?? []).not.toContain('coreIdentifier');
     expect(datapointSchema.required ?? []).not.toContain('coreIdentifier');
+    expect(datapointSchema.properties.extras.properties).toHaveProperty('dataSilo');
+    expect(datapointSchema.properties.extras.required).not.toContain('dataSilo');
     expect(profileSchema.required).not.toContain('type');
     expect(profileSchema.properties.type.type).toEqual(['string', 'null']);
   });

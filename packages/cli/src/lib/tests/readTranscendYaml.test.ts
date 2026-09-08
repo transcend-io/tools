@@ -36,7 +36,8 @@ describe('readTranscendYaml', () => {
 
   it('multi-instance.yml should fail when no variables are provided', () => {
     expect(() => readTranscendYaml(join(EXAMPLE_DIR, 'multi-instance.yml'))).to.throw(
-      'Found variable that was not set: domain',
+      'Found variable that was not set: domain.\n' +
+        'Make sure you are passing all variables through the --variables=domain:value-for-variable flag.',
     );
   });
 

@@ -14,6 +14,9 @@ without mutating globals. See [Isolated Context](https://bloomberg.github.io/str
 - Treat `commands/**/impl.ts` as the imperative shell. The command implementation should own
   command-local filesystem access, logging, environment access, exits, client construction, and
   high-level orchestration through `this: LocalContext`.
+- Keep the workflow visible in `impl.ts`. Do not make it a thin wrapper that delegates discovery,
+  prompting, planning, mutation, and output wholesale to one effectful helper. Helpers and
+  services may encapsulate one cohesive capability, but must not become a hidden command shell.
 - In `impl.ts`, use `this.fs`, `this.logger`, and `this.process`; never import `node:fs` or the
   singleton logger, mutate global `process`, or spy on globals.
 - Prefer helpers that accept in-memory data and return data. Parsing, validation, mapping,

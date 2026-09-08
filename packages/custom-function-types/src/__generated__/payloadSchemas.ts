@@ -47,6 +47,10 @@ export const DSR_DATAPOINT_CUSTOM_FUNCTION_PAYLOAD_SCHEMA = {
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "dataSilo": {
+          "$ref": "#/definitions/CustomFunction.DataSilo",
+          "description": "Optional integration override for a test invocation."
+        },
         "profile": {
           "type": "object",
           "additionalProperties": false,
@@ -96,14 +100,9 @@ export const DSR_DATAPOINT_CUSTOM_FUNCTION_PAYLOAD_SCHEMA = {
         "purpose": {
           "$ref": "#/definitions/CustomFunction.PurposeChange",
           "description": "Consent-purpose change that triggered this request, when applicable."
-        },
-        "dataSilo": {
-          "$ref": "#/definitions/CustomFunction.DataSilo",
-          "description": "Integration being processed."
         }
       },
       "required": [
-        "dataSilo",
         "organization",
         "profile",
         "request"
@@ -129,7 +128,7 @@ export const DSR_DATAPOINT_CUSTOM_FUNCTION_PAYLOAD_SCHEMA = {
     "isTest",
     "type"
   ],
-  "description": "Payload supplied when locally testing a datapoint export.\n\nTranscend adds `coreIdentifier` when it is omitted.",
+  "description": "Payload supplied when locally testing a datapoint export.\n\nTranscend adds `coreIdentifier` and the resolved `dataSilo` when omitted.",
   "definitions": {
     "CustomFunction.CoreIdentifier": {
       "type": "object",
@@ -144,6 +143,35 @@ export const DSR_DATAPOINT_CUSTOM_FUNCTION_PAYLOAD_SCHEMA = {
       ],
       "additionalProperties": false,
       "description": "The authenticated identifier attached to every invocation."
+    },
+    "CustomFunction.DataSilo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Integration ID."
+        },
+        "title": {
+          "type": "string",
+          "description": "Integration title."
+        },
+        "description": {
+          "type": "string",
+          "description": "Integration description."
+        },
+        "link": {
+          "type": "string",
+          "description": "URL path to the integration in Transcend."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description",
+        "link"
+      ],
+      "additionalProperties": false,
+      "description": "Integration associated with a datapoint invocation."
     },
     "CustomFunction.Request": {
       "type": "object",
@@ -346,35 +374,6 @@ export const DSR_DATAPOINT_CUSTOM_FUNCTION_PAYLOAD_SCHEMA = {
       },
       "additionalProperties": false,
       "description": "Preference choice included with a consent-purpose change."
-    },
-    "CustomFunction.DataSilo": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Integration ID."
-        },
-        "title": {
-          "type": "string",
-          "description": "Integration title."
-        },
-        "description": {
-          "type": "string",
-          "description": "Integration description."
-        },
-        "link": {
-          "type": "string",
-          "description": "URL path to the integration in Transcend."
-        }
-      },
-      "required": [
-        "id",
-        "title",
-        "description",
-        "link"
-      ],
-      "additionalProperties": false,
-      "description": "Integration associated with a datapoint invocation."
     },
     "CustomFunction.RequestAction": {
       "type": "string",

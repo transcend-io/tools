@@ -27,7 +27,7 @@ export default defineConfig({
       // these imports the same way the published bundles do.
       name: 'text-asset-loader',
       load(id) {
-        if (id.endsWith('.svg') || id.endsWith('.html')) {
+        if (id.endsWith('.svg') || id.endsWith('.html') || id.endsWith('.md')) {
           return `export default ${JSON.stringify(readFileSync(id, 'utf8'))}`;
         }
       },

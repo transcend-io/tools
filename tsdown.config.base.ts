@@ -6,7 +6,7 @@ import type { TsdownPlugin, UserConfig } from 'tsdown';
 const repoRoot = path.dirname(fileURLToPath(import.meta.url));
 
 /** Source extensions whose text is inlined verbatim and so is useless in a sourcemap. */
-const OPAQUE_SOURCE_EXTENSIONS = ['.html', '.svg'];
+const OPAQUE_SOURCE_EXTENSIONS = ['.html', '.md', '.svg'];
 
 /**
  * Drops the embedded text of inlined assets from emitted sourcemaps.
@@ -66,9 +66,9 @@ const sharedLibraryConfig: UserConfig = {
   dts: true,
   format: ['esm'],
   sourcemap: true,
-  // `.html` covers prebuilt MCP App views, which Vite emits as a single
-  // self-contained document that the server then inlines as a string.
-  loader: { '.svg': 'text', '.html': 'text' },
+  // `.html` covers prebuilt MCP App views; `.md` covers packaged Agent Skills.
+  // Both are authored as literal files and inlined into the published bundles.
+  loader: { '.svg': 'text', '.html': 'text', '.md': 'text' },
   alias: {
     '@tools/assets': path.join(repoRoot, 'assets'),
   },
