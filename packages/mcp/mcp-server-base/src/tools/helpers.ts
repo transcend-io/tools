@@ -75,6 +75,29 @@ export function createListResult(
   };
 }
 
+/**
+ * A `paginationNote` for a list that came back empty, naming the filters that
+ * were applied.
+ *
+ * An empty `data` array reads exactly like a failed lookup. Cold-read agents
+ * that hit one spend a second, unfiltered call re-deriving the answer by hand
+ * before they will trust the zero, or report the emptiness as a tool failure.
+ * Saying the query succeeded, and against what, is what makes the zero usable.
+ *
+ * @param subject - Plural noun for what was being listed, e.g. `data silos`
+ * @param appliedFilters - Names of the filters, as the caller passed them
+ * @returns The note to attach to the empty page
+ */
+export function describeNoMatches(subject: string, appliedFilters: string[]): string {
+  if (appliedFilters.length === 0) {
+    return `This organization has no ${subject}. The query succeeded.`;
+  }
+  return (
+    `No ${subject} match the filters applied (${appliedFilters.join(', ')}). ` +
+    'The query succeeded; relax or drop a filter rather than retrying it unchanged.'
+  );
+}
+
 export function groupBy<T>(array: T[], key: keyof T): Record<string, number> {
   return array.reduce(
     (groups, item) => {

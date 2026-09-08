@@ -1,13 +1,13 @@
 import {
   createListResult,
   defineTool,
+  describeNoMatches,
   OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
-import { describeNoMatches } from '../helpers/describeNoMatches.js';
 
 export const ListTemplatesSchema = OffsetPaginationSchema.extend({
   text: z.string().optional().describe('Free-text match on the template title and description'),

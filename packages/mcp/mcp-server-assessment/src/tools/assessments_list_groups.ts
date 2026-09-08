@@ -1,6 +1,7 @@
 import {
   createListResult,
   defineTool,
+  describeNoMatches,
   OffsetPaginationSchema,
   z,
   type ToolClients,
@@ -8,7 +9,6 @@ import {
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentGroupUrl } from '../helpers/buildAssessmentLinks.js';
-import { describeNoMatches } from '../helpers/describeNoMatches.js';
 
 export const ListGroupsSchema = OffsetPaginationSchema.extend({
   text: z.string().optional().describe('Free-text match on the group title and description'),
