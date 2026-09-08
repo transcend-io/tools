@@ -1,4 +1,5 @@
 import { CUSTOM_FUNCTION_TYPES_VERSION } from '@transcend-io/custom-function-types';
+import colors from 'colors';
 
 import { version as CLI_VERSION } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
@@ -216,25 +217,23 @@ export async function init(
       return;
     }
     if (flags.dryRun) {
-      this.logger.info('Dry run complete. No changes were written.');
+      this.logger.info(colors.yellow('Dry run complete. No changes were written.'));
       return;
     }
     if (!approved) {
-      this.logger.info('No changes applied.');
+      this.logger.info(colors.yellow('No changes applied.'));
       return;
     }
     if (plan.changes.length === 0) {
-      this.logger.info('Custom Function project is already initialized.');
+      this.logger.info(colors.green('Custom Function project is already initialized.'));
       return;
     }
-    this.logger.info('Custom Function project initialized.');
+    this.logger.info(colors.green('Custom Function project initialized.'));
     if (plan.nextSteps.length > 0) {
-      this.logger.info('\nNext steps');
-      plan.nextSteps.forEach((step, index) => {
-        this.logger.info(`  ${index + 1}. ${step}`);
-      });
+      this.logger.info(`\n${colors.bold('Next steps')}`);
+      plan.nextSteps.forEach((step) => this.logger.info(step));
     }
-    this.logger.info('\nAI handoff — paste into your coding agent');
+    this.logger.info(`\n${colors.bold('AI handoff — paste into your coding agent')}`);
     this.logger.info(aiHandoff);
   } catch (error) {
     if (error instanceof PromptCancelledError) {

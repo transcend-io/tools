@@ -89,6 +89,12 @@ describe('custom-functions new', () => {
     const handoffHeading = lines.indexOf('AI handoff — paste into your coding agent');
     expect(handoffHeading).toBeGreaterThan(-1);
     expect(lines[handoffHeading + 1]).toMatch(/^(?:Ask|Use) /u);
+    const nextStepsHeading = lines.indexOf('Next steps');
+    const nextSteps = lines.slice(nextStepsHeading + 1, handoffHeading).filter(Boolean);
+    expect(nextSteps).toHaveLength(3);
+    expect(nextSteps[0]).toMatch(/^Edit /u);
+    expect(nextSteps[1]).toMatch(/^transcend custom-functions check /u);
+    expect(nextSteps[2]).toMatch(/^transcend custom-functions push /u);
     expect(context.stdout).toContain('implement `Example Function`');
     expect(context.stdout).toContain('replace the example fixtures with realistic cases');
   });

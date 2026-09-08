@@ -1,5 +1,7 @@
 import { join } from 'node:path';
 
+import colors from 'colors';
+
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { buildNewFunctionAiHandoff } from '../../../lib/custom-functions/ai-handoff.js';
@@ -200,21 +202,19 @@ export async function _new(
       return;
     }
     if (flags.dryRun) {
-      this.logger.info('Dry run complete. No changes were written.');
+      this.logger.info(colors.yellow('Dry run complete. No changes were written.'));
       return;
     }
     if (!approved) {
-      this.logger.info('No changes applied.');
+      this.logger.info(colors.yellow('No changes applied.'));
       return;
     }
-    this.logger.info('Custom Function added.');
+    this.logger.info(colors.green('Custom Function added.'));
     if (plan.nextSteps.length > 0) {
-      this.logger.info('\nNext steps');
-      plan.nextSteps.forEach((step, index) => {
-        this.logger.info(`  ${index + 1}. ${step}`);
-      });
+      this.logger.info(`\n${colors.bold('Next steps')}`);
+      plan.nextSteps.forEach((step) => this.logger.info(step));
     }
-    this.logger.info('\nAI handoff — paste into your coding agent');
+    this.logger.info(`\n${colors.bold('AI handoff — paste into your coding agent')}`);
     this.logger.info(aiHandoff);
   } catch (error) {
     if (error instanceof PromptCancelledError) {

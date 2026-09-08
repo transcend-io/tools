@@ -1,3 +1,5 @@
+import colors from 'colors';
+
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
@@ -77,10 +79,16 @@ export async function check(
     if (flags.json) {
       this.process.stdout.write(`${JSON.stringify(result)}\n`);
     } else {
-      this.logger.info('Custom Function checks\n');
+      this.logger.info(`${colors.bold('Custom Function checks')}\n`);
       result.checks.forEach(({ name, status }) => {
         const label = status === 'passed' ? 'PASS' : status === 'failed' ? 'FAIL' : 'SKIP';
-        this.logger.info(`${label} ${name[0]!.toUpperCase()}${name.slice(1)}`);
+        const styledLabel =
+          status === 'passed'
+            ? colors.green(label)
+            : status === 'failed'
+              ? colors.red(label)
+              : colors.yellow(label);
+        this.logger.info(`${styledLabel} ${name[0]!.toUpperCase()}${name.slice(1)}`);
       });
       if (result.diagnostics.length > 0) {
         this.logger.error('');
@@ -88,12 +96,16 @@ export async function check(
       result.diagnostics.forEach((diagnostic) => {
         const location = diagnostic.path ? `${diagnostic.path}: ` : '';
         const owner = diagnostic.functionName ? `[${diagnostic.functionName}] ` : '';
-        this.logger.error(`${diagnostic.severity}: ${location}${owner}${diagnostic.message}`);
+        this.logger.error(
+          colors.red(`${diagnostic.severity}: ${location}${owner}${diagnostic.message}`),
+        );
       });
       if (result.status === 'passed') {
-        this.logger.info('\nCustom Function checks passed.');
+        this.logger.info('');
+        this.logger.info(colors.green('Custom Function checks passed.'));
       } else {
-        this.logger.error('\nCustom Function checks failed.');
+        this.logger.error('');
+        this.logger.error(colors.red('Custom Function checks failed.'));
       }
     }
     if (result.status === 'failed') {

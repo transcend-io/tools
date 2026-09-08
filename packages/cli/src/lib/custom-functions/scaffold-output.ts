@@ -1,5 +1,6 @@
 import { isAbsolute, relative, sep } from 'node:path';
 
+import colors from 'colors';
 import { createTwoFilesPatch } from 'diff';
 
 import type { PlannedChange } from '../scaffolding/project-plan.js';
@@ -122,18 +123,23 @@ export function buildPlanResult(
  */
 export function renderProjectPlan(plan: CustomFunctionProjectPlan, cwd: string): string {
   const lines = [
-    'Custom Function plan',
-    `  Target:   ${displayPath(cwd, plan.targetDirectory)}`,
-    `  Manifest: ${displayPath(cwd, plan.manifestPath)}`,
+    colors.bold('Custom Function plan'),
+    `  ${colors.dim('Target:')}   ${colors.cyan(displayPath(cwd, plan.targetDirectory))}`,
+    `  ${colors.dim('Manifest:')} ${colors.cyan(displayPath(cwd, plan.manifestPath))}`,
     '',
   ];
   if (plan.changes.length === 0) {
-    lines.push('No changes needed.');
+    lines.push(colors.dim('No changes needed.'));
   } else {
-    lines.push('Changes:');
+    lines.push(colors.bold('Changes'));
     plan.changes.forEach((change) => {
       const item = publicChange(cwd, change);
-      lines.push(`  ${item.kind.padEnd(7)} ${item.target}`);
+      const kind = {
+        create: colors.green(item.kind.padEnd(7)),
+        merge: colors.cyan(item.kind.padEnd(7)),
+        link: colors.magenta(item.kind.padEnd(7)),
+      }[item.kind];
+      lines.push(`  ${kind} ${item.target}`);
       if (change.kind === 'file' && change.before !== null) {
         const path = displayPath(cwd, change.path);
         const patch = createTwoFilesPatch(path, path, change.before, change.after, '', '', {
@@ -149,12 +155,12 @@ export function renderProjectPlan(plan: CustomFunctionProjectPlan, cwd: string):
     });
   }
   if (plan.unchanged.length > 0) {
-    lines.push('', 'Left unchanged:');
-    plan.unchanged.forEach((path) => lines.push(`  ${displayPath(cwd, path)}`));
+    lines.push('', colors.bold('Left unchanged'));
+    plan.unchanged.forEach((path) => lines.push(`  ${colors.dim(displayPath(cwd, path))}`));
   }
   if (plan.warnings.length > 0) {
-    lines.push('', 'Warnings:');
-    plan.warnings.forEach((warning) => lines.push(`  ${warning}`));
+    lines.push('', colors.bold(colors.yellow('Warnings')));
+    plan.warnings.forEach((warning) => lines.push(`  ${colors.yellow(warning)}`));
   }
   return `${lines.join('\n')}\n`;
 }
