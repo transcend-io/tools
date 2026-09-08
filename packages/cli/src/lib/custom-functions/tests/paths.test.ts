@@ -54,4 +54,24 @@ describe('buildCustomFunctionProjectArguments', () => {
       buildCustomFunctionProjectArguments('/repo/functions', '/repo/functions/custom.yml'),
     ).toBe("'/repo/functions' --manifest='/repo/functions/custom.yml'");
   });
+
+  it('uses paths relative to the invocation directory for human instructions', () => {
+    expect(
+      buildCustomFunctionProjectArguments(
+        '/repo/packages/transcend/custom-functions',
+        '/repo/packages/transcend/custom-functions/transcend-functions.yml',
+        '/repo/packages',
+      ),
+    ).toBe("'transcend/custom-functions'");
+  });
+
+  it('shortens custom manifest paths with the project directory', () => {
+    expect(
+      buildCustomFunctionProjectArguments(
+        '/repo/packages/transcend/custom-functions',
+        '/repo/packages/transcend/custom-functions/custom.yml',
+        '/repo/packages',
+      ),
+    ).toBe("'transcend/custom-functions' --manifest='transcend/custom-functions/custom.yml'");
+  });
 });

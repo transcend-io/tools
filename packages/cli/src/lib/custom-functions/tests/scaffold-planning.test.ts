@@ -23,6 +23,7 @@ import {
 function buildState(root: string): CustomFunctionProjectState {
   const targetDirectory = join(root, 'custom-functions');
   return {
+    invocationDirectory: root,
     targetDirectory,
     projectRoot: root,
     manifestDirectory: targetDirectory,
@@ -184,8 +185,8 @@ describe('buildAddFunctionPlan', () => {
     const commands = plan.nextSteps.filter((step) => step.includes('transcend '));
 
     expect(commands).toHaveLength(2);
-    expect(commands[0]).toContain("--manifest='/repo/custom-functions/functions.yml'");
-    expect(commands[1]).toContain("--file='/repo/custom-functions/functions.yml'");
+    expect(commands[0]).toContain("--manifest='custom-functions/functions.yml'");
+    expect(commands[1]).toContain("--file='custom-functions/functions.yml'");
   });
 
   it('builds a deterministic manifest, source, and payload plan', () => {

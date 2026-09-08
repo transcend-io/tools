@@ -22,6 +22,8 @@ export type CustomFunctionSetupFeature =
 
 /** Repository and target state collected before planning. */
 export interface CustomFunctionProjectState {
+  /** Directory from which the CLI was invoked. */
+  invocationDirectory: string;
   /** Absolute user-selected target directory. */
   targetDirectory: string;
   /** Root that owns repository-level editor and agent setup. */

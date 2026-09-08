@@ -103,6 +103,7 @@ describe('discoverCustomFunctionProject', () => {
 
     expect(second).toEqual(first);
     expect(first).toMatchObject({
+      invocationDirectory: root,
       targetDirectory: target,
       projectRoot: root,
       manifestDirectory: target,

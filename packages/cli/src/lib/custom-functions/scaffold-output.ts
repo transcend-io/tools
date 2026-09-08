@@ -1,9 +1,8 @@
-import { isAbsolute, relative, sep } from 'node:path';
-
 import colors from 'colors';
 import { createTwoFilesPatch } from 'diff';
 
 import type { PlannedChange } from '../scaffolding/project-plan.js';
+import { displayCliPath } from './paths.js';
 import type { CustomFunctionProjectPlan } from './scaffold-model.js';
 
 /** Stable public description of one planned mutation. */
@@ -48,14 +47,7 @@ export interface CustomFunctionPlanResult {
  * @returns Portable display path
  */
 export function displayPath(cwd: string, path: string): string {
-  const value = relative(cwd, path).split(sep).join('/');
-  if (value.length === 0) {
-    return '.';
-  }
-  if (value === '..' || value.startsWith('../') || isAbsolute(value)) {
-    return path.split(sep).join('/');
-  }
-  return value;
+  return displayCliPath(cwd, path);
 }
 
 /**

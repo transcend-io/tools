@@ -15,7 +15,7 @@ import {
   CUSTOM_FUNCTION_SKILL_NAME,
 } from './custom-function-skill.js';
 import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
-import { buildCustomFunctionProjectArguments, quoteCliArgument } from './paths.js';
+import { buildCustomFunctionProjectArguments, displayCliPath, quoteCliArgument } from './paths.js';
 import { generateGithubActionsWorkflow } from './scaffold-artifacts.js';
 import {
   mergeDenoConfiguration,
@@ -351,6 +351,7 @@ export function buildInitPlan(
   const projectArguments = buildCustomFunctionProjectArguments(
     state.targetDirectory,
     state.manifestPath,
+    state.invocationDirectory,
   );
   const plan: CustomFunctionProjectPlan = {
     version: CUSTOM_FUNCTION_RESULT_VERSION,
@@ -564,11 +565,14 @@ export function buildAddFunctionPlan(
   const projectArguments = buildCustomFunctionProjectArguments(
     state.targetDirectory,
     state.manifestPath,
+    state.invocationDirectory,
   );
   plan.nextSteps = [
-    `Edit ${quoteCliArgument(sourcePath)}`,
+    `Edit ${quoteCliArgument(displayCliPath(state.invocationDirectory, sourcePath))}`,
     `transcend custom-functions check ${projectArguments}`,
-    `transcend custom-functions push --file=${quoteCliArgument(state.manifestPath)} --dryRun`,
+    `transcend custom-functions push --file=${quoteCliArgument(
+      displayCliPath(state.invocationDirectory, state.manifestPath),
+    )} --dryRun`,
   ];
   if (options.generated.manifestEntry.env?.TRANSCEND_API_KEY) {
     plan.warnings.push(

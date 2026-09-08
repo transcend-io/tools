@@ -15,6 +15,24 @@ export function resolveCliPath(cwd: string, input: string): string {
 }
 
 /**
+ * Prefer a portable path relative to the invocation directory.
+ *
+ * @param cwd - Process working directory
+ * @param path - Absolute path
+ * @returns Relative path when contained by cwd, otherwise the absolute path
+ */
+export function displayCliPath(cwd: string, path: string): string {
+  const value = relative(cwd, path).split(sep).join('/');
+  if (value.length === 0) {
+    return '.';
+  }
+  if (value === '..' || value.startsWith('../') || isAbsolute(value)) {
+    return path.split(sep).join('/');
+  }
+  return value;
+}
+
+/**
  * Resolve one Custom Function project and its optional manifest override.
  *
  * @param cwd - Process working directory
@@ -85,14 +103,18 @@ export function quoteCliArgument(value: string): string {
  *
  * @param targetDirectory - Project directory
  * @param manifestPath - Explicit manifest
+ * @param cwd - Optional invocation directory for shorter human-readable paths
  * @returns Quoted positional directory and any required manifest override
  */
 export function buildCustomFunctionProjectArguments(
   targetDirectory: string,
   manifestPath: string,
+  cwd?: string,
 ): string {
   const defaultManifest = join(targetDirectory, 'transcend-functions.yml');
+  const displayedTarget = cwd ? displayCliPath(cwd, targetDirectory) : targetDirectory;
+  const displayedManifest = cwd ? displayCliPath(cwd, manifestPath) : manifestPath;
   const manifestFlag =
-    manifestPath === defaultManifest ? '' : ` --manifest=${quoteCliArgument(manifestPath)}`;
-  return `${quoteCliArgument(targetDirectory)}${manifestFlag}`;
+    manifestPath === defaultManifest ? '' : ` --manifest=${quoteCliArgument(displayedManifest)}`;
+  return `${quoteCliArgument(displayedTarget)}${manifestFlag}`;
 }

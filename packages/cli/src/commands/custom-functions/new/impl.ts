@@ -154,6 +154,7 @@ export async function _new(
           `transcend custom-functions init ${buildCustomFunctionProjectArguments(
             state.targetDirectory,
             state.manifestPath,
+            this.process.cwd(),
           )} --deno --noInteractive.`,
       );
     }

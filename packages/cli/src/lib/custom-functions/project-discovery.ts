@@ -300,6 +300,7 @@ export function discoverCustomFunctionProject(
   const denoConfigPath = context.fs.existsSync(denoJsonc) ? denoJsonc : denoJson;
 
   return {
+    invocationDirectory: cwd,
     targetDirectory,
     projectRoot,
     manifestDirectory,
