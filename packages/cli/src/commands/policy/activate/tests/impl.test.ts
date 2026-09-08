@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
-import { logger } from '../../../../logger.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { activate } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
@@ -42,16 +41,13 @@ const sampleBundle = {
 };
 
 describe('activate', () => {
-  const exit = vi.fn();
-  const stdout = { write: vi.fn() };
-  const context = {
-    process: { exit, stdout },
-  } as unknown as LocalContext;
+  const context = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
-    process.env.DEVELOPMENT_MODE_VALIDATE_ONLY = 'false';
+    context.reset();
   });
 
   it('resolves the bundle name and version label, then POSTs the activate endpoint', async () => {
@@ -81,10 +77,8 @@ describe('activate', () => {
       'v1/policy-engine/policy-bundles/resolved-bundle-id/versions/version-id/activate',
       { json: {} },
     );
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('bundleName  main'));
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Policy bundle version activated.'),
-    );
+    expect(context.stdout).toContain('bundleName  main');
+    expect(context.stdout).toContain('Policy bundle version activated.');
   });
 
   it('activates the latest version when --version is omitted', async () => {
@@ -128,7 +122,7 @@ describe('activate', () => {
       json: true,
     });
 
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('"bundleName": "main"'));
+    expect(context.stdout).toContain('"bundleName": "main"');
   });
 
   it('throws a CLI-side error when the bundle name is unknown (before calling the monolith)', async () => {
@@ -171,9 +165,7 @@ describe('activate', () => {
       'v1/policy-engine/policy-bundles/resolved-bundle-id/versions/version-id/activate',
       { json: { dryRun: true } },
     );
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Activation validation succeeded.'),
-    );
+    expect(context.stdout).toContain('Activation validation succeeded.');
   });
 
   it('rewrites a 409 (already active) to a clear operator-facing message', async () => {

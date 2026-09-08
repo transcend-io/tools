@@ -1,5 +1,4 @@
-import fs from 'node:fs';
-import { join } from 'node:path';
+import path from 'node:path';
 
 import { ConsentTrackerStatus } from '@transcend-io/privacy-types';
 import { buildTranscendGraphQLClient } from '@transcend-io/sdk';
@@ -13,7 +12,6 @@ import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullTranscendConfiguration } from '../../../lib/graphql/index.js';
 import { writeTranscendYaml } from '../../../lib/readTranscendYaml.js';
-import { logger } from '../../../logger.js';
 import { DEFAULT_CONSENT_TRACKER_STATUSES, DEFAULT_TRANSCEND_PULL_RESOURCES } from './command.js';
 
 export interface PullCommandFlags {
@@ -48,10 +46,10 @@ export async function pull(
     debug,
   }: PullCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Parse authentication as API key or path to list of API keys
-  const apiKeyOrList = await validateTranscendAuth(auth);
+  const apiKeyOrList = await validateTranscendAuth(auth, this);
 
   const resourcesToPull: TranscendPullResource[] = resources.includes('all')
     ? Object.values(TranscendPullResource)
@@ -75,23 +73,23 @@ export async function pull(
         trackerStatuses,
       });
 
-      logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
+      this.logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
       writeTranscendYaml(file, configuration);
     } catch (err) {
-      logger.error(
+      this.logger.error(
         colors.red(`An error occurred syncing the schema: ${debug ? err.stack : err.message}`),
       );
       this.process.exit(1);
     }
 
     // Indicate success
-    logger.info(
+    this.logger.info(
       colors.green(
         `Successfully synced yaml file to disk at ${file}! View at ${ADMIN_DASH_INTEGRATIONS}`,
       ),
     );
   } else {
-    if (!fs.lstatSync(file).isDirectory()) {
+    if (!this.fs.lstatSync(file).isDirectory()) {
       throw new Error(
         'File is expected to be a folder when passing in a list of API keys to pull from. e.g. --file=./working/',
       );
@@ -100,7 +98,9 @@ export async function pull(
     const encounteredErrors: string[] = [];
     await mapSeries(apiKeyOrList, async (apiKey, ind) => {
       const prefix = `[${ind + 1}/${apiKeyOrList.length}][${apiKey.organizationName}] `;
-      logger.info(colors.magenta(`~~~\n\n${prefix}Attempting to pull configuration...\n\n~~~`));
+      this.logger.info(
+        colors.magenta(`~~~\n\n${prefix}Attempting to pull configuration...\n\n~~~`),
+      );
 
       // Create a GraphQL client
       const client = buildTranscendGraphQLClient(transcendUrl, apiKey.apiKey);
@@ -118,19 +118,19 @@ export async function pull(
           trackerStatuses,
         });
 
-        const filePath = join(file, `${apiKey.organizationName}.yml`);
-        logger.info(colors.magenta(`Writing configuration to file "${filePath}"...`));
+        const filePath = path.join(file, `${apiKey.organizationName}.yml`);
+        this.logger.info(colors.magenta(`Writing configuration to file "${filePath}"...`));
         writeTranscendYaml(filePath, configuration);
 
-        logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
+        this.logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
       } catch (err) {
-        logger.error(colors.red(`${prefix}Failed to sync configuration. - ${err.message}`));
+        this.logger.error(colors.red(`${prefix}Failed to sync configuration. - ${err.message}`));
         encounteredErrors.push(apiKey.organizationName);
       }
     });
 
     if (encounteredErrors.length > 0) {
-      logger.info(
+      this.logger.info(
         colors.red(
           `Sync encountered errors for "${encounteredErrors.join(
             ',',

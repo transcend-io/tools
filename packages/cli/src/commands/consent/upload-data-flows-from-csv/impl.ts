@@ -16,7 +16,7 @@ export async function uploadDataFlowsFromCsv(
   this: LocalContext,
   { auth, trackerStatus, file, classifyService, transcendUrl }: UploadDataFlowsFromCsvCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await uploadDataFlowsFromCsvHelper({
     auth,

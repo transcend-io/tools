@@ -5,7 +5,6 @@ import type { LocalContext } from '../../../../context.js';
 import { doneInputValidation } from '../../../../lib/cli/done-input-validation.js';
 import { markRequestDataSiloIdsCompleted } from '../../../../lib/cron/index.js';
 import { readCsv } from '../../../../lib/requests/index.js';
-import { logger } from '../../../../logger.js';
 
 const RequestIdRow = t.type({
   'Request Id': t.string,
@@ -22,9 +21,9 @@ export async function markRequestDataSilosCompleted(
   this: LocalContext,
   { auth, dataSiloId, file, transcendUrl }: MarkRequestDataSilosCompletedCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
-  logger.info(colors.magenta(`Reading "${file}" from disk`));
+  this.logger.info(colors.magenta(`Reading "${file}" from disk`));
   const activeResults = readCsv(file, RequestIdRow);
 
   await markRequestDataSiloIdsCompleted({

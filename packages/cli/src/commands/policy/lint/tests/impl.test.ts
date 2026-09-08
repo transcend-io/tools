@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { lint } from '../impl.js';
 
 const runOpaMock = vi.hoisted(() => vi.fn());
@@ -19,27 +19,19 @@ vi.mock('../../../../lib/helpers/inquirer.js', () => ({
 }));
 
 describe('lint', () => {
-  const exit = vi.fn();
-  const context = {
-    process: {
-      exit,
-      stdout: { write: vi.fn() },
-      stdin: { isTTY: true },
-    },
-  } as unknown as LocalContext;
+  const context = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.DEVELOPMENT_MODE_VALIDATE_ONLY = 'false';
-    exit.mockImplementation((code?: string | number | null | undefined) => {
-      throw new Error(`exit:${code}`);
-    });
+    context.reset();
   });
 
   it('runs opa check and fmt, exiting on check failure', async () => {
     runOpaMock.mockResolvedValueOnce(2);
 
-    await expect(lint.call(context, { dir: './policies' })).rejects.toThrow('exit:2');
+    await expect(lint.call(context, { dir: './policies' })).rejects.toMatchObject({ code: 2 });
 
     expect(assertOpaInstalledMock).toHaveBeenCalled();
     expect(runOpaMock).toHaveBeenCalledWith(['check', '--strict', expect.any(String)]);
@@ -55,7 +47,7 @@ describe('lint', () => {
     });
     inquirerConfirmBooleanMock.mockResolvedValueOnce(false);
 
-    await expect(lint.call(context, { dir: './policies' })).rejects.toThrow('exit:1');
+    await expect(lint.call(context, { dir: './policies' })).rejects.toMatchObject({ code: 1 });
 
     expect(runOPACaptureMock).toHaveBeenCalledWith(['fmt', '--list', expect.any(String)]);
     expect(runOpaMock).toHaveBeenNthCalledWith(2, ['fmt', '--diff', expect.any(String)]);
@@ -77,17 +69,14 @@ describe('lint', () => {
     await lint.call(context, { dir: './policies' });
 
     expect(runOpaMock).toHaveBeenNthCalledWith(3, ['fmt', '-w', expect.any(String)]);
-    expect(exit).not.toHaveBeenCalled();
+    expect(context.exit).not.toHaveBeenCalled();
   });
 
   it('exits without prompting in a non-interactive environment', async () => {
-    const nonInteractiveContext = {
-      process: {
-        exit,
-        stdout: { write: vi.fn() },
-        stdin: { isTTY: false },
-      },
-    } as unknown as LocalContext;
+    const nonInteractiveContext = buildContextForTest({
+      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+      stdinIsTTY: false,
+    });
 
     runOpaMock.mockResolvedValueOnce(0).mockResolvedValueOnce(0);
     runOPACaptureMock.mockResolvedValueOnce({
@@ -96,7 +85,9 @@ describe('lint', () => {
       stderr: '',
     });
 
-    await expect(lint.call(nonInteractiveContext, { dir: './policies' })).rejects.toThrow('exit:1');
+    await expect(lint.call(nonInteractiveContext, { dir: './policies' })).rejects.toMatchObject({
+      code: 1,
+    });
 
     expect(inquirerConfirmBooleanMock).not.toHaveBeenCalled();
     expect(runOpaMock).not.toHaveBeenCalledWith(['fmt', '-w', expect.any(String)]);

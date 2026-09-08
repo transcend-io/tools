@@ -1,86 +1,68 @@
-import { spawn } from 'node:child_process';
 import { join } from 'node:path';
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
-import { revealInFileManager } from '../os.js';
-
-/**
- * Mock child_process BEFORE importing the SUT.
- */
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
-}));
-
-const mSpawn = vi.mocked(spawn);
+import { revealInFileManager, type PoolingOsPorts } from '../os.js';
 
 /**
- * Temporarily override process.platform for a test.
+ * Build operating-system ports for a platform.
  *
- * @param platform - desired platform
- * @returns restore function
+ * @param platform - Platform returned by the injected dependency.
+ * @returns Injected ports and spawn spy.
  */
-function mockPlatform(platform: NodeJS.Platform): () => void {
-  const original = process.platform;
-  Object.defineProperty(process, 'platform', { value: platform });
-  return () => {
-    Object.defineProperty(process, 'platform', { value: original });
+function makePorts(platform: NodeJS.Platform): {
+  /** Ports passed to the helper. */
+  ports: PoolingOsPorts;
+  /** Child-process spawn spy. */
+  spawn: ReturnType<typeof vi.fn>;
+} {
+  const spawn = vi.fn(() => ({ unref: vi.fn() }));
+  return {
+    ports: {
+      platform: () => platform,
+      spawn: spawn as unknown as PoolingOsPorts['spawn'],
+    },
+    spawn,
   };
 }
 
 describe('revealInFileManager', () => {
-  let restore: () => void;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    if (restore) restore();
-  });
-
   it('returns false for empty path or paths starting with "("', () => {
-    restore = mockPlatform('linux');
-    expect(revealInFileManager('')).toBe(false);
-    expect(revealInFileManager('(temp)')).toBe(false);
-    expect(mSpawn).not.toHaveBeenCalled();
+    const { ports, spawn } = makePorts('linux');
+    expect(revealInFileManager('', ports)).toBe(false);
+    expect(revealInFileManager('(temp)', ports)).toBe(false);
+    expect(spawn).not.toHaveBeenCalled();
   });
 
   it('darwin: uses open -R <path>', () => {
-    restore = mockPlatform('darwin');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mSpawn.mockReturnValue({ unref: vi.fn() } as any);
+    const { ports, spawn } = makePorts('darwin');
 
-    const ok = revealInFileManager('/Users/me/movie.mov');
+    const ok = revealInFileManager('/Users/me/movie.mov', ports);
     expect(ok).toBe(true);
-    expect(mSpawn).toHaveBeenCalledWith('open', ['-R', '/Users/me/movie.mov'], {
+    expect(spawn).toHaveBeenCalledWith('open', ['-R', '/Users/me/movie.mov'], {
       stdio: 'ignore',
       detached: true,
     });
   });
 
   it('win32: uses explorer.exe /select, <path>', () => {
-    restore = mockPlatform('win32');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mSpawn.mockReturnValue({ unref: vi.fn() } as any);
+    const { ports, spawn } = makePorts('win32');
 
-    const ok = revealInFileManager('C:\\Users\\me\\data.csv');
+    const ok = revealInFileManager('C:\\Users\\me\\data.csv', ports);
     expect(ok).toBe(true);
-    expect(mSpawn).toHaveBeenCalledWith('explorer.exe', ['/select,', 'C:\\Users\\me\\data.csv'], {
+    expect(spawn).toHaveBeenCalledWith('explorer.exe', ['/select,', 'C:\\Users\\me\\data.csv'], {
       stdio: 'ignore',
       detached: true,
     });
   });
 
   it('linux: best-effort xdg-open <dirname(path)>', () => {
-    restore = mockPlatform('linux');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mSpawn.mockReturnValue({ unref: vi.fn() } as any);
+    const { ports, spawn } = makePorts('linux');
 
     const p = '/var/log/app/worker-1.log';
-    const ok = revealInFileManager(p);
+    const ok = revealInFileManager(p, ports);
     expect(ok).toBe(true);
-    expect(mSpawn).toHaveBeenCalledWith('xdg-open', [join('/var/log/app')], {
+    expect(spawn).toHaveBeenCalledWith('xdg-open', [join('/var/log/app')], {
       stdio: 'ignore',
       detached: true,
     });
