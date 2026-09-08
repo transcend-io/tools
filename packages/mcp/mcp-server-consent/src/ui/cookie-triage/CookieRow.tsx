@@ -1,6 +1,11 @@
+import { Button, ButtonVariant, StatusBadge, StatusBadgeTone } from '@transcend-io/mcp-ui-common';
 import { memo, useEffect, useRef, useState } from 'react';
 
 import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
+import { ApproveCheckIcon } from '../_shared/icons/ApproveCheckIcon.tsx';
+import { CancelIcon } from '../_shared/icons/CancelIcon.tsx';
+import { CommentIcon } from '../_shared/icons/CommentIcon.tsx';
+import { TrashIcon } from '../_shared/icons/TrashIcon.tsx';
 import { useCookieTriageActions, useCookieTriageState } from './CookieTriageContext.tsx';
 import {
   decisionReadLabel,
@@ -11,7 +16,6 @@ import {
   type CookieRowState,
   type CookieTriageDecision,
 } from './cookieTriageState.ts';
-import { CheckIcon, CloseIcon, CommentIcon, TrashIcon } from './icons.tsx';
 import { PurposeMultiSelect } from './PurposeMultiSelect.tsx';
 
 interface CookieRowProps {
@@ -20,13 +24,6 @@ interface CookieRowProps {
   /** Live row state */
   row: CookieRowState;
 }
-
-const DECISION_BUTTON =
-  'inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border bg-surface text-content-muted disabled:cursor-not-allowed disabled:opacity-60';
-const DECISION_IDLE = `${DECISION_BUTTON} border-line`;
-const DECISION_ACTIVE = `${DECISION_BUTTON} border-brand-text text-brand-text`;
-const ACTION_TEXT =
-  'inline-flex h-9 shrink-0 cursor-pointer items-center rounded-sm border border-line bg-surface px-2.5 text-sm font-medium text-content-muted hover:text-content disabled:cursor-not-allowed disabled:opacity-60';
 
 /** Quiet period before persisting notes after the last keystroke */
 const NOTES_SAVE_DEBOUNCE_MS = 1000;
@@ -192,8 +189,8 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
               {formatLastActivity(cookie.lastActivityAt)}
             </span>
             {dormant ? (
-              <span className="mt-0.5 inline-flex w-fit items-center rounded-sm bg-fill-dormant px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-content-inverse">
-                DORMANT
+              <span className="mt-0.5">
+                <StatusBadge tone={StatusBadgeTone.Emphasis}>DORMANT</StatusBadge>
               </span>
             ) : null}
           </div>
@@ -210,9 +207,8 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
         <td className="px-4 py-3">
           <div className="flex flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2.5" role="group" aria-label="Decision">
-              <button
-                type="button"
-                className={ACTION_TEXT}
+              <Button
+                variant={ButtonVariant.Action}
                 title="Ask the assistant what action to take"
                 disabled={busy}
                 aria-busy={asking}
@@ -221,17 +217,17 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                 }}
               >
                 {asking ? 'Asking…' : 'Ask Agent'}
-              </button>
-              <button
-                type="button"
-                className={notesOpen || hasSavedNotes ? DECISION_ACTIVE : DECISION_IDLE}
+              </Button>
+              <Button
+                variant={ButtonVariant.Icon}
+                active={notesOpen || hasSavedNotes}
                 aria-label={notesOpen ? 'Close note' : 'Add note'}
                 aria-pressed={notesOpen}
                 title={notesOpen ? 'Close note' : 'Add note'}
                 onClick={onToggleNotes}
               >
                 <CommentIcon />
-              </button>
+              </Button>
               {isDecided ? (
                 <>
                   <span
@@ -240,9 +236,8 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                   >
                     {decisionReadLabel(decided)}
                   </span>
-                  <button
-                    type="button"
-                    className={ACTION_TEXT}
+                  <Button
+                    variant={ButtonVariant.Action}
                     aria-label="Undo decision"
                     disabled={busy}
                     aria-busy={mutating}
@@ -251,13 +246,12 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                     }}
                   >
                     {mutating ? 'Undoing…' : 'Undo'}
-                  </button>
+                  </Button>
                 </>
               ) : (
                 <>
-                  <button
-                    type="button"
-                    className={DECISION_IDLE}
+                  <Button
+                    variant={ButtonVariant.Icon}
                     aria-label="Approve"
                     disabled={busy}
                     aria-busy={mutating}
@@ -265,11 +259,10 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                       void onDecision('approve');
                     }}
                   >
-                    <CheckIcon />
-                  </button>
-                  <button
-                    type="button"
-                    className={DECISION_IDLE}
+                    <ApproveCheckIcon />
+                  </Button>
+                  <Button
+                    variant={ButtonVariant.Icon}
                     aria-label="Junk"
                     disabled={busy}
                     aria-busy={mutating}
@@ -277,17 +270,16 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                       void onDecision('junk');
                     }}
                   >
-                    <CloseIcon />
-                  </button>
-                  <button
-                    type="button"
-                    className={DECISION_IDLE}
+                    <CancelIcon />
+                  </Button>
+                  <Button
+                    variant={ButtonVariant.Icon}
                     aria-label="Delete"
                     disabled
                     title="Delete is not available yet"
                   >
                     <TrashIcon />
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -303,9 +295,7 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
         <tr className="border-b border-line-subtle">
           <td colSpan={4} className="px-4 pb-3">
             <div className="flex flex-wrap items-baseline gap-1.5">
-              <span className="inline-flex items-center rounded-sm bg-fill-neutral px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-brand-text">
-                Note
-              </span>
+              <StatusBadge>Note</StatusBadge>
               <span className="min-w-0 flex-1 text-sm text-content-muted break-words">
                 {row.notes}
               </span>

@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
-/** Checkmark icon for the approve decision control. */
+/** Checkmark icon for confirm / approve controls. */
 export function CheckIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 11 8" fill="none" aria-hidden="true" width={16} height={16} {...props}>
@@ -17,7 +17,7 @@ export function CheckIcon(props: IconProps) {
   );
 }
 
-/** Close/X icon for the junk decision control. */
+/** Close / X icon for dismiss or reject controls. */
 export function CloseIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 10 10" fill="none" aria-hidden="true" width={16} height={16} {...props}>
@@ -37,7 +37,7 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
-/** Trash icon for the delete control (not wired yet). */
+/** Trash icon for delete controls. */
 export function TrashIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" width={16} height={16} {...props}>
@@ -78,7 +78,7 @@ export function TrashIcon(props: IconProps) {
   );
 }
 
-/** Comment icon for the per-row notes control. */
+/** Comment / notes icon. */
 export function CommentIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" width={16} height={16} {...props}>
@@ -99,7 +99,7 @@ export function CommentIcon(props: IconProps) {
   );
 }
 
-/** Chevron used in the suggested-purpose control. */
+/** Downward chevron for disclosure triggers. */
 export function ChevronDownIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" width={24} height={24} {...props}>
@@ -114,7 +114,7 @@ export function ChevronDownIcon(props: IconProps) {
   );
 }
 
-/** Circular arrows icon for the header refresh control. */
+/** Circular arrows icon for refresh controls. */
 export function RefreshIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" width={16} height={16} {...props}>

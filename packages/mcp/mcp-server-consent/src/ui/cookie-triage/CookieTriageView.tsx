@@ -1,14 +1,10 @@
 import { useMcpApp } from '@transcend-io/mcp-server-base/ui';
-import { Spinner } from '@transcend-io/mcp-ui-common';
+import { ViewConnectionError, ViewLoadingCard } from '@transcend-io/mcp-ui-common';
 import { useEffect, useState } from 'react';
 
 import type { ConsentTriageType, CookieTriageAppPayload } from '../../lib/cookieTriageTypes.ts';
 import { CookieTriageProvider } from './CookieTriageContext.tsx';
 import { CookieTriageLoaded } from './CookieTriageLoaded.tsx';
-
-const CARD = 'mx-auto w-full max-w-view rounded-lg bg-surface-raised px-6 py-5 shadow-sm';
-const TITLE = 'mb-1 text-heading-md font-semibold text-content';
-const SUBTITLE = 'text-sm text-content-muted';
 
 /** Handles MCP connection, then mounts the session-owned triage queue. */
 export function CookieTriageView() {
@@ -29,22 +25,15 @@ export function CookieTriageView() {
 
   if (connectionError) {
     return (
-      <section className={`${CARD} border-l-4 border-l-danger`} role="alert">
-        <h1 className={TITLE}>Could not reach the host</h1>
-        <p className="text-sm text-danger whitespace-pre-wrap break-words">
-          {connectionError.message}
-        </p>
-        <p className={`${SUBTITLE} mt-2`}>See the browser console for the full error.</p>
-      </section>
+      <ViewConnectionError
+        message={connectionError.message}
+        detail="See the browser console for the full error."
+      />
     );
   }
 
   if (!isConnected || triageType === undefined) {
-    return (
-      <section className={CARD} aria-busy="true">
-        <Spinner label={!isConnected ? 'Connecting to the host…' : 'Loading triage…'} />
-      </section>
-    );
+    return <ViewLoadingCard label={!isConnected ? 'Connecting to the host…' : 'Loading triage…'} />;
   }
 
   return (

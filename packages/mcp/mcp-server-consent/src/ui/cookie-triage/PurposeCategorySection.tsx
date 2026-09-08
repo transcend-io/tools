@@ -1,4 +1,10 @@
-import { Spinner, SpinnerVariant } from '@transcend-io/mcp-ui-common';
+import {
+  Button,
+  ButtonVariant,
+  InlineAlert,
+  Spinner,
+  SpinnerVariant,
+} from '@transcend-io/mcp-ui-common';
 import { memo, useMemo } from 'react';
 
 import {
@@ -59,22 +65,15 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
         </div>
       ) : null}
       {category.loadError ? (
-        <section
-          className="shrink-0 rounded-sm border border-danger/40 bg-surface px-3 py-2"
-          role="alert"
-        >
-          <p className="text-sm font-semibold text-danger">Failed to load {itemNoun}</p>
-          <p className="text-sm text-danger whitespace-pre-wrap break-words">
-            {category.loadError}
-          </p>
-          <button
-            type="button"
-            className="mt-2 cursor-pointer rounded-sm bg-brand px-3 py-1.5 text-sm font-medium text-content-inverse hover:bg-brand-hovered"
-            onClick={() => loadMore(purpose)}
-          >
-            Retry
-          </button>
-        </section>
+        <InlineAlert
+          title={`Failed to load ${itemNoun}`}
+          message={category.loadError}
+          action={
+            <Button variant={ButtonVariant.Primary} onClick={() => loadMore(purpose)}>
+              Retry
+            </Button>
+          }
+        />
       ) : null}
       {category.cookies.length > 0 ? (
         <CookieTable
@@ -83,17 +82,14 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
           cookies={category.cookies}
           footer={
             category.hasNextPage && (category.loadStatus === 'ready' || isLoadingMore) ? (
-              <button
-                type="button"
-                className="inline-flex cursor-pointer items-center gap-2 rounded-sm bg-brand px-3 py-1.5 text-sm font-medium text-content-inverse hover:bg-brand-hovered disabled:cursor-not-allowed disabled:opacity-60"
-                disabled={isLoadingMore}
+              <Button
+                variant={ButtonVariant.Primary}
+                busy={isLoadingMore}
+                busyLabel="Loading more"
                 onClick={() => loadMore(purpose)}
               >
-                {isLoadingMore ? (
-                  <Spinner variant={SpinnerVariant.Small} label="Loading more" />
-                ) : null}
                 Load more
-              </button>
+              </Button>
             ) : null
           }
         />

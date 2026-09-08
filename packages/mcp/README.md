@@ -424,7 +424,16 @@ Two rules, both enforced rather than trusted:
 
 - **Only the entry may end in `View.tsx`.** Discovery looks for exactly one match at the top level of the view directory, so a sibling named `ConfirmModalView.tsx` fails the build by name. Nesting is unaffected — `table/TriageTableView.tsx` would be fine, since the search is not recursive — but the simplest habit is to reserve the suffix for the entry.
 - **Shared components go in a `_`-prefixed directory under `src/ui/`.** Tailwind generates utilities per document by scanning files, so the synthesized stylesheet sources every `_` directory in addition to the view's own. Putting a shared component anywhere else outside the view directory bundles it correctly and then renders it unstyled, which reads as a CSS bug rather than a missing `@source`. The cost of sourcing them is that shared components' utilities appear in every view's document, which is why `_shared` is for genuinely shared UI rather than a dumping ground.
-- **Cross-package widgets live in `@transcend-io/mcp-ui-common`.** That private kit (`dev/mcp-ui-common`) is Grid, Heading, MetricCard, ProgressBar, and Spinner. Add it as a **view `devDependency`** (`workspace:*`) of the MCP server that builds the view — discovery then `@source`s the kit so those class names emit. Same-package `_shared` is still the right place for components that only that server uses. Do not add the kit to `pnpm mcp:new`: the scaffolded stub does not need dashboard chrome, and hello-world in `dev/mcp-server-examples` must stay off it.
+- **Cross-package widgets live in `@transcend-io/mcp-ui-common`.** That private kit (`dev/mcp-ui-common`) is AppShell, ViewToolbar, ViewConnectionError, ViewLoadingCard, Button, Tabs, Badge, InlineAlert, StatChip, Icons, Grid, Heading, MetricCard, ProgressBar, and Spinner. Add it as a **view `devDependency`** (`workspace:*`) of the MCP server that builds the view — discovery then `@source`s the kit so those class names emit. Same-package `_shared` is still the right place for components that only that server uses. Do not add the kit to `pnpm mcp:new`: the scaffolded stub does not need dashboard chrome, and hello-world in `dev/mcp-server-examples` must stay off it.
+- **SVG icons are drop-in files.** Import the `.svg` as text and wrap it with `createSvgIcon` from the kit (author with `currentColor` so theme colors apply). Put **shared** icons next to the kit's other Icons, one module per file so unused SVGs tree-shake out of each view. Put **domain-only** icons under that server's `src/ui/_shared/icons/` — other MCP packages never import them, so they never appear in those bundles:
+
+```tsx
+// packages/mcp/mcp-server-consent/src/ui/_shared/icons/ApproveCheckIcon.tsx
+import { createSvgIcon } from '@transcend-io/mcp-ui-common';
+import approveCheckSvg from './approve-check.svg';
+
+export const ApproveCheckIcon = createSvgIcon(approveCheckSvg, 'ApproveCheckIcon');
+```
 
 ```tsx
 // src/ui/hello/HelloView.tsx

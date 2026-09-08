@@ -1,3 +1,4 @@
+import { ChevronDownIcon } from '@transcend-io/mcp-ui-common';
 import { memo, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
@@ -7,7 +8,6 @@ import {
   isUnknownCookiePurposeSlug,
   type CookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
-import { ChevronDownIcon } from './icons.tsx';
 import { purposeBadgeClass } from './purposeBadgeClasses.ts';
 
 /** Built-in Essential purpose slug (case-insensitive match). */
