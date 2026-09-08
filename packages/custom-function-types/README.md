@@ -12,10 +12,10 @@ TypeScript types and JSON Schemas for building Transcend Custom Functions:
 npm install --save-dev @transcend-io/custom-function-types
 ```
 
-For a Deno-only project, pin the npm package in the type-only import:
+For a Deno-only project:
 
 ```ts
-import type { CustomFunction } from 'npm:@transcend-io/custom-function-types@0.1.0';
+import type { CustomFunction } from 'npm:@transcend-io/custom-function-types';
 ```
 
 ## Type a Custom Function

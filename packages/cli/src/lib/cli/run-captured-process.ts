@@ -13,8 +13,16 @@ export interface CapturedProcessResult {
   stderr: string;
   /** Signal that terminated the process, when present. */
   signal?: NodeJS.Signals;
+  /** Whether the configured timeout elapsed. */
+  timedOut?: boolean;
+  /** Error encountered while writing standard input. */
+  inputError?: NodeJS.ErrnoException;
   /** Whether stdout or stderr exceeded the configured capture limit. */
   outputTruncated?: boolean;
+  /** Whether stdout exceeded the configured capture limit. */
+  stdoutTruncated?: boolean;
+  /** Whether stderr exceeded the configured capture limit. */
+  stderrTruncated?: boolean;
   /** Spawn error, when the executable did not start. */
   error?: NodeJS.ErrnoException;
 }
@@ -57,56 +65,101 @@ export const runCapturedProcess: CapturedProcessRunner = (command, args, options
         NO_COLOR: '1',
       },
       stdio: 'pipe',
-      ...(options.timeoutMs ? { timeout: options.timeoutMs, killSignal: 'SIGTERM' } : {}),
     });
     let stdout = '';
     let stderr = '';
-    let outputTruncated = false;
-    const appendOutput = (output: string, chunk: string): string => {
+    let stdoutTruncated = false;
+    let stderrTruncated = false;
+    let timedOut = false;
+    let inputError: NodeJS.ErrnoException | undefined;
+    let settled = false;
+    let forceKillTimer: NodeJS.Timeout | undefined;
+    const timeoutTimer = options.timeoutMs
+      ? setTimeout(() => {
+          timedOut = true;
+          child.kill('SIGTERM');
+          forceKillTimer = setTimeout(() => child.kill('SIGKILL'), 1000);
+        }, options.timeoutMs)
+      : undefined;
+    const finish = (result: CapturedProcessResult): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+      }
+      if (forceKillTimer) {
+        clearTimeout(forceKillTimer);
+      }
+      resolveResult({
+        ...result,
+        ...(timedOut ? { timedOut: true } : {}),
+        ...(inputError ? { inputError } : {}),
+        ...(stdoutTruncated || stderrTruncated ? { outputTruncated: true } : {}),
+        ...(stdoutTruncated ? { stdoutTruncated: true } : {}),
+        ...(stderrTruncated ? { stderrTruncated: true } : {}),
+      });
+    };
+    const appendOutput = (output: string, chunk: string, markTruncated: () => void): string => {
       if (!options.maxOutputBytes) {
         return output + chunk;
       }
       const remaining = options.maxOutputBytes - Buffer.byteLength(output);
       const bytes = Buffer.from(chunk);
       if (remaining <= 0) {
-        outputTruncated = true;
+        markTruncated();
         return output;
       }
       if (bytes.length > remaining) {
-        outputTruncated = true;
-        return output + bytes.subarray(0, remaining).toString('utf8');
+        markTruncated();
+        let end = remaining;
+        while (end > 0 && (bytes[end]! & 0b1100_0000) === 0b1000_0000) {
+          end -= 1;
+        }
+        return output + bytes.subarray(0, end).toString('utf8');
       }
       return output + chunk;
     };
     child.stdout.setEncoding('utf8');
     child.stderr.setEncoding('utf8');
     child.stdout.on('data', (chunk: string) => {
-      stdout = appendOutput(stdout, chunk);
+      stdout = appendOutput(stdout, chunk, () => {
+        stdoutTruncated = true;
+      });
     });
     child.stderr.on('data', (chunk: string) => {
-      stderr = appendOutput(stderr, chunk);
+      stderr = appendOutput(stderr, chunk, () => {
+        stderrTruncated = true;
+      });
+    });
+    child.stdin.on('error', (error: NodeJS.ErrnoException) => {
+      inputError = error;
     });
     child.once('error', (error: NodeJS.ErrnoException) => {
-      resolveResult({
+      finish({
         code: 1,
         stdout,
         stderr,
         error,
-        ...(outputTruncated ? { outputTruncated } : {}),
       });
     });
     child.once('close', (code, signal) => {
-      resolveResult({
-        code: code ?? 1,
+      finish({
+        code: timedOut || inputError ? 1 : (code ?? 1),
         stdout,
         stderr,
         ...(signal ? { signal } : {}),
-        ...(outputTruncated ? { outputTruncated } : {}),
       });
     });
-    if (options.input === undefined) {
-      child.stdin.end();
-    } else {
-      child.stdin.end(options.input);
+    try {
+      if (options.input === undefined) {
+        child.stdin.end();
+      } else {
+        child.stdin.end(options.input);
+      }
+    } catch (error) {
+      inputError = error as NodeJS.ErrnoException;
+      child.kill('SIGTERM');
     }
   });

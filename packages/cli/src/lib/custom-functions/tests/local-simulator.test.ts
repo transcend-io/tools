@@ -268,6 +268,12 @@ describe('redactLocalSimulatorOutput', () => {
       }),
     ).toBe('[REDACTED]');
   });
+
+  it('removes a partial secret at a truncated capture boundary', () => {
+    expect(redactLocalSimulatorOutput('secret secret sec', { TOKEN: 'secret' }, true)).toBe(
+      '[REDACTED] [REDACTED] ',
+    );
+  });
 });
 
 describe('truncateLocalSimulatorOutput', () => {

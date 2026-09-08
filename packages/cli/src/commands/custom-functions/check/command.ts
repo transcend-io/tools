@@ -13,6 +13,18 @@ export const checkCommand = buildCommand({
         brief: 'Path to transcend-functions.yml; defaults inside the target directory',
         optional: true,
       },
+      parameters: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Comma-separated parameter values used in manifest paths',
+        default: '',
+      },
+      variables: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Deprecated alias for --parameters',
+        default: '',
+      },
       fix: {
         kind: 'boolean',
         brief: 'Apply Deno formatting to manifest-referenced files',

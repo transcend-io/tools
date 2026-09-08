@@ -1,5 +1,4 @@
 import { Buffer } from 'node:buffer';
-import { isIP } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { stripVTControlCharacters } from 'node:util';
@@ -12,6 +11,7 @@ import {
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import Ajv from 'ajv';
 
+import { validateCustomFunctionExecutionContext } from './execution-context.js';
 import type { CustomFunctionManifestConfig, CustomFunctionsManifest } from './manifest.js';
 
 /** Value injected when production-only identifiers are absent from a fixture. */
@@ -26,25 +26,11 @@ export const LOCAL_SIMULATOR_TIMEOUT_MS = 30_000;
 /** Maximum stdout and stderr retained from one local invocation. */
 export const LOCAL_SIMULATOR_MAX_OUTPUT_BYTES = 1024 * 1024;
 
-/** Maximum environment value size supported by the local process. */
-export const LOCAL_SIMULATOR_MAX_ENV_VALUE_BYTES = 64 * 1024;
-
 /** Isolated dependency cache readable by simulated functions. */
 export const LOCAL_SIMULATOR_DENO_DIR = join(tmpdir(), 'transcend-custom-functions-deno');
 
 /** Prefix for synthetic values assigned to unresolved local-only parameters. */
 export const LOCAL_SIMULATOR_PARAMETER_PREFIX = 'local-placeholder-';
-
-const RESERVED_ENV_NAMES = new Set([
-  'DENO_CERT',
-  'DENO_DIR',
-  'DENO_TLS_CA_STORE',
-  'HTTP_PROXY',
-  'HTTPS_PROXY',
-  'NO_COLOR',
-  'NO_PROXY',
-  'NPM_CONFIG_REGISTRY',
-]);
 
 const ajv = new Ajv({ allErrors: true, strict: false });
 const payloadValidators = {
@@ -291,38 +277,6 @@ function validateLocalSimulatorPayload(
 }
 
 /**
- * Check whether a value matches Sombra's hostname/IP contract.
- *
- * @param host - Manifest allowed-host value
- * @returns Whether the host is valid
- */
-function isValidAllowedHost(host: string): boolean {
-  const bracketedIp = /^\[([^\]]+)\](?::(\d+))?$/u.exec(host);
-  if (bracketedIp) {
-    const port = bracketedIp[2];
-    return isIP(bracketedIp[1]!) === 6 && (!port || (Number(port) > 0 && Number(port) <= 65_535));
-  }
-  if (isIP(host) > 0) {
-    return true;
-  }
-  const hostWithPort = /^([^:]+):(\d+)$/u.exec(host);
-  const hostname = hostWithPort?.[1] ?? host;
-  const port = hostWithPort?.[2];
-  return (
-    (!port || (Number(port) > 0 && Number(port) <= 65_535)) &&
-    hostname.length <= 253 &&
-    hostname
-      .split('.')
-      .every(
-        (label) =>
-          label.length > 0 &&
-          label.length <= 63 &&
-          /^[A-Za-z\d](?:[A-Za-z\d-]*[A-Za-z\d])?$/u.test(label),
-      )
-  );
-}
-
-/**
  * Build one constrained Deno invocation for a test fixture.
  *
  * @param config - Selected manifest function
@@ -344,39 +298,7 @@ export function buildLocalSimulatorInvocation(
   const environment = config.env ?? {};
   const envNames = Object.keys(environment);
   const allowedHosts = config.allowedHosts ?? [];
-  const malformedEnvNames = envNames.filter((name) => !/^[A-Za-z][A-Za-z\d_]*$/u.test(name));
-  const reservedEnvNames = envNames.filter(
-    (name) => RESERVED_ENV_NAMES.has(name) || name.startsWith('DENO_'),
-  );
-  if (malformedEnvNames.length > 0 || reservedEnvNames.length > 0) {
-    throw new Error(
-      [
-        malformedEnvNames.length > 0
-          ? `Invalid environment variable names: ${malformedEnvNames.join(', ')}`
-          : undefined,
-        reservedEnvNames.length > 0
-          ? `Reserved environment variable names: ${reservedEnvNames.join(', ')}`
-          : undefined,
-      ]
-        .filter(Boolean)
-        .join('. '),
-    );
-  }
-  const oversizedEnvNames = envNames.filter(
-    (name) => Buffer.byteLength(environment[name]!) > LOCAL_SIMULATOR_MAX_ENV_VALUE_BYTES,
-  );
-  if (oversizedEnvNames.length > 0) {
-    throw new Error(
-      `Environment values exceed ${LOCAL_SIMULATOR_MAX_ENV_VALUE_BYTES} bytes: ${oversizedEnvNames.join(', ')}`,
-    );
-  }
-  if (allowedHosts.length > 1 && allowedHosts.includes('*')) {
-    throw new Error('allowed-hosts cannot combine "*" with specific hosts.');
-  }
-  const invalidHosts = allowedHosts.filter((host) => host !== '*' && !isValidAllowedHost(host));
-  if (invalidHosts.length > 0) {
-    throw new Error(`Invalid allowed-hosts: ${invalidHosts.join(', ')}`);
-  }
+  validateCustomFunctionExecutionContext(config);
   const allowNetArgs = options.allowNetwork
     ? allowedHosts.length === 0
       ? ['--allow-net=localhost']
@@ -460,18 +382,37 @@ function sanitizeLocalSimulatorText(value: string): string {
  *
  * @param output - Captured stdout or stderr
  * @param environment - User-defined environment
+ * @param sourceTruncated - Whether capture stopped before the stream ended
  * @returns Redacted output
  */
 export function redactLocalSimulatorOutput(
   output: string,
   environment: Record<string, string> = {},
+  sourceTruncated = false,
 ): string {
-  const sanitized = sanitizeLocalSimulatorText(output);
-  return Object.values(environment)
+  const values = Object.values(environment)
     .filter((value) => value.length > 0)
     .map(sanitizeLocalSimulatorText)
-    .sort((left, right) => right.length - left.length)
-    .reduce((redacted, value) => redacted.split(value).join('[REDACTED]'), sanitized);
+    .sort((left, right) => right.length - left.length);
+  let sanitized = sanitizeLocalSimulatorText(output);
+  if (sourceTruncated) {
+    const trailingFragmentLength = Math.max(
+      0,
+      ...values.map((value) => {
+        const maximum = Math.min(value.length - 1, sanitized.length);
+        for (let length = maximum; length > 0; length -= 1) {
+          if (sanitized.endsWith(value.slice(0, length))) {
+            return length;
+          }
+        }
+        return 0;
+      }),
+    );
+    if (trailingFragmentLength > 0) {
+      sanitized = sanitized.slice(0, -trailingFragmentLength);
+    }
+  }
+  return values.reduce((redacted, value) => redacted.split(value).join('[REDACTED]'), sanitized);
 }
 
 /**

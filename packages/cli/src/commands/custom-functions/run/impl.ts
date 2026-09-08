@@ -19,10 +19,11 @@ import {
 } from '../../../lib/custom-functions/local-simulator.js';
 import {
   parseCustomFunctionsManifest,
-  readCustomFunctionsManifest,
-  type CustomFunctionManifestConfig,
+  readCustomFunctionManifestEntry,
+  type CustomFunctionManifestEntry,
 } from '../../../lib/custom-functions/manifest.js';
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
+import { findNonSelfContainedRuntimeImports } from '../../../lib/custom-functions/module-graph.js';
 import {
   discoverCustomFunctionManifests,
   discoverCustomFunctionProject,
@@ -56,10 +57,10 @@ export interface CustomFunctionRunFlags {
  * @param selector - Optional exact name or ID
  * @returns Selected function, or undefined when interactive selection is needed
  */
-function selectNamedFunction(
-  configs: readonly CustomFunctionManifestConfig[],
+function selectNamedFunction<Config extends Pick<CustomFunctionManifestEntry, 'id' | 'name'>>(
+  configs: readonly Config[],
   selector: string | undefined,
-): CustomFunctionManifestConfig | undefined {
+): Config | undefined {
   if (!selector) {
     return configs.length === 1 ? configs[0] : undefined;
   }
@@ -109,33 +110,37 @@ export async function run(
       this.fs.readFileSync(state.manifestPath, 'utf8'),
       { allowExternalPaths: true },
     );
-    const localParameters = prepareLocalSimulatorParameters(
-      parsedManifest,
-      parseParametersFromFlags(flags),
-      flags.allowNetwork,
-    );
-    const configs = readCustomFunctionsManifest(state.manifestPath, localParameters.parameters);
-    if (configs.length === 0) {
+    if (parsedManifest.functions.length === 0) {
       throw new Error('The Custom Function manifest does not define any functions.');
     }
     const interactive =
       !flags.noInteractive && Boolean(this.process.stdin.isTTY && this.process.stderr.isTTY);
-    let selected = selectNamedFunction(configs, flags.function);
-    if (!selected && interactive) {
+    let selectedEntry = selectNamedFunction(parsedManifest.functions, flags.function);
+    if (!selectedEntry && interactive) {
       const prompts = new CustomFunctionPrompts(this);
       const selectedIndex = await prompts.select(
         'Custom Function to run:',
-        configs.map((config, index) => ({
-          name: config.id ? `${config.name} (${config.id})` : config.name,
+        parsedManifest.functions.map((entry, index) => ({
+          name: entry.id ? `${entry.name} (${entry.id})` : entry.name,
           value: String(index),
         })),
         '0',
       );
-      selected = configs[Number(selectedIndex)];
+      selectedEntry = parsedManifest.functions[Number(selectedIndex)];
     }
-    if (!selected) {
+    if (!selectedEntry) {
       throw new Error('Select a Custom Function with --function in a non-interactive invocation.');
     }
+    const localParameters = prepareLocalSimulatorParameters(
+      { functions: [selectedEntry] },
+      parseParametersFromFlags(flags),
+      flags.allowNetwork,
+    );
+    const { config: selected, sourcePath } = readCustomFunctionManifestEntry(
+      state.manifestPath,
+      selectedEntry,
+      localParameters.parameters,
+    );
     if (!selected.testPayloads || selected.testPayloads.length === 0) {
       throw new Error(
         `Custom Function "${selected.name}" has no test payloads. Add test-payload or test-payloads to its manifest entry.`,
@@ -169,6 +174,34 @@ export async function run(
     const unsupportedVersion = unsupportedDenoVersionMessage(denoVersion.stdout);
     if (unsupportedVersion) {
       throw new Error(unsupportedVersion);
+    }
+    const moduleGraph = await runCapturedProcess(
+      'deno',
+      [
+        'info',
+        '--json',
+        ...(denoConfig.denoConfigPath
+          ? [`--config=${denoConfig.denoConfigPath}`]
+          : ['--no-config']),
+        sourcePath,
+      ],
+      { cwd: state.manifestDirectory },
+      this,
+    );
+    if (moduleGraph.code !== 0) {
+      throw new Error(
+        `Could not inspect Custom Function runtime imports: ${
+          moduleGraph.stderr.trim() || `Deno exited with code ${moduleGraph.code}`
+        }`,
+      );
+    }
+    const unsupportedImports = findNonSelfContainedRuntimeImports(moduleGraph.stdout);
+    if (unsupportedImports.length > 0) {
+      throw new Error(
+        `Custom Functions must be self-contained. Local or import-map runtime dependencies are not deployed: ${unsupportedImports.join(
+          ', ',
+        )}`,
+      );
     }
 
     this.logger.warn(
@@ -223,10 +256,10 @@ export async function run(
       );
       const environment = selected.env ?? {};
       const stdout = truncateLocalSimulatorOutput(
-        redactLocalSimulatorOutput(result.stdout, environment),
+        redactLocalSimulatorOutput(result.stdout, environment, result.stdoutTruncated),
       );
       const stderr = truncateLocalSimulatorOutput(
-        redactLocalSimulatorOutput(result.stderr, environment),
+        redactLocalSimulatorOutput(result.stderr, environment, result.stderrTruncated),
       );
       if (stdout.output) {
         this.process.stdout.write(
@@ -249,11 +282,15 @@ export async function run(
         this.logger.info(colors.green(`Passed "${selected.name}" (${label})`));
       } else {
         failed = true;
-        const detail = result.error
-          ? `could not start Deno: ${result.error.message}`
-          : result.signal
-            ? `timed out or was terminated with ${result.signal}`
-            : `exited with code ${result.code}`;
+        const detail = result.timedOut
+          ? `timed out after ${invocation.timeoutMs}ms`
+          : result.inputError
+            ? `could not send the fixture to Deno: ${result.inputError.message}`
+            : result.error
+              ? `could not start Deno: ${result.error.message}`
+              : result.signal
+                ? `was terminated with ${result.signal}`
+                : `exited with code ${result.code}`;
         this.logger.error(colors.red(`Failed "${selected.name}" (${label}): ${detail}`));
       }
     }

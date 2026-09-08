@@ -9,6 +9,21 @@ export const VARIABLE_PARAMETERS_REGEXP = /<<parameters\.(.+?)>>/;
 export const VARIABLE_PARAMETERS_NAME = 'parameters';
 
 /**
+ * Replace only parameter values supplied by the caller.
+ *
+ * @param input - YAML text
+ * @param parameters - Parameters to replace
+ * @returns YAML text with provided parameters substituted
+ */
+export function replaceProvidedParametersInYaml(input: string, parameters: ObjByString): string {
+  return Object.entries(parameters).reduce(
+    (contents, [name, value]) =>
+      contents.split(`<<${VARIABLE_PARAMETERS_NAME}.${name}>>`).join(value),
+    input,
+  );
+}
+
+/**
  * Function that replaces parameters in a text file.
  * Throws error if there are parameters that have not been replaced
  *
@@ -22,11 +37,7 @@ export function replaceVariablesInYaml(
   parameters: ObjByString,
   extraErrorMessage = '',
 ): string {
-  let contents = input;
-  // Replace parameters
-  Object.entries(parameters).forEach(([name, value]) => {
-    contents = contents.split(`<<${VARIABLE_PARAMETERS_NAME}.${name}>>`).join(value);
-  });
+  const contents = replaceProvidedParametersInYaml(input, parameters);
 
   // Throw error if unfilled parameters
   if (VARIABLE_PARAMETERS_REGEXP.test(contents)) {

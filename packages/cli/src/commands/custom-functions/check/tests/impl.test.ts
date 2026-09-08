@@ -41,6 +41,8 @@ describe('custom-functions check', () => {
       context,
       {
         manifest: 'custom.yml',
+        parameters: '',
+        variables: '',
         fix: false,
         noInteractive: true,
         json: true,
@@ -64,6 +66,8 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
+      parameters: '',
+      variables: '',
       fix: false,
       noInteractive: true,
       json: true,
@@ -87,6 +91,8 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
+      parameters: '',
+      variables: '',
       fix: false,
       noInteractive: true,
       json: true,
@@ -97,7 +103,7 @@ describe('custom-functions check', () => {
         code: 'manifest.missing',
         message:
           'Custom Function manifest does not exist at transcend/custom-functions/transcend-functions.yml. ' +
-          'Did you mean `transcend custom-functions check packages/privacy-functions`?',
+          "Did you mean `transcend custom-functions check 'packages/privacy-functions'`?",
       }),
     );
   });
@@ -116,6 +122,8 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
+      parameters: '',
+      variables: '',
       fix: false,
       noInteractive: true,
       json: true,
@@ -140,6 +148,8 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
+      parameters: '',
+      variables: '',
       fix: false,
       noInteractive: true,
       json: true,
@@ -172,6 +182,8 @@ describe('custom-functions check', () => {
       stdinIsTTY: false,
     });
     const flags = {
+      parameters: '',
+      variables: '',
       fix: false,
       noInteractive: true,
       json: true,

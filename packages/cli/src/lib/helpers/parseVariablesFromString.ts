@@ -7,13 +7,30 @@
 export function parseParametersFromString(parameters: string): {
   [k in string]: string;
 } {
-  const entries = parameters.split(',').filter((entry) => !!entry);
+  const entries: string[] = [];
+  let current = '';
+  for (let index = 0; index < parameters.length; index += 1) {
+    const character = parameters[index]!;
+    const next = parameters[index + 1];
+    if (character === '\\' && (next === ',' || next === '\\')) {
+      current += next;
+      index += 1;
+    } else if (character === ',') {
+      entries.push(current);
+      current = '';
+    } else {
+      current += character;
+    }
+  }
+  entries.push(current);
   const parsed: { [k in string]: string } = {};
-  entries.forEach((entry) => {
-    const [k, v] = entry.split(':');
-    if (!k || !v) {
+  entries.filter(Boolean).forEach((entry) => {
+    const separator = entry.indexOf(':');
+    if (separator <= 0 || separator === entry.length - 1) {
       throw new Error(`Invalid parameter: ${entry}. Expected format: key:value`);
     }
+    const k = entry.slice(0, separator);
+    const v = entry.slice(separator + 1);
     parsed[k] = v;
   });
   return parsed;
@@ -30,12 +47,12 @@ export const parseVariablesFromString = parseParametersFromString;
  */
 export function parseParametersFromFlags(flags: {
   /** Values passed through --parameters. */
-  parameters: string;
+  parameters?: string;
   /** Values passed through the legacy --variables alias. */
-  variables: string;
+  variables?: string;
 }): { [k in string]: string } {
   if (flags.parameters && flags.variables) {
     throw new Error('Pass either --parameters or --variables, not both.');
   }
-  return parseParametersFromString(flags.parameters || flags.variables);
+  return parseParametersFromString(flags.parameters || flags.variables || '');
 }

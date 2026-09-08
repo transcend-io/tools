@@ -14,6 +14,25 @@ describe('parseParametersFromString', () => {
     });
   });
 
+  it('preserves colons and escaped commas in values', () => {
+    expect(
+      parseParametersFromString(
+        String.raw`endpoint:https://api.example.com:8443,token:first\,second,path:C:\\temp`,
+      ),
+    ).toEqual({
+      endpoint: 'https://api.example.com:8443',
+      token: 'first,second',
+      path: String.raw`C:\temp`,
+    });
+  });
+
+  it.each(['missing-separator', ':missing-key', 'missing-value:'])(
+    'rejects invalid parameter %s',
+    (parameter) => {
+      expect(() => parseParametersFromString(parameter)).toThrow('Expected format: key:value');
+    },
+  );
+
   it('preserves the legacy parser export', () => {
     expect(parseVariablesFromString).toBe(parseParametersFromString);
   });

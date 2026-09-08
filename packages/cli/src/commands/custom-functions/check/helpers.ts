@@ -24,16 +24,21 @@ import {
   SUPPORTED_DENO_VERSION,
   unsupportedDenoVersionMessage,
 } from '../../../lib/custom-functions/deno-runtime.js';
+import { validateCustomFunctionExecutionContext } from '../../../lib/custom-functions/execution-context.js';
 import {
   isCustomFunctionManifestPathContained,
   parseCustomFunctionsManifest,
   type CustomFunctionManifestEntry,
 } from '../../../lib/custom-functions/manifest.js';
+import { findNonSelfContainedRuntimeImports } from '../../../lib/custom-functions/module-graph.js';
 import { CUSTOM_FUNCTION_RESULT_VERSION } from '../../../lib/custom-functions/scaffold-model.js';
+import { replaceProvidedParametersInYaml } from '../../../lib/readTranscendYaml.js';
 import {
   assertPathPhysicallyContained,
   isPathPhysicallyContained,
 } from '../../../lib/scaffolding/path-safety.js';
+import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
+import type { PlannedFileChange } from '../../../lib/scaffolding/project-plan.js';
 
 /** Payload file plus its validation contract. */
 interface PayloadReference {
@@ -55,12 +60,16 @@ interface SourceReference {
   needsDefault: boolean;
   /** Whether an enricher export is required. */
   needsEnricher: boolean;
+  /** Whether either DSR export is acceptable when no fixtures identify one. */
+  needsAnyDsrExport: boolean;
 }
 
 /** Options for local validation. */
 export interface RunCustomFunctionChecksOptions {
   /** Absolute manifest path. */
   manifestPath: string;
+  /** Values used to resolve parameterized manifest paths. */
+  parameters?: Record<string, string>;
   /** Apply Deno formatting. */
   fix: boolean;
   /** Ask for an interactive formatting repair after receiving a patch. */
@@ -141,9 +150,9 @@ function sourceReference(
   return {
     entry,
     path: resolve(manifestDirectory, entry.code),
-    needsDefault:
-      entry.type !== 'DSR' || dsrWithoutPayloads || payloadTypes.includes('dsr-datapoint'),
+    needsDefault: entry.type !== 'DSR' || payloadTypes.includes('dsr-datapoint'),
     needsEnricher: payloadTypes.includes('dsr-enricher'),
+    needsAnyDsrExport: dsrWithoutPayloads,
   };
 }
 
@@ -364,16 +373,17 @@ function denoExtension(path: string): string {
  * @param manifestDirectory - Working directory
  * @param configArgs - Deno config arguments
  * @param paths - Target files
- * @returns Unified patches
+ * @returns Unified patches and transactional file changes
  */
-async function buildFormatPatches(
+async function buildFormatPlan(
   context: LocalContext,
   runner: CapturedProcessRunner,
   manifestDirectory: string,
   configArgs: readonly string[],
   paths: readonly string[],
-): Promise<string> {
+): Promise<{ patch: string; changes: PlannedFileChange[] }> {
   const patches: string[] = [];
+  const changes: PlannedFileChange[] = [];
   for (const path of paths) {
     assertPathPhysicallyContained(context, manifestDirectory, path);
     const before = context.fs.readFileSync(path, 'utf8');
@@ -383,14 +393,29 @@ async function buildFormatPatches(
       { cwd: manifestDirectory, input: before },
       context,
     );
-    if (result.code === 0 && result.stdout !== before) {
+    if (result.code !== 0) {
+      throw new Error(
+        `Deno could not preview formatting for ${relativePath(manifestDirectory, path)}.${
+          result.stderr.trim() ? `\n${result.stderr.trim()}` : ''
+        }`,
+      );
+    }
+    if (result.stdout !== before) {
       const display = relativePath(manifestDirectory, path);
       patches.push(
         createTwoFilesPatch(display, display, before, result.stdout, '', '', { context: 3 }),
       );
+      changes.push({
+        kind: 'file',
+        path,
+        before,
+        after: result.stdout,
+        description: `Format ${display}`,
+        mode: context.fs.statSync(path).mode,
+      });
     }
   }
-  return patches.join('\n');
+  return { patch: patches.join('\n'), changes };
 }
 
 /**
@@ -461,7 +486,11 @@ export async function runCustomFunctionChecks(
 
   let entries: readonly CustomFunctionManifestEntry[] = [];
   try {
-    entries = parseCustomFunctionsManifest(context.fs.readFileSync(manifestPath, 'utf8')).functions;
+    const manifestContents = replaceProvidedParametersInYaml(
+      context.fs.readFileSync(manifestPath, 'utf8'),
+      options.parameters ?? {},
+    );
+    entries = parseCustomFunctionsManifest(manifestContents).functions;
   } catch (error) {
     addError(diagnostics, {
       code: 'manifest.invalid',
@@ -474,6 +503,22 @@ export async function runCustomFunctionChecks(
     );
     return buildResult();
   }
+  entries.forEach((entry) => {
+    try {
+      validateCustomFunctionExecutionContext({
+        ...(entry.env ? { env: entry.env } : {}),
+        ...(entry['allowed-hosts'] ? { allowedHosts: entry['allowed-hosts'] } : {}),
+      });
+    } catch (error) {
+      statuses.set('manifest', 'failed');
+      addError(diagnostics, {
+        code: 'manifest.execution-context',
+        message: (error as Error).message,
+        path: relativePath(manifestDirectory, manifestPath),
+        functionName: entry.name,
+      });
+    }
+  });
 
   const { sources, payloadPaths } = validateReferencedFiles(
     context,
@@ -545,9 +590,47 @@ export async function runCustomFunctionChecks(
     });
   } else if (!unsafeConfig) {
     for (const source of sources) {
+      const moduleGraph = await runner(
+        'deno',
+        ['info', '--json', ...configArgs, source.path],
+        { cwd: manifestDirectory },
+        context,
+      );
+      if (moduleGraph.code !== 0) {
+        statuses.set('files', 'failed');
+        recordDenoFailure(
+          diagnostics,
+          'source.module-graph',
+          `Could not inspect runtime imports for ${relativePath(manifestDirectory, source.path)}.`,
+          moduleGraph,
+        );
+      } else {
+        try {
+          const unsupportedImports = findNonSelfContainedRuntimeImports(moduleGraph.stdout);
+          if (unsupportedImports.length > 0) {
+            statuses.set('files', 'failed');
+            addError(diagnostics, {
+              code: 'source.local-runtime-import',
+              message:
+                'Custom Functions must be self-contained. Local or import-map runtime dependencies are not deployed: ' +
+                unsupportedImports.join(', '),
+              path: relativePath(manifestDirectory, source.path),
+              functionName: source.entry.name,
+            });
+          }
+        } catch (error) {
+          statuses.set('files', 'failed');
+          addError(diagnostics, {
+            code: 'source.module-graph',
+            message: (error as Error).message,
+            path: relativePath(manifestDirectory, source.path),
+            functionName: source.entry.name,
+          });
+        }
+      }
       const result = await runner(
         'deno',
-        ['doc', '--json', source.path],
+        ['doc', '--json', ...(configPath ? ['--import-map', configPath] : []), source.path],
         { cwd: manifestDirectory },
         context,
       );
@@ -576,6 +659,15 @@ export async function runCustomFunctionChecks(
         addError(diagnostics, {
           code: 'exports.enricher-missing',
           message: 'A REQUEST_ENRICHER fixture requires an `enricher` export.',
+          path: relativePath(manifestDirectory, source.path),
+          functionName: source.entry.name,
+        });
+      }
+      if (source.needsAnyDsrExport && !names.has('default') && !names.has('enricher')) {
+        statuses.set('exports', 'failed');
+        addError(diagnostics, {
+          code: 'exports.dsr-missing',
+          message: 'A DSR Custom Function requires a `default` or `enricher` export.',
           path: relativePath(manifestDirectory, source.path),
           functionName: source.entry.name,
         });
@@ -620,41 +712,61 @@ export async function runCustomFunctionChecks(
       context,
     );
     if (format.code !== 0) {
-      const patch = await buildFormatPatches(
-        context,
-        runner,
-        manifestDirectory,
-        configArgs,
-        formatPaths,
-      );
-      const shouldFix =
-        options.fix || (options.confirmFormat ? await options.confirmFormat(patch) : false);
-      if (shouldFix) {
-        formatPaths.forEach((path) =>
-          assertPathPhysicallyContained(context, manifestDirectory, path),
-        );
-        const repair = await runner(
-          'deno',
-          ['fmt', ...configArgs, ...formatPaths],
-          { cwd: manifestDirectory },
+      let formatPlan: Awaited<ReturnType<typeof buildFormatPlan>>;
+      try {
+        formatPlan = await buildFormatPlan(
           context,
+          runner,
+          manifestDirectory,
+          configArgs,
+          formatPaths,
         );
-        if (repair.code !== 0) {
+      } catch (error) {
+        statuses.set('format', 'failed');
+        addError(diagnostics, {
+          code: 'deno.format-preview',
+          message: (error as Error).message,
+        });
+        return buildResult();
+      }
+      if (formatPlan.changes.length === 0) {
+        statuses.set('format', 'failed');
+        recordDenoFailure(
+          diagnostics,
+          'deno.format',
+          'Deno reported a formatting failure but did not produce a repair.',
+          format,
+        );
+        return buildResult();
+      }
+      const shouldFix =
+        options.fix ||
+        (options.confirmFormat ? await options.confirmFormat(formatPlan.patch) : false);
+      if (shouldFix) {
+        try {
+          await applyProjectPlan(context, {
+            rootDirectory: manifestDirectory,
+            changes: formatPlan.changes,
+          });
+        } catch (error) {
           statuses.set('format', 'failed');
-          recordDenoFailure(
-            diagnostics,
-            'deno.format-fix',
-            'Deno could not format the referenced files.',
-            repair,
-          );
+          addError(diagnostics, {
+            code: 'deno.format-fix',
+            message: `Could not apply formatting transaction: ${(error as Error).message}`,
+          });
         }
       } else {
         statuses.set('format', 'failed');
-        addError(diagnostics, {
-          code: 'deno.format',
-          message:
-            `Referenced files are not formatted.` +
-            (options.includeFormatPatchInDiagnostics && patch ? `\n${patch}` : ''),
+        formatPlan.changes.forEach((change, index) => {
+          addError(diagnostics, {
+            code: 'deno.format',
+            message:
+              'Referenced file is not formatted.' +
+              (index === 0 && options.includeFormatPatchInDiagnostics && formatPlan.patch
+                ? `\n${formatPlan.patch}`
+                : ''),
+            path: relativePath(manifestDirectory, change.path),
+          });
         });
       }
     }

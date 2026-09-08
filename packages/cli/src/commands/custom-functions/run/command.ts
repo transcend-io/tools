@@ -58,6 +58,6 @@ export const runCommand = buildCommand({
   docs: {
     brief: 'Run Custom Function fixtures in a local Deno simulator',
     fullDescription:
-      'Executes one manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required, and real network requests are disabled unless --allowNetwork is passed.',
+      'Executes one self-contained manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required. Native fetch is disabled unless --allowNetwork is passed; module imports follow allow-third-party-imports.',
   },
 });

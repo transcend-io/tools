@@ -1,6 +1,7 @@
-import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -12,6 +13,20 @@ import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextF
 import { runCustomFunctionChecks } from '../helpers.js';
 
 const temporaryRoots: string[] = [];
+
+/**
+ * Build an empty Deno module graph for one source.
+ *
+ * @param sourcePath - Root source path
+ * @returns Serialized graph
+ */
+function emptyModuleGraph(sourcePath: string): string {
+  const specifier = pathToFileURL(sourcePath).href;
+  return JSON.stringify({
+    roots: [specifier],
+    modules: [{ specifier, dependencies: [] }],
+  });
+}
 
 /**
  * Create and register an isolated temporary directory.
@@ -236,6 +251,9 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
           }),
         );
       }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
       return Promise.resolve(processResult({ stdout: options.input ?? '' }));
     };
 
@@ -244,6 +262,52 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ code: 'exports.default-missing' }),
     );
+  });
+
+  it('rejects local runtime imports that cannot be deployed', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath, sourcePath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = (_command, args) => {
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+      }
+      if (args[0] === 'info') {
+        const specifier = pathToFileURL(sourcePath).href;
+        return Promise.resolve(
+          processResult({
+            stdout: JSON.stringify({
+              roots: [specifier],
+              modules: [
+                {
+                  specifier,
+                  dependencies: [
+                    {
+                      specifier: './helper.ts',
+                      code: { specifier: pathToFileURL(join(root, 'helper.ts')).href },
+                    },
+                  ],
+                },
+              ],
+            }),
+          }),
+        );
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'source.local-runtime-import',
+        message: expect.stringContaining('./helper.ts'),
+      }),
+    );
+    expect(result.checks).toContainEqual({ name: 'files', status: 'failed' });
   });
 
   it('reports export, typecheck, lint, and format failures independently', async () => {
@@ -258,6 +322,9 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
       }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[]' }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
       }
       if (args[0] === 'check') {
         return Promise.resolve(processResult({ code: 1, stderr: 'type failure' }));
@@ -293,6 +360,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
       '@@',
     );
     expect(calls).toContainEqual(['doc', '--json', sourcePath]);
+    expect(calls).toContainEqual(['info', '--json', '--no-config', sourcePath]);
     expect(calls).toContainEqual(['check', '--no-config', sourcePath]);
     expect(calls).toContainEqual(['lint', '--no-config', sourcePath]);
     expect(calls).toContainEqual([
@@ -310,7 +378,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     { label: 'confirmation', fix: false, useConfirmation: true },
   ])('repairs formatting with $label', async ({ fix, useConfirmation }) => {
     const root = makeTemporaryRoot();
-    const { manifestPath } = writeGeneralProject(root);
+    const { manifestPath, sourcePath } = writeGeneralProject(root);
     const context = buildContextForTest({ cwd: root });
     const calls: string[][] = [];
     const confirmFormat = vi.fn<(patch: string) => Promise<boolean>>(() => Promise.resolve(true));
@@ -321,6 +389,9 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
       }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
       }
       if (args[0] === 'fmt' && args.includes('--check')) {
         return Promise.resolve(processResult({ code: 1 }));
@@ -350,13 +421,60 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     expect(result.checks).toContainEqual({ name: 'format', status: 'passed' });
     expect(
       calls.some((args) => args[0] === 'fmt' && !args.includes('--check') && args.at(-1) !== '-'),
-    ).toBe(true);
+    ).toBe(false);
+    expect(readFileSync(sourcePath, 'utf8')).toContain('{};');
     if (useConfirmation) {
       expect(confirmFormat).toHaveBeenCalledOnce();
       expect(confirmFormat.mock.calls[0]![0]).toContain('Index: function.ts');
     } else {
       expect(confirmFormat).not.toHaveBeenCalled();
     }
+  });
+
+  it('does not apply a stale formatting preview', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath, sourcePath } = writeGeneralProject(root);
+    const context = buildContextForTest({ cwd: root });
+    const runner: CapturedProcessRunner = (_command, args, options) => {
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      if (args[0] === 'fmt' && args.includes('--check')) {
+        return Promise.resolve(processResult({ code: 1 }));
+      }
+      if (args[0] === 'fmt' && args.at(-1) === '-') {
+        const input = options.input ?? '';
+        return Promise.resolve(
+          processResult({
+            stdout: input.includes('export default') ? input.replace('{}\n', '{};\n') : input,
+          }),
+        );
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(
+      context,
+      {
+        manifestPath,
+        fix: false,
+        confirmFormat: () => {
+          writeFileSync(sourcePath, 'changed while awaiting approval\n');
+          return Promise.resolve(true);
+        },
+      },
+      runner,
+    );
+
+    expect(result.status).toBe('failed');
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ code: 'deno.format-fix' }));
+    expect(readFileSync(sourcePath, 'utf8')).toBe('changed while awaiting approval\n');
   });
 
   it('reports unresolved source and payload path placeholders without reading them', async () => {
@@ -381,5 +499,35 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
       'deno.missing',
     ]);
     expect(result.checks).toContainEqual({ name: 'payloads', status: 'failed' });
+  });
+
+  it('resolves parameterized source and payload paths when values are provided', async () => {
+    const root = makeTemporaryRoot();
+    const manifestPath = join(root, 'transcend-functions.yml');
+    writeFileSync(
+      manifestPath,
+      `functions:
+  - name: Parameterized paths
+    code: ./<<parameters.source>>
+    test-payload: ./<<parameters.payload>>
+`,
+    );
+    writeFileSync(join(root, 'function.ts'), 'export default () => {};\n');
+    writeFileSync(join(root, 'payload.json'), '{"event":"example"}\n');
+    const context = buildContextForTest({ cwd: root });
+
+    const result = await runCustomFunctionChecks(
+      context,
+      {
+        manifestPath,
+        parameters: { source: 'function.ts', payload: 'payload.json' },
+        fix: false,
+      },
+      () => Promise.resolve(missingDenoResult()),
+    );
+
+    expect(result.diagnostics.map(({ code }) => code)).toEqual(['deno.missing']);
+    expect(result.checks).toContainEqual({ name: 'files', status: 'passed' });
+    expect(result.checks).toContainEqual({ name: 'payloads', status: 'passed' });
   });
 });

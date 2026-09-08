@@ -26,6 +26,10 @@ describe('custom-functions run with Deno 2.4.5', () => {
     test-payload: ./test-payloads/log-locally.json
     env:
       TEST_TOKEN: <<parameters.testToken>>
+  - name: Unrelated incomplete function
+    code: ./functions/missing.ts
+    env:
+      API_TOKEN: <<parameters.unrelatedToken>>
 `,
     );
     writeFileSync(

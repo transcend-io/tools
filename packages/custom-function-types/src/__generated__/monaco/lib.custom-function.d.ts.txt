@@ -271,7 +271,7 @@ declare namespace CustomFunction {
         /**
          * Store a value.
          *
-         * Keys are limited to 128 bytes, values to 2,048 bytes, and each Custom
+         * Keys are limited to 128 characters, values to 2,048 characters, and each Custom
          * Function may store at most 128 keys.
          *
          * @param key - Stored value name

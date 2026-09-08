@@ -9,6 +9,7 @@ import yaml from 'js-yaml';
 import { isMap, isScalar, isSeq, parseDocument } from 'yaml';
 
 import { replaceVariablesInYaml } from '../readTranscendYaml.js';
+import { validateCustomFunctionExecutionContext } from './execution-context.js';
 
 export const CustomFunctionManifestEntry = t.intersection([
   t.type({
@@ -233,30 +234,16 @@ export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
 };
 
 /**
- * Read a custom functions manifest from disk, apply variable substitution,
- * validate it, and hydrate its referenced code and payload files.
- *
- * Variable substitution deliberately happens before parsing and hydration to
- * preserve push behavior.
+ * Hydrate parsed manifest entries from their referenced files.
  *
  * @param filePath - Path to the manifest YAML file
- * @param parameters - Values to fill into `<<parameters.x>>` placeholders
- * @returns The custom function configs, with code loaded from disk
+ * @param manifest - Parsed manifest
+ * @returns Custom Function configs with code and payloads loaded
  */
-export function readCustomFunctionsManifest(
+function hydrateCustomFunctionsManifest(
   filePath: string,
-  parameters: ObjByString = {},
+  manifest: CustomFunctionsManifest,
 ): CustomFunctionManifestConfig[] {
-  const fileContents = readFileSync(filePath, 'utf-8');
-
-  const replacedVariables = replaceVariablesInYaml(
-    fileContents,
-    parameters,
-    `Also check that there are no extra parameters defined in your manifest: ${filePath}`,
-  );
-
-  const manifest = parseCustomFunctionsManifest(replacedVariables, { allowExternalPaths: true });
-
   const manifestDir = dirname(resolve(filePath));
 
   /**
@@ -285,6 +272,10 @@ export function readCustomFunctionsManifest(
   };
 
   return manifest.functions.map((entry) => {
+    validateCustomFunctionExecutionContext({
+      ...(entry.env ? { env: entry.env } : {}),
+      ...(entry['allowed-hosts'] ? { allowedHosts: entry['allowed-hosts'] } : {}),
+    });
     const codePath = resolve(manifestDir, entry.code);
     if (!existsSync(codePath)) {
       throw new Error(`Code file for custom function "${entry.name}" does not exist: ${codePath}`);
@@ -328,6 +319,61 @@ export function readCustomFunctionsManifest(
       ...(testPayloads !== undefined ? { testPayloads } : {}),
     };
   });
+}
+
+/**
+ * Read a custom functions manifest from disk, apply parameter substitution,
+ * validate it, and hydrate its referenced code and payload files.
+ *
+ * Parameter substitution deliberately happens before parsing and hydration to
+ * preserve push behavior.
+ *
+ * @param filePath - Path to the manifest YAML file
+ * @param parameters - Values to fill into `<<parameters.x>>` placeholders
+ * @returns The custom function configs, with code loaded from disk
+ */
+export function readCustomFunctionsManifest(
+  filePath: string,
+  parameters: ObjByString = {},
+): CustomFunctionManifestConfig[] {
+  const fileContents = readFileSync(filePath, 'utf-8');
+  const replacedParameters = replaceVariablesInYaml(
+    fileContents,
+    parameters,
+    `Also check that there are no extra parameters defined in your manifest: ${filePath}`,
+  );
+  const manifest = parseCustomFunctionsManifest(replacedParameters, { allowExternalPaths: true });
+  return hydrateCustomFunctionsManifest(filePath, manifest);
+}
+
+/**
+ * Resolve and hydrate one selected manifest entry.
+ *
+ * This lets local execution ignore unrelated entries whose files or
+ * parameters are currently incomplete.
+ *
+ * @param filePath - Path to the containing manifest
+ * @param entry - Selected raw manifest entry
+ * @param parameters - Values to fill into `<<parameters.x>>` placeholders
+ * @returns Hydrated selected configuration and its source path
+ */
+export function readCustomFunctionManifestEntry(
+  filePath: string,
+  entry: CustomFunctionManifestEntry,
+  parameters: ObjByString = {},
+): { config: CustomFunctionManifestConfig; sourcePath: string } {
+  const entryContents = yaml.dump({ functions: [entry] });
+  const replacedParameters = replaceVariablesInYaml(
+    entryContents,
+    parameters,
+    `Also check that there are no extra parameters defined for "${entry.name}" in: ${filePath}`,
+  );
+  const manifest = parseCustomFunctionsManifest(replacedParameters);
+  const resolvedEntry = manifest.functions[0]!;
+  return {
+    config: hydrateCustomFunctionsManifest(filePath, manifest)[0]!,
+    sourcePath: resolve(dirname(filePath), resolvedEntry.code),
+  };
 }
 
 /**
