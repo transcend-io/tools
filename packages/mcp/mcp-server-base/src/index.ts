@@ -45,6 +45,7 @@ export type { ToolCallContext } from './tool-call-context.js';
 
 export { TranscendGraphQLBase, SimpleLogger } from './clients/graphql/base.js';
 export type { Logger, ListOptions } from './clients/graphql/base.js';
+export { derivePageInfo } from './clients/graphql/pagination.js';
 export { TranscendRestClient } from './clients/rest-client.js';
 export type { TranscendRestClientOptions } from './clients/rest-client.js';
 
@@ -69,7 +70,6 @@ export {
   CursorPaginationSchema,
   EmptySchema,
   OffsetPaginationSchema,
-  PaginationSchema,
 } from './validation/schemas.js';
 export { collectMissingDescriptions, MIN_DESCRIPTION_LENGTH } from './validation/describe-audit.js';
 
@@ -98,10 +98,11 @@ export {
   CONFIRMATION_TIMEOUT_MS,
   ConfirmationCode,
   ConfirmationPolicy,
+  HUMAN_RESPONSE_FLOOR_MS,
   renderConfirmationPrompt,
   withConfirmation,
-} from './tools/confirmation.js';
-export type { ConfirmationGate } from './tools/confirmation.js';
+} from './tools/confirmation/index.js';
+export type { ConfirmationGate } from './tools/confirmation/index.js';
 
 export { APPROVAL_TOKEN_TTL_MS, ApprovalTokenStore } from './tools/approval-tokens.js';
 
@@ -139,6 +140,7 @@ export type {
 } from './tools/define-tool-with-capabilities.js';
 
 export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
+export { toolInputSchema } from './tools/input-schema.js';
 
 export type {
   PromptArgument,
@@ -193,6 +195,13 @@ export {
   resetOAuthClientState,
 } from './oauth/client-registry.js';
 export { ensureOAuthStartupReady } from './oauth/startup.js';
+export {
+  ALLOW_TEST_OVERRIDES_ENV,
+  MCP_SKIP_CONFIRMATION_ENV,
+  allowTestOverrides,
+  resolveTestOverride,
+  skipConfirmation,
+} from './oauth/env.js';
 export { OAuthCallbackError, parseOAuthCallbackQuery } from './oauth/parse-callback.js';
 export { exchangeAuthorizationCode } from './oauth/token-exchange.js';
 export { refreshOAuthTokens } from './oauth/token-refresh.js';

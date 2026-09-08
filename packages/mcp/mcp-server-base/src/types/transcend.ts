@@ -91,6 +91,24 @@ export interface Request {
   teams?: InventoryTeamPreview[];
 }
 
+/** Nested enricher definition on a request-enricher job */
+export interface RequestEnricherEnricher {
+  /** Enricher UUID — pass as `enricherId` / `x-transcend-enricher-id` */
+  id: string;
+  /** Display title */
+  title: string;
+  /** Enricher type (e.g. SOMBRA, PERSON) */
+  type: string;
+}
+
+/** Enricher job attached to a privacy request (preflight / enrichment stage) */
+export interface RequestEnricherSummary {
+  /** Status of this enricher job on the request (e.g. ENRICHING, RESOLVED, ERROR) */
+  status: string;
+  /** Enricher definition; use `enricher.id` as `enricherId` for `dsr_enrich_identifiers` */
+  enricher: RequestEnricherEnricher;
+}
+
 export interface RequestDetails extends Request {
   dataSubjectType?: string;
   locale?: string;
@@ -99,6 +117,8 @@ export interface RequestDetails extends Request {
   requestIdentifiers?: RequestIdentifier[];
   requestDataSilos?: RequestDataSilo[];
   requestFiles?: RequestFile[];
+  /** Enricher jobs for this request (for discovering enricherId without a nonce) */
+  requestEnrichers?: RequestEnricherSummary[];
 }
 
 export interface RequestIdentifier {
@@ -151,23 +171,56 @@ export interface RequestFile {
 }
 
 export interface DSRSubmission {
-  type: RequestType;
+  /**
+   * Published workflow config UUID (Privacy Requests → Workflows).
+   * Request type and subject class are derived from this config.
+   */
+  workflowConfigId: string;
+  /** Email address of the data subject (required when not silent) */
   email: string;
+  /** Core identifier; defaults to email when omitted */
   coreIdentifier?: string;
-  subjectType?: string;
-  name?: string;
-  phone?: string;
+  /** Locale for communications (e.g. en-US) */
   locale?: string;
+  /** When true, suppress email notifications to the data subject */
   isSilent?: boolean;
-  skipSecondaryLookup?: boolean;
-  additionalIdentifiers?: Record<string, string>;
 }
 
 export interface DSRResponse {
+  /** Privacy request ID */
   id: string;
+  /** Request status */
   status: string;
+  /** Optional server message */
   message?: string;
+  /** Optional nonce */
   nonce?: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Subject email on the created request */
+  email?: string | null;
+  /** Core identifier on the created request */
+  coreIdentifier?: string;
+  /** Admin dashboard deep link */
+  link?: string;
+}
+
+/**
+ * Minimal summary of a request returned from bulk DSR create.
+ */
+export interface DSRCreatedSummary {
+  /** Privacy request ID */
+  id: string;
+  /** Request status */
+  status: string;
+  /** Request action derived from the workflow config */
+  type?: string;
+  /** Data subject class derived from the workflow config */
+  subjectType?: string;
+  /** Admin dashboard deep link */
+  link?: string;
 }
 
 export interface DownloadKey {
@@ -176,23 +229,27 @@ export interface DownloadKey {
 }
 
 export interface EnrichIdentifiersInput {
-  requestId: string;
+  /** JWT nonce from webhook or pending-requests (preferred) */
+  nonce?: string;
+  /** Request ID for manual enrichment when nonce is unavailable */
+  requestId?: string;
+  /** Enricher ID for manual enrichment when nonce is unavailable */
+  enricherId?: string;
+  /** Identifier names and values to add */
   identifiers: Record<string, string>;
 }
 
 export interface AccessResponseInput {
-  requestId: string;
-  dataSiloId: string;
-  profiles?: Record<string, unknown>[];
-  files?: {
-    fileName: string;
-    fileData: string;
-  }[];
+  /** JWT nonce from webhook or pending-requests */
+  nonce: string;
+  /** Profile data to return for the access request */
+  profiles?: { profileId?: string; profileData?: unknown }[];
 }
 
 export interface ErasureResponseInput {
-  requestId: string;
-  dataSiloId: string;
+  /** JWT nonce from webhook or pending-requests */
+  nonce: string;
+  /** Profile IDs that were erased */
   profileIds?: string[];
 }
 
@@ -222,22 +279,152 @@ export interface UserPreferences {
   confirmed?: boolean;
 }
 
+export interface PreferenceStoreIdentifier {
+  /** Identifier name (e.g. email, phone) */
+  name: string;
+  /** Identifier value */
+  value: string;
+}
+
 export interface PreferenceQueryInput {
+  /** Preference store partition key */
   partition: string;
+  /** Identifiers to query */
   identifiers: {
+    /** Identifier value */
     value: string;
-    type?: string;
+    /** Identifier name (optional; inferred when omitted) */
+    name?: string;
+  }[];
+  /** Max records per page (1–50) */
+  limit?: number;
+  /** Pagination cursor from a previous query */
+  cursor?: string;
+}
+
+export interface PreferenceQueryResult {
+  /** Matching preference records */
+  nodes: unknown[];
+  /** Cursor for the next page, if any */
+  cursor?: string;
+}
+
+export interface PreferenceUpsertRecord {
+  /** Partition key for this record */
+  partition: string;
+  /** ISO 8601 timestamp for the consent update */
+  timestamp: string;
+  /** Whether consent was explicitly confirmed */
+  confirmed?: boolean;
+  /** User identifiers */
+  identifiers?: PreferenceStoreIdentifier[];
+  /** Legacy user ID (prefer identifiers) */
+  userId?: string;
+  /** Purpose consent updates */
+  purposes: {
+    /** Purpose slug */
+    purpose: string;
+    /** Whether the purpose is enabled (Preference Store wire field) */
+    enabled: boolean;
+    /** ISO 8601 timestamp for this purpose */
+    timestamp?: string;
   }[];
 }
 
 export interface PreferenceUpsertInput {
-  partition: string;
+  /** Records to upsert */
+  records: PreferenceUpsertRecord[];
+  /** When true, skip workflow triggers */
+  skipWorkflowTriggers?: boolean;
+}
+
+export interface PreferenceDeleteRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the deletion */
+  timestamp: string;
+}
+
+export interface PreferenceAppendIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier to append */
+  append: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Merge records when append value conflicts */
+    mergeRecordsOnConflict?: boolean;
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceUpdateIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier update details */
+  update: {
+    /** Identifier name */
+    name: string;
+    /** Current identifier value */
+    oldValue: string;
+    /** New identifier value */
+    newValue: string;
+  };
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Merge records when update value conflicts */
+    mergeRecordsOnConflict?: boolean;
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceDeleteIdentifierRecordInput {
+  /** Anchor identifier locating the record */
+  anchorIdentifier: PreferenceStoreIdentifier;
+  /** Identifier to delete */
+  delete: PreferenceStoreIdentifier;
+  /** ISO 8601 timestamp for the update */
+  timestamp: string;
+  /** Optional operation flags */
+  options?: {
+    /** Return remaining identifiers in the response */
+    returnIdentifiers?: boolean;
+  };
+}
+
+export interface PreferenceIdentifiersResponse {
+  /** Overall success when the API includes it */
+  success?: boolean;
+  /** Per-record operation results */
   records: {
-    identifier: string;
-    identifierType?: string;
-    purposes: ConsentPreference[];
-    confirmed?: boolean;
+    /** Whether the operation succeeded */
+    success: boolean;
+    /** Remaining identifiers when requested */
+    identifiers?: PreferenceStoreIdentifier[];
+    /** Error message when success is false */
+    errorMessage?: string;
   }[];
+  /** Index-aligned failures */
+  failures?: { index: number; error: string }[];
+  /** Schema / batch validation errors */
+  errors?: unknown[];
+}
+
+export interface PreferenceUpsertResponse {
+  /** Overall success flag from Preference Store */
+  success?: boolean;
+  /** Successfully written records */
+  nodes?: unknown[];
+  /** Index-aligned failures */
+  failures?: { index: number; error: string }[];
+  /** Schema / batch validation errors */
+  errors?: unknown[];
 }
 
 export interface AirgapBundle {
@@ -406,7 +593,7 @@ export interface InventoryTeamPreview {
 export interface BusinessEntity {
   /** Unique identifier */
   id: string;
-  /** Display title (use with inventory_update_data_silo `businessEntityTitles`) */
+  /** Display title (use with inventory_write_data_silo `businessEntityTitles`) */
   title: string;
   /** Description */
   description?: string;
@@ -414,7 +601,7 @@ export interface BusinessEntity {
 
 /** Data subject row for inventory list / silo blocklist resolution */
 export interface DataSubject {
-  /** Unique identifier (use with inventory_update_data_silo `dataSubjectBlockListIds`) */
+  /** Unique identifier (use with inventory_write_data_silo `dataSubjectBlockListIds`) */
   id: string;
   /** Machine type key (e.g. CUSTOMER, EMPLOYEE) */
   type: string;
@@ -526,6 +713,13 @@ export interface DataSiloUpdateInput {
   isLive?: boolean;
 }
 
+export interface DataSiloWriteInput extends Omit<DataSiloUpdateInput, 'id'> {
+  /** Existing data silo ID (update path when set) */
+  id?: string;
+  /** Catalog integration name (GraphQL `name`) required to create when id is omitted */
+  integrationName?: string;
+}
+
 export interface DataPoint {
   /** Unique identifier */
   id: string;
@@ -573,6 +767,10 @@ export interface DataCategory {
   description?: string;
   /** Optional classification regex */
   regex?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface DataPurpose {
@@ -602,7 +800,7 @@ export interface DataCatalog {
 
 /**
  * Integration catalog entry from GraphQL `catalogs`.
- * Pass `integrationName` to `inventory_create_data_silo`.
+ * Pass `integrationName` to `inventory_write_data_silo`.
  */
 export interface CatalogIntegration {
   /** Catalog slug for createDataSilos (`name`) */
@@ -701,6 +899,45 @@ export interface ProcessingPurposeWriteInput {
   purpose?: string;
   /** Description */
   description?: string;
+}
+
+export interface DataCategoryCreateInput {
+  /** Subcategory display name */
+  name: string;
+  /** Top-level data category type */
+  category: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryUpdateInput {
+  /** Data subcategory ID */
+  id: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
+}
+
+export interface DataCategoryWriteInput {
+  /** Existing data subcategory ID (update path when set) */
+  id?: string;
+  /** Subcategory display name (upsert key with category when id is omitted) */
+  name?: string;
+  /** Top-level data category type (upsert key with name when id is omitted) */
+  category?: string;
+  /** Description */
+  description?: string;
+  /** Owner email addresses */
+  ownerEmails?: string[];
+  /** Owner team names */
+  teamNames?: string[];
 }
 
 export interface VendorCreateInput {
@@ -840,33 +1077,64 @@ export interface DiscoveryPlugin {
 }
 
 export interface LLMClassificationInput {
+  /** Text strings to classify */
   texts: string[];
-  categories?: string[];
+  /** Category labels to classify against */
+  categories: string[];
+  /** LLM model type override */
   model?: string;
 }
 
 export interface LLMClassificationResult {
+  /** Input text that was classified */
   text: string;
+  /** Classification guesses for this text */
   classifications: {
+    /** Predicted category label */
     category: string;
+    /** Confidence score (0–1); derived from confidenceLabel when only ordinals are returned */
     confidence: number;
+    /** Parent category when available */
     subcategory?: string;
+    /** Ordinal confidence from the classifier when present (HIGH / MEDIUM / LOW) */
+    confidenceLabel?: string;
   }[];
 }
 
 export interface NERExtractionInput {
+  /** Text to extract entities from */
   text: string;
-  entityTypes?: string[];
+  /** Entity type labels to extract */
+  entityTypes: string[];
 }
 
 export interface NERExtractionResult {
+  /** Extracted entities */
   entities: {
+    /** Extracted entity value */
     text: string;
+    /** Entity type label */
     type: string;
-    start: number;
-    end: number;
+    /** Confidence score */
     confidence: number;
+    /** Source text snippet when available */
+    snippet?: string;
   }[];
+}
+
+export interface PendingRequestItem {
+  /** Pending identifier value */
+  identifier: string;
+  /** Identifier type */
+  type: string;
+  /** Core identifier for the request */
+  coreIdentifier: string;
+  /** Data silo ID */
+  dataSiloId: string;
+  /** Privacy request ID */
+  requestId: string;
+  /** JWT nonce for responding to this pending item */
+  nonce: string;
 }
 
 // Assessment Types
@@ -1119,6 +1387,14 @@ export interface AssessmentPrefillInput {
 export interface Workflow {
   id: string;
   title: { defaultMessage: string };
+  /** Dashboard internal name when present */
+  internalName?: string;
+  /** Visibility of the workflow config (e.g. published vs draft) */
+  workflowConfigVisibility?: string;
+  /** DSR action type derived from the workflow (e.g. ACCESS, ERASURE) */
+  actionType?: string;
+  /** Data subject class for the workflow (e.g. customer, employee) */
+  subjectType?: string;
   type?: string;
   description?: string;
   isActive?: boolean;

@@ -1,5 +1,113 @@
 # @transcend-io/mcp-server-preferences
 
+## 0.7.2
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+- Updated dependencies [a19b07e]
+  - @transcend-io/mcp-server-base@1.8.1
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/sdk@2.1.4
+
+## 0.7.1
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/sdk@2.1.3
+
+## 0.7.0
+
+### Minor Changes
+
+- 2a6a955: Add `preferences_list_partitions` so agents can discover Preference Store partition keys (default airgap bundle + custom) via GraphQL before calling Sombra preferences tools. Require `ViewConsentManager` and point sibling `partition` field descriptions at the new discovery tool.
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
+## 0.6.7
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
+## 0.6.6
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+
+## 0.6.5
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
+## 0.6.4
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+
+## 0.6.3
+
+### Patch Changes
+
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+
+## 0.6.0
+
+### Minor Changes
+
+- d00bd92: Require human confirmation before the highest-consequence tools run. `dsr_cancel`, `dsr_submit`, `dsr_submit_on_behalf`, `dsr_enrich_identifiers`, `preferences_delete`, `preferences_delete_identifiers` and `preferences_update_identifiers` now declare `confirmation`, so a person is asked before the handler runs and the call refuses if nobody can be.
+
+  `dsr_submit`, `dsr_submit_on_behalf`, `dsr_enrich_identifiers` and `preferences_update_identifiers` also flip to `destructiveHint: true`. Gating a tool and annotating it non-destructive tells hosts two different things about the same call, so the gate requires the annotation to agree. All four earn it: submitting an ERASURE or opt-out request starts irreversible deletion across connected systems, and both identifier tools overwrite values that determine whose data a request or consent record resolves to.
+
+  Five of the seven are `requireSombra` and so were already omitted from Agentic Assist. The two that are not, `dsr_cancel` and `dsr_submit_on_behalf`, are the only ones this newly puts behind a confirmation for HTTP callers.
+
+### Patch Changes
+
+- Updated dependencies [d00bd92]
+- Updated dependencies [6c6ea93]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+  - @transcend-io/mcp-server-base@1.6.0
+  - @transcend-io/privacy-types@5.22.0
+
 ## 0.5.19
 
 ### Patch Changes

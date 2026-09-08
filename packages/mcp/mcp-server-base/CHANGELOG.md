@@ -1,5 +1,113 @@
 # @transcend-io/mcp-server-base
 
+## 1.8.1
+
+### Patch Changes
+
+- bccab7e: Recover the confirmation gate on Cursor, which declines prompts it never showed anybody.
+
+  Cursor runs every window's MCP servers in one shared process and routes a server-initiated
+  request to the window that owns the connection. When the caller is in a different window,
+  delivery fails and Cursor answers `elicitation/create` with `{ action: "decline" }` — logging
+  `Cannot route MCP lease elicitation request for window 1 in window 3` — so the gate reported
+  `CONFIRMATION_DECLINED` for a refusal nobody made, and every gated tool was unusable for as
+  long as a second window was open.
+
+  On stdio a decline is now reinterpreted as "nobody was asked", handing back an approval token
+  to replay, but only when all three hold: the host is one whose declines are known to be
+  unprompted (Cursor, the first entry in `HOST_QUIRKS`), the answer arrived in under 250ms, and a
+  token can actually be minted. Undelivered prompts came back in 1-4ms against roughly a minute
+  for a real approval, so the floor sits far from both. `cancel` and `accept` are untouched, since
+  a dismissal is how Cursor reports the user closing the prompt and a fast accept is what an
+  always-allowed call looks like.
+
+  HTTP is unchanged: with no token store behind it, a fast decline there would only swap one
+  refusal for a less accurate one, so it stays `CONFIRMATION_DECLINED`.
+
+  The token still requires the agent to put the action to the user and be told yes, so the
+  protection is the same one form-less hosts have always had. What is given up is narrower: a
+  Cursor user whose genuine "decline" lands within 250ms has it read as a dropped prompt instead,
+  and is asked again in chat.
+
+## 1.8.0
+
+### Minor Changes
+
+- 557a80b: Reject arguments a tool never declared, instead of silently dropping them.
+
+  Zod strips unknown keys by default, so a misspelled argument name parsed cleanly and the tool
+  ran whatever it does with no arguments — while reporting success. An agent calling `docs_list`
+  with `{ query: … }` instead of `{ keyword: … }` received the entire 417-article catalog as a
+  successful result, and on a destructive tool the same slip performs the write without the
+  fields the caller meant to send.
+
+  `tools/call` now validates against a strict schema and refuses unrecognized arguments with a
+  `VALIDATION_ERROR` that names both the rejected argument and the accepted ones, so an agent can
+  correct itself in one retry.
+
+  Confirmation-gated tools still accept `approvalToken` even on transports whose gate does not
+  advertise it, so a replayed token reaches the gate and gets its own explanation rather than a
+  bare unknown-argument error. The advertised input schema is unchanged.
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+
+## 1.7.4
+
+### Patch Changes
+
+- 5b97f8e: Add `MCP_SKIP_CONFIRMATION=1` to bypass server confirmation gates for local
+  automation and accept-path testing. Gated tools still declare `confirmation`
+  metadata; only runtime enforcement is skipped.
+
+## 1.7.3
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+## 1.7.2
+
+### Patch Changes
+
+- 656903e: Add a private shared widget kit for MCP App views and teach the view builder to
+  include its Tailwind sources only when a consuming package opts in.
+
+## 1.7.1
+
+### Patch Changes
+
+- 4aa92a1: Adds pagination to list indentifiers tool
+
+## 1.7.0
+
+### Minor Changes
+
+- 732e769: Switch `dsr_submit` / `TranscendRestClient.submitDSR` to `POST /v1/data-subject-request-bulk`. Callers pass `workflowConfigId` instead of `type`/`subjectType`; the API derives those from the published workflow config. Returns a minimal summary (`id`, `status`, `type`, `subjectType`, `link`) for each created request. DSR OAuth scopes now include `ViewWorkflows` so clients can list published workflow configs for submit.
+
+## 1.6.0
+
+### Minor Changes
+
+- 2b82ee8: Add `inventory_write_category` to create or update Data Inventory data subcategories (ZEL-8169). Enrich `inventory_list_categories` to query `dataSubCategories` with ids, owners, teams, and optional text search.
+- bd397d4: Add `inventory_write_data_silo` to create or update data systems in one MCP call (ZEL-8221). Create-by-integrationName always creates a new silo; update-by-id applies metadata without title upsert. Replaces `inventory_create_data_silo` and `inventory_update_data_silo`.
+
+### Patch Changes
+
+- d00bd92: **@transcend-io/mcp-server-base:** Ask for the confirmation decision with no form fields at all, and read it from the host's accept and decline buttons. This replaces the checkbox described in 1.3.1, which itself replaced a titled select.
+
+  Both earlier shapes asked the user for a second gesture after the button they had already pressed, and both could be answered wrongly. `elicitInput` validates the host's answer against the schema it sent, so a rejected answer reaches the gate as "nobody was asked" — a rendered, approved form reported as a refusal, with every gated tool then falling through to the token fallback. Cursor hit that with the select by answering with a value matching neither option's `const`; a host answering the checkbox's `true` as a string would have fared no better. Requesting nothing leaves no shape to get wrong: the SDK only validates a non-empty `content`, and a schema with no properties and no required fields has nothing to reject.
+
+  `ElicitResult.action` already carried the decision, and the gate already read `decline` and `cancel` from it, so only the redundant field is gone. An `accept` is now the approval outright, whatever the host puts in `content`. That does mean a host returning `accept` without putting the question to anybody has approved on the user's behalf, which is the same trust the HTTP policy in 1.5.0 already documents — a client could equally have ticked the checkbox itself. What the gate still enforces is that the host was asked, and that no token is ever issued for a model to relay.
+
+  Verified in Cursor: the prompt renders as the tool's hint plus Accept and Cancel, accepting runs the action, and dismissing returns `CONFIRMATION_CANCELLED` without running it. Note that Cursor maps its Cancel to the protocol's `cancel`, so `CONFIRMATION_DECLINED` is reachable only from hosts that offer a distinct decline.
+
 ## 1.5.0
 
 ### Minor Changes

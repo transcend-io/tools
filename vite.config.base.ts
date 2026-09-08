@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -54,8 +54,13 @@ export interface McpAppView {
   /** Absolute path to the view's own optional stylesheet, when it has one */
   stylesheet?: string;
   /**
-   * Absolute paths to `_`-prefixed directories under `src/ui`, which hold
-   * components shared between views.
+   * Absolute paths Tailwind must scan besides the view's own directory.
+   *
+   * Always includes `_`-prefixed directories under this package's `src/ui`.
+   * Also includes `dev/mcp-ui-common/src` when the package lists
+   * `@transcend-io/mcp-ui-common` as a dependency — that kit lives outside
+   * `src/ui`, and without an explicit `@source` its classes bundle into JS and
+   * then render unstyled.
    *
    * Carried per view because Tailwind generates utilities per document: a shared
    * component's classes have to be scanned for every view that might render it,
@@ -88,9 +93,12 @@ export function discoverMcpAppViews(packageDir: string): McpAppView[] {
   const directories = readdirSync(viewsDir, { withFileTypes: true }).filter((entry) =>
     entry.isDirectory(),
   );
-  const sharedDirectories = directories
-    .filter((entry) => entry.name.startsWith('_'))
-    .map((entry) => path.join(viewsDir, entry.name));
+  const sharedDirectories = [
+    ...directories
+      .filter((entry) => entry.name.startsWith('_'))
+      .map((entry) => path.join(viewsDir, entry.name)),
+    ...mcpUiCommonSourceIfDeclared(packageDir),
+  ];
 
   for (const entry of directories) {
     // The output directory holds the built documents, not source, and `_` marks
@@ -131,6 +139,35 @@ export function discoverMcpAppViews(packageDir: string): McpAppView[] {
   }
 
   return views.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Workspace name of the private MCP App widget kit. */
+const MCP_UI_COMMON_PACKAGE = '@transcend-io/mcp-ui-common';
+
+/** Source tree Tailwind must scan when a package depends on the kit. */
+const MCP_UI_COMMON_SRC = path.join(repoRoot, 'dev', 'mcp-ui-common', 'src');
+
+/**
+ * Returns the kit source directory when this package declares the widget kit.
+ *
+ * Opt-in via the manifest, not a global `@source`: packages that never import
+ * MetricCard (the hello-world examples) must not emit its CSS.
+ *
+ * @param packageDir - Absolute path to the consuming package
+ * @returns The kit `src` path, or nothing
+ */
+function mcpUiCommonSourceIfDeclared(packageDir: string): string[] {
+  const manifestPath = path.join(packageDir, 'package.json');
+  if (!existsSync(manifestPath)) return [];
+
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    dependencies?: Record<string, string>;
+    devDependencies?: Record<string, string>;
+  };
+  const declared =
+    manifest.devDependencies?.[MCP_UI_COMMON_PACKAGE] !== undefined ||
+    manifest.dependencies?.[MCP_UI_COMMON_PACKAGE] !== undefined;
+  return declared ? [MCP_UI_COMMON_SRC] : [];
 }
 
 /** Source of the entry module that mounts one view. */

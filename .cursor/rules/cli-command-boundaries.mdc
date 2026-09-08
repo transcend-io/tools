@@ -1,0 +1,45 @@
+---
+description: Keep CLI command effects isolated in Stricli context and helpers pure
+globs: "packages/cli/**/*.ts"
+alwaysApply: false
+---
+
+# CLI Functional Core / Imperative Shell
+
+Stricli binds context to command implementations so tests and embedded callers can replace I/O
+without mutating globals. See [Isolated Context](https://bloomberg.github.io/stricli/docs/features/isolated-context).
+
+## Default Boundary
+
+- Treat `commands/**/impl.ts` as the imperative shell. The command implementation should own
+  command-local filesystem access, logging, environment access, exits, client construction, and
+  high-level orchestration through `this: LocalContext`.
+- In `impl.ts`, use `this.fs`, `this.logger`, and `this.process`; never import `node:fs` or the
+  singleton logger, mutate global `process`, or spy on globals.
+- Prefer helpers that accept in-memory data and return data. Parsing, validation, mapping,
+  filtering, formatting, and serialization should normally be pure.
+- Split file helpers into a pure core and a compatibility/convenience shell when useful:
+  `parseThing(contents)` plus `readThing(path)`. Commands should call the pure core after reading
+  with `this.fs`.
+- A helper must not log, exit, or read/write files merely for convenience when its caller can
+  sensibly own that effect.
+- Do not duplicate an effectful command shell in `lib`. Retain a file-based wrapper only for
+  deliberate public compatibility, and have it delegate to the same pure or service core.
+
+## Dependency Injection
+
+1. First ask whether the effect can move into `impl.ts`; prefer that over adding DI plumbing.
+2. Keep cohesive effectful services in helpers when they encapsulate meaningful behavior such as
+   streaming/backpressure, retries, batching, subprocesses, workers, or pooling.
+3. For those services, inject semantic resources they genuinely need (for example a client,
+   logger, or stream). Do not create per-helper bags of low-level Node functions.
+4. For command-specific helpers needing several CLI capabilities, pass the existing
+   `LocalContext` instead of inventing another dependency interface.
+5. Do not inject deterministic utilities such as `node:path` or `node:os`; import them normally.
+
+## Tests
+
+- Test pure helpers with plain inputs and outputs, without mocks.
+- Test command effects with `buildContextForTest`, overriding context dependencies such as `fs`.
+- Prefer context assertions (`context.stdout`, `context.stderr`, `context.exit`) over
+  `vi.spyOn(process|console|fs, ...)`. Module mocks remain appropriate for external API clients.

@@ -80,7 +80,12 @@ export type TelemetryPartitionStrategy =
  */
 export const ConsentPrecedenceOption = makeEnum({
   User: 'user',
+  /**
+   * @deprecated Use Signals instead
+   */
   Signal: 'signal',
+  /** Detected privacy signals take precedence over confirmed consent */
+  Signals: 'signals',
 });
 
 /** Override type */

@@ -24,7 +24,6 @@ import {
   buildTarget,
   DEV_VIEWS_ENV_VAR,
   discoverMcpPackages,
-  ensureInspectorSandboxProxy,
   INSPECTOR_SPEC,
   inspectorEnvArgs,
   installShutdownHandlers,
@@ -72,8 +71,7 @@ async function main(): Promise<void> {
   loadSecretEnv();
   installShutdownHandlers();
 
-  // Overlapped because the sandbox check costs an `npx` resolution the build hides.
-  await Promise.all([buildTarget(target), ensureInspectorSandboxProxy(INSPECTOR_SPEC)]);
+  await buildTarget(target);
 
   // Set here for the server we spawn under `--http`; a stdio server is handed it
   // explicitly below, because the Inspector does not pass our environment on.

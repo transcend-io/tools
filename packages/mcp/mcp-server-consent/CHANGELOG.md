@@ -1,5 +1,123 @@
 # @transcend-io/mcp-server-consent
 
+## 0.9.6
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+- Updated dependencies [a19b07e]
+  - @transcend-io/mcp-server-base@1.8.1
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/sdk@2.1.4
+
+## 0.9.5
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/sdk@2.1.3
+
+## 0.9.4
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
+## 0.9.3
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
+## 0.9.2
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+
+## 0.9.1
+
+### Patch Changes
+
+- cef7025: Ignore Vite-built MCP App documents from the repo root instead of a per-package
+  gitignore.
+
+## 0.9.0
+
+### Minor Changes
+
+- 4c1b802: Add an MCP App view to `consent_get_inventory_stats` that renders cookie and
+  data-flow triage counts.
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/sdk@2.1.2
+
+## 0.8.3
+
+### Patch Changes
+
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
+## 0.8.2
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/sdk@2.1.1
+
+## 0.8.1
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+
+## 0.8.0
+
+### Minor Changes
+
+- bfd2b1a: Make `consent_get_inventory_stats` data-flow counts match the Consent Manager table (CSP rows omitted, same as the UI).
+
+  `consent_list_cookies` and `consent_list_data_flows` now paginate with shared `OffsetPaginationSchema` (`first`/`offset`) instead of a custom `limit`/`offset` pair.
+
+### Patch Changes
+
+- Updated dependencies [d00bd92]
+- Updated dependencies [6c6ea93]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+- Updated dependencies [a5e8334]
+  - @transcend-io/mcp-server-base@1.6.0
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/sdk@2.1.0
+
 ## 0.7.1
 
 ### Patch Changes

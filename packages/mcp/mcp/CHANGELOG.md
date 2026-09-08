@@ -1,5 +1,299 @@
 # @transcend-io/mcp
 
+## 0.16.2
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+  - @transcend-io/mcp-server-base@1.8.1
+  - @transcend-io/mcp-server-admin@0.6.10
+  - @transcend-io/mcp-server-assessment@0.5.30
+  - @transcend-io/mcp-server-consent@0.9.6
+  - @transcend-io/mcp-server-discovery@0.5.30
+  - @transcend-io/mcp-server-docs@0.4.1
+  - @transcend-io/mcp-server-dsr@0.8.10
+  - @transcend-io/mcp-server-inventory@0.7.10
+  - @transcend-io/mcp-server-preferences@0.7.2
+  - @transcend-io/mcp-server-workflows@0.5.30
+
+## 0.16.1
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.6.9
+- @transcend-io/mcp-server-assessment@0.5.29
+- @transcend-io/mcp-server-consent@0.9.5
+- @transcend-io/mcp-server-discovery@0.5.29
+- @transcend-io/mcp-server-dsr@0.8.9
+- @transcend-io/mcp-server-inventory@0.7.9
+- @transcend-io/mcp-server-preferences@0.7.1
+- @transcend-io/mcp-server-workflows@0.5.29
+
+## 0.16.0
+
+### Minor Changes
+
+- 557a80b: Rename the `docs_list` search argument from `keyword` to `query`, and tighten BM25 matching.
+
+  `query` is what comparable search tools name this argument — Linear, Notion, and Datadog all use
+  it — so the rename stops `docs_list` from being the one search tool in a caller's toolset that
+  differs from the convention.
+
+  Search now uses `tolerance: 0` and `threshold: 0.3`. Fuzzy matching cost accuracy on every set
+  of a labeled benchmark, and a typo it "rescued" returned unrelated articles rather than the
+  intended one. The threshold change leaves recall unchanged while cutting matches on a typical
+  query from roughly 417 to 131, so the reported `totalCount` is a usable signal rather than
+  close to the size of the corpus.
+
+  The argument description now asks for the most distinctive terms rather than a whole sentence,
+  since generic words match most articles and blur the ranking.
+
+  Search returns 20 results rather than 10. On the same benchmark, targets that missed the top ten
+  sat at a median rank of 16 and 19, so one page deeper lifts hit@k from 87% to 95% on title terms
+  and 88% to 95% on natural questions, for roughly 434 extra tokens. There is deliberately no
+  offset: almost nothing recoverable ranks past 30, and paging only helps a caller that knows it
+  missed — at rank 16 the first ten results all look plausible, so the miss goes unnoticed and the
+  page is never requested.
+
+  `docs_list` also no longer answers an argument-less call with the whole catalog. It returns the
+  seven documentation sections with their article counts — 540 characters against the roughly 69KB
+  the full listing cost — which is a better answer to "what is documented" and makes the next call
+  obvious. Listing a single section is capped at 50 articles, since the largest holds 125. Whenever
+  results are withheld, the response now carries a note saying how many and what to change; a
+  truncated response the caller cannot distinguish from a complete one is what made the previous
+  behavior hard to notice. An unrecognized `section` is now an error naming the valid ones instead
+  of an empty list that reads like "no such articles", and a `query` that is present but blank is
+  an error rather than a silent fall-through to browsing — the caller asked to search, so answering
+  with the section list and reporting success hides the fact that no search ran.
+
+- 557a80b: Rank `docs_list` keyword results with in-process Orama BM25 over article bodies (not just titles) so queries like "session" can surface Consent Dashboard and telemetry docs (ZEL-8224).
+- 557a80b: Reject arguments a tool never declared, instead of silently dropping them.
+
+  Zod strips unknown keys by default, so a misspelled argument name parsed cleanly and the tool
+  ran whatever it does with no arguments — while reporting success. An agent calling `docs_list`
+  with `{ query: … }` instead of `{ keyword: … }` received the entire 417-article catalog as a
+  successful result, and on a destructive tool the same slip performs the write without the
+  fields the caller meant to send.
+
+  `tools/call` now validates against a strict schema and refuses unrecognized arguments with a
+  `VALIDATION_ERROR` that names both the rejected argument and the accepted ones, so an agent can
+  correct itself in one retry.
+
+  Confirmation-gated tools still accept `approvalToken` even on transports whose gate does not
+  advertise it, so a replayed token reaches the gate and gets its own explanation rather than a
+  bare unknown-argument error. The advertised input schema is unchanged.
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [557a80b]
+- Updated dependencies [557a80b]
+- Updated dependencies [2a6a955]
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-docs@0.4.0
+  - @transcend-io/mcp-server-preferences@0.7.0
+  - @transcend-io/mcp-server-assessment@0.5.28
+  - @transcend-io/mcp-server-discovery@0.5.28
+  - @transcend-io/mcp-server-inventory@0.7.8
+  - @transcend-io/mcp-server-workflows@0.5.28
+  - @transcend-io/mcp-server-consent@0.9.4
+  - @transcend-io/mcp-server-admin@0.6.8
+  - @transcend-io/mcp-server-base@1.8.0
+  - @transcend-io/mcp-server-dsr@0.8.8
+
+## 0.15.9
+
+### Patch Changes
+
+- 423a25b: Load real HTML in the docgen asset stub so MCP App views work with `defineUiResource` instead of being stubbed as empty strings.
+- 5b97f8e: Add `MCP_SKIP_CONFIRMATION=1` to bypass server confirmation gates for local
+  automation and accept-path testing. Gated tools still declare `confirmation`
+  metadata; only runtime enforcement is skipped.
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+  - @transcend-io/mcp-server-admin@0.6.7
+  - @transcend-io/mcp-server-assessment@0.5.27
+  - @transcend-io/mcp-server-consent@0.9.3
+  - @transcend-io/mcp-server-discovery@0.5.27
+  - @transcend-io/mcp-server-docs@0.3.25
+  - @transcend-io/mcp-server-dsr@0.8.7
+  - @transcend-io/mcp-server-inventory@0.7.7
+  - @transcend-io/mcp-server-preferences@0.6.7
+  - @transcend-io/mcp-server-workflows@0.5.27
+
+## 0.15.8
+
+### Patch Changes
+
+- befa05d: Fix for linter
+
+## 0.15.7
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+  - @transcend-io/mcp-server-consent@0.9.2
+  - @transcend-io/mcp-server-preferences@0.6.6
+  - @transcend-io/mcp-server-admin@0.6.6
+  - @transcend-io/mcp-server-assessment@0.5.26
+  - @transcend-io/mcp-server-discovery@0.5.26
+  - @transcend-io/mcp-server-docs@0.3.24
+  - @transcend-io/mcp-server-dsr@0.8.6
+  - @transcend-io/mcp-server-inventory@0.7.6
+  - @transcend-io/mcp-server-workflows@0.5.26
+
+## 0.15.6
+
+### Patch Changes
+
+- Updated dependencies [cef7025]
+  - @transcend-io/mcp-server-consent@0.9.1
+
+## 0.15.5
+
+### Patch Changes
+
+- 4c1b802: Add an MCP App view to `consent_get_inventory_stats` that renders cookie and
+  data-flow triage counts.
+- 656903e: Add a private shared widget kit for MCP App views and teach the view builder to
+  include its Tailwind sources only when a consuming package opts in.
+- Updated dependencies [4c1b802]
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-consent@0.9.0
+  - @transcend-io/mcp-server-base@1.7.2
+  - @transcend-io/mcp-server-admin@0.6.5
+  - @transcend-io/mcp-server-assessment@0.5.25
+  - @transcend-io/mcp-server-discovery@0.5.25
+  - @transcend-io/mcp-server-docs@0.3.23
+  - @transcend-io/mcp-server-dsr@0.8.5
+  - @transcend-io/mcp-server-inventory@0.7.5
+  - @transcend-io/mcp-server-preferences@0.6.5
+  - @transcend-io/mcp-server-workflows@0.5.25
+
+## 0.15.4
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.6.4
+- @transcend-io/mcp-server-assessment@0.5.24
+- @transcend-io/mcp-server-consent@0.8.4
+- @transcend-io/mcp-server-discovery@0.5.24
+- @transcend-io/mcp-server-dsr@0.8.4
+- @transcend-io/mcp-server-inventory@0.7.4
+- @transcend-io/mcp-server-preferences@0.6.4
+- @transcend-io/mcp-server-workflows@0.5.24
+
+## 0.15.3
+
+### Patch Changes
+
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+  - @transcend-io/mcp-server-dsr@0.8.3
+  - @transcend-io/mcp-server-admin@0.6.3
+  - @transcend-io/mcp-server-assessment@0.5.23
+  - @transcend-io/mcp-server-consent@0.8.3
+  - @transcend-io/mcp-server-discovery@0.5.23
+  - @transcend-io/mcp-server-docs@0.3.22
+  - @transcend-io/mcp-server-inventory@0.7.3
+  - @transcend-io/mcp-server-preferences@0.6.3
+  - @transcend-io/mcp-server-workflows@0.5.23
+
+## 0.15.2
+
+### Patch Changes
+
+- @transcend-io/mcp-server-admin@0.6.2
+- @transcend-io/mcp-server-assessment@0.5.22
+- @transcend-io/mcp-server-consent@0.8.2
+- @transcend-io/mcp-server-discovery@0.5.22
+- @transcend-io/mcp-server-dsr@0.8.2
+- @transcend-io/mcp-server-inventory@0.7.2
+- @transcend-io/mcp-server-preferences@0.6.2
+- @transcend-io/mcp-server-workflows@0.5.22
+
+## 0.15.1
+
+### Patch Changes
+
+- Updated dependencies [388ed26]
+  - @transcend-io/mcp-server-dsr@0.8.1
+
+## 0.15.0
+
+### Minor Changes
+
+- 732e769: Switch `dsr_submit` / `TranscendRestClient.submitDSR` to `POST /v1/data-subject-request-bulk`. Callers pass `workflowConfigId` instead of `type`/`subjectType`; the API derives those from the published workflow config. Returns a minimal summary (`id`, `status`, `type`, `subjectType`, `link`) for each created request. DSR OAuth scopes now include `ViewWorkflows` so clients can list published workflow configs for submit.
+- 732e769: Remove `dsr_submit_on_behalf`. DSR creation goes solely through `dsr_submit` → customer-ingress REST (`POST /v1/data-subject-request`), where Sombra attests the subject server-side. The GraphQL `employeeMakeDataSubjectRequest` create path (without `dhEncrypted`) is no longer exposed as an MCP tool.
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+  - @transcend-io/mcp-server-dsr@0.8.0
+  - @transcend-io/mcp-server-admin@0.6.1
+  - @transcend-io/mcp-server-assessment@0.5.21
+  - @transcend-io/mcp-server-consent@0.8.1
+  - @transcend-io/mcp-server-discovery@0.5.21
+  - @transcend-io/mcp-server-docs@0.3.21
+  - @transcend-io/mcp-server-inventory@0.7.1
+  - @transcend-io/mcp-server-preferences@0.6.1
+  - @transcend-io/mcp-server-workflows@0.5.21
+
+## 0.14.0
+
+### Minor Changes
+
+- 3f81b5d: Add full Admin Users filter parity to `admin_list_users` (`text`, booleans, `teamIds`, scopes, last-login bounds, offset pagination, and orderBy).
+- d00bd92: Require human confirmation before the highest-consequence tools run. `dsr_cancel`, `dsr_submit`, `dsr_submit_on_behalf`, `dsr_enrich_identifiers`, `preferences_delete`, `preferences_delete_identifiers` and `preferences_update_identifiers` now declare `confirmation`, so a person is asked before the handler runs and the call refuses if nobody can be.
+
+  `dsr_submit`, `dsr_submit_on_behalf`, `dsr_enrich_identifiers` and `preferences_update_identifiers` also flip to `destructiveHint: true`. Gating a tool and annotating it non-destructive tells hosts two different things about the same call, so the gate requires the annotation to agree. All four earn it: submitting an ERASURE or opt-out request starts irreversible deletion across connected systems, and both identifier tools overwrite values that determine whose data a request or consent record resolves to.
+
+  Five of the seven are `requireSombra` and so were already omitted from Agentic Assist. The two that are not, `dsr_cancel` and `dsr_submit_on_behalf`, are the only ones this newly puts behind a confirmation for HTTP callers.
+
+- 2b82ee8: Add `inventory_write_category` to create or update Data Inventory data subcategories (ZEL-8169). Enrich `inventory_list_categories` to query `dataSubCategories` with ids, owners, teams, and optional text search.
+- bd397d4: Add `inventory_write_data_silo` to create or update data systems in one MCP call (ZEL-8221). Create-by-integrationName always creates a new silo; update-by-id applies metadata without title upsert. Replaces `inventory_create_data_silo` and `inventory_update_data_silo`.
+- 0e77676: Move the TRANSCEND_SCOPES catalog off `admin_create_api_key`'s tools/list descriptor onto compact `admin_list_scopes`, keeping runtime ScopeName validation on create. Cap every tool description at 700 characters and the umbrella tools/list JSON at 85k characters.
+
+### Patch Changes
+
+- d00bd92: `inventory_create_data_silo` now annotates `destructiveHint: false`. It adds a data-map entry and touches nothing existing, which is what the MCP spec calls an additive update; the previous `true` read as "this writes" rather than "this destroys". The neighbouring `inventory_update_data_silo` — which does overwrite existing metadata — was already `false`, so the pair had the asymmetry backwards.
+
+  Hosts use `destructiveHint` to decide how loudly to warn before a call, so labelling a harmless create as destructive trains people to click through warnings and cheapens them on the tools that need them.
+
+- 9263c9d: Readme adjustments
+- 3f81b5d: Fix `admin_list_users` crashing when no filter is provided by sending `filterBy: {}` instead of letting `$filterBy` resolve to `null`.
+- Updated dependencies [3f81b5d]
+- Updated dependencies [d00bd92]
+- Updated dependencies [bfd2b1a]
+- Updated dependencies [d00bd92]
+- Updated dependencies [3f81b5d]
+- Updated dependencies [d00bd92]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+- Updated dependencies [bb8e59b]
+- Updated dependencies [0e77676]
+  - @transcend-io/mcp-server-admin@0.6.0
+  - @transcend-io/mcp-server-base@1.6.0
+  - @transcend-io/mcp-server-consent@0.8.0
+  - @transcend-io/mcp-server-inventory@0.7.0
+  - @transcend-io/mcp-server-preferences@0.6.0
+  - @transcend-io/mcp-server-dsr@0.7.0
+  - @transcend-io/mcp-server-assessment@0.5.20
+  - @transcend-io/mcp-server-discovery@0.5.20
+  - @transcend-io/mcp-server-docs@0.3.20
+  - @transcend-io/mcp-server-workflows@0.5.20
+
 ## 0.13.0
 
 ### Minor Changes

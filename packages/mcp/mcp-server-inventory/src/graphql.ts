@@ -1,4 +1,6 @@
 import {
+  ErrorCode,
+  ToolError,
   TranscendGraphQLBase,
   type BusinessEntity,
   type CatalogIntegration,
@@ -11,12 +13,16 @@ import {
   type DataSiloDetails,
   type DataSiloType,
   type DataSiloUpdateInput,
+  type DataSiloWriteInput,
   type DataSubject,
   type Identifier,
   type ListOptions,
   type PaginatedResponse,
   type SubDataPoint,
   type Vendor,
+  type DataCategoryCreateInput,
+  type DataCategoryUpdateInput,
+  type DataCategoryWriteInput,
   type ProcessingPurposeCreateInput,
   type ProcessingPurposeUpdateInput,
   type ProcessingPurposeWriteInput,
@@ -34,6 +40,12 @@ import { graphql } from './__generated__/gql.js';
  */
 function normalizeSubCategoryName(name: string | null | undefined): string {
   return name && name.trim() ? name : DefaultPurposeSubCategoryType.Other;
+}
+
+/** GraphQL `createDataSubCategory` uniqueness error for an existing (category, name) pair. */
+function isDuplicateSubCategoryError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /cannot add duplicate subcategory/i.test(message);
 }
 
 function mapDataPurpose(node: {
@@ -55,12 +67,16 @@ function mapDataCategory(node: {
   name: string | null;
   category: string;
   description?: string | null;
+  owners?: { email: string }[];
+  teams?: { name: string }[];
 }): DataCategory {
   return {
     id: node.id ?? '',
     name: normalizeSubCategoryName(node.name),
     category: node.category,
     description: node.description ?? undefined,
+    ownerEmails: node.owners?.map((owner) => owner.email),
+    teamNames: node.teams?.map((team) => team.name),
   };
 }
 
@@ -225,6 +241,44 @@ const UpdateProcessingPurposeSubCategoriesDoc = graphql(/* GraphQL */ `
         name
         purpose
         description
+      }
+    }
+  }
+`);
+
+const CreateDataSubCategoryDoc = graphql(/* GraphQL */ `
+  mutation InventoryCreateDataSubCategory($input: CreateDataInventorySubCategoryInput!) {
+    createDataSubCategory(input: $input) {
+      dataSubCategory {
+        id
+        name
+        category
+        description
+        owners {
+          email
+        }
+        teams {
+          name
+        }
+      }
+    }
+  }
+`);
+
+const UpdateDataSubCategoriesDoc = graphql(/* GraphQL */ `
+  mutation InventoryUpdateDataSubCategories($input: UpdateDataSubCategoriesInput!) {
+    updateDataSubCategories(input: $input) {
+      dataSubCategories {
+        id
+        name
+        category
+        description
+        owners {
+          email
+        }
+        teams {
+          name
+        }
       }
     }
   }
@@ -483,6 +537,68 @@ export class InventoryMixin extends TranscendGraphQLBase {
     const updated = data.updateDataSilos.dataSilos[0];
     if (!updated) throw new Error('updateDataSilos returned an empty array');
     return mapDataSilo(updated);
+  }
+
+  /**
+   * Create or update a data silo. Update by id when provided; otherwise create by
+   * catalog integrationName and optionally patch metadata fields in the same call.
+   * Never upserts by title — omitting id always creates a new data system.
+   * If create succeeds but the metadata patch fails, throws {@link ToolError} with
+   * `details.dataSiloId` so the caller can retry as an update instead of recreating.
+   */
+  async writeDataSilo(input: DataSiloWriteInput): Promise<{
+    /** Written data silo */
+    dataSilo: DataSilo;
+    /** True when a new data silo was created */
+    created: boolean;
+  }> {
+    const { id, integrationName, ...updateFields } = input;
+    const { title, description, country, countrySubDivision, ...postCreateFields } = updateFields;
+
+    if (id) {
+      const dataSilo = await this.updateDataSilo({ id, ...updateFields });
+      return { dataSilo, created: false };
+    }
+
+    if (!integrationName) {
+      throw new Error('writeDataSilo requires `id`, or `integrationName` to create');
+    }
+
+    let dataSilo = await this.createDataSilo({
+      name: integrationName,
+      title,
+      description,
+      country,
+      countrySubDivision,
+    });
+
+    // Only fields that createDataSilo does not accept need a follow-up update.
+    const hasPostCreateFields = Object.values(postCreateFields).some(
+      (value) => value !== undefined,
+    );
+
+    if (hasPostCreateFields) {
+      try {
+        dataSilo = await this.updateDataSilo({
+          id: dataSilo.id,
+          ...updateFields,
+        });
+      } catch (error) {
+        const updateError = error instanceof Error ? error.message : String(error);
+        throw new ToolError(
+          ErrorCode.API_ERROR,
+          `Data silo created but metadata update failed. Retry with dataSiloId "${dataSilo.id}" instead of integrationName.`,
+          false,
+          {
+            dataSiloId: dataSilo.id,
+            dataSilo,
+            updateError,
+          },
+        );
+      }
+    }
+
+    return { dataSilo, created: true };
   }
 
   async listVendors(
@@ -900,18 +1016,128 @@ export class InventoryMixin extends TranscendGraphQLBase {
     return this.listConnection<Identifier>(query, 'identifiers', options);
   }
 
-  async listDataCategories(options?: ListOptions): Promise<PaginatedResponse<DataCategory>> {
+  async listDataCategories(
+    options?: ListOptions & {
+      /** Free-text search (GraphQL filterBy.text) */
+      text?: string;
+    },
+  ): Promise<PaginatedResponse<DataCategory>> {
+    const { text, ...listOptions } = options ?? {};
+    const filterBy = buildFilterBy({ text });
     const query = `
-      query ListDataCategories($first: Int, $offset: Int) {
-        dataCategories(first: $first, offset: $offset) {
+      query ListDataSubCategories(
+        $first: Int
+        $offset: Int
+        $filterBy: DataSubCategoryFiltersInput
+      ) {
+        dataSubCategories(first: $first, offset: $offset, filterBy: $filterBy) {
           nodes {
+            id
             name
             category
+            description
+            owners {
+              email
+            }
+            teams {
+              name
+            }
           }
           totalCount
         }
       }
     `;
-    return this.listConnection<DataCategory>(query, 'dataCategories', options);
+    type RawCategory = {
+      id: string;
+      name: string | null;
+      category: string;
+      description: string | null;
+      owners: { email: string }[];
+      teams: { name: string }[];
+    };
+    return this.listConnection<RawCategory, DataCategory>(query, 'dataSubCategories', listOptions, {
+      variables: filterBy ? { filterBy } : {},
+      mapNode: mapDataCategory,
+    });
+  }
+
+  async createDataCategory(input: DataCategoryCreateInput): Promise<DataCategory> {
+    const data = await this.makeRequest(CreateDataSubCategoryDoc, {
+      input: input as never,
+    });
+    const created = data.createDataSubCategory.dataSubCategory;
+    return mapDataCategory(created);
+  }
+
+  async updateDataCategory(input: DataCategoryUpdateInput): Promise<DataCategory> {
+    const data = await this.makeRequest(UpdateDataSubCategoriesDoc, {
+      input: { dataSubCategories: [input as never] },
+    });
+    const updated = data.updateDataSubCategories.dataSubCategories[0];
+    if (!updated) {
+      throw new Error('updateDataSubCategories returned an empty array');
+    }
+    return mapDataCategory(updated);
+  }
+
+  /**
+   * Upsert a data subcategory: update by id when provided, otherwise create and
+   * fall back to update when GraphQL rejects a duplicate `(category, name)`.
+   * Empty API names are treated as {@link DefaultPurposeSubCategoryType.Other} when matching.
+   * Update by id cannot change name or category (GraphQL constraint).
+   */
+  async writeDataCategory(input: DataCategoryWriteInput): Promise<{
+    /** Written data category */
+    category: DataCategory;
+    /** True when a new subcategory was created */
+    created: boolean;
+  }> {
+    const categoryFields = {
+      description: input.description,
+      ownerEmails: input.ownerEmails,
+      teamNames: input.teamNames,
+    };
+
+    if (input.id) {
+      const category = await this.updateDataCategory({
+        id: input.id,
+        ...categoryFields,
+      });
+      return { category, created: false };
+    }
+
+    if (!input.name || !input.category) {
+      throw new Error('writeDataCategory requires `id`, or both `name` and `category`');
+    }
+
+    try {
+      const category = await this.createDataCategory({
+        name: input.name,
+        category: input.category,
+        ...categoryFields,
+      });
+      return { category, created: true };
+    } catch (error) {
+      if (!isDuplicateSubCategoryError(error)) {
+        throw error;
+      }
+    }
+
+    const wantedName = normalizeSubCategoryName(input.name);
+    const existing = await this.listDataCategories({ text: wantedName, first: 50 });
+    const match = existing.nodes.find(
+      (c) => normalizeSubCategoryName(c.name) === wantedName && c.category === input.category,
+    );
+    if (!match) {
+      throw new Error(
+        `createDataSubCategory reported a duplicate, but no matching subcategory was found for ${wantedName}:${input.category}`,
+      );
+    }
+
+    const category = await this.updateDataCategory({
+      id: match.id,
+      ...categoryFields,
+    });
+    return { category, created: false };
   }
 }

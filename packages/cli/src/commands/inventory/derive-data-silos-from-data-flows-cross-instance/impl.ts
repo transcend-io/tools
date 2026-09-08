@@ -1,5 +1,4 @@
-import { existsSync, lstatSync } from 'node:fs';
-import { join } from 'node:path';
+import path from 'node:path';
 
 import { buildTranscendGraphQLClient, fetchAndIndexCatalogs } from '@transcend-io/sdk';
 import colors from 'colors';
@@ -7,11 +6,10 @@ import { difference } from 'lodash-es';
 
 import { DataFlowInput } from '../../../codecs.js';
 import type { LocalContext } from '../../../context.js';
-import { listFiles } from '../../../lib/api-keys/index.js';
+import { filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { dataFlowsToDataSilos } from '../../../lib/consent-manager/dataFlowsToDataSilos.js';
-import { readTranscendYaml, writeTranscendYaml } from '../../../lib/readTranscendYaml.js';
-import { logger } from '../../../logger.js';
+import { parseTranscendYaml, serializeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
 export interface DeriveDataSilosFromDataFlowsCrossInstanceCommandFlags {
   auth: string;
@@ -31,11 +29,14 @@ export async function deriveDataSilosFromDataFlowsCrossInstance(
     transcendUrl,
   }: DeriveDataSilosFromDataFlowsCrossInstanceCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // Ensure folder is passed
-  if (!existsSync(dataFlowsYmlFolder) || !lstatSync(dataFlowsYmlFolder).isDirectory()) {
-    logger.error(colors.red(`Folder does not exist: "${dataFlowsYmlFolder}"`));
+  if (
+    !this.fs.existsSync(dataFlowsYmlFolder) ||
+    !this.fs.lstatSync(dataFlowsYmlFolder).isDirectory()
+  ) {
+    this.logger.error(colors.red(`Folder does not exist: "${dataFlowsYmlFolder}"`));
     this.process.exit(1);
   }
 
@@ -43,25 +44,33 @@ export async function deriveDataSilosFromDataFlowsCrossInstance(
   const instancesToIgnore = ignoreYmls.map((x) => x.split('.')[0]);
 
   // Map over each data flow yml file and convert to data silo configurations
-  const dataSiloInputs = listFiles(dataFlowsYmlFolder).map((directory) => {
-    // read in the data flows for a specific instance
-    const { 'data-flows': dataFlows = [] } = readTranscendYaml(join(dataFlowsYmlFolder, directory));
+  const dataSiloInputs = filterFileNames(this.fs.readdirSync(dataFlowsYmlFolder)).map(
+    (directory) => {
+      const inputPath = path.join(dataFlowsYmlFolder, directory);
 
-    // map the data flows to data silos
-    const { adTechDataSilos, siteTechDataSilos } = dataFlowsToDataSilos(
-      dataFlows as DataFlowInput[],
-      {
-        serviceToSupportedIntegration,
-        serviceToTitle,
-      },
-    );
+      // read in the data flows for a specific instance
+      const { 'data-flows': dataFlows = [] } = parseTranscendYaml(
+        this.fs.readFileSync(inputPath, 'utf8'),
+        {},
+        inputPath,
+      );
 
-    return {
-      adTechDataSilos,
-      siteTechDataSilos,
-      organizationName: directory.split('.')[0],
-    };
-  });
+      // map the data flows to data silos
+      const { adTechDataSilos, siteTechDataSilos } = dataFlowsToDataSilos(
+        dataFlows as DataFlowInput[],
+        {
+          serviceToSupportedIntegration,
+          serviceToTitle,
+        },
+      );
+
+      return {
+        adTechDataSilos,
+        siteTechDataSilos,
+        organizationName: directory.split('.')[0],
+      };
+    },
+  );
 
   // Mapping from service name to instances that have that service
   const serviceToInstance: { [k in string]: string[] } = {};
@@ -122,7 +131,7 @@ export async function deriveDataSilosFromDataFlowsCrossInstance(
   // Fetch all integrations in the catalog
   const client = buildTranscendGraphQLClient(transcendUrl, auth);
   const { serviceToTitle, serviceToSupportedIntegration } = await fetchAndIndexCatalogs(client, {
-    logger,
+    logger: this.logger,
   });
 
   // construct the aggregated data silo inputs
@@ -148,12 +157,14 @@ export async function deriveDataSilosFromDataFlowsCrossInstance(
   }));
 
   // Log output
-  logger.log(`Total Services: ${dataSilos.length}`);
-  logger.log(`Ad Tech Services: ${adTechIntegrations.length}`);
-  logger.log(`Site Tech Services: ${siteTechIntegrations.length}`);
+  this.logger.log(`Total Services: ${dataSilos.length}`);
+  this.logger.log(`Ad Tech Services: ${adTechIntegrations.length}`);
+  this.logger.log(`Site Tech Services: ${siteTechIntegrations.length}`);
 
-  // Write to yaml
-  writeTranscendYaml(output, {
-    'data-silos': dataSilos,
-  });
+  this.fs.writeFileSync(
+    output,
+    serializeTranscendYaml({
+      'data-silos': dataSilos,
+    }),
+  );
 }

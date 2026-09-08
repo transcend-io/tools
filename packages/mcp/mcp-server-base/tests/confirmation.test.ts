@@ -18,6 +18,7 @@ import {
   type ClientCapabilityReport,
 } from '../src/capabilities/types.js';
 import { mcpSessionContext, type McpSession } from '../src/mcp-session-context.js';
+import { MCP_SKIP_CONFIRMATION_ENV } from '../src/oauth/env.js';
 import { buildMcpServer } from '../src/server/build-server.js';
 import { ApprovalTokenStore } from '../src/tools/approval-tokens.js';
 import {
@@ -26,9 +27,10 @@ import {
   CONFIRMATION_TIMEOUT_MS,
   ConfirmationCode,
   ConfirmationPolicy,
+  HUMAN_RESPONSE_FLOOR_MS,
   withConfirmation,
   type ConfirmationGate,
-} from '../src/tools/confirmation.js';
+} from '../src/tools/confirmation/index.js';
 import {
   defineToolWithCapabilities,
   expandToolsForClient,
@@ -90,6 +92,15 @@ const ASKING: ConfirmationGate = { policy: ConfirmationPolicy.ElicitOnly };
 /** Id of the `tools/call` the simulated session is serving. */
 const CALL_ID = 42;
 
+/**
+ * How long a scripted host takes to answer, unless a case says otherwise.
+ *
+ * Above {@link HUMAN_RESPONSE_FLOOR_MS} so every case reads as a person having
+ * answered, which is what the existing assertions were written against. A case
+ * that wants the undelivered-prompt path asks for it explicitly.
+ */
+const HUMAN_SPEED_MS = HUMAN_RESPONSE_FLOOR_MS * 4;
+
 /** Runs a gated tool the way the server would, against a scripted host. */
 async function callAs(
   options: {
@@ -97,6 +108,16 @@ async function callAs(
     capabilities?: McpClientCapability[];
     /** Answer the host gives to the confirmation form */
     answer?: ElicitResult;
+    /** Which host is answering, for the quirk lookup */
+    host?: McpHostClient;
+    /**
+     * Wall-clock time the host appears to take to answer.
+     *
+     * Simulated rather than waited out: the gate reads `Date.now()` either side
+     * of the request, so advancing a stubbed clock inside the answer is both
+     * exact and instant, where a real timer would add a quarter second per case.
+     */
+    answerAfterMs?: number;
     /** How the host fails the elicitation, instead of answering it */
     elicitError?: Error;
     /** Gate configuration, i.e. what this connection may do to get approval */
@@ -120,16 +141,21 @@ async function callAs(
   elicitInput: ReturnType<typeof vi.fn>;
 }> {
   const mutate = vi.fn(options.mutate ?? (async () => ({ cancelled: true })));
+  const elapsed = options.answerAfterMs ?? HUMAN_SPEED_MS;
+  let clock = Date.now();
+  const nowSpy = vi.spyOn(Date, 'now').mockImplementation(() => clock);
+
   const elicitInput = options.elicitError
     ? vi.fn().mockRejectedValue(options.elicitError)
-    : vi
-        .fn()
-        .mockResolvedValue(options.answer ?? { action: 'accept', content: { confirmed: true } });
+    : vi.fn().mockImplementation(async () => {
+        clock += elapsed;
+        return options.answer ?? { action: 'accept', content: {} };
+      });
 
   const session: McpSession = {
     client: {
       capabilities: new Set(options.capabilities ?? []),
-      host: McpHostClient.Claude,
+      host: options.host ?? McpHostClient.Claude,
     },
     server: { elicitInput } as unknown as Server,
     ...(options.bound !== false && {
@@ -139,9 +165,14 @@ async function callAs(
 
   const gated = withConfirmation(gatedTool(mutate), options.gate ?? askOrToken());
   const args = options.args ?? { requestId: 'req-1' };
-  const result = await mcpSessionContext.run(session, async () => gated.handler(args));
-
-  return { result, mutate, elicitInput };
+  try {
+    const result = await mcpSessionContext.run(session, async () => gated.handler(args));
+    return { result, mutate, elicitInput };
+  } finally {
+    // Restored even when the handler throws, since the token store and everything
+    // downstream date their entries off the real clock.
+    nowSpy.mockRestore();
+  }
 }
 
 const ELICITATION = [McpClientCapability.Elicitation];
@@ -206,22 +237,22 @@ describe('withConfirmation on a host that can show a form', () => {
     expect((result as Refusal).code).toBe(ConfirmationCode.Cancelled);
   });
 
-  it('does not mutate when the host accepts without choosing to proceed', async () => {
-    // Submitting the dialog is not the same as saying yes, and nothing forces a
-    // host to answer with the shape it was asked for.
+  it('mutates on accept whatever the host puts in content', async () => {
+    // Accepting is the yes. The form requests no fields, so a host is free to
+    // answer with nothing, or with fields it invented, without that reading as a
+    // refusal — which is how a real approval twice came back as one.
     const answers: Record<string, string | number | boolean | string[]>[] = [
       {},
       { confirmed: false },
       { confirmed: 'yes' },
     ];
     for (const content of answers) {
-      const { result, mutate } = await callAs({
+      const { mutate } = await callAs({
         capabilities: ELICITATION,
         answer: { action: 'accept', content },
       });
 
-      expect(mutate, JSON.stringify(content)).not.toHaveBeenCalled();
-      expect((result as Refusal).code).toBe(ConfirmationCode.Declined);
+      expect(mutate, JSON.stringify(content)).toHaveBeenCalledTimes(1);
     }
   });
 
@@ -238,6 +269,121 @@ describe('withConfirmation on a host that can show a form', () => {
     // No recap on a decline: the agent supplied these arguments and still has
     // them, so echoing them back is context spent to tell it what it knows.
     expect(refusal.details?.summary).toBeUndefined();
+  });
+});
+
+describe('a decline too fast to have been anybody’s', () => {
+  /** Roughly what Cursor takes to answer a prompt it could not route. */
+  const INSTANT_MS = 2;
+
+  it('falls back to the token when the host is known to decline unasked', async () => {
+    const { result, mutate } = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Cursor,
+      answer: { action: 'decline' },
+      answerAfterMs: INSTANT_MS,
+    });
+
+    expect(mutate).not.toHaveBeenCalled();
+    const refusal = result as Refusal;
+    expect(refusal.code).toBe(ConfirmationCode.Required);
+    expect(refusal.details?.approvalToken).toEqual(expect.any(String));
+  });
+
+  it('says the prompt went to another window rather than that forms are unsupported', async () => {
+    // The user is looking at a window that can show forms, so the generic wording
+    // would send them after a capability problem that is not theirs.
+    const { result } = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Cursor,
+      answer: { action: 'decline' },
+      answerAfterMs: INSTANT_MS,
+    });
+
+    const { error } = result as Refusal;
+    expect(error).toContain('different window');
+    expect(error).not.toContain('cannot show a confirmation form');
+  });
+
+  it('mutates once the agent replays the token it was handed', async () => {
+    const tokens = new ApprovalTokenStore();
+    const declined = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Cursor,
+      answer: { action: 'decline' },
+      answerAfterMs: INSTANT_MS,
+      gate: askOrToken(tokens),
+    });
+    const token = (declined.result as Refusal).details!.approvalToken!;
+
+    const replayed = await callAs({
+      gate: askOrToken(tokens),
+      args: { requestId: 'req-1', [APPROVAL_TOKEN_ARG]: token },
+    });
+
+    expect(replayed.mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
+  });
+
+  it('honours a decline that arrived at human speed', async () => {
+    const { result, mutate } = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Cursor,
+      answer: { action: 'decline' },
+      answerAfterMs: HUMAN_RESPONSE_FLOOR_MS,
+    });
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect((result as Refusal).code).toBe(ConfirmationCode.Declined);
+  });
+
+  it('honours an instant decline from a host with no such quirk', async () => {
+    // The workaround is scoped to a host with a known routing bug, so everyone
+    // else's decline is a person's answer no matter how quickly it came back.
+    const { result, mutate } = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Claude,
+      answer: { action: 'decline' },
+      answerAfterMs: INSTANT_MS,
+    });
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect((result as Refusal).code).toBe(ConfirmationCode.Declined);
+  });
+
+  it('honours an instant decline where no token could be issued', async () => {
+    // On HTTP there is nothing to fall back to, so reinterpreting the decline
+    // would only swap one refusal for a less accurate one.
+    const { result, mutate } = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Cursor,
+      answer: { action: 'decline' },
+      answerAfterMs: INSTANT_MS,
+      gate: ASKING,
+    });
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect((result as Refusal).code).toBe(ConfirmationCode.Declined);
+  });
+
+  it('leaves an instant dismissal and an instant approval alone', async () => {
+    // Only `decline` is reinterpreted. A dismissal is how Cursor reports the user
+    // closing the prompt, and a host with the call always-allowed accepts at once.
+    const cancelled = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Cursor,
+      answer: { action: 'cancel' },
+      answerAfterMs: INSTANT_MS,
+    });
+    expect(cancelled.mutate).not.toHaveBeenCalled();
+    expect((cancelled.result as Refusal).code).toBe(ConfirmationCode.Cancelled);
+
+    const accepted = await callAs({
+      capabilities: ELICITATION,
+      host: McpHostClient.Cursor,
+      answer: { action: 'accept', content: {} },
+      answerAfterMs: INSTANT_MS,
+    });
+    expect(accepted.mutate).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -353,7 +499,7 @@ describe('a refusing connection does not consult the host', () => {
   it('ignores a declared elicitation capability entirely', async () => {
     const { result, mutate, elicitInput } = await callAs({
       capabilities: ELICITATION,
-      answer: { action: 'accept', content: { confirmed: true } },
+      answer: { action: 'accept', content: {} },
       gate: REFUSING,
     });
 
@@ -662,16 +808,13 @@ describe('confirmation and the protocol annotations agree', () => {
     );
   });
 
-  it('refuses a gated tool that calls itself non-destructive', () => {
-    // destructiveHint is what an Apps host reads to decide how hard to prompt,
-    // and Apps is exactly the path the gate does not cover. Letting the two
-    // disagree would under-prompt precisely where we stepped back.
-    expect(gatedWith({ readOnlyHint: false, destructiveHint: false })).toThrow(
-      /annotates destructiveHint: false/,
-    );
+  it('accepts a gated tool that calls itself non-destructive', () => {
+    // confirmation gates the server-side handler; destructiveHint is a separate
+    // host advisory for how loudly to warn on paths that do not run the gate.
+    expect(gatedWith({ readOnlyHint: false, destructiveHint: false })).not.toThrow();
   });
 
-  it('accepts the one coherent combination', () => {
+  it('accepts a gated tool that calls itself destructive and mutating', () => {
     expect(gatedWith({ readOnlyHint: false, destructiveHint: true })).not.toThrow();
   });
 });
@@ -702,9 +845,7 @@ describe('the token fallback appears only where nothing else can ask', () => {
       {
         client,
         server: {
-          elicitInput: vi
-            .fn()
-            .mockResolvedValue({ action: 'accept', content: { confirmed: true } }),
+          elicitInput: vi.fn().mockResolvedValue({ action: 'accept', content: {} }),
         } as unknown as Server,
       },
       async () => resolved.handler({ requestId: 'req-1' }),
@@ -823,7 +964,7 @@ describe('the gate against a real SDK server', () => {
 
   it('asks over http when the client can render a form', async () => {
     const { payload, listed, mutate, asked } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'http',
     );
 
@@ -837,7 +978,7 @@ describe('the gate against a real SDK server', () => {
     // Listing it would have the agent plan around a tool that refuses every call, which
     // is how a triage run ends in the model explaining a dead end instead of working.
     const { listed } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'http',
       false,
     );
@@ -849,7 +990,7 @@ describe('the gate against a real SDK server', () => {
     // Withholding is for the model's benefit, not a boundary: a name from a cached
     // list or a guess still reaches `tools/call`.
     const { payload, isError, mutate } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'http',
       false,
     );
@@ -863,7 +1004,7 @@ describe('the gate against a real SDK server', () => {
   it('keeps offering the tool over stdio to a form-less client', async () => {
     // The token route needs nothing from the host, so there is nothing to withhold.
     const { listed, payload } = await callOverTransport(
-      async () => ({ action: 'accept', content: { confirmed: true } }),
+      async () => ({ action: 'accept', content: {} }),
       'stdio',
       false,
     );
@@ -887,7 +1028,7 @@ describe('the gate against a real SDK server', () => {
   it('runs the mutation on a well-formed confirmation', async () => {
     const { payload, mutate } = await callOverTransport(async () => ({
       action: 'accept',
-      content: { confirmed: true },
+      content: {},
     }));
 
     expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
@@ -897,9 +1038,15 @@ describe('the gate against a real SDK server', () => {
   it('reports a decline as a refusal, with no way to replay it', async () => {
     // A decline is a person's answer, so it must not hand back a token: an agent
     // holding one could land the action anyway after being told no.
-    const { payload, isError, mutate, asked } = await callOverTransport(async () => ({
-      action: 'decline',
-    }));
+    //
+    // Answered on a real timer past the human floor rather than a stubbed clock,
+    // since the SDK sits between the gate and this responder. The client here
+    // identifies as Cursor, so an immediate answer would take the undelivered
+    // path below and this case would stop testing a refusal at all.
+    const { payload, isError, mutate, asked } = await callOverTransport(async () => {
+      await new Promise((resolve) => setTimeout(resolve, HUMAN_RESPONSE_FLOOR_MS + 50));
+      return { action: 'decline' };
+    });
 
     expect(asked).toHaveBeenCalledTimes(1);
     expect(mutate).not.toHaveBeenCalled();
@@ -908,23 +1055,47 @@ describe('the gate against a real SDK server', () => {
     expect(payload.details?.approvalToken).toBeUndefined();
   });
 
-  const REJECTED = [
-    { name: 'omits the confirmation', content: {} },
-    { name: 'answers with the wrong type', content: { confirmed: 'yes' } },
+  it('offers the token when the host declines instantly over stdio', async () => {
+    // What a real Cursor window that never saw the prompt produces, end to end:
+    // the host answers on its own before a person could, and the call comes back
+    // asking to be replayed rather than reporting a refusal nobody made.
+    const { payload, mutate } = await callOverTransport(async () => ({ action: 'decline' }));
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect(payload.code).toBe(ConfirmationCode.Required);
+    expect(payload.details?.approvalToken).toEqual(expect.any(String));
+  });
+
+  it('keeps a fast decline over http a refusal', async () => {
+    // Same host, no token store behind it, so the answer stands as given.
+    const { payload, mutate } = await callOverTransport(
+      async () => ({ action: 'decline' }),
+      'http',
+    );
+
+    expect(mutate).not.toHaveBeenCalled();
+    expect(payload.code).toBe(ConfirmationCode.Declined);
+    expect(payload.details?.approvalToken).toBeUndefined();
+  });
+
+  const ODD_CONTENT = [
+    { name: 'sends no content at all', content: undefined },
+    { name: 'sends an empty object', content: {} },
+    { name: 'volunteers fields never asked for', content: { confirmed: 'yes' } },
   ];
 
-  it.each(REJECTED)('falls back to a token when the host $name', async (scenario) => {
-    const { payload, isError, mutate } = await callOverTransport(async () => ({
+  // The form requests no fields, so `content` carries nothing the gate needs and
+  // cannot strand the call. Asking for one is what twice turned an approval into
+  // `MCP error -32602`: the SDK validates the answer against the schema it sent,
+  // and a host that got the shape wrong had its yes thrown away.
+  it.each(ODD_CONTENT)('runs the action when the host accepts and $name', async (scenario) => {
+    const { isError, mutate } = await callOverTransport(async () => ({
       action: 'accept',
       content: scenario.content as ElicitResult['content'],
     }));
 
-    // Previously this surfaced as `MCP error -32602`, which tells the agent
-    // nothing it can act on and strands the call with no way to proceed.
-    expect(mutate).not.toHaveBeenCalled();
+    expect(mutate).toHaveBeenCalledTimes(1);
     expect(isError).toBe(false);
-    expect(payload.code).toBe(ConfirmationCode.Required);
-    expect(payload.details?.approvalToken).toEqual(expect.any(String));
   });
 
   it('falls back to a token when the host fails the request outright', async () => {
@@ -978,11 +1149,73 @@ describe('the gate against a real SDK server', () => {
     abandoned.abort();
     await expect(call).rejects.toThrow();
 
-    answer({ action: 'accept', content: { confirmed: true } });
+    answer({ action: 'accept', content: {} });
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(mutate).not.toHaveBeenCalled();
     await client.close();
+  });
+});
+
+describe('MCP_SKIP_CONFIRMATION', () => {
+  const originalSkip = process.env[MCP_SKIP_CONFIRMATION_ENV];
+
+  afterEach(() => {
+    if (originalSkip === undefined) delete process.env[MCP_SKIP_CONFIRMATION_ENV];
+    else process.env[MCP_SKIP_CONFIRMATION_ENV] = originalSkip;
+  });
+
+  it('returns the gated tool unchanged when skip is enabled', () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const mutate = vi.fn();
+    const tool = gatedTool(mutate);
+    expect(withConfirmation(tool, askOrToken())).toBe(tool);
+  });
+
+  it('runs the handler immediately when skip is enabled', async () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const mutate = vi.fn(async () => ({ ok: true }));
+    const gated = withConfirmation(gatedTool(mutate), askOrToken());
+    const result = await gated.handler({ requestId: 'req-1' });
+    expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
+    expect(result).toEqual({ ok: true });
+  });
+
+  it('does not widen the schema with approvalToken when skip is enabled', () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const gated = withConfirmation(gatedTool(vi.fn()), askOrToken());
+    expect(gated.zodSchema.parse({ requestId: 'r', approvalToken: 'x' })).toEqual({
+      requestId: 'r',
+    });
+  });
+
+  it('still gates when skip is unset', async () => {
+    delete process.env[MCP_SKIP_CONFIRMATION_ENV];
+    const { mutate, elicitInput } = await callAs({
+      capabilities: [McpClientCapability.Elicitation],
+      answer: { action: 'cancel', content: {} },
+    });
+    expect(elicitInput).toHaveBeenCalled();
+    expect(mutate).not.toHaveBeenCalled();
+  });
+
+  it('still gates when skip is not exactly 1', async () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '0';
+    const { mutate, elicitInput } = await callAs({
+      capabilities: [McpClientCapability.Elicitation],
+      answer: { action: 'accept', content: {} },
+    });
+    expect(elicitInput).toHaveBeenCalled();
+    expect(mutate).toHaveBeenCalled();
+  });
+
+  it('expandToolsForClient leaves handlers unwrapped when skip is enabled', async () => {
+    process.env[MCP_SKIP_CONFIRMATION_ENV] = '1';
+    const mutate = vi.fn(async () => ({ ok: true }));
+    const client = { capabilities: new Set<McpClientCapability>(), host: McpHostClient.Claude };
+    const [expanded] = expandToolsForClient([gatedTool(mutate)], client, askOrToken());
+    await expanded.handler({ requestId: 'req-1' });
+    expect(mutate).toHaveBeenCalledWith({ requestId: 'req-1' });
   });
 });
 

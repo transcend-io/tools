@@ -440,6 +440,9 @@ enum ScopeName {
   viewAssignedRules
   manageAssignedRules
   executeRules
+  viewCustomFunction
+  manageCustomFunction
+  viewUsage
 }
 
 enum ScopeType {
@@ -763,6 +766,7 @@ enum DatabaseModelName {
   PromptPartialTeam
   PromptPartialUser
   AssessmentFormAssignee
+  AssessmentFormCommentNotification
   AssessmentSectionAssignee
   AssessmentQuestionAnswer
   AssessmentFormReviewer
@@ -824,6 +828,7 @@ enum DatabaseModelName {
   WorkflowConfigPurpose
   ConsentSiteAirgapDataFlow
   ConsentSiteAirgapCookie
+  ConsentSiteAttributeValue
   WorkflowPreferenceMappingConfig
   PurposeSubject
   PurposeDataPoint
@@ -890,6 +895,8 @@ enum DatabaseModelName {
   dataReport
   demo
   assessmentAnswer
+  assessmentCommentFile
+  assessmentFormExternalCommentNotification
   assessmentQuestion
   assessmentSection
   assessmentEmailSet
@@ -969,14 +976,10 @@ enum DatabaseModelName {
   saaSVendor
   aiDocumentationLink
   savingsConfiguration
-  scanColor
   scope
   seedEnricher
   Session
   signupCode
-  scanCookiePurpose
-  scanCookieHostPurpose
-  scanDomainPurpose
   sombra
   sombraApiKey
   sombraAuditLog
@@ -998,7 +1001,6 @@ enum DatabaseModelName {
   user
   vendor
   businessEntity
-  sitescan
   experience
   consentManagerUi
   shopifyAccessToken
@@ -1134,6 +1136,7 @@ enum AttributeSupportedResourceType {
   auditorRun
   auditorSchedule
   businessEntity
+  consentSite
   dataSubCategory
   dataPoint
   dataPointLevel
@@ -1874,6 +1877,19 @@ enum PreferenceSelectionState {
   UNSELECTED
 }
 
+enum PurposeChangeCause {
+  manual
+  cascade
+  expiration
+}
+
+enum TranscendCollectionPoint {
+  ADMIN_DASHBOARD
+  CONSENT_MANAGER
+  SOMBRA
+  PRIVACY_CENTER
+}
+
 enum OnConsentExpiry {
   Prompt
   ResetAll
@@ -1883,6 +1899,7 @@ enum OnConsentExpiry {
 enum ConsentPrecedenceOption {
   user
   signal
+  signals
 }
 
 enum UnstructuredSubDataPointRecommendationStatus {
@@ -2234,6 +2251,14 @@ enum AnalyticsDimension {
   BACKEND_SAMPLING_MULTIPLIER
 }
 
+enum UsageMart {
+  PREFERENCE_RECORDS
+  WORKFLOW_RUNS
+  WEB_VISITORS
+  SCANNED_DATA_STORES
+  INTEGRATIONS
+}
+
 enum ActionOrderField {
   createdAt
   updatedAt
@@ -2568,22 +2593,6 @@ enum DiscoClassPluginType {
   UNSTRUCTURED_DATA_DISCOVERY
 }
 
-enum ScanType {
-  FULL_SCAN
-  DELTA_UPDATE_SCAN
-  TARGETED_SCAN
-}
-
-enum ScanLambdaStatus {
-  RETRY
-  SUCCESS
-  ERROR
-  SILO_CREDENTIALS_EXPIRED
-  SILO_PERMISSIONS_UPDATED
-  SKIPPED
-  IN_PROGRESS
-}
-
 enum ProcessingActivityOrderField {
   title
   createdAt
@@ -2765,6 +2774,13 @@ enum DropRunRecordsMaterializationStatus {
   NOT_STARTED
 }
 
+enum DropRunReportGenerationStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETE
+  FAILED
+}
+
 enum DropIntakePhase {
   IDLE
   PARSING
@@ -2863,6 +2879,7 @@ enum ActivityCode {
   REQUEST_REVOKED
   REQUEST_ARCHIVED
   REQUEST_DOWNLOAD_EXPIRATION_UPDATED
+  REQUEST_ADDITIONAL_TIME_GRANTED
   REQUEST_REVERTED_FROM_DOWNLOADABLE
   REPORT_OPENED
   REPORT_DOWNLOADED
@@ -2882,6 +2899,7 @@ enum DownloadAndDecryptError {
   DECRYPTION_FAILED
   DECRYPTION_FAILED_FINALIZATION
   STREAM_PIPELINE_TIMEOUT
+  DOWNLOAD_INTERRUPTED_TAB_HIDDEN
   SINK_STALL_TIMEOUT
   SERVICE_WORKER_LOST
   SINK_BACKPRESSURE_TIMEOUT
@@ -2905,6 +2923,7 @@ enum DownloadAndDecryptEventType {
   ERROR_RECOVERED
   STALLED
   ERROR
+  ABANDONED
 }
 
 enum DownloadAndDecryptPhase {
@@ -2913,6 +2932,30 @@ enum DownloadAndDecryptPhase {
   DECRYPT_STREAM
   SINK_STREAM
   CONCATENATION_STREAM
+}
+
+enum DownloadBrowserFamily {
+  CHROME
+  SAFARI
+  FIREFOX
+  EDGE
+  OTHER
+}
+
+enum DownloadDeviceClass {
+  DESKTOP
+  MOBILE
+  TABLET
+  OTHER
+}
+
+enum DownloadOsFamily {
+  IOS
+  MACOS
+  WINDOWS
+  ANDROID
+  LINUX
+  OTHER
 }
 
 enum LegalHoldOrderField {
@@ -3228,6 +3271,7 @@ enum AssessmentActionType {
   REJECTED
   FORM_CHANGES_REQUESTED
   SECTIONS_CHANGES_REQUESTED
+  COMMENT_REPLY
 }
 
 enum RateLimitSource {
@@ -3269,6 +3313,7 @@ enum SiloFormType {
 
 enum AuthenticationMethod {
   OAuth
+  SharedOAuth
   ProgrammaticAccessToken
   ApiToken
   Minimum
@@ -3609,6 +3654,11 @@ enum MaestroHmacTimestampFormat {
   http_date
 }
 
+enum MaestroHmacSignatureEncoding {
+  hex
+  base64
+}
+
 enum MaestroScheduleCadence {
   DAILY
   WEEKLY
@@ -3690,6 +3740,11 @@ enum PrivacyCenterAssetName {
 enum PrivacyCenterFooterLayout {
   DEFAULT
   GRID
+}
+
+enum AuthenticatedSaleOfInfoPreferenceMode {
+  OPT_IN_AND_OPT_OUT
+  OPT_OUT_ONLY
 }
 
 enum PrivacyCenterEmailLoginState {
@@ -3778,6 +3833,7 @@ enum FeatureDefinitionName {
   ACTION_ITEM_CHECKLISTS
   AGENTIC_ASSIST
   AIRGAP_ALLOWED_VERSION_TAGS
+  AIRGAP_PREFIX_MODULES
   AGENTIC_ASSIST_TOTAL_USD_COST_LIMIT
   ALLOW_PRIVATE_DOCKER_REGISTRY_ACCESS
   ASSESSMENTS
@@ -3801,7 +3857,6 @@ enum FeatureDefinitionName {
   PRIVACY_CENTER
   PROMPTS
   RULES_AUTOMATION
-  SALE_OF_INFO_TOGGLE
   SELF_HOSTED_SOMBRA
   SILO_DISCOVERY
   SOMBRA_JOB_QUEUE
@@ -3867,6 +3922,11 @@ enum ConsentManagerOnboardingStatus {
   STARTED
   AWAITING_TELEMETRY
   READY_TO_LAUNCH
+  DONE
+}
+
+enum PreferenceManagementOnboardingStatus {
+  STARTED
   DONE
 }
 
@@ -4114,6 +4174,9 @@ enum CookiesColumnName {
   name
   notes
   owners
+  updatedAt
+  lastChangedBy
+  rowActions
   purpose
   serviceCategoriesOfRecipients
   serviceDescription
@@ -4138,6 +4201,9 @@ enum DataFlowsColumnName {
   lastDiscoveredAt
   notes
   owners
+  updatedAt
+  lastChangedBy
+  rowActions
   purpose
   serviceCategoriesOfRecipients
   serviceDescription
@@ -4357,9 +4423,13 @@ enum AuditEventCode {
   ASSESSMENT_SECTION
   ASSESSMENT_SECTION_ASSIGNEE
   ASSESSMENT_EMAIL_SET
+  CUSTOM_FUNCTION
   CUSTOM_FUNCTION_CODE
   CUSTOM_FUNCTION_CODE_CONTEXT
+  CUSTOM_FUNCTION_ENVIRONMENT_VARIABLE
+  CUSTOM_FUNCTION_OWNER
   CUSTOM_FUNCTION_RUN
+  CUSTOM_FUNCTION_TEAM
   DATA_POINT
   DATA_POINT_ACTION
   DATA_POINT_LEVEL_DESCRIPTION
@@ -4446,6 +4516,7 @@ enum AuditEventCode {
   ORG_TCF_SPECIAL_FEATURE_PURPOSE
   CONSENT_SERVICE
   CONSENT_SITE
+  CONSENT_SITE_ATTRIBUTE
   AIRGAP_BUNDLE_TCF_STACK
   AIRGAP_PARTITION
   AIRGAP_PREFIX_MODULE
@@ -4463,6 +4534,10 @@ enum AuditEventCode {
   PREFERENCE_TOPIC
   CONSENT_WORKFLOW_TRIGGER
   FEATURE
+  USER
+  USER_TEAM
+  USER_SCOPE
+  USER_DATA_SILO
   DATA_SUBJECT
   VENDOR_LIST
   CONSENT_UI_VARIANT
@@ -4579,6 +4654,7 @@ enum AuditEventBaseModelCode {
   PREFERENCE_TOPIC
   CONSENT_WORKFLOW_TRIGGER
   FEATURE
+  USER
   DATA_SUBJECT
   VENDOR_LIST
   CONSENT_UI_VARIANT
@@ -4607,8 +4683,13 @@ enum CONSENT_AUDIT_EVENTS {
   AIRGAP_DATA_FLOW_PURPOSE
   AIRGAP_DATA_FLOW_TEAM
   AIRGAP_PARTITION
+  AIRGAP_PREFIX_MODULE
+  AIRGAP_PREFIX_MODULE_RELEASE
+  AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE
+  AIRGAP_BUNDLE_AIRGAP_PREFIX_MODULE_SETTINGS
   CONSENT_SERVICE
   CONSENT_SITE
+  CONSENT_SITE_ATTRIBUTE
   EXPERIENCE
   EXPERIENCE_PURPOSE
   TRACKING_PURPOSE
@@ -4873,6 +4954,7 @@ type Query {
   apiKeys(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ApiKeyFiltersInput, orderBy: [ApiKeyOrder!]): ApiKeysPayload!
   assessmentEmailSets(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentEmailSetFiltersInput): AssessmentEmailSetsPayload!
   assessmentFormComments(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentFormCommentFiltersInput): AssessmentFormCommentsPayload!
+  assessmentFormCommentsToken(first: Int, offset: Int = 0, last: Int, input: TokenInput!, filterBy: AssessmentFormCommentFiltersInput): AssessmentFormCommentsTokenPayload!
   assessmentForms(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentFormFiltersInput, orderBy: [AssessmentFormRawOrder!]): AssessmentFormsPayload!
   assessmentFormTemplates(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentFormTemplateFiltersInput): AssessmentFormTemplatesPayload!
   assessmentFormToken(input: TokenInput!): AssessmentFormTokenPayload!
@@ -4883,6 +4965,7 @@ type Query {
   assessmentQuestionSelectOptions(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentQuestionSelectOptionsFiltersInput): AssessmentQuestionSelectOptionsPayload!
   assessmentQuestionSelectOptionsToken(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, input: TokenInput!, filterBy: AssessmentQuestionSelectOptionsTokenFiltersInput): AssessmentQuestionSelectOptionsTokenPayload!
   assessmentSectionComments(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: AssessmentSectionCommentFiltersInput): AssessmentSectionCommentsPayload!
+  assessmentSectionCommentsToken(first: Int, offset: Int = 0, last: Int, input: TokenInput!, filterBy: AssessmentSectionCommentFiltersInput): AssessmentSectionCommentsTokenPayload!
   assetFiles(first: Int, offset: Int = 0, last: Int, orderBy: [AssetFileOrder!]): AssetFilesPayload!
   associateReplyWithSombra(input: AssociateReplyWithSombraInput!): AssociateReplyWithSombraResponse!
   attributeKey(id: ID!): AttributeKey!
@@ -4932,6 +5015,7 @@ type Query {
   consentUiVariants(first: Int, offset: Int = 0, last: Int, input: AirgapBundleInput!, filterBy: ConsentUiVariantFilterInput): ConsentUiVariantsPayload!
   consentWorkflowTriggers(first: Int, offset: Int = 0, last: Int, filterBy: ConsentWorkflowTriggersFilterInput): ConsentWorkflowTriggersPayload!
   contentClassificationDataPoints(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: ContentClassificationDataPointsFiltersInput, orderBy: [ContentClassificationDataPointOrder!]): ContentClassificationDataPointsPayload!
+  contractEntitlements: ContractEntitlementsResult!
   cookies(first: Int, offset: Int = 0, last: Int, input: AirgapBundleInput!, filterBy: CookiesFiltersInput, orderBy: [CookieOrder!], useMaster: Boolean, isExportCsv: Boolean): CookiesPayload!
   cookieStats(input: AirgapBundleInput!): CookieStatsPayload!
   currentDnsRecords(input: CurrentDnsRecordsInput!): CurrentDnsRecordsPayload!
@@ -4944,7 +5028,6 @@ type Query {
   customSyncEndpoints(id: ID!): CustomSyncEndpointsPayload!
   dataCategories(first: Int, offset: Int = 0, last: Int, filterBy: DataCategoryFiltersInput): DataCategoriesPayload!
   dataCollections: [DataCollection!]!
-  dataCollectionsRequestFileCount(input: DataCollectionsRequestFileCountInput!, dhEncrypted: String, lookup: PrivacyCenterLookupInput): DataCollectionsRequestFileCountPayload!
   dataFlows(first: Int, offset: Int = 0, last: Int, input: AirgapBundleInput!, filterBy: DataFlowsFiltersInput, orderBy: [DataFlowOrder!], useMaster: Boolean, isExportCsv: Boolean): DataFlowsPayload!
   dataFlowServices(first: Int, offset: Int = 0, last: Int, input: AirgapBundleInput!, filterBy: DataFlowServicesFiltersInput): DataFlowServicesPayload!
   dataFlowStats(input: AirgapBundleInput!): DataFlowStatsPayload!
@@ -4972,7 +5055,7 @@ type Query {
   downloadFilesCountsOnly(dhEncrypted: String!, filterBy: DownloadFileFiltersInput!, lookup: PrivacyCenterLookupInput): DownloadFilesCountsOnlyPayload!
   dropBrokerConfig: DropBrokerConfigPayload!
   dropRun(id: ID!): DropRunSummary!
-  dropRunDsrProgress(id: ID!): DropRunDsrProgress!
+  dropRunDsrProgress(input: DropRunDsrProgressInput!): DropRunDsrProgress!
   dropRunRequests(first: Int, last: Int, before: String, after: String, filterBy: DropRunRequestFiltersInput!): DropRunRequestsPayload!
   dropRuns(first: Int, last: Int, before: String, after: String, filterBy: DropRunFiltersInput): DropRunsPayload!
   enricher(id: ID!): Enricher!
@@ -4986,8 +5069,6 @@ type Query {
   initializer: Enricher!
   inspectLookupProcesses(input: InspectLookupProcessesInput!): InspectLookupProcessesPayload!
   internalSubjects(filterBy: InternalSubjectsFiltersInput): [DataSubjectInternal!]!
-  latestScan(id: ID!): LatestScanPayload!
-  latestSchemaDiscoveryScanProgress(id: ID!): LatestSchemaDiscoveryScanProgressPayload!
   legalHolds(first: Int, offset: Int = 0, last: Int, filterBy: LegalHoldsFiltersInput, orderBy: [LegalHoldOrder!], useMaster: Boolean, isExportCsv: Boolean): LegalHoldsPayload!
   legalMatters(first: Int, offset: Int = 0, last: Int, filterBy: LegalMattersFiltersInput, orderBy: [LegalMatterOrder!]): LegalMattersPayload!
   listReducedRequestsForDataSilo(first: Int, offset: Int = 0, last: Int, input: BulkCompletionReducedRequestInput!): ListReducedRequestsForDataSiloPayload!
@@ -5008,11 +5089,11 @@ type Query {
   orgTcfSpecialPurposes(input: AirgapBundleInput!): OrgTcfSpecialPurposesPayload!
   parentOrganizationTeams(first: Int, offset: Int = 0, last: Int, filterBy: ParentTeamFiltersInput, orderBy: [TeamOrder!]): ParentOrganizationTeamsPayload!
   plugins(first: Int, offset: Int = 0, last: Int, filterBy: PluginsFiltersInput): PluginsPayload!
-  pluginScans(first: Int, input: PluginScansInput!): PluginScansPayload!
   possibleDataSiloDependencies(first: Int, offset: Int = 0, last: Int, filterBy: PossibleDataSiloDependencyFilterInput!): PossibleDataSiloDependenciesPayload!
   predictPrivacyPolicyUrl: PredictPrivacyPolicyUrlPayload!
   preference(filterBy: PreferenceFiltersInput!): PreferencePayload!
   preferenceOptionValues(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceOptionValueFilterInput): PreferenceOptionValuesPayload!
+  preferenceStoreSetup: PreferenceStoreSetup!
   preferenceTopicOptionValueDataPoints(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicOptionValueDataPointFilterInput): PreferenceTopicOptionValueDataPointsPayload!
   preferenceTopicOptionValues(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicOptionValueFilterInput): PreferenceTopicOptionValuesPayload!
   preferenceTopics(first: Int, offset: Int = 0, last: Int, filterBy: PreferenceTopicFilterInput): PreferenceTopicsPayload!
@@ -5040,6 +5121,7 @@ type Query {
   purposeDataPointWorkflowMappings(first: Int, offset: Int = 0, last: Int, filterBy: PurposeDataPointWorkflowMappingsFilterInput): PurposeDataPointWorkflowMappingsPayload!
   purposes(first: Int, offset: Int = 0, last: Int, filterBy: TrackingPurposeFiltersInput, orderBy: [PurposeOrder!], input: TrackingPurposeInput): PurposesPayload!
   queryConsentPreferences(input: MCDConsentLookupInput!): ConsentPreferenceResponseSombra!
+  queryRocUserRecords(input: QueryRocUserRecordsInput!): QueryRocUserRecordsPayload!
   repositories(first: Int, offset: Int = 0, last: Int, filterBy: RepositoryFiltersInput, orderBy: [RepositoryOrder!]): RepositoriesPayload!
   request(id: ID!): Request!
   requestAttachments(first: Int, last: Int, before: String, after: String, filterBy: RequestAttachmentFiltersInput!, orderBy: [RequestAttachmentOrder!]): RequestAttachmentsPayload!
@@ -5091,6 +5173,7 @@ type Query {
   translatedMessages(input: TranslatedMessagesFilterInput): [Message!]!
   unstructuredDataDiscoveryFiles(first: Int, offset: Int = 0, last: Int, filterBy: UnstructuredDataDiscoveryFilesFilterInput!): UnstructuredDataDiscoveryFilesPayload!
   unstructuredSubDataPointRecommendations(first: Int, offset: Int = 0, last: Int, useMaster: Boolean, isExportCsv: Boolean, filterBy: UnstructuredSubDataPointRecommendationsFilterInput, orderBy: [UnstructuredSubDataPointRecommendationOrder!]): UnstructuredSubDataPointRecommendationsPayload!
+  usageDataMart(input: UsageDataMartInput!): UsageDataMartResult!
   user: CurrentUser
   users(first: Int, offset: Int = 0, last: Int, filterBy: UserFiltersInput, orderBy: [UserOrder!]): UsersPayload!
   vendorCommunicationsMetadata(first: Int, offset: Int = 0, last: Int, input: VendorCommunicationsMetadataInput!): VendorCommunicationsMetadataPayload!
@@ -5137,6 +5220,7 @@ type Mutation {
   cloneWorkflowConfig(input: WorkflowConfigIdInput!): CloneWorkflowConfigPayload!
   compileRequest(id: ID!): CompileRequestPayload!
   completeDropIntake(input: CompleteDropIntakeInput!): CompleteDropIntakePayload!
+  completePreferenceManagementOnboarding: CompletePreferenceManagementOnboardingPayload!
   consentPreferences(first: Int, input: ConsentPreferencesInput!, dhEncrypted: String!): ConsentPreferencesPayload!
   createActionItemCollection(input: CreateActionItemCollectionInput!): CreateActionItemCollectionPayload!
   createActionItems(input: [CreateActionItemsInput!]!): CreateActionItemsPayload!
@@ -5144,14 +5228,17 @@ type Mutation {
   createApiKey(input: ApiKeyInput!): CreateApiKeyPayload!
   createAssessmentEmailSet(input: CreateAssessmentEmailSetInput!): CreateAssessmentEmailSetPayload!
   createAssessmentFormComments(input: CreateAssessmentFormCommentsInput!): CreateAssessmentFormCommentsPayload!
+  createAssessmentFormCommentsToken(input: CreateAssessmentFormCommentsTokenInput!): CreateAssessmentFormCommentsTokenPayload!
   createAssessmentForms(input: CreateAssessmentFormsInput!): CreateAssessmentFormsPayload!
   createAssessmentFormTemplate(input: CreateAssessmentFormTemplateInput!): CreateAssessmentFormTemplatePayload!
   createAssessmentFormToken(input: CreateAssessmentFormTokenInput!): CreateAssessmentFormTokenPayload!
   createAssessmentGroup(input: CreateAssessmentGroupInput!): CreateAssessmentGroupPayload!
   createAssessmentQuestionComments(input: CreateAssessmentQuestionCommentsInput!): CreateAssessmentQuestionCommentsPayload!
+  createAssessmentQuestionCommentsToken(input: CreateAssessmentQuestionCommentsTokenInput!): CreateAssessmentQuestionCommentsTokenPayload!
   createAssessmentQuestions(input: [CreateAssessmentQuestionInput!]!): CreateAssessmentQuestionsPayload!
   createAssessmentSection(input: CreateAssessmentSectionInput!): CreateAssessmentSectionPayload!
   createAssessmentSectionComments(input: CreateAssessmentSectionCommentsInput!): CreateAssessmentSectionCommentsPayload!
+  createAssessmentSectionCommentsToken(input: CreateAssessmentSectionCommentsTokenInput!): CreateAssessmentSectionCommentsTokenPayload!
   createAttributeKey(input: CreateAttributeKeyInput!): CreateAttributeKeyPayload!
   createAttributeValues(input: [CreateAttributeValuesInput!]!): CreateAttributeValuesPayload!
   createAuditorSchedule(input: AuditorScheduleInput!): CreateAuditorSchedulePayload!
@@ -5295,10 +5382,14 @@ type Mutation {
   downloadAndDecryptEvent(input: DownloadAndDecryptEventInput!, lookup: PrivacyCenterLookupInput): DownloadAndDecryptEventPayload!
   duplicateApiKey(id: ID!): DuplicateApiKeyPayload!
   duplicateMaestroRule(id: ID!): DuplicateMaestroRulePayload!
+  employeeAppendConsentPreferenceIdentifiers(input: EmployeePreferenceIdentifierMutationInput!, dhEncrypted: String!): EmployeeAppendConsentPreferenceIdentifiersPayload!
+  employeeDeleteConsentPreferenceIdentifiers(input: EmployeePreferenceIdentifierMutationInput!, dhEncrypted: String!): EmployeeDeleteConsentPreferenceIdentifiersPayload!
+  employeeDeleteConsentPreferenceRecords(input: EmployeePreferenceIdentifierMutationInput!, dhEncrypted: String!): EmployeeDeleteConsentPreferenceRecordsPayload!
   employeeDownloadCEK(id: ID!, dhEncrypted: String!): EmployeeDownloadCekPayload!
   employeeMakeDataSubjectRequest(input: EmployeeRequestInput!, dhEncrypted: String): EmployeeMakeDataSubjectRequestPayload!
   employeeMakeDataSubjectRequests(input: [EmployeeBulkRequestInput!]!, dhEncrypted: String): EmployeeMakeDataSubjectRequestsPayload!
   employeeReSignEncryptedCEKContexts(input: ReSignEncryptedCEKContextsInput!, dhEncrypted: String!): EmployeeReSignEncryptedCekContextsPayload!
+  employeeUpdateConsentPreferenceIdentifiers(input: EmployeePreferenceIdentifierMutationInput!, dhEncrypted: String!): EmployeeUpdateConsentPreferenceIdentifiersPayload!
   employeeUpdateConsentPreferences(input: UpdateConsentPreferenceInput!, dhEncrypted: String!): EmployeeUpdateConsentPreferencesPayload!
   employeeUpdateRequestIdentifiers(input: EmployeeUpdateRequestIdentifiersInput!, dhEncrypted: String!): EmployeeUpdateRequestIdentifiersPayload!
   enableUserAccount(id: ID!): EnableUserAccountPayload!
@@ -5307,7 +5398,9 @@ type Mutation {
   fireSecondaryAction(input: FireSecondaryActionInput!): FireSecondaryActionPayload!
   generateConsentIdentifierEncryptionKey(dhEncrypted: String!): GenerateConsentIdentifierEncryptionKeyPayload!
   generateDataSiloSqlStatements(input: GenerateSqlInput!): GenerateDataSiloSqlStatementsPayload!
+  generateDropReport(input: GenerateDropReportInput!): GenerateDropReportPayload!
   generateParentPrivacyCenterLoginToken(lookup: PrivacyCenterLookupInput, dhEncrypted: String!): GenerateParentPrivacyCenterLoginTokenPayload!
+  generateWorkflowConfigSqlStatements(input: GenerateWorkflowConfigSqlInput!): GenerateWorkflowConfigSqlStatementsPayload!
   importOneTrustAssessmentForms(input: ImportOnetrustAssessmentsInput!): ImportOneTrustAssessmentFormsPayload!
   invalidateUserEmail(input: TokenInput!): InvalidateUserEmailPayload!
   issueSombraApiKey(id: ID!): IssueSombraApiKeyPayload!
@@ -5325,6 +5418,7 @@ type Mutation {
   manuallyTestAndRefreshDataSilo(id: ID!): ManuallyTestAndRefreshDataSiloPayload!
   markDataSiloDiscoveryResultsDuplicate(input: [MarkDataSiloDiscoveryResultsDuplicateInput!]!): MarkDataSiloDiscoveryResultsDuplicatePayload!
   markDataSiloDiscoveryResultsJunk(input: [MarkDataSiloDiscoveryResultsJunkInput!]!): MarkDataSiloDiscoveryResultsJunkPayload!
+  markDataSiloNotConfigured(id: ID!): MarkDataSiloNotConfiguredPayload!
   markDropStarterDownloaded(input: MarkDropStarterDownloadedInput!): MarkDropStarterDownloadedPayload!
   materializeDropRun(id: ID!): MaterializeDropRunPayload!
   notifyAdditionalTime(input: AdditionalTimeInput!): NotifyAdditionalTimePayload!
@@ -5363,6 +5457,9 @@ type Mutation {
   resetDataSiloRateLimitsToDefault(id: ID!): ResetDataSiloRateLimitsToDefaultPayload!
   resetUserPassword(input: ResetPasswordInput!): ResetUserPasswordPayload!
   reSignSaaSContexts(input: ReSignSaaSContextsInput!, dhEncrypted: String!): ReSignSaaSContextsPayload!
+  resolveAssessmentFormComments(input: ResolveAssessmentFormCommentsInput!): ResolveAssessmentFormCommentsPayload!
+  resolveAssessmentQuestionComments(input: ResolveAssessmentQuestionCommentsInput!): ResolveAssessmentQuestionCommentsPayload!
+  resolveAssessmentSectionComments(input: ResolveAssessmentSectionCommentsInput!): ResolveAssessmentSectionCommentsPayload!
   restartSiloObjectClassifications(input: RestartSiloObjectClassificationsInput!): RestartSiloObjectClassificationsPayload!
   restoreCustomFunction(input: RestoreCustomFunctionInput!): RestoreCustomFunctionPayload!
   restoreCustomFunctionVersion(input: RestoreCustomFunctionVersionInput!): RestoreCustomFunctionVersionPayload!
@@ -5390,6 +5487,8 @@ type Mutation {
   selfServeSignup(input: SelfServeSignupInput!): SelfServeSignupPayload!
   sendCommunication(input: SendMessageInput!, dhEncrypted: String!): SendCommunicationPayload!
   sendTestEmail(input: SendTestEmailInput!): SendTestEmailPayload!
+  sendTestSlackNotification(input: SendTestSlackNotificationInput!): SendTestSlackNotificationPayload!
+  sendTestSlackNotificationToUser: SendTestSlackNotificationToUserPayload!
   sendUserInviteEmail(input: SendUserInviteEmailInput!): SendUserInviteEmailPayload!
   setAiFeatureHighRiskForVendor(input: SetAiFeatureHighRiskForVendorInput!): SetAiFeatureHighRiskForVendorPayload!
   setAiFeatureVisibilityForVendor(input: SetAiFeatureVisibilityForVendorInput!): SetAiFeatureVisibilityForVendorPayload!
@@ -5403,6 +5502,7 @@ type Mutation {
   setWorkflowIdentifierDisabled(input: SetWorkflowIdentifierDisabledInput!): SetWorkflowIdentifierDisabledPayload!
   shareComplianceReport(input: ShareComplianceReportInput!): ShareComplianceReportPayload!
   showTcfVendorInUI(input: ShowTCFVendorInput!): ShowTcfVendorInUiPayload!
+  skipProfileDataPointsByIdentifierType(input: SkipProfileDataPointsByIdentifierTypeInput!): SkipProfileDataPointsByIdentifierTypePayload!
   skipRequestEnricher(id: ID!): SkipRequestEnricherPayload!
   sombraDataSubjectLogin(dhEncrypted: String!, lookup: PrivacyCenterLookupInput): SombraDataSubjectLoginPayload!
   sombraSingleTenantConfigSync(input: SombraSingleTenantConfigSyncInput!): SombraSingleTenantConfigSyncPayload!
@@ -5514,6 +5614,7 @@ type Mutation {
   updateRiskFrameworks(input: UpdateRiskFrameworksInput!): UpdateRiskFrameworksPayload!
   updateSavingsConfiguration(input: UpdateSavingsConfigurationInput!): UpdateSavingsConfigurationPayload!
   updateScope(input: UpdateScopeInput!): UpdateScopePayload!
+  updateScopes(input: UpdateScopesInput!): UpdateScopesPayload!
   updateSensitiveCategories(input: UpdateSensitiveCategoriesInput!): UpdateSensitiveCategoriesPayload!
   updateSoftwareDevelopmentKits(input: UpdateSoftwareDevelopmentKitsInput!): UpdateSoftwareDevelopmentKitsPayload!
   updateSombra(id: ID!, input: UpdateSombraInput!): UpdateSombraPayload!
@@ -5527,10 +5628,12 @@ type Mutation {
   updateSyncEndpoint(input: UpdateSyncEndpointInput!): UpdateSyncEndpointPayload!
   updateSyncGroups(input: UpdateSyncGroupsInput!): UpdateSyncGroupsPayload!
   updateTeam(input: UpdateTeamInput!): UpdateTeamPayload!
+  updateTeams(input: UpdateTeamsInput!): UpdateTeamsPayload!
   updateTemplate(input: UpdateTemplateInput!): UpdateTemplatePayload!
   updateUnstructuredSubDataPointRecommendations(input: UpdateScannedObjectsInput!): UpdateUnstructuredSubDataPointRecommendationsPayload!
   updateUser(input: UpdateUserInput!): UpdateUserPayload!
   updateUserProfile(input: UpdateCurrentUserInput!): UpdateUserProfilePayload!
+  updateUsers(input: UpdateUsersInput!): UpdateUsersPayload!
   updateVendors(input: UpdateVendorsInput!): UpdateVendorsPayload!
   updateWorkflowCommunicationSettings(input: UpdateWorkflowCommunicationSettingsInput!): UpdateWorkflowCommunicationSettingsPayload!
   updateWorkflowConfig(input: UpdateWorkflowConfigInput!): UpdateWorkflowConfigPayload!
@@ -5753,6 +5856,13 @@ input ActivityOrder {
   direction: OrderDirection!
 }
 
+input AddAirgapPrefixModuleToAirgapBundleInput {
+  airgapBundleId: ID!
+  airgapPrefixModuleId: ID!
+  version: String!
+  config: String
+}
+
 type AddDataSiloToOpenRequestsPayload {
   clientMutationId: String
   updatedRequestCount: Int!
@@ -5816,6 +5926,7 @@ input AdditionalTimeInput {
   template: String
   subject: String
   additionalTime: Int!
+  sendEmail: Boolean
 }
 
 type AddSignedIdentifiersPayload {
@@ -5931,6 +6042,15 @@ type AirgapBundleAggregateAnalyticsItem {
 type AirgapBundleAggregateAnalyticsResult {
   items: [AirgapBundleAggregateAnalyticsItem!]!
   cachedAt: Date
+}
+
+type AirgapBundleAirgapPrefixModule {
+  id: ID!
+  airgapBundleId: ID!
+  airgapPrefixModuleId: ID!
+  organizationId: ID!
+  version: String!
+  config: String
 }
 
 input AirgapBundleInput {
@@ -6222,6 +6342,8 @@ input AnalyticsInput {
   endDate: String
   groupBy: AnalyticsGroupBy
   attributeKey: String
+  attributeValueIds: [ID!]
+  partitionIds: [ID!]
   airgapBundleId: ID
   dataPointId: ID
   dataSiloId: ID
@@ -6422,6 +6544,15 @@ type AssessmentAnswerSubmission {
   answers: [SelectedAssessmentAnswerRaw!]!
 }
 
+type AssessmentCommentFile {
+  id: ID!
+  name: String!
+  size: Int!
+  mimeType: String!
+  presignedUrl: String!
+  createdAt: Date!
+}
+
 type AssessmentEmailSet {
   id: ID!
   title: String!
@@ -6452,6 +6583,11 @@ type AssessmentFormComment {
   id: ID!
   content: String!
   author: UserPreview
+  externalAuthorEmail: String
+  parentCommentId: ID
+  resolvedAt: Date
+  resolvedBy: UserPreview
+  files: [AssessmentCommentFile!]!
   updatedAt: Date!
   createdAt: Date!
   formStatus: AssessmentFormStatus
@@ -6467,6 +6603,12 @@ input AssessmentFormCommentFiltersInput {
 }
 
 type AssessmentFormCommentsPayload {
+  clientMutationId: String
+  nodes: [AssessmentFormComment!]!
+  totalCount: Int!
+}
+
+type AssessmentFormCommentsTokenPayload {
   clientMutationId: String
   nodes: [AssessmentFormComment!]!
   totalCount: Int!
@@ -6797,6 +6939,11 @@ type AssessmentQuestionComment {
   id: ID!
   content: String!
   author: UserPreview
+  externalAuthorEmail: String
+  parentCommentId: ID
+  resolvedAt: Date
+  resolvedBy: UserPreview
+  files: [AssessmentCommentFile!]!
   updatedAt: Date!
   createdAt: Date!
 }
@@ -6930,6 +7077,11 @@ type AssessmentSectionComment {
   id: ID!
   content: String!
   author: UserPreview
+  externalAuthorEmail: String
+  parentCommentId: ID
+  resolvedAt: Date
+  resolvedBy: UserPreview
+  files: [AssessmentCommentFile!]!
   updatedAt: Date!
   createdAt: Date!
   assessmentSectionId: ID!
@@ -6948,6 +7100,12 @@ input AssessmentSectionCommentInput {
 }
 
 type AssessmentSectionCommentsPayload {
+  clientMutationId: String
+  nodes: [AssessmentSectionComment!]!
+  totalCount: Int!
+}
+
+type AssessmentSectionCommentsTokenPayload {
   clientMutationId: String
   nodes: [AssessmentSectionComment!]!
   totalCount: Int!
@@ -7101,6 +7259,14 @@ type AttributeBusinessEntityResource implements AttributeResourceInterface {
   address: String!
   headquarterCountry: IsoCountryCode
   headquarterSubDivision: String
+}
+
+type AttributeConsentSiteResource implements AttributeResourceInterface {
+  resourceType: AttributeSupportedResourceType!
+  id: ID!
+  name: String!
+  site: String!
+  host: String!
 }
 
 type AttributeDataSiloResource implements AttributeResourceInterface & DataSiloInterface {
@@ -8517,6 +8683,11 @@ input CompleteDropIntakeInput {
   dropRunId: ID!
 }
 
+type CompletePreferenceManagementOnboardingPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
 type ComplianceReport {
   id: ID!
   createdAt: Date!
@@ -8827,6 +8998,7 @@ type ConsentHost {
   cookieCountTriageLastWeek: Int!
   consentUiThemeId: ID
   consentUiTheme: ConsentUiThemePreview
+  attributeValues: [AttributeValue!]!
 }
 
 type ConsentHostsPayload {
@@ -8876,6 +9048,7 @@ type ConsentManager {
   useModules: Boolean!
   useIabFramework: Boolean!
   useUiV2: Boolean
+  uiV2Version: String
   deployError: String
   webhookUrl: String
   headers: [CustomHeader!]!
@@ -9099,6 +9272,13 @@ type ConsentSite {
   site: String!
   createdAt: Date!
   hosts: [ConsentHost!]!
+}
+
+type ConsentSiteHostPreview {
+  id: ID!
+  name: String!
+  site: String!
+  host: String!
 }
 
 type ConsentSitePreview {
@@ -9354,6 +9534,19 @@ input ContentLayoutInput {
   maxWidths: [MaxWidthEntryInput!]
 }
 
+type ContractEntitlement {
+  metricName: String!
+  entitledQuantity: Float!
+  contractStartDate: String
+  contractEndDate: String
+  currentContractYearStartDate: String
+  currentContractYearEndDate: String
+}
+
+type ContractEntitlementsResult {
+  nodes: [ContractEntitlement!]!
+}
+
 type Cookie {
   id: ID!
   description: String
@@ -9380,6 +9573,8 @@ type Cookie {
   consentSiteCountAllTime: Int!
   consentSiteCountLastWeek: Int!
   tcfVendorLink: TcfVendorLink
+  lastChangedBy: UserPreview
+  lastChangedByApiKey: ApiKeyPreview
 }
 
 type CookieDomain {
@@ -9516,6 +9711,7 @@ input CreateAssessmentEmailSetInput {
 
 input CreateAssessmentFormCommentInput {
   content: String!
+  parentCommentId: ID
   assessmentFormId: ID!
   formStatus: AssessmentFormStatus
   assessmentEventId: ID
@@ -9528,6 +9724,16 @@ type CreateAssessmentFormCommentsPayload {
 
 input CreateAssessmentFormCommentsInput {
   assessmentFormComments: [CreateAssessmentFormCommentInput!]!
+}
+
+type CreateAssessmentFormCommentsTokenPayload {
+  clientMutationId: String
+  assessmentFormComments: [AssessmentFormComment!]!
+}
+
+input CreateAssessmentFormCommentsTokenInput {
+  assessmentFormComments: [CreateAssessmentFormCommentInput!]!
+  token: String!
 }
 
 input CreateAssessmentFormInput {
@@ -9608,6 +9814,7 @@ input CreateAssessmentGroupInput {
 input CreateAssessmentQuestionCommentInput {
   content: String!
   assessmentQuestionId: ID!
+  parentCommentId: ID
 }
 
 type CreateAssessmentQuestionCommentsPayload {
@@ -9617,6 +9824,16 @@ type CreateAssessmentQuestionCommentsPayload {
 
 input CreateAssessmentQuestionCommentsInput {
   assessmentQuestionComments: [CreateAssessmentQuestionCommentInput!]!
+}
+
+type CreateAssessmentQuestionCommentsTokenPayload {
+  clientMutationId: String
+  assessmentQuestionComments: [AssessmentQuestionComment!]!
+}
+
+input CreateAssessmentQuestionCommentsTokenInput {
+  assessmentQuestionComments: [CreateAssessmentQuestionCommentInput!]!
+  token: String!
 }
 
 input CreateAssessmentQuestionInput {
@@ -9653,6 +9870,7 @@ type CreateAssessmentSectionPayload {
 input CreateAssessmentSectionCommentInput {
   content: String!
   assessmentSectionId: ID!
+  parentCommentId: ID
 }
 
 type CreateAssessmentSectionCommentsPayload {
@@ -9662,6 +9880,16 @@ type CreateAssessmentSectionCommentsPayload {
 
 input CreateAssessmentSectionCommentsInput {
   assessmentSectionComments: [CreateAssessmentSectionCommentInput!]!
+}
+
+type CreateAssessmentSectionCommentsTokenPayload {
+  clientMutationId: String
+  assessmentSectionComments: [AssessmentSectionComment!]!
+}
+
+input CreateAssessmentSectionCommentsTokenInput {
+  assessmentSectionComments: [CreateAssessmentSectionCommentInput!]!
+  token: String!
 }
 
 input CreateAssessmentSectionInput {
@@ -10059,6 +10287,7 @@ input CreateMaestroRuleInput {
   signedMessageTemplate: String
   timestampSkewToleranceSeconds: Int
   timestampFormat: MaestroHmacTimestampFormat
+  signatureEncoding: MaestroHmacSignatureEncoding
 }
 
 type CreateOauthClientPayload {
@@ -10120,6 +10349,7 @@ input CreateOrUpdateConsentSiteInput {
   description: String
   includeInMetadata: Boolean
   airgapBundleId: ID!
+  attributes: [AttributeInput!]
 }
 
 type CreateOrUpdateConsentWorkflowTriggerPayload {
@@ -10581,6 +10811,7 @@ type CurrentUser implements UserInterface {
   onboarded: Boolean!
   locale: String!
   organization: Organization!
+  primaryOrganization: OrganizationIdentityPreview
   roles: [Role!]!
   parentRole: UserPreview
   teams: [TeamPreview!]!
@@ -10798,21 +11029,6 @@ input DataCollectionInput {
   staticType: DataCollectionStaticType
 }
 
-type DataCollectionRequestFileCount {
-  id: ID!
-  count: Int
-  hasRequestFiles: Boolean!
-}
-
-type DataCollectionsRequestFileCountPayload {
-  clientMutationId: String
-  requestFileCounts: [DataCollectionRequestFileCount!]!
-}
-
-input DataCollectionsRequestFileCountInput {
-  requestId: ID!
-}
-
 type DataFlow {
   id: ID!
   description: String
@@ -10837,6 +11053,8 @@ type DataFlow {
   consentSiteCountAllTime: Int!
   consentSiteCountLastWeek: Int!
   tcfVendorLink: TcfVendorLink
+  lastChangedBy: UserPreview
+  lastChangedByApiKey: ApiKeyPreview
 }
 
 input DataFlowInput {
@@ -11019,6 +11237,7 @@ interface DatamapDataSiloInterface {
   customSiloConnectionStrategy: CustomSiloConnectionStrategy
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
+  workflowConfigActionCounts: [WorkflowConfigActionCount!]!
   dependentDataSilos: [DataSiloPreview!]!
   dependedOnDataSilos: [DataSiloDependencyPreview!]!
   dependedOnDataSilosPerWorkflow: [DependedOnDataSilosPerWorkflow!]!
@@ -11366,6 +11585,7 @@ type DataSilo implements DatamapDataSiloInterface {
   customSiloConnectionStrategy: CustomSiloConnectionStrategy
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
+  workflowConfigActionCounts: [WorkflowConfigActionCount!]!
   dependentDataSilos: [DataSiloPreview!]!
   dependedOnDataSilos: [DataSiloDependencyPreview!]!
   dependedOnDataSilosPerWorkflow: [DependedOnDataSilosPerWorkflow!]!
@@ -11465,6 +11685,7 @@ type DataSiloBulkPreview implements DatamapDataSiloInterface {
   customSiloConnectionStrategy: CustomSiloConnectionStrategy
   manualWorkRetryFrequency: String!
   connectedActions: [RequestActionObjectResolver!]!
+  workflowConfigActionCounts: [WorkflowConfigActionCount!]!
   dependentDataSilos: [DataSiloPreview!]!
   dependedOnDataSilos: [DataSiloDependencyPreview!]!
   dependedOnDataSilosPerWorkflow: [DependedOnDataSilosPerWorkflow!]!
@@ -11485,6 +11706,8 @@ type DataSiloBulkPreview implements DatamapDataSiloInterface {
   sensitiveCategories: [SensitiveCategory!]
   isPausedForDsrs: Boolean!
   skipSecondaryIfNoFiles: Boolean!
+  sombraId: ID
+  sombra: SombraPreview
 }
 
 input DataSiloBulkPreviewOrder {
@@ -11534,6 +11757,7 @@ input DataSiloFiltersInput {
   type: [String!]
   actions: [RequestAction!]
   ids: [ID!]
+  omitIds: [ID!]
   isLive: Boolean
   isPaidIntegration: Boolean
   canCustomizeDataPoints: Boolean
@@ -11771,6 +11995,7 @@ type DataSubject implements DataSubjectInterface {
   oauthScope: String
   responseType: String
   actions: [Action!]!
+  saleOfInfoRegionList: [String!]
   supportsAuthorizedAgent: Boolean!
 }
 
@@ -11805,6 +12030,7 @@ interface DataSubjectInterface {
   oauthScope: String
   responseType: String
   actions: [Action!]!
+  saleOfInfoRegionList: [String!]
   supportsAuthorizedAgent: Boolean!
 }
 
@@ -11822,6 +12048,7 @@ type DataSubjectInternal implements DataSubjectInterface {
   oauthScope: String
   responseType: String
   actions: [Action!]!
+  saleOfInfoRegionList: [String!]
   supportsAuthorizedAgent: Boolean!
   displayOrder: Int!
   attributeValues: [AttributeValue!]!
@@ -12562,6 +12789,7 @@ input DependedOnDataSiloInput {
 
 type DependedOnDataSilosPerWorkflow {
   workflowConfigId: ID!
+  workflowInternalName: String!
   dependedOnDataSilos: [DataSiloDependencyPreview!]!
 }
 
@@ -12755,6 +12983,13 @@ input DownloadAndDecryptEventInput {
   phase: DownloadAndDecryptPhase
   metrics: DownloadAndDecryptMetricsInput
   sinkMode: DownloadSinkMode
+  swPreflightMs: Float
+  downloadAttemptId: String
+  attemptElapsedMs: Float
+  attemptNumber: Int
+  deviceClass: DownloadDeviceClass
+  browserFamily: DownloadBrowserFamily
+  osFamily: DownloadOsFamily
   documentVisibilityState: DownloadDocumentVisibilityState
 }
 
@@ -12854,6 +13089,12 @@ type DropBrokerConfig {
   pollLeaseOwnerApiKey: ApiKeyPreview
 }
 
+type DropGenerateReportResult {
+  started: Boolean!
+  reportGenerationStatus: DropRunReportGenerationStatus!
+  state: DropRunState!
+}
+
 type DropIntakeCompletion {
   dropRunId: ID!
   state: DropRunState!
@@ -12863,6 +13104,13 @@ type DropIntakeCompletion {
 input DropRecordRefInput {
   dropRecordId: String!
   dropListType: DropListType!
+}
+
+type DropReportStatusBreakdown {
+  statusExempted: Int!
+  statusDeleted: Int!
+  statusOptedOut: Int!
+  statusNotFound: Int!
 }
 
 type DropRunDsrProcessingStats {
@@ -12878,6 +13126,11 @@ type DropRunDsrProgress {
   projectedCppaOutcomeCounts: [DropRunProjectedCppaOutcomeCount!]!
   needsAttention: DropRunNeedsAttentionCounts!
   cachedAt: Date
+}
+
+input DropRunDsrProgressInput {
+  id: ID!
+  forceRefetch: Boolean
 }
 
 input DropRunFiltersInput {
@@ -12946,6 +13199,8 @@ type DropRunRequestSummary {
   dropListType: DropListType!
   cppaHash: String
   cppaStatusCode: Int
+  projectedCppaStatusCode: Int
+  request: RequestForDropPreview
 }
 
 type DropRunsPayload {
@@ -12981,6 +13236,12 @@ type DropRunSummary {
   declaredRecordsCount: Int!
   unresolvedRecordsCount: Int!
   artifacts: [DropArtifact!]!
+  reportGeneratedAt: Date
+  reportSummary: DropReportStatusBreakdown
+  reportGenerationStatus: DropRunReportGenerationStatus!
+  reportGenerationStartedAt: Date
+  reportGenerationError: String
+  reportPendingRecordsCount: Int
 }
 
 input DropStatusOverrideInput {
@@ -13010,6 +13271,7 @@ type DsrFormIdentifier implements IdentifierInterface {
   isMultiInput: Boolean!
   privacyCenterVisibility: [RequestAction!]!
   dataSubjects: [DataSubject!]!
+  displayOrder: Int
 }
 
 type DsrPurposeChange {
@@ -13070,6 +13332,11 @@ type EmailSenderAddress {
   attributeValues: [ID!]!
 }
 
+type EmployeeAppendConsentPreferenceIdentifiersPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
 input EmployeeBulkRequestInput {
   requestIdentifiers: DeprecatedRequestIdentifiersInput
   signedRequestIdentifiers: SignedRequestIdentifiersInput
@@ -13097,8 +13364,20 @@ input EmployeeBulkRequestInput {
   partitionKey: String
   idempotencyKey: String
   workflowConfigId: ID!
+  type: RequestAction
+  subjectType: String
   dropRecords: [DropRecordRefInput!]
   dropRunId: ID
+}
+
+type EmployeeDeleteConsentPreferenceIdentifiersPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+type EmployeeDeleteConsentPreferenceRecordsPayload {
+  clientMutationId: String
+  success: Boolean!
 }
 
 type EmployeeDownloadCekPayload {
@@ -13114,6 +13393,10 @@ type EmployeeMakeDataSubjectRequestPayload {
 type EmployeeMakeDataSubjectRequestsPayload {
   clientMutationId: String
   requests: [Request!]!
+}
+
+input EmployeePreferenceIdentifierMutationInput {
+  partition: String!
 }
 
 input EmployeeRequestInput {
@@ -13149,6 +13432,11 @@ input EmployeeRequestInput {
 type EmployeeReSignEncryptedCekContextsPayload {
   clientMutationId: String
   done: Boolean!
+}
+
+type EmployeeUpdateConsentPreferenceIdentifiersPayload {
+  clientMutationId: String
+  success: Boolean!
 }
 
 type EmployeeUpdateConsentPreferencesPayload {
@@ -13208,6 +13496,8 @@ type EnrichedPurposeSchema {
   consent: Boolean
   preferences: [EnrichedPreference!]
   timestamp: String
+  expiresAt: String
+  provenance: PurposeProvenanceSchema
 }
 
 type Enricher {
@@ -13484,6 +13774,7 @@ input FilterConsentHostInput {
   filterLastActivityDays: Int
   includeInMetadata: Boolean
   ids: [ID!]
+  attributeValueIds: [ID!]
 }
 
 input FilterConsentServicesInput {
@@ -13502,6 +13793,7 @@ input FilterConsentSiteInput {
   userId: [String!]
   description: String
   includeNulls: [String!]
+  attributeValueIds: [ID!]
 }
 
 input FireIntegrationsInput {
@@ -13644,11 +13936,11 @@ type FormItem {
   authenticationMethods: [AuthenticationMethod!]
   jsonSchema: String
   examples: [FormItemJsonExample!]
-  example: String
+  example: String @deprecated(reason: "Use examples instead. Remove after deploy: https://linear.app/transcend/issue/PIK-8398")
 }
 
 type FormItemJsonExample {
-  title: String
+  title: String!
   value: String!
 }
 
@@ -13682,6 +13974,15 @@ input GenerateDebugBundleInput {
   buildPathPrefix: String
 }
 
+type GenerateDropReportPayload {
+  clientMutationId: String
+  result: DropGenerateReportResult!
+}
+
+input GenerateDropReportInput {
+  dropRunId: ID!
+}
+
 input GenerateLoginSessionTokenForDiffieHellmanInput {
   organizationId: ID!
 }
@@ -13708,6 +14009,16 @@ input GenerateTemporaryApiTokenInput {
   organizationId: ID!
   scopes: [ScopeName!]
   msBeforeExpire: Int
+}
+
+input GenerateWorkflowConfigSqlInput {
+  workflowConfigId: ID!
+  autoSelectIdentifiersByPriority: Boolean!
+}
+
+type GenerateWorkflowConfigSqlStatementsPayload {
+  clientMutationId: String
+  count: Int!
 }
 
 type GetTokenSecretsPayload {
@@ -13762,6 +14073,8 @@ type GlobalActionItemContext {
   parentTitle: String
   pluginType: String
   aggregateCount: Int
+  identifierCount: Int
+  unreadMessageCount: Int
 }
 
 input GlobalActionItemFiltersInput {
@@ -13778,6 +14091,8 @@ input GlobalActionItemFiltersInput {
   dataSiloId: ID
   requestId: ID
   isAggregate: Boolean
+  text: String
+  textCodes: [ActionItemCode!]
 }
 
 interface GlobalActionItemInterface {
@@ -14006,16 +14321,6 @@ type IsUserAuthenticatedPayload {
   success: Boolean!
 }
 
-type LatestScanPayload {
-  clientMutationId: String
-  scan: Scan
-}
-
-type LatestSchemaDiscoveryScanProgressPayload {
-  clientMutationId: String
-  scanProgress: SchemaDiscoveryScanResult
-}
-
 type LaunchPrivacyCenterPayload {
   clientMutationId: String
   success: Boolean!
@@ -14232,6 +14537,9 @@ type LookupProcessesPayload {
 
 input LookupProcessFiltersInput {
   text: String
+  status: [LookupProcessStatus!]
+  hasErrors: Boolean
+  ids: [ID!]
 }
 
 input LookupProcessInput {
@@ -14363,6 +14671,7 @@ type MaestroRuleTrigger {
   signedMessageTemplate: String
   timestampSkewToleranceSeconds: Int
   timestampFormat: MaestroHmacTimestampFormat
+  signatureEncoding: MaestroHmacSignatureEncoding
   hasWebhookSecret: Boolean!
   webhookHmacSettings: MaestroWebhookHmacSettings
   scheduleConfig: MaestroScheduleTriggerConfig
@@ -14413,6 +14722,7 @@ type MaestroWebhookHmacSettings {
   signedMessageTemplate: String
   timestampSkewToleranceSeconds: Int
   timestampFormat: MaestroHmacTimestampFormat
+  signatureEncoding: MaestroHmacSignatureEncoding
 }
 
 type MakeDataSubjectRequestPayload {
@@ -14462,6 +14772,11 @@ type MarkDataSiloDiscoveryResultsJunkPayload {
 
 input MarkDataSiloDiscoveryResultsJunkInput {
   id: ID!
+}
+
+type MarkDataSiloNotConfiguredPayload {
+  clientMutationId: String
+  dataSilo: DataSilo!
 }
 
 type MarkDropStarterDownloadedPayload {
@@ -14584,6 +14899,7 @@ input NonAdminPurposeInput {
   preferences: [PreferenceInput!]
   timestamp: String
   workflowSettings: NonAdminConsentWorkflowSettingsInput
+  sourceSystem: String
 }
 
 type NotifyAdditionalTimePayload {
@@ -14594,6 +14910,8 @@ type NotifyAdditionalTimePayload {
 type NotifyAdditionalTimesPayload {
   clientMutationId: String
   success: Boolean!
+  extendedCount: Int!
+  emailedCount: Int!
 }
 
 input NotifyAdditionalTimesInput {
@@ -14601,6 +14919,7 @@ input NotifyAdditionalTimesInput {
   template: String
   subject: String
   additionalTime: Int!
+  sendEmail: Boolean
 }
 
 type OauthClient implements OauthClientInterface {
@@ -14832,6 +15151,10 @@ type Organization {
   restartTimeLimitDays: Int
 }
 
+input OrganizationExistsInput {
+  organizationId: ID!
+}
+
 type OrganizationForRole {
   id: ID!
   name: String!
@@ -15014,22 +15337,13 @@ type PluginsPayload {
   totalCount: Int!
 }
 
-type PluginScansPayload {
-  clientMutationId: String
-  nodes: [Scan!]!
-  lastKey: ScanKey
-}
-
-input PluginScansInput {
-  pluginId: ID!
-  lastKey: ScanKeyInput
-}
-
 input PluginsFiltersInput {
   dataSiloId: String
   enabled: Boolean
   type: PluginType
   ids: [ID!]
+  status: [PluginQueueStatus!]
+  hasErrors: Boolean
   text: String
 }
 
@@ -15186,6 +15500,15 @@ input PreferenceStoreIdentifierInput {
 type PreferenceStoreIdentifierSchema {
   value: String!
   name: String!
+}
+
+type PreferenceStoreSetup {
+  consentManagerId: ID
+  preferenceStoreEnabled: Boolean!
+  hasEncryptionKey: Boolean
+  hasJwtSigningKey: Boolean
+  unauthenticatedUpdatesEnabled: Boolean
+  onboardingStatus: PreferenceManagementOnboardingStatus!
 }
 
 type PreferenceTopic {
@@ -15421,6 +15744,7 @@ type PrivacyCenterStringified {
   filterPurposesByRegime: Boolean!
   showManageYourPrivacy: Boolean!
   showSaleOfInfo: Boolean!
+  authenticatedSaleOfInfoPreferenceMode: AuthenticatedSaleOfInfoPreferenceMode!
   unauthenticatedDoNotSellRegions: [Region!]!
   showMarketingPreferences: Boolean!
   showDataSubjectSelectorOnCommunicationPreferences: Boolean!
@@ -15455,6 +15779,7 @@ type PrivacyCenterStringified {
   transcendHostedDomain: String!
   consentPartitions: [ConsentPartition!]!
   workflowsCustomFieldsRequired: Boolean!
+  workflowsV2EnabledOnPc: Boolean!
   footerLinks: [PrivacyCenterFooterLink!]!
   footerLayout: PrivacyCenterFooterLayout!
 }
@@ -16037,6 +16362,7 @@ input PurposeInput {
   preferences: [PreferenceInput!]
   timestamp: String
   workflowSettings: ConsentWorkflowSettingsInput
+  sourceSystem: String
 }
 
 type PurposeOfProcessing implements ProcessingPurposeInterface {
@@ -16051,6 +16377,12 @@ input PurposeOrder {
   direction: OrderDirection!
 }
 
+type PurposeProvenanceSchema {
+  updateCause: PurposeChangeCause!
+  collectionPoint: TranscendCollectionPoint
+  sourceSystem: String
+}
+
 type PurposesPayload {
   clientMutationId: String
   nodes: [TrackingPurpose!]!
@@ -16062,6 +16394,8 @@ type PurposeSchema {
   consent: Boolean!
   preferences: [PreferenceSchema!]
   timestamp: String!
+  expiresAt: String
+  provenance: PurposeProvenanceSchema
 }
 
 type PurposeSubCategory implements ProcessingPurposeInterface & ProcessingPurposeSubCategoryInterface {
@@ -16112,6 +16446,19 @@ type PurposeSubjectPreview {
 
 input QueryActionItemSubscriptionInput {
   orgLevelSubscriptions: Boolean
+}
+
+type QueryRocUserRecordsPayload {
+  clientMutationId: String
+  nodes: [RocUserRecordSchema!]!
+  containsInitialRecord: Boolean!
+}
+
+input QueryRocUserRecordsInput {
+  partition: String!
+  identifier: PreferenceStoreIdentifierInput!
+  limit: Int
+  includeRawRequest: Boolean
 }
 
 type RateLimitConfig {
@@ -16305,6 +16652,11 @@ input ReleaseAirgapPrefixModuleVersionInput {
 type ReleaseAirgapPrefixModuleVersionResult {
   airgapPrefixModuleId: ID!
   airgapPrefixModuleReleaseId: ID!
+}
+
+input RemoveAirgapPrefixModuleFromAirgapBundleInput {
+  airgapBundleId: ID!
+  airgapPrefixModuleId: ID!
 }
 
 type RemoveDataSiloFromWorkflowConfigPayload {
@@ -16872,6 +17224,13 @@ type RequestForDataSilo {
   errorCount: Int!
 }
 
+type RequestForDropPreview {
+  id: ID!
+  status: RequestStatus!
+  email: String
+  coreIdentifier: String!
+}
+
 type RequestHistoryPayload {
   clientMutationId: String
   nodes: [RequestHistory!]!
@@ -17197,6 +17556,36 @@ input ResolveActionItemsInput {
   batchSize: Int
 }
 
+type ResolveAssessmentFormCommentsPayload {
+  clientMutationId: String
+  assessmentFormComments: [AssessmentFormComment!]!
+}
+
+input ResolveAssessmentFormCommentsInput {
+  ids: [ID!]!
+  isResolved: Boolean!
+}
+
+type ResolveAssessmentQuestionCommentsPayload {
+  clientMutationId: String
+  assessmentQuestionComments: [AssessmentQuestionComment!]!
+}
+
+input ResolveAssessmentQuestionCommentsInput {
+  ids: [ID!]!
+  isResolved: Boolean!
+}
+
+type ResolveAssessmentSectionCommentsPayload {
+  clientMutationId: String
+  assessmentSectionComments: [AssessmentSectionComment!]!
+}
+
+input ResolveAssessmentSectionCommentsInput {
+  ids: [ID!]!
+  isResolved: Boolean!
+}
+
 type Resource {
   id: ID!
   type: ResourceType!
@@ -17432,6 +17821,7 @@ type RocPurposeSchema {
   consent: Boolean
   preferences: [RocPreferenceSchema!]
   timestamp: String!
+  expiresAt: String
 }
 
 type RocRawConsentRecordSchema {
@@ -17453,6 +17843,7 @@ type RocUserRecordsPayload {
   clientMutationId: String
   nodes: [RocUserRecordSchema!]!
   decryptionContext: DecryptionContext!
+  containsInitialRecord: Boolean!
 }
 
 type RocUserRecordSchema {
@@ -17668,6 +18059,8 @@ input RunCustomFunctionInput {
   payload: String!
   isCustomFunctionTestRun: Boolean
   payloadType: CustomFunctionPayloadType
+  signedCodeJwt: String
+  signedCodeContextJwt: String
 }
 
 type SaaSCategoriesPayload {
@@ -17775,31 +18168,6 @@ type SavingsConfigurationPreview {
   engineerSalary: Float!
 }
 
-type Scan {
-  id: String!
-  startEpoch: String!
-  status: ScanLambdaStatus!
-  type: ScanType!
-  expiresAt: Int!
-  pluginId: ID!
-  stack: String
-  currentScanRunId: String
-  lastSuccessfulScanRunId: String
-  lastScanRunId: String
-  endEpoch: String
-  scanResult: ScanResult
-}
-
-type ScanKey {
-  id: String!
-  startEpoch: String!
-}
-
-input ScanKeyInput {
-  id: String!
-  startEpoch: String!
-}
-
 type ScannedObjectFileTypesPayload {
   clientMutationId: String
   response: ScannedObjectFileTypesOutput!
@@ -17868,29 +18236,13 @@ input ScanPluginConfigInput {
   configuration: String
 }
 
-type ScanResult {
-  schemaDiscovery: SchemaDiscoveryScanResult
-}
-
 type ScanRunId {
   scanId: String!
   startEpoch: String!
 }
 
-type SchemaDiscoveryCurrentScanProgressResult {
-  displayName: DataPointTypeDisplayName!
-  totalExpectedProgress: Int
-  currentProgress: Int
-}
-
 type SchemaDiscoveryPluginConfigurationSchema {
   scanObjectsToFilter: [ScanObject!]
-}
-
-type SchemaDiscoveryScanResult {
-  subDataPointResult: SchemaDiscoveryCurrentScanProgressResult!
-  dataPointResult: SchemaDiscoveryCurrentScanProgressResult!
-  dataPointLevelResults: [SchemaDiscoveryCurrentScanProgressResult!]!
 }
 
 type Scope {
@@ -18178,6 +18530,20 @@ type SendTestEmailResponse {
   errorMessage: String
   failurePoint: TestEmailFailurePoint
   emailOutboxStatus: EmailOutboxStatus
+}
+
+type SendTestSlackNotificationPayload {
+  clientMutationId: String
+  success: Boolean!
+}
+
+input SendTestSlackNotificationInput {
+  channelId: String!
+}
+
+type SendTestSlackNotificationToUserPayload {
+  clientMutationId: String
+  success: Boolean!
 }
 
 type SendUserInviteEmailPayload {
@@ -18507,6 +18873,26 @@ type SimpleTCFFeature {
 type SimpleTCFPurpose {
   id: Int!
   name: String!
+}
+
+type SkipProfileDataPointsByIdentifierTypePayload {
+  clientMutationId: String
+  skippedJobCount: Int!
+  terminalizedDataSiloCount: Int!
+  transitionedRequestCount: Int!
+}
+
+input SkipProfileDataPointsByIdentifierTypeInput {
+  dataSiloIds: [ID!]!
+  identifierTypes: [String!]!
+  requestIds: [ID!]!
+  profileDataPointStatuses: [ProfileDataPointStatus!]
+}
+
+type SkipProfileDataPointsByIdentifierTypeResult {
+  skippedJobCount: Int!
+  terminalizedDataSiloCount: Int!
+  transitionedRequestCount: Int!
 }
 
 type SkipRequestEnricherPayload {
@@ -19753,6 +20139,13 @@ input UpdateActionItemsRollupInput {
   isAggregate: Boolean
 }
 
+input UpdateAirgapPrefixModuleOnAirgapBundleInput {
+  airgapBundleId: ID!
+  airgapPrefixModuleId: ID!
+  version: String
+  config: String
+}
+
 input UpdateAirgapPrefixSuffixScriptInput {
   id: ID!
   prefixScript: String
@@ -19797,6 +20190,7 @@ input UpdateAssessmentEmailSetInput {
 type UpdateAssessmentFormPayload {
   clientMutationId: String
   assessmentForm: AssessmentFormRaw!
+  assessmentFormComment: AssessmentFormComment
 }
 
 type UpdateAssessmentFormAssigneesPayload {
@@ -19868,6 +20262,7 @@ input UpdateAssessmentFormSectionInput {
 type UpdateAssessmentFormSectionsPayload {
   clientMutationId: String
   assessmentSections: [AssessmentSectionRaw!]!
+  assessmentFormComment: AssessmentFormComment
 }
 
 input updateAssessmentFormSectionsInput {
@@ -20155,6 +20550,7 @@ input UpdateConsentManagerInput {
   webhookUrl: String
   headers: [CustomHeaderInput!]
   useUiV2: Boolean
+  uiV2Version: String
 }
 
 type UpdateConsentManagerOnboardingStatusPayload {
@@ -20740,6 +21136,7 @@ input UpdateMaestroRuleInput {
   signedMessageTemplate: String
   timestampSkewToleranceSeconds: Int
   timestampFormat: MaestroHmacTimestampFormat
+  signatureEncoding: MaestroHmacSignatureEncoding
 }
 
 type UpdateMaestroRuleStatusesPayload {
@@ -20990,6 +21387,7 @@ input UpdatePrivacyCenterInput {
   filterPurposesByRegime: Boolean
   showManageYourPrivacy: Boolean
   showSaleOfInfo: Boolean
+  authenticatedSaleOfInfoPreferenceMode: AuthenticatedSaleOfInfoPreferenceMode
   unauthenticatedDoNotSellRegions: [RegionInput!]
   showMarketingPreferences: Boolean
   showDataSubjectSelectorOnCommunicationPreferences: Boolean
@@ -21011,6 +21409,7 @@ input UpdatePrivacyCenterInput {
   displayOrder: Int
   displayedChildOrganizationIds: [ID!]
   workflowsCustomFieldsRequired: Boolean
+  workflowsV2EnabledOnPc: Boolean
   footerLayout: PrivacyCenterFooterLayout
 }
 
@@ -21330,6 +21729,21 @@ input UpdateScopeInput {
   apiKeys: [ID!]
 }
 
+type UpdateScopesPayload {
+  clientMutationId: String
+  count: Int!
+}
+
+input UpdateScopesInput {
+  ids: [ID!]!
+  addUsers: [ID!]
+  removeUsers: [ID!]
+  addTeams: [ID!]
+  removeTeams: [ID!]
+  addApiKeys: [ID!]
+  removeApiKeys: [ID!]
+}
+
 type UpdateSensitiveCategoriesPayload {
   clientMutationId: String
   sensitiveCategories: [SensitiveCategory!]!
@@ -21433,6 +21847,7 @@ type UpdateStandaloneCustomFunctionPayload {
 input UpdateStandaloneCustomFunctionInput {
   id: ID!
   versionId: ID
+  sombraId: ID
   name: String
   description: String
   ownerUserIds: [ID!]
@@ -21484,6 +21899,7 @@ input UpdateSubjectInput {
   displayDescription: String
   displayOrder: Int
   actions: [RequestAction!]
+  saleOfInfoRegionList: [String!]
   loginInstructions: String
   disabledInstructions: String
   adminDashboardDefaultSilentMode: Boolean
@@ -21542,6 +21958,19 @@ input UpdateTeamInput {
   parentTeam: ID
 }
 
+type UpdateTeamsPayload {
+  clientMutationId: String
+  count: Int!
+}
+
+input UpdateTeamsInput {
+  ids: [ID!]!
+  addUsers: [ID!]
+  removeUsers: [ID!]
+  addScopes: [ScopeName!]
+  removeScopes: [ScopeName!]
+}
+
 type UpdateTemplatePayload {
   clientMutationId: String
   template: Template!
@@ -21594,6 +22023,19 @@ input UpdateUserInput {
 type UpdateUserProfilePayload {
   clientMutationId: String
   user: CurrentUser!
+}
+
+type UpdateUsersPayload {
+  clientMutationId: String
+  count: Int!
+}
+
+input UpdateUsersInput {
+  ids: [ID!]!
+  addTeams: [ID!]
+  removeTeams: [ID!]
+  addScopes: [ScopeName!]
+  removeScopes: [ScopeName!]
 }
 
 input UpdateVendorInput {
@@ -21689,6 +22131,20 @@ input UpsertConsentServiceInput {
   showInTcfModal: Boolean
 }
 
+input UsageDataMartInput {
+  mart: UsageMart!
+  startDate: String
+  endDate: String
+}
+
+type UsageDataMartResult {
+  nodes: [UsageDataMartRow!]!
+}
+
+type UsageDataMartRow {
+  data: String!
+}
+
 type User implements UserInterface {
   id: ID!
   email: String!
@@ -21717,6 +22173,8 @@ input UserFiltersInput {
   isAdmin: Boolean
   canRevealMultiTenantSombraSecret: Boolean
   isInvited: Boolean
+  awaitingNotification: Boolean
+  needsConfiguration: Boolean
   teamIds: [ID!]
   scopeNames: [ScopeName!]
   derivedScopeNames: [ScopeName!]
@@ -21968,6 +22426,11 @@ type WorkflowConfig {
   WorkflowConfigAttributeKeys: [WorkflowConfigAttributeKey!]
   internalName: String!
   unresolvedRequiredIdentifierCount: Int
+}
+
+type WorkflowConfigActionCount {
+  action: RequestActionObjectResolver!
+  count: Int!
 }
 
 type WorkflowConfigAttributeKey {

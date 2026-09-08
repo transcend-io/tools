@@ -29,6 +29,12 @@ import { getWorkflowTools } from '@transcend-io/mcp-server-workflows';
 import { describe, expect, test } from 'vitest';
 
 /**
+ * Hard ceiling for a tool's top-level description. Long enough for real
+ * guidance; too short to inline another catalog (TRANSCEND_SCOPES was ~18.5k).
+ */
+const MAX_DESCRIPTION_LENGTH = 700;
+
+/**
  * Mock ToolClients sufficient for tool *construction*. Tools dereference
  * `clients.graphql`/`rest` inside their handler, but never at the moment
  * their Zod schema is built, so passing an empty object is safe.
@@ -84,6 +90,12 @@ describe('MCP tool input descriptions', () => {
             tool.description.trim().length >= MIN_DESCRIPTION_LENGTH,
           `[${name}] tool "${tool.name}" is missing a meaningful top-level description`,
         ).toBe(true);
+
+        expect(
+          tool.description.length,
+          `[${name}] tool "${tool.name}" description is ${tool.description.length} chars; ` +
+            `keep it under ${MAX_DESCRIPTION_LENGTH} so catalogs stay out of tools/list`,
+        ).toBeLessThanOrEqual(MAX_DESCRIPTION_LENGTH);
 
         const missing = collectMissingDescriptions(tool.zodSchema);
         expect(

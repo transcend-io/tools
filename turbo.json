@@ -118,6 +118,14 @@
       "dependsOn": ["build"],
       "outputs": []
     },
+    "@transcend-io/mcp-server-consent#build": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": ["dist/**", "src/ui/generated/**"]
+    },
+    "@transcend-io/mcp-server-consent#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
     "@transcend-io/mcp#typecheck": {
       "dependsOn": ["^build", "//#codegen"],
       "outputs": []
@@ -144,6 +152,18 @@
     "@transcend-io/design-tokens#typecheck": {
       "dependsOn": ["build"],
       "outputs": []
+    },
+    "@transcend-io/custom-function-types#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "scripts/**",
+        "src/**",
+        "!src/__generated__/**",
+        "package.json",
+        "tsconfig.json",
+        "tsdown.config.ts"
+      ],
+      "outputs": ["dist/**", "src/__generated__/**"]
     }
   }
 }

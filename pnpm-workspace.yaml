@@ -13,6 +13,7 @@ catalog:
   '@graphql-typed-document-node/core': ^3.2.0
   '@modelcontextprotocol/ext-apps': ^1.7.5
   '@modelcontextprotocol/sdk': ^1.29.0
+  '@orama/orama': ^3.1.18
   '@tailwindcss/vite': ^4.3.3
   '@terrazzo/cli': 2.0.3
   '@terrazzo/plugin-css': 2.0.3
@@ -35,6 +36,7 @@ catalog:
   semver: ^7.7.4
   syncpack: ^14.2.0
   tailwindcss: ^4.3.3
+  ts-json-schema-generator: ^2.9.0
   tsdown: ^0.21.2
   turbo: ^2.9.14
   typescript: ^6.0.0
@@ -49,6 +51,8 @@ minimumReleaseAgeExclude:
   - '@transcend-io/*'
   # Renovate security update: pnpm@10.34.4
   - pnpm@10.34.4
+  # Renovate security update: undici@6.28.0
+  - undici@6.28.0
 
 onlyBuiltDependencies:
   - esbuild

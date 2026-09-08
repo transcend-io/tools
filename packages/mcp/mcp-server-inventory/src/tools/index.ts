@@ -1,7 +1,6 @@
 import type { ToolDefinition, ToolClients } from '@transcend-io/mcp-server-base';
 
 import { createInventoryAnalyzeTool } from './inventory_analyze.js';
-import { createInventoryCreateDataSiloTool } from './inventory_create_data_silo.js';
 import { createInventoryGetDataSiloTool } from './inventory_get_data_silo.js';
 import { createInventoryListBusinessEntitiesTool } from './inventory_list_business_entities.js';
 import { createInventoryListCatalogIntegrationsTool } from './inventory_list_catalog_integrations.js';
@@ -13,8 +12,9 @@ import { createInventoryListIdentifiersTool } from './inventory_list_identifiers
 import { createInventoryListProcessingPurposesTool } from './inventory_list_processing_purposes.js';
 import { createInventoryListSubDataPointsTool } from './inventory_list_sub_data_points.js';
 import { createInventoryListVendorsTool } from './inventory_list_vendors.js';
-import { createInventoryUpdateDataSiloTool } from './inventory_update_data_silo.js';
 import { createInventoryUpdateOrCreateDataPointTool } from './inventory_update_or_create_data_point.js';
+import { createInventoryWriteCategoryTool } from './inventory_write_category.js';
+import { createInventoryWriteDataSiloTool } from './inventory_write_data_silo.js';
 import { createInventoryWriteProcessingPurposeTool } from './inventory_write_processing_purpose.js';
 import { createInventoryWriteVendorTool } from './inventory_write_vendor.js';
 
@@ -23,8 +23,7 @@ export function getInventoryTools(clients: ToolClients): ToolDefinition[] {
     createInventoryListDataSilosTool(clients),
     createInventoryGetDataSiloTool(clients),
     createInventoryListCatalogIntegrationsTool(clients),
-    createInventoryCreateDataSiloTool(clients),
-    createInventoryUpdateDataSiloTool(clients),
+    createInventoryWriteDataSiloTool(clients),
     createInventoryListVendorsTool(clients),
     createInventoryWriteVendorTool(clients),
     createInventoryListDataPointsTool(clients),
@@ -32,6 +31,7 @@ export function getInventoryTools(clients: ToolClients): ToolDefinition[] {
     createInventoryListSubDataPointsTool(clients),
     createInventoryListIdentifiersTool(clients),
     createInventoryListCategoriesTool(clients),
+    createInventoryWriteCategoryTool(clients),
     createInventoryListProcessingPurposesTool(clients),
     createInventoryWriteProcessingPurposeTool(clients),
     createInventoryListBusinessEntitiesTool(clients),

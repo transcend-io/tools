@@ -79,18 +79,33 @@ describe('MCP Tool Annotations', () => {
 
   describe('destructive tools are annotated correctly', () => {
     const expectedDestructive = [
-      'dsr_cancel',
       'admin_create_api_key',
-      'inventory_create_data_silo',
+      'assessments_submit_response',
+      'consent_bulk_triage',
+      'consent_update_cookies',
+      'consent_update_data_flows',
+      'dsr_cancel',
+      'dsr_enrich_identifiers',
+      'dsr_submit',
       'preferences_delete',
       'preferences_delete_identifiers',
-      'assessments_submit_response',
+      'preferences_update_identifiers',
     ];
 
     it.each(expectedDestructive)('%s has destructiveHint: true', (name) => {
       const tool = toolByName(name);
       expect(tool.annotations.destructiveHint).toBe(true);
       expect(tool.annotations.readOnlyHint).toBe(false);
+    });
+
+    // Exact rather than a lower bound: a tool picking up destructiveHint changes how
+    // every host prompts for it, so it should not happen without editing this list.
+    it('no other tool is marked destructive', () => {
+      const actual = allTools
+        .filter((t) => t.annotations.destructiveHint)
+        .map((t) => t.name)
+        .sort();
+      expect(actual).toEqual([...expectedDestructive].sort());
     });
 
     it('no read-only tool is marked destructive', () => {
@@ -101,13 +116,56 @@ describe('MCP Tool Annotations', () => {
     });
   });
 
+  describe('confirmation-gated tools', () => {
+    const expectedGated = [
+      'dsr_cancel',
+      'dsr_enrich_identifiers',
+      'dsr_submit',
+      'preferences_append_identifiers',
+      'preferences_delete',
+      'preferences_delete_identifiers',
+      'preferences_update_identifiers',
+      'preferences_upsert',
+    ];
+
+    const expectedGatedNonDestructive = ['preferences_append_identifiers', 'preferences_upsert'];
+
+    // Exact in both directions: adding a gate makes a tool refuse on hosts that
+    // cannot ask, and dropping one silently un-guards an irreversible action.
+    it('exactly the expected tools require confirmation', () => {
+      const actual = allTools
+        .filter((t) => t.confirmation)
+        .map((t) => t.name)
+        .sort();
+      expect(actual).toEqual([...expectedGated].sort());
+    });
+
+    it.each(expectedGated)('%s has a non-empty confirmation hint', (name) => {
+      const tool = toolByName(name);
+      expect(tool.confirmation?.hint.trim()).not.toBe('');
+    });
+
+    it('every gated tool is annotated mutating', () => {
+      for (const tool of allTools.filter((t) => t.confirmation)) {
+        expect(tool.annotations.readOnlyHint, `${tool.name}`).toBe(false);
+      }
+    });
+
+    it.each(expectedGatedNonDestructive)(
+      '%s is gated without destructiveHint (confirmation and destructiveHint are independent)',
+      (name) => {
+        const tool = toolByName(name);
+        expect(tool.confirmation?.hint.trim()).not.toBe('');
+        expect(tool.annotations.destructiveHint).toBe(false);
+      },
+    );
+  });
+
   describe('idempotent mutative tools are annotated correctly', () => {
     const expectedIdempotentMutative = [
       'workflows_update_config',
-      'consent_set_preferences',
       'preferences_upsert',
       'preferences_update_identifiers',
-      'inventory_update_data_silo',
       'inventory_write_vendor',
       'inventory_write_processing_purpose',
       'inventory_update_or_create_data_point',

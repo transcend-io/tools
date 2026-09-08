@@ -1,4 +1,5 @@
 import {
+  derivePageInfo,
   TranscendGraphQLBase,
   type ApiKey,
   type ApiKeyCreateInput,
@@ -11,7 +12,39 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import { graphql } from './__generated__/gql.js';
-import type { ScopeName } from './__generated__/graphql.js';
+import type { ScopeName, UserFiltersInput, UserOrder } from './__generated__/graphql.js';
+
+/**
+ * User row returned by {@link AdminMixin.listUsers}, matching Admin Users fields.
+ */
+export interface ListedUser {
+  /** User UUID */
+  id: string;
+  /** Email address */
+  email: string;
+  /** Display name */
+  name: string;
+  /** Whether the user is an organization administrator */
+  isAdmin: boolean;
+  /** Whether the user has been invited but not onboarded */
+  isInvited: boolean;
+  /** Whether the account is locked */
+  isLocked: boolean;
+  /** ISO timestamp of last login, if any */
+  lastLoggedIn?: string;
+  /** Teams the user belongs to */
+  teams: {
+    /** Team UUID */
+    id: string;
+    /** Team display name */
+    name: string;
+  }[];
+  /** Directly assigned scopes */
+  scopes: {
+    /** ScopeName enum value */
+    name: string;
+  }[];
+}
 
 const GetOrganizationDoc = graphql(/* GraphQL */ `
   query AdminGetOrganization {
@@ -36,12 +69,28 @@ const GetCurrentUserDoc = graphql(/* GraphQL */ `
 `);
 
 const ListUsersDoc = graphql(/* GraphQL */ `
-  query AdminListUsers($first: Int, $filterBy: UserFiltersInput) {
-    users(first: $first, filterBy: $filterBy) {
+  query AdminListUsers(
+    $first: Int
+    $offset: Int
+    $filterBy: UserFiltersInput
+    $orderBy: [UserOrder!]
+  ) {
+    users(first: $first, offset: $offset, filterBy: $filterBy, orderBy: $orderBy) {
       nodes {
         id
         email
         name
+        isAdmin
+        isInvited
+        isLocked
+        lastLoggedIn
+        teams {
+          id
+          name
+        }
+        scopes {
+          name
+        }
       }
       totalCount
     }
@@ -49,8 +98,8 @@ const ListUsersDoc = graphql(/* GraphQL */ `
 `);
 
 const ListTeamsDoc = graphql(/* GraphQL */ `
-  query AdminListTeams($first: Int) {
-    teams(first: $first) {
+  query AdminListTeams($first: Int, $offset: Int) {
+    teams(first: $first, offset: $offset) {
       nodes {
         id
         name
@@ -143,31 +192,55 @@ export class AdminMixin extends TranscendGraphQLBase {
   }
 
   async listUsers(
-    options?: ListOptions & { filterBy?: { text?: string } },
-  ): Promise<PaginatedResponse<User>> {
+    options?: Omit<ListOptions, 'filterBy' | 'orderBy'> & {
+      /** Sparse UserFiltersInput; omitted/undefined becomes `{}` on the wire */
+      filterBy?: UserFiltersInput;
+      /** Sort clauses; defaults to null (server default) when omitted */
+      orderBy?: UserOrder[];
+    },
+  ): Promise<PaginatedResponse<ListedUser>> {
+    // Always send an object. Omitting `$filterBy` still resolves to null on the
+    // wire (query still has `filterBy: $filterBy`), and `null` crashes the
+    // users resolver (`Cannot read properties of null (reading 'ids')`).
+    const first = Math.min(options?.first ?? 50, 100);
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListUsersDoc, {
-      first: Math.min(options?.first ?? 50, 100),
-      filterBy: options?.filterBy ?? null,
+      first,
+      offset,
+      filterBy: options?.filterBy ?? {},
+      orderBy: options?.orderBy ?? null,
     });
     return {
       nodes: data.users.nodes.map((node) => ({
         id: node.id,
         email: node.email,
         name: node.name,
-        isActive: true,
-        createdAt: new Date(0).toISOString(),
+        isAdmin: node.isAdmin,
+        isInvited: node.isInvited,
+        isLocked: node.isLocked,
+        lastLoggedIn: node.lastLoggedIn ?? undefined,
+        teams: node.teams.map((team) => ({
+          id: team.id,
+          name: team.name,
+        })),
+        scopes: node.scopes.map((scope) => ({
+          name: scope.name,
+        })),
       })),
-      pageInfo: {
-        hasNextPage: data.users.nodes.length < data.users.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.users.nodes.length,
+        totalCount: data.users.totalCount,
+      }),
       totalCount: data.users.totalCount,
     };
   }
 
   async listTeams(options?: ListOptions): Promise<PaginatedResponse<Team>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListTeamsDoc, {
       first: Math.min(options?.first ?? 50, 100),
+      offset,
     });
     return {
       nodes: data.teams.nodes.map((node) => ({
@@ -175,18 +248,20 @@ export class AdminMixin extends TranscendGraphQLBase {
         name: node.name,
         createdAt: new Date(0).toISOString(),
       })),
-      pageInfo: {
-        hasNextPage: data.teams.nodes.length < data.teams.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.teams.nodes.length,
+        totalCount: data.teams.totalCount,
+      }),
       totalCount: data.teams.totalCount,
     };
   }
 
   async listApiKeys(options?: ListOptions): Promise<PaginatedResponse<ApiKey>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListApiKeysDoc, {
       first: Math.min(options?.first ?? 50, 100),
-      offset: options?.offset ?? 0,
+      offset,
     });
     return {
       nodes: data.apiKeys.nodes.map((node) => ({
@@ -199,10 +274,11 @@ export class AdminMixin extends TranscendGraphQLBase {
         lastUsedAt: node.lastUsedAt ?? undefined,
         createdAt: node.createdAt,
       })),
-      pageInfo: {
-        hasNextPage: data.apiKeys.nodes.length < data.apiKeys.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.apiKeys.nodes.length,
+        totalCount: data.apiKeys.totalCount,
+      }),
       totalCount: data.apiKeys.totalCount,
     };
   }

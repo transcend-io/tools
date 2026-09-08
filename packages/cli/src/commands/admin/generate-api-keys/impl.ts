@@ -1,5 +1,3 @@
-import { writeFileSync } from 'node:fs';
-
 import { ScopeName } from '@transcend-io/privacy-types';
 
 import { SCOPES_BY_TITLE } from '../../../constants.js';
@@ -35,7 +33,7 @@ export async function generateApiKeys(
     transcendUrl,
   }: GenerateApiKeysCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   const scopeNames = scopes.map((scopeTitle) => SCOPES_BY_TITLE[scopeTitle].name as ScopeName);
 
@@ -52,7 +50,7 @@ export async function generateApiKeys(
   });
 
   // Write to disk
-  writeFileSync(file, `${JSON.stringify(apiKeys, null, 2)}\n`);
+  this.fs.writeFileSync(file, `${JSON.stringify(apiKeys, null, 2)}\n`);
   if (errors.length > 0) {
     this.process.exit(1);
   }

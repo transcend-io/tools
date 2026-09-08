@@ -56,6 +56,31 @@
   --color-focus: var(--color-ring-primary, var(--border-focused, #3e2ebc));
 
   /*
+   * KPI / metric cards stay on a light surface even when the host is dark.
+   * Status colors (`text-success`, `text-danger`) are authored for light
+   * backgrounds, and Claude's dark chrome makes them unreadable — so these
+   * deliberately skip host background/text variables and use Transcend light
+   * tokens only.
+   */
+  --color-card: var(--background-default, #ffffff);
+  --color-card-sunken: var(--background-neutral, #ebebef);
+  --color-on-card: var(--text, #1e1d28);
+  --color-on-card-muted: var(--text-subtle, #55535f);
+  --color-on-card-subtle: var(--text-subtlest, #85838f);
+  --color-card-line: var(--border-default, #d6d5db);
+
+  /*
+   * Fills for bars and swatches. Separate from the `--color-success` family
+   * below because those resolve to `--text-*-bold` — near-black green and brown
+   * that read as mud when painted as a shape rather than set as type.
+   */
+  --color-fill-brand: var(--background-brand-bold, #5f5bf7);
+  --color-fill-success: var(--background-success-bold, #008200);
+  --color-fill-warning: var(--background-warning-bold, #c98300);
+  --color-fill-danger: var(--background-danger-bold, #bb0036);
+  --color-fill-neutral: var(--background-neutral, #ebebef);
+
+  /*
    * Brand and status are Transcend's identity, so tokens lead here and the host
    * is only the fallback.
    */
@@ -90,6 +115,10 @@
   --text-heading-sm--line-height: var(--font-heading-sm-line-height, 1.5rem);
   --text-heading-md: var(--font-heading-md-size, 1.125rem);
   --text-heading-md--line-height: var(--font-heading-md-line-height, 1.625rem);
+  /* Ours: a display number that outranks its label, which the heading
+     sizes above are too close to do. */
+  --text-metric: 1.75rem;
+  --text-metric--line-height: 2.125rem;
 
   --radius-sm: var(--border-radius-sm, 6px);
   --radius-md: var(--border-radius-md, 8px);
@@ -105,6 +134,15 @@
   --spacing: 0.25rem;
   --breakpoint-sm: 24rem;
   --breakpoint-md: 32rem;
+  --breakpoint-lg: 48rem;
+
+  /*
+   * Widest a view's content grows before it reads as stretched rather than
+   * full-bleed. A host gives an app whatever width the conversation has, and an
+   * inspector or maximized panel is often far wider than the content can fill.
+   * Structural, so it is ours rather than the host's.
+   */
+  --container-view: 64rem;
 }
 
 @layer base {
@@ -200,14 +238,5 @@
   :focus-visible {
     outline: 2px solid var(--color-focus);
     outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      transition-duration: 0.01ms !important;
-    }
   }
 }

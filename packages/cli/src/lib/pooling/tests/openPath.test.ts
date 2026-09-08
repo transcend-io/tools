@@ -1,87 +1,68 @@
-import { spawn } from 'node:child_process';
+import { describe, it, expect, vi } from 'vitest';
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-import { openPath } from '../os.js';
+import { openPath, type PoolingOsPorts } from '../os.js';
 
 /**
- * Mock child_process BEFORE importing the SUT.
- */
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
-}));
-
-const mSpawn = vi.mocked(spawn);
-
-/**
- * Temporarily override process.platform for a test.
+ * Build operating-system ports for a platform.
  *
- * @param platform - e.g. 'win32' | 'darwin' | 'linux'
- * @returns restore function to reset platform
+ * @param platform - Platform returned by the injected dependency.
+ * @returns Injected ports and spawn spy.
  */
-function mockPlatform(platform: NodeJS.Platform): () => void {
-  const original = process.platform;
-  Object.defineProperty(process, 'platform', { value: platform });
-  return () => {
-    Object.defineProperty(process, 'platform', { value: original });
+function makePorts(platform: NodeJS.Platform): {
+  /** Ports passed to the helper. */
+  ports: PoolingOsPorts;
+  /** Child-process spawn spy. */
+  spawn: ReturnType<typeof vi.fn>;
+} {
+  const spawn = vi.fn(() => ({ unref: vi.fn() }));
+  return {
+    ports: {
+      platform: () => platform,
+      spawn: spawn as unknown as PoolingOsPorts['spawn'],
+    },
+    spawn,
   };
 }
 
 describe('openPath', () => {
-  let restore: () => void;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    if (restore) restore();
-  });
-
   it('returns false for empty path or paths starting with "("', () => {
-    restore = mockPlatform('linux');
-    expect(openPath('')).toBe(false);
-    expect(openPath('(temporary)')).toBe(false);
-    expect(mSpawn).not.toHaveBeenCalled();
+    const { ports, spawn } = makePorts('linux');
+    expect(openPath('', ports)).toBe(false);
+    expect(openPath('(temporary)', ports)).toBe(false);
+    expect(spawn).not.toHaveBeenCalled();
   });
 
   it('windows: uses cmd /c start "" <path>', () => {
-    restore = mockPlatform('win32');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mSpawn.mockReturnValue({ unref: vi.fn() } as any);
+    const { ports, spawn } = makePorts('win32');
 
-    const ok = openPath('C:\\foo\\bar.txt');
+    const ok = openPath('C:\\foo\\bar.txt', ports);
 
     expect(ok).toBe(true);
-    expect(mSpawn).toHaveBeenCalledWith('cmd', ['/c', 'start', '', 'C:\\foo\\bar.txt'], {
+    expect(spawn).toHaveBeenCalledWith('cmd', ['/c', 'start', '', 'C:\\foo\\bar.txt'], {
       stdio: 'ignore',
       detached: true,
     });
   });
 
   it('darwin: uses xdg-open (best-effort) as coded', () => {
-    restore = mockPlatform('darwin');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mSpawn.mockReturnValue({ unref: vi.fn() } as any);
+    const { ports, spawn } = makePorts('darwin');
 
-    const ok = openPath('/Users/me/file.pdf');
+    const ok = openPath('/Users/me/file.pdf', ports);
 
     expect(ok).toBe(true);
-    expect(mSpawn).toHaveBeenCalledWith('xdg-open', ['/Users/me/file.pdf'], {
+    expect(spawn).toHaveBeenCalledWith('xdg-open', ['/Users/me/file.pdf'], {
       stdio: 'ignore',
       detached: true,
     });
   });
 
   it('linux: uses xdg-open <path>', () => {
-    restore = mockPlatform('linux');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mSpawn.mockReturnValue({ unref: vi.fn() } as any);
+    const { ports, spawn } = makePorts('linux');
 
-    const ok = openPath('/tmp/a.png');
+    const ok = openPath('/tmp/a.png', ports);
 
     expect(ok).toBe(true);
-    expect(mSpawn).toHaveBeenCalledWith('xdg-open', ['/tmp/a.png'], {
+    expect(spawn).toHaveBeenCalledWith('xdg-open', ['/tmp/a.png'], {
       stdio: 'ignore',
       detached: true,
     });

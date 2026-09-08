@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs';
-
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
@@ -21,7 +19,6 @@ import {
   writeCustomFunctionIdsToManifest,
 } from '../../../lib/custom-functions/manifest.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
-import { logger } from '../../../logger.js';
 
 export interface CustomFunctionsPushCommandFlags {
   auth: string;
@@ -53,12 +50,12 @@ export async function push(
     sombraId,
   }: CustomFunctionsPushCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // This command operates on a single Transcend instance
-  const apiKeyOrList = validateTranscendAuth(auth);
+  const apiKeyOrList = validateTranscendAuth(auth, this);
   if (Array.isArray(apiKeyOrList)) {
-    logger.error(
+    this.logger.error(
       colors.red(
         'transcend custom-functions push does not support a list of API keys — pass a single API key.',
       ),
@@ -68,8 +65,8 @@ export async function push(
   const apiKey = apiKeyOrList as string;
 
   // Read and validate the manifest
-  if (!existsSync(file)) {
-    logger.error(
+  if (!this.fs.existsSync(file)) {
+    this.logger.error(
       colors.red(
         `The manifest file does not exist on disk: ${file}. ` +
           'You can specify the file path using --file=./transcend-functions.yml',
@@ -78,14 +75,14 @@ export async function push(
     this.process.exit(1);
   }
   const vars = parseVariablesFromString(variables);
-  logger.info(colors.magenta(`Reading manifest "${file}"...`));
+  this.logger.info(colors.magenta(`Reading manifest "${file}"...`));
   const configs = readCustomFunctionsManifest(file, vars);
-  logger.info(colors.green(`Found ${configs.length} custom function(s) in "${file}"`));
+  this.logger.info(colors.green(`Found ${configs.length} custom function(s) in "${file}"`));
 
   const client = buildTranscendGraphQLClient(transcendUrl, apiKey);
 
   // Fetch existing functions once to diff against
-  const existing = await fetchAllCustomFunctions(client, { logger });
+  const existing = await fetchAllCustomFunctions(client, { logger: this.logger });
 
   // Each custom function belongs to a single Sombra gateway whose keys sign
   // its code, so code must be signed against that specific gateway's customer
@@ -102,7 +99,7 @@ export async function push(
     if (cached) {
       return cached;
     }
-    logger.info(
+    this.logger.info(
       colors.magenta(
         `Connecting to the ${
           gatewaySombraId ? `Sombra gateway "${gatewaySombraId}"` : 'primary Sombra gateway'
@@ -110,7 +107,7 @@ export async function push(
       ),
     );
     const sombra = await createSombraGotInstance(transcendUrl, apiKey, {
-      logger,
+      logger: this.logger,
       sombraApiKey,
       ...(gatewaySombraId ? { sombraId: gatewaySombraId } : {}),
     });
@@ -135,7 +132,7 @@ export async function push(
     if (!input.sombraAuthEnv) {
       return sombraAuth;
     }
-    const value = process.env[input.sombraAuthEnv];
+    const value = this.process.env[input.sombraAuthEnv];
     if (!value) {
       throw new Error(
         `Custom function "${input.name}" sets sombra-auth-env: ${input.sombraAuthEnv}, ` +
@@ -174,7 +171,7 @@ export async function push(
         ...(!skipTests && input.testPayloads !== undefined
           ? { testPayloads: input.testPayloads }
           : {}),
-        logger,
+        logger: this.logger,
       });
       results.push({ name: input.name, result });
 
@@ -184,16 +181,16 @@ export async function push(
       switch (result.outcome) {
         case 'created':
           if (result.createdDataSilo && result.dataSiloId) {
-            logger.info(
+            this.logger.info(
               colors.green(
                 `Created DSR integration (data silo ${result.dataSiloId}) for "${input.name}"`,
               ),
             );
           }
-          logger.info(colors.green(`Created custom function "${input.name}"${suffix}`));
+          this.logger.info(colors.green(`Created custom function "${input.name}"${suffix}`));
           break;
         case 'updated':
-          logger.info(
+          this.logger.info(
             colors.green(
               `Pushed new revision to "${input.name}"${suffix}${changes}${
                 result.promoted ? ' and promoted to active' : ' as a draft'
@@ -202,14 +199,14 @@ export async function push(
           );
           break;
         case 'metadata-updated':
-          logger.info(
+          this.logger.info(
             colors.green(
               `Updated metadata for "${input.name}"${changes} — code unchanged, no new revision`,
             ),
           );
           break;
         case 'skipped':
-          logger.info(
+          this.logger.info(
             colors.yellow(
               `Skipped "${input.name}" — no changes detected ` +
                 '(env variable values cannot be diffed; use --force if only values changed)',
@@ -217,7 +214,7 @@ export async function push(
           );
           break;
         case 'would-create':
-          logger.info(
+          this.logger.info(
             colors.cyan(
               `[dry run] Would create custom function "${input.name}"${
                 input.type === CustomFunctionType.Dsr && !input.dataSiloId
@@ -228,13 +225,13 @@ export async function push(
           );
           break;
         case 'would-update':
-          logger.info(
+          this.logger.info(
             colors.cyan(`[dry run] Would push a new revision to "${input.name}"${changes}`),
           );
           break;
         case 'test-failed': {
           const failed = (result.testResults ?? []).filter(({ passed }) => !passed);
-          logger.error(
+          this.logger.error(
             colors.red(
               `Rejected "${input.name}" — ${failed.length} of ${
                 result.testResults?.length ?? 0
@@ -243,7 +240,7 @@ export async function push(
           );
           failed.forEach(({ payloadType, result: execution }) => {
             const label = payloadType ? `[${payloadType}] ` : '';
-            logger.error(
+            this.logger.error(
               colors.red(
                 `  ${label}${
                   execution.error
@@ -253,11 +250,11 @@ export async function push(
               ),
             );
             execution.logs.forEach(({ file: logFile, message }) => {
-              logger.error(colors.red(`    [${logFile}] ${message}`));
+              this.logger.error(colors.red(`    [${logFile}] ${message}`));
             });
           });
           if (result.createdDataSilo) {
-            logger.error(
+            this.logger.error(
               colors.red(
                 `  The DSR integration (data silo) created for "${input.name}" was rolled back.`,
               ),
@@ -274,7 +271,7 @@ export async function push(
         (input.testPayloads === undefined || input.testPayloads.length === 0) &&
         (result.outcome === 'created' || result.outcome === 'updated')
       ) {
-        logger.warn(
+        this.logger.warn(
           colors.yellow(
             `Custom function "${input.name}" was pushed without a test run — add a ` +
               'test-payload to its manifest entry to enable test-before-promote.',
@@ -302,7 +299,7 @@ export async function push(
             covered === CustomFunctionPayloadType.DataPoint
               ? CustomFunctionPayloadType.RequestEnricher
               : CustomFunctionPayloadType.DataPoint;
-          logger.warn(
+          this.logger.warn(
             colors.yellow(
               `DSR custom function "${input.name}" only tests its ${covered} export — if it ` +
                 `also implements the ${uncovered} export, add a test payload with ` +
@@ -313,7 +310,7 @@ export async function push(
       }
     } catch (err) {
       results.push({ name: input.name, error: err as Error });
-      logger.error(
+      this.logger.error(
         colors.red(`Failed to sync custom function "${input.name}": ${(err as Error).message}`),
       );
     }
@@ -336,7 +333,7 @@ export async function push(
     });
     const updatedCount = writeCustomFunctionIdsToManifest(file, idsByIndex);
     if (updatedCount > 0) {
-      logger.info(
+      this.logger.info(
         colors.green(
           `Wrote assigned id(s) back to ${updatedCount} manifest entr(ies) in "${file}" — ` +
             'commit this change so future pushes match by ID.',
@@ -350,7 +347,7 @@ export async function push(
     results.filter(({ result }) => result?.outcome === outcome).length;
   const failures = results.filter(({ error }) => error !== undefined);
   const rejected = count('test-failed');
-  logger.info(
+  this.logger.info(
     colors.magenta(
       `Custom function sync complete: ${count('created') + count('would-create')} created, ${
         count('updated') + count('would-update')

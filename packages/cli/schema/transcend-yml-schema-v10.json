@@ -328,7 +328,8 @@
                     "manageAssignedRules",
                     "executeRules",
                     "viewCustomFunction",
-                    "manageCustomFunction"
+                    "manageCustomFunction",
+                    "viewUsage"
                   ]
                 }
               }
@@ -5918,6 +5919,7 @@
                     "auditorRun",
                     "auditorSchedule",
                     "businessEntity",
+                    "consentSite",
                     "dataSubCategory",
                     "dataPoint",
                     "dataPointLevel",
@@ -34127,7 +34129,7 @@
         },
         "consentPrecedence": {
           "type": "string",
-          "enum": ["user", "signal"]
+          "enum": ["user", "signal", "signals"]
         },
         "unknownRequestPolicy": {
           "type": "string",
@@ -43198,6 +43200,7 @@
                         "auditorRun",
                         "auditorSchedule",
                         "businessEntity",
+                        "consentSite",
                         "dataSubCategory",
                         "dataPoint",
                         "dataPointLevel",
@@ -43240,6 +43243,7 @@
                         "auditorRun",
                         "auditorSchedule",
                         "businessEntity",
+                        "consentSite",
                         "dataSubCategory",
                         "dataPoint",
                         "dataPointLevel",
