@@ -16,6 +16,14 @@ narrow the search.
 now exposes `text` to match on group title and `templateIds` to restrict to groups built
 from given templates, and pages with `offset`.
 
+Two corrections from a cold-read probe. The `text` filter was documented as matching "the group
+title"; it also matches the description, which the probe caught when searching "Rideshare"
+returned a group whose title says only "App Tracking Transparency (ATT) Compliance" — it had no
+way to tell whether its result set was over-broad or incomplete. And an empty result now carries
+a note naming the filters applied and saying the query succeeded, as `assessments_list` already
+did; without it a zero read exactly like a failed lookup, and the probe spent a second unfiltered
+call before it would trust one.
+
 `hasNextPage` was also computed as `nodes.length < totalCount`, which reports another page
 from the last page of any multi-page result. It is now `offset + nodes.length < totalCount`,
 matching the fix made to `assessments_list`.

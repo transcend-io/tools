@@ -8,6 +8,7 @@ import {
 import { AssessmentFormTemplateSource } from '@transcend-io/privacy-types';
 
 import type { AssessmentsMixin } from '../graphql.js';
+import { describeNoMatches } from '../helpers/describeNoMatches.js';
 
 /**
  * Three-query test. An agent holding only the tool list should land here, and
@@ -28,7 +29,7 @@ import type { AssessmentsMixin } from '../graphql.js';
  */
 
 export const ListTemplatesSchema = OffsetPaginationSchema.extend({
-  text: z.string().optional().describe('Free-text match on the template title'),
+  text: z.string().optional().describe('Free-text match on the template title and description'),
   ids: z.array(z.string()).optional().describe('Specific template IDs to fetch'),
   statuses: z
     .array(z.enum(['DRAFT', 'PUBLISHED']))
@@ -46,17 +47,23 @@ export const ListTemplatesSchema = OffsetPaginationSchema.extend({
     .array(z.string())
     .optional()
     .describe(
-      'Transcend user IDs who created the template. Resolve names with `admin_list_users`.',
+      'Transcend user IDs who created the template. Resolve names with `admin_list_users`. ' +
+        'Templates that predate this being recorded have no creator and match no one.',
     ),
   lastEditorIds: z
     .array(z.string())
     .optional()
-    .describe('Transcend user IDs who last edited it. Resolve names with `admin_list_users`.'),
+    .describe(
+      'Transcend user IDs who last edited it. Resolve names with `admin_list_users`. ' +
+        'A template nobody has edited matches no one.',
+    ),
   includeDetails: z
     .boolean()
     .optional()
     .default(false)
-    .describe('Also return who created and who last edited each template'),
+    .describe(
+      'Also return who created and who last edited each template, where either was recorded',
+    ),
 });
 export type ListTemplatesInput = z.infer<typeof ListTemplatesSchema>;
 
@@ -102,9 +109,23 @@ export function createAssessmentsListTemplatesTool(clients: ToolClients) {
         },
       });
 
+      const appliedFilters = Object.entries({
+        text,
+        ids: ids?.length,
+        statuses: statuses?.length,
+        sources: sources?.length,
+        creatorIds: creatorIds?.length,
+        lastEditorIds: lastEditorIds?.length,
+      })
+        .filter(([, value]) => Boolean(value))
+        .map(([name]) => name);
+
       return createListResult(result.nodes, {
         totalCount: result.totalCount,
         hasNextPage: result.pageInfo?.hasNextPage,
+        ...(result.totalCount === 0 && {
+          paginationNote: describeNoMatches('templates', appliedFilters),
+        }),
       });
     },
   });

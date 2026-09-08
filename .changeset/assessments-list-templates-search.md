@@ -20,6 +20,13 @@ match nothing in the catalog. Every row now carries `source`, which is short eno
 be worth it and lets a caller read back what it filtered on; the two people sit behind
 `includeDetails`, defaulting to false.
 
+A cold-read probe against a live org drove the same corrections here: `text` matches the
+description as well as the title, an empty result now says which filters were applied and that
+the query succeeded, and the creator and last editor are described as recorded-where-available
+rather than guaranteed. That last one matters for the filters: six of fourteen templates in the
+test org have no creator on record, so `creatorIds` can never match them, and the probe was one
+inference away from reporting that as "nobody built these".
+
 More seriously, the mapper fabricated three fields it never fetched: `version: '1.0.0'`,
 `isActive: true`, and `createdAt: new Date().toISOString()`. That last one reported every
 template in the organization as created at the moment of the call, which an agent asked

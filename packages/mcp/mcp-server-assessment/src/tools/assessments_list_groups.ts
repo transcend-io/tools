@@ -8,9 +8,10 @@ import {
 
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentGroupUrl } from '../helpers/buildAssessmentLinks.js';
+import { describeNoMatches } from '../helpers/describeNoMatches.js';
 
 export const ListGroupsSchema = OffsetPaginationSchema.extend({
-  text: z.string().optional().describe('Free-text match on the group title'),
+  text: z.string().optional().describe('Free-text match on the group title and description'),
   ids: z
     .array(z.string())
     .optional()
@@ -55,9 +56,20 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
         groupUrl: buildAssessmentGroupUrl(dashboardUrl, node.id),
       }));
 
+      const appliedFilters = Object.entries({
+        text,
+        ids: ids?.length,
+        templateIds: templateIds?.length,
+      })
+        .filter(([, value]) => Boolean(value))
+        .map(([name]) => name);
+
       return createListResult(nodesWithLinks, {
         totalCount: result.totalCount,
         hasNextPage: result.pageInfo?.hasNextPage,
+        ...(result.totalCount === 0 && {
+          paginationNote: describeNoMatches('assessment groups', appliedFilters),
+        }),
       });
     },
   });

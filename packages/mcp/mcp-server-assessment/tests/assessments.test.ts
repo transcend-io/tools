@@ -460,6 +460,39 @@ describe('Assessment Tools', () => {
       expect(result.success).toBe(false);
     });
 
+    it('says a filter matched nothing rather than returning a bare empty page', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ sources: ['IMPORT'] }) as never,
+      )) as { paginationNote?: string };
+
+      // An empty array alone reads exactly like a failed lookup, and a probe
+      // agent spent a second unfiltered call before it would trust the zero.
+      expect(result.paginationNote).toContain('sources');
+      expect(result.paginationNote).toContain('query succeeded');
+    });
+
+    it('distinguishes an empty organization from an over-narrow filter', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        paginationNote?: string;
+      };
+
+      expect(result.paginationNote).toContain('no templates');
+    });
+
     it('leaves the people off the row until they are asked for', async () => {
       mockGraphql.listAssessmentTemplates.mockResolvedValue({
         nodes: [{ id: 'tpl-7', title: 'Vendor Onboarding', source: 'IMPORT' }],
@@ -1114,6 +1147,22 @@ describe('Assessment Tools', () => {
         expect.objectContaining({ filterBy: { ids: ['grp-1'] } }),
       );
       expect(result.data[0]!.assessmentFormTemplate.id).toBe('tpl-7');
+    });
+
+    it('assessments_list_groups says a filter matched nothing', async () => {
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ text: 'Nothing By This Name' }) as never,
+      )) as { paginationNote?: string };
+
+      expect(result.paginationNote).toContain('text');
+      expect(result.paginationNote).toContain('query succeeded');
     });
 
     it('assessments_list_groups no longer accepts a cursor', () => {
