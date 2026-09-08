@@ -12,3 +12,5 @@ The same `transcend-custom-functions` skill can also be installed directly from 
 The guided setup previews its changes and finishes with clear next steps and a compact prompt for handing remaining implementation or CI work to an AI coding agent.
 
 Use `--parameters=name:value` to fill `<<parameters.name>>` placeholders. The existing `--variables` spelling remains available as a compatibility alias.
+
+For safe local runs without network access, unresolved environment-only parameters receive synthetic placeholder values with a warning; pushes and file-path parameters still require explicit values.

@@ -13,10 +13,12 @@ import {
 import {
   buildLocalSimulatorInvocation,
   LOCAL_SIMULATOR_MAX_OUTPUT_BYTES,
+  prepareLocalSimulatorParameters,
   redactLocalSimulatorOutput,
   truncateLocalSimulatorOutput,
 } from '../../../lib/custom-functions/local-simulator.js';
 import {
+  parseCustomFunctionsManifest,
   readCustomFunctionsManifest,
   type CustomFunctionManifestConfig,
 } from '../../../lib/custom-functions/manifest.js';
@@ -103,10 +105,16 @@ export async function run(
       );
     }
 
-    const configs = readCustomFunctionsManifest(
-      state.manifestPath,
-      parseParametersFromFlags(flags),
+    const parsedManifest = parseCustomFunctionsManifest(
+      this.fs.readFileSync(state.manifestPath, 'utf8'),
+      { allowExternalPaths: true },
     );
+    const localParameters = prepareLocalSimulatorParameters(
+      parsedManifest,
+      parseParametersFromFlags(flags),
+      flags.allowNetwork,
+    );
+    const configs = readCustomFunctionsManifest(state.manifestPath, localParameters.parameters);
     if (configs.length === 0) {
       throw new Error('The Custom Function manifest does not define any functions.');
     }
@@ -168,6 +176,15 @@ export async function run(
         'Local simulator: sdk.fetch calls are logged and return HTTP 200 without sending a request; KV state starts empty for each payload.',
       ),
     );
+    if (localParameters.defaulted.length > 0) {
+      this.logger.warn(
+        colors.yellow(
+          `Using local placeholder values for environment parameters: ${localParameters.defaulted.join(
+            ', ',
+          )}. Pass --parameters to override them.`,
+        ),
+      );
+    }
     if (flags.allowNetwork) {
       this.logger.warn(
         colors.yellow(

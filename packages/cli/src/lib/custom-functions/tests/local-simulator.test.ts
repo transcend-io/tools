@@ -8,7 +8,9 @@ import {
   LOCAL_SIMULATOR_DATA_SILO_ID,
   LOCAL_SIMULATOR_DENO_DIR,
   LOCAL_SIMULATOR_IDENTIFIER,
+  LOCAL_SIMULATOR_PARAMETER_PREFIX,
   LOCAL_SIMULATOR_TIMEOUT_MS,
+  prepareLocalSimulatorParameters,
   prepareLocalSimulatorPayload,
   redactLocalSimulatorOutput,
   truncateLocalSimulatorOutput,
@@ -18,6 +20,41 @@ import { generateCustomFunctionTemplate } from '../scaffold-templates.js';
 const ENRICHER_PAYLOAD = JSON.parse(
   generateCustomFunctionTemplate('Enricher', 'dsr-enricher').payloadFiles[0]!.contents,
 ) as object;
+
+describe('prepareLocalSimulatorParameters', () => {
+  const manifest = {
+    functions: [
+      {
+        name: 'Local example',
+        code: './functions/<<parameters.source>>.ts',
+        env: {
+          API_TOKEN: '<<parameters.apiToken>>',
+          SOURCE: '<<parameters.source>>',
+        },
+      },
+    ],
+  };
+
+  it('defaults unresolved environment-only parameters without network access', () => {
+    expect(prepareLocalSimulatorParameters(manifest, {}, false)).toEqual({
+      parameters: {
+        apiToken: `${LOCAL_SIMULATOR_PARAMETER_PREFIX}apiToken`,
+      },
+      defaulted: ['apiToken'],
+    });
+  });
+
+  it('preserves explicit values and does not default with network access', () => {
+    expect(prepareLocalSimulatorParameters(manifest, { apiToken: 'explicit' }, false)).toEqual({
+      parameters: { apiToken: 'explicit' },
+      defaulted: [],
+    });
+    expect(prepareLocalSimulatorParameters(manifest, {}, true)).toEqual({
+      parameters: {},
+      defaulted: [],
+    });
+  });
+});
 
 describe('prepareLocalSimulatorPayload', () => {
   it('adds production-style DSR defaults without mutating the fixture', () => {

@@ -48,7 +48,7 @@ export default function ({ environment, payload }: CustomFunction.GeneralArgumen
       context,
       {
         function: 'Log locally',
-        parameters: 'testToken:local-secret',
+        parameters: '',
         variables: '',
         noInteractive: true,
         allowNetwork: false,
@@ -59,6 +59,9 @@ export default function ({ environment, payload }: CustomFunction.GeneralArgumen
     expect(context.stdout).toContain('function log: visible');
     expect(context.stdout).toContain('parameter: [REDACTED]');
     expect(context.stdout).toContain('Passed "Log locally" (payload 1)');
+    expect(context.stderr).toContain(
+      'Using local placeholder values for environment parameters: testToken.',
+    );
     expect(context.process.exitCode).toBeUndefined();
   }, 30_000);
 

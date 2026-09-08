@@ -22,7 +22,7 @@ export const runCommand = buildCommand({
       parameters: {
         kind: 'parsed',
         parse: String,
-        brief: 'Comma-separated parameter values such as apiKey:value',
+        brief: 'Comma-separated parameter overrides such as apiKey:value',
         default: '',
       },
       variables: {

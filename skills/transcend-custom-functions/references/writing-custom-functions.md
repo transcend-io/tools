@@ -51,7 +51,7 @@ transcend custom-functions run "<custom-function-directory>" \
   --function="<function-name>"
 ```
 
-The local simulator mirrors Deno permissions, payload preparation, export selection, timeouts, environment isolation, and KV limits. It starts KV empty for each fixture and simulates `sdk.fetch` with a logged HTTP 200 response without making a request. Native network calls are denied unless the user explicitly passes `--allowNetwork`; those real requests can have side effects. Treat the simulator as a fast development loop, not proof of production behavior.
+The local simulator mirrors Deno permissions, payload preparation, export selection, timeouts, environment isolation, and KV limits. It starts KV empty for each fixture and simulates `sdk.fetch` with a logged HTTP 200 response without making a request. With networking disabled, unresolved environment-only parameters receive synthetic local values; use `--parameters="name:value"` to override them. Native network calls are denied unless the user explicitly passes `--allowNetwork`; those real requests can have side effects. Treat the simulator as a fast development loop, not proof of production behavior.
 
 ## Validate and deploy
 
@@ -65,4 +65,4 @@ transcend custom-functions push \
   --dryRun
 ```
 
-Fix every check failure before pushing. Keep a revision as a draft with `--promote=false`. After the first successful push, use `--updateManifest` to record assigned IDs for stable future matching.
+Pushes do not synthesize parameters, so pass every `<<parameters.name>>` value through `--parameters="name:value"`. Fix every check failure before pushing. Keep a revision as a draft with `--promote=false`. After the first successful push, use `--updateManifest` to record assigned IDs for stable future matching.

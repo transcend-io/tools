@@ -12,7 +12,7 @@ import {
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import Ajv from 'ajv';
 
-import type { CustomFunctionManifestConfig } from './manifest.js';
+import type { CustomFunctionManifestConfig, CustomFunctionsManifest } from './manifest.js';
 
 /** Value injected when production-only identifiers are absent from a fixture. */
 export const LOCAL_SIMULATOR_IDENTIFIER = 'example-identifier';
@@ -32,6 +32,9 @@ export const LOCAL_SIMULATOR_MAX_ENV_VALUE_BYTES = 64 * 1024;
 /** Isolated dependency cache readable by simulated functions. */
 export const LOCAL_SIMULATOR_DENO_DIR = join(tmpdir(), 'transcend-custom-functions-deno');
 
+/** Prefix for synthetic values assigned to unresolved local-only parameters. */
+export const LOCAL_SIMULATOR_PARAMETER_PREFIX = 'local-placeholder-';
+
 const RESERVED_ENV_NAMES = new Set([
   'DENO_CERT',
   'DENO_DIR',
@@ -49,6 +52,59 @@ const payloadValidators = {
   datapoint: ajv.compile(DSR_DATAPOINT_CUSTOM_FUNCTION_PAYLOAD_SCHEMA),
   enricher: ajv.compile(DSR_REQUEST_ENRICHER_CUSTOM_FUNCTION_PAYLOAD_SCHEMA),
 };
+
+/**
+ * Find parameter placeholders in a manifest value.
+ *
+ * @param value - Manifest value
+ * @returns Unique parameter names
+ */
+function parameterNames(value: unknown): string[] {
+  const serialized = JSON.stringify(value) ?? '';
+  return [
+    ...new Set(Array.from(serialized.matchAll(/<<parameters\.([^>]+)>>/gu), (match) => match[1]!)),
+  ];
+}
+
+/**
+ * Add harmless defaults for unresolved environment-only parameters.
+ *
+ * Defaults are disabled whenever native networking is enabled. Parameters
+ * referenced by source or payload paths remain required because substituting
+ * those would change which files execute.
+ *
+ * @param manifest - Parsed manifest
+ * @param provided - Explicit CLI parameters
+ * @param allowNetwork - Whether native network calls are enabled
+ * @returns Complete values and the names that received local defaults
+ */
+export function prepareLocalSimulatorParameters(
+  manifest: Pick<CustomFunctionsManifest, 'functions'>,
+  provided: Record<string, string>,
+  allowNetwork: boolean,
+): { parameters: Record<string, string>; defaulted: string[] } {
+  const parameters = { ...provided };
+  if (allowNetwork) {
+    return { parameters, defaulted: [] };
+  }
+  const pathParameterNames = new Set(
+    parameterNames(
+      manifest.functions.flatMap((entry) => [
+        entry.code,
+        entry['test-payload'],
+        ...(entry['test-payloads'] ?? []).map(({ payload }) => payload),
+      ]),
+    ),
+  );
+  const environmentParameterNames = parameterNames(manifest.functions.map(({ env }) => env));
+  const defaulted = environmentParameterNames.filter(
+    (name) => !Object.hasOwn(parameters, name) && !pathParameterNames.has(name),
+  );
+  defaulted.forEach((name) => {
+    parameters[name] = `${LOCAL_SIMULATOR_PARAMETER_PREFIX}${name}`;
+  });
+  return { parameters, defaulted };
+}
 
 /** Complete local Deno process invocation. */
 export interface LocalSimulatorInvocation {
