@@ -120,7 +120,7 @@ describe('custom-functions init', () => {
 
     await init.call(context, buildFlags({ json: false }), target);
 
-    expect(context.stdout).toContain('AI handoff:');
+    expect(context.stdout).toContain('AI handoff (paste this prompt to your coding agent):');
     expect(context.stdout).toContain('add equivalent CI for this repository');
     expect(context.stdout).toContain('install Deno 2.x');
   });

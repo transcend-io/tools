@@ -85,7 +85,7 @@ describe('custom-functions new', () => {
 
     await newCustomFunction.call(context, buildFlags({ json: false }), target);
 
-    expect(context.stdout).toContain('AI handoff:');
+    expect(context.stdout).toContain('AI handoff (paste this prompt to your coding agent):');
     expect(context.stdout).toContain('implement `Example Function`');
     expect(context.stdout).toContain('replace the example fixtures with realistic cases');
   });

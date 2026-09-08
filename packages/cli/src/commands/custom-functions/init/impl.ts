@@ -224,7 +224,7 @@ export async function init(
         this.logger.info(`  ${index + 1}. ${step}`);
       });
     }
-    this.logger.info('\nAI handoff:');
+    this.logger.info('\nAI handoff (paste this prompt to your coding agent):');
     this.logger.info(
       `  ${buildInitAiHandoff({
         targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),

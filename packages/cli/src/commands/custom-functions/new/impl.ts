@@ -183,7 +183,7 @@ export async function _new(
     const hasSkill = state.existingSkillDirectories.some(({ path }) =>
       this.fs.existsSync(join(skillRoot, path, CUSTOM_FUNCTION_SKILL_NAME, 'SKILL.md')),
     );
-    this.logger.info('\nAI handoff:');
+    this.logger.info('\nAI handoff (paste this prompt to your coding agent):');
     this.logger.info(
       `  ${buildNewFunctionAiHandoff({
         displayName: generated.displayName,
