@@ -369,9 +369,10 @@ function denoExtension(path: string): string {
 /**
  * Resolve the import-map input supported by `deno doc`.
  *
- * Deno 2.4 does not expose `--config` for `doc`. A config with inline
- * `imports` is itself a valid import map; an `importMap` reference must be
- * followed explicitly.
+ * Deno 2.4 does not expose `--config` for `doc`. A full `deno.json` is not a
+ * valid import map when it also has `tasks`, `lint`, `fmt`, or
+ * `compilerOptions`, so inline `imports` / `scopes` are passed as a data URL.
+ * An `importMap` reference is followed explicitly.
  *
  * @param context - CLI context
  * @param manifestDirectory - Approved project root
@@ -389,16 +390,35 @@ function resolveDocImportMap(
   const config = parseJsonc(context.fs.readFileSync(configPath, 'utf8')) as {
     /** Optional separate import map. */
     importMap?: unknown;
+    /** Inline import map entries. */
+    imports?: unknown;
+    /** Inline import map scopes. */
+    scopes?: unknown;
   };
-  if (typeof config?.importMap !== 'string') {
-    return configPath;
+  if (typeof config?.importMap === 'string') {
+    if (/^[a-z][a-z\d+.-]*:/iu.test(config.importMap)) {
+      return config.importMap;
+    }
+    const importMapPath = resolve(dirname(configPath), config.importMap);
+    assertPathPhysicallyContained(context, manifestDirectory, importMapPath);
+    return importMapPath;
   }
-  if (/^[a-z][a-z\d+.-]*:/iu.test(config.importMap)) {
-    return config.importMap;
+  const importMap: {
+    /** Bare-specifier remappings. */
+    imports?: unknown;
+    /** Scoped remappings. */
+    scopes?: unknown;
+  } = {};
+  if (config.imports !== undefined) {
+    importMap.imports = config.imports;
   }
-  const importMapPath = resolve(dirname(configPath), config.importMap);
-  assertPathPhysicallyContained(context, manifestDirectory, importMapPath);
-  return importMapPath;
+  if (config.scopes !== undefined) {
+    importMap.scopes = config.scopes;
+  }
+  if (Object.keys(importMap).length === 0) {
+    return undefined;
+  }
+  return `data:application/json,${encodeURIComponent(JSON.stringify(importMap))}`;
 }
 
 /**

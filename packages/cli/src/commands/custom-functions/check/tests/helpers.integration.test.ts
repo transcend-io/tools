@@ -6,11 +6,11 @@ import { CUSTOM_FUNCTION_TYPES_VERSION } from '@transcend-io/custom-function-typ
 import { afterAll, describe, expect, it } from 'vitest';
 
 import { insertCustomFunctionManifestEntry } from '../../../../lib/custom-functions/manifest.js';
-import { mergeDenoConfiguration } from '../../../../lib/custom-functions/scaffold-config.js';
 import {
   EMPTY_CUSTOM_FUNCTION_MANIFEST,
   prepareGeneratedCustomFunction,
 } from '../../../../lib/custom-functions/scaffold-planning.js';
+import { localCustomFunctionTypesDenoConfiguration } from '../../../../lib/custom-functions/tests/local-contract-specifier.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { runCustomFunctionChecks } from '../helpers.js';
 
@@ -36,7 +36,7 @@ describe('runCustomFunctionChecks with Deno 2', () => {
     });
     writeFileSync(
       join(root, 'deno.json'),
-      mergeDenoConfiguration(null, CUSTOM_FUNCTION_TYPES_VERSION),
+      localCustomFunctionTypesDenoConfiguration(CUSTOM_FUNCTION_TYPES_VERSION),
     );
 
     const result = await runCustomFunctionChecks(buildContextForTest({ cwd: root }), {

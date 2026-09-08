@@ -11,11 +11,11 @@ import {
 import Ajv from 'ajv';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { mergeDenoConfiguration } from '../scaffold-config.js';
 import {
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
   generateCustomFunctionTemplate,
 } from '../scaffold-templates.js';
+import { localCustomFunctionTypesDenoConfiguration } from './local-contract-specifier.js';
 
 const temporaryRoots: string[] = [];
 
@@ -52,7 +52,10 @@ describe('generated Custom Function artifacts', () => {
       const sourcePath = join(root, 'function.ts');
       const configPath = join(root, 'deno.json');
       writeFileSync(sourcePath, generated.sourceFile.contents);
-      writeFileSync(configPath, mergeDenoConfiguration(null, CUSTOM_FUNCTION_TYPES_VERSION));
+      writeFileSync(
+        configPath,
+        localCustomFunctionTypesDenoConfiguration(CUSTOM_FUNCTION_TYPES_VERSION),
+      );
 
       expect(() =>
         execFileSync('deno', ['check', `--config=${configPath}`, sourcePath], {
