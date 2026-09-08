@@ -50,6 +50,16 @@ export function displayProjectPath(cwd: string, path: string): string {
 }
 
 /**
+ * Quote one value for POSIX-compatible command snippets.
+ *
+ * @param value - Raw command argument
+ * @returns Safely single-quoted argument
+ */
+export function quoteShellArgument(value: string): string {
+  return `'${value.replace(/'/gu, "'\\''")}'`;
+}
+
+/**
  * Convert an internal mutation to its stable public shape.
  *
  * @param cwd - Working directory

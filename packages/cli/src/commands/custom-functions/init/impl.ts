@@ -13,11 +13,6 @@ import {
 } from '../../../lib/custom-functions/deno-runtime.js';
 import { discoverCustomFunctionProject } from '../../../lib/custom-functions/project-discovery.js';
 import {
-  CustomFunctionPrompts,
-  PromptCancelledError,
-  type PromptChoice,
-} from '../../../lib/custom-functions/prompts.js';
-import {
   CustomFunctionSetupFeature,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
 } from '../../../lib/custom-functions/scaffold-model.js';
@@ -32,6 +27,11 @@ import {
   displayProjectPath,
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
+import {
+  PromptCancelledError,
+  type PromptChoice,
+  ScaffoldPrompts,
+} from '../../../lib/scaffolding/prompts.js';
 
 /** Flags for `custom-functions init`. */
 export interface CustomFunctionInitFlags {
@@ -91,7 +91,7 @@ function isInteractiveInvocation(
  * @returns Selected setup features
  */
 async function resolveFeatures(
-  prompts: CustomFunctionPrompts,
+  prompts: ScaffoldPrompts,
   flags: CustomFunctionInitFlags,
   options: {
     /** Whether prompts are available. */
@@ -135,7 +135,7 @@ export async function init(
       ...(directory ? { directory } : {}),
       ...(flags.manifest ? { manifest: flags.manifest } : {}),
     });
-    const prompts = new CustomFunctionPrompts(this);
+    const prompts = new ScaffoldPrompts(this);
     const interactive = isInteractiveInvocation(
       flags,
       this.process.stdin.isTTY,

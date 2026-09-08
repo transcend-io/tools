@@ -33,6 +33,15 @@ describe('policy runtime versions', () => {
     );
   });
 
+  it('supports stricter capabilities compatibility through the shared parser', () => {
+    expect(
+      unsupportedRegalVersionMessage('Version: 0.38.1\n', '0.39.0', 'OPA 1.13.1 capabilities'),
+    ).toMatch(/Regal 0\.39\.0 or newer[\s\S]*OPA 1\.13\.1 capabilities/u);
+    expect(
+      unsupportedRegalVersionMessage('Version: 0.39.0\n', '0.39.0', 'OPA 1.13.1 capabilities'),
+    ).toBeUndefined();
+  });
+
   it('rejects unparseable tool output with official guidance', () => {
     expect(unsupportedOpaVersionMessage('development build')).toMatch(
       /unable to parse[\s\S]*openpolicyagent\.org\/docs/u,

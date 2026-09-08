@@ -5,7 +5,7 @@ import {
   planManagedAgentSkill,
   type ManagedAgentSkillDefinition,
 } from '../scaffolding/agent-skill.js';
-import { displayProjectPath } from '../scaffolding/project-plan-output.js';
+import { displayProjectPath, quoteShellArgument } from '../scaffolding/project-plan-output.js';
 import {
   getPlanningFileSnapshot,
   planFileChange,
@@ -16,11 +16,7 @@ import {
   CUSTOM_FUNCTION_SKILL_NAME,
 } from './custom-function-skill.js';
 import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
-import {
-  buildCustomFunctionProjectArguments,
-  buildPlaceholderVariablesArgument,
-  quoteCliArgument,
-} from './paths.js';
+import { buildCustomFunctionProjectArguments, buildPlaceholderVariablesArgument } from './paths.js';
 import {
   generateGithubActionsWorkflow,
   isUnmodifiedCustomFunctionWorkflow,
@@ -481,12 +477,12 @@ export function buildAddFunctionPlan(
   const variableNames = parameterNamesInManifestValue(options.generated.manifestEntry);
   const variablesArgument = buildPlaceholderVariablesArgument(variableNames);
   plan.nextSteps = [
-    `Edit ${quoteCliArgument(displayProjectPath(state.invocationDirectory, sourcePath))}`,
-    `transcend custom-functions run ${projectArguments} --function=${quoteCliArgument(
+    `Edit ${quoteShellArgument(displayProjectPath(state.invocationDirectory, sourcePath))}`,
+    `transcend custom-functions run ${projectArguments} --function=${quoteShellArgument(
       options.generated.displayName,
     )}${variablesArgument}`,
     `transcend custom-functions check ${projectArguments}${variablesArgument}`,
-    `transcend custom-functions push --file=${quoteCliArgument(
+    `transcend custom-functions push --file=${quoteShellArgument(
       displayProjectPath(state.invocationDirectory, state.manifestPath),
     )} --dryRun${variablesArgument}`,
   ];

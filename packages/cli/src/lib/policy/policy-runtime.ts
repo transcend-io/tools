@@ -6,6 +6,9 @@ export const SUPPORTED_OPA_MAJOR_VERSION = 1;
 /** Oldest Regal release with first-class OPA 1.0 support. */
 export const MINIMUM_REGAL_VERSION = '0.30.0';
 
+/** Oldest Regal release containing OPA 1.13.1 capabilities. */
+export const MINIMUM_POLICY_STARTER_REGAL_VERSION = '0.39.0';
+
 /** Official OPA installation instructions. */
 export const OPA_INSTALL_URL = 'https://www.openpolicyagent.org/docs#1-download-opa';
 
@@ -78,16 +81,22 @@ export function unsupportedOpaVersionMessage(output: string): string | undefined
  * Explain why a Regal version cannot run OPA 1 policy verification.
  *
  * @param output - Captured `regal version` output
+ * @param minimumVersion - Oldest accepted Regal release
+ * @param compatibilityTarget - Capability requiring the minimum version
  * @returns Requirement error, or undefined for supported Regal
  */
-export function unsupportedRegalVersionMessage(output: string): string | undefined {
+export function unsupportedRegalVersionMessage(
+  output: string,
+  minimumVersion: string = MINIMUM_REGAL_VERSION,
+  compatibilityTarget = 'OPA 1 support',
+): string | undefined {
   const runtime = parsePolicyToolVersion(output);
-  if (runtime && semver.gte(runtime.version, MINIMUM_REGAL_VERSION)) {
+  if (runtime && semver.gte(runtime.version, minimumVersion)) {
     return undefined;
   }
   const found = runtime ? `; found ${runtime.version}` : '; unable to parse the installed version';
   return (
-    `Regal ${MINIMUM_REGAL_VERSION} or newer is required for OPA 1 support${found}. ` +
+    `Regal ${minimumVersion} or newer is required for ${compatibilityTarget}${found}. ` +
     `Install or upgrade it using the official instructions: ${REGAL_INSTALL_URL}`
   );
 }

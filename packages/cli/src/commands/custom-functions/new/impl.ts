@@ -12,10 +12,6 @@ import {
   discoverCustomFunctionManifests,
   discoverCustomFunctionProject,
 } from '../../../lib/custom-functions/project-discovery.js';
-import {
-  CustomFunctionPrompts,
-  PromptCancelledError,
-} from '../../../lib/custom-functions/prompts.js';
 import { buildPlanResult } from '../../../lib/custom-functions/scaffold-output.js';
 import {
   buildAddFunctionPlan,
@@ -34,6 +30,7 @@ import {
   displayProjectPath,
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
+import { PromptCancelledError, ScaffoldPrompts } from '../../../lib/scaffolding/prompts.js';
 
 /** Flags for `custom-functions new`. */
 export interface CustomFunctionNewFlags {
@@ -97,7 +94,7 @@ export async function _new(
         }),
       );
     }
-    const prompts = new CustomFunctionPrompts(this);
+    const prompts = new ScaffoldPrompts(this);
     const interactive = isInteractiveInvocation(
       flags,
       this.process.stdin.isTTY,
