@@ -2,11 +2,19 @@ import { join } from 'node:path';
 
 import { expect, describe, it } from 'vitest';
 
-import { readTranscendYaml } from '../../index.js';
+import { parseTranscendYaml, readTranscendYaml, serializeTranscendYaml } from '../../index.js';
 
 const EXAMPLE_DIR = join(__dirname, '..', '..', '..', 'examples');
 
 describe('readTranscendYaml', () => {
+  it('parses YAML contents without filesystem access', () => {
+    expect(parseTranscendYaml('data-silos: []\n')).toEqual({ 'data-silos': [] });
+  });
+
+  it('serializes validated configuration without filesystem access', () => {
+    expect(serializeTranscendYaml({ 'data-silos': [] })).toBe('data-silos: []\n');
+  });
+
   it('simple.yml should pass the codec validation for TranscendInput', () => {
     expect(() => readTranscendYaml(join(EXAMPLE_DIR, 'simple.yml'))).to.not.throw();
   });

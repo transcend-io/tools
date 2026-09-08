@@ -11,7 +11,7 @@ import { TranscendPullResource } from '../../../enums.js';
 import { validateTranscendAuth } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { pullTranscendConfiguration } from '../../../lib/graphql/index.js';
-import { writeTranscendYaml } from '../../../lib/readTranscendYaml.js';
+import { serializeTranscendYaml } from '../../../lib/readTranscendYaml.js';
 import { DEFAULT_CONSENT_TRACKER_STATUSES, DEFAULT_TRANSCEND_PULL_RESOURCES } from './command.js';
 
 export interface PullCommandFlags {
@@ -74,7 +74,7 @@ export async function pull(
       });
 
       this.logger.info(colors.magenta(`Writing configuration to file "${file}"...`));
-      writeTranscendYaml(file, configuration);
+      this.fs.writeFileSync(file, serializeTranscendYaml(configuration));
     } catch (err) {
       this.logger.error(
         colors.red(`An error occurred syncing the schema: ${debug ? err.stack : err.message}`),
@@ -120,7 +120,7 @@ export async function pull(
 
         const filePath = path.join(file, `${apiKey.organizationName}.yml`);
         this.logger.info(colors.magenta(`Writing configuration to file "${filePath}"...`));
-        writeTranscendYaml(filePath, configuration);
+        this.fs.writeFileSync(filePath, serializeTranscendYaml(configuration));
 
         this.logger.info(colors.green(`${prefix}Successfully pulled configuration!`));
       } catch (err) {
