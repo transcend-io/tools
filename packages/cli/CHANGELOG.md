@@ -1,5 +1,19 @@
 # @transcend-io/cli
 
+## 10.27.5
+
+### Patch Changes
+
+- 46488a6: Route CLI runtime I/O through Stricli's isolated command context and centralize pooling UI
+  wiring so embedded and test invocations can provide their own process streams, filesystem, and
+  logger.
+- 118c5b6: Move CSV and YAML filesystem access to Stricli command boundaries while preserving reusable,
+  pure parsing, serialization, and file-selection helpers.
+- c5fb568: Move consent CSV parsing and row mapping into pure functions while routing command filesystem,
+  logging, network, and exit behavior through the isolated CLI context.
+- Updated dependencies [7e7d797]
+  - @transcend-io/sdk@2.1.5
+
 ## 10.27.4
 
 ### Patch Changes
