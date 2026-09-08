@@ -528,9 +528,7 @@ export class TranscendRestClient {
     }
   }
 
-  async listRocRecords(
-    input: RocQueryInput,
-  ): Promise<RocQueryResponse> {
+  async listRocRecords(input: RocQueryInput): Promise<RocQueryResponse> {
     const { partition, identifier, limit, includeRawRequest } = input;
     return this.makeRequest(`/v1/preferences/${encodeURIComponent(partition)}/consent-records`, {
       method: 'POST',
