@@ -242,7 +242,6 @@ const ListAssessmentTemplatesDoc = graphql(/* GraphQL */ `
     $first: Int
     $offset: Int
     $filterBy: AssessmentFormTemplateFiltersInput
-    $includeDetails: Boolean!
   ) {
     assessmentFormTemplates(first: $first, offset: $offset, filterBy: $filterBy) {
       nodes {
@@ -254,16 +253,6 @@ const ListAssessmentTemplatesDoc = graphql(/* GraphQL */ `
         isArchived
         createdAt
         updatedAt
-        creator @include(if: $includeDetails) {
-          id
-          name
-          email
-        }
-        lastEditor @include(if: $includeDetails) {
-          id
-          name
-          email
-        }
       }
       totalCount
     }
@@ -645,30 +634,20 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       filterBy?: {
         /** Restrict to these template IDs */
         ids?: string[];
-        /** Free-text match over template titles */
+        /** Free-text match over template titles and descriptions */
         text?: string;
         /** Publication statuses to include */
         statuses?: string[];
-        /** How the template came to exist */
-        sources?: string[];
-        /** Users who created the template */
-        creatorIds?: string[];
-        /** Users who last edited the template */
-        lastEditorIds?: string[];
       };
-      /** Fetch the creator and last editor on each row */
-      includeDetails?: boolean;
     },
   ): Promise<PaginatedResponse<AssessmentTemplate>> {
     const first = Math.min(options?.first ?? 50, 100);
     const offset = options?.offset ?? 0;
     const filterBy = options?.filterBy;
-    const includeDetails = options?.includeDetails ?? false;
 
     const data = await this.makeRequest(ListAssessmentTemplatesDoc, {
       first,
       offset,
-      includeDetails,
       // The codegen-emitted enum is structurally equivalent to the plain strings
       // accepted here; the server validates them strictly.
       filterBy: filterBy && Object.keys(filterBy).length > 0 ? (filterBy as never) : null,
@@ -685,14 +664,6 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
         isArchived: t.isArchived,
         createdAt: t.createdAt,
         updatedAt: t.updatedAt,
-        ...(includeDetails && {
-          creator: t.creator
-            ? { id: t.creator.id, name: t.creator.name, email: t.creator.email }
-            : undefined,
-          lastEditor: t.lastEditor
-            ? { id: t.lastEditor.id, name: t.lastEditor.name, email: t.lastEditor.email }
-            : undefined,
-        }),
       })),
       pageInfo: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }),
       totalCount,

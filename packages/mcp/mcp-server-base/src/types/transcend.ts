@@ -1152,11 +1152,7 @@ export type AssessmentStatus = AssessmentFormStatus;
 
 /** A Transcend user attached to an assessment as an assignee or reviewer. */
 export interface AssessmentParticipant {
-  /**
-   * Transcend user ID, usable as `assigneeIds`/`reviewerIds` in
-   * `assessments_list` and as `creatorIds`/`lastEditorIds` in
-   * `assessments_list_templates`
-   */
+  /** Transcend user ID, usable as `assigneeIds`/`reviewerIds` in `assessments_list` */
   id: string;
   /** Display name */
   name: string;
@@ -1241,10 +1237,6 @@ export interface AssessmentTemplate {
   createdAt?: string;
   /** When the template was last updated (ISO 8601) */
   updatedAt?: string;
-  /** Who created the template, when details were requested */
-  creator?: AssessmentParticipant;
-  /** Who last edited the template, when details were requested */
-  lastEditor?: AssessmentParticipant;
 }
 
 export interface AssessmentTemplateSection {

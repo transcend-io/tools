@@ -144,15 +144,13 @@ describe('AssessmentsMixin (listAssessmentTemplates)', () => {
     isArchived: false,
     createdAt: '2024-03-01T00:00:00.000Z',
     updatedAt: '2024-04-01T00:00:00.000Z',
-    creator: { id: 'usr-1', name: 'Daniel Sklyar', email: 'daniel@transcend.io' },
-    lastEditor: { id: 'usr-2', name: 'Ada Lovelace', email: 'ada@transcend.io' },
   };
 
   beforeEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('sends the source and people filters to the API under its own names', async () => {
+  it('sends the filters to the API under its own names', async () => {
     const mockFetch = createMockFetchResponse({
       assessmentFormTemplates: { nodes: [], totalCount: 0 },
     });
@@ -160,25 +158,16 @@ describe('AssessmentsMixin (listAssessmentTemplates)', () => {
 
     const client = new AssessmentsMixin(API_KEY_AUTH);
     await client.listAssessmentTemplates({
-      filterBy: {
-        sources: ['IMPORT'],
-        creatorIds: ['usr-1'],
-        lastEditorIds: ['usr-2'],
-      },
+      filterBy: { text: 'Vendor', statuses: ['PUBLISHED'] },
     });
 
     const { variables } = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body) as {
       variables: Record<string, unknown>;
     };
-    expect(variables.filterBy).toEqual({
-      sources: ['IMPORT'],
-      creatorIds: ['usr-1'],
-      lastEditorIds: ['usr-2'],
-    });
-    expect(variables.includeDetails).toBe(false);
+    expect(variables.filterBy).toEqual({ text: 'Vendor', statuses: ['PUBLISHED'] });
   });
 
-  it('carries source on every row but the people only when asked', async () => {
+  it('reports when the template was really created rather than the time of the call', async () => {
     vi.stubGlobal(
       'fetch',
       createMockFetchResponse({
@@ -187,47 +176,15 @@ describe('AssessmentsMixin (listAssessmentTemplates)', () => {
     );
 
     const client = new AssessmentsMixin(API_KEY_AUTH);
-    const compact = await client.listAssessmentTemplates();
+    const result = await client.listAssessmentTemplates();
 
-    // The server answers the @include directive, so a compact row could still
-    // arrive carrying people; the mapper is what keeps them off it.
-    expect(compact.nodes[0]).toMatchObject({ source: 'IMPORT' });
-    expect(compact.nodes[0].creator).toBeUndefined();
-    expect(compact.nodes[0].lastEditor).toBeUndefined();
-  });
-
-  it('names the creator and last editor when details are requested', async () => {
-    vi.stubGlobal(
-      'fetch',
-      createMockFetchResponse({
-        assessmentFormTemplates: { nodes: [template], totalCount: 1 },
-      }),
-    );
-
-    const client = new AssessmentsMixin(API_KEY_AUTH);
-    const detailed = await client.listAssessmentTemplates({ includeDetails: true });
-
-    expect(detailed.nodes[0]).toMatchObject({
-      creator: { id: 'usr-1', name: 'Daniel Sklyar', email: 'daniel@transcend.io' },
-      lastEditor: { id: 'usr-2', name: 'Ada Lovelace', email: 'ada@transcend.io' },
+    expect(result.nodes[0]).toMatchObject({
+      status: 'PUBLISHED',
+      source: 'IMPORT',
+      createdAt: '2024-03-01T00:00:00.000Z',
+      updatedAt: '2024-04-01T00:00:00.000Z',
     });
-  });
-
-  it('leaves the people undefined when the template has no creator on record', async () => {
-    vi.stubGlobal(
-      'fetch',
-      createMockFetchResponse({
-        assessmentFormTemplates: {
-          nodes: [{ ...template, creator: null, lastEditor: null }],
-          totalCount: 1,
-        },
-      }),
-    );
-
-    const client = new AssessmentsMixin(API_KEY_AUTH);
-    const detailed = await client.listAssessmentTemplates({ includeDetails: true });
-
-    expect(detailed.nodes[0].creator).toBeUndefined();
-    expect(detailed.nodes[0].lastEditor).toBeUndefined();
+    expect(result.nodes[0]).not.toHaveProperty('version');
+    expect(result.nodes[0]).not.toHaveProperty('isActive');
   });
 });

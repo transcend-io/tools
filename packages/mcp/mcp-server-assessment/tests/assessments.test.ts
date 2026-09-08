@@ -428,38 +428,6 @@ describe('Assessment Tools', () => {
       expect(result.data[0]).not.toHaveProperty('isActive');
     });
 
-    it('forwards how a template was made and who made it', async () => {
-      mockGraphql.listAssessmentTemplates.mockResolvedValue({
-        nodes: [],
-        totalCount: 0,
-        pageInfo: { hasNextPage: false },
-      });
-
-      const tool = templatesTool();
-      await tool.handler(
-        tool.zodSchema.parse({
-          sources: ['IMPORT', 'DATA_INVENTORY'],
-          creatorIds: ['usr-1'],
-          lastEditorIds: ['usr-2'],
-        }) as never,
-      );
-
-      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
-        expect.objectContaining({
-          filterBy: {
-            sources: ['IMPORT', 'DATA_INVENTORY'],
-            creatorIds: ['usr-1'],
-            lastEditorIds: ['usr-2'],
-          },
-        }),
-      );
-    });
-
-    it('rejects a source the dashboard does not offer', () => {
-      const result = templatesTool().zodSchema.safeParse({ sources: ['ONETRUST'] });
-      expect(result.success).toBe(false);
-    });
-
     it('says a filter matched nothing rather than returning a bare empty page', async () => {
       mockGraphql.listAssessmentTemplates.mockResolvedValue({
         nodes: [],
@@ -469,12 +437,12 @@ describe('Assessment Tools', () => {
 
       const tool = templatesTool();
       const result = (await tool.handler(
-        tool.zodSchema.parse({ sources: ['IMPORT'] }) as never,
+        tool.zodSchema.parse({ text: 'Nothing By This Name' }) as never,
       )) as { paginationNote?: string };
 
       // An empty array alone reads exactly like a failed lookup, and a probe
       // agent spent a second unfiltered call before it would trust the zero.
-      expect(result.paginationNote).toContain('sources');
+      expect(result.paginationNote).toContain('text');
       expect(result.paginationNote).toContain('query succeeded');
     });
 
@@ -493,7 +461,7 @@ describe('Assessment Tools', () => {
       expect(result.paginationNote).toContain('no templates');
     });
 
-    it('leaves the people off the row until they are asked for', async () => {
+    it('carries how the template was made without a filter for it', async () => {
       mockGraphql.listAssessmentTemplates.mockResolvedValue({
         nodes: [{ id: 'tpl-7', title: 'Vendor Onboarding', source: 'IMPORT' }],
         totalCount: 1,
@@ -505,41 +473,10 @@ describe('Assessment Tools', () => {
         data: Array<Record<string, unknown>>;
       };
 
-      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
-        expect.objectContaining({ includeDetails: false }),
-      );
-      // `source` is cheap enough to carry always; a caller filtering on it can
-      // read back what it matched without a second call.
+      // Row fields cost nothing in the tools/list budget, so `source` rides
+      // along; a filter for it would have cost roughly 280 characters to save
+      // an in-model match over a list that is tens of rows long.
       expect(result.data[0]).toMatchObject({ source: 'IMPORT' });
-    });
-
-    it('names the creator and last editor when details are requested', async () => {
-      mockGraphql.listAssessmentTemplates.mockResolvedValue({
-        nodes: [
-          {
-            id: 'tpl-7',
-            title: 'Vendor Onboarding',
-            source: 'MANUAL',
-            creator: { id: 'usr-1', name: 'Daniel Sklyar', email: 'daniel@transcend.io' },
-            lastEditor: { id: 'usr-2', name: 'Ada Lovelace', email: 'ada@transcend.io' },
-          },
-        ],
-        totalCount: 1,
-        pageInfo: { hasNextPage: false },
-      });
-
-      const tool = templatesTool();
-      const result = (await tool.handler(
-        tool.zodSchema.parse({ includeDetails: true }) as never,
-      )) as { data: Array<Record<string, unknown>> };
-
-      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
-        expect.objectContaining({ includeDetails: true }),
-      );
-      expect(result.data[0]).toMatchObject({
-        creator: { name: 'Daniel Sklyar' },
-        lastEditor: { name: 'Ada Lovelace' },
-      });
     });
   });
 
