@@ -380,9 +380,15 @@ export interface ListAssessmentsFilter {
   externalAssigneeEmails?: string[];
   /** Internal Transcend users reviewing the form */
   reviewerIds?: string[];
-  /** Templates the forms were built from */
-  templateIds?: string[];
-  /** Groups the forms belong to */
+  /**
+   * Groups the forms belong to.
+   *
+   * `AssessmentFormFiltersInput` also declares `templateIds`, and the server
+   * rejects it — "assessmentFormTemplate is not associated to assessmentForm".
+   * A form reaches its template only through its group, so resolve templates
+   * with `listAssessmentGroups({ filterBy: { templateIds } })` and filter on
+   * the group ids it returns.
+   */
   assessmentGroupIds?: string[];
   /** Created strictly before this ISO 8601 date */
   createdAtBefore?: string;

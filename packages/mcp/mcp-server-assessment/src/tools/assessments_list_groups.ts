@@ -14,10 +14,12 @@ export const ListGroupsSchema = OffsetPaginationSchema.extend({
   text: z.string().optional().describe('Free-text match on the group title and description'),
   ids: z
     .array(z.string())
+    .min(1, { message: 'Pass at least one group ID, or omit the filter entirely.' })
     .optional()
     .describe('Specific group IDs, e.g. the `assessmentGroupId` on an `assessments_list` row'),
   templateIds: z
     .array(z.string())
+    .min(1, { message: 'Pass at least one template ID, or omit the filter entirely.' })
     .optional()
     .describe('Groups built from these templates; see `assessments_list_templates`'),
 });

@@ -9,17 +9,19 @@ Give the three assessment list tools the filters, paging and sorting the API alr
 forwarded one. An agent asked "which DPIAs are overdue and still unapproved" had to page the
 whole index and filter in the model, or answer from the first fifty rows and be wrong.
 `assessments_list` now takes `statuses`, `text`, `ids`, `assigneeIds`, `reviewerIds`,
-`externalAssigneeEmails`, `templateIds`, `assessmentGroupIds` and the `createdAfter` /
-`createdBefore` / `dueAfter` / `dueBefore` bounds, ordered by `sortBy` and `sortDirection`.
-`attributeValueIds` and `riskLevelIds` are left out: no tool here lists attribute values or
-risk levels, so an agent could not populate them. Rows stay compact by default, with
-`includeDetails` adding assignees, reviewers, dates and lock state; every row now carries
-`assessmentGroupTitle`, which saves a lookup to name the group.
+`externalAssigneeEmails`, `assessmentGroupIds` and the `createdAfter` / `createdBefore` /
+`dueAfter` / `dueBefore` bounds, ordered by `sortBy` and `sortDirection`. `attributeValueIds`
+and `riskLevelIds` are left out: no tool here lists attribute values or risk levels, so an agent
+could not populate them. `templateIds` is left out too — `assessmentForms` declares the field
+and then rejects it, since a form reaches its template only through its group, and emulating it
+is not worth the machinery until we see callers asking template-scoped questions. Rows stay
+compact by default, with `includeDetails` adding assignees, reviewers, dates and lock state;
+every row now carries `assessmentGroupTitle`, which saves a lookup to name the group.
 
-`templateIds` is served through the group index rather than forwarded. `assessmentForms`
-accepts the field and then rejects it — a form reaches its template only through its group —
-so the tool resolves templates to groups itself. A template no group was built from returns an
-explicit zero rather than an unfiltered list of every assessment in the organization.
+Every list filter rejects `[]`. Empty arrays are dropped during filter assembly, so a caller
+that resolved a lookup to nothing and passed the result through had its filter read as "no
+filter given" and got back every row in the organization — the widest possible answer to a query
+that should have matched none. That is now a validation error naming the field.
 
 `assessments_list_groups` and `assessments_list_templates` were both "list all", capped at 100
 with no filter and no route to page two, which is useless for their actual job of turning a

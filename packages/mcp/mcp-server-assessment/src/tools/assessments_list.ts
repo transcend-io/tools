@@ -12,33 +12,6 @@ import { AssessmentFormStatus } from '@transcend-io/privacy-types';
 import type { AssessmentsMixin, ListAssessmentsSortField } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 
-/**
- * Three-query test. An agent holding only the tool list — no repo, no prior
- * calls — should land on this tool, and only this tool, for each of these:
- *
- * 1. "Which privacy reviews are sitting with me to approve?"
- *    Reaches `reviewerIds` plus an IN_REVIEW status. Requires the description
- *    to say reviewers are filterable, and requires the caller to have resolved
- *    their own user ID via `admin_list_users` first, which the `reviewerIds`
- *    description points at.
- *
- * 2. "Any vendor assessments overdue and still not approved?"
- *    Reaches `dueBefore` with a `statuses` list that omits APPROVED. If the
- *    tool text does not say due dates are filterable server-side, an agent
- *    pages the whole index and filters locally, which is the failure this
- *    tool's filter set exists to prevent.
- *
- * 3. "How many assessments came out of the Vendor Onboarding template this
- *    quarter?"
- *    Reaches `templateIds` (resolved through `assessments_list_templates`) and
- *    `createdAfter`. Answerable from `totalCount` without paging, which is why
- *    `totalCount` is documented as the match count rather than the page count.
- *
- * The neighbours this must not be confused with: `assessments_list_groups`
- * returns the containers, `assessments_list_templates` returns blank templates,
- * and `assessments_get` returns one form's questions and answers.
- */
-
 export const AssessmentStatusEnum = z.nativeEnum(AssessmentFormStatus);
 export type AssessmentStatusEnumInput = z.infer<typeof AssessmentStatusEnum>;
 
@@ -54,7 +27,20 @@ const isoDate = (field: string) =>
     })
     .optional();
 
-const idList = (description: string) => z.array(z.string()).optional().describe(description);
+/**
+ * An optional list filter that rejects `[]`.
+ *
+ * Empty arrays are dropped during filter assembly, so a caller that resolved a
+ * lookup to nothing and passed the result through would have its filter read as
+ * "no filter given" and get back every assessment in the organization — the
+ * widest possible answer to a query that should have matched none.
+ */
+const idList = (description: string) =>
+  z
+    .array(z.string())
+    .min(1, { message: 'Pass at least one value, or omit the filter entirely.' })
+    .optional()
+    .describe(description);
 
 /** Caller-facing sort names mapped onto `AssessmentFormRawOrderField`. */
 const SORT_FIELDS: Record<string, ListAssessmentsSortField> = {
@@ -67,6 +53,7 @@ export const ListAssessmentsSchema = z
   .object({
     statuses: z
       .array(AssessmentStatusEnum)
+      .min(1, { message: 'Pass at least one status, or omit the filter entirely.' })
       .optional()
       .describe('Lifecycle statuses to include. Omit for every status.'),
     text: z.string().optional().describe('Free-text match on the assessment title'),
@@ -77,14 +64,7 @@ export const ListAssessmentsSchema = z
     reviewerIds: idList(
       'Transcend user IDs reviewing the form. Resolve names with `admin_list_users`.',
     ),
-    externalAssigneeEmails: z
-      .array(z.string())
-      .optional()
-      .describe('Email addresses of external (vendor) assignees'),
-    templateIds: idList(
-      'Templates the forms were built from; see `assessments_list_templates`. Costs one extra ' +
-        'lookup, since a form reaches its template through its group',
-    ),
+    externalAssigneeEmails: idList('Email addresses of external (vendor) assignees'),
     assessmentGroupIds: idList('Groups the forms belong to; see `assessments_list_groups`'),
     createdAfter: isoDate('createdAfter').describe('Only forms created on or after this date'),
     createdBefore: isoDate('createdBefore').describe('Only forms created before this date'),
@@ -131,7 +111,6 @@ export function createAssessmentsListTool(clients: ToolClients) {
       assigneeIds,
       reviewerIds,
       externalAssigneeEmails,
-      templateIds,
       assessmentGroupIds,
       createdAfter,
       createdBefore,
@@ -143,14 +122,6 @@ export function createAssessmentsListTool(clients: ToolClients) {
       limit,
       offset,
     }) => {
-      // `assessmentForms` accepts templateIds and then rejects it —
-      // "assessmentFormTemplate is not associated to assessmentForm". A form
-      // reaches its template only through its group, so the ids are resolved
-      // into groups here and the caller is spared knowing that.
-      const groupIds = templateIds?.length
-        ? await groupsBuiltFromTemplates(graphql, templateIds, assessmentGroupIds)
-        : assessmentGroupIds;
-
       const filterBy = {
         ...(statuses?.length && { statuses }),
         ...(text && { text }),
@@ -158,7 +129,7 @@ export function createAssessmentsListTool(clients: ToolClients) {
         ...(assigneeIds?.length && { assigneeIds }),
         ...(reviewerIds?.length && { reviewerIds }),
         ...(externalAssigneeEmails?.length && { externalAssigneeEmails }),
-        ...(groupIds?.length && { assessmentGroupIds: groupIds }),
+        ...(assessmentGroupIds?.length && { assessmentGroupIds }),
         ...(createdAfter && { createdAtAfter: createdAfter }),
         ...(createdBefore && { createdAtBefore: createdBefore }),
         ...(dueAfter && { dueDateAfter: dueAfter }),
@@ -166,8 +137,7 @@ export function createAssessmentsListTool(clients: ToolClients) {
       };
       // Named as the caller passed them. Reporting the API's own field names
       // sent an agent looking for a `dueDateAfter` argument this tool does not
-      // have, and would say `assessmentGroupIds` to a caller who asked by
-      // template.
+      // have.
       const appliedFilters = Object.entries({
         statuses: statuses?.length,
         text,
@@ -175,7 +145,6 @@ export function createAssessmentsListTool(clients: ToolClients) {
         assigneeIds: assigneeIds?.length,
         reviewerIds: reviewerIds?.length,
         externalAssigneeEmails: externalAssigneeEmails?.length,
-        templateIds: templateIds?.length,
         assessmentGroupIds: assessmentGroupIds?.length,
         createdAfter,
         createdBefore,
@@ -184,20 +153,6 @@ export function createAssessmentsListTool(clients: ToolClients) {
       })
         .filter(([, value]) => Boolean(value))
         .map(([name]) => name);
-
-      // No group was built from those templates, so no form can match. An empty
-      // assessmentGroupIds would have been dropped as "no filter" and returned
-      // every assessment in the organization.
-      if (templateIds?.length && (groupIds ?? []).length === 0) {
-        return createListResult([], {
-          totalCount: 0,
-          hasNextPage: false,
-          paginationNote:
-            `No assessments match the filters applied (${appliedFilters.join(', ')}). ` +
-            'The query succeeded; no assessment group was built from those templates. ' +
-            'Call assessments_list_templates to check the id.',
-        });
-      }
 
       const result = await graphql.listAssessments({
         first: limit,
@@ -244,37 +199,6 @@ export function createAssessmentsListTool(clients: ToolClients) {
       });
     },
   });
-}
-
-/** Rows to pull per round trip when reading the group index to the end. */
-const GROUP_FETCH_CHUNK = 100;
-
-/**
- * The groups built from the given templates, intersected with any groups the
- * caller asked for directly.
- *
- * A form does not point at its template — it points at a group, and the group
- * points at the template — so the only route from one to the other runs through
- * the group index. Every group is read, because a template used by more groups
- * than fit in one page would otherwise silently lose the assessments in the
- * groups that did not fit.
- */
-async function groupsBuiltFromTemplates(
-  graphql: AssessmentsMixin,
-  templateIds: string[],
-  assessmentGroupIds: string[] | undefined,
-): Promise<string[]> {
-  const found: string[] = [];
-  for (;;) {
-    const page = await graphql.listAssessmentGroups({
-      first: GROUP_FETCH_CHUNK,
-      offset: found.length,
-      filterBy: { templateIds },
-    });
-    found.push(...page.nodes.map((group) => group.id));
-    if (page.nodes.length === 0 || found.length >= (page.totalCount ?? found.length)) break;
-  }
-  return assessmentGroupIds?.length ? found.filter((id) => assessmentGroupIds.includes(id)) : found;
 }
 
 /**

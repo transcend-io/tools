@@ -106,10 +106,6 @@ describe('Assessment Tools', () => {
 
     it('forwards every filter to the API rather than filtering client-side', async () => {
       resolveList(NODES);
-      mockGraphql.listAssessmentGroups.mockResolvedValue({
-        nodes: [{ id: 'g1' }, { id: 'g2' }],
-        totalCount: 2,
-      });
 
       await call({
         statuses: ['IN_REVIEW'],
@@ -118,7 +114,6 @@ describe('Assessment Tools', () => {
         assigneeIds: ['u1'],
         reviewerIds: ['u2'],
         externalAssigneeEmails: ['vendor@example.com'],
-        templateIds: ['t1'],
         assessmentGroupIds: ['g1'],
         createdAfter: '2026-01-01',
         createdBefore: '2026-04-01',
@@ -251,68 +246,25 @@ describe('Assessment Tools', () => {
       expect((result as any).paginationNote).toContain('no assessments');
     });
 
-    it('reaches assessments by template through their groups', async () => {
-      // assessmentForms accepts templateIds and then rejects it with
-      // "assessmentFormTemplate is not associated to assessmentForm", so the
-      // ids have to be resolved into groups before the forms are queried.
-      resolveList(NODES);
-      mockGraphql.listAssessmentGroups.mockResolvedValue({
-        nodes: [{ id: 'g-a' }, { id: 'g-b' }],
-        totalCount: 2,
-      });
+    it('rejects an empty filter list instead of reading it as no filter', () => {
+      // An empty array is dropped during filter assembly, so a caller that
+      // resolved a lookup to nothing and passed the result through would get
+      // back every assessment in the organization.
+      const result = listTool().zodSchema.safeParse({ assessmentGroupIds: [] });
 
-      await call({ templateIds: ['tpl-1'] });
-
-      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith(
-        expect.objectContaining({ filterBy: { templateIds: ['tpl-1'] } }),
-      );
-      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
-        expect.objectContaining({ filterBy: { assessmentGroupIds: ['g-a', 'g-b'] } }),
-      );
+      expect(result.success).toBe(false);
+      expect(JSON.stringify(result)).toContain('omit the filter entirely');
     });
 
-    it('reads every group of a template, not just the first page', async () => {
-      resolveList(NODES);
-      mockGraphql.listAssessmentGroups
-        .mockResolvedValueOnce({
-          nodes: Array.from({ length: 100 }, (_, i) => ({ id: `g-${i}` })),
-          totalCount: 102,
-        })
-        .mockResolvedValueOnce({ nodes: [{ id: 'g-100' }, { id: 'g-101' }], totalCount: 102 });
-
-      await call({ templateIds: ['tpl-1'] });
-
-      // Stopping at one page would silently drop the assessments in the groups
-      // that did not fit.
-      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledTimes(2);
-      const { filterBy } = mockGraphql.listAssessments.mock.calls[0][0];
-      expect(filterBy.assessmentGroupIds).toHaveLength(102);
+    it('rejects an empty status list too', () => {
+      expect(listTool().zodSchema.safeParse({ statuses: [] }).success).toBe(false);
     });
 
-    it('intersects templateIds with an explicit group filter', async () => {
-      resolveList(NODES);
-      mockGraphql.listAssessmentGroups.mockResolvedValue({
-        nodes: [{ id: 'g-a' }, { id: 'g-b' }],
-        totalCount: 2,
-      });
+    it('has no template filter, since a form reaches its template only through its group', () => {
+      const { shape } = listTool().zodSchema as unknown as { shape: Record<string, unknown> };
 
-      await call({ templateIds: ['tpl-1'], assessmentGroupIds: ['g-b', 'g-z'] });
-
-      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
-        expect.objectContaining({ filterBy: { assessmentGroupIds: ['g-b'] } }),
-      );
-    });
-
-    it('reports no matches when no group was built from the template', async () => {
-      mockGraphql.listAssessmentGroups.mockResolvedValue({ nodes: [], totalCount: 0 });
-
-      const result = await call({ templateIds: ['tpl-unused'] });
-
-      // An empty assessmentGroupIds would have been dropped as "no filter" and
-      // returned every assessment in the organization.
-      expect(mockGraphql.listAssessments).not.toHaveBeenCalled();
-      expect(result).toMatchObject({ success: true, count: 0, totalCount: 0 });
-      expect((result as any).paginationNote).toContain('templateIds');
+      expect(shape).not.toHaveProperty('templateIds');
+      expect(shape).toHaveProperty('assessmentGroupIds');
     });
 
     it('names filters as the caller passed them, not as the API spells them', async () => {
