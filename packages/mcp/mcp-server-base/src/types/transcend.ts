@@ -494,6 +494,8 @@ export interface RocUserRecord {
 }
 
 export interface RocQueryInput {
+  /** Consent partition (airgap bundle id) the lookup is scoped to */
+  partition: string;
   /** Identifier to query */
   identifier: PreferenceStoreIdentifier;
   /** Maximum number of records to return */
