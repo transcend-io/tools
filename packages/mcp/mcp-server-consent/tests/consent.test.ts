@@ -1,3 +1,4 @@
+import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
 import {
   AirgapBundleAnalyticsDimension,
   AirgapBundleAnalyticsMetric,
@@ -8,6 +9,7 @@ import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
 import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
+import { MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS } from '../src/tools/consent_list_roc_records.js';
 import { getConsentTools } from '../src/tools/index.js';
 import inventoryStatsHtml from '../src/ui/generated/inventory-stats.html';
 
@@ -34,6 +36,9 @@ describe('Consent Tools', () => {
     testConnection: ReturnType<typeof vi.fn>;
     getBaseUrl: ReturnType<typeof vi.fn>;
   };
+  let mockRest: {
+    listRocRecords: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     mockGraphql = {
@@ -41,11 +46,14 @@ describe('Consent Tools', () => {
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
     };
+    mockRest = {
+      listRocRecords: vi.fn(),
+    };
   });
 
   const getTools = () =>
     getConsentTools({
-      rest: {} as never,
+      rest: mockRest as never,
       graphql: mockGraphql as never,
       dashboardUrl: 'https://app.transcend.io',
     });
@@ -294,6 +302,81 @@ describe('Consent Tools', () => {
           totalRows: 1,
         },
       });
+    });
+  });
+
+  describe('consent_list_roc_records', () => {
+    const validInput = {
+      partition: 'bundle-1',
+      identifier: 'user@example.com',
+      identifierType: 'email',
+      includeRawRequest: false,
+    };
+
+    const getRocTool = () => getTools().find((t) => t.name === 'consent_list_roc_records')!;
+
+    it('forwards the identifier as a name/value pair and returns the timeline', async () => {
+      mockRest.listRocRecords.mockResolvedValue({
+        nodes: [{ preferencesAtCurrentTime: [] }],
+        containsInitialRecord: true,
+      });
+
+      const result = await getRocTool().handler({ ...validInput, limit: 50 });
+
+      expect(mockRest.listRocRecords).toHaveBeenCalledWith({
+        partition: 'bundle-1',
+        identifier: { name: 'email', value: 'user@example.com' },
+        limit: 50,
+        includeRawRequest: false,
+      });
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          records: [{ preferencesAtCurrentTime: [] }],
+          containsInitialRecord: true,
+        },
+      });
+    });
+
+    it('reports an empty timeline as found: false rather than an error', async () => {
+      mockRest.listRocRecords.mockResolvedValue({ nodes: [], containsInitialRecord: false });
+
+      expect(await getRocTool().handler(validInput)).toMatchObject({
+        success: true,
+        data: { found: false },
+      });
+    });
+
+    it('names the Sombra minimum version on a 404, keeping the original error', async () => {
+      mockRest.listRocRecords.mockRejectedValue(
+        new ToolError(ErrorCode.NOT_FOUND, 'Resource not found (404): Not Found', false),
+      );
+
+      await expect(getRocTool().handler(validInput)).rejects.toMatchObject({
+        code: ErrorCode.NOT_FOUND,
+        message: expect.stringContaining(MIN_SOMBRA_VERSION_FOR_CONSENT_RECORDS),
+      });
+      // A 404 can also mean a renamed path, so the cause must stay visible.
+      await expect(getRocTool().handler(validInput)).rejects.toThrow(/Resource not found \(404\)/);
+    });
+
+    it('passes through non-404 failures untouched', async () => {
+      mockRest.listRocRecords.mockRejectedValue(
+        new ToolError(ErrorCode.PERMISSION_ERROR, 'Authentication failed (403): denied', false),
+      );
+
+      await expect(getRocTool().handler(validInput)).rejects.toMatchObject({
+        code: ErrorCode.PERMISSION_ERROR,
+        message: 'Authentication failed (403): denied',
+      });
+    });
+
+    it('rejects a limit outside the server-validated 1-200 range', () => {
+      const tool = getRocTool();
+      expect(tool.zodSchema.safeParse({ ...validInput, limit: 0 }).success).toBe(false);
+      expect(tool.zodSchema.safeParse({ ...validInput, limit: 201 }).success).toBe(false);
+      expect(tool.zodSchema.safeParse({ ...validInput, limit: 1.5 }).success).toBe(false);
+      expect(tool.zodSchema.safeParse(validInput).success).toBe(true);
     });
   });
 });
