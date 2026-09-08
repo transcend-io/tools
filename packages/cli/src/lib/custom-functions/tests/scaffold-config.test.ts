@@ -37,7 +37,8 @@ describe('JSONC configuration merging', () => {
       },
       tasks: {
         custom: 'deno task custom',
-        'custom-functions:check': "transcend custom-functions check '.' --noInteractive",
+        'custom-functions:check':
+          "transcend custom-functions check '.' --variables=TRANSCEND_API_KEY:placeholder --noInteractive",
       },
     });
     expect(rerun).toBe(merged);
@@ -61,7 +62,7 @@ describe('JSONC configuration merging', () => {
     ).toMatchObject({
       tasks: {
         'custom-functions:check':
-          "transcend custom-functions check '.' --manifest='functions.yml' --noInteractive",
+          "transcend custom-functions check '.' --manifest='functions.yml' --variables=TRANSCEND_API_KEY:placeholder --noInteractive",
       },
       lint: { include: expect.arrayContaining(['./src/custom.ts']) },
       fmt: {
@@ -70,6 +71,22 @@ describe('JSONC configuration merging', () => {
           './src/custom.ts',
           './fixtures/custom.json',
         ]),
+      },
+    });
+  });
+
+  it('adds placeholder variables to the previous generated check task', () => {
+    const previous = `{
+  "tasks": {
+    "custom-functions:check": "transcend custom-functions check '.' --noInteractive"
+  }
+}
+`;
+
+    expect(parse(mergeDenoConfiguration(previous, '1.2.3'))).toMatchObject({
+      tasks: {
+        'custom-functions:check':
+          "transcend custom-functions check '.' --variables=TRANSCEND_API_KEY:placeholder --noInteractive",
       },
     });
   });

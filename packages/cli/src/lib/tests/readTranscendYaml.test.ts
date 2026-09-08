@@ -34,14 +34,14 @@ describe('readTranscendYaml', () => {
   ".data-silos.1.1.disabled expected type 'boolean'"`);
   });
 
-  it('multi-instance.yml should fail when no parameters are provided', () => {
+  it('multi-instance.yml should fail when no variables are provided', () => {
     expect(() => readTranscendYaml(join(EXAMPLE_DIR, 'multi-instance.yml'))).to.throw(
-      'Found parameter that was not set: domain.\n' +
-        'Make sure you are passing all parameters through the --parameters=domain:value-for-param flag.',
+      'Found variable that was not set: domain.\n' +
+        'Make sure you are passing all variables through the --variables=domain:value-for-variable flag.',
     );
   });
 
-  it('multi-instance.yml should be successful when parameters are provided', () => {
+  it('multi-instance.yml should be successful when variables are provided', () => {
     const result = readTranscendYaml(join(EXAMPLE_DIR, 'multi-instance.yml'), {
       domain: 'acme.com',
       stage: 'Staging',

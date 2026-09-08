@@ -518,7 +518,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     expect(readFileSync(sourcePath, 'utf8')).toBe('changed while awaiting approval\n');
   });
 
-  it('reports unresolved source and payload path placeholders without reading them', async () => {
+  it('requires variables for every manifest placeholder', async () => {
     const root = makeTemporaryRoot();
     const manifestPath = join(root, 'transcend-functions.yml');
     writeFileSync(
@@ -534,15 +534,17 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
 
     const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
 
-    expect(result.diagnostics.map(({ code }) => code)).toEqual([
-      'manifest.unresolved-code-path',
-      'manifest.unresolved-payload-path',
-      'deno.missing',
-    ]);
-    expect(result.checks).toContainEqual({ name: 'payloads', status: 'failed' });
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        code: 'manifest.invalid',
+        message: expect.stringContaining('Found variable that was not set: source'),
+      }),
+    );
+    expect(result.checks).toContainEqual({ name: 'manifest', status: 'failed' });
+    expect(result.checks).toContainEqual({ name: 'payloads', status: 'skipped' });
   });
 
-  it('resolves parameterized source and payload paths when values are provided', async () => {
+  it('resolves source and payload paths when variables are provided', async () => {
     const root = makeTemporaryRoot();
     const manifestPath = join(root, 'transcend-functions.yml');
     writeFileSync(
@@ -561,7 +563,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
       context,
       {
         manifestPath,
-        parameters: { source: 'function.ts', payload: 'payload.json' },
+        variables: { source: 'function.ts', payload: 'payload.json' },
         fix: false,
       },
       () => Promise.resolve(missingDenoResult()),

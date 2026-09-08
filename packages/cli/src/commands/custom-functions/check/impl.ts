@@ -9,16 +9,14 @@ import {
   CustomFunctionPrompts,
   PromptCancelledError,
 } from '../../../lib/custom-functions/prompts.js';
-import { parseParametersFromFlags } from '../../../lib/helpers/parseVariablesFromString.js';
+import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 import { runCustomFunctionChecks } from './helpers.js';
 
 /** CLI flags for `transcend custom-functions check`. */
 export interface CustomFunctionsCheckFlags {
   /** Explicit manifest path. */
   manifest?: string;
-  /** Canonical manifest parameter substitutions. */
-  parameters: string;
-  /** Legacy manifest parameter substitutions. */
+  /** Manifest variable substitutions. */
   variables: string;
   /** Apply Deno formatting. */
   fix: boolean;
@@ -61,7 +59,7 @@ export async function check(
   try {
     const result = await runCustomFunctionChecks(this, {
       manifestPath,
-      parameters: parseParametersFromFlags(flags),
+      variables: parseVariablesFromString(flags.variables),
       fix: flags.fix,
       includeFormatPatchInDiagnostics: !flags.json,
       ...(interactive && !flags.fix

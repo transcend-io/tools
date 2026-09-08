@@ -13,7 +13,6 @@ import {
 import {
   buildLocalSimulatorInvocation,
   LOCAL_SIMULATOR_MAX_OUTPUT_BYTES,
-  prepareLocalSimulatorParameters,
   redactLocalSimulatorOutput,
   truncateLocalSimulatorOutput,
 } from '../../../lib/custom-functions/local-simulator.js';
@@ -32,7 +31,7 @@ import {
   CustomFunctionPrompts,
   PromptCancelledError,
 } from '../../../lib/custom-functions/prompts.js';
-import { parseParametersFromFlags } from '../../../lib/helpers/parseVariablesFromString.js';
+import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 import { assertPathPhysicallyContained } from '../../../lib/scaffolding/path-safety.js';
 
 /** Flags accepted by `transcend custom-functions run`. */
@@ -41,9 +40,7 @@ export interface CustomFunctionRunFlags {
   manifest?: string;
   /** Exact function name. */
   function?: string;
-  /** Canonical manifest parameter substitutions. */
-  parameters: string;
-  /** Legacy manifest parameter substitutions. */
+  /** Manifest variable substitutions. */
   variables: string;
   /** Disable prompts. */
   noInteractive: boolean;
@@ -132,15 +129,10 @@ export async function run(
     if (!selectedEntry) {
       throw new Error('Select a Custom Function with --function in a non-interactive invocation.');
     }
-    const localParameters = prepareLocalSimulatorParameters(
-      { functions: [selectedEntry] },
-      parseParametersFromFlags(flags),
-      flags.allowNetwork,
-    );
     const { config: selected, sourcePath } = readCustomFunctionManifestEntry(
       state.manifestPath,
       selectedEntry,
-      localParameters.parameters,
+      parseVariablesFromString(flags.variables),
       (path) => assertPathPhysicallyContained(this, state.manifestDirectory, path),
     );
     if (!selected.testPayloads || selected.testPayloads.length === 0) {
@@ -214,15 +206,6 @@ export async function run(
         'Local simulator: sdk.fetch calls are logged and return HTTP 200 without sending a request; KV state starts empty for each payload.',
       ),
     );
-    if (localParameters.defaulted.length > 0) {
-      this.logger.warn(
-        colors.yellow(
-          `Using local placeholder values for environment parameters: ${localParameters.defaulted.join(
-            ', ',
-          )}. Pass --parameters to override them.`,
-        ),
-      );
-    }
     if (flags.allowNetwork) {
       this.logger.warn(
         colors.yellow(

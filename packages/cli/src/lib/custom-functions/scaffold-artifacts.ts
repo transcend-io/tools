@@ -96,6 +96,7 @@ jobs:
         run: >-
           transcend custom-functions check "$CUSTOM_FUNCTION_DIRECTORY"
           --manifest="$CUSTOM_FUNCTION_MANIFEST"
+          --variables=TRANSCEND_API_KEY:placeholder
           --noInteractive
           --json
 `;

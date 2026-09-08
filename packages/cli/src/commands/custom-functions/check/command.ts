@@ -13,16 +13,10 @@ export const checkCommand = buildCommand({
         brief: 'Path to transcend-functions.yml; defaults inside the target directory',
         optional: true,
       },
-      parameters: {
-        kind: 'parsed',
-        parse: String,
-        brief: 'Comma-separated parameter values used in manifest paths',
-        default: '',
-      },
       variables: {
         kind: 'parsed',
         parse: String,
-        brief: 'Deprecated alias for --parameters',
+        brief: 'Comma-separated variables to template into the manifest',
         default: '',
       },
       fix: {

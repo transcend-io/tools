@@ -41,7 +41,6 @@ describe('custom-functions check', () => {
       context,
       {
         manifest: 'custom.yml',
-        parameters: '',
         variables: '',
         fix: false,
         noInteractive: true,
@@ -66,7 +65,6 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
-      parameters: '',
       variables: '',
       fix: false,
       noInteractive: true,
@@ -91,7 +89,6 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
-      parameters: '',
       variables: '',
       fix: false,
       noInteractive: true,
@@ -122,7 +119,6 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
-      parameters: '',
       variables: '',
       fix: false,
       noInteractive: true,
@@ -148,7 +144,6 @@ describe('custom-functions check', () => {
     });
 
     await check.call(context, {
-      parameters: '',
       variables: '',
       fix: false,
       noInteractive: true,
@@ -182,7 +177,6 @@ describe('custom-functions check', () => {
       stdinIsTTY: false,
     });
     const flags = {
-      parameters: '',
       variables: '',
       fix: false,
       noInteractive: true,

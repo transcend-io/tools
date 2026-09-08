@@ -25,7 +25,7 @@ describe('custom-functions run with Deno 2', () => {
     code: ./functions/log-locally.ts
     test-payload: ./test-payloads/log-locally.json
     env:
-      TEST_TOKEN: <<parameters.testToken>>
+      TEST_TOKEN: <<parameters.TEST_TOKEN>>
   - name: Unrelated incomplete function
     code: ./functions/missing.ts
     env:
@@ -48,12 +48,24 @@ export default function ({ environment, payload }: CustomFunction.GeneralArgumen
       stdinIsTTY: false,
     });
 
+    await expect(
+      run.call(
+        context,
+        {
+          function: 'Log locally',
+          variables: '',
+          noInteractive: true,
+          allowNetwork: false,
+        },
+        'transcend/custom-functions',
+      ),
+    ).rejects.toThrow('Found variable that was not set: TEST_TOKEN');
+
     await run.call(
       context,
       {
         function: 'Log locally',
-        parameters: '',
-        variables: '',
+        variables: 'TEST_TOKEN:placeholder',
         noInteractive: true,
         allowNetwork: false,
       },
@@ -63,9 +75,6 @@ export default function ({ environment, payload }: CustomFunction.GeneralArgumen
     expect(context.stdout).toContain('function log: visible');
     expect(context.stdout).toContain('parameter: [REDACTED]');
     expect(context.stdout).toContain('Passed "Log locally" (payload 1)');
-    expect(context.stderr).toContain(
-      'Using local placeholder values for environment parameters: testToken.',
-    );
     expect(context.process.exitCode).toBeUndefined();
   }, 30_000);
 
@@ -99,7 +108,6 @@ export default function ({ environment, payload }: CustomFunction.GeneralArgumen
       context,
       {
         function: 'Multiple payloads',
-        parameters: '',
         variables: '',
         noInteractive: true,
         allowNetwork: false,
@@ -135,7 +143,6 @@ export default function ({ environment, payload }: CustomFunction.GeneralArgumen
         context,
         {
           function: 'Linked source',
-          parameters: '',
           variables: '',
           noInteractive: true,
           allowNetwork: false,

@@ -99,6 +99,20 @@ export function quoteCliArgument(value: string): string {
 }
 
 /**
+ * Build a CLI variables argument with non-secret values suitable for local checks.
+ *
+ * @param variableNames - Manifest placeholder names
+ * @returns Empty string or a leading-space-prefixed CLI argument
+ */
+export function buildPlaceholderVariablesArgument(variableNames: readonly string[]): string {
+  if (variableNames.length === 0) {
+    return '';
+  }
+  const value = variableNames.map((name) => `${name}:placeholder`).join(',');
+  return ` --variables=${quoteCliArgument(value)}`;
+}
+
+/**
  * Build project arguments for a generated Custom Function command.
  *
  * @param targetDirectory - Project directory

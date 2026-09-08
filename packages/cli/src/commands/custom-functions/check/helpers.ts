@@ -33,7 +33,7 @@ import {
 } from '../../../lib/custom-functions/manifest.js';
 import { findNonSelfContainedRuntimeImports } from '../../../lib/custom-functions/module-graph.js';
 import { CUSTOM_FUNCTION_RESULT_VERSION } from '../../../lib/custom-functions/scaffold-model.js';
-import { replaceProvidedParametersInYaml } from '../../../lib/readTranscendYaml.js';
+import { replaceVariablesInYaml } from '../../../lib/readTranscendYaml.js';
 import {
   assertPathPhysicallyContained,
   isPathPhysicallyContained,
@@ -69,8 +69,8 @@ interface SourceReference {
 export interface RunCustomFunctionChecksOptions {
   /** Absolute manifest path. */
   manifestPath: string;
-  /** Values used to resolve parameterized manifest paths. */
-  parameters?: Record<string, string>;
+  /** Variables used to resolve manifest placeholders. */
+  variables?: Record<string, string>;
   /** Apply Deno formatting. */
   fix: boolean;
   /** Ask for an interactive formatting repair after receiving a patch. */
@@ -522,9 +522,9 @@ export async function runCustomFunctionChecks(
 
   let entries: readonly CustomFunctionManifestEntry[] = [];
   try {
-    const manifestContents = replaceProvidedParametersInYaml(
+    const manifestContents = replaceVariablesInYaml(
       context.fs.readFileSync(manifestPath, 'utf8'),
-      options.parameters ?? {},
+      options.variables ?? {},
     );
     entries = parseCustomFunctionsManifest(manifestContents).functions;
   } catch (error) {

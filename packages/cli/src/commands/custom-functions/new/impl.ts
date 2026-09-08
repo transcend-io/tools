@@ -25,6 +25,7 @@ import {
 import {
   buildAddFunctionPlan,
   getAddFunctionPlanningCandidatePaths,
+  parameterNamesInManifestValue,
   prepareGeneratedCustomFunction,
 } from '../../../lib/custom-functions/scaffold-planning.js';
 import {
@@ -192,6 +193,7 @@ export async function _new(
       targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
       manifestPath: displayPath(this.process.cwd(), state.manifestPath),
       hasSkill,
+      variableNames: parameterNamesInManifestValue(generated.manifestEntry),
     });
     const result = buildPlanResult(plan, {
       applied,

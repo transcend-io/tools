@@ -36,7 +36,7 @@ Check `response.ok` for every `sdk.fetch` call. Include the response status and 
 
 ## Manifest and fixtures
 
-- Use `<<parameters.name>>` placeholders for local secret values.
+- Use `<<parameters.ENV_NAME>>` placeholders for secret values, matching each placeholder name to its environment key.
 - Add every external network destination to `allowed-hosts`. Transcend SDK routes do not require an allowed-host entry.
 - Set `allow-third-party-imports` only when the implementation needs undeclared third-party modules.
 - Keep each function self-contained in its entry source file. Local runtime imports are not deployed; remote and `npm:` imports follow `allow-third-party-imports`.
@@ -49,21 +49,24 @@ Exercise every configured fixture and show `console.log` output:
 
 ```sh
 transcend custom-functions run "<custom-function-directory>" \
-  --function="<function-name>"
+  --function="<function-name>" \
+  --variables=TRANSCEND_API_KEY:placeholder
 ```
 
-The local simulator mirrors Deno permissions, payload preparation, export selection, timeouts, environment isolation, and KV limits. It starts KV empty for each fixture and simulates `sdk.fetch` with a logged HTTP 200 response without making a request. With networking disabled, unresolved environment-only parameters receive synthetic local values; use `--parameters="name:value"` to override them. Native network calls are denied unless the user explicitly passes `--allowNetwork`; those real requests can have side effects. Treat the simulator as a fast development loop, not proof of production behavior.
+The local simulator mirrors Deno permissions, payload preparation, export selection, timeouts, environment isolation, and KV limits. It starts KV empty for each fixture and simulates `sdk.fetch` with a logged HTTP 200 response without making a request. Pass every `<<parameters.name>>` value through `--variables="name:value"`. Native network calls are denied unless the user explicitly passes `--allowNetwork`; those real requests can have side effects. Treat the simulator as a fast development loop, not proof of production behavior.
 
 ## Validate and deploy
 
 Run:
 
 ```sh
-transcend custom-functions check "<custom-function-directory>"
+transcend custom-functions check "<custom-function-directory>" \
+  --variables=TRANSCEND_API_KEY:placeholder
 transcend custom-functions push \
   --file="<custom-function-directory>/transcend-functions.yml" \
   --auth="$TRANSCEND_API_KEY" \
+  --variables="TRANSCEND_API_KEY:$TRANSCEND_API_KEY" \
   --dryRun
 ```
 
-Pushes do not synthesize parameters, so pass every `<<parameters.name>>` value through `--parameters="name:value"`. Fix every check failure before pushing. Keep a revision as a draft with `--promote=false`. After the first successful push, use `--updateManifest` to record assigned IDs for stable future matching.
+Run, check, and push require every manifest variable. Placeholder values are sufficient for local validation; pass real secrets only when they are needed for authenticated push tests or deployment. Fix every check failure before pushing. Keep a revision as a draft with `--promote=false`. After the first successful push, use `--updateManifest` to record assigned IDs for stable future matching.

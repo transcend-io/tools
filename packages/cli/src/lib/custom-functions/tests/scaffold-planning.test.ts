@@ -259,7 +259,7 @@ describe('buildAddFunctionPlan', () => {
     const generated = prepareGeneratedCustomFunction('DSR Lookup', 'dsr-datapoint');
     generated.manifestEntry.env = {
       ...generated.manifestEntry.env,
-      CRM_API_KEY: '<<parameters.crmApiKey>>',
+      CRM_API_KEY: '<<parameters.CRM_API_KEY>>',
     };
     const paths = getAddFunctionPlanningCandidatePaths(state, generated);
     const plan = buildAddFunctionPlan(buildInput(state, initializedSnapshots(paths, state)), {
@@ -267,7 +267,12 @@ describe('buildAddFunctionPlan', () => {
     });
 
     expect(plan.warnings).toContain(
-      'Supply transcendApiKey, crmApiKey through --parameters when running or pushing; never commit secret values.',
+      'Supply TRANSCEND_API_KEY, CRM_API_KEY through --variables when running or pushing; never commit secret values.',
+    );
+    expect(plan.nextSteps).toContainEqual(
+      expect.stringContaining(
+        "--variables='TRANSCEND_API_KEY:placeholder,CRM_API_KEY:placeholder'",
+      ),
     );
   });
 

@@ -22,7 +22,7 @@ const examples = buildExamples<CustomFunctionsPushCommandFlags>(
       flags: {
         auth: '$TRANSCEND_API_KEY',
         file: './transcend/functions.yml',
-        parameters: 'crmApiKey:example-secret-value',
+        variables: 'CRM_API_KEY:example-secret-value',
       },
     },
     {
@@ -87,7 +87,7 @@ functions:
       - api.example.com
     timeout-ms: 30000
     env:
-      CRM_API_KEY: <<parameters.crmApiKey>>
+      CRM_API_KEY: <<parameters.CRM_API_KEY>>
   - name: DSR Lookup
     code: ./functions/dsr-lookup.ts
     type: DSR
@@ -115,9 +115,9 @@ functions:
 | \`allowed-hosts\` | No | Hosts the function may make network requests to. |
 | \`timeout-ms\` | No | Execution timeout in milliseconds. |
 | \`allow-third-party-imports\` | No | Whether the function may import third party modules. |
-| \`env\` | No | Environment variables exposed to the function. Use \`<<parameters.name>>\` placeholders with the \`--parameters\` flag to avoid committing secrets. |
+| \`env\` | No | Environment variables exposed to the function. Use \`<<parameters.ENV_NAME>>\` placeholders with the \`--variables\` flag to avoid committing secrets; matching the placeholder name to the environment key keeps the mapping clear. |
 
-Local authoring commands require source and payload paths to stay inside the Custom Function project. \`push\` continues to accept parent-relative paths for compatibility with existing manifests. Parameter values preserve colons; escape a literal comma as \`\\,\` inside a quoted \`--parameters\` value.
+Local authoring commands require source and payload paths to stay inside the Custom Function project. \`push\` continues to accept parent-relative paths for compatibility with existing manifests. Variable values preserve colons; escape a literal comma as \`\\,\` inside a quoted \`--variables\` value.
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use \`--force\` to push a new revision.
 

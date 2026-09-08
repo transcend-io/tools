@@ -15,7 +15,12 @@ import {
   CUSTOM_FUNCTION_SKILL_NAME,
 } from './custom-function-skill.js';
 import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
-import { buildCustomFunctionProjectArguments, displayCliPath, quoteCliArgument } from './paths.js';
+import {
+  buildCustomFunctionProjectArguments,
+  buildPlaceholderVariablesArgument,
+  displayCliPath,
+  quoteCliArgument,
+} from './paths.js';
 import {
   generateGithubActionsWorkflow,
   isUnmodifiedCustomFunctionWorkflow,
@@ -89,7 +94,7 @@ export interface CustomFunctionPlanningInput {
  * @param value - Generated manifest entry
  * @returns Unique parameter names in encounter order
  */
-function parameterNamesInManifestValue(value: unknown): string[] {
+export function parameterNamesInManifestValue(value: unknown): string[] {
   const serialized = JSON.stringify(value) ?? '';
   return [
     ...new Set(Array.from(serialized.matchAll(/<<parameters\.([^>]+)>>/gu), (match) => match[1]!)),
@@ -618,20 +623,21 @@ export function buildAddFunctionPlan(
     state.manifestPath,
     state.invocationDirectory,
   );
+  const variableNames = parameterNamesInManifestValue(options.generated.manifestEntry);
+  const variablesArgument = buildPlaceholderVariablesArgument(variableNames);
   plan.nextSteps = [
     `Edit ${quoteCliArgument(displayCliPath(state.invocationDirectory, sourcePath))}`,
     `transcend custom-functions run ${projectArguments} --function=${quoteCliArgument(
       options.generated.displayName,
-    )}`,
-    `transcend custom-functions check ${projectArguments}`,
+    )}${variablesArgument}`,
+    `transcend custom-functions check ${projectArguments}${variablesArgument}`,
     `transcend custom-functions push --file=${quoteCliArgument(
       displayCliPath(state.invocationDirectory, state.manifestPath),
-    )} --dryRun`,
+    )} --dryRun${variablesArgument}`,
   ];
-  const parameterNames = parameterNamesInManifestValue(options.generated.manifestEntry);
-  if (parameterNames.length > 0) {
+  if (variableNames.length > 0) {
     plan.warnings.push(
-      `Supply ${parameterNames.join(', ')} through --parameters when running or pushing; never commit secret values.`,
+      `Supply ${variableNames.join(', ')} through --variables when running or pushing; never commit secret values.`,
     );
   }
   validatePlanDestinations(

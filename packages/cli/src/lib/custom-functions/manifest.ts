@@ -322,27 +322,27 @@ function hydrateCustomFunctionsManifest(
 }
 
 /**
- * Read a custom functions manifest from disk, apply parameter substitution,
+ * Read a custom functions manifest from disk, apply variable substitution,
  * validate it, and hydrate its referenced code and payload files.
  *
- * Parameter substitution deliberately happens before parsing and hydration to
+ * Variable substitution deliberately happens before parsing and hydration to
  * preserve push behavior.
  *
  * @param filePath - Path to the manifest YAML file
- * @param parameters - Values to fill into `<<parameters.x>>` placeholders
+ * @param variables - Variables to fill into `<<parameters.x>>` placeholders
  * @returns The custom function configs, with code loaded from disk
  */
 export function readCustomFunctionsManifest(
   filePath: string,
-  parameters: ObjByString = {},
+  variables: ObjByString = {},
 ): CustomFunctionManifestConfig[] {
   const fileContents = readFileSync(filePath, 'utf-8');
-  const replacedParameters = replaceVariablesInYaml(
+  const replacedVariables = replaceVariablesInYaml(
     fileContents,
-    parameters,
-    `Also check that there are no extra parameters defined in your manifest: ${filePath}`,
+    variables,
+    `Also check that there are no extra variables defined in your manifest: ${filePath}`,
   );
-  const manifest = parseCustomFunctionsManifest(replacedParameters, { allowExternalPaths: true });
+  const manifest = parseCustomFunctionsManifest(replacedVariables, { allowExternalPaths: true });
   return hydrateCustomFunctionsManifest(filePath, manifest);
 }
 
@@ -350,27 +350,27 @@ export function readCustomFunctionsManifest(
  * Resolve and hydrate one selected manifest entry.
  *
  * This lets local execution ignore unrelated entries whose files or
- * parameters are currently incomplete.
+ * variables are currently incomplete.
  *
  * @param filePath - Path to the containing manifest
  * @param entry - Selected raw manifest entry
- * @param parameters - Values to fill into `<<parameters.x>>` placeholders
+ * @param variables - Variables to fill into `<<parameters.x>>` placeholders
  * @param assertPath - Optional safety check applied before referenced files are read
  * @returns Hydrated selected configuration and its source path
  */
 export function readCustomFunctionManifestEntry(
   filePath: string,
   entry: CustomFunctionManifestEntry,
-  parameters: ObjByString = {},
+  variables: ObjByString = {},
   assertPath?: (path: string) => void,
 ): { config: CustomFunctionManifestConfig; sourcePath: string } {
   const entryContents = yaml.dump({ functions: [entry] });
-  const replacedParameters = replaceVariablesInYaml(
+  const replacedVariables = replaceVariablesInYaml(
     entryContents,
-    parameters,
-    `Also check that there are no extra parameters defined for "${entry.name}" in: ${filePath}`,
+    variables,
+    `Also check that there are no extra variables defined for "${entry.name}" in: ${filePath}`,
   );
-  const manifest = parseCustomFunctionsManifest(replacedParameters);
+  const manifest = parseCustomFunctionsManifest(replacedVariables);
   const resolvedEntry = manifest.functions[0]!;
   const manifestDirectory = dirname(resolve(filePath));
   const sourcePath = resolve(manifestDirectory, resolvedEntry.code);

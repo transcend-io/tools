@@ -248,13 +248,18 @@ export function mergeDenoConfiguration(
   const taskName = 'custom-functions:check';
   const legacyTaskCommand =
     'deno check functions/**/*.ts && deno lint functions/ && deno fmt --check functions/ test-payloads/';
-  const taskCommand = `transcend custom-functions check ${buildCustomFunctionProjectArguments(
+  const previousTaskCommand = `transcend custom-functions check ${buildCustomFunctionProjectArguments(
     '.',
     manifestFileName,
   )} --noInteractive`;
+  const taskCommand = `transcend custom-functions check ${buildCustomFunctionProjectArguments(
+    '.',
+    manifestFileName,
+  )} --variables=TRANSCEND_API_KEY:placeholder --noInteractive`;
   if (
     tasks[taskName] !== undefined &&
     tasks[taskName] !== legacyTaskCommand &&
+    tasks[taskName] !== previousTaskCommand &&
     tasks[taskName] !== taskCommand
   ) {
     throw new Error(

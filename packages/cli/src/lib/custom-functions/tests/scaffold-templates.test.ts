@@ -108,7 +108,7 @@ describe('generateCustomFunctionTemplate', () => {
         code: './functions/dsr-lookup.ts',
         type: 'DSR',
         env: {
-          TRANSCEND_API_KEY: '<<parameters.transcendApiKey>>',
+          TRANSCEND_API_KEY: '<<parameters.TRANSCEND_API_KEY>>',
         },
         'test-payload': `./${payloadPath}`,
         'test-payload-type': payloadType,
@@ -128,7 +128,7 @@ describe('generateCustomFunctionTemplate', () => {
       code: './functions/dsr-lookup.ts',
       type: 'DSR',
       env: {
-        TRANSCEND_API_KEY: '<<parameters.transcendApiKey>>',
+        TRANSCEND_API_KEY: '<<parameters.TRANSCEND_API_KEY>>',
       },
       'test-payloads': [
         {

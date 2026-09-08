@@ -1,6 +1,10 @@
 import { CUSTOM_FUNCTION_SKILL_NAME } from './custom-function-skill.js';
 import { SUPPORTED_DENO_MAJOR_VERSION } from './deno-runtime.js';
-import { buildCustomFunctionProjectArguments, quoteCliArgument } from './paths.js';
+import {
+  buildCustomFunctionProjectArguments,
+  buildPlaceholderVariablesArgument,
+  quoteCliArgument,
+} from './paths.js';
 
 /**
  * Build a compact AI handoff after project initialization.
@@ -50,17 +54,20 @@ export function buildNewFunctionAiHandoff(options: {
   manifestPath: string;
   /** Whether the authoring skill is expected in this project. */
   hasSkill: boolean;
+  /** Manifest variables required by this function. */
+  variableNames: readonly string[];
 }): string {
   const prefix = options.hasSkill
     ? `Use the \`${CUSTOM_FUNCTION_SKILL_NAME}\` skill to`
     : 'Ask your coding agent to';
+  const variablesArgument = buildPlaceholderVariablesArgument(options.variableNames);
   const checkCommand = `transcend custom-functions check ${buildCustomFunctionProjectArguments(
     options.targetDirectory,
     options.manifestPath,
-  )}`;
+  )}${variablesArgument}`;
   const runCommand =
     `transcend custom-functions run ` +
     `${buildCustomFunctionProjectArguments(options.targetDirectory, options.manifestPath)} ` +
-    `--function=${quoteCliArgument(options.displayName)}`;
+    `--function=${quoteCliArgument(options.displayName)}${variablesArgument}`;
   return `${prefix} implement \`${options.displayName}\` in \`${options.sourcePath}\`, replace the example fixtures with realistic cases, run \`${runCommand}\` to exercise it locally, and finish with \`${checkCommand}\`.`;
 }

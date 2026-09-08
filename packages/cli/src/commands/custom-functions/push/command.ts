@@ -26,17 +26,11 @@ export const pushCommand = buildCommand({
         brief: 'Path to the custom functions manifest YAML file',
         default: './transcend-functions.yml',
       },
-      parameters: {
-        kind: 'parsed',
-        parse: String,
-        brief:
-          'Parameters to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.',
-        default: '',
-      },
       variables: {
         kind: 'parsed',
         parse: String,
-        brief: 'Deprecated alias for --parameters',
+        brief:
+          'Variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.',
         default: '',
       },
       dryRun: {

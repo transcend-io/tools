@@ -112,7 +112,7 @@ export function generateCustomFunctionTemplate(
     code: toManifestPath(sourcePath),
     type: 'DSR',
     env: {
-      TRANSCEND_API_KEY: '<<parameters.transcendApiKey>>',
+      TRANSCEND_API_KEY: '<<parameters.TRANSCEND_API_KEY>>',
     },
   };
 

@@ -18,14 +18,13 @@ import {
   readCustomFunctionsManifest,
   writeCustomFunctionIdsToManifest,
 } from '../../../lib/custom-functions/manifest.js';
-import { parseParametersFromFlags } from '../../../lib/helpers/parseVariablesFromString.js';
+import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 
 export interface CustomFunctionsPushCommandFlags {
   auth: string;
   sombraAuth?: string;
   transcendUrl: string;
   file: string;
-  parameters: string;
   variables: string;
   dryRun: boolean;
   promote: boolean;
@@ -42,7 +41,6 @@ export async function push(
     sombraAuth,
     transcendUrl,
     file = './transcend-functions.yml',
-    parameters,
     variables,
     dryRun,
     promote,
@@ -78,7 +76,7 @@ export async function push(
   }
   const apiKey = apiKeyOrList as string;
 
-  const vars = parseParametersFromFlags({ parameters, variables });
+  const vars = parseVariablesFromString(variables);
   this.logger.info(colors.magenta(`Reading manifest "${file}"...`));
   const configs = readCustomFunctionsManifest(file, vars);
   this.logger.info(colors.green(`Found ${configs.length} custom function(s) in "${file}"`));

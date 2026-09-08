@@ -33,11 +33,13 @@ describe('buildNewFunctionAiHandoff', () => {
       targetDirectory: 'transcend/custom-functions',
       manifestPath: 'transcend/custom-functions/transcend-functions.yml',
       hasSkill: true,
+      variableNames: ['TRANSCEND_API_KEY'],
     });
 
     expect(handoff).toContain('Use the `transcend-custom-functions` skill');
     expect(handoff).toContain('transcend custom-functions run');
     expect(handoff).toContain("--function='Customer CRM access'");
+    expect(handoff).toContain("--variables='TRANSCEND_API_KEY:placeholder'");
   });
 
   it('preserves a custom manifest path in the validation command', () => {
@@ -47,6 +49,7 @@ describe('buildNewFunctionAiHandoff', () => {
       targetDirectory: '.',
       manifestPath: 'functions.yml',
       hasSkill: false,
+      variableNames: [],
     });
 
     expect(handoff).toContain("--manifest='functions.yml'");
