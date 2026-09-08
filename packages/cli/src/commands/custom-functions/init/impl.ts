@@ -146,6 +146,7 @@ export async function init(
     const features = await resolveFeatures(prompts, flags, { interactive });
     const snapshots = collectPlanningSnapshots(
       this,
+      state.projectRoot,
       getInitPlanningCandidatePaths(state, { features }),
     );
     const plan = buildInitPlan(
@@ -200,12 +201,14 @@ export async function init(
       await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
+    const setupAvailable = approved && !flags.dryRun;
     const aiHandoff = buildInitAiHandoff({
       targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
       manifestPath: displayPath(this.process.cwd(), state.manifestPath),
       cliVersion: CLI_VERSION,
-      hasSkill: features.includes(CustomFunctionSetupFeature.Skill),
+      hasSkill: setupAvailable && features.includes(CustomFunctionSetupFeature.Skill),
       hasGithubWorkflow:
+        setupAvailable &&
         features.includes(CustomFunctionSetupFeature.Ci) &&
         Boolean(state.repositoryRoot && state.usesGithub),
     });

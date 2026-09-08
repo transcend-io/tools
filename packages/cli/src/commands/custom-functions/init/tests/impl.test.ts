@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -82,6 +82,22 @@ describe('custom-functions init', () => {
     expect(existsSync(join(target, '.agents'))).toBe(false);
   });
 
+  it('rejects escaping setup paths before a dry-run reads them', async () => {
+    const root = makeTemporaryRoot();
+    const outside = makeTemporaryRoot();
+    mkdirSync(outside, { recursive: true });
+    symlinkSync(outside, join(root, '.vscode'), 'dir');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { HOME: root },
+      stdinIsTTY: false,
+    });
+
+    await expect(init.call(context, buildFlags({ dryRun: true, editor: true }))).rejects.toThrow(
+      'Refusing to access path outside project root through a symlink',
+    );
+  });
+
   it('previews an empty target without writing anything', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'project');
@@ -109,6 +125,22 @@ describe('custom-functions init', () => {
       ],
     });
     expect(context.stderr).toBe('');
+  });
+
+  it('does not claim dry-run setup artifacts are installed', async () => {
+    const root = makeTemporaryRoot();
+    const target = join(root, 'project');
+    const context = buildContextForTest({
+      cwd: root,
+      env: { HOME: root },
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags({ dryRun: true, skill: true }), target);
+
+    const result = JSON.parse(context.stdout);
+    expect(result.aiHandoff).not.toContain('.agents/skills/transcend-custom-functions');
+    expect(existsSync(target)).toBe(false);
   });
 
   it('applies only explicitly enabled setup flags without prompts', async () => {

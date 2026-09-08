@@ -105,22 +105,61 @@ function writeAtomic(context: LocalContext, path: string, contents: string, mode
 }
 
 /**
+ * Create a file atomically without replacing a destination that appeared.
+ *
+ * @param context - CLI context
+ * @param path - Destination path
+ * @param contents - UTF-8 contents
+ * @param mode - Optional file mode
+ */
+function writeAtomicCreateOnly(
+  context: LocalContext,
+  path: string,
+  contents: string,
+  mode?: number,
+): void {
+  context.fs.mkdirSync(dirname(path), { recursive: true });
+  const temporaryPath = join(
+    dirname(path),
+    `.${basename(path)}.${context.process.pid}.${Date.now()}.tmp`,
+  );
+  try {
+    context.fs.writeFileSync(
+      temporaryPath,
+      contents,
+      mode === undefined ? undefined : { mode: mode & 0o777 },
+    );
+    context.fs.linkSync(temporaryPath, path);
+  } finally {
+    if (pathExists(context, temporaryPath)) {
+      context.fs.rmSync(temporaryPath, { force: true });
+    }
+  }
+}
+
+/**
  * Restore one path.
  *
  * @param context - CLI context
  * @param snapshot - Original state
  */
 function restoreSnapshot(context: LocalContext, snapshot: RollbackSnapshot): void {
-  if (pathExists(context, snapshot.path)) {
-    context.fs.rmSync(snapshot.path, { recursive: true, force: true });
-  }
   if (snapshot.kind === 'absent') {
+    if (pathExists(context, snapshot.path)) {
+      context.fs.rmSync(snapshot.path, { recursive: true, force: true });
+    }
     return;
   }
   context.fs.mkdirSync(dirname(snapshot.path), { recursive: true });
   if (snapshot.kind === 'link') {
+    if (pathExists(context, snapshot.path)) {
+      context.fs.rmSync(snapshot.path, { recursive: true, force: true });
+    }
     context.fs.symlinkSync(snapshot.target, snapshot.path, 'dir');
     return;
+  }
+  if (pathExists(context, snapshot.path) && !context.fs.lstatSync(snapshot.path).isFile()) {
+    context.fs.rmSync(snapshot.path, { recursive: true, force: true });
   }
   writeAtomic(context, snapshot.path, snapshot.contents, snapshot.mode);
 }
@@ -194,9 +233,18 @@ export async function applyProjectPlan(context: LocalContext, plan: ProjectPlan)
     for (const change of plan.changes) {
       assertPathPhysicallyContained(context, plan.rootDirectory, change.path);
       if (change.kind === 'file') {
-        applied.push(snapshotPath(context, change.path));
-        writeAtomic(context, change.path, change.after, change.mode);
+        preflightFile(context, change);
+        const snapshot = snapshotPath(context, change.path);
+        if (change.before === null) {
+          writeAtomicCreateOnly(context, change.path, change.after, change.mode);
+        } else {
+          writeAtomic(context, change.path, change.after, change.mode);
+        }
+        applied.push(snapshot);
       } else {
+        if (pathExists(context, change.path)) {
+          throw new Error(`Skill target appeared after preview: ${change.path}`);
+        }
         applied.push({ kind: 'absent', path: change.path });
         applyLink(context, change, plan.rootDirectory);
       }

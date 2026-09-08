@@ -108,13 +108,11 @@ describe('applyProjectPlan rollback', () => {
     const second = join(root, 'second.json');
     writeFileSync(first, 'first before\n');
     writeFileSync(second, 'second before\n');
-    let failed = false;
     const failingFs = new Proxy(fs, {
       get(target, property, receiver) {
         if (property === 'renameSync') {
           return (oldPath: PathLike, newPath: PathLike): void => {
-            if (!failed && String(newPath) === second) {
-              failed = true;
+            if (String(newPath) === second) {
               throw new Error('simulated atomic rename failure');
             }
             target.renameSync(oldPath, newPath);
@@ -145,6 +143,37 @@ describe('applyProjectPlan rollback', () => {
     ).rejects.toThrow('simulated atomic rename failure');
     expect(readFileSync(first, 'utf8')).toBe('first before\n');
     expect(readFileSync(second, 'utf8')).toBe('second before\n');
+  });
+
+  it('does not replace a create-only file that appears during apply', async () => {
+    const root = makeTemporaryRoot();
+    const destination = join(root, 'function.ts');
+    const racingFs = new Proxy(fs, {
+      get(target, property, receiver) {
+        if (property === 'linkSync') {
+          return (existingPath: PathLike, newPath: PathLike): void => {
+            writeFileSync(newPath, 'appeared during apply\n');
+            target.linkSync(existingPath, newPath);
+          };
+        }
+        return Reflect.get(target, property, receiver);
+      },
+    });
+    const plan = buildPlan(root, [
+      {
+        kind: 'file',
+        path: destination,
+        before: null,
+        after: 'generated\n',
+        createOnly: true,
+        description: 'Create source',
+      },
+    ]);
+
+    await expect(
+      applyProjectPlan(buildContextForTest({ cwd: root, fs: racingFs }), plan),
+    ).rejects.toThrow();
+    expect(readFileSync(destination, 'utf8')).toBe('appeared during apply\n');
   });
 });
 

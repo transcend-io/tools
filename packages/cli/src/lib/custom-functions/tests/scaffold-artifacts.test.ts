@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
 import { SUPPORTED_DENO_VERSION } from '../deno-runtime.js';
-import { generateGithubActionsWorkflow } from '../scaffold-artifacts.js';
+import {
+  generateGithubActionsWorkflow,
+  isUnmodifiedCustomFunctionWorkflow,
+} from '../scaffold-artifacts.js';
 
 describe('generateGithubActionsWorkflow', () => {
   it('generates pinned, least-privilege, credential-free checks', () => {
@@ -20,6 +23,8 @@ describe('generateGithubActionsWorkflow', () => {
     expect(workflow).not.toContain('secrets.');
     expect(workflow).not.toContain('--auth=');
     expect(workflow).not.toContain('custom-functions push');
+    expect(isUnmodifiedCustomFunctionWorkflow(workflow)).toBe(true);
+    expect(isUnmodifiedCustomFunctionWorkflow(workflow.replace('--json', '--fix'))).toBe(false);
   });
 
   it('quotes valid repository paths and includes manifest-referenced files', () => {
@@ -32,5 +37,21 @@ describe('generateGithubActionsWorkflow', () => {
 
     expect(() => parse(workflow)).not.toThrow();
     expect(workflow).toContain(JSON.stringify("packages/customer's-functions/src/example.ts"));
+  });
+
+  it('escapes literal GitHub glob characters in repository paths', () => {
+    const workflow = generateGithubActionsWorkflow({
+      cliVersion: '10.27.4',
+      targetDirectory: 'packages/[tenant]/custom-functions',
+      manifestPath: 'packages/[tenant]/custom-functions/functions!.yml',
+      watchedPaths: ['packages/[tenant]/custom-functions/src/file?.ts'],
+    });
+
+    expect(workflow).toContain(
+      JSON.stringify(String.raw`packages/\[tenant\]/custom-functions/functions\!.yml`),
+    );
+    expect(workflow).toContain(
+      JSON.stringify(String.raw`packages/\[tenant\]/custom-functions/src/file\?.ts`),
+    );
   });
 });

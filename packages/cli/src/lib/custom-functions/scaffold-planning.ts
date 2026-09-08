@@ -16,7 +16,10 @@ import {
 } from './custom-function-skill.js';
 import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from './manifest.js';
 import { buildCustomFunctionProjectArguments, displayCliPath, quoteCliArgument } from './paths.js';
-import { generateGithubActionsWorkflow } from './scaffold-artifacts.js';
+import {
+  generateGithubActionsWorkflow,
+  isUnmodifiedCustomFunctionWorkflow,
+} from './scaffold-artifacts.js';
 import {
   mergeDenoConfiguration,
   mergeEditorExtensions,
@@ -153,6 +156,11 @@ export function getInitPlanningCandidatePaths(
         paths.add(join(aliasDirectory, path));
       });
     });
+    state.existingSkillDirectories.forEach(({ path: directory }) => {
+      CUSTOM_FUNCTION_SKILL_FILES.forEach(({ path }) => {
+        paths.add(join(root, directory, CUSTOM_FUNCTION_SKILL_NAME, path));
+      });
+    });
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     paths.add(join(root, '.github', 'workflows', 'transcend-custom-functions.yml'));
@@ -244,11 +252,15 @@ function validatePlanDestinations(
     if (relativePath.startsWith('../')) {
       return;
     }
-    const collision = existing.get(relativePath.toLocaleLowerCase('en-US'));
-    if (collision && collision !== relativePath) {
-      throw new Error(
-        `Case-insensitive path collision: "${relativePath}" conflicts with "${collision}".`,
-      );
+    const components = relativePath.split('/');
+    for (let length = 1; length <= components.length; length += 1) {
+      const candidate = components.slice(0, length).join('/');
+      const collision = existing.get(candidate.toLocaleLowerCase('en-US'));
+      if (collision && collision !== candidate) {
+        throw new Error(
+          `Case-insensitive path collision: "${candidate}" conflicts with "${collision}".`,
+        );
+      }
     }
   });
 }
@@ -347,6 +359,28 @@ function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlannin
     };
     plan.changes.push(change);
   });
+
+  input.state.existingSkillDirectories
+    .map(({ path }) => path)
+    .filter(
+      (directory) =>
+        directory !== directories.canonical && !directories.aliases.includes(directory),
+    )
+    .forEach((directory) => {
+      const existingDirectory = join(root, directory, CUSTOM_FUNCTION_SKILL_NAME);
+      const skillSnapshot = fileSnapshotAt(input, join(existingDirectory, 'SKILL.md'));
+      if (
+        skillSnapshot.contents !== null &&
+        isUnmodifiedManagedAgentSkill(skillSnapshot.contents, '@transcend-io/cli')
+      ) {
+        planManagedFiles(existingDirectory, `Update existing managed skill in ${directory}`);
+      } else if (skillSnapshot.contents?.includes('managed-by: @transcend-io/cli')) {
+        plan.unchanged.push(join(existingDirectory, 'SKILL.md'));
+        plan.warnings.push(
+          `Existing customized managed skill was left unchanged: ${existingDirectory}`,
+        );
+      }
+    });
 }
 
 /**
@@ -486,6 +520,12 @@ export function buildInitPlan(
         });
       } else if (workflowSnapshot.contents === workflowContents) {
         plan.unchanged.push(workflowPath);
+      } else if (isUnmodifiedCustomFunctionWorkflow(workflowSnapshot.contents)) {
+        addFileChange(plan, input, {
+          path: workflowPath,
+          contents: workflowContents,
+          description: 'Update managed Custom Function checks',
+        });
       } else {
         plan.unchanged.push(workflowPath);
         plan.warnings.push(`Existing GitHub Actions workflow was left unchanged: ${workflowPath}`);
@@ -528,9 +568,7 @@ export function buildAddFunctionPlan(
         `which conflicts with existing path ${sourceCollision}. Choose another name.`,
     );
   }
-  const existingSourceEntry = parseCustomFunctionsManifest(currentManifest, {
-    allowExternalPaths: true,
-  }).functions.find(
+  const existingSourceEntry = parseCustomFunctionsManifest(currentManifest).functions.find(
     (entry) =>
       resolve(state.manifestDirectory, entry.code) ===
       resolve(state.manifestDirectory, sourceRelativePath),

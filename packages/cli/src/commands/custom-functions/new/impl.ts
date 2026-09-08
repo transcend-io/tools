@@ -139,6 +139,7 @@ export async function _new(
     const generated = prepareGeneratedCustomFunction(name, template);
     const snapshots = collectPlanningSnapshots(
       this,
+      state.manifestDirectory,
       getAddFunctionPlanningCandidatePaths(state, generated),
     );
     const plan = buildAddFunctionPlan(

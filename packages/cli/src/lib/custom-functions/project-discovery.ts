@@ -6,6 +6,7 @@ import {
   PROJECT_SKILL_DIRECTORIES,
   type ExistingProjectSkillDirectory,
 } from '../scaffolding/agent-skill.js';
+import { assertPathPhysicallyContained } from '../scaffolding/path-safety.js';
 import { parseCustomFunctionsManifest } from './manifest.js';
 import { DEFAULT_CUSTOM_FUNCTION_DIRECTORY, resolveCustomFunctionProjectPaths } from './paths.js';
 import type { CustomFunctionProjectState } from './scaffold-model.js';
@@ -15,15 +16,18 @@ import type { PlanningPathSnapshot } from './scaffold-planning.js';
  * Collect candidate paths once, before preview.
  *
  * @param context - CLI context
+ * @param rootDirectory - Approved planning root
  * @param paths - Absolute paths
  * @returns In-memory path snapshots
  */
 export function collectPlanningSnapshots(
   context: LocalContext,
+  rootDirectory: string,
   paths: readonly string[],
 ): Readonly<Record<string, PlanningPathSnapshot>> {
   return Object.fromEntries(
     paths.map((path): [string, PlanningPathSnapshot] => {
+      assertPathPhysicallyContained(context, rootDirectory, path);
       try {
         const stat = context.fs.lstatSync(path);
         if (stat.isSymbolicLink()) {

@@ -2,6 +2,8 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { buildManagedAgentSkill } from '../../scaffolding/agent-skill.js';
+import { CUSTOM_FUNCTION_SKILL_FILES } from '../custom-function-skill.js';
 import { CustomFunctionSetupFeature, type CustomFunctionProjectState } from '../scaffold-model.js';
 import {
   buildAddFunctionPlan,
@@ -171,6 +173,27 @@ describe('buildInitPlan', () => {
       `Existing GitHub Actions workflow was left unchanged: ${workflowPath}`,
     );
   });
+
+  it('updates an unmodified managed workflow', () => {
+    const state = buildState('/repo');
+    const features = [CustomFunctionSetupFeature.Ci];
+    const paths = getInitPlanningCandidatePaths(state, { features });
+    const first = buildInitPlan(buildInput(state, absentSnapshots(paths)), { features });
+    const snapshots = snapshotsAfterPlan(paths, first);
+    const workflowPath = join('/repo', '.github', 'workflows', 'transcend-custom-functions.yml');
+
+    const rerun = buildInitPlan(
+      { ...buildInput(state, snapshots), cliVersion: '10.28.0' },
+      { features },
+    );
+
+    expect(rerun.changes).toContainEqual(
+      expect.objectContaining({
+        path: workflowPath,
+        description: 'Update managed Custom Function checks',
+      }),
+    );
+  });
 });
 
 describe('buildAddFunctionPlan', () => {
@@ -265,6 +288,21 @@ describe('buildAddFunctionPlan', () => {
     );
   });
 
+  it('rejects case-insensitive ancestor directory collisions', () => {
+    const state = {
+      ...buildState('/repo'),
+      relativePaths: ['Functions'],
+    };
+    const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
+    const paths = getAddFunctionPlanningCandidatePaths(state, generated);
+
+    expect(() =>
+      buildAddFunctionPlan(buildInput(state, initializedSnapshots(paths, state)), {
+        generated,
+      }),
+    ).toThrow('Case-insensitive path collision: "functions" conflicts with "Functions".');
+  });
+
   it('requires an existing manifest snapshot', () => {
     const state = buildState('/repo');
     const generated = prepareGeneratedCustomFunction('Score Lead', 'general');
@@ -299,8 +337,8 @@ describe('agent skill planning', () => {
     expect(paths).toContain(
       join('/repo', '.agents', 'skills', 'transcend-custom-functions', 'references', 'setup.md'),
     );
-    expect(paths.some((path) => path.includes('.cursor/skills/transcend-custom-functions'))).toBe(
-      false,
+    expect(paths).toContain(
+      join('/repo', '.cursor', 'skills', 'transcend-custom-functions', 'SKILL.md'),
     );
 
     const rerun = buildInitPlan(buildInput(state, snapshotsAfterPlan(paths, first)), { features });
@@ -320,6 +358,35 @@ describe('agent skill planning', () => {
     });
     const copiedRerun = buildInitPlan(buildInput(state, copiedSnapshots), { features });
     expect(copiedRerun.changes).toEqual([]);
+  });
+
+  it('updates a prior managed canonical copy after directory preference changes', () => {
+    const state = buildState('/repo');
+    state.existingSkillDirectories = [
+      { path: '.cursor/skills', supportsAgentsSkills: true },
+      { path: '.claude/skills', supportsAgentsSkills: false },
+    ];
+    const features = [CustomFunctionSetupFeature.Skill];
+    const paths = getInitPlanningCandidatePaths(state, { features });
+    const snapshots = absentSnapshots(paths);
+    CUSTOM_FUNCTION_SKILL_FILES.forEach((file) => {
+      const path = join('/repo', '.cursor', 'skills', 'transcend-custom-functions', file.path);
+      snapshots[path] = {
+        kind: 'file',
+        path,
+        contents: buildManagedAgentSkill(
+          `${file.contents.trimEnd()}\n\nPrior managed revision.\n`,
+          '@transcend-io/cli',
+        ),
+        mode: 0o100644,
+      };
+    });
+
+    const plan = buildInitPlan(buildInput(state, snapshots), { features });
+
+    expect(
+      plan.changes.filter(({ path }) => path.includes('.cursor/skills/transcend-custom-functions')),
+    ).toHaveLength(CUSTOM_FUNCTION_SKILL_FILES.length);
   });
 
   it('writes directly to one existing skill directory without creating aliases', () => {

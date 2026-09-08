@@ -203,7 +203,7 @@ describe('custom-functions new', () => {
 
     await expect(
       newCustomFunction.call(context, buildFlags(), join(root, 'missing-project')),
-    ).rejects.toThrow('Did you mean `transcend custom-functions new other-functions`?');
+    ).rejects.toThrow("Did you mean `transcend custom-functions new 'other-functions'`?");
   });
 
   it('does not treat JSON output as approval to mutate', async () => {

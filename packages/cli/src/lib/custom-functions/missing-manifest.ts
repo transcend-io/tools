@@ -1,5 +1,7 @@
 import { dirname, relative } from 'node:path';
 
+import { quoteCliArgument } from './paths.js';
+
 /** Command that can be redirected to a discovered Custom Function project. */
 export type ManifestConsumerCommand = 'check' | 'new' | 'run';
 
@@ -26,10 +28,9 @@ export function formatMissingManifestMessage(options: {
   );
   if (discovered.length === 1) {
     const directory = relative(cwd, dirname(discovered[0]!)) || '.';
-    const argument = /\s/u.test(directory) ? JSON.stringify(directory) : directory;
     return (
       `Custom Function manifest does not exist at ${requested}. ` +
-      `Did you mean \`transcend custom-functions ${command} ${argument}\`?`
+      `Did you mean \`transcend custom-functions ${command} ${quoteCliArgument(directory)}\`?`
     );
   }
   if (discovered.length > 1) {

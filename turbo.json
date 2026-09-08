@@ -16,7 +16,8 @@
     "oxlint.json",
     ".oxfmtrc.jsonc",
     "codegen.ts",
-    "schema.graphql"
+    "schema.graphql",
+    "skills/transcend-custom-functions/**"
   ],
   "tasks": {
     "build": {

@@ -39,6 +39,7 @@ Check `response.ok` for every `sdk.fetch` call. Include the response status and 
 - Use `<<parameters.name>>` placeholders for local secret values.
 - Add every external network destination to `allowed-hosts`. Transcend SDK routes do not require an allowed-host entry.
 - Set `allow-third-party-imports` only when the implementation needs undeclared third-party modules.
+- Keep each function self-contained in its entry source file. Local runtime imports are not deployed; remote and `npm:` imports follow `allow-third-party-imports`.
 - Keep fixtures minimal but realistic, with at least one case for every implemented export.
 - Match DSR fixtures to `DATA_POINT` and `REQUEST_ENRICHER`. Do not hardcode values such as the data silo identity that the push workflow supplies.
 
