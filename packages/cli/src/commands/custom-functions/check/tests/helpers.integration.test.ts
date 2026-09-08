@@ -20,7 +20,7 @@ afterAll(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('runCustomFunctionChecks with Deno 2.x', () => {
+describe('runCustomFunctionChecks with Deno 2.4.5', () => {
   it('validates a generated project with the real runtime', async () => {
     const generated = prepareGeneratedCustomFunction('Integration Example', 'general');
     const manifestPath = join(root, 'transcend-functions.yml');

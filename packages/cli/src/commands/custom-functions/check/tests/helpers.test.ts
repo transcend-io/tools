@@ -192,7 +192,7 @@ describe('runCustomFunctionChecks without Deno', () => {
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         code: 'deno.unsupported-version',
-        message: expect.stringContaining('Deno 2.x is required; found 1.46.3'),
+        message: expect.stringContaining('Deno 2.4.5 is required; found 1.46.3'),
       }),
     );
   });
@@ -209,7 +209,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const calls: string[][] = [];
     const runner: CapturedProcessRunner = (_command, args) => {
       calls.push([...args]);
-      return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+      return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
     };
 
     const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
@@ -227,7 +227,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const context = buildContextForTest({ cwd: root });
     const runner: CapturedProcessRunner = (_command, args, options) => {
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
       }
       if (args[0] === 'doc') {
         return Promise.resolve(
@@ -254,7 +254,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const runner: CapturedProcessRunner = (_command, args, options) => {
       calls.push([...args]);
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
       }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[]' }));
@@ -317,7 +317,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const runner: CapturedProcessRunner = (_command, args, options) => {
       calls.push([...args]);
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
+        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
       }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));

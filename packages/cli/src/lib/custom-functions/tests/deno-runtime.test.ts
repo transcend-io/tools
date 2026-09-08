@@ -5,15 +5,15 @@ import { parseDenoRuntimeVersion, unsupportedDenoVersionMessage } from '../deno-
 describe('parseDenoRuntimeVersion', () => {
   it('reads the runtime version from Deno output', () => {
     expect(
-      parseDenoRuntimeVersion('deno 2.5.6 (stable, release, aarch64-apple-darwin)\nv8 14.0\n'),
+      parseDenoRuntimeVersion('deno 2.4.5 (stable, release, aarch64-apple-darwin)\nv8 13.0\n'),
     ).toEqual({
-      version: '2.5.6',
+      version: '2.4.5',
       major: 2,
     });
   });
 
   it.each([
-    ['deno 2.5.6\r\nv8 14.0\r\n', { version: '2.5.6', major: 2 }],
+    ['deno 2.4.5\r\nv8 13.0\r\n', { version: '2.4.5', major: 2 }],
     ['deno 2.6.0-rc.1\n', { version: '2.6.0-rc.1', major: 2 }],
     ['', undefined],
     ['unexpected localized output', undefined],
@@ -23,13 +23,19 @@ describe('parseDenoRuntimeVersion', () => {
 });
 
 describe('unsupportedDenoVersionMessage', () => {
-  it('accepts Deno 2.x', () => {
-    expect(unsupportedDenoVersionMessage('deno 2.0.0\n')).toBeUndefined();
+  it('accepts the production runtime version', () => {
+    expect(unsupportedDenoVersionMessage('deno 2.4.5\n')).toBeUndefined();
   });
 
-  it('explains an unsupported major version', () => {
+  it('rejects a different Deno runtime patch', () => {
+    expect(unsupportedDenoVersionMessage('deno 2.4.6\n')).toContain(
+      'Deno 2.4.5 is required; found 2.4.6',
+    );
+  });
+
+  it('explains an unsupported older version', () => {
     expect(unsupportedDenoVersionMessage('deno 1.46.3\n')).toContain(
-      'Deno 2.x is required; found 1.46.3',
+      'Deno 2.4.5 is required; found 1.46.3',
     );
   });
 });

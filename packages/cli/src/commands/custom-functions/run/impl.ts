@@ -7,6 +7,7 @@ import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { runCapturedProcess } from '../../../lib/cli/run-captured-process.js';
 import {
   DENO_INSTALL_URL,
+  SUPPORTED_DENO_VERSION,
   unsupportedDenoVersionMessage,
 } from '../../../lib/custom-functions/deno-runtime.js';
 import {
@@ -148,7 +149,9 @@ export async function run(
       this,
     );
     if (denoVersion.error?.code === 'ENOENT') {
-      throw new Error(`Deno 2.x is required. Install it from ${DENO_INSTALL_URL}`);
+      throw new Error(
+        `Deno ${SUPPORTED_DENO_VERSION} is required. Install it from ${DENO_INSTALL_URL}`,
+      );
     }
     if (denoVersion.code !== 0) {
       throw new Error('Deno was found, but its version could not be determined.');

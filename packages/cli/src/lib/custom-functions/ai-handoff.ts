@@ -1,4 +1,5 @@
 import { CUSTOM_FUNCTION_SKILL_NAME } from './custom-function-skill.js';
+import { SUPPORTED_DENO_VERSION } from './deno-runtime.js';
 import { buildCustomFunctionProjectArguments, quoteCliArgument } from './paths.js';
 
 /**
@@ -29,7 +30,7 @@ export function buildInitAiHandoff(options: {
   if (options.hasGithubWorkflow) {
     return `${prefix} review the Custom Function setup in \`${options.targetDirectory}\`, adapt the generated GitHub Actions workflow to this repository's conventions, and run \`${checkCommand}\`.`;
   }
-  return `${prefix} review the Custom Function setup in \`${options.targetDirectory}\` and add equivalent CI for this repository: install Deno 2.x and \`@transcend-io/cli@${options.cliVersion}\`, then run \`${checkCommand}\`.`;
+  return `${prefix} review the Custom Function setup in \`${options.targetDirectory}\` and add equivalent CI for this repository: install Deno ${SUPPORTED_DENO_VERSION} and \`@transcend-io/cli@${options.cliVersion}\`, then run \`${checkCommand}\`.`;
 }
 
 /**

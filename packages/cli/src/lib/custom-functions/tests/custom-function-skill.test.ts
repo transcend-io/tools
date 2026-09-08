@@ -41,7 +41,7 @@ describe('Custom Function Agent Skill', () => {
 
   it('keeps setup and CI guidance in its focused reference', () => {
     expect(CUSTOM_FUNCTION_SETUP_REFERENCE_MD).toContain('transcend custom-functions init');
-    expect(CUSTOM_FUNCTION_SETUP_REFERENCE_MD).toContain('Deno 2.x');
+    expect(CUSTOM_FUNCTION_SETUP_REFERENCE_MD).toContain('Deno 2.4.5');
     expect(CUSTOM_FUNCTION_SETUP_REFERENCE_MD).toContain('--noInteractive');
     expect(CUSTOM_FUNCTION_SETUP_REFERENCE_MD).toContain('Do not add deployment credentials');
   });

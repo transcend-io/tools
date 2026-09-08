@@ -45,6 +45,6 @@ export const checkCommand = buildCommand({
   docs: {
     brief: 'Validate a local Custom Function project without credentials',
     fullDescription:
-      'Checks manifest semantics and published payload schemas, then uses Deno 2.x without executing user modules to inspect exports, type-check, lint, and verify formatting.',
+      'Checks manifest semantics and published payload schemas, then uses Deno 2.4.5 without executing user modules to inspect exports, type-check, lint, and verify formatting.',
   },
 });

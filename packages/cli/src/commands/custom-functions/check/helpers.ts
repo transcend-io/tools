@@ -21,6 +21,7 @@ import {
 } from '../../../lib/custom-functions/check-model.js';
 import {
   DENO_INSTALL_URL,
+  SUPPORTED_DENO_VERSION,
   unsupportedDenoVersionMessage,
 } from '../../../lib/custom-functions/deno-runtime.js';
 import {
@@ -529,7 +530,7 @@ export async function runCustomFunctionChecks(
     skipPendingDenoChecks();
     addError(diagnostics, {
       code: 'deno.missing',
-      message: `Deno 2.x is required for export, type, lint, and format checks. Install it from ${DENO_INSTALL_URL}`,
+      message: `Deno ${SUPPORTED_DENO_VERSION} is required for export, type, lint, and format checks. Install it from ${DENO_INSTALL_URL}`,
     });
   } else if (denoVersion.code !== 0) {
     statuses.set('runtime', 'failed');

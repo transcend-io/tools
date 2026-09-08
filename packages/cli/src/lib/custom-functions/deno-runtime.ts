@@ -1,8 +1,5 @@
-/** Supported local Deno major version. */
-export const SUPPORTED_DENO_MAJOR_VERSION = 2;
-
-/** Exact Deno version used by generated CI. */
-export const GENERATED_DENO_VERSION = '2.5.6';
+/** Exact Deno version used by the Custom Function runtime. */
+export const SUPPORTED_DENO_VERSION = '2.4.5';
 
 /** Official Deno installation instructions. */
 export const DENO_INSTALL_URL = 'https://docs.deno.com/runtime/getting_started/installation/';
@@ -40,9 +37,9 @@ export function parseDenoRuntimeVersion(output: string): DenoRuntimeVersion | un
  */
 export function unsupportedDenoVersionMessage(output: string): string | undefined {
   const runtime = parseDenoRuntimeVersion(output);
-  if (runtime?.major === SUPPORTED_DENO_MAJOR_VERSION) {
+  if (runtime?.version === SUPPORTED_DENO_VERSION) {
     return undefined;
   }
   const found = runtime ? `; found ${runtime.version}` : '';
-  return `Deno ${SUPPORTED_DENO_MAJOR_VERSION}.x is required${found}. Install or upgrade it from ${DENO_INSTALL_URL}`;
+  return `Deno ${SUPPORTED_DENO_VERSION} is required${found}. Install or switch versions using ${DENO_INSTALL_URL}`;
 }

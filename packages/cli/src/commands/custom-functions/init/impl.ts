@@ -8,6 +8,7 @@ import { runCapturedProcess } from '../../../lib/cli/run-captured-process.js';
 import { buildInitAiHandoff } from '../../../lib/custom-functions/ai-handoff.js';
 import {
   DENO_INSTALL_URL,
+  SUPPORTED_DENO_VERSION,
   unsupportedDenoVersionMessage,
 } from '../../../lib/custom-functions/deno-runtime.js';
 import {
@@ -164,10 +165,12 @@ export async function init(
         this,
       );
       if (denoVersion.error?.code === 'ENOENT') {
-        plan.warnings.push(`Deno 2.x is not installed. Install it from ${DENO_INSTALL_URL}`);
+        plan.warnings.push(
+          `Deno ${SUPPORTED_DENO_VERSION} is not installed. Install it from ${DENO_INSTALL_URL}`,
+        );
       } else if (denoVersion.code !== 0) {
         plan.warnings.push(
-          `Deno was found, but its version could not be determined. Deno 2.x is required. See ${DENO_INSTALL_URL}`,
+          `Deno was found, but its version could not be determined. Deno ${SUPPORTED_DENO_VERSION} is required. See ${DENO_INSTALL_URL}`,
         );
       } else {
         const unsupportedVersion = unsupportedDenoVersionMessage(denoVersion.stdout);
