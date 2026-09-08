@@ -1,7 +1,7 @@
 ---
 name: transcend-custom-functions
 description: Sets up, implements, validates, and deploys Transcend Custom Functions. Use when working with transcend-functions.yml, General or DSR handlers, test payloads, Deno configuration, Custom Function CI, or transcend custom-functions CLI commands.
-compatibility: Requires Deno 2.4.5 for local validation and the Transcend CLI.
+compatibility: Requires Deno 2.x (2.4.5 recommended) for local validation and the Transcend CLI.
 ---
 
 # Transcend Custom Functions

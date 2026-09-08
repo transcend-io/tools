@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
-import { SUPPORTED_DENO_VERSION } from '../deno-runtime.js';
+import { RECOMMENDED_DENO_VERSION } from '../deno-runtime.js';
 import {
   generateGithubActionsWorkflow,
   isUnmodifiedCustomFunctionWorkflow,
@@ -18,7 +18,7 @@ describe('generateGithubActionsWorkflow', () => {
     expect(workflow).toContain('permissions:\n  contents: read');
     expect(workflow).toMatch(/uses: actions\/checkout@[a-f0-9]{40} # v6/u);
     expect(workflow).toMatch(/uses: denoland\/setup-deno@[a-f0-9]{40} # v2\.0\.5/u);
-    expect(workflow).toContain(`deno-version: ${SUPPORTED_DENO_VERSION}`);
+    expect(workflow).toContain(`deno-version: ${RECOMMENDED_DENO_VERSION}`);
     expect(workflow).not.toContain('pull_request_target:');
     expect(workflow).not.toContain('secrets.');
     expect(workflow).not.toContain('--auth=');

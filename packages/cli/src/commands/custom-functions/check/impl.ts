@@ -102,9 +102,12 @@ export async function check(
       result.diagnostics.forEach((diagnostic) => {
         const location = diagnostic.path ? `${diagnostic.path}: ` : '';
         const owner = diagnostic.functionName ? `[${diagnostic.functionName}] ` : '';
-        this.logger.error(
-          colors.red(`${diagnostic.severity}: ${location}${owner}${diagnostic.message}`),
-        );
+        const message = `${diagnostic.severity}: ${location}${owner}${diagnostic.message}`;
+        if (diagnostic.severity === 'warning') {
+          this.logger.warn(colors.yellow(message));
+        } else {
+          this.logger.error(colors.red(message));
+        }
       });
       if (result.status === 'passed') {
         this.logger.info('');

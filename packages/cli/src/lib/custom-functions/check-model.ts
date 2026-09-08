@@ -4,8 +4,8 @@ import type { CUSTOM_FUNCTION_RESULT_VERSION } from './scaffold-model.js';
 export interface CustomFunctionDiagnostic {
   /** Stable machine-readable diagnostic code. */
   code: string;
-  /** Diagnostics currently represent validation errors. */
-  severity: 'error';
+  /** Whether the diagnostic blocks validation. */
+  severity: 'error' | 'warning';
   /** Human-readable explanation. */
   message: string;
   /** File path, relative to the manifest when possible. */

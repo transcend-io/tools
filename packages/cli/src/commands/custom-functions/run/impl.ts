@@ -7,8 +7,8 @@ import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { runCapturedProcess } from '../../../lib/cli/run-captured-process.js';
 import {
   DENO_INSTALL_URL,
-  SUPPORTED_DENO_VERSION,
-  unsupportedDenoVersionMessage,
+  getDenoRuntimeCompatibility,
+  SUPPORTED_DENO_MAJOR_VERSION,
 } from '../../../lib/custom-functions/deno-runtime.js';
 import {
   buildLocalSimulatorInvocation,
@@ -167,15 +167,18 @@ export async function run(
     );
     if (denoVersion.error?.code === 'ENOENT') {
       throw new Error(
-        `Deno ${SUPPORTED_DENO_VERSION} is required. Install it from ${DENO_INSTALL_URL}`,
+        `Deno ${SUPPORTED_DENO_MAJOR_VERSION}.x is required. Install it from ${DENO_INSTALL_URL}`,
       );
     }
     if (denoVersion.code !== 0) {
       throw new Error('Deno was found, but its version could not be determined.');
     }
-    const unsupportedVersion = unsupportedDenoVersionMessage(denoVersion.stdout);
-    if (unsupportedVersion) {
-      throw new Error(unsupportedVersion);
+    const compatibility = getDenoRuntimeCompatibility(denoVersion.stdout);
+    if (compatibility.level === 'error') {
+      throw new Error(compatibility.message);
+    }
+    if (compatibility.level === 'warning') {
+      this.logger.warn(compatibility.message);
     }
     const moduleGraph = await runCapturedProcess(
       'deno',

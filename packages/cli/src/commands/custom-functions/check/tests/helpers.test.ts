@@ -9,10 +9,12 @@ import type {
   CapturedProcessResult,
   CapturedProcessRunner,
 } from '../../../../lib/cli/run-captured-process.js';
+import { RECOMMENDED_DENO_VERSION } from '../../../../lib/custom-functions/deno-runtime.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { runCustomFunctionChecks } from '../helpers.js';
 
 const temporaryRoots: string[] = [];
+const recommendedDenoOutput = `deno ${RECOMMENDED_DENO_VERSION}\n`;
 
 /**
  * Build an empty Deno module graph for one source.
@@ -207,7 +209,7 @@ describe('runCustomFunctionChecks without Deno', () => {
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         code: 'deno.unsupported-version',
-        message: expect.stringContaining('Deno 2.4.5 is required; found 1.46.3'),
+        message: expect.stringContaining('Deno 2.x is required; found 1.46.3'),
       }),
     );
   });
@@ -224,7 +226,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const calls: string[][] = [];
     const runner: CapturedProcessRunner = (_command, args) => {
       calls.push([...args]);
-      return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+      return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
     };
 
     const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
@@ -247,7 +249,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const runner: CapturedProcessRunner = (_command, args) => {
       calls.push([...args]);
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+        return Promise.resolve(processResult({ stdout: 'deno 2.5.6\n' }));
       }
       if (args[0] === 'info') {
         return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
@@ -261,6 +263,11 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
 
     expect(result.status).toBe('passed');
+    expect(result.diagnostics).toContainEqual({
+      code: 'deno.version-mismatch',
+      severity: 'warning',
+      message: 'Deno 2.5.6 is compatible, but 2.4.5 matches the current production runtime.',
+    });
     expect(calls).toContainEqual([
       'doc',
       '--json',
@@ -276,7 +283,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const context = buildContextForTest({ cwd: root });
     const runner: CapturedProcessRunner = (_command, args, options) => {
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
       }
       if (args[0] === 'doc') {
         return Promise.resolve(
@@ -304,7 +311,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const context = buildContextForTest({ cwd: root });
     const runner: CapturedProcessRunner = (_command, args) => {
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
       }
       if (args[0] === 'info') {
         const specifier = pathToFileURL(sourcePath).href;
@@ -352,7 +359,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const runner: CapturedProcessRunner = (_command, args, options) => {
       calls.push([...args]);
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
       }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[]' }));
@@ -419,7 +426,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const runner: CapturedProcessRunner = (_command, args, options) => {
       calls.push([...args]);
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
       }
       if (args[0] === 'doc') {
         return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
@@ -471,7 +478,7 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     const context = buildContextForTest({ cwd: root });
     const runner: CapturedProcessRunner = (_command, args, options) => {
       if (args[0] === '--version') {
-        return Promise.resolve(processResult({ stdout: 'deno 2.4.5\n' }));
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
       }
       if (args[0] === 'info') {
         return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));

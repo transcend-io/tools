@@ -20,16 +20,16 @@ Review the complete plan before applying it. Existing JSONC settings and comment
 
 ## Deno
 
-Local validation requires Deno 2.4.5, matching the production runtime. The generated `custom-functions:check` Deno task delegates to the CLI so it runs the same manifest, export, type, lint, and format checks. If Deno is missing or unsupported, direct the developer to the official installation instructions; do not install or switch runtimes without permission.
+Local validation requires Deno 2 (2.4.5 recommended). The generated `custom-functions:check` Deno task delegates to the CLI so it runs the same manifest, export, type, lint, and format checks. A different Deno 2 version may produce a production-parity warning; other major versions are unsupported. If Deno is missing or unsupported, direct the developer to the official installation instructions; do not install or switch runtimes without permission.
 
 ## CI
 
-The generated GitHub Actions workflow is a secure reference implementation: it uses read-only repository permissions, pinned actions, Deno 2.4.5, a pinned Transcend CLI version, and no Transcend credentials.
+The generated GitHub Actions workflow is a secure reference implementation: it uses read-only repository permissions, pinned actions, a tested Deno 2.4.5 version, a pinned Transcend CLI version, and no Transcend credentials.
 
 Adapt it to existing repository conventions instead of creating a parallel CI system. For another CI provider, preserve this validation recipe:
 
 1. Trigger when the Custom Function manifest, source, payloads, or Deno configuration changes.
-2. Install Deno 2.4.5.
+2. Install Deno 2.
 3. Install a pinned `@transcend-io/cli` version.
 4. Run:
 

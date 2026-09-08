@@ -22,8 +22,8 @@ import {
 } from '../../../lib/custom-functions/check-model.js';
 import {
   DENO_INSTALL_URL,
-  SUPPORTED_DENO_VERSION,
-  unsupportedDenoVersionMessage,
+  getDenoRuntimeCompatibility,
+  SUPPORTED_DENO_MAJOR_VERSION,
 } from '../../../lib/custom-functions/deno-runtime.js';
 import { validateCustomFunctionExecutionContext } from '../../../lib/custom-functions/execution-context.js';
 import {
@@ -618,25 +618,32 @@ export async function runCustomFunctionChecks(
     });
   };
   const denoVersion = await runner('deno', ['--version'], { cwd: manifestDirectory }, context);
-  const unsupportedVersion =
-    denoVersion.code === 0 ? unsupportedDenoVersionMessage(denoVersion.stdout) : undefined;
+  const compatibility =
+    denoVersion.code === 0 ? getDenoRuntimeCompatibility(denoVersion.stdout) : undefined;
+  if (compatibility?.level === 'warning') {
+    diagnostics.push({
+      code: 'deno.version-mismatch',
+      severity: 'warning',
+      message: compatibility.message,
+    });
+  }
   if (denoVersion.error?.code === 'ENOENT') {
     statuses.set('runtime', 'failed');
     skipPendingDenoChecks();
     addError(diagnostics, {
       code: 'deno.missing',
-      message: `Deno ${SUPPORTED_DENO_VERSION} is required for export, type, lint, and format checks. Install it from ${DENO_INSTALL_URL}`,
+      message: `Deno ${SUPPORTED_DENO_MAJOR_VERSION}.x is required for export, type, lint, and format checks. Install it from ${DENO_INSTALL_URL}`,
     });
   } else if (denoVersion.code !== 0) {
     statuses.set('runtime', 'failed');
     skipPendingDenoChecks();
     recordDenoFailure(diagnostics, 'deno.unavailable', 'Deno could not be started.', denoVersion);
-  } else if (unsupportedVersion) {
+  } else if (compatibility?.level === 'error') {
     statuses.set('runtime', 'failed');
     skipPendingDenoChecks();
     addError(diagnostics, {
       code: 'deno.unsupported-version',
-      message: unsupportedVersion,
+      message: compatibility.message,
     });
   } else if (!unsafeConfiguration) {
     for (const source of sources) {

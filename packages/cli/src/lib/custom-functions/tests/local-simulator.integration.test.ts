@@ -7,7 +7,7 @@ import { runCapturedProcess } from '../../cli/run-captured-process.js';
 import { buildContextForTest } from '../../tests/helpers/buildContextForTest.js';
 import { buildLocalSimulatorInvocation } from '../local-simulator.js';
 
-describe('local Custom Function simulator with Deno 2.4.5', () => {
+describe('local Custom Function simulator with Deno 2', () => {
   it('executes the selected export with payload, environment, SDK, and KV', async () => {
     const invocation = buildLocalSimulatorInvocation(
       {

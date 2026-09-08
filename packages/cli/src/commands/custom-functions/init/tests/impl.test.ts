@@ -181,7 +181,7 @@ describe('custom-functions init', () => {
     expect(nextSteps[0]).toMatch(/^transcend custom-functions new /u);
     expect(nextSteps[1]).toMatch(/^transcend custom-functions check /u);
     expect(context.stdout).toContain('add equivalent CI for this repository');
-    expect(context.stdout).toContain('install Deno 2.4.5');
+    expect(context.stdout).toContain('install Deno 2');
   });
 
   it('applies initialization once and reports a no-op on rerun', async () => {

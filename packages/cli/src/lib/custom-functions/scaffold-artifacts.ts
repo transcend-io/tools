@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { SUPPORTED_DENO_VERSION } from './deno-runtime.js';
+import { RECOMMENDED_DENO_VERSION } from './deno-runtime.js';
 
 /** Immutable actions/checkout v6 release commit. */
 const ACTIONS_CHECKOUT_SHA = 'd23441a48e516b6c34aea4fa41551a30e30af803';
@@ -86,7 +86,7 @@ jobs:
       - uses: actions/checkout@${ACTIONS_CHECKOUT_SHA} # v6
       - uses: denoland/setup-deno@${SETUP_DENO_SHA} # v2.0.5
         with:
-          deno-version: ${SUPPORTED_DENO_VERSION}
+          deno-version: ${RECOMMENDED_DENO_VERSION}
       - name: Install the Transcend CLI
         run: npm install --global @transcend-io/cli@${cliVersion}
       - name: Validate Custom Functions

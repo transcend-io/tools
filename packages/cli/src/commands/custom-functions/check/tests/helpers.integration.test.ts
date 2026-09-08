@@ -20,7 +20,7 @@ afterAll(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('runCustomFunctionChecks with Deno 2.4.5', () => {
+describe('runCustomFunctionChecks with Deno 2', () => {
   it('validates a generated project with the real runtime', async () => {
     const generated = prepareGeneratedCustomFunction('Integration Example', 'general');
     const manifestPath = join(root, 'transcend-functions.yml');
@@ -46,6 +46,6 @@ describe('runCustomFunctionChecks with Deno 2.4.5', () => {
 
     expect(result.status, JSON.stringify(result, null, 2)).toBe('passed');
     expect(result.checks.every(({ status }) => status === 'passed')).toBe(true);
-    expect(result.diagnostics).toEqual([]);
+    expect(result.diagnostics.filter(({ severity }) => severity === 'error')).toEqual([]);
   }, 30_000);
 });

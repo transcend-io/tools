@@ -19,7 +19,7 @@ describe('buildInitAiHandoff', () => {
   it('gives other CI systems the complete validation recipe', () => {
     const handoff = buildInitAiHandoff({ ...baseOptions, hasGithubWorkflow: false });
 
-    expect(handoff).toContain('install Deno 2.4.5');
+    expect(handoff).toContain('install Deno 2');
     expect(handoff).toContain('@transcend-io/cli@10.27.4');
     expect(handoff).toContain('--noInteractive');
   });

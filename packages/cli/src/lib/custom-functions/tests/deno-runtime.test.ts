@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { parseDenoRuntimeVersion, unsupportedDenoVersionMessage } from '../deno-runtime.js';
+import {
+  getDenoRuntimeCompatibility,
+  parseDenoRuntimeVersion,
+  RECOMMENDED_DENO_VERSION,
+} from '../deno-runtime.js';
 
 describe('parseDenoRuntimeVersion', () => {
   it('reads the runtime version from Deno output', () => {
@@ -22,20 +26,32 @@ describe('parseDenoRuntimeVersion', () => {
   });
 });
 
-describe('unsupportedDenoVersionMessage', () => {
+describe('getDenoRuntimeCompatibility', () => {
   it('accepts the production runtime version', () => {
-    expect(unsupportedDenoVersionMessage('deno 2.4.5\n')).toBeUndefined();
+    expect(getDenoRuntimeCompatibility(`deno ${RECOMMENDED_DENO_VERSION}\n`)).toEqual({
+      level: 'compatible',
+    });
   });
 
-  it('rejects a different Deno runtime patch', () => {
-    expect(unsupportedDenoVersionMessage('deno 2.4.6\n')).toContain(
-      'Deno 2.4.5 is required; found 2.4.6',
-    );
+  it('warns for a different Deno 2 runtime', () => {
+    expect(getDenoRuntimeCompatibility('deno 2.5.6\n')).toEqual({
+      level: 'warning',
+      message: 'Deno 2.5.6 is compatible, but 2.4.5 matches the current production runtime.',
+    });
   });
 
   it('explains an unsupported older version', () => {
-    expect(unsupportedDenoVersionMessage('deno 1.46.3\n')).toContain(
-      'Deno 2.4.5 is required; found 1.46.3',
-    );
+    expect(getDenoRuntimeCompatibility('deno 1.46.3\n')).toEqual({
+      level: 'error',
+      message:
+        'Deno 2.x is required; found 1.46.3. Install or switch versions using https://docs.deno.com/runtime/getting_started/installation/',
+    });
+  });
+
+  it('rejects unreadable version output', () => {
+    expect(getDenoRuntimeCompatibility('unexpected output')).toMatchObject({
+      level: 'error',
+      message: expect.stringContaining('installed version could not be determined'),
+    });
   });
 });

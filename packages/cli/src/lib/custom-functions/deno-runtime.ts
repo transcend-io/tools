@@ -1,5 +1,8 @@
-/** Exact Deno version used by the Custom Function runtime. */
-export const SUPPORTED_DENO_VERSION = '2.4.5';
+/** Deno version pinned in generated CI to match the current production runtime. */
+export const RECOMMENDED_DENO_VERSION = '2.4.5';
+
+/** Deno major version supported by local Custom Function tooling. */
+export const SUPPORTED_DENO_MAJOR_VERSION = 2;
 
 /** Official Deno installation instructions. */
 export const DENO_INSTALL_URL = 'https://docs.deno.com/runtime/getting_started/installation/';
@@ -11,6 +14,25 @@ export interface DenoRuntimeVersion {
   /** Semantic major version. */
   major: number;
 }
+
+/** Compatibility result for one installed Deno runtime. */
+export type DenoRuntimeCompatibility =
+  | {
+      /** Exact production match. */
+      level: 'compatible';
+    }
+  | {
+      /** Compatible major with a different production pin. */
+      level: 'warning';
+      /** Human-readable compatibility guidance. */
+      message: string;
+    }
+  | {
+      /** Unsupported or unreadable runtime version. */
+      level: 'error';
+      /** Human-readable requirement error. */
+      message: string;
+    };
 
 /**
  * Parse the first line of `deno --version`.
@@ -30,16 +52,30 @@ export function parseDenoRuntimeVersion(output: string): DenoRuntimeVersion | un
 }
 
 /**
- * Explain why a reported Deno version cannot be used.
+ * Compare an installed Deno runtime with the supported major and production pin.
  *
  * @param output - Captured `deno --version` output
- * @returns Requirement error, or undefined for supported Deno
+ * @returns Compatibility and optional guidance
  */
-export function unsupportedDenoVersionMessage(output: string): string | undefined {
+export function getDenoRuntimeCompatibility(output: string): DenoRuntimeCompatibility {
   const runtime = parseDenoRuntimeVersion(output);
-  if (runtime?.version === SUPPORTED_DENO_VERSION) {
-    return undefined;
+  if (!runtime) {
+    return {
+      level: 'error',
+      message: `Deno ${SUPPORTED_DENO_MAJOR_VERSION}.x is required, but the installed version could not be determined. Install or switch versions using ${DENO_INSTALL_URL}`,
+    };
   }
-  const found = runtime ? `; found ${runtime.version}` : '';
-  return `Deno ${SUPPORTED_DENO_VERSION} is required${found}. Install or switch versions using ${DENO_INSTALL_URL}`;
+  if (runtime.major !== SUPPORTED_DENO_MAJOR_VERSION) {
+    return {
+      level: 'error',
+      message: `Deno ${SUPPORTED_DENO_MAJOR_VERSION}.x is required; found ${runtime.version}. Install or switch versions using ${DENO_INSTALL_URL}`,
+    };
+  }
+  if (runtime.version !== RECOMMENDED_DENO_VERSION) {
+    return {
+      level: 'warning',
+      message: `Deno ${runtime.version} is compatible, but ${RECOMMENDED_DENO_VERSION} matches the current production runtime.`,
+    };
+  }
+  return { level: 'compatible' };
 }

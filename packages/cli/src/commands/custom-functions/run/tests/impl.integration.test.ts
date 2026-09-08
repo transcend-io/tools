@@ -14,7 +14,7 @@ afterAll(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-describe('custom-functions run with Deno 2.4.5', () => {
+describe('custom-functions run with Deno 2', () => {
   it('prints console output from a selected local function', async () => {
     mkdirSync(join(project, 'functions'), { recursive: true });
     mkdirSync(join(project, 'test-payloads'), { recursive: true });
