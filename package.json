@@ -6,6 +6,7 @@
   "scripts": {
     "build": "turbo run build",
     "test": "turbo run test test:root",
+    "test:integration": "turbo run test:integration",
     "quality": "turbo run quality",
     "quality:fix": "turbo run quality:fix",
     "changeset": "changeset",
