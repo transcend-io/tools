@@ -106,7 +106,6 @@ export async function run(
 
     const parsedManifest = parseCustomFunctionsManifest(
       this.fs.readFileSync(state.manifestPath, 'utf8'),
-      { allowExternalPaths: true },
     );
     if (parsedManifest.functions.length === 0) {
       throw new Error('The Custom Function manifest does not define any functions.');

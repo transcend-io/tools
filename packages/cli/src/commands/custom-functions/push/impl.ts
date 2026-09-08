@@ -1,3 +1,5 @@
+import { dirname, resolve } from 'node:path';
+
 import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
 import {
   buildTranscendGraphQLClient,
@@ -19,6 +21,7 @@ import {
   writeCustomFunctionIdsToManifest,
 } from '../../../lib/custom-functions/manifest.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
+import { assertPathPhysicallyContained } from '../../../lib/scaffolding/path-safety.js';
 
 export interface CustomFunctionsPushCommandFlags {
   auth: string;
@@ -78,7 +81,10 @@ export async function push(
 
   const vars = parseVariablesFromString(variables);
   this.logger.info(colors.magenta(`Reading manifest "${file}"...`));
-  const configs = readCustomFunctionsManifest(file, vars);
+  const manifestDirectory = dirname(resolve(file));
+  const configs = readCustomFunctionsManifest(file, vars, (path) =>
+    assertPathPhysicallyContained(this, manifestDirectory, path),
+  );
   this.logger.info(colors.green(`Found ${configs.length} custom function(s) in "${file}"`));
 
   const client = buildTranscendGraphQLClient(transcendUrl, apiKey);

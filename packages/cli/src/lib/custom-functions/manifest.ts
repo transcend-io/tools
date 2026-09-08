@@ -117,13 +117,13 @@ export function isCustomFunctionManifestPathContained(filePath: string): boolean
  * Validate semantic constraints shared by manifest readers and editors.
  *
  * @param manifest - Shape-validated custom function manifest
- * @param options - Compatibility behavior
+ * @param options - Validation behavior
  */
 export function validateCustomFunctionsManifest(
   manifest: CustomFunctionsManifest,
   options: {
-    /** Preserve legacy push support for paths outside the manifest directory. */
-    allowExternalPaths?: boolean;
+    /** Skip path validation while identifying candidate manifest files. */
+    skipPathValidation?: boolean;
   } = {},
 ): void {
   // IDs must be unique — two entries cannot target the same function
@@ -185,7 +185,7 @@ export function validateCustomFunctionsManifest(
       })),
     ];
     referencedPaths.forEach(({ field, path }) => {
-      if (!options.allowExternalPaths && !isCustomFunctionManifestPathContained(path)) {
+      if (!options.skipPathValidation && !isCustomFunctionManifestPathContained(path)) {
         throw new Error(
           `Custom function "${entry.name}" has a ${field} path outside the manifest directory: ${path}`,
         );
@@ -202,14 +202,14 @@ export function validateCustomFunctionsManifest(
  * manifest.
  *
  * @param contents - Custom function manifest YAML
- * @param options - Compatibility behavior
+ * @param options - Validation behavior
  * @returns The parsed, shape-validated, and semantically valid manifest
  */
 export function parseCustomFunctionsManifest(
   contents: string,
   options: {
-    /** Preserve legacy push support for paths outside the manifest directory. */
-    allowExternalPaths?: boolean;
+    /** Skip path validation while identifying candidate manifest files. */
+    skipPathValidation?: boolean;
   } = {},
 ): CustomFunctionsManifest {
   const manifest = decodeCodec(CustomFunctionsManifest, yaml.load(contents));
@@ -238,11 +238,13 @@ export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
  *
  * @param filePath - Path to the manifest YAML file
  * @param manifest - Parsed manifest
+ * @param assertPath - Optional safety check applied before referenced files are read
  * @returns Custom Function configs with code and payloads loaded
  */
 function hydrateCustomFunctionsManifest(
   filePath: string,
   manifest: CustomFunctionsManifest,
+  assertPath?: (path: string) => void,
 ): CustomFunctionManifestConfig[] {
   const manifestDir = dirname(resolve(filePath));
 
@@ -255,6 +257,7 @@ function hydrateCustomFunctionsManifest(
    */
   const loadTestPayload = (entryName: string, payloadFile: string): object => {
     const testPayloadPath = resolve(manifestDir, payloadFile);
+    assertPath?.(testPayloadPath);
     if (!existsSync(testPayloadPath)) {
       throw new Error(
         `Test payload file for custom function "${entryName}" does not exist: ${testPayloadPath}`,
@@ -277,6 +280,7 @@ function hydrateCustomFunctionsManifest(
       ...(entry['allowed-hosts'] ? { allowedHosts: entry['allowed-hosts'] } : {}),
     });
     const codePath = resolve(manifestDir, entry.code);
+    assertPath?.(codePath);
     if (!existsSync(codePath)) {
       throw new Error(`Code file for custom function "${entry.name}" does not exist: ${codePath}`);
     }
@@ -330,11 +334,13 @@ function hydrateCustomFunctionsManifest(
  *
  * @param filePath - Path to the manifest YAML file
  * @param variables - Variables to fill into `<<parameters.x>>` placeholders
+ * @param assertPath - Optional safety check applied before referenced files are read
  * @returns The custom function configs, with code loaded from disk
  */
 export function readCustomFunctionsManifest(
   filePath: string,
   variables: ObjByString = {},
+  assertPath?: (path: string) => void,
 ): CustomFunctionManifestConfig[] {
   const fileContents = readFileSync(filePath, 'utf-8');
   const replacedVariables = replaceVariablesInYaml(
@@ -342,8 +348,8 @@ export function readCustomFunctionsManifest(
     variables,
     `Also check that there are no extra variables defined in your manifest: ${filePath}`,
   );
-  const manifest = parseCustomFunctionsManifest(replacedVariables, { allowExternalPaths: true });
-  return hydrateCustomFunctionsManifest(filePath, manifest);
+  const manifest = parseCustomFunctionsManifest(replacedVariables);
+  return hydrateCustomFunctionsManifest(filePath, manifest, assertPath);
 }
 
 /**
@@ -374,16 +380,8 @@ export function readCustomFunctionManifestEntry(
   const resolvedEntry = manifest.functions[0]!;
   const manifestDirectory = dirname(resolve(filePath));
   const sourcePath = resolve(manifestDirectory, resolvedEntry.code);
-  [
-    sourcePath,
-    ...(resolvedEntry['test-payloads']?.map(({ payload }) => resolve(manifestDirectory, payload)) ??
-      []),
-    ...(resolvedEntry['test-payload']
-      ? [resolve(manifestDirectory, resolvedEntry['test-payload'])]
-      : []),
-  ].forEach((path) => assertPath?.(path));
   return {
-    config: hydrateCustomFunctionsManifest(filePath, manifest)[0]!,
+    config: hydrateCustomFunctionsManifest(filePath, manifest, assertPath)[0]!,
     sourcePath,
   };
 }
@@ -418,7 +416,7 @@ export function insertCustomFunctionManifestEntry(
   }
   functions.add(document.createNode(entry));
   const updatedContents = document.toString();
-  parseCustomFunctionsManifest(updatedContents, { allowExternalPaths: true });
+  parseCustomFunctionsManifest(updatedContents);
   return updatedContents;
 }
 

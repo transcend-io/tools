@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
@@ -184,22 +184,34 @@ describe('parseCustomFunctionsManifest', () => {
 });
 
 describe('readCustomFunctionsManifest', () => {
-  it('preserves push compatibility for parent-relative source paths', () => {
-    const root = mkdtempSync(join(tmpdir(), 'cf-external-source-'));
-    const manifestDirectory = join(root, 'config');
-    const sourcePath = join(root, 'shared.ts');
-    mkdirSync(manifestDirectory, { recursive: true });
-    writeFileSync(sourcePath, 'export default async () => 1;\n');
-    const manifestPath = join(manifestDirectory, 'transcend-functions.yml');
-    writeFileSync(
-      manifestPath,
-      `functions:
+  it('rejects parent-relative source paths', () => {
+    const manifestPath = writeFixture(`functions:
   - name: Shared source
     code: ../shared.ts
-`,
-    );
+`);
 
-    expect(readCustomFunctionsManifest(manifestPath)[0]!.code).toContain('export default');
+    expect(() => readCustomFunctionsManifest(manifestPath)).toThrow(
+      /code path outside the manifest directory/,
+    );
+  });
+
+  it('applies path validation before reading source and payload files', () => {
+    const manifestPath = writeFixture(`functions:
+  - name: Validated paths
+    code: ./functions/a.ts
+    test-payload: ./test-payloads/a.json
+`);
+    const manifestDirectory = dirname(manifestPath);
+    mkdirSync(join(manifestDirectory, 'test-payloads'));
+    writeFileSync(join(manifestDirectory, 'test-payloads', 'a.json'), '{}');
+    const validatedPaths: string[] = [];
+
+    readCustomFunctionsManifest(manifestPath, {}, (path) => validatedPaths.push(path));
+
+    expect(validatedPaths).toEqual([
+      join(manifestDirectory, 'functions', 'a.ts'),
+      join(manifestDirectory, 'test-payloads', 'a.json'),
+    ]);
   });
 
   it('passes ids through and allows duplicate names when disambiguated by id', () => {

@@ -160,7 +160,7 @@ export function discoverCustomFunctionManifests(
               return;
             }
             parseCustomFunctionsManifest(context.fs.readFileSync(absolute, 'utf8'), {
-              allowExternalPaths: true,
+              skipPathValidation: true,
             });
             manifests.push(absolute);
           } catch {

@@ -103,21 +103,23 @@ functions:
 | Field | Required | Description |
 | --- | --- | --- |
 | \`name\` | Yes | Display name of the function. Used as the sync key when no \`id\` is set — renaming an id-less entry creates a new function. |
-| \`code\` | Yes | Path to the TypeScript source file, relative to the manifest. |
+| \`code\` | Yes | Path to the TypeScript source file. The path is resolved relative to the manifest and must remain within its directory. |
 | \`id\` | No | Custom function ID. When set, it becomes the sync key (allowing renames and disambiguating non-unique names). Find IDs via \`transcend custom-functions list\`, or let \`--updateManifest\` fill them in after a push. |
 | \`description\` | No | Description shown in the Transcend dashboard. |
 | \`type\` | No | \`GENERAL\` (default) or \`DSR\`. |
 | \`data-silo-id\` | DSR only | The data silo (DSR integration) the DSR function is attached to. When omitted for a **new** DSR function, the integration is created automatically (see below) and \`--updateManifest\` writes the assigned ID back. |
 | \`sombra-id\` | No | The Sombra gateway the function belongs to. Each function's code is signed against its own gateway; when omitted, the existing function's gateway (or \`--sombraId\`, or the primary Sombra) is used. An entry cannot move an existing function to a different gateway. |
 | \`sombra-auth-env\` | No | Name of the environment variable holding the internal key of the function's Sombra gateway (e.g. \`SOMBRA_EU_INTERNAL_KEY\`). The key itself never lives in the manifest — it is read from the environment at push time. Overrides \`--sombraAuth\` for this entry. |
-| \`test-payloads\` | No | List of test payloads to run the function with before pushing. Each item has a \`payload\` (path to a JSON file, relative to the manifest) and an optional \`payload-type\`. Every payload runs and all must pass, or the push is rejected. DSR functions should list one payload per export they implement: \`DATA_POINT\` (default) invokes the default export, \`REQUEST_ENRICHER\` invokes the \`enricher\` export. |
-| \`test-payload\` | No | Shorthand for a single-item \`test-payloads\` list: path to one JSON payload file. Pair with \`test-payload-type\` for DSR functions. Mutually exclusive with \`test-payloads\`. |
+| \`test-payloads\` | No | List of test payloads to run the function with before pushing. Each item has a \`payload\` path, resolved relative to the manifest and contained within its directory, plus an optional \`payload-type\`. Every payload runs and all must pass, or the push is rejected. DSR functions should list one payload per export they implement: \`DATA_POINT\` (default) invokes the default export, \`REQUEST_ENRICHER\` invokes the \`enricher\` export. |
+| \`test-payload\` | No | Shorthand for a single-item \`test-payloads\` list. The JSON path is resolved relative to the manifest and must remain within its directory. Pair with \`test-payload-type\` for DSR functions. Mutually exclusive with \`test-payloads\`. |
 | \`allowed-hosts\` | No | Hosts the function may make network requests to. |
 | \`timeout-ms\` | No | Execution timeout in milliseconds. |
 | \`allow-third-party-imports\` | No | Whether the function may import third party modules. |
-| \`env\` | No | Environment variables exposed to the function. Use \`<<parameters.ENV_NAME>>\` placeholders with the \`--variables\` flag to avoid committing secrets; matching the placeholder name to the environment key keeps the mapping clear. |
+| \`env\` | No | Environment variables exposed to the function. Use manifest variables to avoid committing secrets. |
 
-Local authoring commands require source and payload paths to stay inside the Custom Function project. \`push\` continues to accept parent-relative paths for compatibility with existing manifests. Variable values preserve colons; escape a literal comma as \`\\,\` inside a quoted \`--variables\` value.
+#### Manifest variables
+
+Use \`<<parameters.ENV_NAME>>\` placeholders and supply their values with \`--variables=ENV_NAME:value\`. Match each placeholder name to its environment key to keep the mapping clear. Values may contain colons. Escape a literal comma as \`\\,\` inside a quoted \`--variables\` value.
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use \`--force\` to push a new revision.
 
