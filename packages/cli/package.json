@@ -76,7 +76,7 @@
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
-    "check:skill-bundle": "tsx scripts/checkCustomFunctionSkillBundle.ts",
+    "check:skill-bundle": "tsx scripts/checkAgentSkillBundles.ts",
     "check:publint": "publint --level warning --strict --pack pnpm",
     "script:transcend-json-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildTranscendJsonSchema.ts && oxfmt ./schema/transcend-yml-schema-*.json",
     "docgen": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildReadmeDocs.ts",

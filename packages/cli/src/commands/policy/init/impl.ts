@@ -2,6 +2,7 @@ import { join } from 'node:path';
 
 import colors from 'colors';
 
+import { version as CLI_VERSION } from '../../../constants.js';
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
@@ -24,6 +25,10 @@ import {
   unsupportedRegalVersionMessage,
 } from '../../../lib/policy/policy-runtime.js';
 import {
+  PolicySetupFeature,
+  type PolicySetupFeature as PolicySetupFeatureType,
+} from '../../../lib/policy/policy-scaffold-model.js';
+import {
   buildPolicyInitAiHandoff,
   buildPolicyInitPlanResult,
   type PolicyInitToolVersions,
@@ -40,10 +45,20 @@ import {
   quoteShellArgument,
   renderProjectPlan,
 } from '../../../lib/scaffolding/project-plan-output.js';
-import { PromptCancelledError, ScaffoldPrompts } from '../../../lib/scaffolding/prompts.js';
+import {
+  PromptCancelledError,
+  type PromptChoice,
+  ScaffoldPrompts,
+} from '../../../lib/scaffolding/prompts.js';
 
 /** Flags for `transcend policy init`. */
 export interface PolicyInitFlags {
+  /** Install repository-level VS Code setup. */
+  editor?: boolean;
+  /** Install the Policy Engine Agent Skill. */
+  skill?: boolean;
+  /** Install validation-only GitHub Actions CI. */
+  ci?: boolean;
   /** Disable prompts. */
   noInteractive: boolean;
   /** Render but do not apply the plan. */
@@ -53,6 +68,16 @@ export interface PolicyInitFlags {
   /** Emit one stable JSON result on stdout. */
   json: boolean;
 }
+
+/** User-facing optional setup labels. */
+const SETUP_LABELS: Readonly<Record<PolicySetupFeatureType, string>> = {
+  [PolicySetupFeature.Editor]: 'VS Code settings and lint task',
+  [PolicySetupFeature.Skill]: 'Policy Engine Agent Skill',
+  [PolicySetupFeature.Ci]: 'Validation-only GitHub Actions',
+};
+
+/** All optional setup features in stable prompt order. */
+const ALL_SETUP_FEATURES = Object.values(PolicySetupFeature);
 
 /** Runtime compatibility detected before policy planning. */
 interface PolicyRuntimeProbe {
@@ -76,6 +101,38 @@ function isInteractiveInvocation(
   stderrIsTTY: boolean | undefined,
 ): boolean {
   return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
+}
+
+/**
+ * Resolve setup from explicit flags or one default-selected checklist.
+ *
+ * @param prompts - Prompt adapters
+ * @param flags - Setup flags
+ * @param options - Interaction state
+ * @returns Explicitly selected setup features
+ */
+async function resolveFeatures(
+  prompts: ScaffoldPrompts,
+  flags: PolicyInitFlags,
+  options: {
+    /** Whether prompts are available. */
+    interactive: boolean;
+  },
+): Promise<PolicySetupFeatureType[]> {
+  const enabled: Readonly<Record<PolicySetupFeatureType, boolean | undefined>> = {
+    [PolicySetupFeature.Editor]: flags.editor,
+    [PolicySetupFeature.Skill]: flags.skill,
+    [PolicySetupFeature.Ci]: flags.ci,
+  };
+  if (!options.interactive) {
+    return ALL_SETUP_FEATURES.filter((feature) => enabled[feature] === true);
+  }
+  const choices: PromptChoice<PolicySetupFeatureType>[] = ALL_SETUP_FEATURES.map((feature) => ({
+    name: SETUP_LABELS[feature],
+    value: feature,
+    checked: enabled[feature] !== false,
+  }));
+  return prompts.checkbox('Choose repository setup:', choices);
 }
 
 /**
@@ -168,17 +225,22 @@ export async function init(
   try {
     const runtime = await probePolicyRuntimes(this, this.process.cwd(), runner);
     const state = discoverPolicyProject(this, directory);
-    const candidatePaths = getPolicyInitPlanningCandidatePaths(state);
+    const prompts = new ScaffoldPrompts(this);
+    const interactive = isInteractiveInvocation(
+      flags,
+      this.process.stdin.isTTY,
+      this.process.stderr.isTTY,
+    );
+    const features = await resolveFeatures(prompts, flags, { interactive });
+    const candidatePaths = getPolicyInitPlanningCandidatePaths(state, { features });
     candidatePaths.forEach((path) => assertPathPhysicallyContained(this, state.projectRoot, path));
     const snapshots = collectPlanningSnapshots(this, candidatePaths);
 
-    // Editor, managed-skill, and CI selections are added here in the next DX
-    // phase. Keeping the feature list explicit prevents this core command from
-    // advertising integrations it does not yet install.
     const plan = buildPolicyInitPlan(
       { state, snapshots },
       {
-        features: [],
+        features,
+        cliVersion: CLI_VERSION,
       },
     );
     plan.warnings.push(...runtime.warnings);
@@ -196,12 +258,6 @@ export async function init(
       );
     }
 
-    const interactive = isInteractiveInvocation(
-      flags,
-      this.process.stdin.isTTY,
-      this.process.stderr.isTTY,
-    );
-    const prompts = new ScaffoldPrompts(this);
     let approved = plan.changes.length === 0 || flags.dryRun;
     if (plan.changes.length > 0 && !flags.dryRun) {
       if (flags.yes) {
@@ -254,9 +310,9 @@ export async function init(
           ? 'Policy project is already initialized.'
           : 'Existing policy project was left unchanged.';
       this.logger.info(colors.green(message));
-      return;
+    } else {
+      this.logger.info(colors.green('Policy project initialized.'));
     }
-    this.logger.info(colors.green('Policy project initialized.'));
     if (plan.nextSteps.length > 0) {
       this.logger.info(`\n${colors.bold('Next steps')}`);
       plan.nextSteps.forEach((step) => this.logger.info(step));

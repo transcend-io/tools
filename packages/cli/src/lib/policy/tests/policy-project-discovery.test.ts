@@ -43,14 +43,14 @@ describe('discoverPolicyProject', () => {
     expect(state.repositoryRoot).toBeUndefined();
   });
 
-  it('uses a custom standalone target as its own approved root', () => {
+  it('uses the invocation root for a custom standalone target', () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'custom-policy');
 
     const state = discoverPolicyProject(buildContextForTest({ cwd: root }), target);
 
     expect(state.targetDirectory).toBe(target);
-    expect(state.projectRoot).toBe(target);
+    expect(state.projectRoot).toBe(root);
     expect(state.repositoryRoot).toBeUndefined();
   });
 });

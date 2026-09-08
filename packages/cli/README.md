@@ -65,6 +65,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend policy deactivate`](#transcend-policy-deactivate)
   - [`transcend policy download`](#transcend-policy-download)
   - [`transcend policy eval`](#transcend-policy-eval)
+  - [`transcend policy init`](#transcend-policy-init)
   - [`transcend policy lint`](#transcend-policy-lint)
   - [`transcend policy bundles`](#transcend-policy-bundles)
   - [`transcend policy publish`](#transcend-policy-publish)
@@ -4299,26 +4300,91 @@ FLAGS
 transcend policy eval --pkg=data.transcend.decision --input=./fixtures/envelope.json --bundle=./policies
 ```
 
+### `transcend policy init`
+
+```txt
+USAGE
+  transcend policy init [--editor] [--skill] [--ci] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
+  transcend policy init --help
+
+Probes OPA and Regal, previews one safe transactional plan, and creates a publishable fail-closed Rego v1 starter only in an empty target. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.
+
+FLAGS
+     [--editor/--noEditor]  Merge strict target-scoped VS Code settings, extensions, and lint task
+     [--skill/--noSkill]    Install the canonical Policy Engine coding-agent skill
+     [--ci/--noCi]          Generate credential-free validation-only GitHub Actions
+     [--noInteractive]      Disable prompts and enable optional setup only through explicit flags  [default = false]
+     [--dryRun]             Preview all changes without writing files                              [default = false]
+     [--yes]                Skip only the final plan confirmation                                  [default = false]
+     [--json]               Emit one stable JSON result and imply non-interactive output           [default = false]
+  -h  --help                Print help information and exit
+
+ARGUMENTS
+  [directory]  Policy project directory [default = transcend/policy]
+```
+
+#### Create the safe default policy project
+
+```sh
+transcend policy init
+```
+
+This creates a publishable, fail-closed Rego v1 starter under `transcend/policy`. The example policy is disposable teaching material, not an application contract. Initialization checks local OPA and Regal versions and prints official installation guidance when they are missing or incompatible; it never installs tools or creates runtime-manager configuration.
+
+The interactive checklist selects repository-level VS Code setup, the `transcend-policy-engine` Agent Skill, and credential-free validation-only GitHub Actions by default. VS Code setup recommends the official OPA extension, scopes bundle authoring and a default `policy: lint` task to the selected project, and configures strict Rego v1 formatting with Regal.
+
+To give an agent the same policy guidance before initialization, install the standalone skill directly from this repository:
+
+```sh
+npx skills add transcend-io/tools --skill transcend-policy-engine
+```
+
+#### Preview or choose another directory
+
+```sh
+transcend policy init ./policies --dryRun --json
+transcend policy init ./policies --editor --skill --ci --noInteractive --yes
+```
+
+Non-interactive setup enables only the individual `--editor`, `--skill`, and `--ci` flags passed. There are no setup presets. The complete plan is applied transactionally. Existing or partially initialized policy targets are left unchanged with actionable warnings, including customized Rego, manifests, Regal configuration, README files, workflows, editor values and tasks, and managed skill content.
+
+Generated CI pins OPA 1.13.1, Regal 0.42.0, immutable setup action commits, and the current Transcend CLI release. It runs only `transcend policy lint --noInteractive --json`; it never publishes or adds Transcend API credentials. After successful initialization, copyable one-line next steps and an AI handoff prompt identify the disposable example, repository-specific CI adaptation, and the final lint gate.
+
 ### `transcend policy lint`
 
 ```txt
 USAGE
-  transcend policy lint (--dir value)
+  transcend policy lint [--dir value] [--fix] [--noInteractive] [--json]
   transcend policy lint --help
 
-Runs `opa check --strict` for Rego validation and `opa fmt` for formatting. When files are not formatted, lists the affected paths, prints a diff, and prompts to format them in place. Requires the `opa` CLI on PATH. No Transcend API key is needed.
+Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs `opa check --strict --v0-compatible`, `regal lint`, and `opa test --fail-on-empty`. No Transcend API key is needed.
 
 FLAGS
-     --dir   Directory containing Rego policy files
-  -h --help  Print help information and exit
+     [--dir]            Directory containing the local policy project                  [default = transcend/policy]
+     [--fix]            Apply OPA formatting without running broad Regal fixes         [default = false]
+     [--noInteractive]  Disable the optional formatting confirmation                   [default = false]
+     [--json]           Emit one stable JSON result and imply non-interactive behavior [default = false]
+  -h  --help            Print help information and exit
 ```
 
 #### Examples
 
-**Lint a local policy directory and optionally format Rego files**
+**Verify the default local policy project**
 
 ```sh
-transcend policy lint --dir=./policies
+transcend policy lint
+```
+
+**Verify and format a custom policy project**
+
+```sh
+transcend policy lint --dir=./policies --fix
+```
+
+**Run the verification gate in CI or an editor**
+
+```sh
+transcend policy lint --noInteractive --json
 ```
 
 ### `transcend policy bundles`

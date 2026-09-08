@@ -32,6 +32,16 @@ jobs:
         with:
           deno-version: 2.4.5
 
+      - name: Install OPA for Policy Engine integration tests
+        uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
+        with:
+          version: 1.13.1
+
+      - name: Install Regal for Policy Engine integration tests
+        uses: open-policy-agent/setup-regal@761188c3b435761fa254beca508a44875619648f # v2.0.0
+        with:
+          version: 0.42.0
+
       - if: github.event_name == 'pull_request'
         name: Check changeset
         run: pnpm check:changeset

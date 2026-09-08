@@ -31,10 +31,7 @@ export function discoverPolicyProject(
   }
   const repository = discoverProjectRepository(context, {
     targetDirectory,
-    standaloneProjectRoot:
-      targetDirectory === resolve(invocationDirectory, DEFAULT_POLICY_PROJECT_DIRECTORY)
-        ? invocationDirectory
-        : targetDirectory,
+    standaloneProjectRoot: invocationDirectory,
   });
   return {
     invocationDirectory,

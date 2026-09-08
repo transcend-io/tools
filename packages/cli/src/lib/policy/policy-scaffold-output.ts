@@ -2,7 +2,7 @@ import {
   toPublicPlannedChange,
   type PublicPlannedChange,
 } from '../scaffolding/project-plan-output.js';
-import type { PolicyInitProjectPlan } from './policy-scaffold-model.js';
+import type { PolicyInitProjectPlan, PolicySetupFeature } from './policy-scaffold-model.js';
 
 /** Detected local policy tool versions. */
 export interface PolicyInitToolVersions {
@@ -32,6 +32,8 @@ export interface PolicyInitPlanResult {
   warnings: string[];
   /** Suggested raw one-line follow-up commands. */
   nextSteps: string[];
+  /** Explicitly selected repository integrations. */
+  features: PolicySetupFeature[];
   /** Compact prompt for continuing with a coding agent. */
   aiHandoff: string;
   /** Compatible local policy tool versions. */
@@ -39,7 +41,7 @@ export interface PolicyInitPlanResult {
 }
 
 /**
- * Build the compact core-phase AI handoff.
+ * Build the compact policy implementation and CI handoff.
  *
  * @param options - Portable example path and lint command
  * @returns Raw one-line prompt
@@ -52,7 +54,8 @@ export function buildPolicyInitAiHandoff(options: {
 }): string {
   return (
     `Ask your coding agent to replace the disposable example in ${options.examplePath} with ` +
-    `your intended OPA document tree and input/output contract, then run ${options.lintCommand}.`
+    `the intended policy document tree and input/output contract, adapt the generated GitHub ` +
+    `Actions validation to repository conventions, and rerun ${options.lintCommand}.`
   );
 }
 
@@ -88,6 +91,7 @@ export function buildPolicyInitPlanResult(
     changes: plan.changes.map((change) => toPublicPlannedChange(options.cwd, change)),
     warnings: plan.warnings,
     nextSteps: plan.nextSteps,
+    features: [...plan.features],
     aiHandoff: options.aiHandoff,
     tools: options.tools,
   };

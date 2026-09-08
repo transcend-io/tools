@@ -7,9 +7,24 @@ export const initCommand = buildCommand({
   },
   parameters: {
     flags: {
+      editor: {
+        kind: 'boolean',
+        brief: 'Merge strict target-scoped VS Code settings, extensions, and lint task',
+        optional: true,
+      },
+      skill: {
+        kind: 'boolean',
+        brief: 'Install the canonical Policy Engine coding-agent skill',
+        optional: true,
+      },
+      ci: {
+        kind: 'boolean',
+        brief: 'Generate credential-free validation-only GitHub Actions',
+        optional: true,
+      },
       noInteractive: {
         kind: 'boolean',
-        brief: 'Disable prompts and require final approval with --yes',
+        brief: 'Disable prompts and enable optional setup only through explicit flags',
         default: false,
       },
       dryRun: {
@@ -44,6 +59,6 @@ export const initCommand = buildCommand({
   docs: {
     brief: 'Initialize a safe local policy project',
     fullDescription:
-      'Probes OPA and Regal, previews one safe transactional plan, and creates a publishable fail-closed Rego v1 starter only in an empty target. Existing policy content is never overwritten. No Transcend credentials are needed.',
+      'Probes OPA and Regal, previews one safe transactional plan, and creates a publishable fail-closed Rego v1 starter only in an empty target. Optional editor, Agent Skill, and validation-only CI setup preserve repository customization. No Transcend credentials are needed.',
   },
 });

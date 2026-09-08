@@ -4,7 +4,7 @@ import type { ProjectPlan } from '../scaffolding/project-plan.js';
 /** Version of the stable policy initialization JSON result. */
 export const POLICY_INIT_RESULT_VERSION = 1 as const;
 
-/** Repository integrations reserved for the policy DX phase. */
+/** Optional repository integrations for policy authoring. */
 export const PolicySetupFeature = {
   /** Repository-level editor configuration. */
   Editor: 'editor',
@@ -14,7 +14,7 @@ export const PolicySetupFeature = {
   Ci: 'ci',
 } as const;
 
-/** Repository integration reserved for the policy DX phase. */
+/** Optional repository integration for policy authoring. */
 export type PolicySetupFeature = (typeof PolicySetupFeature)[keyof typeof PolicySetupFeature];
 
 /** Repository and target state collected before policy planning. */
@@ -23,11 +23,11 @@ export interface PolicyProjectState {
   invocationDirectory: string;
   /** Absolute user-selected policy directory. */
   targetDirectory: string;
-  /** Root that will own future repository-level setup. */
+  /** Repository or invocation root that owns setup artifacts. */
   projectRoot: string;
   /** Nearest repository root, when present. */
   repositoryRoot?: string;
-  /** Existing project-level skill directories for future setup. */
+  /** Existing project-level skill directories. */
   existingSkillDirectories: ExistingProjectSkillDirectory[];
   /** Whether the repository appears to use GitHub. */
   usesGithub: boolean;
@@ -51,6 +51,6 @@ export interface PolicyInitProjectPlan extends ProjectPlan {
   warnings: string[];
   /** Raw commands shown after a successful apply. */
   nextSteps: string[];
-  /** Selected repository integrations, currently empty in the core phase. */
+  /** Selected repository integrations. */
   features: PolicySetupFeature[];
 }

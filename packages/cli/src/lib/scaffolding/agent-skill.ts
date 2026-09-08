@@ -127,6 +127,8 @@ export interface ManagedAgentSkillPlan {
   changes: PlannedChange[];
   /** Skill paths already in their desired state. */
   unchanged: string[];
+  /** Customized paths preserved for manual review. */
+  warnings: string[];
 }
 
 /**
@@ -231,9 +233,11 @@ export function planManagedAgentSkill(input: {
   snapshots: Readonly<Record<string, PlanningPathSnapshot>>;
   /** Managed skill definition. */
   skill: ManagedAgentSkillDefinition;
+  /** Preserve customized files and unexpected alias targets with warnings. */
+  preserveModified?: boolean;
 }): ManagedAgentSkillPlan {
-  const { rootDirectory, existingDirectories, snapshots, skill } = input;
-  const plan: ManagedAgentSkillPlan = { changes: [], unchanged: [] };
+  const { rootDirectory, existingDirectories, snapshots, skill, preserveModified = false } = input;
+  const plan: ManagedAgentSkillPlan = { changes: [], unchanged: [], warnings: [] };
   const directories = resolveAgentSkillDirectories(existingDirectories);
   const canonicalDirectory = join(rootDirectory, directories.canonical, skill.name);
   const managedFiles = skill.files.map((file) => ({
@@ -249,6 +253,13 @@ export function planManagedAgentSkill(input: {
         snapshot.contents !== file.contents &&
         !isUnmodifiedManagedAgentSkill(snapshot.contents, skill.owner)
       ) {
+        if (preserveModified) {
+          plan.unchanged.push(path);
+          plan.warnings.push(
+            `Customized managed skill file was left unchanged: ${path}. Merge the updated guidance manually.`,
+          );
+          return;
+        }
         throw new Error(
           `Refusing to replace user-managed skill: ${path}. Apply the skill update manually.`,
         );
@@ -280,6 +291,13 @@ export function planManagedAgentSkill(input: {
       return;
     }
     if (snapshot.kind !== 'absent') {
+      if (preserveModified) {
+        plan.unchanged.push(targetDirectory);
+        plan.warnings.push(
+          `Customized skill target was left unchanged: ${targetDirectory}. Expose the canonical skill manually if needed.`,
+        );
+        return;
+      }
       throw new Error(`Refusing to replace unexpected skill target: ${targetDirectory}`);
     }
     const change: PlannedLinkChange = {

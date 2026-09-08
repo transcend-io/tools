@@ -17,7 +17,9 @@ import type {
   CapturedProcessRunner,
 } from '../../../../lib/cli/run-captured-process.js';
 import { OPA_INSTALL_URL, REGAL_INSTALL_URL } from '../../../../lib/policy/policy-runtime.js';
+import { PolicySetupFeature } from '../../../../lib/policy/policy-scaffold-model.js';
 import { generatePolicyStarterFiles } from '../../../../lib/policy/policy-scaffold-templates.js';
+import { POLICY_SKILL_NAME } from '../../../../lib/policy/policy-skill.js';
 import { PromptCancelledError, ScaffoldPrompts } from '../../../../lib/scaffolding/prompts.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { init, type PolicyInitFlags } from '../impl.js';
@@ -116,32 +118,56 @@ describe('policy init', () => {
       })),
       warnings: [],
       nextSteps: [
-        "transcend policy lint --dir 'transcend/policy'",
+        "transcend policy lint --dir 'transcend/policy' --noInteractive",
         "Edit 'transcend/policy/policy_engine/example/result.rego'",
       ],
-      aiHandoff: expect.stringContaining('OPA document tree'),
+      features: [],
+      aiHandoff: expect.stringContaining('policy document tree'),
       tools: { opa: '1.13.1', regal: '0.42.0' },
     });
     expect(invocations).toEqual(['opa version', 'regal version']);
     expect(context.stderr).toBe('');
     expect(existsSync(join(root, 'manifest.json'))).toBe(false);
+    expect(existsSync(join(root, '.vscode'))).toBe(false);
+    expect(existsSync(join(root, '.agents'))).toBe(false);
+    expect(existsSync(join(root, '.github'))).toBe(false);
   });
 
   it('previews the complete plan without writing any files', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'custom-policy');
+    mkdirSync(join(root, '.git'), { recursive: true });
+    writeFileSync(
+      join(root, '.git', 'config'),
+      '[remote "origin"]\n  url = git@github.com:transcend-io/example.git\n',
+    );
     const context = buildContextForTest({
       cwd: root,
       stdinIsTTY: false,
     });
 
-    await init.call(context, buildFlags({ dryRun: true, yes: false }), target, buildRunner());
+    await init.call(
+      context,
+      buildFlags({
+        editor: true,
+        skill: true,
+        ci: true,
+        dryRun: true,
+        yes: false,
+      }),
+      target,
+      buildRunner(),
+    );
 
     expect(existsSync(target)).toBe(false);
+    expect(existsSync(join(root, '.vscode'))).toBe(false);
+    expect(existsSync(join(root, '.agents'))).toBe(false);
+    expect(existsSync(join(root, '.github'))).toBe(false);
     expect(JSON.parse(context.stdout)).toMatchObject({
       applied: false,
       dryRun: true,
       targetDirectory: target,
+      features: Object.values(PolicySetupFeature),
       changes: expect.arrayContaining([
         expect.objectContaining({
           kind: 'create',
@@ -155,16 +181,22 @@ describe('policy init', () => {
   it('applies once and reports an idempotent no-op with a local private input', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'policy');
+    mkdirSync(join(root, '.git'), { recursive: true });
+    writeFileSync(
+      join(root, '.git', 'config'),
+      '[remote "origin"]\n  url = https://github.com/transcend-io/example.git\n',
+    );
     const context = buildContextForTest({
       cwd: root,
       stdinIsTTY: false,
     });
+    const flags = buildFlags({ editor: true, skill: true, ci: true });
 
-    await init.call(context, buildFlags(), target, buildRunner());
+    await init.call(context, flags, target, buildRunner());
     writeFileSync(join(target, 'input.json'), '{"local": true}\n');
 
     context.reset();
-    await init.call(context, buildFlags(), target, buildRunner());
+    await init.call(context, flags, target, buildRunner());
 
     expect(JSON.parse(context.stdout)).toMatchObject({
       applied: false,
@@ -172,8 +204,132 @@ describe('policy init', () => {
       targetDirectory: target,
       changes: [],
       warnings: [],
+      features: Object.values(PolicySetupFeature),
     });
     expect(readFileSync(join(target, 'input.json'), 'utf8')).toBe('{"local": true}\n');
+    expect(existsSync(join(root, '.vscode', 'settings.json'))).toBe(true);
+    expect(existsSync(join(root, '.agents', 'skills', POLICY_SKILL_NAME, 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(root, '.github', 'workflows', 'transcend-policy.yml'))).toBe(true);
+  });
+
+  it('selects editor, skill, and CI by default in the interactive checklist', async () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, '.git'), { recursive: true });
+    writeFileSync(
+      join(root, '.git', 'config'),
+      '[remote "origin"]\n  url = git@github.com:transcend-io/example.git\n',
+    );
+    const context = buildContextForTest({
+      cwd: root,
+      stdinIsTTY: true,
+      stderrIsTTY: true,
+    });
+    const checkbox = vi
+      .spyOn(ScaffoldPrompts.prototype, 'checkbox')
+      .mockResolvedValueOnce(Object.values(PolicySetupFeature));
+    vi.spyOn(ScaffoldPrompts.prototype, 'confirm').mockResolvedValueOnce(true);
+
+    await init.call(
+      context,
+      buildFlags({
+        noInteractive: false,
+        yes: false,
+        json: false,
+      }),
+      undefined,
+      buildRunner(),
+    );
+
+    const choices = checkbox.mock.calls[0]![1];
+    expect(choices.map(({ value, checked }) => ({ value, checked }))).toEqual([
+      { value: PolicySetupFeature.Editor, checked: true },
+      { value: PolicySetupFeature.Skill, checked: true },
+      { value: PolicySetupFeature.Ci, checked: true },
+    ]);
+    expect(existsSync(join(root, '.vscode', 'settings.json'))).toBe(true);
+    expect(existsSync(join(root, '.agents', 'skills', POLICY_SKILL_NAME, 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(root, '.github', 'workflows', 'transcend-policy.yml'))).toBe(true);
+  });
+
+  it('installs repository-level editor and skill setup in a bare project', async () => {
+    const root = makeTemporaryRoot();
+    const context = buildContextForTest({
+      cwd: root,
+      stdinIsTTY: false,
+    });
+
+    await init.call(
+      context,
+      buildFlags({ editor: true, skill: true, ci: true }),
+      undefined,
+      buildRunner(),
+    );
+
+    const target = join(root, 'transcend', 'policy');
+    expect(existsSync(join(root, '.vscode', 'settings.json'))).toBe(true);
+    expect(existsSync(join(target, '.vscode'))).toBe(false);
+    expect(existsSync(join(root, '.agents', 'skills', POLICY_SKILL_NAME, 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(root, '.github'))).toBe(false);
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      applied: true,
+      features: Object.values(PolicySetupFeature),
+      warnings: [expect.stringContaining('not inside a detected GitHub repository')],
+    });
+  });
+
+  it('installs directly into one compatible existing project skill directory', async () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, '.claude', 'skills', 'existing'), { recursive: true });
+    writeFileSync(
+      join(root, '.claude', 'skills', 'existing', 'SKILL.md'),
+      '---\nname: existing\ndescription: Existing guidance\n---\n',
+    );
+    const context = buildContextForTest({
+      cwd: root,
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags({ skill: true }), undefined, buildRunner());
+
+    expect(existsSync(join(root, '.claude', 'skills', POLICY_SKILL_NAME, 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(root, '.agents'))).toBe(false);
+  });
+
+  it('keeps custom apostrophe paths relative and shell-safe across output and setup', async () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, '.git'), { recursive: true });
+    writeFileSync(
+      join(root, '.git', 'config'),
+      '[remote "origin"]\n  url = https://github.com/transcend-io/example.git\n',
+    );
+    const directory = "policies/customer's policy";
+    const context = buildContextForTest({
+      cwd: root,
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags({ editor: true, ci: true }), directory, buildRunner());
+
+    const tasks = JSON.parse(readFileSync(join(root, '.vscode', 'tasks.json'), 'utf8')) as {
+      /** Generated VS Code tasks. */
+      tasks: {
+        /** Shell-safe task arguments. */
+        args: string[];
+      }[];
+    };
+    expect(tasks.tasks[0]!.args).toEqual(['policy', 'lint', '--dir', directory, '--noInteractive']);
+    const workflow = readFileSync(
+      join(root, '.github', 'workflows', 'transcend-policy.yml'),
+      'utf8',
+    );
+    expect(workflow).toContain(`POLICY_DIRECTORY: ${JSON.stringify(directory)}`);
+    const result = JSON.parse(context.stdout);
+    expect(result.nextSteps[0]).toBe(
+      "transcend policy lint --dir 'policies/customer'\\''s policy' --noInteractive",
+    );
+    expect(result.aiHandoff).not.toContain('\n');
+    expect(result.aiHandoff).toContain('adapt the generated GitHub Actions validation');
+    expect(result.aiHandoff).toContain('rerun transcend policy lint');
   });
 
   it('preserves every existing target file and reports actionable warnings', async () => {
@@ -212,6 +368,54 @@ describe('policy init', () => {
     );
   });
 
+  it('preserves customized editor, skill, and workflow artifacts on rerun', async () => {
+    const root = makeTemporaryRoot();
+    mkdirSync(join(root, '.git'), { recursive: true });
+    writeFileSync(
+      join(root, '.git', 'config'),
+      '[remote "origin"]\n  url = https://github.com/transcend-io/example.git\n',
+    );
+    const context = buildContextForTest({
+      cwd: root,
+      stdinIsTTY: false,
+    });
+    const flags = buildFlags({ editor: true, skill: true, ci: true });
+    await init.call(context, flags, undefined, buildRunner());
+
+    const settingsPath = join(root, '.vscode', 'settings.json');
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf8')) as Record<string, unknown>;
+    settings['opa.strictMode'] = false;
+    const customizedSettings = `${JSON.stringify(settings, null, 2)}\n`;
+    writeFileSync(settingsPath, customizedSettings);
+
+    const skillPath = join(root, '.agents', 'skills', POLICY_SKILL_NAME, 'SKILL.md');
+    const customizedSkill = readFileSync(skillPath, 'utf8').replace(
+      'Use the CLI for deterministic scaffolding',
+      'Use the repository policy workflow',
+    );
+    writeFileSync(skillPath, customizedSkill);
+
+    const workflowPath = join(root, '.github', 'workflows', 'transcend-policy.yml');
+    const customizedWorkflow = `${readFileSync(workflowPath, 'utf8')}# Repository customization.\n`;
+    writeFileSync(workflowPath, customizedWorkflow);
+
+    context.reset();
+    await init.call(context, flags, undefined, buildRunner());
+
+    expect(readFileSync(settingsPath, 'utf8')).toBe(customizedSettings);
+    expect(readFileSync(skillPath, 'utf8')).toBe(customizedSkill);
+    expect(readFileSync(workflowPath, 'utf8')).toBe(customizedWorkflow);
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      applied: false,
+      changes: [],
+      warnings: expect.arrayContaining([
+        expect.stringContaining('opa.strictMode'),
+        expect.stringContaining('Customized managed skill file was left unchanged'),
+        expect.stringContaining('Existing GitHub Actions workflow was left unchanged'),
+      ]),
+    });
+  });
+
   it('renders a colored plan followed by raw unpadded next steps and AI handoff', async () => {
     const root = makeTemporaryRoot();
     const context = buildContextForTest({
@@ -225,7 +429,7 @@ describe('policy init', () => {
     expect(context.stdout).toContain('Changes');
     expect(context.stdout).toContain('Policy project initialized.');
     const lines = context.stdout.split('\n');
-    expect(lines).toContain("transcend policy lint --dir 'transcend/policy'");
+    expect(lines).toContain("transcend policy lint --dir 'transcend/policy' --noInteractive");
     expect(lines).toContain("Edit 'transcend/policy/policy_engine/example/result.rego'");
     const handoffHeading = lines.indexOf('AI handoff — paste into your coding agent');
     expect(handoffHeading).toBeGreaterThan(-1);
@@ -253,7 +457,7 @@ describe('policy init', () => {
       stderrIsTTY: true,
       exitBehavior: 'record',
     });
-    vi.spyOn(ScaffoldPrompts.prototype, 'confirm').mockRejectedValueOnce(
+    vi.spyOn(ScaffoldPrompts.prototype, 'checkbox').mockRejectedValueOnce(
       new PromptCancelledError(),
     );
 
