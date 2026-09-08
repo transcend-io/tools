@@ -5,21 +5,21 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { mergeDenoConfiguration } from '../scaffold-config.js';
 
 /**
- * Resolve the workspace `@transcend-io/custom-function-types` declaration
- * build for Deno contract tests. Version Packages bumps this version before it
- * is available from npm.
+ * Resolve the workspace `@transcend-io/custom-function-types` source for Deno
+ * contract tests. Version Packages bumps this version before it is available
+ * from npm, and CI runs tests before package builds.
  *
- * @returns Absolute `file:` URL to the built declaration entry
+ * @returns Absolute `file:` URL to the authoring contract source
  */
 function localCustomFunctionTypesSpecifier(): string {
   const packageEntry = fileURLToPath(import.meta.resolve('@transcend-io/custom-function-types'));
-  const typesEntry = resolve(dirname(packageEntry), '..', 'dist', 'index.d.mts');
-  if (!existsSync(typesEntry)) {
+  const contractSource = resolve(dirname(packageEntry), '..', 'src', 'contract.ts');
+  if (!existsSync(contractSource)) {
     throw new Error(
-      `Build @transcend-io/custom-function-types before running Deno contract tests (missing ${typesEntry}).`,
+      `Could not locate the Custom Function authoring contract at ${contractSource}.`,
     );
   }
-  return pathToFileURL(typesEntry).href;
+  return pathToFileURL(contractSource).href;
 }
 
 /**
