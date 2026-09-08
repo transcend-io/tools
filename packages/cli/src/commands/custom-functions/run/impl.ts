@@ -27,12 +27,9 @@ import {
   discoverCustomFunctionManifests,
   discoverCustomFunctionProject,
 } from '../../../lib/custom-functions/project-discovery.js';
-import {
-  CustomFunctionPrompts,
-  PromptCancelledError,
-} from '../../../lib/custom-functions/prompts.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
 import { assertPathPhysicallyContained } from '../../../lib/scaffolding/path-safety.js';
+import { PromptCancelledError, ScaffoldPrompts } from '../../../lib/scaffolding/prompts.js';
 
 /** Flags accepted by `transcend custom-functions run`. */
 export interface CustomFunctionRunFlags {
@@ -114,7 +111,7 @@ export async function run(
       !flags.noInteractive && Boolean(this.process.stdin.isTTY && this.process.stderr.isTTY);
     let selectedEntry = selectNamedFunction(parsedManifest.functions, flags.function);
     if (!selectedEntry && interactive) {
-      const prompts = new CustomFunctionPrompts(this);
+      const prompts = new ScaffoldPrompts(this);
       const selectedIndex = await prompts.select(
         'Custom Function to run:',
         parsedManifest.functions.map((entry, index) => ({

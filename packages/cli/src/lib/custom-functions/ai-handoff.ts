@@ -1,10 +1,7 @@
+import { quoteShellArgument } from '../scaffolding/project-plan-output.js';
 import { CUSTOM_FUNCTION_SKILL_NAME } from './custom-function-skill.js';
 import { SUPPORTED_DENO_MAJOR_VERSION } from './deno-runtime.js';
-import {
-  buildCustomFunctionProjectArguments,
-  buildPlaceholderVariablesArgument,
-  quoteCliArgument,
-} from './paths.js';
+import { buildCustomFunctionProjectArguments, buildPlaceholderVariablesArgument } from './paths.js';
 
 /**
  * Build a compact AI handoff after project initialization.
@@ -68,6 +65,6 @@ export function buildNewFunctionAiHandoff(options: {
   const runCommand =
     `transcend custom-functions run ` +
     `${buildCustomFunctionProjectArguments(options.targetDirectory, options.manifestPath)} ` +
-    `--function=${quoteCliArgument(options.displayName)}${variablesArgument}`;
+    `--function=${quoteShellArgument(options.displayName)}${variablesArgument}`;
   return `${prefix} implement \`${options.displayName}\` in \`${options.sourcePath}\`, replace the example fixtures with realistic cases, run \`${runCommand}\` to exercise it locally, and finish with \`${checkCommand}\`.`;
 }
