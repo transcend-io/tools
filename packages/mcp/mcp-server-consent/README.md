@@ -115,8 +115,9 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_update_cookies` — Update cookies (approve, junk, assign purposes)
 - `consent_update_data_flows` — Update data flows
 - `consent_bulk_triage` — Bulk approve or junk cookies and data flows
+- `consent_list_roc_records` - List record of consent records for a user
 
-Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api).
+Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api). `consent_list_roc_records` requires the **ViewManagedConsentDatabaseAdminApi** scope.
 
 ## Prompts
 
