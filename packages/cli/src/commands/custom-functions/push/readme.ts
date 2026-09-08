@@ -22,7 +22,7 @@ const examples = buildExamples<CustomFunctionsPushCommandFlags>(
       flags: {
         auth: '$TRANSCEND_API_KEY',
         file: './transcend/functions.yml',
-        variables: 'crmApiKey:example-secret-value',
+        parameters: 'crmApiKey:example-secret-value',
       },
     },
     {
@@ -115,7 +115,7 @@ functions:
 | \`allowed-hosts\` | No | Hosts the function may make network requests to. |
 | \`timeout-ms\` | No | Execution timeout in milliseconds. |
 | \`allow-third-party-imports\` | No | Whether the function may import third party modules. |
-| \`env\` | No | Environment variables exposed to the function. Use \`<<parameters.name>>\` placeholders with the \`--variables\` flag to avoid committing secrets. |
+| \`env\` | No | Environment variables exposed to the function. Use \`<<parameters.name>>\` placeholders with the \`--parameters\` flag to avoid committing secrets. |
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use \`--force\` to push a new revision.
 

@@ -231,16 +231,20 @@ describe('buildAddFunctionPlan', () => {
     },
   );
 
-  it('gives self-contained secret guidance when no skill is installed', () => {
+  it('gives guidance for every generated manifest parameter', () => {
     const state = buildState('/repo');
     const generated = prepareGeneratedCustomFunction('DSR Lookup', 'dsr-datapoint');
+    generated.manifestEntry.env = {
+      ...generated.manifestEntry.env,
+      CRM_API_KEY: '<<parameters.crmApiKey>>',
+    };
     const paths = getAddFunctionPlanningCandidatePaths(state, generated);
     const plan = buildAddFunctionPlan(buildInput(state, initializedSnapshots(paths, state)), {
       generated,
     });
 
     expect(plan.warnings).toContain(
-      'Supply transcendApiKey through --variables when pushing; never commit the API key.',
+      'Supply transcendApiKey, crmApiKey through --parameters when running or pushing; never commit secret values.',
     );
   });
 

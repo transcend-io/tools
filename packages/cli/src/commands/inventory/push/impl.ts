@@ -10,7 +10,7 @@ import type { LocalContext } from '../../../context.js';
 import { validateTranscendAuth, filterFileNames } from '../../../lib/api-keys/index.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { syncConfigurationToTranscend } from '../../../lib/graphql/index.js';
-import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
+import { parseParametersFromFlags } from '../../../lib/helpers/parseVariablesFromString.js';
 import { mergeTranscendInputs } from '../../../lib/mergeTranscendInputs.js';
 import { parseTranscendYaml } from '../../../lib/readTranscendYaml.js';
 
@@ -77,6 +77,7 @@ export interface PushCommandFlags {
   file: string;
   transcendUrl: string;
   pageSize: number;
+  parameters: string;
   variables: string;
   publishToPrivacyCenter: boolean;
   classifyService: boolean;
@@ -89,6 +90,7 @@ export async function push(
     file = './transcend.yml',
     transcendUrl,
     auth,
+    parameters,
     variables,
     pageSize,
     publishToPrivacyCenter,
@@ -101,8 +103,7 @@ export async function push(
   // Parse authentication as API key or path to list of API keys
   const apiKeyOrList = await validateTranscendAuth(auth, this);
 
-  // Parse out the variables
-  const vars = parseVariablesFromString(variables);
+  const vars = parseParametersFromFlags({ parameters, variables });
 
   // check if we are being passed a list of API keys and a list of files
   let fileList: string[];

@@ -240,19 +240,19 @@ export type CustomFunctionManifestConfig = CustomFunctionConfigInput & {
  * preserve push behavior.
  *
  * @param filePath - Path to the manifest YAML file
- * @param variables - Variables to fill into `<<parameters.x>>` placeholders
+ * @param parameters - Values to fill into `<<parameters.x>>` placeholders
  * @returns The custom function configs, with code loaded from disk
  */
 export function readCustomFunctionsManifest(
   filePath: string,
-  variables: ObjByString = {},
+  parameters: ObjByString = {},
 ): CustomFunctionManifestConfig[] {
   const fileContents = readFileSync(filePath, 'utf-8');
 
   const replacedVariables = replaceVariablesInYaml(
     fileContents,
-    variables,
-    `Also check that there are no extra variables defined in your manifest: ${filePath}`,
+    parameters,
+    `Also check that there are no extra parameters defined in your manifest: ${filePath}`,
   );
 
   const manifest = parseCustomFunctionsManifest(replacedVariables, { allowExternalPaths: true });

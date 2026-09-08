@@ -24,14 +24,17 @@ describe('custom-functions run with Deno 2.4.5', () => {
   - name: Log locally
     code: ./functions/log-locally.ts
     test-payload: ./test-payloads/log-locally.json
+    env:
+      TEST_TOKEN: <<parameters.testToken>>
 `,
     );
     writeFileSync(
       join(project, 'functions', 'log-locally.ts'),
       `import type { CustomFunction } from '@transcend-io/custom-function-types';
 
-export default function ({ payload }: CustomFunction.GeneralArgument): void {
+export default function ({ environment, payload }: CustomFunction.GeneralArgument): void {
   console.log('function log:', payload.message);
+  console.log('parameter:', environment.TEST_TOKEN);
 }
 `,
     );
@@ -45,6 +48,7 @@ export default function ({ payload }: CustomFunction.GeneralArgument): void {
       context,
       {
         function: 'Log locally',
+        parameters: 'testToken:local-secret',
         variables: '',
         noInteractive: true,
         allowNetwork: false,
@@ -53,6 +57,7 @@ export default function ({ payload }: CustomFunction.GeneralArgument): void {
     );
 
     expect(context.stdout).toContain('function log: visible');
+    expect(context.stdout).toContain('parameter: [REDACTED]');
     expect(context.stdout).toContain('Passed "Log locally" (payload 1)');
     expect(context.process.exitCode).toBeUndefined();
   }, 30_000);
@@ -87,6 +92,7 @@ export default function ({ payload }: CustomFunction.GeneralArgument): void {
       context,
       {
         function: 'Multiple payloads',
+        parameters: '',
         variables: '',
         noInteractive: true,
         allowNetwork: false,

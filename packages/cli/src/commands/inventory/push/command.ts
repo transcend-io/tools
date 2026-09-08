@@ -28,11 +28,17 @@ export const pushCommand = buildCommand({
         brief: 'The page size to use when paginating over the API',
         default: '50',
       },
-      variables: {
+      parameters: {
         kind: 'parsed',
         parse: String,
         brief:
-          'The variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.',
+          'Parameters to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.',
+        default: '',
+      },
+      variables: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Deprecated alias for --parameters',
         default: '',
       },
       publishToPrivacyCenter: {

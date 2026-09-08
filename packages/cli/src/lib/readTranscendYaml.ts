@@ -9,30 +9,30 @@ export const VARIABLE_PARAMETERS_REGEXP = /<<parameters\.(.+?)>>/;
 export const VARIABLE_PARAMETERS_NAME = 'parameters';
 
 /**
- * Function that replaces variables in a text file.
- * Throws error if there are variables that have not been replaced
+ * Function that replaces parameters in a text file.
+ * Throws error if there are parameters that have not been replaced
  *
  * @param input - Input text
- * @param variables - Variables to replace
+ * @param parameters - Parameters to replace
  * @param extraErrorMessage - Additional error message text
  * @returns Output text
  */
 export function replaceVariablesInYaml(
   input: string,
-  variables: ObjByString,
+  parameters: ObjByString,
   extraErrorMessage = '',
 ): string {
   let contents = input;
-  // Replace variables
-  Object.entries(variables).forEach(([name, value]) => {
+  // Replace parameters
+  Object.entries(parameters).forEach(([name, value]) => {
     contents = contents.split(`<<${VARIABLE_PARAMETERS_NAME}.${name}>>`).join(value);
   });
 
-  // Throw error if unfilled variables
+  // Throw error if unfilled parameters
   if (VARIABLE_PARAMETERS_REGEXP.test(contents)) {
     const [, name] = VARIABLE_PARAMETERS_REGEXP.exec(contents) || [];
     throw new Error(
-      `Found variable that was not set: ${name}.
+      `Found parameter that was not set: ${name}.
 Make sure you are passing all parameters through the --${VARIABLE_PARAMETERS_NAME}=${name}:value-for-param flag.
 ${extraErrorMessage}`,
     );
@@ -45,20 +45,20 @@ ${extraErrorMessage}`,
  * Parse YAML contents and validate that their shape matches the codec API.
  *
  * @param contents - YAML contents.
- * @param variables - Variables to fill in
- * @param sourcePath - Optional source path included in variable errors.
+ * @param parameters - Parameters to fill in
+ * @param sourcePath - Optional source path included in parameter errors.
  * @returns The parsed contents, type-checked.
  */
 export function parseTranscendYaml(
   contents: string,
-  variables: ObjByString = {},
+  parameters: ObjByString = {},
   sourcePath?: string,
 ): TranscendInput {
   const replacedVariables = replaceVariablesInYaml(
     contents,
-    variables,
+    parameters,
     sourcePath
-      ? `Also check that there are no extra variables defined in your yaml: ${sourcePath}`
+      ? `Also check that there are no extra parameters defined in your yaml: ${sourcePath}`
       : '',
   );
 
@@ -79,11 +79,11 @@ export function serializeTranscendYaml(input: TranscendInput): string {
  * Read in the contents of a YAML file and validate that its shape matches the codec API.
  *
  * @param filePath - Path to YAML file.
- * @param variables - Variables to fill in.
+ * @param parameters - Parameters to fill in.
  * @returns The parsed contents, type-checked.
  */
-export function readTranscendYaml(filePath: string, variables: ObjByString = {}): TranscendInput {
-  return parseTranscendYaml(readFileSync(filePath, 'utf-8'), variables, filePath);
+export function readTranscendYaml(filePath: string, parameters: ObjByString = {}): TranscendInput {
+  return parseTranscendYaml(readFileSync(filePath, 'utf-8'), parameters, filePath);
 }
 
 /**

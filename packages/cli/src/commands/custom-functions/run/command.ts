@@ -19,10 +19,16 @@ export const runCommand = buildCommand({
         brief: 'Exact Custom Function name or ID; prompts when omitted',
         optional: true,
       },
-      variables: {
+      parameters: {
         kind: 'parsed',
         parse: String,
         brief: 'Comma-separated parameter values such as apiKey:value',
+        default: '',
+      },
+      variables: {
+        kind: 'parsed',
+        parse: String,
+        brief: 'Deprecated alias for --parameters',
         default: '',
       },
       noInteractive: {

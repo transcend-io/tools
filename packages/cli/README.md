@@ -2609,7 +2609,7 @@ In CI, use `--noInteractive --json`. JSON diagnostics stay concise instead of em
 
 ```txt
 USAGE
-  transcend custom-functions run [--manifest value] [--function value] [--variables value] [--noInteractive] [--allowNetwork] [<directory>]
+  transcend custom-functions run [--manifest value] [--function value] [--parameters value] [--variables value] [--noInteractive] [--allowNetwork] [<directory>]
   transcend custom-functions run --help
 
 Executes one manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required, and real network requests are disabled unless --allowNetwork is passed.
@@ -2617,7 +2617,8 @@ Executes one manifest function against its configured test payloads with product
 FLAGS
      [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
      [--function]       Exact Custom Function name or ID; prompts when omitted
-     [--variables]      Comma-separated parameter values such as apiKey:value                 [default = ""]
+     [--parameters]     Comma-separated parameter values such as apiKey:value                 [default = ""]
+     [--variables]      Deprecated alias for --parameters                                     [default = ""]
      [--noInteractive]  Disable function selection prompts                                    [default = false]
      [--allowNetwork]   Permit real native fetch calls to manifest allowed-hosts              [default = false]
   -h  --help            Print help information and exit
@@ -2639,13 +2640,13 @@ This is a credential-free development simulator, not an exact Sombra runtime. It
 
 Native `fetch` is denied by default. Pass `--allowNetwork` to permit real requests only to the manifest's `allowed-hosts`; like Sombra, an empty list then permits localhost. Real requests can have side effects.
 
-Use `--variables` for manifest parameter values needed by the local run. Configured environment values are redacted from captured output. Before deployment, run `transcend custom-functions check` and use the authenticated `push` test run for production-runtime validation.
+Use `--parameters` for manifest parameter values needed by the local run. Configured environment values are redacted from captured output. Before deployment, run `transcend custom-functions check` and use the authenticated `push` test run for production-runtime validation.
 
 ### `transcend custom-functions push`
 
 ```txt
 USAGE
-  transcend custom-functions push (--auth value) [--sombraAuth value] [--transcendUrl value] [--file value] [--variables value] [--dryRun] [--promote] [--force] [--skipTests] [--updateManifest] [--sombraId value]
+  transcend custom-functions push (--auth value) [--sombraAuth value] [--transcendUrl value] [--file value] [--parameters value] [--variables value] [--dryRun] [--promote] [--force] [--skipTests] [--updateManifest] [--sombraId value]
   transcend custom-functions push --help
 
 Sync custom function source code from your repository to Transcend.
@@ -2672,7 +2673,8 @@ FLAGS
      [--sombraAuth]           The Sombra internal key, use for additional authentication when self-hosting Sombra
      [--transcendUrl]         URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                [default = https://api.transcend.io]
      [--file]                 Path to the custom functions manifest YAML file                                                                                                                                                                   [default = ./transcend-functions.yml]
-     [--variables]            The variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                               [default = ""]
+     [--parameters]           Parameters to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.                                                                                                  [default = ""]
+     [--variables]            Deprecated alias for --parameters                                                                                                                                                                                 [default = ""]
      [--dryRun]               When true, report what would change without pushing anything                                                                                                                                                      [default = false]
      [--promote/--noPromote]  When true, promote new revisions to active. Set to false to leave new revisions as drafts for review in the dashboard.                                                                                            [default = true]
      [--force]                Push a new revision even when no changes are detected. Useful when only environment variable values changed, which cannot be diffed.                                                                              [default = false]
@@ -2725,7 +2727,7 @@ functions:
 | `allowed-hosts`             | No       | Hosts the function may make network requests to.                                                                                                                                                                                                                                                                                                                                                              |
 | `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                                                                                                                                                                                                            |
 | `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                                                                                                                                                                                                                          |
-| `env`                       | No       | Environment variables exposed to the function. Use `<<parameters.name>>` placeholders with the `--variables` flag to avoid committing secrets.                                                                                                                                                                                                                                                                |
+| `env`                       | No       | Environment variables exposed to the function. Use `<<parameters.name>>` placeholders with the `--parameters` flag to avoid committing secrets.                                                                                                                                                                                                                                                               |
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use `--force` to push a new revision.
 
@@ -2798,7 +2800,7 @@ transcend custom-functions push --auth="$TRANSCEND_API_KEY" --dryRun
 transcend custom-functions push \
   --auth="$TRANSCEND_API_KEY" \
   --file=./transcend/functions.yml \
-  --variables=crmApiKey:example-secret-value
+  --parameters=crmApiKey:example-secret-value
 ```
 
 **Push new revisions as drafts for review instead of promoting them**
@@ -3076,7 +3078,7 @@ Note: This command will overwrite the existing transcend.yml file that you have 
 
 ```txt
 USAGE
-  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues]
+  transcend inventory push (--auth value) [--file value] [--transcendUrl value] [--pageSize value] [--parameters value] [--variables value] [--publishToPrivacyCenter] [--classifyService] [--deleteExtraAttributeValues]
   transcend inventory push --help
 
 Given a transcend.yml file, sync the contents up to your Transcend instance.
@@ -3086,7 +3088,8 @@ FLAGS
      [--file]                        Path to the YAML file to push from                                                                                                                                                                                                                          [default = ./transcend.yml]
      [--transcendUrl]                URL of the Transcend backend. Use https://api.us.transcend.io for US hosting. Defaults to the TRANSCEND_API_URL environment variable when set, so --transcendUrl may be omitted if it is exported.                                                          [default = https://api.transcend.io]
      [--pageSize]                    The page size to use when paginating over the API                                                                                                                                                                                                           [default = 50]
-     [--variables]                   The variables to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.                                                                                                                                           [default = ""]
+     [--parameters]                  Parameters to template into the YAML file when pushing configuration. Comma-separated list of key:value pairs.                                                                                                                                              [default = ""]
+     [--variables]                   Deprecated alias for --parameters                                                                                                                                                                                                                           [default = ""]
      [--publishToPrivacyCenter]      When true, publish the configuration to the Privacy Center                                                                                                                                                                                                  [default = false]
      [--classifyService]             When true, automatically assign the service for a data flow based on the domain that is specified                                                                                                                                                           [default = false]
      [--deleteExtraAttributeValues]  When true and syncing attributes, delete any extra attributes instead of just upserting                                                                                                                                                                     [default = false]
@@ -3156,10 +3159,10 @@ transcend inventory push --auth="$TRANSCEND_API_KEY" --classifyService
 transcend inventory push --auth="$TRANSCEND_API_KEY" --deleteExtraAttributeValues
 ```
 
-**Use dynamic variables to fill out parameters in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))**
+**Use dynamic parameters in YAML files (see [./examples/multi-instance.yml](./examples/multi-instance.yml))**
 
 ```sh
-transcend inventory push --auth="$TRANSCEND_API_KEY" --variables=domain:acme.com,stage:staging
+transcend inventory push --auth="$TRANSCEND_API_KEY" --parameters=domain:acme.com,stage:staging
 ```
 
 **Push a single .yml file configuration into multiple Transcend instances**
@@ -3289,11 +3292,11 @@ jobs:
         run: transcend inventory push --auth=${{ secrets.TRANSCEND_API_KEY }}
 ```
 
-#### Dynamic Variables
+#### Dynamic parameters
 
 If you are using this CLI to sync your Data Map between multiple Transcend instances, you may find the need to make minor modifications to your configurations between environments. The most notable difference would be the domain where your webhook URLs are hosted on.
 
-The `transcend inventory push` command takes in a parameter `variables`. This is a CSV of `key:value` pairs.
+The `transcend inventory push` command accepts `--parameters` as a comma-separated list of `key:value` pairs.
 
 This command could fill out multiple parameters in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
 

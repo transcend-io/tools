@@ -29,7 +29,7 @@ import {
   CustomFunctionPrompts,
   PromptCancelledError,
 } from '../../../lib/custom-functions/prompts.js';
-import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
+import { parseParametersFromFlags } from '../../../lib/helpers/parseVariablesFromString.js';
 
 /** Flags accepted by `transcend custom-functions run`. */
 export interface CustomFunctionRunFlags {
@@ -37,7 +37,9 @@ export interface CustomFunctionRunFlags {
   manifest?: string;
   /** Exact function name. */
   function?: string;
-  /** Manifest parameter substitutions. */
+  /** Canonical manifest parameter substitutions. */
+  parameters: string;
+  /** Legacy manifest parameter substitutions. */
   variables: string;
   /** Disable prompts. */
   noInteractive: boolean;
@@ -103,7 +105,7 @@ export async function run(
 
     const configs = readCustomFunctionsManifest(
       state.manifestPath,
-      parseVariablesFromString(flags.variables),
+      parseParametersFromFlags(flags),
     );
     if (configs.length === 0) {
       throw new Error('The Custom Function manifest does not define any functions.');

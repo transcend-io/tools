@@ -11,5 +11,5 @@ This is a credential-free development simulator, not an exact Sombra runtime. It
 
 Native \`fetch\` is denied by default. Pass \`--allowNetwork\` to permit real requests only to the manifest's \`allowed-hosts\`; like Sombra, an empty list then permits localhost. Real requests can have side effects.
 
-Use \`--variables\` for manifest parameter values needed by the local run. Configured environment values are redacted from captured output. Before deployment, run \`transcend custom-functions check\` and use the authenticated \`push\` test run for production-runtime validation.
+Use \`--parameters\` for manifest parameter values needed by the local run. Configured environment values are redacted from captured output. Before deployment, run \`transcend custom-functions check\` and use the authenticated \`push\` test run for production-runtime validation.
 `;

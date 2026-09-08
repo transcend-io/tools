@@ -10,3 +10,5 @@ Add a guided local workflow for developing Custom Functions without Transcend cr
 The same `transcend-custom-functions` skill can also be installed directly from the Transcend tools repository with `npx skills`.
 
 The guided setup previews its changes and finishes with clear next steps and a compact prompt for handing remaining implementation or CI work to an AI coding agent.
+
+Use `--parameters=name:value` to fill `<<parameters.name>>` placeholders. The existing `--variables` spelling remains available as a compatibility alias.

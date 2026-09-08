@@ -80,6 +80,19 @@ export interface CustomFunctionPlanningInput {
   snapshots: Readonly<Record<string, PlanningPathSnapshot>>;
 }
 
+/**
+ * Find parameter placeholders in a generated manifest value.
+ *
+ * @param value - Generated manifest entry
+ * @returns Unique parameter names in encounter order
+ */
+function parameterNamesInManifestValue(value: unknown): string[] {
+  const serialized = JSON.stringify(value) ?? '';
+  return [
+    ...new Set(Array.from(serialized.matchAll(/<<parameters\.([^>]+)>>/gu), (match) => match[1]!)),
+  ];
+}
+
 /** In-memory input required only by project initialization. */
 export interface CustomFunctionInitPlanningInput extends CustomFunctionPlanningInput {
   /** Exact authoring contract version. */
@@ -577,9 +590,10 @@ export function buildAddFunctionPlan(
       displayCliPath(state.invocationDirectory, state.manifestPath),
     )} --dryRun`,
   ];
-  if (options.generated.manifestEntry.env?.TRANSCEND_API_KEY) {
+  const parameterNames = parameterNamesInManifestValue(options.generated.manifestEntry);
+  if (parameterNames.length > 0) {
     plan.warnings.push(
-      'Supply transcendApiKey through --variables when pushing; never commit the API key.',
+      `Supply ${parameterNames.join(', ')} through --parameters when running or pushing; never commit secret values.`,
     );
   }
   validatePlanDestinations(
