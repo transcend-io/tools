@@ -20,7 +20,7 @@ Review the complete plan before applying it. Existing JSONC settings and comment
 
 ## Deno
 
-Local validation requires Deno 2.x. If it is missing or unsupported, direct the developer to the official installation instructions; do not install or upgrade runtimes without permission.
+Local validation requires Deno 2.x. The generated `custom-functions:check` Deno task delegates to the CLI so it runs the same manifest, export, type, lint, and format checks. If Deno is missing or unsupported, direct the developer to the official installation instructions; do not install or upgrade runtimes without permission.
 
 ## CI
 
@@ -36,7 +36,8 @@ Adapt it to existing repository conventions instead of creating a parallel CI sy
 ```sh
 transcend custom-functions check "<custom-function-directory>" \
   --manifest="<manifest-path>" \
-  --noInteractive
+  --noInteractive \
+  --json
 ```
 
 Do not add deployment credentials to validation-only jobs.

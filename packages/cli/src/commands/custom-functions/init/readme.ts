@@ -21,9 +21,10 @@ transcend custom-functions init ./packages/transcend-functions \\
   --deno \\
   --editor \\
   --skill \\
+  --ci \\
   --noInteractive \\
   --yes
 \`\`\`
 
-Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Use \`--dryRun\` to review the same transactional plan without applying it. After a successful setup, the CLI prints a compact AI handoff for reviewing the generated files and adapting validation to the repository's CI.
+Non-interactive setup enables only the individual flags passed; use the example above for the full setup selected by default in the interactive checklist. Existing JSONC and YAML comments are retained. A collision or unsafe merge stops before any file is written. Existing generated GitHub Actions workflows with repository-specific edits are left unchanged. Use \`--dryRun\` to review the same transactional plan without applying it. After a successful setup, the CLI prints a compact AI handoff for reviewing the generated files and adapting validation to the repository's CI.
 `;
