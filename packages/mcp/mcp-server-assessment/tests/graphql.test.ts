@@ -131,3 +131,46 @@ describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
     expect(questions[0].requireRiskEvaluation).toBe(false);
   });
 });
+
+describe('AssessmentsMixin (row shapes that callers audit against)', () => {
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reports a missing due date as null rather than dropping the key', async () => {
+    // An absent key reads as "the query never asked for this", which makes the
+    // dueBefore filter look broken instead of showing a form with no deadline.
+    vi.stubGlobal(
+      'fetch',
+      createMockFetchResponse({
+        assessmentForms: {
+          nodes: [
+            {
+              id: 'form-1',
+              title: 'Untimed review',
+              status: 'IN_PROGRESS',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              dueDate: null,
+              updatedAt: '2026-01-02T00:00:00.000Z',
+              submittedAt: null,
+              isArchived: false,
+              isLocked: false,
+              assignees: [],
+              reviewers: [],
+              externalAssignees: [],
+            },
+          ],
+          totalCount: 1,
+        },
+      }),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const result = await client.listAssessments({ includeDetails: true });
+
+    expect(result.nodes[0]).toHaveProperty('dueDate');
+    expect(result.nodes[0].dueDate).toBeNull();
+  });
+});
