@@ -1,5 +1,7 @@
 import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
+import { displayProjectPath } from '../scaffolding/project-plan-output.js';
+
 /** Default local Custom Function project directory. */
 export const DEFAULT_CUSTOM_FUNCTION_DIRECTORY = 'transcend/custom-functions';
 
@@ -12,24 +14,6 @@ export const DEFAULT_CUSTOM_FUNCTION_DIRECTORY = 'transcend/custom-functions';
  */
 export function resolveCliPath(cwd: string, input: string): string {
   return isAbsolute(input) ? resolve(input) : resolve(cwd, input);
-}
-
-/**
- * Prefer a portable path relative to the invocation directory.
- *
- * @param cwd - Process working directory
- * @param path - Absolute path
- * @returns Relative path when contained by cwd, otherwise the absolute path
- */
-export function displayCliPath(cwd: string, path: string): string {
-  const value = relative(cwd, path).split(sep).join('/');
-  if (value.length === 0) {
-    return '.';
-  }
-  if (value === '..' || value.startsWith('../') || isAbsolute(value)) {
-    return path.split(sep).join('/');
-  }
-  return value;
 }
 
 /**
@@ -126,8 +110,8 @@ export function buildCustomFunctionProjectArguments(
   cwd?: string,
 ): string {
   const defaultManifest = join(targetDirectory, 'transcend-functions.yml');
-  const displayedTarget = cwd ? displayCliPath(cwd, targetDirectory) : targetDirectory;
-  const displayedManifest = cwd ? displayCliPath(cwd, manifestPath) : manifestPath;
+  const displayedTarget = cwd ? displayProjectPath(cwd, targetDirectory) : targetDirectory;
+  const displayedManifest = cwd ? displayProjectPath(cwd, manifestPath) : manifestPath;
   const manifestFlag =
     manifestPath === defaultManifest ? '' : ` --manifest=${quoteCliArgument(displayedManifest)}`;
   return `${quoteCliArgument(displayedTarget)}${manifestFlag}`;

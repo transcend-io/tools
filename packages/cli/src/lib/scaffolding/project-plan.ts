@@ -8,6 +8,39 @@ export interface ProjectFileSnapshot {
   mode?: number;
 }
 
+/** State of one potentially mutated path. */
+export type PlanningPathSnapshot =
+  | {
+      /** Snapshot kind. */
+      kind: 'absent';
+      /** Absolute path. */
+      path: string;
+    }
+  | {
+      /** Snapshot kind. */
+      kind: 'file';
+      /** Absolute path. */
+      path: string;
+      /** UTF-8 contents. */
+      contents: string;
+      /** File mode. */
+      mode: number;
+    }
+  | {
+      /** Snapshot kind. */
+      kind: 'link';
+      /** Absolute path. */
+      path: string;
+      /** Link target. */
+      target: string;
+    }
+  | {
+      /** Snapshot kind. */
+      kind: 'directory';
+      /** Absolute path. */
+      path: string;
+    };
+
 /** A planned regular-file create or update. */
 export interface PlannedFileChange {
   /** Discriminator. */
@@ -54,6 +87,44 @@ export interface ProjectPlan {
   rootDirectory: string;
   /** Ordered staged mutations. */
   changes: PlannedChange[];
+}
+
+/**
+ * Read a required candidate snapshot.
+ *
+ * @param snapshots - Snapshots keyed by absolute path
+ * @param path - Absolute path
+ * @returns Snapshot
+ */
+export function getPlanningPathSnapshot(
+  snapshots: Readonly<Record<string, PlanningPathSnapshot>>,
+  path: string,
+): PlanningPathSnapshot {
+  const snapshot = snapshots[path];
+  if (!snapshot) {
+    throw new Error(`Missing preflight snapshot for ${path}`);
+  }
+  return snapshot;
+}
+
+/**
+ * Adapt a planning snapshot to a regular-file plan input.
+ *
+ * @param snapshots - Snapshots keyed by absolute path
+ * @param path - Absolute file path
+ * @returns File snapshot
+ */
+export function getPlanningFileSnapshot(
+  snapshots: Readonly<Record<string, PlanningPathSnapshot>>,
+  path: string,
+): ProjectFileSnapshot {
+  const snapshot = getPlanningPathSnapshot(snapshots, path);
+  if (snapshot.kind === 'directory' || snapshot.kind === 'link') {
+    throw new Error(`Expected a regular file or absent path: ${path}`);
+  }
+  return snapshot.kind === 'file'
+    ? { path, contents: snapshot.contents, mode: snapshot.mode }
+    : { path, contents: null };
 }
 
 /**

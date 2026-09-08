@@ -1,14 +1,15 @@
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import {
-  buildManagedAgentSkill,
-  isUnmodifiedManagedAgentSkill,
-  resolveAgentSkillDirectories,
+  getManagedAgentSkillCandidatePaths,
+  planManagedAgentSkill,
+  type ManagedAgentSkillDefinition,
 } from '../scaffolding/agent-skill.js';
+import { displayProjectPath } from '../scaffolding/project-plan-output.js';
 import {
+  getPlanningFileSnapshot,
   planFileChange,
-  type PlannedLinkChange,
-  type ProjectFileSnapshot,
+  type PlanningPathSnapshot,
 } from '../scaffolding/project-plan.js';
 import {
   CUSTOM_FUNCTION_SKILL_FILES,
@@ -18,7 +19,6 @@ import { insertCustomFunctionManifestEntry, parseCustomFunctionsManifest } from 
 import {
   buildCustomFunctionProjectArguments,
   buildPlaceholderVariablesArgument,
-  displayCliPath,
   quoteCliArgument,
 } from './paths.js';
 import {
@@ -47,38 +47,13 @@ export const EMPTY_CUSTOM_FUNCTION_MANIFEST = `# Custom Functions managed as cod
 functions: []
 `;
 
-/** State of one potentially mutated path. */
-export type PlanningPathSnapshot =
-  | {
-      /** Snapshot kind. */
-      kind: 'absent';
-      /** Absolute path. */
-      path: string;
-    }
-  | {
-      /** Snapshot kind. */
-      kind: 'file';
-      /** Absolute path. */
-      path: string;
-      /** UTF-8 contents. */
-      contents: string;
-      /** File mode. */
-      mode: number;
-    }
-  | {
-      /** Snapshot kind. */
-      kind: 'link';
-      /** Absolute path. */
-      path: string;
-      /** Link target. */
-      target: string;
-    }
-  | {
-      /** Snapshot kind. */
-      kind: 'directory';
-      /** Absolute path. */
-      path: string;
-    };
+/** Managed Custom Function Agent Skill definition. */
+const CUSTOM_FUNCTION_MANAGED_SKILL: ManagedAgentSkillDefinition = {
+  name: CUSTOM_FUNCTION_SKILL_NAME,
+  displayName: 'Custom Function',
+  owner: '@transcend-io/cli',
+  files: CUSTOM_FUNCTION_SKILL_FILES,
+};
 
 /** In-memory input consumed by pure project planners. */
 export interface CustomFunctionPlanningInput {
@@ -150,22 +125,11 @@ export function getInitPlanningCandidatePaths(
     paths.add(join(root, '.vscode', 'extensions.json'));
   }
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
-    const directories = resolveAgentSkillDirectories(state.existingSkillDirectories);
-    CUSTOM_FUNCTION_SKILL_FILES.forEach(({ path }) => {
-      paths.add(join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME, path));
-    });
-    directories.aliases.forEach((directory) => {
-      const aliasDirectory = join(root, directory, CUSTOM_FUNCTION_SKILL_NAME);
-      paths.add(aliasDirectory);
-      CUSTOM_FUNCTION_SKILL_FILES.forEach(({ path }) => {
-        paths.add(join(aliasDirectory, path));
-      });
-    });
-    state.existingSkillDirectories.forEach(({ path: directory }) => {
-      CUSTOM_FUNCTION_SKILL_FILES.forEach(({ path }) => {
-        paths.add(join(root, directory, CUSTOM_FUNCTION_SKILL_NAME, path));
-      });
-    });
+    getManagedAgentSkillCandidatePaths(
+      root,
+      state.existingSkillDirectories,
+      CUSTOM_FUNCTION_MANAGED_SKILL,
+    ).forEach((path) => paths.add(path));
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     paths.add(join(root, '.github', 'workflows', 'transcend-custom-functions.yml'));
@@ -189,38 +153,6 @@ export function getAddFunctionPlanningCandidatePaths(
     join(state.manifestDirectory, generated.sourceFile.path),
     ...generated.payloadFiles.map((file) => join(state.manifestDirectory, file.path)),
   ].sort((left, right) => left.localeCompare(right));
-}
-
-/**
- * Read a required candidate snapshot.
- *
- * @param input - Planning input
- * @param path - Absolute path
- * @returns Snapshot
- */
-function snapshotAt(input: CustomFunctionPlanningInput, path: string): PlanningPathSnapshot {
-  const snapshot = input.snapshots[path];
-  if (!snapshot) {
-    throw new Error(`Missing preflight snapshot for ${path}`);
-  }
-  return snapshot;
-}
-
-/**
- * Adapt a generic snapshot to a regular-file plan input.
- *
- * @param input - Planning input
- * @param path - Absolute file path
- * @returns File snapshot
- */
-function fileSnapshotAt(input: CustomFunctionPlanningInput, path: string): ProjectFileSnapshot {
-  const snapshot = snapshotAt(input, path);
-  if (snapshot.kind === 'directory' || snapshot.kind === 'link') {
-    throw new Error(`Expected a regular file or absent path: ${path}`);
-  }
-  return snapshot.kind === 'file'
-    ? { path, contents: snapshot.contents, mode: snapshot.mode }
-    : { path, contents: null };
 }
 
 /**
@@ -292,7 +224,7 @@ function addFileChange(
   },
 ): void {
   const change = planFileChange({
-    snapshot: fileSnapshotAt(input, options.path),
+    snapshot: getPlanningFileSnapshot(input.snapshots, options.path),
     after: options.contents,
     description: options.description,
     ...(options.createOnly === undefined ? {} : { createOnly: options.createOnly }),
@@ -302,90 +234,6 @@ function addFileChange(
   } else {
     plan.unchanged.push(options.path);
   }
-}
-
-/**
- * Plan one direct skill installation and links into other existing directories.
- *
- * @param plan - Plan being assembled
- * @param input - Planning input
- */
-function planSkill(plan: CustomFunctionProjectPlan, input: CustomFunctionPlanningInput): void {
-  const root = setupRoot(input.state);
-  const directories = resolveAgentSkillDirectories(input.state.existingSkillDirectories);
-  const canonicalDirectory = join(root, directories.canonical, CUSTOM_FUNCTION_SKILL_NAME);
-  const managedFiles = CUSTOM_FUNCTION_SKILL_FILES.map((file) => ({
-    path: file.path,
-    contents: buildManagedAgentSkill(file.contents, '@transcend-io/cli'),
-  }));
-  const planManagedFiles = (directory: string, description: string): void => {
-    managedFiles.forEach((file) => {
-      const path = join(directory, file.path);
-      const snapshot = fileSnapshotAt(input, path);
-      if (
-        snapshot.contents !== null &&
-        snapshot.contents !== file.contents &&
-        !isUnmodifiedManagedAgentSkill(snapshot.contents, '@transcend-io/cli')
-      ) {
-        throw new Error(
-          `Refusing to replace user-managed skill: ${path}. Apply the skill update manually.`,
-        );
-      }
-      addFileChange(plan, input, {
-        path,
-        contents: file.contents,
-        description: `${description}: ${file.path}`,
-      });
-    });
-  };
-  planManagedFiles(canonicalDirectory, 'Install Custom Function skill file');
-
-  directories.aliases.forEach((directory) => {
-    const targetDirectory = join(root, directory, CUSTOM_FUNCTION_SKILL_NAME);
-    const snapshot = snapshotAt(input, targetDirectory);
-    const relativeTarget = relative(dirname(targetDirectory), canonicalDirectory);
-    if (snapshot.kind === 'link' && snapshot.target === relativeTarget) {
-      plan.unchanged.push(targetDirectory);
-      return;
-    }
-    if (snapshot.kind === 'directory') {
-      planManagedFiles(targetDirectory, `Update Custom Function skill copy in ${directory}`);
-      return;
-    }
-    if (snapshot.kind !== 'absent') {
-      throw new Error(`Refusing to replace unexpected skill target: ${targetDirectory}`);
-    }
-    const change: PlannedLinkChange = {
-      kind: 'link',
-      path: targetDirectory,
-      target: relativeTarget,
-      fallbackFiles: managedFiles,
-      description: `Expose the canonical skill in ${directory}`,
-    };
-    plan.changes.push(change);
-  });
-
-  input.state.existingSkillDirectories
-    .map(({ path }) => path)
-    .filter(
-      (directory) =>
-        directory !== directories.canonical && !directories.aliases.includes(directory),
-    )
-    .forEach((directory) => {
-      const existingDirectory = join(root, directory, CUSTOM_FUNCTION_SKILL_NAME);
-      const skillSnapshot = fileSnapshotAt(input, join(existingDirectory, 'SKILL.md'));
-      if (
-        skillSnapshot.contents !== null &&
-        isUnmodifiedManagedAgentSkill(skillSnapshot.contents, '@transcend-io/cli')
-      ) {
-        planManagedFiles(existingDirectory, `Update existing managed skill in ${directory}`);
-      } else if (skillSnapshot.contents?.includes('managed-by: @transcend-io/cli')) {
-        plan.unchanged.push(join(existingDirectory, 'SKILL.md'));
-        plan.warnings.push(
-          `Existing customized managed skill was left unchanged: ${existingDirectory}`,
-        );
-      }
-    });
 }
 
 /**
@@ -419,7 +267,7 @@ export function buildInitPlan(
       `transcend custom-functions check ${projectArguments}`,
     ],
   };
-  const manifestSnapshot = fileSnapshotAt(input, state.manifestPath);
+  const manifestSnapshot = getPlanningFileSnapshot(input.snapshots, state.manifestPath);
   const existingManifest =
     manifestSnapshot.contents === null
       ? undefined
@@ -436,7 +284,7 @@ export function buildInitPlan(
 
   const selected = new Set(options.features);
   if (selected.has(CustomFunctionSetupFeature.Deno)) {
-    const snapshot = fileSnapshotAt(input, state.denoConfigPath);
+    const snapshot = getPlanningFileSnapshot(input.snapshots, state.denoConfigPath);
     const sourcePaths = (existingManifest?.functions ?? [])
       .map(({ code }) => code)
       .filter((path) => !path.includes('<<parameters.'));
@@ -462,8 +310,8 @@ export function buildInitPlan(
   if (selected.has(CustomFunctionSetupFeature.Editor)) {
     const settingsPath = join(root, '.vscode', 'settings.json');
     const extensionsPath = join(root, '.vscode', 'extensions.json');
-    const settingsSnapshot = fileSnapshotAt(input, settingsPath);
-    const extensionsSnapshot = fileSnapshotAt(input, extensionsPath);
+    const settingsSnapshot = getPlanningFileSnapshot(input.snapshots, settingsPath);
+    const extensionsSnapshot = getPlanningFileSnapshot(input.snapshots, extensionsPath);
     addFileChange(plan, input, {
       path: settingsPath,
       contents: mergeEditorSettings(settingsSnapshot.contents, root, state.targetDirectory),
@@ -477,7 +325,14 @@ export function buildInitPlan(
   }
 
   if (selected.has(CustomFunctionSetupFeature.Skill)) {
-    planSkill(plan, input);
+    const skillPlan = planManagedAgentSkill({
+      rootDirectory: root,
+      existingDirectories: state.existingSkillDirectories,
+      snapshots: input.snapshots,
+      skill: CUSTOM_FUNCTION_MANAGED_SKILL,
+    });
+    plan.changes.push(...skillPlan.changes);
+    plan.unchanged.push(...skillPlan.unchanged);
   }
   if (selected.has(CustomFunctionSetupFeature.Ci)) {
     if (!state.repositoryRoot || !state.usesGithub) {
@@ -515,7 +370,7 @@ export function buildInitPlan(
         manifestPath: manifest,
         watchedPaths,
       });
-      const workflowSnapshot = fileSnapshotAt(input, workflowPath);
+      const workflowSnapshot = getPlanningFileSnapshot(input.snapshots, workflowPath);
       if (workflowSnapshot.contents === null) {
         addFileChange(plan, input, {
           path: workflowPath,
@@ -559,7 +414,7 @@ export function buildAddFunctionPlan(
   },
 ): CustomFunctionProjectPlan {
   const { state } = input;
-  const currentManifest = fileSnapshotAt(input, state.manifestPath).contents;
+  const currentManifest = getPlanningFileSnapshot(input.snapshots, state.manifestPath).contents;
   if (currentManifest === null) {
     throw new Error(`Custom Function manifest does not exist: ${state.manifestPath}`);
   }
@@ -626,13 +481,13 @@ export function buildAddFunctionPlan(
   const variableNames = parameterNamesInManifestValue(options.generated.manifestEntry);
   const variablesArgument = buildPlaceholderVariablesArgument(variableNames);
   plan.nextSteps = [
-    `Edit ${quoteCliArgument(displayCliPath(state.invocationDirectory, sourcePath))}`,
+    `Edit ${quoteCliArgument(displayProjectPath(state.invocationDirectory, sourcePath))}`,
     `transcend custom-functions run ${projectArguments} --function=${quoteCliArgument(
       options.generated.displayName,
     )}${variablesArgument}`,
     `transcend custom-functions check ${projectArguments}${variablesArgument}`,
     `transcend custom-functions push --file=${quoteCliArgument(
-      displayCliPath(state.invocationDirectory, state.manifestPath),
+      displayProjectPath(state.invocationDirectory, state.manifestPath),
     )} --dryRun${variablesArgument}`,
   ];
   if (variableNames.length > 0) {
