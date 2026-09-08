@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { createToolResult } from '../tools/helpers.js';
 
-export { PaginationSchema } from './schemas.js';
+export { CursorPaginationSchema, OffsetPaginationSchema } from './schemas.js';
 
 export type ValidationResult<T> =
   | { success: true; data: T }

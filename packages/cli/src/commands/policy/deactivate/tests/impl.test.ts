@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
-import { logger } from '../../../../logger.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { deactivate } from '../impl.js';
 
 const buildPolicyEngineClientMock = vi.hoisted(() => vi.fn());
@@ -40,15 +39,13 @@ const sampleBundle = {
 };
 
 describe('deactivate', () => {
-  const exit = vi.fn();
-  const stdout = { write: vi.fn() };
-  const context = {
-    process: { exit, stdout },
-  } as unknown as LocalContext;
+  const context = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(logger, 'info').mockImplementation(() => undefined);
+    context.reset();
   });
 
   it('resolves the bundle name to a UUID and POSTs the deactivate endpoint', async () => {
@@ -69,13 +66,9 @@ describe('deactivate', () => {
     expect(post).toHaveBeenCalledWith(
       'v1/policy-engine/policy-bundles/resolved-bundle-id/deactivate',
     );
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('bundleName  main'));
-    expect(stdout.write).toHaveBeenCalledWith(
-      expect.stringContaining(`id          ${sampleVersion.id}`),
-    );
-    expect(logger.info).toHaveBeenCalledWith(
-      expect.stringContaining('Policy bundle version deactivated.'),
-    );
+    expect(context.stdout).toContain('bundleName  main');
+    expect(context.stdout).toContain(`id          ${sampleVersion.id}`);
+    expect(context.stdout).toContain('Policy bundle version deactivated.');
   });
 
   it('prints raw JSON when --json is set', async () => {
@@ -92,7 +85,7 @@ describe('deactivate', () => {
       json: true,
     });
 
-    expect(stdout.write).toHaveBeenCalledWith(expect.stringContaining('"bundleName": "main"'));
+    expect(context.stdout).toContain('"bundleName": "main"');
   });
 
   it('throws a CLI-side error when the bundle name is unknown (before calling the monolith)', async () => {

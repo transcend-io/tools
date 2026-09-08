@@ -10,6 +10,15 @@ export const TRANSCEND_ACTIVE_ORG_ID_HEADER = 'x-transcend-active-organization-i
 /** MCP client identity for inbound HTTP and outbound API attribution */
 export const MCP_CALLER_HEADER = 'x-transcend-mcp-caller';
 
+/** Raw client-reported name, for discovering hosts not yet in `McpHostClient` */
+export const MCP_CLIENT_NAME_HEADER = 'x-transcend-mcp-client-name';
+
+/**
+ * `@transcend-io/mcp-server-base` package version on outbound Transcend requests.
+ * Safe to group by on dashboards: the value is ours, not client-controlled.
+ */
+export const MCP_VERSION_HEADER = 'x-transcend-mcp-version';
+
 /** Transcend REST API dated version */
 export const TRANSCEND_VERSION_HEADER = 'X-Transcend-Version';
 
@@ -18,3 +27,9 @@ export const TRANSCEND_VERSION_HEADER_VALUE = '2021-11-15';
 
 /** Correlates outbound Transcend requests to a single MCP `tools/call` */
 export const TOOLCALL_ID_HEADER = 'x-toolcall-id';
+
+/**
+ * Optional Sombra customer-ingress API key (self-hosted / STS).
+ * Sent as `X-Sombra-Authorization: Bearer …` when `SOMBRA_CUSTOMER_KEY` is set.
+ */
+export const SOMBRA_AUTHORIZATION_HEADER = 'X-Sombra-Authorization';

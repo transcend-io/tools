@@ -42,34 +42,56 @@ ${extraErrorMessage}`,
 }
 
 /**
- * Read in the contents of a yaml file and validate that the shape
- * of the yaml file matches the codec API
+ * Parse YAML contents and validate that their shape matches the codec API.
  *
- * @param filePath - Path to yaml file
+ * @param contents - YAML contents.
  * @param variables - Variables to fill in
- * @returns The contents of the yaml file, type-checked
+ * @param sourcePath - Optional source path included in variable errors.
+ * @returns The parsed contents, type-checked.
  */
-export function readTranscendYaml(filePath: string, variables: ObjByString = {}): TranscendInput {
-  // Read in contents
-  const fileContents = readFileSync(filePath, 'utf-8');
-
-  // Replace variables
+export function parseTranscendYaml(
+  contents: string,
+  variables: ObjByString = {},
+  sourcePath?: string,
+): TranscendInput {
   const replacedVariables = replaceVariablesInYaml(
-    fileContents,
+    contents,
     variables,
-    `Also check that there are no extra variables defined in your yaml: ${filePath}`,
+    sourcePath
+      ? `Also check that there are no extra variables defined in your yaml: ${sourcePath}`
+      : '',
   );
 
-  // Validate shape
   return decodeCodec(TranscendInput, yaml.load(replacedVariables));
 }
 
 /**
- * Write a Transcend configuration to disk
+ * Serialize a validated Transcend configuration as YAML.
  *
- * @param filePath - Path to yaml file
- * @param input - The input to write out
+ * @param input - The input to serialize.
+ * @returns YAML contents.
+ */
+export function serializeTranscendYaml(input: TranscendInput): string {
+  return yaml.dump(decodeCodec(TranscendInput, input));
+}
+
+/**
+ * Read in the contents of a YAML file and validate that its shape matches the codec API.
+ *
+ * @param filePath - Path to YAML file.
+ * @param variables - Variables to fill in.
+ * @returns The parsed contents, type-checked.
+ */
+export function readTranscendYaml(filePath: string, variables: ObjByString = {}): TranscendInput {
+  return parseTranscendYaml(readFileSync(filePath, 'utf-8'), variables, filePath);
+}
+
+/**
+ * Write a Transcend configuration to disk.
+ *
+ * @param filePath - Path to YAML file.
+ * @param input - The input to write out.
  */
 export function writeTranscendYaml(filePath: string, input: TranscendInput): void {
-  writeFileSync(filePath, yaml.dump(decodeCodec(TranscendInput, input)));
+  writeFileSync(filePath, serializeTranscendYaml(input));
 }

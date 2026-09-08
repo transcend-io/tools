@@ -74,9 +74,7 @@ const releaseRelevantPackageJsonKeys = [
 ] as const;
 const releaseRelevantPackageJsonScriptKeys = ['build', 'start'] as const;
 
-const baseRef =
-  process.env.CHANGESET_BASE_SHA ??
-  (process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main');
+const baseRef = resolveChangesetBaseRef();
 
 try {
   run();
@@ -145,6 +143,40 @@ function run(): void {
   );
 
   process.exit(1);
+}
+
+/**
+ * GitHub Actions checks out `pull/N/merge` by default. That merge's first
+ * parent is current `main`. Prefer it over `CHANGESET_BASE_SHA` so the
+ * three-dot diff is the pull request's own changes, not every commit that
+ * landed on `main` since a stale event SHA.
+ */
+function resolveChangesetBaseRef(): string {
+  const mergeCommitFirstParent = getMergeCommitFirstParent();
+
+  if (mergeCommitFirstParent) {
+    return mergeCommitFirstParent;
+  }
+
+  return (
+    process.env.CHANGESET_BASE_SHA ??
+    (process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main')
+  );
+}
+
+function getMergeCommitFirstParent(): string | null {
+  try {
+    const revisionList = execFileSync('git', ['rev-list', '--parents', '-n', '1', 'HEAD'], {
+      encoding: 'utf8',
+    })
+      .trim()
+      .split(/\s+/);
+    const firstParent = revisionList[1];
+
+    return revisionList.length >= 3 && firstParent ? firstParent : null;
+  } catch {
+    return null;
+  }
 }
 
 function getChangedFiles(base: string): string[] {

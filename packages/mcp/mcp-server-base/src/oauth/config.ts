@@ -10,7 +10,7 @@ import {
   formatOAuthClientConfigError,
   getOAuthClientsAdminUrl,
 } from './constants.js';
-import { isTestEnv } from './env.js';
+import { allowTestOverrides } from './env.js';
 
 /** Validated OAuth startup configuration. */
 interface OAuthStartupConfig {
@@ -55,7 +55,7 @@ export function isOAuthModeEnabled(): boolean {
  * Returns OAuth issuer URLs to probe during startup client verification.
  */
 export function getOAuthIssuerCandidates(): readonly string[] {
-  if (isTestEnv()) {
+  if (allowTestOverrides()) {
     const testOverride = process.env[TRANSCEND_OAUTH_ISSUER_ENV]?.trim();
     if (testOverride) {
       return [testOverride];

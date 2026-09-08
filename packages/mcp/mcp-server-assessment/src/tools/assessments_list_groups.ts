@@ -1,7 +1,7 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
@@ -9,7 +9,7 @@ import {
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentGroupUrl } from '../helpers/buildAssessmentLinks.js';
 
-export const ListGroupsSchema = PaginationSchema;
+export const ListGroupsSchema = OffsetPaginationSchema;
 export type ListGroupsInput = z.infer<typeof ListGroupsSchema>;
 
 export function createAssessmentsListGroupsTool(clients: ToolClients) {
@@ -18,15 +18,17 @@ export function createAssessmentsListGroupsTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_list_groups',
     description:
-      'List all assessment groups. Groups are containers for assessments and are linked to templates. Use this to find the right group ID for creating assessments. Each row includes a `groupUrl` field with the canonical admin-dashboard link — surface those to the user verbatim.',
+      'List all assessment groups. Groups are containers for assessments and are linked to ' +
+      'templates. Use this to find the right group ID for creating assessments. ' +
+      'Surface the `groupUrl` on each row verbatim.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListGroupsSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listAssessmentGroups({
         first: limit,
-        after: cursor,
+        offset,
       });
 
       const nodesWithLinks = result.nodes.map((node) => ({

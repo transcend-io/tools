@@ -1,15 +1,10 @@
 export { getConsentTools } from './tools/index.js';
+export { getConsentPrompts } from './prompts/index.js';
 export { CONSENT_OAUTH_SCOPES } from './scopes.js';
 export { resolveAirgapBundleId } from './resolveAirgapBundleId.js';
 export { resolveAnalyticsDateRange } from './analyticsDateRange.js';
 
 export { GetPreferencesSchema, type GetPreferencesInput } from './tools/consent_get_preferences.js';
-export {
-  PurposeConsentSchema,
-  type PurposeConsentInput,
-  SetPreferencesSchema,
-  type SetPreferencesInput,
-} from './tools/consent_set_preferences.js';
 export {
   ListAirgapBundlesSchema,
   type ListAirgapBundlesInput,

@@ -1,0 +1,67 @@
+
+# -----------------------------------------------
+# Configuration (Defaults)
+# -----------------------------------------------
+
+# TypeScript
+tsconfig.json @transcend-io/lakitu @transcend-io/zelda
+tsconfig.*.json @transcend-io/lakitu @transcend-io/zelda
+
+# General
+*.config.* @transcend-io/lakitu @transcend-io/zelda
+turbo.json @transcend-io/lakitu @transcend-io/zelda
+
+# -----------------------------------------------
+# Continuous Integration (Defaults)
+# -----------------------------------------------
+
+# GitHub Actions
+/.github/ @transcend-io/lakitu
+
+# -----------------------------------------------
+# Manifests (Defaults)
+# -----------------------------------------------
+
+.node-version @transcend-io/lakitu @transcend-io/zelda
+mise.toml @transcend-io/lakitu @transcend-io/zelda
+package.json @transcend-io/lakitu @transcend-io/zelda
+pnpm-workspace.yaml @transcend-io/lakitu @transcend-io/zelda
+
+# -----------------------------------------------
+# Lakitu
+# -----------------------------------------------
+
+# Dependency Management
+/renovate.json @transcend-io/lakitu
+
+# Environment
+/.vscode/ @transcend-io/lakitu
+
+# Linting
+.editorconfig @transcend-io/lakitu
+.oxfmtrc.* @transcend-io/lakitu
+.oxlintrc.* @transcend-io/lakitu
+
+
+# -----------------------------------------------
+# Packages
+# -----------------------------------------------
+
+/packages/airgap.js-types/ @transcend-io/goomba @transcend-io/resetti
+/packages/design-tokens/ @transcend-io/ganondorf
+/packages/mcp/ @transcend-io/zelda
+/packages/privacy-types/ @transcend-io/waluigi @transcend-io/goomba
+# /packages/cli/                    TBD?
+# /packages/internationalization/   TBD?
+# /packages/sdk/                    TBD?
+# /packages/type-utils/             TBD?
+# /packages/utils/                  TBD?
+
+# -----------------------------------------------
+# Development-only packages
+# -----------------------------------------------
+
+# Never published. Listed after the defaults above so a manifest or config here
+# belongs to the team whose code it exercises.
+/dev/mcp-server-examples/ @transcend-io/zelda
+/dev/mcp-ui-common/ @transcend-io/zelda

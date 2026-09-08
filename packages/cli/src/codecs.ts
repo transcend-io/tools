@@ -39,8 +39,6 @@ import {
   PreflightRequestStatus,
   AttributeSupportedResourceType,
   SubDataPointDataSubCategoryGuessStatus,
-  LargeLanguageModelClient,
-  PromptFilePurpose,
   CodePackageType,
   ActionItemPriorityOverride,
   ActionItemCode,
@@ -70,10 +68,6 @@ import { applyEnum, valuesOf } from '@transcend-io/type-utils';
 // eslint-disable-next-line eslint-comments/disable-enable-pair
 /* eslint-disable max-lines */
 import * as t from 'io-ts';
-
-import { OpenAIRouteName, PathfinderPolicyName } from './enums.js';
-import { buildAIIntegrationType } from './lib/helpers/buildAIIntegrationType.js';
-import { buildEnabledRouteType } from './lib/helpers/buildEnabledRouteType.js';
 
 /**
  * Input to define email templates that can be used to communicate to end-users
@@ -348,105 +342,6 @@ export const AttributePreview = t.type({
 export type AttributePreview = t.TypeOf<typeof AttributePreview>;
 
 /**
- * Agent type definition.
- */
-export const AgentInput = t.intersection([
-  t.type({
-    /** The name of the agent. */
-    name: t.string,
-    /** The instructions of the agent. */
-    instructions: t.string,
-    /** The ID of the agent */
-    agentId: t.string,
-    /** Whether the agent has code interpreter enabled */
-    codeInterpreterEnabled: t.boolean,
-    /** Whether the agent has retrieval enabled */
-    retrievalEnabled: t.boolean,
-    /** Large language model powering the agent */
-    'large-language-model': t.type({
-      /** Name of the model */
-      name: t.string,
-      /** Client of the model */
-      client: valuesOf(LargeLanguageModelClient),
-    }),
-  }),
-  t.partial({
-    /** The description of the agent. */
-    description: t.string,
-    /** The title of the prompt that the agent is based on */
-    prompt: t.string,
-    /**
-     * The email addresses of the employees within your company that are the go-to individuals
-     * for managing this agent
-     */
-    owners: t.array(t.string),
-    /**
-     * The names of teams within your Transcend instance that should be responsible
-     * for managing this agent
-     *
-     * @see https://docs.transcend.io/docs/security/access-control#teams
-     * for more information about how to create and manage teams
-     */
-    teams: t.array(t.string),
-    /**
-     * The names of the functions that the agent has access to
-     */
-    'agent-functions': t.array(t.string),
-    /**
-     * The names of the files that the agent has access to for retrieval
-     */
-    'agent-files': t.array(t.string),
-  }),
-]);
-
-/**
- * Type override
- */
-export type AgentInput = t.TypeOf<typeof AgentInput>;
-
-/**
- * AgentFunction type definition.
- */
-export const AgentFunctionInput = t.type({
-  /** Name of the agentFunction */
-  name: t.string,
-  /** Description of the agentFunction */
-  description: t.string,
-  /** The JSON schema */
-  parameters: t.string,
-});
-
-/**
- * Type override
- */
-export type AgentFunctionInput = t.TypeOf<typeof AgentFunctionInput>;
-
-/**
- * AgentFile type definition.
- */
-export const AgentFileInput = t.intersection([
-  t.type({
-    /** Name of the agentFile */
-    name: t.string,
-    /** File ID */
-    fileId: t.string,
-    /** File size */
-    size: t.number,
-    /** File purpose */
-    purpose: valuesOf(PromptFilePurpose),
-  }),
-  t.partial({
-    /** Description of the agentFile */
-    description: t.string,
-  }),
-]);
-
-/**
- * Type override
- */
-export type AgentFileInput = t.TypeOf<typeof AgentFileInput>;
-
-/**
  * Vendor type definition.
  */
 export const VendorInput = t.intersection([
@@ -575,53 +470,6 @@ export const ProcessingPurposeInput = t.intersection([
  * Type override
  */
 export type ProcessingPurposeInput = t.TypeOf<typeof ProcessingPurposeInput>;
-
-/**
- * Prompt definition inputs
- */
-export const PromptInput = t.type({
-  /** The title of the prompt. */
-  title: t.string,
-  /** The content of the prompt. */
-  content: t.string,
-});
-
-/**
- * Type override
- */
-export type PromptInput = t.TypeOf<typeof PromptInput>;
-
-/**
- * Prompt partial definition inputs
- */
-export const PromptPartialInput = t.type({
-  /** The title of the prompt partial. */
-  title: t.string,
-  /** The content of the prompt partial. */
-  content: t.string,
-});
-
-/**
- * Type override
- */
-export type PromptPartialInput = t.TypeOf<typeof PromptPartialInput>;
-
-/**
- * Prompt partial definition inputs
- */
-export const PromptGroupInput = t.type({
-  /** The title of the prompt group. */
-  title: t.string,
-  /** The description of the prompt group. */
-  description: t.string,
-  /** The titles of the prompts included. */
-  prompts: t.array(t.string),
-});
-
-/**
- * Type override
- */
-export type PromptGroupInput = t.TypeOf<typeof PromptGroupInput>;
 
 /**
  * Annotate specific fields within a datapoint. These are often database table columns.
@@ -1454,6 +1302,71 @@ export const IntlMessageInput = t.intersection([
 export type IntlMessageInput = t.TypeOf<typeof IntlMessageInput>;
 
 /**
+ * A set of deletion dependencies, either global (when `workflow` is omitted)
+ * or scoped to a single DSR workflow.
+ *
+ * An empty `titles` list scoped to a workflow is an explicit override, meaning
+ * that workflow runs the data silo with no dependencies at all.
+ */
+export const DeletionDependency = t.intersection([
+  t.type({
+    /**
+     * The titles of the data silos that must be deleted from first. This list can contain
+     * other internal systems defined in this file, as well as any of the SaaS tools connected
+     * in your Transcend instance.
+     */
+    titles: t.array(t.string),
+  }),
+  t.partial({
+    /**
+     * The internal name of the DSR workflow that these dependencies override the global
+     * configuration for. Omit to declare the global configuration.
+     */
+    workflow: t.string,
+  }),
+]);
+
+/** Type override */
+export type DeletionDependency = t.TypeOf<typeof DeletionDependency>;
+
+/**
+ * Removes a workflow's deletion dependency override so that the workflow falls back
+ * to the global configuration.
+ */
+export const DeletionDependencyReset = t.type({
+  /** The internal name of the DSR workflow to remove the override from */
+  workflow: t.string,
+  /** Must be `true`; declares that the override should be removed */
+  'reset-to-global': t.literal(true),
+});
+
+/** Type override */
+export type DeletionDependencyReset = t.TypeOf<typeof DeletionDependencyReset>;
+
+/**
+ * A single object entry in a data silo's `deletion-dependencies` list.
+ * Global dependencies are written as `{ titles: [...] }`; per-workflow overrides
+ * include a `workflow` key.
+ */
+export const DeletionDependencyInput = t.union([DeletionDependency, DeletionDependencyReset]);
+
+/** Type override */
+export type DeletionDependencyInput = t.TypeOf<typeof DeletionDependencyInput>;
+
+/**
+ * The `deletion-dependencies` field for a data silo.
+ *
+ * Prefer a list of objects: `{ titles: [...] }` for the global configuration and
+ * `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for each override.
+ * A bare list of titles is still accepted for global-only configuration. Mixing
+ * titles and objects in the same list is not allowed.
+ */
+export const DeletionDependencies = t.union([t.array(t.string), t.array(DeletionDependencyInput)]);
+
+/** Type override */
+export type DeletionDependencies = t.TypeOf<typeof DeletionDependencies>;
+
+/**
  * Input to define a data silo
  *
  * Define the data silos in your data map. A data silo can be a database,
@@ -1502,8 +1415,13 @@ export const DataSiloInput = t.intersection([
      * When a data erasure request is being performed, this data silo should not be deleted from
      * until all of the following data silos were deleted first. This list can contain other internal
      * systems defined in this file, as well as any of the SaaS tools connected in your Transcend instance.
+     *
+     * Prefer a list of objects: `{ titles: [...] }` for the global configuration and
+     * `{ workflow, titles }` (or `{ workflow, reset-to-global: true }`) for each override.
+     * A bare list of titles is still accepted for global-only configuration. Workflows that
+     * are not listed keep whatever configuration they already have.
      */
-    'deletion-dependencies': t.array(t.string),
+    'deletion-dependencies': DeletionDependencies,
     /**
      * The email addresses of the employees within your company that are the go-to individuals
      * for managing this data silo
@@ -2182,30 +2100,6 @@ export const TranscendInput = t.partial({
    */
   'consent-manager': ConsentManagerInput,
   /**
-   * Prompt definitions
-   */
-  prompts: t.array(PromptInput),
-  /**
-   * Prompt partial definitions
-   */
-  'prompt-partials': t.array(PromptPartialInput),
-  /**
-   * Prompt group definitions
-   */
-  'prompt-groups': t.array(PromptGroupInput),
-  /**
-   * Agent definitions
-   */
-  agents: t.array(AgentInput),
-  /**
-   * Agent function definitions
-   */
-  'agent-functions': t.array(AgentFunctionInput),
-  /**
-   * Agent file definitions
-   */
-  'agent-files': t.array(AgentFileInput),
-  /**
    * The privacy center configuration
    */
   'privacy-center': PrivacyCenterInput,
@@ -2360,105 +2254,6 @@ export const ConsentManagerServiceMetadata = t.type({
 
 /** Type override */
 export type ConsentManagerServiceMetadata = t.TypeOf<typeof ConsentManagerServiceMetadata>;
-/// //////////////////////////////////////
-// Pathfinder policies                  //
-/// //////////////////////////////////////
-
-export const PathfinderPolicyNameC = valuesOf(PathfinderPolicyName);
-
-/** the codec of a route enabled in an AI integration */
-export type EnabledRouteC<T extends t.Mixed> = t.TypeC<{
-  /** the name of the enabled route */
-  routeName: T;
-  /** the enabled policies */
-  enabledPolicies: t.ArrayC<typeof PathfinderPolicyNameC>;
-}>;
-
-/** the codec of routes enabled in an AI integration */
-export type EnabledRoutesC<T extends t.Mixed> = t.ArrayC<EnabledRouteC<T>>;
-
-/** the codec of an AI Integration */
-export type AIIntegrationC<T extends t.Mixed> = t.TypeC<{
-  /** the routes enabled in the AI integration */
-  enabledRoutes: EnabledRoutesC<T>;
-}>;
-
-export const OpenAIEnabledRoute = buildEnabledRouteType({
-  TRouteName: valuesOf(OpenAIRouteName),
-});
-
-/** Type override */
-export type OpenAIEnabledRoute = t.TypeOf<typeof OpenAIEnabledRoute>;
-
-const OpenAIRouteNameC = valuesOf(OpenAIRouteName);
-
-/** The enabled routes for OpenAI */
-export const OpenAIEnabledRoutes: EnabledRoutesC<typeof OpenAIRouteNameC> =
-  t.array(OpenAIEnabledRoute);
-
-/** Type override */
-export type OpenAIEnabledRoutes = t.TypeOf<typeof OpenAIEnabledRoutes>;
-
-export const OpenAIIntegration = buildAIIntegrationType<
-  typeof OpenAIRouteNameC,
-  EnabledRoutesC<typeof OpenAIRouteNameC>
->({
-  TEnabledRoutes: OpenAIEnabledRoutes,
-});
-
-/** Type override */
-export type OpenAIIntegration = t.TypeOf<typeof OpenAIIntegration>;
-
-export const PathfinderPolicy = t.partial({
-  enabledIntegrations: t.partial({
-    openAI: OpenAIIntegration,
-  }),
-});
-
-/** Type override */
-export type PathfinderPolicy = t.TypeOf<typeof PathfinderPolicy>;
-
-/**
- * Interface of metadata that can be passed for logging purposes
- * via the Transcend Pathfinder
- */
-export const PathfinderPromptRunMetadata = t.partial({
-  /** Unique name for the current prompt run */
-  promptRunName: t.string,
-  /** ID of the Transcend prompt being reported */
-  promptId: t.string,
-  /** Title of the prompt being reported on */
-  promptTitle: t.string,
-  /** The ID of the prompt group being reported */
-  promptGroupId: t.string,
-  /** The title of the prompt group being reported */
-  promptGroupTitle: t.string,
-  /** Employee email that is executing the request */
-  runByEmployeeEmail: t.string,
-  /** ID of the application calling pathfinder  */
-  applicationId: t.string,
-  /** Name of the application calling pathfinder  */
-  applicationName: t.string,
-  /** Name of the code package calling pathfinder  */
-  codePackageName: t.string,
-  /** Name of the repository calling pathfinder  */
-  repositoryName: t.string,
-  /** Core identifier of the application user being reported on  */
-  applicationUserCoreIdentifier: t.string,
-  /** Name of the application user being reported on  */
-  applicationUserName: t.string,
-  /** Slack message ts that is in context of the API call */
-  slackMessageTs: t.string,
-  /** Slack team ID in context of the API call */
-  slackTeamId: t.string,
-  /** Slack channel ID in context of the API call */
-  slackChannelId: t.string,
-  /** Slack channel name in context of the API call */
-  slackChannelName: t.string,
-});
-
-/** Type override */
-export type PathfinderPromptRunMetadata = t.TypeOf<typeof PathfinderPromptRunMetadata>;
 
 /** The columns of a row of a OneTrust Assessment form to import into Transcend. */
 const OneTrustAssessmentColumnInput = t.intersection([

@@ -1,0 +1,63 @@
+name: Sync MCP docs to Sanity
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print planned patches without writing drafts
+        type: boolean
+        default: false
+      publish:
+        description: Publish drafts after patching (ignored when dry_run is true)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04-arm
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      SANITY_API_TOKEN: ${{ secrets.SANITY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          persist-credentials: false
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Build MCP packages
+        run: pnpm exec turbo run build --filter="@transcend-io/mcp..."
+
+      - name: Regenerate MCP docs
+        run: pnpm --dir packages/mcp/mcp genfiles
+
+      - name: Sync tool counts to Sanity
+        run: |
+          FLAGS=()
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            FLAGS+=(--dry-run)
+          fi
+          if [ "${{ inputs.publish }}" = "true" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            FLAGS+=(--publish)
+          fi
+          pnpm --dir packages/mcp/mcp sync:sanity -- "${FLAGS[@]}"
+
+      - name: Summary
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "Dry run only — no Sanity writes." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ inputs.publish }}" = "true" ]; then
+            echo "Sanity documents patched and published." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Sanity drafts updated (not published)." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Review and publish in Sanity Studio, or re-run with publish=true." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide" >> "$GITHUB_STEP_SUMMARY"
+          echo "- https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-cursor-setup" >> "$GITHUB_STEP_SUMMARY"

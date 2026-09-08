@@ -1,30 +1,29 @@
 import {
   createListResult,
   defineTool,
-  PaginationSchema,
+  OffsetPaginationSchema,
   z,
   type ToolClients,
 } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
 
-export const ListTemplatesSchema = PaginationSchema;
+export const ListTemplatesSchema = OffsetPaginationSchema;
 export type ListTemplatesInput = z.infer<typeof ListTemplatesSchema>;
 
 export function createAssessmentsListTemplatesTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
   return defineTool({
     name: 'assessments_list_templates',
-    description:
-      'List all available assessment templates. Note: Cursor pagination is not supported by the Transcend API for templates - use limit to control results (max 100).',
+    description: 'List the blank assessment templates available to build new assessments from.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListTemplatesSchema,
-    handler: async ({ limit, cursor }) => {
+    handler: async ({ limit, offset }) => {
       const result = await graphql.listAssessmentTemplates({
         first: limit,
-        after: cursor,
+        offset,
       });
 
       return createListResult(result.nodes, {

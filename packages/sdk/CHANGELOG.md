@@ -1,5 +1,224 @@
 # @transcend-io/sdk
 
+## 2.1.4
+
+### Patch Changes
+
+- Updated dependencies [a19b07e]
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/airgap.js-types@14.2.41
+
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+  - @transcend-io/airgap.js-types@14.2.40
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+  - @transcend-io/airgap.js-types@14.2.39
+
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+  - @transcend-io/airgap.js-types@14.2.38
+
+## 2.1.0
+
+### Minor Changes
+
+- a5e8334: `transcend inventory pull` now writes per-workflow deletion dependencies into `transcend.yml`. Global-only configs stay as a list of titles; once any override exists, the whole field is written as objects. Overrides on workflows without an internal name are skipped with a warning, since `transcend.yml` references workflows by internal name.
+
+  `DataSiloEnriched` gains `dependedOnDataSilosPerWorkflow`.
+
+### Patch Changes
+
+- Updated dependencies [6c6ea93]
+- Updated dependencies [48a41a5]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+  - @transcend-io/privacy-types@5.22.0
+  - @transcend-io/utils@0.2.1
+  - @transcend-io/airgap.js-types@14.2.37
+
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [9637490]
+  - @transcend-io/privacy-types@5.20.0
+  - @transcend-io/airgap.js-types@14.2.36
+
+## 2.0.0
+
+### Major Changes
+
+- 43d6ffe: Support per-workflow deletion dependencies in `transcend.yml`. Use a list of titles for the global configuration only, or a list of objects when any per-workflow override is present (`{ titles }` for global, `{ workflow, titles }` or `{ workflow, reset-to-global: true }` for overrides). Mixing titles and objects in the same list is not allowed.
+
+  `syncDataSiloDependencies` now takes `[dataSiloId, DependedOnDataSiloInput[]][]` instead of `[dataSiloId, string[]][]` and pushes through `dependedOnDataSilos` rather than the deprecated `dependedOnDataSiloTitles`.
+
+### Minor Changes
+
+- 98eeb1d: `@transcend-io/privacy-types` gains custom function enums (`CustomFunctionType`, `CustomFunctionLifecycleState`, `CustomFunctionVersionLifecycleState`, `CustomFunctionPayloadType`), mirroring the backend's canonical values.
+
+  Add custom function sync support. The SDK gains a customer-ingress code signing helper (`signCustomFunctionCode`, calling Sombra's `/v1/custom/sign` route with bearer authentication) and typed custom function fetch/diff/sync helpers (`fetchAllCustomFunctions`, `syncCustomFunction`). The custom function type/lifecycle/payload-type unions come from the new `@transcend-io/privacy-types` enums, and JWT payload decoding uses `jsonwebtoken`. Existing custom functions are matched by `id` when provided, falling back to exact name, with an error on ambiguous names.
+
+  `createSombraGotInstance` gains a `sombraId` option to connect to a specific (non-primary) Sombra gateway by ID, resolved from the organization's gateway list.
+
+  Creating a GENERAL function without a pinned gateway resolves the organization's primary Sombra (the backend requires an explicit `sombraId` for GENERAL creates); DSR creates never send `sombraId` or `setActive` — the linked data silo dictates the gateway, and DSR functions are always created active (a warning is logged when `promote` is disabled for a DSR create).
+
+  Also adds a test-before-promote flow: `runCustomFunctionTest` test-runs freshly signed code via the `runCustomFunction` mutation (pre-signed JWT pair, `isCustomFunctionTestRun: true`) and reports a `passed` boolean; `syncCustomFunction` accepts a `testPayloads` list (each payload optionally tagged with a `payloadType`, so DSR functions can cover both the default `DATA_POINT` export and the `REQUEST_ENRICHER` enricher export in one push). Every payload runs and all must pass — any failure rejects the push with a new `test-failed` outcome, with per-payload `testResults` (error and logs) attached.
+
+  New DSR functions get their DSR integration created automatically: when a DSR config has no `dataSiloId` and no existing function matches, `syncCustomFunction` creates a `customFunction`-catalog data silo shell (`createCustomFunctionDataSilo`), tests the signed code against it (DSR test payloads always get `extras.dataSilo` injected from the resolved silo, with `title`/`description`/`link` defaulted to satisfy the backend's webhook payload codec), then creates and links the function on a passing test — rolling the silo back (`deleteDataSilo`) when the test or the create itself fails. Sync results now report `dataSiloId` / `createdDataSilo`.
+
+  `makeGraphQLRequest` no longer retries backend payload validation failures (`Failed to decode codec`) — they are deterministic, and retrying repeated the full codec error output.
+
+  Metadata-only changes (description, or name for id-pinned entries) are detected when code and context are unchanged, and update the function record in place — no signing, no test runs, and no new code revision — reported with a new `metadata-updated` outcome. Environment variable _values_ remain undiffable (encrypted at sign time); use `force` for value-only rotations.
+
+### Patch Changes
+
+- Updated dependencies [98eeb1d]
+  - @transcend-io/privacy-types@5.19.0
+  - @transcend-io/airgap.js-types@14.2.35
+
+## 1.9.5
+
+### Patch Changes
+
+- Updated dependencies [c198439]
+- Updated dependencies [60f2200]
+  - @transcend-io/privacy-types@5.18.0
+  - @transcend-io/airgap.js-types@14.2.34
+
+## 1.9.4
+
+### Patch Changes
+
+- Updated dependencies [2bc0cb2]
+  - @transcend-io/privacy-types@5.17.0
+  - @transcend-io/airgap.js-types@14.2.33
+
+## 1.9.3
+
+### Patch Changes
+
+- Updated dependencies [3aab830]
+  - @transcend-io/privacy-types@5.16.0
+  - @transcend-io/airgap.js-types@14.2.32
+
+## 1.9.2
+
+### Patch Changes
+
+- Updated dependencies [2cc726f]
+  - @transcend-io/privacy-types@5.15.0
+  - @transcend-io/airgap.js-types@14.2.31
+
+## 1.9.1
+
+### Patch Changes
+
+- Updated dependencies [8deab38]
+  - @transcend-io/privacy-types@5.14.0
+  - @transcend-io/airgap.js-types@14.2.30
+
+## 1.9.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
+### Patch Changes
+
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/privacy-types@5.13.0
+  - @transcend-io/airgap.js-types@14.2.29
+
+## 1.8.1
+
+### Patch Changes
+
+- Updated dependencies [188ba6f]
+  - @transcend-io/privacy-types@5.12.0
+  - @transcend-io/airgap.js-types@14.2.28
+
+## 1.8.0
+
+### Minor Changes
+
+- 29e9d5f: Remove Pathfinder from the tools repo and drop CLI prompt-manager integration: remove `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, `TranscendPromptManager`, `reportPromptRun`, and related CLI/SDK types.
+
+### Patch Changes
+
+- Updated dependencies [29e9d5f]
+  - @transcend-io/privacy-types@5.11.0
+  - @transcend-io/airgap.js-types@14.2.27
+
+## 1.7.7
+
+### Patch Changes
+
+- Updated dependencies [e68d245]
+  - @transcend-io/privacy-types@5.10.2
+  - @transcend-io/airgap.js-types@14.2.26
+
+## 1.7.6
+
+### Patch Changes
+
+- Updated dependencies [841f1a9]
+  - @transcend-io/privacy-types@5.10.1
+  - @transcend-io/airgap.js-types@14.2.25
+
+## 1.7.5
+
+### Patch Changes
+
+- Updated dependencies [da3e443]
+  - @transcend-io/privacy-types@5.10.0
+  - @transcend-io/airgap.js-types@14.2.24
+
+## 1.7.4
+
+### Patch Changes
+
+- Updated dependencies [8bfe3cc]
+  - @transcend-io/privacy-types@5.9.1
+  - @transcend-io/airgap.js-types@14.2.23
+
+## 1.7.3
+
+### Patch Changes
+
+- Updated dependencies [be15c28]
+  - @transcend-io/privacy-types@5.9.0
+  - @transcend-io/airgap.js-types@14.2.22
+
+## 1.7.2
+
+### Patch Changes
+
+- Updated dependencies [ac7537b]
+  - @transcend-io/privacy-types@5.8.5
+  - @transcend-io/airgap.js-types@14.2.21
+
+## 1.7.1
+
+### Patch Changes
+
+- Updated dependencies [54f4aff]
+  - @transcend-io/privacy-types@5.8.4
+  - @transcend-io/airgap.js-types@14.2.20
+
 ## 1.7.0
 
 ### Minor Changes

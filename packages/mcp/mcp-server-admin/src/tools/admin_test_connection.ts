@@ -16,6 +16,7 @@ export function createAdminTestConnectionTool(clients: ToolClients) {
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: EmptySchema,
     handler: async (_args) => {
       const [graphqlConnected, restConnected] = await Promise.all([

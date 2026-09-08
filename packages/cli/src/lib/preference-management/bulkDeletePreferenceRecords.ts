@@ -9,6 +9,7 @@ import colors from 'colors';
 import type { Got } from 'got';
 import { chunk } from 'lodash-es';
 
+import type { CliLogger } from '../../context.js';
 import { logger } from '../../logger.js';
 import { readCsv } from '../requests/index.js';
 
@@ -24,6 +25,8 @@ interface DeletePreferenceRecordsRepositoryOptions {
   identifierChunk: DeletePreferenceRecordCliCsvRow[];
   /** the timestamp for the deletion operation */
   timestamp: Date;
+  /** Command logger */
+  logger: CliLogger;
 }
 
 /**
@@ -31,7 +34,7 @@ interface DeletePreferenceRecordsRepositoryOptions {
  */
 type DeletePreferenceRecordsOptions = Omit<
   DeletePreferenceRecordsRepositoryOptions,
-  'identifierChunk'
+  'identifierChunk' | 'logger'
 > & {
   /** The file path to read CSV rows from */
   filePath: string;
@@ -39,6 +42,13 @@ type DeletePreferenceRecordsOptions = Omit<
   maxItemsInChunk: number;
   /** Maximum concurrency for deletion requests */
   maxConcurrency: number;
+};
+
+type DeletePreferenceRecordRowsOptions = Omit<DeletePreferenceRecordsOptions, 'filePath'> & {
+  /** Decoded identifiers to delete */
+  anchorIdentifiers: DeletePreferenceRecordCliCsvRow[];
+  /** Command logger */
+  logger: CliLogger;
 };
 
 /**
@@ -54,7 +64,12 @@ type DeletePreferenceRecordsOptions = Omit<
  */
 async function deletePreferenceRecordsRepository(
   sombra: Got,
-  { partition, identifierChunk: chunk, timestamp }: DeletePreferenceRecordsRepositoryOptions,
+  {
+    partition,
+    identifierChunk: chunk,
+    timestamp,
+    logger: commandLogger,
+  }: DeletePreferenceRecordsRepositoryOptions,
 ): Promise<FailedResult[]> {
   try {
     const response = await withTransientRetry(
@@ -71,10 +86,10 @@ async function deletePreferenceRecordsRepository(
           })
           .json(),
       {
-        logger,
+        logger: commandLogger,
         maxAttempts: 3,
         onRetry: (attempt, _err, msg) => {
-          logger.warn(
+          commandLogger.warn(
             colors.yellow(`Attempt ${attempt} to delete preference records failed: ${msg}`),
           );
         },
@@ -117,6 +132,34 @@ export async function bulkDeletePreferenceRecords(
   }: DeletePreferenceRecordsOptions,
 ): Promise<FailedResult[]> {
   const anchorIdentifiers = readCsv(filePath, DeletePreferenceRecordCliCsvRow);
+  return bulkDeletePreferenceRecordsFromRows(sombra, {
+    anchorIdentifiers,
+    partition,
+    timestamp,
+    maxItemsInChunk,
+    maxConcurrency,
+    logger,
+  });
+}
+
+/**
+ * Delete decoded consent preference identifiers from the managed consent database.
+ *
+ * @param sombra - Sombra instance with authentication headers.
+ * @param options - Decoded rows and deletion options.
+ * @returns Failed deletions.
+ */
+export async function bulkDeletePreferenceRecordsFromRows(
+  sombra: Got,
+  {
+    anchorIdentifiers,
+    partition,
+    timestamp,
+    maxItemsInChunk,
+    maxConcurrency,
+    logger,
+  }: DeletePreferenceRecordRowsOptions,
+): Promise<FailedResult[]> {
   const chunks = chunk(anchorIdentifiers, maxItemsInChunk);
 
   const failedResults = await map(
@@ -126,6 +169,7 @@ export async function bulkDeletePreferenceRecords(
         partition,
         identifierChunk,
         timestamp,
+        logger,
       });
       return failedResults;
     },

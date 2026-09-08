@@ -269,7 +269,7 @@ const expected: CodePackageInput[] = [
       },
       {
         name: 'fast-csv',
-        version: '^4.3.6',
+        version: '^5.0.0',
       },
       {
         name: 'sequelize',
@@ -304,7 +304,7 @@ const expected: CodePackageInput[] = [
       },
       {
         name: 'fast-csv',
-        version: '^4.3.6',
+        version: '^5.0.0',
       },
       {
         name: 'typescript',

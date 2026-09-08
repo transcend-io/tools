@@ -236,6 +236,65 @@ Update privacy types.
     expect(result.status).toBe(0);
     expect(result.stderr).toBe('');
   });
+
+  it('ignores a stale CHANGESET_BASE_SHA when HEAD is a merge commit', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+    });
+    const staleBaseSha = repository.baseSha;
+
+    writeRepositoryFile(repository.path, 'packages/cli/src/index.ts', 'export const value = 2;\n');
+    writeRepositoryFile(
+      repository.path,
+      '.changeset/cli.md',
+      `---
+"@transcend-io/cli": patch
+---
+
+Update the CLI package.
+`,
+    );
+    commitAll(repository.path, 'feature on main');
+    const mainSha = runGit(repository.path, ['rev-parse', 'HEAD']);
+
+    runGit(repository.path, ['checkout', '-b', 'changeset-release/main']);
+    rmSync(join(repository.path, '.changeset/cli.md'));
+    updatePackageJson(repository.path, 'packages/cli/package.json', (packageJson) => ({
+      ...packageJson,
+      version: '1.0.1',
+    }));
+    commitAll(repository.path, 'Version Packages');
+    const versionSha = runGit(repository.path, ['rev-parse', 'HEAD']);
+
+    runGit(repository.path, ['checkout', '--detach', mainSha]);
+    mergeCommit(repository.path, versionSha, 'Merge version PR');
+
+    const result = runCheckChangeset(repository.path, staleBaseSha);
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).toBe('');
+  });
+
+  it('still fails a merge-commit checkout when the PR itself lacks a changeset', () => {
+    const repository = createRepository({
+      packages: [{ directory: 'cli', name: '@transcend-io/cli' }],
+    });
+    const mainSha = runGit(repository.path, ['rev-parse', 'HEAD']);
+
+    runGit(repository.path, ['checkout', '-b', 'feature']);
+    writeRepositoryFile(repository.path, 'packages/cli/src/index.ts', 'export const value = 2;\n');
+    commitAll(repository.path, 'change cli without changeset');
+    const featureSha = runGit(repository.path, ['rev-parse', 'HEAD']);
+
+    runGit(repository.path, ['checkout', '--detach', mainSha]);
+    mergeCommit(repository.path, featureSha, 'Merge feature PR');
+
+    const result = runCheckChangeset(repository.path, mainSha);
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain('No changeset was found');
+    expect(result.stderr).toContain('@transcend-io/cli');
+  });
 });
 
 function createRepository({ packages }: RepositoryDefinition): Repository {
@@ -305,6 +364,20 @@ function commitAll(repositoryPath: string, message: string) {
     '-c',
     'user.email=test@example.com',
     'commit',
+    '-m',
+    message,
+  ]);
+}
+
+function mergeCommit(repositoryPath: string, commitSha: string, message: string) {
+  runGit(repositoryPath, [
+    '-c',
+    'user.name=Test User',
+    '-c',
+    'user.email=test@example.com',
+    'merge',
+    '--no-ff',
+    commitSha,
     '-m',
     message,
   ]);

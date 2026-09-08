@@ -9,10 +9,13 @@
     "quality": "turbo run quality",
     "quality:fix": "turbo run quality:fix",
     "changeset": "changeset",
+    "mcp:inspect": "node ./scripts/mcp-inspect.ts",
+    "mcp:new": "node ./scripts/mcp-new.ts",
     "codegen": "graphql-codegen --config codegen.ts",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "graphql:refresh-schema": "node scripts/refresh-graphql-schema.ts",
     "typecheck": "turbo run typecheck typecheck:root",
+    "typecheck:ui": "turbo run typecheck:ui",
     "lint": "turbo run lint lint:root",
     "lint:fix": "turbo run lint:fix lint:fix:root",
     "format": "turbo run format format:root",
@@ -25,19 +28,20 @@
     "changeset:version": "changeset version",
     "changeset:version:release": "changeset version && pnpm format:root",
     "release": "turbo run build && changeset publish",
-    "test:root": "vitest run scripts/check-changeset.test.ts scripts/package-conventions.test.ts scripts/check-mcp-descriptions.test.ts",
+    "test:root": "vitest run --dir scripts",
     "typecheck:root": "tsc -p scripts/tsconfig.json --noEmit",
     "lint:root": "oxlint",
     "lint:fix:root": "oxlint --fix",
     "format:root": "oxfmt",
     "format:check:root": "oxfmt --check",
-    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\" --source \"packages/mcp/*/package.json\"",
+    "check:deps:root": "syncpack lint --source \"package.json\" --source \"packages/*/package.json\" --source \"packages/mcp/*/package.json\" --source \"dev/*/package.json\"",
     "prepare": "husky"
   },
   "devDependencies": {
     "@changesets/cli": "catalog:",
     "@graphql-codegen/cli": "catalog:",
     "@graphql-codegen/client-preset": "catalog:",
+    "@tailwindcss/vite": "catalog:",
     "@transcend-io/mcp-server-admin": "workspace:*",
     "@transcend-io/mcp-server-assessment": "workspace:*",
     "@transcend-io/mcp-server-base": "workspace:*",
@@ -53,14 +57,17 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "syncpack": "catalog:",
+    "tailwindcss": "catalog:",
+    "tsdown": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
   "engines": {
     "node": ">=22.12.0",
-    "pnpm": ">=10.28.2"
+    "pnpm": ">=10.34.4"
   },
-  "packageManager": "pnpm@10.28.2"
+  "packageManager": "pnpm@10.34.4"
 }

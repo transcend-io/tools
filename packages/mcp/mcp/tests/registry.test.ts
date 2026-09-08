@@ -1,6 +1,7 @@
 import { getAdminTools } from '@transcend-io/mcp-server-admin';
 import { getAssessmentTools } from '@transcend-io/mcp-server-assessment';
 import {
+  isVisibleToModel,
   TranscendRestClient,
   type AuthCredentials,
   type ToolClients,
@@ -49,6 +50,17 @@ describe('ToolRegistry', () => {
     expect(unique.size).toBe(names.length);
   });
 
+  // A `cursor` param is only honest where the underlying API threads it through to a real
+  // endCursor. Everywhere else it was silently dropped, so callers paged forever on page one.
+  it('only exposes cursor on the tools whose API actually pages by cursor', () => {
+    const withCursor = allTools
+      .filter((tool) => 'cursor' in (tool.zodSchema as { shape: Record<string, unknown> }).shape)
+      .map((tool) => tool.name)
+      .sort();
+
+    expect(withCursor).toEqual(['dsr_list', 'preferences_query']);
+  });
+
   it('ToolRegistry registers all tools with correct count', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');
@@ -59,7 +71,12 @@ describe('ToolRegistry', () => {
     });
 
     expect(registry.getToolCount()).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
-    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT);
+
+    // Registering a tool and describing it to an embedder differ: gated tools and
+    // tools with visibility omitting `model` stay callable but are withheld from the list.
+    const hidden = registry.getAllTools().filter((tool) => !isVisibleToModel(tool)).length;
+    const gated = registry.getAllTools().filter((tool) => tool.confirmation).length;
+    expect(registry.getToolList()).toHaveLength(EXPECTED_UMBRELLA_TOOL_COUNT - gated - hidden);
   });
 
   it('getToolList returns well-formed tool descriptors', () => {

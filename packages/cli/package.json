@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/cli",
-  "version": "10.23.1",
+  "version": "10.27.4",
   "description": "A command line interface for programmatic operations across Transcend.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/cli",
   "license": "Apache-2.0",
@@ -78,16 +78,14 @@
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm",
     "script:transcend-json-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildTranscendJsonSchema.ts && oxfmt ./schema/transcend-yml-schema-*.json",
-    "script:pathfinder-json-schema": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildPathfinderJsonSchema.ts && oxfmt ./schema/pathfinder-policy-yml-schema.json",
     "docgen": "NODE_OPTIONS=\"--conditions=@transcend-io/source\" tsx scripts/buildReadmeDocs.ts",
-    "genfiles": "pnpm script:transcend-json-schema && pnpm script:pathfinder-json-schema && pnpm docgen"
+    "genfiles": "pnpm script:transcend-json-schema && pnpm docgen"
   },
   "dependencies": {
     "@duckdb/node-api": "1.4.2-r.1",
     "@stricli/auto-complete": "^1.2.0",
     "@stricli/core": "^1.2.0",
     "@transcend-io/airgap.js-types": "workspace:*",
-    "@transcend-io/handlebars-utils": "^1.3.2",
     "@transcend-io/internationalization": "workspace:*",
     "@transcend-io/persisted-state": "^1.0.6",
     "@transcend-io/privacy-types": "workspace:*",
@@ -100,7 +98,7 @@
     "cli-progress": "^3.11.2",
     "colors": "^1.4.0",
     "csv-parse": "^5.6.0",
-    "fast-csv": "^4.3.6",
+    "fast-csv": "^5.0.0",
     "fast-glob": "^3.2.12",
     "fp-ts": "^2.16.1",
     "fuzzysearch": "^1.0.3",
@@ -120,7 +118,8 @@
     "newtype-ts": "^0.3.5",
     "query-string": "=7.0.0",
     "semver": "catalog:",
-    "undici": "6.27.0",
+    "undici": "6.28.0",
+    "yaml": "catalog:",
     "yargs-parser": "^21.1.1"
   },
   "devDependencies": {

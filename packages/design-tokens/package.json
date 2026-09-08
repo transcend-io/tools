@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/design-tokens",
-  "version": "0.0.0",
+  "version": "1.2.1",
   "description": "Centralized design token primitives and semantics for Transcend frontends.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/design-tokens",
   "license": "Apache-2.0",
@@ -11,17 +11,30 @@
     "directory": "packages/design-tokens"
   },
   "files": [
-    "dist"
+    "dist",
+    "tokens"
   ],
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css"
+  ],
   "types": "./dist/index.d.mts",
   "exports": {
     ".": {
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
-    }
+    },
+    "./tokens.css": {
+      "@transcend-io/source": "./src/tokens.css",
+      "default": "./dist/tokens.css"
+    },
+    "./tokens": "./tokens/tokens.resolver.json",
+    "./tokens/tokens.resolver.json": "./tokens/tokens.resolver.json",
+    "./tokens/primitive/palette.tokens.json": "./tokens/primitive/palette.tokens.json",
+    "./tokens/semantic/color.tokens.json": "./tokens/semantic/color.tokens.json",
+    "./tokens/semantic/color-dark.tokens.json": "./tokens/semantic/color-dark.tokens.json",
+    "./tokens/semantic/typography.tokens.json": "./tokens/semantic/typography.tokens.json"
   },
   "publishConfig": {
     "access": "public"
@@ -38,6 +51,7 @@
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
     "@terrazzo/cli": "catalog:",
+    "@terrazzo/plugin-css": "catalog:",
     "@types/lodash": "catalog:",
     "@types/node": "catalog:",
     "colorjs.io": "catalog:",

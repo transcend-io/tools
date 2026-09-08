@@ -18,6 +18,8 @@ export enum AttributeSupportedResourceType {
   AuditorSchedule = 'auditorSchedule',
   /** Business entity table */
   BusinessEntity = 'businessEntity',
+  /** Consent Manager domain records */
+  ConsentSite = 'consentSite',
   /** Categories table */
   DataSubCategory = 'dataSubCategory',
   /** Datapoint table */
@@ -40,10 +42,6 @@ export enum AttributeSupportedResourceType {
   ProcessingPurposeSubCategory = 'processingPurposeSubCategory',
   /** Prompt table */
   Prompt = 'prompt',
-  /** PromptGroup table */
-  PromptGroup = 'promptGroup',
-  /** PromptRun table */
-  PromptRun = 'promptRun',
   /** Requests table */
   Request = 'request',
   /** ScannedObject table */

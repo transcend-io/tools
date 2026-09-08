@@ -147,10 +147,8 @@
                   "PRIVACY_CENTER",
                   "ADMINISTRATION",
                   "ASSESSMENTS",
-                  "PATHFINDER",
                   "PREFERENCE_MANAGEMENT",
                   "PROMPT_MANAGER",
-                  "CONTRACT_SCANNING",
                   "WEB_AUDITOR",
                   "SOMBRA",
                   "SILO_DISCOVERY",
@@ -304,10 +302,6 @@
                     "executeAuditor",
                     "viewCodeScanning",
                     "manageCodeScanning",
-                    "viewPathfinder",
-                    "managePathfinder",
-                    "viewContractScanning",
-                    "manageContractScanning",
                     "viewAuditorRuns",
                     "viewAuditEvents",
                     "manageActionItemCollections",
@@ -332,7 +326,10 @@
                     "manageRules",
                     "viewAssignedRules",
                     "manageAssignedRules",
-                    "executeRules"
+                    "executeRules",
+                    "viewCustomFunction",
+                    "manageCustomFunction",
+                    "viewUsage"
                   ]
                 }
               }
@@ -5922,6 +5919,7 @@
                     "auditorRun",
                     "auditorSchedule",
                     "businessEntity",
+                    "consentSite",
                     "dataSubCategory",
                     "dataPoint",
                     "dataPointLevel",
@@ -5933,8 +5931,6 @@
                     "processingActivity",
                     "processingPurposeSubCategory",
                     "prompt",
-                    "promptGroup",
-                    "promptRun",
                     "request",
                     "scannedObject",
                     "scannedObjectPath",
@@ -28106,10 +28102,57 @@
                 }
               },
               "deletion-dependencies": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
+                "anyOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "allOf": [
+                            {
+                              "type": "object",
+                              "required": ["titles"],
+                              "properties": {
+                                "titles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "workflow": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "type": "object",
+                          "required": ["workflow", "reset-to-global"],
+                          "properties": {
+                            "workflow": {
+                              "type": "string"
+                            },
+                            "reset-to-global": {
+                              "const": true
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
               },
               "owners": {
                 "type": "array",
@@ -34086,7 +34129,7 @@
         },
         "consentPrecedence": {
           "type": "string",
-          "enum": ["user", "signal"]
+          "enum": ["user", "signal", "signals"]
         },
         "unknownRequestPolicy": {
           "type": "string",
@@ -40657,192 +40700,6 @@
         }
       }
     },
-    "prompts": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "content"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "prompt-partials": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "content"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "content": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "prompt-groups": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["title", "description", "prompts"],
-        "properties": {
-          "title": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "prompts": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    "agents": {
-      "type": "array",
-      "items": {
-        "allOf": [
-          {
-            "type": "object",
-            "required": [
-              "name",
-              "instructions",
-              "agentId",
-              "codeInterpreterEnabled",
-              "retrievalEnabled",
-              "large-language-model"
-            ],
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "instructions": {
-                "type": "string"
-              },
-              "agentId": {
-                "type": "string"
-              },
-              "codeInterpreterEnabled": {
-                "type": "boolean"
-              },
-              "retrievalEnabled": {
-                "type": "boolean"
-              },
-              "large-language-model": {
-                "type": "object",
-                "required": ["name", "client"],
-                "properties": {
-                  "name": {
-                    "type": "string"
-                  },
-                  "client": {
-                    "type": "string",
-                    "enum": ["openai", "claude", "llama"]
-                  }
-                }
-              }
-            }
-          },
-          {
-            "type": "object",
-            "properties": {
-              "description": {
-                "type": "string"
-              },
-              "prompt": {
-                "type": "string"
-              },
-              "owners": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "teams": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "agent-functions": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "agent-files": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            }
-          }
-        ]
-      }
-    },
-    "agent-functions": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["name", "description", "parameters"],
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "parameters": {
-            "type": "string"
-          }
-        }
-      }
-    },
-    "agent-files": {
-      "type": "array",
-      "items": {
-        "allOf": [
-          {
-            "type": "object",
-            "required": ["name", "fileId", "size", "purpose"],
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "fileId": {
-                "type": "string"
-              },
-              "size": {
-                "type": "number"
-              },
-              "purpose": {
-                "type": "string",
-                "enum": ["ASSISTANTS", "FINE_TUNE", "FINE_TUNE_RESULTS", "ASSISTANTS_OUTPUT"]
-              }
-            }
-          },
-          {
-            "type": "object",
-            "properties": {
-              "description": {
-                "type": "string"
-              }
-            }
-          }
-        ]
-      }
-    },
     "privacy-center": {
       "type": "object",
       "properties": {
@@ -43343,6 +43200,7 @@
                         "auditorRun",
                         "auditorSchedule",
                         "businessEntity",
+                        "consentSite",
                         "dataSubCategory",
                         "dataPoint",
                         "dataPointLevel",
@@ -43354,8 +43212,6 @@
                         "processingActivity",
                         "processingPurposeSubCategory",
                         "prompt",
-                        "promptGroup",
-                        "promptRun",
                         "request",
                         "scannedObject",
                         "scannedObjectPath",
@@ -43387,6 +43243,7 @@
                         "auditorRun",
                         "auditorSchedule",
                         "businessEntity",
+                        "consentSite",
                         "dataSubCategory",
                         "dataPoint",
                         "dataPointLevel",
@@ -43398,8 +43255,6 @@
                         "processingActivity",
                         "processingPurposeSubCategory",
                         "prompt",
-                        "promptGroup",
-                        "promptRun",
                         "request",
                         "scannedObject",
                         "scannedObjectPath",

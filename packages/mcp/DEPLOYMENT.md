@@ -28,15 +28,16 @@ The server listens on `http://127.0.0.1:3000/mcp` by default. A health check is 
 
 ### Environment variables
 
-| Variable                       | Default                                    | Description                                                                                                     |
-| ------------------------------ | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `TRANSCEND_API_KEY`            | —                                          | Default API key for HTTP transport, or stdio alternative to OAuth. Disables OAuth when set alongside client ID. |
-| `TRANSCEND_API_URL`            | `https://api.transcend.io`                 | GraphQL backend API URL (matches CLI / main monorepo convention)                                                |
-| `SOMBRA_URL`                   | `https://multi-tenant.sombra.transcend.io` | Sombra REST API URL (matches CLI / SDK convention)                                                              |
-| `TRANSCEND_HTTP_PORT`          | `3000`                                     | HTTP listen port (overridden by `--port`)                                                                       |
-| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                                | HTTP listen host (overridden by `--host`)                                                                       |
-| `TRANSCEND_MCP_CORS_ORIGINS`   | —                                          | Comma-separated allowed CORS origins                                                                            |
-| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)                         | Idle session timeout in milliseconds                                                                            |
+| Variable                       | Default                    | Description                                                                                                                                                                                                                                                                              |
+| ------------------------------ | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TRANSCEND_API_KEY`            | —                          | Default API key for HTTP transport, or stdio alternative to OAuth. Disables OAuth when set alongside client ID.                                                                                                                                                                          |
+| `TRANSCEND_API_URL`            | `https://api.transcend.io` | GraphQL backend API URL (matches CLI / main monorepo convention)                                                                                                                                                                                                                         |
+| `SOMBRA_URL`                   | _(lazy GraphQL resolve)_   | Sticky **customer ingress** host override (DSR create and other Sombra REST). When unset, resolves `organization.sombra.customerUrl` once; AiSettings are re-checked on every Sombra call. Local customer ingress is often port **5046**—do not point this at transcend/external ingress |
+| `SOMBRA_CUSTOMER_KEY`          | —                          | Optional self-hosted customer-ingress key (STS). Sent as `X-Sombra-Authorization: Bearer …`. Not needed on multi-tenant Transcend-hosted Sombra. Never commit tenant secrets                                                                                                             |
+| `TRANSCEND_HTTP_PORT`          | `3000`                     | HTTP listen port (overridden by `--port`)                                                                                                                                                                                                                                                |
+| `TRANSCEND_HTTP_HOST`          | `127.0.0.1`                | HTTP listen host (overridden by `--host`)                                                                                                                                                                                                                                                |
+| `TRANSCEND_MCP_CORS_ORIGINS`   | —                          | Comma-separated allowed CORS origins                                                                                                                                                                                                                                                     |
+| `TRANSCEND_MCP_SESSION_TTL_MS` | `1800000` (30 min)         | Idle session timeout in milliseconds                                                                                                                                                                                                                                                     |
 
 ## Authentication
 
@@ -188,3 +189,38 @@ When binding to `0.0.0.0` (e.g. in Docker), the SDK's DNS rebinding protection i
 ### SSE streams dropping
 
 Ensure your reverse proxy has buffering disabled and a long read timeout for the `/mcp` path. See the nginx configuration above.
+
+## Docs sync (tool counts → Sanity)
+
+Package tool counts and OAuth scope titles are generated from code at release time so public docs stay aligned with `get*Tools()` / `*_OAUTH_SCOPES`. The sync payload (`packages/mcp/mcp/docs/mcp-guide-sync.json`) is **gitignored** — do not commit it.
+
+### Generate the sync payload
+
+```bash
+pnpm --dir packages/mcp/mcp genfiles
+```
+
+Writes `packages/mcp/mcp/docs/mcp-guide-sync.json` (local/CI only). Repo READMEs are hand-maintained; live tool counts live on the [MCP Guide](https://docs.transcend.io/docs/articles/artificial-intelligence/mcp-guide).
+
+### Draft-sync public docs (Sanity)
+
+By default creates **drafts only**. Pass `--publish` to publish after patching.
+
+1. Create an Editor API token for project `1ievmmav` / dataset `production`: https://www.sanity.io/manage
+2. Export it locally or store it as the GitHub Actions secret `SANITY_API_TOKEN` on `transcend-io/tools` (required for CI sync)
+3. Run locally:
+
+```bash
+export SANITY_API_TOKEN=...   # or omit to be prompted interactively
+pnpm --dir packages/mcp/mcp genfiles
+pnpm --dir packages/mcp/mcp sync:sanity
+# optional: -- --dry-run    (print planned patches only; cannot combine with --publish)
+# optional: -- --publish    (publish immediately after drafting)
+# optional: -- --discover   (print table/prose block keys)
+```
+
+**CI:** After the changeset release PR (`changeset-release/main`) merges and npm publish succeeds, the **Publish** workflow’s `sync-mcp-docs` job runs `genfiles` then `sync:sanity -- --publish` automatically. That job uses `continue-on-error`, so a docs failure does **not** fail the release; the job summary warns you and shows the manual command. You can also trigger **Sync MCP docs to Sanity** (`workflow_dispatch`) for a manual dry-run / draft / publish.
+
+4. If you did **not** pass `--publish` locally: open Sanity Studio, validate the MCP Guide package table and Cursor setup “N tools” sentence (check Validation for nested `marks` / `markDefs`), then publish when ready
+
+The public MCP Guide scopes section is deferred (repo README scopes table is hand-maintained; canonical lists live in each package’s `src/scopes.ts`).

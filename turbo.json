@@ -5,8 +5,12 @@
     "mise.toml",
     "mise.lock",
     "tsconfig.base.json",
+    "tsconfig.ui.base.json",
     "tsdown.config.base.ts",
+    "tsdown.config.mcp.ts",
+    "vite.config.base.ts",
     "vitest.config.ts",
+    "vitest.config.mcp.ts",
     "types/**",
     "assets/**",
     "oxlint.json",
@@ -35,6 +39,7 @@
     "quality:checks": {
       "dependsOn": [
         "typecheck",
+        "typecheck:ui",
         "//#typecheck:root",
         "//#check:packages",
         "check:deps",
@@ -48,6 +53,10 @@
     },
     "typecheck": {
       "dependsOn": ["transit", "//#codegen"],
+      "outputs": []
+    },
+    "typecheck:ui": {
+      "dependsOn": ["transit"],
       "outputs": []
     },
     "//#codegen": {
@@ -101,10 +110,40 @@
     "//#format:check:root": {},
     "//#check:packages": {},
     "//#check:deps:root": {},
+    "@transcend-io/mcp-server-examples#build": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": ["dist/**", "src/ui/generated/**"]
+    },
+    "@transcend-io/mcp-server-examples#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "@transcend-io/mcp-server-consent#build": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": ["dist/**", "src/ui/generated/**"]
+    },
+    "@transcend-io/mcp-server-consent#test": {
+      "dependsOn": ["build"],
+      "outputs": []
+    },
+    "@transcend-io/mcp#typecheck": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": []
+    },
+    "@transcend-io/mcp#test": {
+      "dependsOn": ["^build", "//#codegen"],
+      "outputs": []
+    },
     "@transcend-io/design-tokens#build": {
       "dependsOn": ["^build"],
       "inputs": ["tokens/**", "plugins/**", "terrazzo.config.ts"],
-      "outputs": ["dist/**", "src/primitive/**", "src/semantic/**", "src/index.ts"]
+      "outputs": [
+        "dist/**",
+        "src/primitive/**",
+        "src/semantic/**",
+        "src/index.ts",
+        "src/tokens.css"
+      ]
     },
     "@transcend-io/design-tokens#test": {
       "dependsOn": ["build"],
@@ -113,6 +152,18 @@
     "@transcend-io/design-tokens#typecheck": {
       "dependsOn": ["build"],
       "outputs": []
+    },
+    "@transcend-io/custom-function-types#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "scripts/**",
+        "src/**",
+        "!src/__generated__/**",
+        "package.json",
+        "tsconfig.json",
+        "tsdown.config.ts"
+      ],
+      "outputs": ["dist/**", "src/__generated__/**"]
     }
   }
 }

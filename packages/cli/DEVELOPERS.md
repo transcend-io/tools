@@ -8,7 +8,7 @@
   - [Repo Structure](#repo-structure)
   - [Generated files](#generated-files)
     - [README.md](#readmemd)
-    - [transcend.yml and pathfinder.yml JSON schemas](#transcendyml-and-pathfinderyml-json-schemas)
+    - [transcend.yml JSON schema](#transcendyml-json-schema)
   - [Testing](#testing)
   - [Publishing](#publishing)
 
@@ -76,14 +76,13 @@ pnpm -F cli docgen
 
 This will generate the README.md file from the command documentation and the `src/commands/**/readme.ts` files. To add examples, use the `buildExamples` command to generate type-safe examples. For complex or multi-line bash scripts, use `buildExampleCommand` directly (search for examples in the codebase).
 
-### transcend.yml and pathfinder.yml JSON schemas
+### transcend.yml JSON schema
 
 ```bash
 pnpm -F cli script:transcend-json-schema
-pnpm -F cli script:pathfinder-json-schema
 ```
 
-These commands generate the `transcend.yml` and `pathfinder.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
+This command generates the `transcend.yml` JSON schema files in `schema/`. They are published to [schemastore](https://github.com/SchemaStore/schemastore), which powers linting and JSON schema support in VSCode and other IDEs.
 
 ## Testing
 

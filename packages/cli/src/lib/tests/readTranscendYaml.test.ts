@@ -2,11 +2,19 @@ import { join } from 'node:path';
 
 import { expect, describe, it } from 'vitest';
 
-import { readTranscendYaml } from '../../index.js';
+import { parseTranscendYaml, readTranscendYaml, serializeTranscendYaml } from '../../index.js';
 
 const EXAMPLE_DIR = join(__dirname, '..', '..', '..', 'examples');
 
 describe('readTranscendYaml', () => {
+  it('parses YAML contents without filesystem access', () => {
+    expect(parseTranscendYaml('data-silos: []\n')).toEqual({ 'data-silos': [] });
+  });
+
+  it('serializes validated configuration without filesystem access', () => {
+    expect(serializeTranscendYaml({ 'data-silos': [] })).toBe('data-silos: []\n');
+  });
+
   it('simple.yml should pass the codec validation for TranscendInput', () => {
     expect(() => readTranscendYaml(join(EXAMPLE_DIR, 'simple.yml'))).to.not.throw();
   });
@@ -16,9 +24,13 @@ describe('readTranscendYaml', () => {
       .throw(` ".enrichers.0.0.title expected type 'string'",
   ".enrichers.1.0.output-identifiers expected type 'Array<string>'",
   ".data-silos.0.0.title expected type 'string'",
-  ".data-silos.0.1.deletion-dependencies expected type 'Array<string>'",
+  ".data-silos.0.1.deletion-dependencies.0 expected type 'Array<string>'",
+  ".data-silos.0.1.deletion-dependencies.1 expected type 'Array<(({ titles: Array<string> } & Partial<{ workflow: string }>) | { workflow: string, reset-to-global: true })>'",
   ".data-silos.0.1.datapoints.0.0.key expected type 'string'",
   ".data-silos.0.1.datapoints.0.1.fields.0.0.key expected type 'string'",
+  ".data-silos.1.1.deletion-dependencies.0.0 expected type 'string'",
+  ".data-silos.1.1.deletion-dependencies.1.0.0.0.titles expected type 'Array<string>'",
+  ".data-silos.1.1.deletion-dependencies.1.0.1.reset-to-global expected type 'true'",
   ".data-silos.1.1.disabled expected type 'boolean'"`);
   });
 

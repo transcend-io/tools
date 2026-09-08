@@ -14,6 +14,7 @@ export function createConsentGetPreferencesTool(clients: ToolClients) {
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: GetPreferencesSchema,
     handler: async ({ identifier, partition }) => {
       const result = await rest.getConsentPreferences(identifier, partition);

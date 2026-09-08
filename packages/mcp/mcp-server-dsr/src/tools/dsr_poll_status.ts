@@ -14,6 +14,7 @@ export function createDsrPollStatusTool(clients: ToolClients) {
     category: 'DSR Automation',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: pollStatusSchema,
     handler: async ({ requestId }) => {
       const result = await rest.getDSRStatus(requestId);

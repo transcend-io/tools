@@ -1,5 +1,162 @@
 # @transcend-io/airgap.js-types
 
+## 14.2.41
+
+### Patch Changes
+
+- Updated dependencies [a19b07e]
+  - @transcend-io/privacy-types@5.26.0
+
+## 14.2.40
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+
+## 14.2.39
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+
+## 14.2.38
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+
+## 14.2.37
+
+### Patch Changes
+
+- Updated dependencies [6c6ea93]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+  - @transcend-io/privacy-types@5.22.0
+
+## 14.2.36
+
+### Patch Changes
+
+- Updated dependencies [9637490]
+  - @transcend-io/privacy-types@5.20.0
+
+## 14.2.35
+
+### Patch Changes
+
+- Updated dependencies [98eeb1d]
+  - @transcend-io/privacy-types@5.19.0
+
+## 14.2.34
+
+### Patch Changes
+
+- Updated dependencies [c198439]
+- Updated dependencies [60f2200]
+  - @transcend-io/privacy-types@5.18.0
+
+## 14.2.33
+
+### Patch Changes
+
+- Updated dependencies [2bc0cb2]
+  - @transcend-io/privacy-types@5.17.0
+
+## 14.2.32
+
+### Patch Changes
+
+- Updated dependencies [3aab830]
+  - @transcend-io/privacy-types@5.16.0
+
+## 14.2.31
+
+### Patch Changes
+
+- Updated dependencies [2cc726f]
+  - @transcend-io/privacy-types@5.15.0
+
+## 14.2.30
+
+### Patch Changes
+
+- Updated dependencies [8deab38]
+  - @transcend-io/privacy-types@5.14.0
+
+## 14.2.29
+
+### Patch Changes
+
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/privacy-types@5.13.0
+
+## 14.2.28
+
+### Patch Changes
+
+- Updated dependencies [188ba6f]
+  - @transcend-io/privacy-types@5.12.0
+
+## 14.2.27
+
+### Patch Changes
+
+- Updated dependencies [29e9d5f]
+  - @transcend-io/privacy-types@5.11.0
+
+## 14.2.26
+
+### Patch Changes
+
+- Updated dependencies [e68d245]
+  - @transcend-io/privacy-types@5.10.2
+
+## 14.2.25
+
+### Patch Changes
+
+- Updated dependencies [841f1a9]
+  - @transcend-io/privacy-types@5.10.1
+
+## 14.2.24
+
+### Patch Changes
+
+- Updated dependencies [da3e443]
+  - @transcend-io/privacy-types@5.10.0
+
+## 14.2.23
+
+### Patch Changes
+
+- Updated dependencies [8bfe3cc]
+  - @transcend-io/privacy-types@5.9.1
+
+## 14.2.22
+
+### Patch Changes
+
+- Updated dependencies [be15c28]
+  - @transcend-io/privacy-types@5.9.0
+
+## 14.2.21
+
+### Patch Changes
+
+- Updated dependencies [ac7537b]
+  - @transcend-io/privacy-types@5.8.5
+
+## 14.2.20
+
+### Patch Changes
+
+- Updated dependencies [54f4aff]
+  - @transcend-io/privacy-types@5.8.4
+
 ## 14.2.19
 
 ### Patch Changes

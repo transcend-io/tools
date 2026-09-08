@@ -10,6 +10,16 @@ interface ColorValue {
   alpha?: number;
 }
 
+/** DTCG typography composite property names we serialize to CSS. */
+const TYPOGRAPHY_KEYS = [
+  'fontFamily',
+  'fontSize',
+  'fontWeight',
+  'fontStyle',
+  'letterSpacing',
+  'lineHeight',
+] as const;
+
 /**
  * Format a DTCG color object as a CSS string using colorjs.io.
  *
@@ -30,6 +40,39 @@ function colorToCss(value: ColorValue): string {
   }
 
   return serialize(color, { inGamut: true });
+}
+
+/** True when `value` looks like a DTCG typography composite object. */
+export function isTypographyComposite(value: unknown): value is Record<string, unknown> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    'fontFamily' in value &&
+    !('components' in value) &&
+    !('value' in value && 'unit' in value)
+  );
+}
+
+/**
+ * Convert a typography composite into a nested map of CSS strings
+ * (`fontFamily`, `fontSize`, …) for the TypeScript theme object.
+ */
+export function typographyToCssObj(value: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const key of TYPOGRAPHY_KEYS) {
+    if (key in value && value[key] !== undefined) {
+      out[key] = valueToCss(value[key]);
+    }
+  }
+  // Preserve any additional composite fields Terrazzo may resolve.
+  for (const [key, v] of Object.entries(value)) {
+    if (key in out || v === undefined) {
+      continue;
+    }
+    out[key] = valueToCss(v);
+  }
+  return out;
 }
 
 /** Convert a resolved DTCG value to a CSS string by pattern-matching on shape. */

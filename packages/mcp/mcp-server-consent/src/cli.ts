@@ -2,6 +2,7 @@
 import { createMCPServer } from '@transcend-io/mcp-server-base';
 
 import packageJson from '../package.json' with { type: 'json' };
+import { getConsentPrompts } from './prompts/index.js';
 import { CONSENT_OAUTH_SCOPES } from './scopes.js';
 import { getConsentTools } from './tools/index.js';
 
@@ -10,4 +11,5 @@ createMCPServer({
   version: packageJson.version,
   oauthScopes: CONSENT_OAUTH_SCOPES,
   getTools: getConsentTools,
+  getPrompts: getConsentPrompts,
 });

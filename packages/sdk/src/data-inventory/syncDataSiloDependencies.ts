@@ -9,6 +9,23 @@ import { UPDATE_DATA_SILOS } from './gqls/dataSilo.js';
 const BATCH_SILOS_LIMIT = 20;
 
 /**
+ * A set of data silos that another data silo depends on during an erasure request,
+ * either globally or scoped to a single erasure workflow.
+ */
+export interface DependedOnDataSiloInput {
+  /** IDs of the data silos depended on */
+  ids?: string[];
+  /** Titles of the data silos depended on */
+  titles?: string[];
+  /** ID of the workflow config this override applies to. Omit for the global configuration */
+  workflowConfigId?: string;
+  /** Internal name of the workflow config this override applies to. Omit for the global configuration */
+  workflowConfigInternalName?: string;
+  /** Clear the workflow-scoped override so the data silo falls back to the global configuration */
+  resetToGlobal?: boolean;
+}
+
+/**
  * Sync data silo dependencies
  *
  * @param client - GraphQL client
@@ -18,8 +35,8 @@ const BATCH_SILOS_LIMIT = 20;
 export async function syncDataSiloDependencies(
   client: GraphQLClient,
   options: {
-    /** Pairs of [data silo ID, dependency titles] */
-    input: [string, string[]][];
+    /** Pairs of [data silo ID, dependency entries] */
+    input: [string, DependedOnDataSiloInput[]][];
     /** Logger instance */
     logger?: Logger;
   },
@@ -43,9 +60,9 @@ export async function syncDataSiloDependencies(
       }>(client, UPDATE_DATA_SILOS, {
         variables: {
           input: {
-            dataSilos: dependencyUpdateChunk.map(([id, dependedOnDataSiloTitles]) => ({
+            dataSilos: dependencyUpdateChunk.map(([id, dependedOnDataSilos]) => ({
               id,
-              dependedOnDataSiloTitles,
+              dependedOnDataSilos,
             })),
           },
         },

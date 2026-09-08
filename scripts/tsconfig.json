@@ -8,7 +8,10 @@
     "incremental": false,
     "isolatedDeclarations": false,
     "noEmit": true,
-    "rootDir": ".",
+    // The repo root, not `.`, because the view scripts import the shared Vite
+    // config that lives there. Nothing is emitted, so this only has to be wide
+    // enough to contain every file in the program.
+    "rootDir": "..",
     "types": ["node", "vitest/globals"],
     // The MCP description audit imports `@transcend-io/mcp-server-consent`,
     // which transitively re-exports types from `@transcend-io/airgap.js-types`

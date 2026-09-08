@@ -1,5 +1,156 @@
 # @transcend-io/privacy-types
 
+## 5.26.0
+
+### Minor Changes
+
+- a19b07e: Add `viewportHeightOverride` to `LoadOptions` and `overrideLocale` to `SharedLoadOptions` in UI v2 load options.
+
+## 5.25.0
+
+### Minor Changes
+
+- ff0204c: Add `ConsentSite` to `AttributeSupportedResourceType` for Consent Manager domain custom fields. Regenerate CLI transcend.yml JSON schemas to match.
+
+## 5.24.0
+
+### Minor Changes
+
+- 7d1d57c: Add `ViewUsage` (`viewUsage`) to the AD scope catalog, titled "View Usage". Grants view access to organization usage metrics in the Administration Usage dashboard.
+
+## 5.23.0
+
+### Minor Changes
+
+- ea1ab3c: Add `DsrErrorCode.ConflictingDataSiloFilters` (`CONFLICTING_DATA_SILO_FILTERS`) for bulk DSR inputs that set both `dataSiloIds` and `ignoreDataSiloIds`.
+
+## 5.22.0
+
+### Minor Changes
+
+- 6c6ea93: Add `Signals` (`'signals'`) to `ConsentPrecedenceOption` and deprecate `Signal` (`'signal'`) in favor of the plural value. Regenerate CLI transcend.yml JSON schemas to include the new enum value.
+- 1f72e6a: add customCssUrlMap to UI v2 load options
+- 6a09b61: Add optional `sourceSystem` (non-empty, max 128 chars via `SourceSystemLabel`) and optional per-purpose `timestamp` to `PreferenceStorePurposeResponse`, which flows into `PreferenceStorePurposeUpdate` for PUT `/v1/preferences` and preference query responses (PIK-8191).
+
+## 5.20.0
+
+### Minor Changes
+
+- 9637490: Add dedicated Custom Function scopes to the AD scope catalog: `ViewCustomFunction` and `ManageCustomFunction` (wire values `viewCustomFunction` / `manageCustomFunction`), titled "View Custom Functions" / "Manage Custom Functions". These let Custom Function access be granted independently of the broader Data Map scopes (LINK-7162). Endpoint mapping onto the new scopes lands in a follow-up (LINK-7163).
+
+## 5.19.0
+
+### Minor Changes
+
+- 98eeb1d: `@transcend-io/privacy-types` gains custom function enums (`CustomFunctionType`, `CustomFunctionLifecycleState`, `CustomFunctionVersionLifecycleState`, `CustomFunctionPayloadType`), mirroring the backend's canonical values.
+
+  Add custom function sync support. The SDK gains a customer-ingress code signing helper (`signCustomFunctionCode`, calling Sombra's `/v1/custom/sign` route with bearer authentication) and typed custom function fetch/diff/sync helpers (`fetchAllCustomFunctions`, `syncCustomFunction`). The custom function type/lifecycle/payload-type unions come from the new `@transcend-io/privacy-types` enums, and JWT payload decoding uses `jsonwebtoken`. Existing custom functions are matched by `id` when provided, falling back to exact name, with an error on ambiguous names.
+
+  `createSombraGotInstance` gains a `sombraId` option to connect to a specific (non-primary) Sombra gateway by ID, resolved from the organization's gateway list.
+
+  Creating a GENERAL function without a pinned gateway resolves the organization's primary Sombra (the backend requires an explicit `sombraId` for GENERAL creates); DSR creates never send `sombraId` or `setActive` — the linked data silo dictates the gateway, and DSR functions are always created active (a warning is logged when `promote` is disabled for a DSR create).
+
+  Also adds a test-before-promote flow: `runCustomFunctionTest` test-runs freshly signed code via the `runCustomFunction` mutation (pre-signed JWT pair, `isCustomFunctionTestRun: true`) and reports a `passed` boolean; `syncCustomFunction` accepts a `testPayloads` list (each payload optionally tagged with a `payloadType`, so DSR functions can cover both the default `DATA_POINT` export and the `REQUEST_ENRICHER` enricher export in one push). Every payload runs and all must pass — any failure rejects the push with a new `test-failed` outcome, with per-payload `testResults` (error and logs) attached.
+
+  New DSR functions get their DSR integration created automatically: when a DSR config has no `dataSiloId` and no existing function matches, `syncCustomFunction` creates a `customFunction`-catalog data silo shell (`createCustomFunctionDataSilo`), tests the signed code against it (DSR test payloads always get `extras.dataSilo` injected from the resolved silo, with `title`/`description`/`link` defaulted to satisfy the backend's webhook payload codec), then creates and links the function on a passing test — rolling the silo back (`deleteDataSilo`) when the test or the create itself fails. Sync results now report `dataSiloId` / `createdDataSilo`.
+
+  `makeGraphQLRequest` no longer retries backend payload validation failures (`Failed to decode codec`) — they are deterministic, and retrying repeated the full codec error output.
+
+  Metadata-only changes (description, or name for id-pinned entries) are detected when code and context are unchanged, and update the function record in place — no signing, no test runs, and no new code revision — reported with a new `metadata-updated` outcome. Environment variable _values_ remain undiffable (encrypted at sign time); use `force` for value-only rotations.
+
+## 5.18.0
+
+### Minor Changes
+
+- c198439: Add `DsrErrorCode.RegionNotInWorkflow` for bulk DSR submissions whose region is outside the workflow config's `regionList`.
+- 60f2200: Add `DsrErrorCode.TypeNotMatchingWorkflow` and `DsrErrorCode.SubjectTypeNotMatchingWorkflow` with parameterized `DSR_ERROR_MESSAGE` builders, emitted when a bulk DSR submission asserts a `type` or `subjectType` that does not match the targeted workflow config.
+
+## 5.17.0
+
+### Minor Changes
+
+- 2bc0cb2: Add `DsrErrorCode.DropRunNotIntakeEligible` with its `DSR_ERROR_MESSAGE` builder, emitted when a bulk DSR submission references a DROP run whose state no longer accepts intake.
+
+## 5.16.0
+
+### Minor Changes
+
+- 3aab830: Add `DsrErrorCode.DataSiloNotInWorkflow` for bulk DSR submissions that name `dataSiloIds` outside the workflow config's connected set.
+
+## 5.15.0
+
+### Minor Changes
+
+- 2cc726f: Split `LoadOptions.themeConfigMap` so it accepts only `ThemeConfigurationMinimal` values, and add `MobileUiLoadOptions` with `themeConfigMap` mapped to full `ThemeConfiguration` values.
+
+## 5.14.0
+
+### Minor Changes
+
+- 8deab38: Remove `PromptGroup` and `PromptRun` from `AttributeSupportedResourceType`. Attributes remain supported on `Prompt`. Regenerate CLI transcend.yml JSON schemas to match.
+
+## 5.13.0
+
+### Minor Changes
+
+- 6bbe7d9: Remove contract scanning references, drop prompts/prompt partials/prompt groups from inventory push/pull, and delete the SDK sync/fetch helpers that only supported that flow.
+
+## 5.12.0
+
+### Minor Changes
+
+- 188ba6f: Add WAL-10304 bulk DSR submission symbols: `DSR_BULK_SUBMISSION_REJECTED_MESSAGE`. Also add `DsrErrorCode.IdentifierValidationFailed`, `DsrErrorCode.UnsupportedIdentifierName`, and `DsrErrorCode.MissingRequiredEmail` with their `DSR_ERROR_MESSAGE` builders.
+
+## 5.11.0
+
+### Minor Changes
+
+- 29e9d5f: Remove Pathfinder from the tools repo and drop CLI prompt-manager integration: remove `PromptRunProductArea.Pathfinder`, Pathfinder scopes and product, pathfinder.yml schema generation, `TranscendPromptManager`, `reportPromptRun`, and related CLI/SDK types.
+
+## 5.10.2
+
+### Patch Changes
+
+- e68d245: Export `DROP_RECORD_ID_MAX_LENGTH` from `drop.ts` for shared DROP ingress validation.
+
+## 5.10.1
+
+### Patch Changes
+
+- 841f1a9: Scope `DhContextRequired` and `ConcurrentSubmissionConflict` under `DsrBulkErrorCode` (no single `input[]` index can be attributed) and restore `DropIdentifierCoverageMismatch` and `DuplicateDropRecords` message wording from main.
+
+## 5.10.0
+
+### Minor Changes
+
+- da3e443: Publish canonical DSR submission error codes, message builders, numeric limits, and `DsrRequestOutcome`. Per-input failures use `DsrErrorCode` with `DSR_ERROR_MESSAGE`; bulk-call failures use `DsrBulkErrorCode` with `DSR_BULK_ERROR_MESSAGE`.
+
+  `DsrErrorCode` landed in 5.9.0, but no endpoint has ever emitted any of its values. `OPEN_PARENT_REQUEST_EXISTS`, `DUPLICATE_REQUEST`, and `INVALID_INPUT` never had producers (`DUPLICATE_REQUEST` becomes `DsrRequestOutcome.AlreadyOpen` on bulk instead of an error; former `INVALID_INPUT` cases now have dedicated codes). No consumer can depend on removed members. Strict semver would call removing them breaking; this note is what makes the minor bump defensible.
+
+## 5.9.1
+
+### Patch Changes
+
+- 8bfe3cc: Add `DsrErrorCode.DropIdentifierCoverageMismatch` for DROP DSR submit validation.
+
+## 5.9.0
+
+### Minor Changes
+
+- be15c28: Add `DropListType` enum for DROP list types.
+
+## 5.8.5
+
+### Patch Changes
+
+- ac7537b: Add consent triage filters and sorting: `unmappedOnly` (orphaned/unmapped approved data flows), `type` (data flow scope, e.g. CSP), and `minOccurrences` on `consent_list_data_flows`; `minOccurrences` and `occurrences` sorting on `consent_list_cookies`. Clarify `showZeroActivity` semantics so the default `NEEDS_REVIEW` totals reconcile with `consent_get_inventory_stats`.
+
+## 5.8.4
+
+### Patch Changes
+
+- 54f4aff: added hostThemeMap
+
 ## 5.8.2
 
 ### Patch Changes

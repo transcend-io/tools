@@ -20,10 +20,10 @@ export function createAssessmentsCreateGroupTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_create_group',
     description:
-      'Create a new assessment group linked to a template. Assessment groups are containers for assessments. The response includes a `groupUrl` field with the canonical admin-dashboard link to the group — surface that to the user verbatim.',
+      'Create a new assessment group linked to a template. Assessment groups are containers for ' +
+      'assessments. Surface the returned `groupUrl` verbatim.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Creates a new assessment group',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateGroupSchema,
     handler: async ({ title, templateId, description, reviewerIds }) => {

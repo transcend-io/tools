@@ -3,65 +3,48 @@ import { z } from 'zod';
 export const EmptySchema = z.object({});
 
 /**
- * Cursor (Relay-style) pagination input. Use this for any GraphQL `Connection`
- * field exposed as an MCP tool. The shape mirrors GraphQL's `first`/`after`
- * args one-to-one, with copy tuned for LLM callers.
+ * Page size, shared by both pagination shapes.
+ *
+ * Callers see `limit`; the GraphQL wire name is `first`, and mixins do that
+ * mapping so Relay vocabulary never reaches the tool surface.
  */
-export const CursorPaginationSchema = z.object({
-  first: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe(
-      'Maximum number of results to return per page (1-100, default 50). ' +
-        'Use the smallest value that satisfies the user request to keep responses fast.',
-    ),
-  after: z
-    .string()
-    .optional()
-    .describe(
-      "Opaque cursor from a previous response's pageInfo.endCursor. " +
-        'Pass this to fetch the next page; omit for the first page.',
-    ),
-});
+const limit = z.coerce
+  .number()
+  .int()
+  .min(1)
+  .max(100)
+  .optional()
+  .default(50)
+  .describe('Results per page (1-100, default 50).');
 
 /**
- * Offset/limit pagination input. Use this for GraphQL queries that expose
- * an offset arg instead of a Relay-style cursor (e.g. legacy admin lists).
+ * Offset pagination — the default for Transcend list tools.
+ *
+ * Nearly every list field in the GraphQL schema is offset-based: it accepts
+ * `first`/`offset` and returns `nodes` + `totalCount` with no `pageInfo`, so
+ * `hasNextPage` has to be derived. Build the response with
+ * {@link derivePageInfo} rather than hand-rolling the comparison.
  */
 export const OffsetPaginationSchema = z.object({
-  first: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Maximum number of results to return (1-100, default 50).'),
+  limit,
   offset: z.coerce
     .number()
     .int()
     .min(0)
     .optional()
     .default(0)
-    .describe('Zero-based index of the first result to return.'),
+    .describe('Results to skip (default 0).'),
 });
 
 /**
- * @deprecated Prefer `CursorPaginationSchema` (cursor pagination) or
- * `OffsetPaginationSchema` (offset pagination). Kept for backwards
- * compatibility with existing tools that mix Relay cursor + arbitrary `limit`.
+ * Cursor pagination — only for sources that hand back a real continuation
+ * token. That is a short list: the GraphQL `requests` field (the one payload
+ * exposing `pageInfo.endCursor`) and the REST preferences API.
+ *
+ * Prefer {@link OffsetPaginationSchema} anywhere else; a synthetic cursor over
+ * an offset-based field would just be an offset in disguise.
  */
-export const PaginationSchema = z.object({
-  limit: z.coerce
-    .number()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Results per page (1-100, default: 50)'),
-  cursor: z.string().optional().describe('Pagination cursor from previous response'),
+export const CursorPaginationSchema = z.object({
+  limit,
+  cursor: z.string().optional().describe('Continuation token from the previous response.'),
 });

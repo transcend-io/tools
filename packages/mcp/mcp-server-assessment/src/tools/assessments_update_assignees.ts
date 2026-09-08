@@ -23,7 +23,6 @@ export function createAssessmentsUpdateAssigneesTool(clients: ToolClients) {
       'Assign internal users (by ID) or external users (by email) to an assessment form. This also transitions DRAFT assessments to SHARED status.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Assigns users to the assessment form',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssigneesSchema,
     handler: async ({ assessmentId, assigneeIds, externalAssigneeEmails }) => {

@@ -1,5 +1,321 @@
 # @transcend-io/mcp-server-base
 
+## 1.8.1
+
+### Patch Changes
+
+- bccab7e: Recover the confirmation gate on Cursor, which declines prompts it never showed anybody.
+
+  Cursor runs every window's MCP servers in one shared process and routes a server-initiated
+  request to the window that owns the connection. When the caller is in a different window,
+  delivery fails and Cursor answers `elicitation/create` with `{ action: "decline" }` — logging
+  `Cannot route MCP lease elicitation request for window 1 in window 3` — so the gate reported
+  `CONFIRMATION_DECLINED` for a refusal nobody made, and every gated tool was unusable for as
+  long as a second window was open.
+
+  On stdio a decline is now reinterpreted as "nobody was asked", handing back an approval token
+  to replay, but only when all three hold: the host is one whose declines are known to be
+  unprompted (Cursor, the first entry in `HOST_QUIRKS`), the answer arrived in under 250ms, and a
+  token can actually be minted. Undelivered prompts came back in 1-4ms against roughly a minute
+  for a real approval, so the floor sits far from both. `cancel` and `accept` are untouched, since
+  a dismissal is how Cursor reports the user closing the prompt and a fast accept is what an
+  always-allowed call looks like.
+
+  HTTP is unchanged: with no token store behind it, a fast decline there would only swap one
+  refusal for a less accurate one, so it stays `CONFIRMATION_DECLINED`.
+
+  The token still requires the agent to put the action to the user and be told yes, so the
+  protection is the same one form-less hosts have always had. What is given up is narrower: a
+  Cursor user whose genuine "decline" lands within 250ms has it read as a dropped prompt instead,
+  and is asked again in chat.
+
+## 1.8.0
+
+### Minor Changes
+
+- 557a80b: Reject arguments a tool never declared, instead of silently dropping them.
+
+  Zod strips unknown keys by default, so a misspelled argument name parsed cleanly and the tool
+  ran whatever it does with no arguments — while reporting success. An agent calling `docs_list`
+  with `{ query: … }` instead of `{ keyword: … }` received the entire 417-article catalog as a
+  successful result, and on a destructive tool the same slip performs the write without the
+  fields the caller meant to send.
+
+  `tools/call` now validates against a strict schema and refuses unrecognized arguments with a
+  `VALIDATION_ERROR` that names both the rejected argument and the accepted ones, so an agent can
+  correct itself in one retry.
+
+  Confirmation-gated tools still accept `approvalToken` even on transports whose gate does not
+  advertise it, so a replayed token reaches the gate and gets its own explanation rather than a
+  bare unknown-argument error. The advertised input schema is unchanged.
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+
+## 1.7.4
+
+### Patch Changes
+
+- 5b97f8e: Add `MCP_SKIP_CONFIRMATION=1` to bypass server confirmation gates for local
+  automation and accept-path testing. Gated tools still declare `confirmation`
+  metadata; only runtime enforcement is skipped.
+
+## 1.7.3
+
+### Patch Changes
+
+- ef34d80: Decouple `destructiveHint` from server confirmation gates so consequential
+  consent writes can require approval without marking them destructive to hosts.
+
+  Gate `consent_set_preferences`, `preferences_upsert`, and
+  `preferences_append_identifiers` behind human confirmation while keeping
+  `destructiveHint: false`.
+
+## 1.7.2
+
+### Patch Changes
+
+- 656903e: Add a private shared widget kit for MCP App views and teach the view builder to
+  include its Tailwind sources only when a consuming package opts in.
+
+## 1.7.1
+
+### Patch Changes
+
+- 4aa92a1: Adds pagination to list indentifiers tool
+
+## 1.7.0
+
+### Minor Changes
+
+- 732e769: Switch `dsr_submit` / `TranscendRestClient.submitDSR` to `POST /v1/data-subject-request-bulk`. Callers pass `workflowConfigId` instead of `type`/`subjectType`; the API derives those from the published workflow config. Returns a minimal summary (`id`, `status`, `type`, `subjectType`, `link`) for each created request. DSR OAuth scopes now include `ViewWorkflows` so clients can list published workflow configs for submit.
+
+## 1.6.0
+
+### Minor Changes
+
+- 2b82ee8: Add `inventory_write_category` to create or update Data Inventory data subcategories (ZEL-8169). Enrich `inventory_list_categories` to query `dataSubCategories` with ids, owners, teams, and optional text search.
+- bd397d4: Add `inventory_write_data_silo` to create or update data systems in one MCP call (ZEL-8221). Create-by-integrationName always creates a new silo; update-by-id applies metadata without title upsert. Replaces `inventory_create_data_silo` and `inventory_update_data_silo`.
+
+### Patch Changes
+
+- d00bd92: **@transcend-io/mcp-server-base:** Ask for the confirmation decision with no form fields at all, and read it from the host's accept and decline buttons. This replaces the checkbox described in 1.3.1, which itself replaced a titled select.
+
+  Both earlier shapes asked the user for a second gesture after the button they had already pressed, and both could be answered wrongly. `elicitInput` validates the host's answer against the schema it sent, so a rejected answer reaches the gate as "nobody was asked" — a rendered, approved form reported as a refusal, with every gated tool then falling through to the token fallback. Cursor hit that with the select by answering with a value matching neither option's `const`; a host answering the checkbox's `true` as a string would have fared no better. Requesting nothing leaves no shape to get wrong: the SDK only validates a non-empty `content`, and a schema with no properties and no required fields has nothing to reject.
+
+  `ElicitResult.action` already carried the decision, and the gate already read `decline` and `cancel` from it, so only the redundant field is gone. An `accept` is now the approval outright, whatever the host puts in `content`. That does mean a host returning `accept` without putting the question to anybody has approved on the user's behalf, which is the same trust the HTTP policy in 1.5.0 already documents — a client could equally have ticked the checkbox itself. What the gate still enforces is that the host was asked, and that no token is ever issued for a model to relay.
+
+  Verified in Cursor: the prompt renders as the tool's hint plus Accept and Cancel, accepting runs the action, and dismissing returns `CONFIRMATION_CANCELLED` without running it. Note that Cursor maps its Cancel to the protocol's `cancel`, so `CONFIRMATION_DECLINED` is reachable only from hosts that offer a distinct decline.
+
+## 1.5.0
+
+### Minor Changes
+
+- 9032822: **@transcend-io/mcp-server-base:** Renames a `ConfirmationPolicy` member shipped in 1.3.0. `ASK_OR_TOKEN` is now `ELICIT_OR_TOKEN`, and the new `ELICIT_ONLY` joins it. The enum names the mechanism that carries the question everywhere else in the package — `McpClientCapability.Elicitation`, `requestElicitation`, `elicitInput` — and was the one place calling it asking. Nothing in the product needs migrating, since the policy is how a transport tells the gate what it may do rather than anything a caller passes in, but an embedder that referenced `ConfirmationPolicy.AskOrToken` directly must update the name.
+
+  Ask for confirmation over HTTP too, bound to the call that triggered it. This replaces the behavior described in 1.3.0, where the HTTP policy was `REFUSE` and every gated call refused: that made an agent platform read-only for gated tools. `ELICIT_ONLY` asks the user with no approval-token fallback and is what `transport: 'http'` now selects. Under it a form that cannot be bound to a call is not sent at all, and a host that cannot render one gets `CONFIRMATION_UNAVAILABLE` rather than a token, because the agent there sits on the far side of the transport and would be the one relaying it.
+
+  `McpSession` now carries the `tools/call` a handler is serving, its JSON-RPC id and abort signal, and `requestElicitation` passes both to the host. Two things follow. Streamable HTTP routes an outbound message by `relatedRequestId` onto that call's own SSE stream, so the form reaches whoever made the call instead of the connection's shared stream, where it could surface in another user's turn; and if nothing is listening on the shared stream the SDK stores the event for replay and returns, so an undelivered form used to sit until the 10-minute timeout with no error logged anywhere. Binding also means abandoning the call tears the form down, which closes a real hazard: a client that gave up at its own tool timeout left the form on screen, and a yes clicked afterwards still resolved and ran the mutation into a call nobody was listening to.
+
+  `canObtainApproval(gate, client)` reports whether a gated tool could actually be approved on a connection, and `tools/list` now withholds gated tools where it cannot: over HTTP from a client that did not declare form elicitation, and always from the in-process `ToolRegistry`. An agent shown a tool that refuses every call plans around it, calls it, and spends the turn on a refusal it can do nothing about. Withholding is for the model's benefit only — nothing in the protocol stops a client calling a tool it was never shown, so the gate still runs on every `tools/call` and remains the actual boundary.
+
+  The trust assumption is worth stating plainly, since it changed. Over HTTP, whether a person is asked now rests on a capability the caller declared about itself. A client that declares form elicitation and then answers its own prompt has approved on the user's behalf, and nothing server-side can tell that apart from a person clicking yes. What the gate does enforce is that such a client asked at all, that the prompt went to the stream of the call it belongs to, and that no token is ever issued for the model to relay. Deployments fronting MCP with an agent platform should declare `elicitation: { form: {} }` only on paths where a person is actually present for the call, and never synthesize an answer on an unattended one.
+
+  **@transcend-io/mcp:** `ToolRegistry.getToolList` no longer describes gated tools, since `executeTool` on that path can never confirm one.
+
+## 1.4.0
+
+### Minor Changes
+
+- c8df618: Add MCP prompts support to mcp-server-base (`prompts/list` and `prompts/get`), and ship three consent workflow prompts (`consent-triage`, `consent-research-tracker`, `consent-inspect-site`) on the consent and umbrella servers.
+
+## 1.3.1
+
+### Patch Changes
+
+- Updated dependencies [99a0110]
+  - @transcend-io/design-tokens@1.2.1
+
+## 1.3.0
+
+### Minor Changes
+
+- c787e9d: **@transcend-io/mcp-server-base:** Add a server-enforced confirmation gate. A tool declaring `confirmation: { hint }` on its `ToolDefinition` no longer reaches its handler until a human agrees. On a host that renders forms the gate asks through `elicitation/create`; on one that cannot it issues a single-use approval token bound to the tool, a hash of the arguments, and the caller's auth subject, which the agent replays after getting the user's agreement.
+
+  How approval may be obtained is decided by the transport, not by the caller. `buildMcpServer` now requires `transport`, and over HTTP the policy is `REFUSE`: the caller there is another service rather than a person at a keyboard, so gated tools refuse every call with `CONFIRMATION_UNAVAILABLE` and point the user at the admin dashboard. The check happens before anything the client declared is consulted, because a declared elicitation capability is a claim by the party being gated — a client that says it renders forms and then answers its own prompt has approved on the user's behalf.
+
+  Declaring the capability is also not a promise to honor the request. A host that errors, never answers within the timeout, or replies with a shape the SDK validates and rejects now falls through to the approval-token fallback rather than surfacing an opaque `MCP error`, and confirmation forms are given 10 minutes rather than the SDK's 60-second default, which used to cancel the request while the dialog was still on the user's screen.
+
+  `expandToolsForClient` requires its gate argument for the same reason `transport` is required: a default would let a new serving path pick a confirmation policy it never considered.
+
+  **@transcend-io/mcp:** `ToolRegistry.executeTool` now applies the gate rather than calling the registered handler directly, so an embedder driving the registry in-process refuses gated tools instead of running them unconfirmed.
+
+### Patch Changes
+
+- 5819bc1: **@transcend-io/mcp-server-base:** Ask for the confirmation decision as a boolean rather than a titled single-select. Cursor answered a select with a value matching neither option's `const`, and because `elicitInput` validates the host's response against the schema it sent, a rendered and answered form was rejected before the gate could read it — an approval became "nobody was asked", and every gated tool fell through to the token fallback or reported a refusal no one made. A checkbox is the narrowest shape a host can get wrong. The warning logged when a host fails to show the form now names the host and client, so the next such failure is attributable.
+
+## 1.2.0
+
+### Minor Changes
+
+- 4404c48: **@transcend-io/mcp-server-base:** Add an in-memory `ApprovalTokenStore` for the confirmation-gate fallback path. A token is bound to a tool name, a hash of the arguments the caller was asked to approve, and the caller's auth subject; it is single-use, has a short TTL, and is claimed on the second `tools/call` that supplies it. The store is not yet wired into a gate — that arrives with the confirmation-gate PR — so this change ships an internal primitive with no user-visible behavior change.
+
+### Patch Changes
+
+- 7d980a1: Expose DSR request assignees and connected-system owners through MCP so Agentic Assist can answer who owns approval bottlenecks and failed systems.
+
+  `dsr_list` and `dsr_get_details` now return each request's assigned owners and teams. A new `dsr_list_request_data_silos` tool lists per-system processing status (including errors) with nested data-silo owners and teams, so bottleneck questions no longer hit a capability gap.
+
+## 1.1.1
+
+### Patch Changes
+
+- 26fadc4: Remove the `confirmationHint` field and its remaining call-site strings. #407 removed it from 25 tools; nine occurrences have re-appeared since (three in the platform interfaces and six in inventory / consent / dsr feature PRs). No code reads the field, so this is dead metadata. The upcoming confirmation-gate work introduces a separate `confirmation: { hint }` field with a semantic contract — deleting the old one first keeps that landing focused on adding the new API.
+
+## 1.1.0
+
+### Minor Changes
+
+- 97fa941: Send `@transcend-io/mcp-server-base`'s own package version on outbound Transcend requests as `x-transcend-mcp-version`, so rollout dashboards can tell which clients have upgraded rather than inferring age from missing attribution headers.
+
+### Patch Changes
+
+- 2faaff6: Add `inventory_update_or_create_data_point` for field-level purpose of processing assignments (ZEL-8168).
+- 5b239dc: Improve inventory MCP DX: split data-silo create into catalog `integrationName` + optional display `title`/`description`, add `text` (and silo `titles`) list filters, and stop fabricating datapoint timestamps.
+- 5b239dc: Add `inventory_list_catalog_integrations` so agents can search the Transcend catalog for valid `integrationName` values before creating a data silo.
+- 6293072: Add processing purpose list/write MCP tools and expand `inventory_update_data_silo` for Data Systems fields (ZEL-8168 stack).
+- daffc18: Enrich inventory MCP read tools with silo vendor/purposes/owners metadata, datapoint filtering, vendor field detail, and subcategory normalization; add `inventory_list_business_entities` and `inventory_list_data_subjects` (ZEL-8168 stack PR1).
+- dc9ab41: Add `inventory_write_vendor` MCP tool to create/update vendors in Data Inventory (ZEL-8168 stack).
+- 5b239dc: Tool copy changes
+- 5b239dc: Small type adjustment to Datapoint
+
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [77ef86f]
+  - @transcend-io/design-tokens@1.2.0
+
+## 0.14.0
+
+### Minor Changes
+
+- f6ca084: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 66e641e: Address MCP app configuration review follow-ups: hoist the client capability report in `buildMcpServer`, and name the HTML doctype check used by UI resources.
+
+## 0.13.0
+
+### Minor Changes
+
+- e127dfc: Split MCP usage attribution into two outbound headers: `x-transcend-mcp-caller` stays an `McpHostClient` value (including `unknown` when unrecognized), and `x-transcend-mcp-client-name` carries a sanitized `clientInfo.name` for discovering hosts not yet in the enum.
+
+  An explicitly forwarded caller header still wins, since a caller proxying on a user's behalf knows its own identity best. The discovery header is sent whenever a usable name exists, independent of caller. Sanitization uses an ASCII allowlist so client-controlled names cannot break outbound `fetch`.
+
+- f3ce7dc: Add `viewHtml`, which lets a UI resource serve its built document from disk instead of the copy inlined at build time when `TRANSCEND_MCP_DEV_VIEWS` is set.
+
+  Production behaviour is unchanged: without the variable the inlined string is returned, so the document is still validated once at construction. With it set, each `resources/read` re-reads the built file, so a view rebuild reaches the host without restarting the server or reconnecting the client.
+
+### Patch Changes
+
+- 4bc21f7: Gate test-only URL overrides behind `ALLOW_TEST_OVERRIDES=1` instead of `NODE_ENV=test` / Vitest detection. Unset or any other value disables the overrides. The Vitest suite sets the flag via `vitest.config.ts`.
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
+## 0.12.0
+
+### Minor Changes
+
+- 1b93859: Negotiate client capabilities from the `initialize` handshake, so a tool can adapt to what the connected host is actually able to render.
+
+  Servers now derive the host's capabilities and identity once per connection (`deriveClientCapabilities`, `whatIsTheClient`) and expose them to handlers through an `AsyncLocalStorage` session context, reachable with `getMcpSession()` and `hasCapability()` without threading a server through every call signature. `requestElicitation` asks the host for a form and returns `undefined` when it cannot show one, rather than letting the SDK's own capability check throw and fail the tool call.
+
+  Only elicitation and MCP Apps are detected, being the only capabilities a tool can act on differently. Sampling and roots are deliberately excluded: roots is inert for API-backed servers, our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
+
+  Nothing changes on the wire yet. Handshakes stay byte-identical, and no tool behaves differently until per-capability variants land.
+
+- 1b93859: Add a browser-only `@transcend-io/mcp-server-base/ui` subpath exporting `useMcpApp`, the React hook a view uses to connect to its host, read the payload the tool sent, and call tools back.
+
+  The separate subpath is load-bearing rather than cosmetic: the package root reaches into `node:async_hooks`, GraphQL clients, and OAuth, none of which can run in a sandboxed iframe. Importing only from `/ui` in view code keeps that graph unreachable. React and `@modelcontextprotocol/ext-apps` are optional peer dependencies, so packages that ship no view install nothing new.
+
+- c166809: Publish `@transcend-io/mcp-server-base/ui/theme.css`, the Tailwind theme MCP App views are styled with.
+
+  Stock Tailwind is deliberately absent — the default theme is never imported, so `bg-red-500` does not exist and every utility resolves to a host value, a Transcend design token, or a literal fallback. Surfaces, typography, radii, and shadows follow the style variables the host sends at handshake time, so a view looks native in light or dark Claude; brand and status colors come from `@transcend-io/design-tokens` so it still reads as ours; spacing stays on Tailwind's scale, which the MCP Apps spec omits on purpose because layouts break when it shifts underneath them.
+
+  The theme also replaces Tailwind's Preflight, because a view lives in an iframe the host measures: the body has to stay transparent and nothing may trap content in its own scroller. `tailwindcss` and `@transcend-io/design-tokens` are optional peer dependencies, so packages that ship no view install nothing new.
+
+- 1b93859: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- 1b93859: Fall back to the host detected at `initialize` when setting `x-transcend-mcp-caller` on outbound Transcend requests, so stdio sessions carry usage attribution they previously had no way to send.
+
+  An explicitly forwarded header still takes precedence, since a caller proxying on a user's behalf knows its own identity better than we can infer it. Nothing is sent when the host could not be identified, rather than guessing.
+
+## 0.11.0
+
+### Minor Changes
+
+- 6932df1: Add a browser-only `@transcend-io/mcp-server-base/ui` subpath exporting `useMcpApp`, the React hook a view uses to connect to its host, read the payload the tool sent, and call tools back.
+
+  The separate subpath is load-bearing rather than cosmetic: the package root reaches into `node:async_hooks`, GraphQL clients, and OAuth, none of which can run in a sandboxed iframe. Importing only from `/ui` in view code keeps that graph unreachable. React and `@modelcontextprotocol/ext-apps` are optional peer dependencies, so packages that ship no view install nothing new.
+
+## 0.10.0
+
+### Minor Changes
+
+- c00f3c5: Serve `ui://` HTML resources and resolve tools to a per-capability variant, so one tool definition can return plain text to a scripted client, a form to a host that supports elicitation, and an interactive view to a host that supports MCP Apps (SEP-1865).
+
+  `defineToolWithCapabilities` declares the variants; `buildMcpServer` resolves them per connection and registers `resources/list` and `resources/read` for any bound views. Tools carry a `_meta.ui.resourceUri` binding, emitted in both the canonical nested and deprecated flat forms because hosts shipped against the earlier draft still read the flat key. App-only tools stay callable through `tools/call` while being hidden from `tools/list`, so a view can reach its own helpers without cluttering the model's tool set.
+
+  For a server with no views nothing changes on the wire: the `resources` capability is only declared when at least one `ui://` resource exists, so those handshakes stay byte-identical.
+
+### Patch Changes
+
+- 8034d59: Fall back to the host detected at `initialize` when setting `x-transcend-mcp-caller` on outbound Transcend requests, so stdio sessions carry usage attribution they previously had no way to send.
+
+  An explicitly forwarded header still takes precedence, since a caller proxying on a user's behalf knows its own identity better than we can infer it. Nothing is sent when the host could not be identified, rather than guessing.
+
+## 0.9.0
+
+### Minor Changes
+
+- c65d41e: Negotiate client capabilities from the `initialize` handshake, so a tool can adapt to what the connected host is actually able to render.
+
+  Servers now derive the host's capabilities and identity once per connection (`deriveClientCapabilities`, `whatIsTheClient`) and expose them to handlers through an `AsyncLocalStorage` session context, reachable with `getMcpSession()` and `hasCapability()` without threading a server through every call signature. `requestElicitation` asks the host for a form and returns `undefined` when it cannot show one, rather than letting the SDK's own capability check throw and fail the tool call.
+
+  Only elicitation and MCP Apps are detected, being the only capabilities a tool can act on differently. Sampling and roots are deliberately excluded: roots is inert for API-backed servers, our target hosts do not implement sampling, and both are deprecated as of the 2026-07-28 spec under SEP-2577.
+
+  Nothing changes on the wire yet. Handshakes stay byte-identical, and no tool behaves differently until per-capability variants land.
+
+## 0.8.0
+
+### Minor Changes
+
+- 637b357: Enables sombra integration with mcp
+
+### Patch Changes
+
+- cf74715: enforce orgs mcp x sombra setting
+- 29821b9: Adds condition sombra header and lazy load the customers sombra url
+- fb24b96: Adds sombra metadata to tools
+
+## 0.7.0
+
+### Minor Changes
+
+- e410109: Map GraphQL `extensions.code: "ACCESS_DENIED"` to MCP `PERMISSION_ERROR`, and serialize optional `details` (`route`, `requiredScopes`) on tool error results so Agentic Assist can classify scope denials without parsing the English message.
+
 ## 0.6.2
 
 ### Patch Changes

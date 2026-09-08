@@ -137,9 +137,9 @@ export async function syncDataSilos(
             isLive: !input.disabled,
             ownerEmails: input.owners,
             teamNames: input.teams,
-            // clear out if not specified, otherwise the update needs to be applied after
-            // all data silos are created
-            dependedOnDataSiloTitles: input['deletion-dependencies'] ? undefined : [],
+            // clear out the global config if not specified, otherwise the update needs to be
+            // applied after all data silos are created
+            dependedOnDataSilos: input['deletion-dependencies'] ? undefined : [{ titles: [] }],
             apiKeyId: input['api-key-title']
               ? apiKeysByTitle[input['api-key-title']].id
               : undefined,

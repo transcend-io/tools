@@ -4,8 +4,10 @@ export const NerExtractSchema = z.object({
   text: z.string().describe('Text to extract entities from'),
   entityTypes: z
     .array(z.string())
-    .optional()
-    .describe('Specific entity types to extract (optional)'),
+    .min(1)
+    .describe(
+      'Entity type labels to extract (required). Examples: Contact, Email, Phone, IP Address, Not Personal Data.',
+    ),
 });
 export type NerExtractInput = z.infer<typeof NerExtractSchema>;
 
@@ -13,10 +15,12 @@ export function createDiscoveryNerExtractTool(clients: ToolClients) {
   const { rest } = clients;
   return defineTool({
     name: 'discovery_ner_extract',
-    description: 'Extract named entities (PII, organizations, locations, etc.) from text using NER',
+    description:
+      'Extract named entities (PII, organizations, locations, etc.) from text using NER. Requires at least one entity type label.',
     category: 'Data Discovery',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+    requireSombra: true,
     zodSchema: NerExtractSchema,
     handler: async ({ text, entityTypes }) => {
       const result = await rest.extractEntities({

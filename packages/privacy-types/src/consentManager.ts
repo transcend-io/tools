@@ -80,7 +80,12 @@ export type TelemetryPartitionStrategy =
  */
 export const ConsentPrecedenceOption = makeEnum({
   User: 'user',
+  /**
+   * @deprecated Use Signals instead
+   */
   Signal: 'signal',
+  /** Detected privacy signals take precedence over confirmed consent */
+  Signals: 'signals',
 });
 
 /** Override type */
@@ -221,6 +226,8 @@ export const CookieOrderField = makeEnum({
   CreatedAt: 'createdAt',
   /** The time the cookie was updated */
   UpdatedAt: 'updatedAt',
+  /** The number of occurrences (traffic) of this cookie */
+  Occurrences: 'occurrences',
 });
 
 /** Type override */

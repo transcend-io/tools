@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import path from 'node:path';
 
 import colors from 'colors';
@@ -6,7 +5,6 @@ import got from 'got';
 
 import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
-import { logger } from '../../../logger.js';
 import { EMPTY_CELL } from '../constants.js';
 import {
   buildPolicyEngineClient,
@@ -94,7 +92,7 @@ export async function download(
     debug = false,
   }: DownloadCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
   setPolicyEngineCliDebug(debug);
 
   const client = buildPolicyEngineClient(transcendUrl, auth);
@@ -115,7 +113,7 @@ export async function download(
     versionId = bundle.activeVersionId;
   }
 
-  logger.info(
+  this.logger.info(
     colors.green(
       version
         ? `Fetching download URL for bundle "${bundleName}" version "${version}"...`
@@ -141,7 +139,7 @@ export async function download(
     output ?? defaultPolicyDownloadOutputPath(bundleName, body.version),
   );
 
-  logger.info(colors.green(`Downloading policy bundle to ${outputPath}...`));
+  this.logger.info(colors.green(`Downloading policy bundle to ${outputPath}...`));
 
   let bundleBytes: Uint8Array;
   try {
@@ -156,8 +154,8 @@ export async function download(
   }
 
   const outputDir = path.dirname(outputPath);
-  fs.mkdirSync(outputDir, { recursive: true });
-  fs.writeFileSync(outputPath, bundleBytes);
+  this.fs.mkdirSync(outputDir, { recursive: true });
+  this.fs.writeFileSync(outputPath, bundleBytes);
 
   printResult(this.process.stdout, {
     json: false,
@@ -165,5 +163,5 @@ export async function download(
     renderTable: () => formatDownloadSummary(body, outputPath),
   });
 
-  logger.info(colors.green('Policy bundle downloaded successfully.'));
+  this.logger.info(colors.green('Policy bundle downloaded successfully.'));
 }

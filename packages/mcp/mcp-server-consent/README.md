@@ -103,13 +103,12 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 ## Tools
 
 - `consent_get_preferences` — Get consent preferences for a user
-- `consent_set_preferences` — Set consent preferences
 - `consent_list_purposes` — List tracking purposes
 - `consent_list_data_flows` — List data flows
 - `consent_list_cookies` — List cookies
 - `consent_list_airgap_bundles` — List Airgap bundles
 - `consent_list_regimes` — List consent regimes
-- `consent_get_inventory_stats` — Cookie/data-flow inventory triage counts (live, needs review, junk)
+- `consent_get_inventory_stats` — Cookie/data-flow inventory triage counts (live, needs review, junk). Matches the Consent Manager tables; CSP data flows are omitted like the UI.
 - `consent_get_aggregate_analytics` — Aggregate consent analytics (`airgapBundleAggregateAnalytics`)
 - `consent_get_timeseries_analytics` — Timeseries consent analytics (`airgapBundleTimeseriesAnalytics`)
 - `consent_get_analytics_data` — Consent metrics via `analyticsData` (opt-in/out, signals, sessions)
@@ -118,6 +117,14 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_bulk_triage` — Bulk approve or junk cookies and data flows
 
 Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api).
+
+## Prompts
+
+Workflow templates discoverable via MCP `prompts/list` / `prompts/get`:
+
+- `consent-triage` — End-to-end cookie/data-flow triage (setup, batch, research, push)
+- `consent-research-tracker` — Research methodology for classifying a single tracker
+- `consent-inspect-site` — Live site investigation via browser DevTools / airgap console
 
 ## Related packages
 

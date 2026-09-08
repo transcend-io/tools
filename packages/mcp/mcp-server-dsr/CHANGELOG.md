@@ -1,5 +1,338 @@
 # @transcend-io/mcp-server-dsr
 
+## 0.8.10
+
+### Patch Changes
+
+- Updated dependencies [bccab7e]
+- Updated dependencies [a19b07e]
+  - @transcend-io/mcp-server-base@1.8.1
+  - @transcend-io/privacy-types@5.26.0
+
+## 0.8.9
+
+### Patch Changes
+
+- Updated dependencies [ff0204c]
+  - @transcend-io/privacy-types@5.25.0
+
+## 0.8.8
+
+### Patch Changes
+
+- 2a6a955: Fixes a lot of Sombra tools
+- Updated dependencies [2a6a955]
+- Updated dependencies [557a80b]
+  - @transcend-io/mcp-server-base@1.8.0
+
+## 0.8.7
+
+### Patch Changes
+
+- Updated dependencies [5b97f8e]
+  - @transcend-io/mcp-server-base@1.7.4
+
+## 0.8.6
+
+### Patch Changes
+
+- Updated dependencies [ef34d80]
+  - @transcend-io/mcp-server-base@1.7.3
+
+## 0.8.5
+
+### Patch Changes
+
+- Updated dependencies [656903e]
+  - @transcend-io/mcp-server-base@1.7.2
+
+## 0.8.4
+
+### Patch Changes
+
+- Updated dependencies [7d1d57c]
+  - @transcend-io/privacy-types@5.24.0
+
+## 0.8.3
+
+### Patch Changes
+
+- 4aa92a1: Adds pagination to list indentifiers tool
+- Updated dependencies [4aa92a1]
+  - @transcend-io/mcp-server-base@1.7.1
+
+## 0.8.2
+
+### Patch Changes
+
+- Updated dependencies [ea1ab3c]
+  - @transcend-io/privacy-types@5.23.0
+
+## 0.8.1
+
+### Patch Changes
+
+- 388ed26: New filters on the dsr_list
+
+## 0.8.0
+
+### Minor Changes
+
+- 732e769: Switch `dsr_submit` / `TranscendRestClient.submitDSR` to `POST /v1/data-subject-request-bulk`. Callers pass `workflowConfigId` instead of `type`/`subjectType`; the API derives those from the published workflow config. Returns a minimal summary (`id`, `status`, `type`, `subjectType`, `link`) for each created request. DSR OAuth scopes now include `ViewWorkflows` so clients can list published workflow configs for submit.
+- 732e769: Remove `dsr_submit_on_behalf`. DSR creation goes solely through `dsr_submit` → customer-ingress REST (`POST /v1/data-subject-request`), where Sombra attests the subject server-side. The GraphQL `employeeMakeDataSubjectRequest` create path (without `dhEncrypted`) is no longer exposed as an MCP tool.
+
+### Patch Changes
+
+- Updated dependencies [732e769]
+  - @transcend-io/mcp-server-base@1.7.0
+
+## 0.7.0
+
+### Minor Changes
+
+- d00bd92: Require human confirmation before the highest-consequence tools run. `dsr_cancel`, `dsr_submit`, `dsr_submit_on_behalf`, `dsr_enrich_identifiers`, `preferences_delete`, `preferences_delete_identifiers` and `preferences_update_identifiers` now declare `confirmation`, so a person is asked before the handler runs and the call refuses if nobody can be.
+
+  `dsr_submit`, `dsr_submit_on_behalf`, `dsr_enrich_identifiers` and `preferences_update_identifiers` also flip to `destructiveHint: true`. Gating a tool and annotating it non-destructive tells hosts two different things about the same call, so the gate requires the annotation to agree. All four earn it: submitting an ERASURE or opt-out request starts irreversible deletion across connected systems, and both identifier tools overwrite values that determine whose data a request or consent record resolves to.
+
+  Five of the seven are `requireSombra` and so were already omitted from Agentic Assist. The two that are not, `dsr_cancel` and `dsr_submit_on_behalf`, are the only ones this newly puts behind a confirmation for HTTP callers.
+
+### Patch Changes
+
+- Updated dependencies [d00bd92]
+- Updated dependencies [6c6ea93]
+- Updated dependencies [2b82ee8]
+- Updated dependencies [bd397d4]
+- Updated dependencies [1f72e6a]
+- Updated dependencies [6a09b61]
+  - @transcend-io/mcp-server-base@1.6.0
+  - @transcend-io/privacy-types@5.22.0
+
+## 0.6.4
+
+### Patch Changes
+
+- Updated dependencies [9032822]
+  - @transcend-io/mcp-server-base@1.5.0
+
+## 0.6.3
+
+### Patch Changes
+
+- Updated dependencies [c8df618]
+- Updated dependencies [9637490]
+  - @transcend-io/mcp-server-base@1.4.0
+  - @transcend-io/privacy-types@5.20.0
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [98eeb1d]
+  - @transcend-io/privacy-types@5.19.0
+  - @transcend-io/mcp-server-base@1.3.1
+
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies [5819bc1]
+- Updated dependencies [c787e9d]
+  - @transcend-io/mcp-server-base@1.3.0
+
+## 0.6.0
+
+### Minor Changes
+
+- 7d980a1: Expose DSR request assignees and connected-system owners through MCP so Agentic Assist can answer who owns approval bottlenecks and failed systems.
+
+  `dsr_list` and `dsr_get_details` now return each request's assigned owners and teams. A new `dsr_list_request_data_silos` tool lists per-system processing status (including errors) with nested data-silo owners and teams, so bottleneck questions no longer hit a capability gap.
+
+### Patch Changes
+
+- Updated dependencies [4404c48]
+- Updated dependencies [c198439]
+- Updated dependencies [60f2200]
+- Updated dependencies [7d980a1]
+  - @transcend-io/mcp-server-base@1.2.0
+  - @transcend-io/privacy-types@5.18.0
+
+## 0.5.14
+
+### Patch Changes
+
+- 26fadc4: Remove the `confirmationHint` field and its remaining call-site strings. #407 removed it from 25 tools; nine occurrences have re-appeared since (three in the platform interfaces and six in inventory / consent / dsr feature PRs). No code reads the field, so this is dead metadata. The upcoming confirmation-gate work introduces a separate `confirmation: { hint }` field with a semantic contract — deleting the old one first keeps that landing focused on adding the new API.
+- Updated dependencies [26fadc4]
+  - @transcend-io/mcp-server-base@1.1.1
+
+## 0.5.13
+
+### Patch Changes
+
+- Updated dependencies [2bc0cb2]
+  - @transcend-io/privacy-types@5.17.0
+
+## 0.5.12
+
+### Patch Changes
+
+- Updated dependencies [3aab830]
+  - @transcend-io/privacy-types@5.16.0
+
+## 0.5.11
+
+### Patch Changes
+
+- 80d9f9e: Remove unused `confirmationHint` strings from 25 ungated tools. The field is never serialized into `tools/list` and is only read by the confirmation gate, which none of these tools opt into.
+- Updated dependencies [2faaff6]
+- Updated dependencies [5b239dc]
+- Updated dependencies [5b239dc]
+- Updated dependencies [6293072]
+- Updated dependencies [daffc18]
+- Updated dependencies [dc9ab41]
+- Updated dependencies [5b239dc]
+- Updated dependencies [97fa941]
+- Updated dependencies [5b239dc]
+  - @transcend-io/mcp-server-base@1.1.0
+
+## 0.5.10
+
+### Patch Changes
+
+- @transcend-io/mcp-server-base@1.0.0
+
+## 0.5.9
+
+### Patch Changes
+
+- Updated dependencies [f6ca084]
+- Updated dependencies [2cc726f]
+- Updated dependencies [66e641e]
+  - @transcend-io/mcp-server-base@0.14.0
+  - @transcend-io/privacy-types@5.15.0
+
+## 0.5.8
+
+### Patch Changes
+
+- Updated dependencies [8deab38]
+  - @transcend-io/privacy-types@5.14.0
+
+## 0.5.7
+
+### Patch Changes
+
+- 6d2b56d: Publish sourcemaps that reference their sources rather than embedding them, taking the maps across these packages from roughly 817 KB to 174 KB.
+
+  Stack traces keep their mapped TypeScript positions; what is lost is the surrounding code frame, and only where the sources are not on disk. A fair trade for a server a host launches as a subprocess, and the reason this is scoped to the MCP packages rather than set for every published library.
+
+- Updated dependencies [4bc21f7]
+- Updated dependencies [e127dfc]
+- Updated dependencies [f3ce7dc]
+- Updated dependencies [6d2b56d]
+- Updated dependencies [6bbe7d9]
+  - @transcend-io/mcp-server-base@0.13.0
+  - @transcend-io/privacy-types@5.13.0
+
+## 0.5.6
+
+### Patch Changes
+
+- Updated dependencies [1b93859]
+- Updated dependencies [1b93859]
+- Updated dependencies [1b93859]
+- Updated dependencies [c166809]
+- Updated dependencies [1b93859]
+- Updated dependencies [188ba6f]
+  - @transcend-io/mcp-server-base@0.12.0
+  - @transcend-io/privacy-types@5.12.0
+
+## 0.5.5
+
+### Patch Changes
+
+- Updated dependencies [6932df1]
+- Updated dependencies [29e9d5f]
+  - @transcend-io/mcp-server-base@0.11.0
+  - @transcend-io/privacy-types@5.11.0
+
+## 0.5.4
+
+### Patch Changes
+
+- Updated dependencies [e68d245]
+  - @transcend-io/privacy-types@5.10.2
+
+## 0.5.3
+
+### Patch Changes
+
+- Updated dependencies [841f1a9]
+  - @transcend-io/privacy-types@5.10.1
+
+## 0.5.2
+
+### Patch Changes
+
+- Updated dependencies [da3e443]
+- Updated dependencies [8034d59]
+- Updated dependencies [c00f3c5]
+  - @transcend-io/privacy-types@5.10.0
+  - @transcend-io/mcp-server-base@0.10.0
+
+## 0.5.1
+
+### Patch Changes
+
+- Updated dependencies [8bfe3cc]
+- Updated dependencies [c65d41e]
+  - @transcend-io/privacy-types@5.9.1
+  - @transcend-io/mcp-server-base@0.9.0
+
+## 0.5.0
+
+### Minor Changes
+
+- 637b357: Enables sombra integration with mcp
+
+### Patch Changes
+
+- cf74715: enforce orgs mcp x sombra setting
+- 29821b9: Adds condition sombra header and lazy load the customers sombra url
+- fb24b96: Adds sombra metadata to tools
+- Updated dependencies [cf74715]
+- Updated dependencies [29821b9]
+- Updated dependencies [fb24b96]
+- Updated dependencies [637b357]
+  - @transcend-io/mcp-server-base@0.8.0
+
+## 0.4.13
+
+### Patch Changes
+
+- Updated dependencies [be15c28]
+  - @transcend-io/privacy-types@5.9.0
+
+## 0.4.12
+
+### Patch Changes
+
+- Updated dependencies [ac7537b]
+  - @transcend-io/privacy-types@5.8.5
+
+## 0.4.11
+
+### Patch Changes
+
+- Updated dependencies [54f4aff]
+  - @transcend-io/privacy-types@5.8.4
+
+## 0.4.10
+
+### Patch Changes
+
+- Updated dependencies [e410109]
+  - @transcend-io/mcp-server-base@0.7.0
+
 ## 0.4.9
 
 ### Patch Changes

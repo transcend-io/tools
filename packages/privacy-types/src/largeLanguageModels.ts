@@ -18,11 +18,9 @@ export type ChatCompletionRole = (typeof ChatCompletionRole)[keyof typeof ChatCo
  */
 export enum PromptRunProductArea {
   Assessments = 'assessments',
-  ContractScanning = 'contractScanning',
   PromptManager = 'promptManager',
   UnstructuredDiscovery = 'unstructuredDiscovery',
   DataInventory = 'dataInventory',
-  Pathfinder = 'pathfinder',
 }
 
 export const ChatCompletionMessage = t.type({

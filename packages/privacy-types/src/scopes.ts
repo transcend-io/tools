@@ -79,10 +79,6 @@ export enum ScopeName {
   ExecuteAuditor = 'executeAuditor',
   ViewCodeScanning = 'viewCodeScanning',
   ManageCodeScanning = 'manageCodeScanning',
-  ViewPathfinder = 'viewPathfinder',
-  ManagePathfinder = 'managePathfinder',
-  ViewContractScanning = 'viewContractScanning',
-  ManageContractScanning = 'manageContractScanning',
   ViewAuditorRuns = 'viewAuditorRuns',
   ViewAuditEvents = 'viewAuditEvents',
   ManageActionItemCollections = 'manageActionItemCollections',
@@ -109,6 +105,11 @@ export enum ScopeName {
   ViewAssignedRules = 'viewAssignedRules',
   ManageAssignedRules = 'manageAssignedRules',
   ExecuteRules = 'executeRules',
+  // Custom Functions — dedicated scopes (LINK-7162); endpoints migrate in LINK-7163
+  ViewCustomFunction = 'viewCustomFunction',
+  ManageCustomFunction = 'manageCustomFunction',
+  // Assignable view access for the Administration Usage dashboard
+  ViewUsage = 'viewUsage',
 }
 
 /**
@@ -131,10 +132,8 @@ export enum TranscendProduct {
   PrivacyCenter = 'PRIVACY_CENTER',
   Administration = 'ADMINISTRATION',
   Assessments = 'ASSESSMENTS',
-  Pathfinder = 'PATHFINDER',
   PreferenceManagement = 'PREFERENCE_MANAGEMENT',
   PromptManagement = 'PROMPT_MANAGER',
-  ContractScanning = 'CONTRACT_SCANNING',
   WebAuditor = 'WEB_AUDITOR',
   Sombra = 'SOMBRA',
   SiloDiscovery = 'SILO_DISCOVERY',
@@ -196,10 +195,8 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
       TranscendProduct.StructuredDiscovery,
       TranscendProduct.Administration,
       TranscendProduct.Assessments,
-      TranscendProduct.Pathfinder,
       TranscendProduct.PromptManagement,
       TranscendProduct.WebAuditor,
-      TranscendProduct.ContractScanning,
     ],
   },
   [ScopeName.ManageAccessControl]: {
@@ -358,10 +355,8 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
       TranscendProduct.StructuredDiscovery,
       TranscendProduct.Administration,
       TranscendProduct.Assessments,
-      TranscendProduct.Pathfinder,
       TranscendProduct.PromptManagement,
       TranscendProduct.WebAuditor,
-      TranscendProduct.ContractScanning,
     ],
   },
   [ScopeName.ViewLegalHold]: {
@@ -826,34 +821,6 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     type: ScopeType.Modify,
     products: [TranscendProduct.Assessments, TranscendProduct.DataInventory],
   },
-  [ScopeName.ViewPathfinder]: {
-    title: 'View Pathfinder',
-    dependencies: [ScopeName.ViewGlobalAttributes],
-    description: 'View the pathfinder settings.',
-    type: ScopeType.View,
-    products: [TranscendProduct.Pathfinder],
-  },
-  [ScopeName.ManagePathfinder]: {
-    title: 'Manage Pathfinder',
-    dependencies: [ScopeName.ViewPathfinder],
-    description: 'Manage the pathfinder settings under that pathfinder side menu',
-    type: ScopeType.Modify,
-    products: [TranscendProduct.Pathfinder],
-  },
-  [ScopeName.ViewContractScanning]: {
-    title: 'View Contract Scanning',
-    dependencies: [ScopeName.ViewGlobalAttributes],
-    description: 'View the contract scanning side menu - including setting and contracts.',
-    type: ScopeType.View,
-    products: [TranscendProduct.ContractScanning],
-  },
-  [ScopeName.ManageContractScanning]: {
-    title: 'Manage Contract Scanning',
-    dependencies: [ScopeName.ViewContractScanning],
-    description: 'Upload and manage contracts under the contract scanning side menu',
-    type: ScopeType.Modify,
-    products: [TranscendProduct.ContractScanning],
-  },
   [ScopeName.ViewPrompts]: {
     title: 'View Prompts',
     dependencies: [ScopeName.ViewGlobalAttributes],
@@ -880,7 +847,7 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     dependencies: [ScopeName.ViewPromptRuns, ScopeName.ViewPrompts],
     description: 'Manage, edit and create prompt run results',
     type: ScopeType.Modify,
-    products: [TranscendProduct.PromptManagement, TranscendProduct.Pathfinder],
+    products: [TranscendProduct.PromptManagement],
   },
   [ScopeName.ViewCodeScanning]: {
     title: 'View Code Scanning',
@@ -1040,6 +1007,39 @@ const SCOPES_WITHOUT_VIEW_ONLY: {
     description: 'Trigger rule execution and view the outputs.',
     type: ScopeType.Modify,
     products: [TranscendProduct.RulesAutomation],
+  },
+  [ScopeName.ViewCustomFunction]: {
+    title: 'View Custom Functions',
+    dependencies: [],
+    description: 'View Custom Functions, their versions, and run history.',
+    type: ScopeType.View,
+    products: [
+      TranscendProduct.DsrAutomation,
+      TranscendProduct.DataInventory,
+      TranscendProduct.StructuredDiscovery,
+      TranscendProduct.SiloDiscovery,
+      TranscendProduct.UnstructuredDiscovery,
+    ],
+  },
+  [ScopeName.ManageCustomFunction]: {
+    title: 'Manage Custom Functions',
+    dependencies: [ScopeName.ViewCustomFunction],
+    description: 'Create, update, archive, promote, and run Custom Functions and their versions.',
+    type: ScopeType.Modify,
+    products: [
+      TranscendProduct.DsrAutomation,
+      TranscendProduct.DataInventory,
+      TranscendProduct.StructuredDiscovery,
+      TranscendProduct.SiloDiscovery,
+      TranscendProduct.UnstructuredDiscovery,
+    ],
+  },
+  [ScopeName.ViewUsage]: {
+    title: 'View Usage',
+    dependencies: [],
+    description: 'View organization usage metrics in the Administration Usage dashboard.',
+    type: ScopeType.View,
+    products: [TranscendProduct.Administration],
   },
 };
 

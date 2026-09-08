@@ -14,6 +14,7 @@ interface ResolvedToken {
  * Bootstrap compiles a single set of Sass variables.
  */
 const BOOTSTRAP_VARIABLE_MAP: Record<string, string> = {
+  // Stateful groups expose rest values under a named `default` leaf.
   primary: 'background.brand.bold.default',
   secondary: 'background.neutral.default',
   dark: 'text.subtle',

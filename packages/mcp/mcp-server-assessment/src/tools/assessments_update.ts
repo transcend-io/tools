@@ -23,10 +23,10 @@ export function createAssessmentsUpdateTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_update',
     description:
-      'Update an existing assessment. The response includes a `url` field with the canonical admin-dashboard link — surface that to the user verbatim and do not construct assessment URLs from raw IDs.',
+      'Update an existing assessment. ' +
+      'Surface the returned `url` verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Updates the assessment',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     zodSchema: UpdateAssessmentSchema,
     handler: async ({ assessmentId, title, description, reviewerIds, dueDate, status }) => {

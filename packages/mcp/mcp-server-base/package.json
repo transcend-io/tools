@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/mcp-server-base",
-  "version": "0.6.2",
+  "version": "1.8.1",
   "description": "Shared infrastructure for Transcend MCP Server packages.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/mcp/mcp-server-base",
   "license": "Apache-2.0",
@@ -21,6 +21,15 @@
       "@transcend-io/source": "./src/index.ts",
       "types": "./dist/index.d.mts",
       "default": "./dist/index.mjs"
+    },
+    "./ui": {
+      "@transcend-io/source": "./src/ui/index.ts",
+      "types": "./dist/ui/index.d.mts",
+      "default": "./dist/ui/index.mjs"
+    },
+    "./ui/theme.css": {
+      "@transcend-io/source": "./src/ui/theme.css",
+      "default": "./dist/ui/theme.css"
     }
   },
   "publishConfig": {
@@ -28,14 +37,16 @@
   },
   "scripts": {
     "build": "tsdown",
-    "test": "vitest run",
+    "test": "vitest run --config ../../../vitest.config.mcp.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:ui": "tsc -p tsconfig.ui.json --noEmit",
     "check:exports": "attw --pack . --ignore-rules cjs-resolves-to-esm",
     "check:publint": "publint --level warning --strict --pack pnpm"
   },
   "dependencies": {
     "@graphql-typed-document-node/core": "catalog:",
     "@modelcontextprotocol/sdk": "catalog:",
+    "@transcend-io/type-utils": "workspace:*",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "graphql": "catalog:",
@@ -44,13 +55,38 @@
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "catalog:",
+    "@modelcontextprotocol/ext-apps": "catalog:",
+    "@transcend-io/design-tokens": "workspace:*",
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
     "publint": "catalog:",
+    "react": "catalog:",
+    "tailwindcss": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/ext-apps": "catalog:",
+    "@transcend-io/design-tokens": "workspace:*",
+    "react": "catalog:",
+    "tailwindcss": "catalog:"
+  },
+  "peerDependenciesMeta": {
+    "@modelcontextprotocol/ext-apps": {
+      "optional": true
+    },
+    "@transcend-io/design-tokens": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "tailwindcss": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=22.12.0"

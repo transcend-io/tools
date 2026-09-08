@@ -2,7 +2,7 @@ import { LOCALE_KEY } from '@transcend-io/internationalization';
 import { makeEnum, valuesOf } from '@transcend-io/type-utils';
 import * as t from 'io-ts';
 
-import { AbsoluteUrlString, UIConfiguration } from './consentUiConfiguration.js';
+import { AbsoluteUrlString, UIConfiguration, URLHostString } from './consentUiConfiguration.js';
 import { ThemeConfiguration, ThemeConfigurationMinimal } from './consentUiTheme.js';
 
 /**
@@ -83,14 +83,13 @@ export const ShadowRootOptions = makeEnum({
 /** Override type */
 export type ShadowRootOptions = (typeof ShadowRootOptions)[keyof typeof ShadowRootOptions];
 
-/** The top-level configuration for the consent UI */
-export const LoadOptions = t.intersection([
+/** Shared load option fields excluding themeConfigMap */
+const SharedLoadOptions = t.intersection([
   t.type({
     regimeVariantMap: t.record(RegimeKey, VariantKey),
     regimeAutoPromptMap: t.record(RegimeKey, t.boolean),
     variantConfigMap: t.record(VariantKey, UIConfiguration),
     variantThemeMap: t.record(VariantKey, ThemeKey),
-    themeConfigMap: t.record(ThemeKey, t.union([ThemeConfiguration, ThemeConfigurationMinimal])),
     autofocus: AutofocusValues,
     uiZIndex: IntegerString,
     // If messageMap is not defined, messages will be fetched from `${messageFolder}/${localeKey}.json`
@@ -106,8 +105,35 @@ export const LoadOptions = t.intersection([
     forceTheme: ThemeKey,
     // if cssFolder is defined, per-theme CSS will be fetched from `${cssFolder}/${themeKey}.css`
     cssFolder: AbsoluteUrlString,
+    hostThemeMap: t.record(URLHostString, ThemeKey),
+    customCssUrlMap: t.record(ThemeKey, AbsoluteUrlString),
+    // Override the locale used to load localized messages
+    overrideLocale: t.string,
+  }),
+]);
+
+/** The top-level configuration for the consent UI (minimal theme configs) */
+export const LoadOptions = t.intersection([
+  SharedLoadOptions,
+  t.type({
+    themeConfigMap: t.record(ThemeKey, ThemeConfigurationMinimal),
+  }),
+  t.partial({
+    // Override the viewport height used when rendering the consent UI
+    viewportHeightOverride: t.string,
   }),
 ]);
 
 /** Override type */
 export type LoadOptions = t.TypeOf<typeof LoadOptions>;
+
+/** The top-level configuration for the mobile consent UI (full theme configs) */
+export const MobileUiLoadOptions = t.intersection([
+  SharedLoadOptions,
+  t.type({
+    themeConfigMap: t.record(ThemeKey, ThemeConfiguration),
+  }),
+]);
+
+/** Override type */
+export type MobileUiLoadOptions = t.TypeOf<typeof MobileUiLoadOptions>;

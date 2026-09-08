@@ -13,9 +13,6 @@ import {
   fetchAllActionItemCollections,
   fetchAllActionItems,
   fetchAllActions,
-  fetchAllAgentFiles,
-  fetchAllAgentFunctions,
-  fetchAllAgents,
   fetchAllAssessments,
   fetchAllAttributes,
   fetchAllBusinessEntities,
@@ -35,10 +32,7 @@ import {
   fetchAllEnrichers,
   fetchAllIdentifiers,
   fetchAllMessages,
-  fetchAllPromptGroups,
-  fetchAllPromptPartials,
   fetchAllProcessingActivities,
-  fetchAllPrompts,
   fetchAllPurposesAndPreferences,
   fetchAllConsentWorkflowTriggers,
   fetchAllPreferenceOptionValues,
@@ -73,21 +67,15 @@ import {
   IdentifierInput,
   BusinessEntityInput,
   EnricherInput,
-  PromptGroupInput,
   DataFlowInput,
-  PromptPartialInput,
   DataSubjectInput,
   CookieInput,
-  PromptInput,
   DatapointInput,
   FieldInput,
   ProcessingPurposeInput,
   ProcessingActivityInput,
   DataCategoryInput,
   VendorInput,
-  AgentFileInput,
-  AgentFunctionInput,
-  AgentInput,
   PolicyInput,
   IntlMessageInput,
   ActionItemInput,
@@ -107,6 +95,7 @@ import {
 } from '../../codecs.js';
 import { TranscendPullResource } from '../../enums.js';
 import { logger } from '../../logger.js';
+import { buildDeletionDependenciesInput } from './buildDeletionDependencies.js';
 import { fetchAllAssessmentTemplates } from './fetchAllAssessmentTemplates.js';
 
 export const DEFAULT_TRANSCEND_PULL_RESOURCES = [
@@ -182,12 +171,6 @@ export async function pullTranscendConfiguration(
     consentManagerExperiences,
     consentVariants,
     consentThemes,
-    prompts,
-    promptPartials,
-    promptGroups,
-    agents,
-    agentFunctions,
-    agentFiles,
     vendors,
     dataCategories,
     processingPurposes,
@@ -303,26 +286,6 @@ export async function pullTranscendConfiguration(
     // Fetch consent manager consent themes
     resources.includes(TranscendPullResource.ConsentManager)
       ? fetchConsentThemes(client, { logger })
-      : [],
-    // Fetch prompts
-    resources.includes(TranscendPullResource.Prompts) ? fetchAllPrompts(client, { logger }) : [],
-    // Fetch promptPartials
-    resources.includes(TranscendPullResource.PromptPartials)
-      ? fetchAllPromptPartials(client, { logger })
-      : [],
-    // Fetch promptGroups
-    resources.includes(TranscendPullResource.PromptGroups)
-      ? fetchAllPromptGroups(client, { logger })
-      : [],
-    // Fetch agents
-    resources.includes(TranscendPullResource.Agents) ? fetchAllAgents(client, { logger }) : [],
-    // Fetch agentFunctions
-    resources.includes(TranscendPullResource.AgentFunctions)
-      ? fetchAllAgentFunctions(client, { logger })
-      : [],
-    // Fetch agentFiles
-    resources.includes(TranscendPullResource.AgentFiles)
-      ? fetchAllAgentFiles(client, { logger })
       : [],
     // Fetch vendors
     resources.includes(TranscendPullResource.Vendors) ? fetchAllVendors(client, { logger }) : [],
@@ -843,37 +806,6 @@ export async function pullTranscendConfiguration(
     );
   }
 
-  // Save prompts
-  if (prompts.length > 0 && resources.includes(TranscendPullResource.Prompts)) {
-    result.prompts = prompts.map(
-      ({ title, content }): PromptInput => ({
-        title,
-        content,
-      }),
-    );
-  }
-
-  // Save promptPartials
-  if (promptPartials.length > 0 && resources.includes(TranscendPullResource.PromptPartials)) {
-    result['prompt-partials'] = promptPartials.map(
-      ({ title, content }): PromptPartialInput => ({
-        title,
-        content,
-      }),
-    );
-  }
-
-  // Save promptGroups
-  if (promptGroups.length > 0 && resources.includes(TranscendPullResource.PromptGroups)) {
-    result['prompt-groups'] = promptGroups.map(
-      ({ title, description, prompts }): PromptGroupInput => ({
-        title,
-        description,
-        prompts: prompts.map(({ title }) => title),
-      }),
-    );
-  }
-
   // Save teams
   if (teams.length > 0 && resources.includes(TranscendPullResource.Teams)) {
     result.teams = teams.map(
@@ -1149,46 +1081,6 @@ export async function pullTranscendConfiguration(
     );
   }
 
-  // Save agents
-  if (agents.length > 0 && resources.includes(TranscendPullResource.Agents)) {
-    result.agents = agents.map(
-      ({
-        name,
-        agentId,
-        description,
-        instructions,
-        codeInterpreterEnabled,
-        retrievalEnabled,
-        prompt,
-        largeLanguageModel,
-        teams,
-        owners,
-        agentFunctions,
-        agentFiles,
-      }): AgentInput => ({
-        name,
-        agentId,
-        description: description || undefined,
-        instructions,
-        codeInterpreterEnabled,
-        retrievalEnabled,
-        prompt: prompt?.title,
-        'large-language-model': {
-          name: largeLanguageModel.name,
-          client: largeLanguageModel.client,
-        },
-        teams: teams && teams.length > 0 ? teams.map(({ name }) => name) : undefined,
-        owners: owners && owners.length > 0 ? owners.map(({ email }) => email) : undefined,
-        'agent-functions':
-          agentFunctions && agentFunctions.length > 0
-            ? agentFunctions.map(({ name }) => name)
-            : undefined,
-        'agent-files':
-          agentFiles && agentFiles.length > 0 ? agentFiles.map(({ name }) => name) : undefined,
-      }),
-    );
-  }
-
   // Save action items
   if (actionItems.length > 0 && resources.includes(TranscendPullResource.ActionItems)) {
     result['action-items'] = actionItems.map(
@@ -1236,30 +1128,6 @@ export async function pullTranscendConfiguration(
         description: description || undefined,
         hidden,
         productLine,
-      }),
-    );
-  }
-
-  // Save agent functions
-  if (agentFunctions.length > 0 && resources.includes(TranscendPullResource.AgentFunctions)) {
-    result['agent-functions'] = agentFunctions.map(
-      ({ name, description, parameters }): AgentFunctionInput => ({
-        name,
-        description,
-        parameters: JSON.stringify(parameters),
-      }),
-    );
-  }
-
-  // Save agent files
-  if (agentFiles.length > 0 && resources.includes(TranscendPullResource.AgentFiles)) {
-    result['agent-files'] = agentFiles.map(
-      ({ name, description, fileId, size, purpose }): AgentFileInput => ({
-        name,
-        description,
-        fileId,
-        size,
-        purpose,
       }),
     );
   }
@@ -1652,6 +1520,7 @@ export async function pullTranscendConfiguration(
           notifyEmailAddress,
           identifiers,
           dependentDataSilos,
+          dependedOnDataSilosPerWorkflow,
           owners,
           country,
           countrySubDivision,
@@ -1681,11 +1550,10 @@ export async function pullTranscendConfiguration(
         'identity-keys': identifiers
           .filter(({ isConnected }) => isConnected)
           .map(({ name }) => name),
-        ...(dependentDataSilos.length > 0
-          ? {
-              'deletion-dependencies': dependentDataSilos.map(({ title }) => title),
-            }
-          : {}),
+        ...buildDeletionDependenciesInput({
+          dependentDataSilos,
+          dependedOnDataSilosPerWorkflow,
+        }),
         ...(owners.length > 0 ? { owners: owners.map(({ email }) => email) } : {}),
         ...(teams.length > 0 ? { teams: teams.map(({ name }) => name) } : {}),
         ...(discoveredBy.length > 0

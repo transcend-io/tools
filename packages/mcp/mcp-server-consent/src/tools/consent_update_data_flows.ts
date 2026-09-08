@@ -34,7 +34,6 @@ export function createConsentUpdateDataFlowsTool(clients: ToolClients) {
       'assign tracking purposes, or set a service.',
     category: 'Consent Management',
     readOnly: false,
-    confirmationHint: 'Updates data flows in the consent manager',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true },
     zodSchema: UpdateDataFlowsSchema,
     handler: async ({ dataFlows }) => {

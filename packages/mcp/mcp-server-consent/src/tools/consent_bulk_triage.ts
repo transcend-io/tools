@@ -41,7 +41,6 @@ export function createConsentBulkTriageTool(clients: ToolClients) {
       'For data flows, same behavior. Optionally assign tracking purposes and service when approving.',
     category: 'Consent Management',
     readOnly: false,
-    confirmationHint: 'Bulk approves or junks cookies and data flows',
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
     zodSchema: BulkTriageSchema,
     handler: async ({ items }) => {

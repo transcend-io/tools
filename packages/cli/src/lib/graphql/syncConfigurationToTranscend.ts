@@ -7,9 +7,6 @@ import {
   syncAction,
   syncActionItemCollections,
   syncActionItems,
-  syncAgentFiles,
-  syncAgentFunctions,
-  syncAgents,
   syncAttribute,
   syncBusinessEntities,
   syncDataCategories,
@@ -26,9 +23,6 @@ import {
   syncPrivacyCenter,
   syncProcessingActivities,
   syncProcessingPurposes,
-  syncPromptGroups,
-  syncPromptPartials,
-  syncPrompts,
   syncConsentWorkflowTriggers,
   syncWorkflowConfigs,
   syncPreferenceOptionValues,
@@ -37,6 +31,7 @@ import {
   syncTeams,
   syncTemplate,
   syncVendors,
+  type DependedOnDataSiloInput,
   type Identifier,
 } from '@transcend-io/sdk';
 import { map, type Logger, type SyncError, type SyncResult } from '@transcend-io/utils';
@@ -48,6 +43,7 @@ import { TranscendInput } from '../../codecs.js';
 import { logger } from '../../logger.js';
 import { validatePreferenceManagementSlugs } from '../preference-management/validatePreferenceManagementSlugs.js';
 import { ensureAllDataSubjectsExist } from './ensureAllDataSubjectsExist.js';
+import { normalizeDeletionDependencies } from './normalizeDeletionDependencies.js';
 import { syncDataSilos } from './syncDataSilos.js';
 
 const CONCURRENCY = 10;
@@ -109,12 +105,6 @@ export async function syncConfigurationToTranscend(
     'consent-manager': consentManager,
     'data-silos': dataSilos,
     'data-flows': dataFlows,
-    prompts,
-    'prompt-groups': promptGroups,
-    'prompt-partials': promptPartials,
-    agents,
-    'agent-functions': agentFunctions,
-    'agent-files': agentFiles,
     vendors,
     'data-categories': dataCategories,
     'processing-activities': processingActivities,
@@ -241,20 +231,6 @@ export async function syncConfigurationToTranscend(
     }
   }
 
-  // Sync prompts
-  if (prompts) {
-    const promptsSuccess = await syncPrompts(client, prompts, { logger });
-    encounteredError = encounteredError || !promptsSuccess;
-  }
-  if (promptPartials) {
-    const promptsSuccess = await syncPromptPartials(client, promptPartials, { logger });
-    encounteredError = encounteredError || !promptsSuccess;
-  }
-  if (promptGroups) {
-    const promptsSuccess = await syncPromptGroups(client, promptGroups, { logger });
-    encounteredError = encounteredError || !promptsSuccess;
-  }
-
   if (teams) {
     const teamsSuccess = await syncTeams(client, teams, { logger });
     encounteredError = encounteredError || !teamsSuccess;
@@ -312,24 +288,6 @@ export async function syncConfigurationToTranscend(
   if (partitions) {
     const partitionsSuccess = await syncPartitions(client, partitions, { logger });
     encounteredError = encounteredError || !partitionsSuccess;
-  }
-
-  // Sync agents
-  if (agents) {
-    const agentsSuccess = await syncAgents(client, agents, { logger });
-    encounteredError = encounteredError || !agentsSuccess;
-  }
-
-  // Sync agent functions
-  if (agentFunctions) {
-    const agentFunctionsSuccess = await syncAgentFunctions(client, agentFunctions, { logger });
-    encounteredError = encounteredError || !agentFunctionsSuccess;
-  }
-
-  // Sync agent files
-  if (agentFiles) {
-    const agentFilesSuccess = await syncAgentFiles(client, agentFiles, { logger });
-    encounteredError = encounteredError || !agentFilesSuccess;
   }
 
   // Sync cookies
@@ -571,7 +529,7 @@ export async function syncConfigurationToTranscend(
   }
 
   // Store dependency updates
-  const dependencyUpdates: [string, string[]][] = [];
+  const dependencyUpdates: [string, DependedOnDataSiloInput[]][] = [];
   // Sync data silos
   if (dataSilos) {
     const { success, dataSiloTitleToId } = await syncDataSilos(dataSilos, client, {
@@ -581,11 +539,17 @@ export async function syncConfigurationToTranscend(
     });
     dataSilos?.forEach((dataSilo) => {
       // Queue up dependency update
-      if (dataSilo['deletion-dependencies']) {
-        dependencyUpdates.push([
-          dataSiloTitleToId[dataSilo.title],
-          dataSilo['deletion-dependencies'],
-        ]);
+      const dependencies = dataSilo['deletion-dependencies'];
+      if (dependencies) {
+        try {
+          dependencyUpdates.push([
+            dataSiloTitleToId[dataSilo.title],
+            normalizeDeletionDependencies(dependencies, dataSilo.title),
+          ]);
+        } catch (err) {
+          recordError('data-silos', (err as Error).message, dataSilo.title);
+          activeLogger.error(colors.red((err as Error).message));
+        }
       }
     });
     encounteredError = encounteredError || !success;
@@ -593,7 +557,11 @@ export async function syncConfigurationToTranscend(
 
   // Dependencies updated at the end after all data silos are created
   if (dependencyUpdates.length > 0) {
-    await syncDataSiloDependencies(client, { input: dependencyUpdates, logger });
+    const dependenciesSuccess = await syncDataSiloDependencies(client, {
+      input: dependencyUpdates,
+      logger,
+    });
+    encounteredError = encounteredError || !dependenciesSuccess;
   }
 
   // Update processing activities

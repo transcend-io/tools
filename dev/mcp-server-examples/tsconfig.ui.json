@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "../../tsconfig.ui.base.json",
+  "include": ["src/ui/**/*.ts", "src/ui/**/*.tsx"],
+  // The built documents are HTML, and are Node-side input rather than browser
+  // source; `src/apps/` holds the modules that inline them.
+  "exclude": ["src/ui/generated/**"]
+}

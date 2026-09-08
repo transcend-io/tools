@@ -1,23 +1,38 @@
 import { getRequestAuth } from '../auth-context.js';
 import { type AuthCredentials, authHeaders } from '../auth.js';
-import { DEFAULT_SOMBRA_URL } from '../defaults.js';
 import {
   MCP_CALLER_HEADER,
+  MCP_CLIENT_NAME_HEADER,
+  MCP_VERSION_HEADER,
+  SOMBRA_AUTHORIZATION_HEADER,
   TOOLCALL_ID_HEADER,
   TRANSCEND_VERSION_HEADER,
   TRANSCEND_VERSION_HEADER_VALUE,
 } from '../http-header-names.js';
-import { getRequestMcpCaller } from '../mcp-caller-context.js';
+import {
+  resolveMcpCallerAttribution,
+  resolveMcpClientName,
+  resolveMcpPackageVersion,
+} from '../mcp-caller-context.js';
 import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
   DSRResponse,
+  DSRCreatedSummary,
   DownloadKey,
   EnrichIdentifiersInput,
   AccessResponseInput,
   ErasureResponseInput,
   PreferenceQueryInput,
+  PreferenceQueryResult,
   PreferenceUpsertInput,
+  PreferenceUpsertResponse,
+  PreferenceDeleteRecordInput,
+  PreferenceAppendIdentifierRecordInput,
+  PreferenceUpdateIdentifierRecordInput,
+  PreferenceDeleteIdentifierRecordInput,
+  PreferenceIdentifiersResponse,
+  PendingRequestItem,
   UserPreferences,
   LLMClassificationInput,
   LLMClassificationResult,
@@ -28,21 +43,118 @@ import type {
 import { SimpleLogger, type Logger } from './graphql/base.js';
 import { TRANSCEND_MCP_USER_AGENT } from './mcp-user-agent.js';
 
+export interface TranscendRestClientOptions {
+  /**
+   * Sticky Sombra host override (e.g. from `SOMBRA_URL`).
+   * When set, GraphQL customerUrl lookup is skipped.
+   */
+  baseUrl?: string;
+  /**
+   * Optional Sombra customer-ingress API key.
+   * Sent as `X-Sombra-Authorization: Bearer …` when present.
+   */
+  sombraCustomerKey?: string;
+  /**
+   * Lazy host resolver used when {@link baseUrl} is unset.
+   * Invoked once; the result is sticky for the client lifetime.
+   */
+  resolveBaseUrl?: () => Promise<string>;
+  /**
+   * Gate checked before every Sombra HTTP call (not sticky).
+   * Use for org AiSettings / MCP × Sombra enablement.
+   */
+  assertReady?: () => Promise<void>;
+  /** Logger instance */
+  logger?: Logger;
+}
+
 export class TranscendRestClient {
   private auth: AuthCredentials | null;
-  private baseUrl: string;
+  private baseUrl: string | null;
+  private readonly sombraCustomerKey: string | undefined;
+  private readonly resolveBaseUrl: (() => Promise<string>) | undefined;
+  private readonly assertReady: (() => Promise<void>) | undefined;
+  private resolvePromise: Promise<string> | null = null;
   private logger: Logger;
   private defaultTimeout: number;
   private defaultRetries: number;
   private lastRequestTime: number = 0;
   private minRequestInterval: number = 200;
 
-  constructor(auth: AuthCredentials | null, baseUrl: string = DEFAULT_SOMBRA_URL, logger?: Logger) {
+  /**
+   * @param auth - Default credentials (may be overridden per-request via ALS)
+   * @param baseUrlOrOptions - Sticky base URL string, or options with lazy resolve
+   * @param logger - Optional logger when the second argument is a base URL string
+   */
+  constructor(
+    auth: AuthCredentials | null,
+    baseUrlOrOptions: string | TranscendRestClientOptions = {},
+    logger?: Logger,
+  ) {
     this.auth = auth;
-    this.baseUrl = baseUrl.replace(/\/$/, '');
-    this.logger = logger || new SimpleLogger();
+
+    if (typeof baseUrlOrOptions === 'string') {
+      this.baseUrl = baseUrlOrOptions.replace(/\/$/, '');
+      this.sombraCustomerKey = undefined;
+      this.resolveBaseUrl = undefined;
+      this.assertReady = undefined;
+      this.logger = logger || new SimpleLogger();
+    } else {
+      const opts = baseUrlOrOptions;
+      const trimmed = opts.baseUrl?.trim();
+      this.baseUrl = trimmed ? trimmed.replace(/\/$/, '') : null;
+      this.sombraCustomerKey = opts.sombraCustomerKey?.trim() || undefined;
+      this.resolveBaseUrl = opts.resolveBaseUrl;
+      this.assertReady = opts.assertReady;
+      this.logger = opts.logger || logger || new SimpleLogger();
+    }
+
     this.defaultTimeout = 30000;
     this.defaultRetries = 3;
+  }
+
+  /**
+   * Runs the non-sticky readiness gate (e.g. org AiSettings), then ensures the
+   * Sombra host is resolved. Host resolution remains sticky; the gate does not.
+   */
+  async prepareRequest(): Promise<string> {
+    if (this.assertReady) {
+      await this.assertReady();
+    }
+    return this.ensureResolved();
+  }
+
+  /**
+   * Ensures the Sombra host is resolved and sticky.
+   * Safe to call multiple times; only the first resolve runs.
+   * Does not re-check org enablement — use {@link prepareRequest} for that.
+   */
+  async ensureResolved(): Promise<string> {
+    if (this.baseUrl) {
+      return this.baseUrl;
+    }
+    if (!this.resolveBaseUrl) {
+      throw new Error(
+        'Sombra URL is not configured. Set SOMBRA_URL or provide a GraphQL-backed host resolver.',
+      );
+    }
+    if (!this.resolvePromise) {
+      this.resolvePromise = this.resolveBaseUrl().then((url) => {
+        this.baseUrl = url.replace(/\/$/, '');
+        this.logger.info(`Using sombra: ${this.baseUrl}`);
+        return this.baseUrl;
+      });
+    }
+    return this.resolvePromise;
+  }
+
+  private sombraAuthHeaders(): Record<string, string> {
+    if (!this.sombraCustomerKey) {
+      return {};
+    }
+    return {
+      [SOMBRA_AUTHORIZATION_HEADER]: `Bearer ${this.sombraCustomerKey}`,
+    };
   }
 
   private async rateLimitWait(): Promise<void> {
@@ -63,9 +175,10 @@ export class TranscendRestClient {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
 
+    const baseUrl = await this.prepareRequest();
     await this.rateLimitWait();
 
-    const url = `${this.baseUrl}${endpoint}`;
+    const url = `${baseUrl}${endpoint}`;
     const {
       timeout = this.defaultTimeout,
       retries = this.defaultRetries,
@@ -73,9 +186,12 @@ export class TranscendRestClient {
     } = options;
 
     const toolCallId = getToolCallIdHeader();
-    const mcpCaller = getRequestMcpCaller();
+    const mcpCaller = resolveMcpCallerAttribution();
+    const mcpClientName = resolveMcpClientName();
+    const mcpPackageVersion = resolveMcpPackageVersion();
     const headers: Record<string, string> = {
       ...authHeaders(effectiveAuth),
+      ...this.sombraAuthHeaders(),
       'Content-Type': 'application/json',
       Accept: 'application/json',
       [TRANSCEND_VERSION_HEADER]: TRANSCEND_VERSION_HEADER_VALUE,
@@ -83,6 +199,8 @@ export class TranscendRestClient {
       'User-Agent': TRANSCEND_MCP_USER_AGENT,
       ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
       ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
+      ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
+      ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
     };
 
     const controller = new AbortController();
@@ -159,30 +277,39 @@ export class TranscendRestClient {
     throw lastError || new Error('Request failed after all retries');
   }
 
-  async submitDSR(submission: DSRSubmission): Promise<DSRResponse> {
+  async submitDSR(submission: DSRSubmission): Promise<DSRCreatedSummary[]> {
     const coreIdentifier = submission.coreIdentifier || submission.email;
     const payload = {
-      type: submission.type,
-      subject: {
-        email: submission.email,
-        coreIdentifier,
-        ...(submission.name && { name: submission.name }),
-        ...(submission.phone && { phone: submission.phone }),
-      },
-      ...(submission.subjectType && { subjectType: submission.subjectType }),
-      ...(submission.locale && { locale: submission.locale }),
-      ...(submission.isSilent !== undefined && { isSilent: submission.isSilent }),
-      ...(submission.skipSecondaryLookup !== undefined && {
-        skipSecondaryLookup: submission.skipSecondaryLookup,
-      }),
-      ...(submission.additionalIdentifiers && {
-        additionalIdentifiers: submission.additionalIdentifiers,
-      }),
+      input: [
+        {
+          workflowConfigId: submission.workflowConfigId,
+          attestedAuthContext: {
+            email: submission.email,
+            coreIdentifier,
+          },
+          ...(submission.locale && { locale: submission.locale }),
+          ...(submission.isSilent !== undefined && { isSilent: submission.isSilent }),
+        },
+      ],
     };
-    return this.makeRequest<DSRResponse>('/v1/data-subject-request', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    const response = await this.makeRequest<{ requests: DSRResponse[] }>(
+      '/v1/data-subject-request-bulk',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      },
+    );
+    const requests = response.requests ?? [];
+    if (requests.length === 0) {
+      throw new Error('Bulk DSR submission returned no requests');
+    }
+    return requests.map((request) => ({
+      id: request.id,
+      status: request.status,
+      ...(request.type !== undefined && { type: request.type }),
+      ...(request.subjectType !== undefined && { subjectType: request.subjectType }),
+      ...(request.link !== undefined && { link: request.link }),
+    }));
   }
 
   async getDSRStatus(requestId: string): Promise<DSRResponse> {
@@ -201,16 +328,22 @@ export class TranscendRestClient {
     if (!effectiveAuth) {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
-    const url = `${this.baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
+    const baseUrl = await this.prepareRequest();
+    const url = `${baseUrl}/v1/files?key=${encodeURIComponent(downloadKey)}`;
     const toolCallId = getToolCallIdHeader();
-    const mcpCaller = getRequestMcpCaller();
+    const mcpCaller = resolveMcpCallerAttribution();
+    const mcpClientName = resolveMcpClientName();
+    const mcpPackageVersion = resolveMcpPackageVersion();
     const response = await fetch(url, {
       headers: {
         ...authHeaders(effectiveAuth),
+        ...this.sombraAuthHeaders(),
         Accept: 'application/octet-stream',
         'User-Agent': TRANSCEND_MCP_USER_AGENT,
         ...(toolCallId && { [TOOLCALL_ID_HEADER]: toolCallId }),
         ...(mcpCaller && { [MCP_CALLER_HEADER]: mcpCaller }),
+        ...(mcpClientName && { [MCP_CLIENT_NAME_HEADER]: mcpClientName }),
+        ...(mcpPackageVersion && { [MCP_VERSION_HEADER]: mcpPackageVersion }),
       },
     });
     if (!response.ok) {
@@ -219,30 +352,61 @@ export class TranscendRestClient {
     return response.arrayBuffer();
   }
 
-  async listRequestIdentifiers(requestId: string): Promise<Record<string, string>[]> {
+  async listRequestIdentifiers(
+    requestId: string,
+    options?: {
+      /** Maximum number of identifiers to return (default 50) */
+      first?: number;
+      /** Zero-based offset for pagination */
+      offset?: number;
+    },
+  ): Promise<Record<string, string>[]> {
+    const first = Math.min(options?.first ?? 50, 100);
+    const offset = options?.offset ?? 0;
     const response = await this.makeRequest<{ identifiers: Record<string, string>[] }>(
-      `/v1/request-identifiers?requestId=${encodeURIComponent(requestId)}`,
+      '/v1/request-identifiers',
+      {
+        method: 'POST',
+        body: JSON.stringify({ requestId, first, offset }),
+      },
     );
     return response.identifiers || [];
   }
 
   async enrichIdentifiers(input: EnrichIdentifiersInput): Promise<{ success: boolean }> {
+    const enrichedIdentifiers = Object.entries(input.identifiers).reduce<
+      Record<string, { value: string }[]>
+    >((acc, [key, value]) => {
+      acc[key] = [{ value: key === 'email' ? value.toLowerCase() : value }];
+      return acc;
+    }, {});
+
+    const headers: Record<string, string> = {};
+    if (input.nonce) {
+      headers['x-transcend-nonce'] = input.nonce;
+    } else if (input.requestId && input.enricherId) {
+      headers['x-transcend-request-id'] = input.requestId.toLowerCase();
+      headers['x-transcend-enricher-id'] = input.enricherId;
+    } else {
+      throw new Error(
+        'Either nonce or both requestId and enricherId are required for identifier enrichment',
+      );
+    }
+
     return this.makeRequest<{ success: boolean }>('/v1/enrich-identifiers', {
       method: 'POST',
-      body: JSON.stringify(input),
+      headers,
+      body: JSON.stringify({ enrichedIdentifiers }),
     });
   }
 
   async respondToAccess(input: AccessResponseInput): Promise<{ success: boolean }> {
-    const payload = {
-      requestId: input.requestId,
-      dataSiloId: input.dataSiloId,
-      ...(input.profiles && { profiles: input.profiles }),
-      ...(input.files && { files: input.files }),
-    };
-    return this.makeRequest<{ success: boolean }>('/v1/datapoint', {
+    return this.makeRequest<{ success: boolean }>('/v1/data-silo', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      headers: { 'x-transcend-nonce': input.nonce },
+      body: JSON.stringify({
+        profiles: input.profiles ?? [],
+      }),
     });
   }
 
@@ -251,18 +415,19 @@ export class TranscendRestClient {
   ): Promise<{ success: boolean }> {
     return this.makeRequest<{ success: boolean }>('/v1/datapoint-chunked', {
       method: 'POST',
+      headers: { 'x-transcend-nonce': input.nonce },
       body: JSON.stringify(input),
     });
   }
 
   async confirmErasure(input: ErasureResponseInput): Promise<{ success: boolean }> {
+    const profiles = (input.profileIds ?? []).map((profileId) => ({ profileId }));
     return this.makeRequest<{ success: boolean }>('/v1/data-silo', {
-      method: 'POST',
+      method: 'PUT',
+      headers: { 'x-transcend-nonce': input.nonce },
       body: JSON.stringify({
-        requestId: input.requestId,
-        dataSiloId: input.dataSiloId,
-        status: 'COMPLETED',
-        ...(input.profileIds && { profileIds: input.profileIds }),
+        profiles,
+        status: 'READY',
       }),
     });
   }
@@ -270,69 +435,81 @@ export class TranscendRestClient {
   async getPendingRequests(
     dataSiloId: string,
     requestType: 'ACCESS' | 'ERASURE',
-  ): Promise<{ requests: { id: string; identifiers: Record<string, string> }[] }> {
-    return this.makeRequest<{ requests: { id: string; identifiers: Record<string, string> }[] }>(
+  ): Promise<{ items: PendingRequestItem[] }> {
+    return this.makeRequest<{ items: PendingRequestItem[] }>(
       `/v1/data-silo/${dataSiloId}/pending-requests/${requestType}`,
     );
   }
 
-  async queryPreferences(input: PreferenceQueryInput): Promise<UserPreferences[]> {
-    const response = await this.makeRequest<{ preferences: UserPreferences[] }>(
+  async queryPreferences(input: PreferenceQueryInput): Promise<PreferenceQueryResult> {
+    const identifiers = input.identifiers.map(({ value, name }) => ({
+      value,
+      ...(name !== undefined && { name }),
+    }));
+    const limit = Math.max(1, Math.min(50, input.limit ?? identifiers.length));
+    const response = await this.makeRequest<{ nodes: unknown[]; cursor?: string }>(
       `/v1/preferences/${encodeURIComponent(input.partition)}/query`,
-      { method: 'POST', body: JSON.stringify({ identifiers: input.identifiers }) },
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          filter: { identifiers },
+          limit,
+          ...(input.cursor && { cursor: input.cursor }),
+        }),
+      },
     );
-    return response.preferences || [];
+    return { nodes: response.nodes || [], cursor: response.cursor };
   }
 
-  async upsertPreferences(
-    input: PreferenceUpsertInput,
-  ): Promise<{ success: boolean; count: number }> {
-    return this.makeRequest<{ success: boolean; count: number }>('/v1/preferences', {
-      method: 'POST',
-      body: JSON.stringify(input),
+  async upsertPreferences(input: PreferenceUpsertInput): Promise<PreferenceUpsertResponse> {
+    return this.makeRequest<PreferenceUpsertResponse>('/v1/preferences', {
+      method: 'PUT',
+      body: JSON.stringify({
+        records: input.records,
+        ...(input.skipWorkflowTriggers !== undefined && {
+          skipWorkflowTriggers: input.skipWorkflowTriggers,
+        }),
+      }),
     });
   }
 
   async deletePreferences(
     partition: string,
-    identifiers: { value: string; type?: string }[],
-  ): Promise<{ success: boolean; count: number }> {
-    return this.makeRequest<{ success: boolean; count: number }>(
+    records: PreferenceDeleteRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/delete`,
-      { method: 'DELETE', body: JSON.stringify({ identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
   async appendIdentifiers(
     partition: string,
-    userId: string,
-    identifiers: { value: string; type?: string }[],
-  ): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(
+    records: PreferenceAppendIdentifierRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/append-identifiers`,
-      { method: 'POST', body: JSON.stringify({ userId, identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
   async updateIdentifiers(
     partition: string,
-    userId: string,
-    identifiers: { oldValue: string; newValue: string; type?: string }[],
-  ): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(
+    records: PreferenceUpdateIdentifierRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/update-identifiers`,
-      { method: 'PUT', body: JSON.stringify({ userId, identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
   async deleteIdentifiers(
     partition: string,
-    userId: string,
-    identifiers: { value: string; type?: string }[],
-  ): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>(
+    records: PreferenceDeleteIdentifierRecordInput[],
+  ): Promise<PreferenceIdentifiersResponse> {
+    return this.makeRequest<PreferenceIdentifiersResponse>(
       `/v1/preferences/${encodeURIComponent(partition)}/delete-identifiers`,
-      { method: 'DELETE', body: JSON.stringify({ userId, identifiers }) },
+      { method: 'POST', body: JSON.stringify({ records }) },
     );
   }
 
@@ -349,28 +526,74 @@ export class TranscendRestClient {
     }
   }
 
-  async syncConsent(preferences: UserPreferences): Promise<{ success: boolean }> {
-    return this.makeRequest<{ success: boolean }>('/sync', {
-      method: 'POST',
-      body: JSON.stringify(preferences),
-    });
-  }
-
   async classifyText(input: LLMClassificationInput): Promise<LLMClassificationResult[]> {
-    const payload = { inputList: input.texts, labels: input.categories || [] };
-    const response = await this.makeRequest<{ results: LLMClassificationResult[] }>(
-      '/llm/classify-text',
-      { method: 'POST', body: JSON.stringify(payload) },
-    );
-    return response.results || [];
+    const payload: { inputList: string[]; labels: string[]; model_type?: string } = {
+      inputList: input.texts,
+      labels: input.categories,
+    };
+    if (input.model) {
+      payload.model_type = input.model;
+    }
+    const response = await this.makeRequest<{
+      guesses: {
+        /** Documented Preference/LLM classifier label field */
+        type?: string;
+        /** Legacy / alternate label fields seen in some responses */
+        name?: string;
+        category?: string;
+        /** Numeric confidence when the classifier returns one */
+        confidence?: number;
+        /** Documented ordinal confidence (HIGH / MEDIUM / LOW) */
+        confidenceLabel?: string;
+      }[][];
+    }>('/llm/classify-text', { method: 'POST', body: JSON.stringify(payload) });
+
+    return (response.guesses ?? []).map((guesses, index) => ({
+      text: input.texts[index] ?? '',
+      classifications: guesses.map((guess) => {
+        const category = guess.type ?? guess.name ?? guess.category ?? '';
+        const confidenceLabel = guess.confidenceLabel;
+        const confidence =
+          typeof guess.confidence === 'number'
+            ? guess.confidence
+            : confidenceLabelToNumber(confidenceLabel);
+        const subcategory =
+          guess.category && guess.name && guess.name !== guess.category
+            ? guess.category
+            : guess.category && guess.type && guess.type !== guess.category
+              ? guess.category
+              : undefined;
+        return {
+          category,
+          confidence,
+          ...(subcategory ? { subcategory } : {}),
+          ...(confidenceLabel ? { confidenceLabel } : {}),
+        };
+      }),
+    }));
   }
 
   async extractEntities(input: NERExtractionInput): Promise<NERExtractionResult> {
-    const payload = { inputList: [input.text], labels: input.entityTypes || [] };
-    return this.makeRequest<NERExtractionResult>('/classify/unstructured-text', {
+    const payload = { inputList: [input.text], labels: input.entityTypes };
+    const response = await this.makeRequest<{
+      guesses: {
+        value?: string;
+        type?: string;
+        confidence?: number;
+        snippet?: string;
+      }[][];
+    }>('/classify/unstructured-text', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+
+    const entities = (response.guesses?.[0] ?? []).map((guess) => ({
+      text: guess.value ?? '',
+      type: guess.type ?? '',
+      confidence: guess.confidence ?? 0,
+      ...(guess.snippet !== undefined && { snippet: guess.snippet }),
+    }));
+    return { entities };
   }
 
   async getSombraPublicKey(): Promise<{ key: string }> {
@@ -387,7 +610,24 @@ export class TranscendRestClient {
     }
   }
 
+  /**
+   * Returns the resolved Sombra base URL, or an empty string if not yet resolved.
+   */
   getBaseUrl(): string {
-    return this.baseUrl;
+    return this.baseUrl ?? '';
+  }
+}
+
+/** Map documented ordinal confidence labels to a 0–1 score for agents. */
+function confidenceLabelToNumber(label: string | undefined): number {
+  switch (label?.toUpperCase()) {
+    case 'HIGH':
+      return 0.9;
+    case 'MEDIUM':
+      return 0.6;
+    case 'LOW':
+      return 0.3;
+    default:
+      return 0;
   }
 }

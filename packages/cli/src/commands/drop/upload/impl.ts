@@ -16,7 +16,7 @@ export async function upload(
   this: LocalContext,
   { auth, file, dropRunId, transcendUrl, sombraAuth, batchSize, dryRun }: DropUploadCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await uploadDropFile2({
     file,

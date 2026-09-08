@@ -30,7 +30,6 @@ export function createAssessmentsAddSectionTool(clients: ToolClients) {
       'Same auto-corrections as assessments_create_template apply to questions.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Adds a section to the assessment template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: AddSectionSchema,
     handler: async ({ templateId, title, questions }) => {

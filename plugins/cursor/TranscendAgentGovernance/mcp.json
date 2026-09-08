@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "transcend-agent-governance": {
+      "url": "${GATEWAY_BASE_URL}/mcp/${TENANT_ID}/agent",
+      "headers": {
+        "Accept": "application/json, text/event-stream"
+      },
+      "auth": {
+        "CLIENT_ID": "myelin_cursor_plugin",
+        "scopes": ["mcp", "offline_access"]
+      }
+    }
+  }
+}

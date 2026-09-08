@@ -39,7 +39,6 @@ export function createAssessmentsCreateTemplateTool(clients: ToolClients) {
       'requireRiskEvaluation is ignored when no riskFrameworkId is provided.',
     category: 'Assessments',
     readOnly: false,
-    confirmationHint: 'Creates a new assessment form template',
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     zodSchema: CreateTemplateSchema,
     handler: async ({ title, description, status, sections }) => {
