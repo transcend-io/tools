@@ -139,7 +139,14 @@ export type {
   ToolVariants,
 } from './tools/define-tool-with-capabilities.js';
 
-export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
+export {
+  assertOffsetInRange,
+  createToolResult,
+  createErrorResult,
+  createListResult,
+  describeNoMatches,
+  groupBy,
+} from './tools/helpers.js';
 export { toolInputSchema } from './tools/input-schema.js';
 
 export type {
