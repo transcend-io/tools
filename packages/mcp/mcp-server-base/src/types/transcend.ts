@@ -427,6 +427,78 @@ export interface PreferenceUpsertResponse {
   errors?: unknown[];
 }
 
+export interface RocPreferenceChoice {
+  /** The boolean value of the preference */
+  booleanValue?: boolean;
+  /** The select value(string) of the preference */
+  selectValue?: string;
+  /** The multi-select values of the preference */
+  selectValues?: string[];
+}
+
+export interface RocPreference {
+  /** The topic of the preference */
+  topic: string;
+  /** The choice made by the user for this preference topic */
+  choice: RocPreferenceChoice;
+}
+
+export interface RocPurpose {
+  /** Purpose slug */
+  purpose: string;
+  /** Consent value */
+  consent: boolean;
+  /** ISO 8601 timestamp for the purpose update */
+  timestamp: string;
+  /** Associated preferences */
+  preferences?: RocPreference[];
+  /** Workflow settings for this purpose */
+  workflowSettings?: string;
+  /** Whether async processing is enabled for this purpose */
+  asyncProcessingEnabled?: boolean;
+  /** ISO 8601 timestamp for when this purpose's consent expires */
+  expiresAt?: string;
+  /** Provenance of the consent update */
+  provenance?: string;
+}
+
+export interface RocRawConsentRecord {
+  /** ISO 8601 timestamp for the consent update */
+  timestamp: string;
+  /** Whether consent was explicitly confirmed */
+  confirmed?: boolean;
+  /** Purpose consent updates */
+  purposes: RocPurpose[];
+  /** User identifiers */
+  identifiers: PreferenceStoreIdentifier[];
+  /** JSON-serialized consent metadata */
+  metadata: string;
+}
+
+export interface RocUserRecordDiff {
+  /** Purposes added */
+  added: RocPurpose[];
+  /** Purposes removed */
+  removed: RocPurpose[];
+  /** Purposes updated */
+  updated: RocPurpose[];
+}
+
+export interface RocQueryInput {
+  /** Identifier to query */
+  identifier: PreferenceStoreIdentifier;
+  /** Maximum number of records to return */
+  limit?: number;
+  /** Whether to include the raw request in the response */
+  includeRawRequest?: boolean;
+}
+
+export interface RocUserRecord {
+  preferencesAtCurrentTime: string;
+  changeFromPrevState: string;
+  rawRequest?: string;
+}
+
 export interface AirgapBundle {
   id: string;
   name: string;
