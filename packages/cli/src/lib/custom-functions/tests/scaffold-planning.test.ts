@@ -184,9 +184,10 @@ describe('buildAddFunctionPlan', () => {
     });
     const commands = plan.nextSteps.filter((step) => step.includes('transcend '));
 
-    expect(commands).toHaveLength(2);
+    expect(commands).toHaveLength(3);
     expect(commands[0]).toContain("--manifest='custom-functions/functions.yml'");
-    expect(commands[1]).toContain("--file='custom-functions/functions.yml'");
+    expect(commands[1]).toContain("--manifest='custom-functions/functions.yml'");
+    expect(commands[2]).toContain("--file='custom-functions/functions.yml'");
   });
 
   it('builds a deterministic manifest, source, and payload plan', () => {

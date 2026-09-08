@@ -91,10 +91,11 @@ describe('custom-functions new', () => {
     expect(lines[handoffHeading + 1]).toMatch(/^(?:Ask|Use) /u);
     const nextStepsHeading = lines.indexOf('Next steps');
     const nextSteps = lines.slice(nextStepsHeading + 1, handoffHeading).filter(Boolean);
-    expect(nextSteps).toHaveLength(3);
+    expect(nextSteps).toHaveLength(4);
     expect(nextSteps[0]).toMatch(/^Edit /u);
-    expect(nextSteps[1]).toMatch(/^transcend custom-functions check /u);
-    expect(nextSteps[2]).toMatch(/^transcend custom-functions push /u);
+    expect(nextSteps[1]).toMatch(/^transcend custom-functions run /u);
+    expect(nextSteps[2]).toMatch(/^transcend custom-functions check /u);
+    expect(nextSteps[3]).toMatch(/^transcend custom-functions push /u);
     expect(context.stdout).toContain('implement `Example Function`');
     expect(context.stdout).toContain('replace the example fixtures with realistic cases');
   });

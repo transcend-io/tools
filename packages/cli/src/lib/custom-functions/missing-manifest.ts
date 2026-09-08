@@ -1,7 +1,7 @@
 import { dirname, relative } from 'node:path';
 
 /** Command that can be redirected to a discovered Custom Function project. */
-export type ManifestConsumerCommand = 'check' | 'new';
+export type ManifestConsumerCommand = 'check' | 'new' | 'run';
 
 /**
  * Format actionable guidance when a requested Custom Function manifest is absent.

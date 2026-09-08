@@ -569,6 +569,9 @@ export function buildAddFunctionPlan(
   );
   plan.nextSteps = [
     `Edit ${quoteCliArgument(displayCliPath(state.invocationDirectory, sourcePath))}`,
+    `transcend custom-functions run ${projectArguments} --function=${quoteCliArgument(
+      options.generated.displayName,
+    )}`,
     `transcend custom-functions check ${projectArguments}`,
     `transcend custom-functions push --file=${quoteCliArgument(
       displayCliPath(state.invocationDirectory, state.manifestPath),

@@ -14,7 +14,7 @@ Use the CLI for deterministic scaffolding and validation. Use this skill for the
 2. For project setup, Deno, editor support, or CI, read [references/setup.md](references/setup.md).
 3. For handlers, manifest entries, test payloads, validation, or deployment, read [references/writing-custom-functions.md](references/writing-custom-functions.md).
 4. Follow existing repository conventions and preserve unrelated configuration.
-5. Run `transcend custom-functions check <custom-function-directory>` before considering the work complete.
+5. Use `transcend custom-functions run <custom-function-directory>` while developing, then run `transcend custom-functions check <custom-function-directory>` before considering the work complete.
 
 ## Documentation
 

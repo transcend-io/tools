@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 describe('custom-functions routes', () => {
-  it('registers init, new, and check in command help', async () => {
+  it('registers local development commands in command help', async () => {
     const context = buildContextForTest({
       cwd: makeTemporaryRoot(),
       exitBehavior: 'record',
@@ -44,5 +44,7 @@ describe('custom-functions routes', () => {
     expect(output).toContain('Scaffold one local Custom Function');
     expect(output).toContain('check');
     expect(output).toContain('Validate a local Custom Function project');
+    expect(output).toContain('run');
+    expect(output).toContain('Run Custom Function fixtures in a local Deno simulator');
   });
 });

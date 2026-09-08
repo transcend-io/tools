@@ -5,7 +5,7 @@
 
 Add a guided local workflow for developing Custom Functions without Transcend credentials.
 
-`custom-functions init` creates a project and can set up Deno, editor recommendations, an AI authoring skill, and CI checks. `custom-functions new` adds a General or DSR starter with test payloads. `custom-functions check` validates the project locally with Deno 2.x before it is pushed.
+`custom-functions init` creates a project and can set up Deno, editor recommendations, an AI authoring skill, and CI checks. `custom-functions new` adds a General or DSR starter with test payloads. `custom-functions run` exercises those payloads in a credential-free local Deno simulator and shows function logs. `custom-functions check` validates the project locally with Deno 2.x before it is pushed.
 
 The same `transcend-custom-functions` skill can also be installed directly from the Transcend tools repository with `npx skills`.
 

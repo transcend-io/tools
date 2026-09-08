@@ -43,6 +43,7 @@ A command line interface that allows you to programatically interact with the Tr
   - [`transcend custom-functions init`](#transcend-custom-functions-init)
   - [`transcend custom-functions new`](#transcend-custom-functions-new)
   - [`transcend custom-functions check`](#transcend-custom-functions-check)
+  - [`transcend custom-functions run`](#transcend-custom-functions-run)
   - [`transcend custom-functions push`](#transcend-custom-functions-push)
   - [`transcend custom-functions list`](#transcend-custom-functions-list)
   - [`transcend inventory pull`](#transcend-inventory-pull)
@@ -2603,6 +2604,42 @@ transcend custom-functions check
 `check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. It validates unresolved manifest placeholders and every test fixture against the published authoring schemas, then asks Deno 2.x to inspect exports, type-check, lint, and check formatting without executing the modules. Missing and unsupported Deno versions produce focused installation or upgrade guidance.
 
 In CI, use `--noInteractive --json`. JSON diagnostics stay concise instead of embedding full format patches. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
+
+### `transcend custom-functions run`
+
+```txt
+USAGE
+  transcend custom-functions run [--manifest value] [--function value] [--variables value] [--noInteractive] [--allowNetwork] [<directory>]
+  transcend custom-functions run --help
+
+Executes one manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required, and real network requests are disabled unless --allowNetwork is passed.
+
+FLAGS
+     [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--function]       Exact Custom Function name or ID; prompts when omitted
+     [--variables]      Comma-separated parameter values such as apiKey:value                 [default = ""]
+     [--noInteractive]  Disable function selection prompts                                    [default = false]
+     [--allowNetwork]   Permit real native fetch calls to manifest allowed-hosts              [default = false]
+  -h  --help            Print help information and exit
+
+ARGUMENTS
+  [directory]  Custom Function project directory [default = transcend/custom-functions]
+```
+
+#### Run locally
+
+```sh
+transcend custom-functions run ./transcend/custom-functions \
+  --function="Customer CRM access"
+```
+
+The command runs every test payload configured for the selected function and prints its stdout and stderr, including `console.log` output. When `--function` is omitted, a single manifest entry is selected automatically; an interactive terminal prompts when the manifest contains several functions.
+
+This is a credential-free development simulator, not an exact Sombra runtime. It mirrors production export selection, payload defaults, environment isolation, network permissions, timeout behavior, and KV limits. Each payload receives a fresh in-memory KV store. Calls to `sdk.fetch` are logged and return a simulated HTTP 200 without sending a request.
+
+Native `fetch` is denied by default. Pass `--allowNetwork` to permit real requests only to the manifest's `allowed-hosts`; like Sombra, an empty list then permits localhost. Real requests can have side effects.
+
+Use `--variables` for manifest parameter values needed by the local run. Configured environment values are redacted from captured output. Before deployment, run `transcend custom-functions check` and use the authenticated `push` test run for production-runtime validation.
 
 ### `transcend custom-functions push`
 

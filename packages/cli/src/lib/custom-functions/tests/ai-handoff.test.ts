@@ -27,15 +27,17 @@ describe('buildInitAiHandoff', () => {
 
 describe('buildNewFunctionAiHandoff', () => {
   it('routes implementation through the installed authoring skill', () => {
-    expect(
-      buildNewFunctionAiHandoff({
-        displayName: 'Customer CRM access',
-        sourcePath: 'transcend/custom-functions/functions/customer-crm-access.ts',
-        targetDirectory: 'transcend/custom-functions',
-        manifestPath: 'transcend/custom-functions/transcend-functions.yml',
-        hasSkill: true,
-      }),
-    ).toContain('Use the `transcend-custom-functions` skill');
+    const handoff = buildNewFunctionAiHandoff({
+      displayName: 'Customer CRM access',
+      sourcePath: 'transcend/custom-functions/functions/customer-crm-access.ts',
+      targetDirectory: 'transcend/custom-functions',
+      manifestPath: 'transcend/custom-functions/transcend-functions.yml',
+      hasSkill: true,
+    });
+
+    expect(handoff).toContain('Use the `transcend-custom-functions` skill');
+    expect(handoff).toContain('transcend custom-functions run');
+    expect(handoff).toContain("--function='Customer CRM access'");
   });
 
   it('preserves a custom manifest path in the validation command', () => {

@@ -1,5 +1,5 @@
 import { CUSTOM_FUNCTION_SKILL_NAME } from './custom-function-skill.js';
-import { buildCustomFunctionProjectArguments } from './paths.js';
+import { buildCustomFunctionProjectArguments, quoteCliArgument } from './paths.js';
 
 /**
  * Build a compact AI handoff after project initialization.
@@ -57,5 +57,9 @@ export function buildNewFunctionAiHandoff(options: {
     options.targetDirectory,
     options.manifestPath,
   )}`;
-  return `${prefix} implement \`${options.displayName}\` in \`${options.sourcePath}\`, replace the example fixtures with realistic cases, and run \`${checkCommand}\`.`;
+  const runCommand =
+    `transcend custom-functions run ` +
+    `${buildCustomFunctionProjectArguments(options.targetDirectory, options.manifestPath)} ` +
+    `--function=${quoteCliArgument(options.displayName)}`;
+  return `${prefix} implement \`${options.displayName}\` in \`${options.sourcePath}\`, replace the example fixtures with realistic cases, run \`${runCommand}\` to exercise it locally, and finish with \`${checkCommand}\`.`;
 }
