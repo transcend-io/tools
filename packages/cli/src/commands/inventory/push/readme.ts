@@ -221,7 +221,7 @@ jobs:
 
 If you are using this CLI to sync your Data Map between multiple Transcend instances, you may find the need to make minor modifications to your configurations between environments. The most notable difference would be the domain where your webhook URLs are hosted on.
 
-The \`transcend inventory push\` command accepts \`--parameters\` as a comma-separated list of \`key:value\` pairs.
+The \`transcend inventory push\` command accepts \`--parameters\` as a comma-separated list of \`key:value\` pairs. Colons are preserved in values; escape a literal comma as \`\\,\` inside a quoted flag value.
 
 This command could fill out multiple parameters in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
 

@@ -117,6 +117,8 @@ functions:
 | \`allow-third-party-imports\` | No | Whether the function may import third party modules. |
 | \`env\` | No | Environment variables exposed to the function. Use \`<<parameters.name>>\` placeholders with the \`--parameters\` flag to avoid committing secrets. |
 
+Local authoring commands require source and payload paths to stay inside the Custom Function project. \`push\` continues to accept parent-relative paths for compatibility with existing manifests. Parameter values preserve colons; escape a literal comma as \`\\,\` inside a quoted \`--parameters\` value.
+
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use \`--force\` to push a new revision.
 
 Functions may belong to different Sombra gateways within one manifest; the command connects to each distinct gateway as needed. \`--sombraAuth\` provides the default internal key; when self-hosted gateways use *different* internal keys, set \`sombra-auth-env\` per entry to the name of the environment variable holding that gateway's key:

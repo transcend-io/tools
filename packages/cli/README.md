@@ -2579,13 +2579,15 @@ Generated code contains only the selected handler exports and focused TODOs. Cus
 
 ```txt
 USAGE
-  transcend custom-functions check [--manifest value] [--fix] [--noInteractive] [--json] [<directory>]
+  transcend custom-functions check [--manifest value] [--parameters value] [--variables value] [--fix] [--noInteractive] [--json] [<directory>]
   transcend custom-functions check --help
 
 Checks manifest semantics and published payload schemas, then uses Deno 2.4.5 without executing user modules to inspect exports, type-check, lint, and verify formatting.
 
 FLAGS
      [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
+     [--parameters]     Comma-separated parameter values used in manifest paths               [default = ""]
+     [--variables]      Deprecated alias for --parameters                                     [default = ""]
      [--fix]            Apply Deno formatting to manifest-referenced files                    [default = false]
      [--noInteractive]  Disable the optional formatting confirmation                          [default = false]
      [--json]           Emit a stable JSON result and imply non-interactive behavior          [default = false]
@@ -2601,7 +2603,7 @@ ARGUMENTS
 transcend custom-functions check
 ```
 
-`check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. It validates unresolved manifest placeholders and every test fixture against the published authoring schemas, then asks Deno 2.4.5 to inspect exports, type-check, lint, and check formatting without executing the modules. Missing and unsupported Deno versions produce focused installation or version-switch guidance.
+`check` defaults to `transcend/custom-functions` and needs no API key. If that manifest is missing, it reports any project manifest it discovers as an explicit suggestion. Pass `--parameters` when source or payload paths contain placeholders; unresolved environment placeholders remain valid. It validates every test fixture against the published authoring schemas, rejects local runtime imports that cannot be deployed, then asks Deno 2.4.5 to inspect exports, type-check, lint, and check formatting without executing the modules. Missing and unsupported Deno versions produce focused installation or version-switch guidance.
 
 In CI, use `--noInteractive --json`. JSON diagnostics stay concise instead of embedding full format patches. Formatting differences fail unless `--fix` is explicitly passed; an interactive terminal may preview and confirm the same repair.
 
@@ -2612,7 +2614,7 @@ USAGE
   transcend custom-functions run [--manifest value] [--function value] [--parameters value] [--variables value] [--noInteractive] [--allowNetwork] [<directory>]
   transcend custom-functions run --help
 
-Executes one manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required, and real network requests are disabled unless --allowNetwork is passed.
+Executes one self-contained manifest function against its configured test payloads with production-like payload preparation, restricted Deno permissions, an in-memory KV store, and a simulated sdk.fetch implementation. No credentials are required. Native fetch is disabled unless --allowNetwork is passed; module imports follow allow-third-party-imports.
 
 FLAGS
      [--manifest]       Path to transcend-functions.yml; defaults inside the target directory
@@ -2636,11 +2638,11 @@ transcend custom-functions run ./transcend/custom-functions \
 
 The command runs every test payload configured for the selected function and prints its stdout and stderr, including `console.log` output. When `--function` is omitted, a single manifest entry is selected automatically; an interactive terminal prompts when the manifest contains several functions.
 
-This is a credential-free development simulator, not an exact Sombra runtime. It mirrors production export selection, payload defaults, environment isolation, network permissions, timeout behavior, and KV limits. Each payload receives a fresh in-memory KV store. Calls to `sdk.fetch` are logged and return a simulated HTTP 200 without sending a request.
+This is a credential-free development simulator, not an exact Sombra runtime. Custom Functions must be self-contained because only the entry source file is deployed; local runtime imports are rejected. The simulator mirrors production export selection, payload defaults, environment isolation, network permissions, timeout behavior, and KV limits. Each payload receives a fresh in-memory KV store. Calls to `sdk.fetch` are logged and return a simulated HTTP 200 without sending a request.
 
 Native `fetch` is denied by default. Pass `--allowNetwork` to permit real requests only to the manifest's `allowed-hosts`; like Sombra, an empty list then permits localhost. Real requests can have side effects.
 
-With networking disabled, unresolved parameters used only in `env` receive clearly labeled local placeholder values. Use `--parameters` to override them; parameters used in source or payload paths always remain required. Configured environment values are redacted from captured output. Before deployment, run `transcend custom-functions check` and use the authenticated `push` test run for production-runtime validation.
+With networking disabled, unresolved parameters used only in `env` receive clearly labeled local placeholder values. Use `--parameters` to override them; parameters used in source or payload paths always remain required. Colons are preserved in values; escape a literal comma as `\,` inside a quoted flag value. Configured environment values are redacted from captured output. Before deployment, run `transcend custom-functions check` and use the authenticated `push` test run for production-runtime validation.
 
 ### `transcend custom-functions push`
 
@@ -2728,6 +2730,8 @@ functions:
 | `timeout-ms`                | No       | Execution timeout in milliseconds.                                                                                                                                                                                                                                                                                                                                                                            |
 | `allow-third-party-imports` | No       | Whether the function may import third party modules.                                                                                                                                                                                                                                                                                                                                                          |
 | `env`                       | No       | Environment variables exposed to the function. Use `<<parameters.name>>` placeholders with the `--parameters` flag to avoid committing secrets.                                                                                                                                                                                                                                                               |
+
+Local authoring commands require source and payload paths to stay inside the Custom Function project. `push` continues to accept parent-relative paths for compatibility with existing manifests. Parameter values preserve colons; escape a literal comma as `\,` inside a quoted `--parameters` value.
 
 Note: environment variable values are encrypted by Sombra and cannot be diffed. When only an env value changes, use `--force` to push a new revision.
 
@@ -3296,7 +3300,7 @@ jobs:
 
 If you are using this CLI to sync your Data Map between multiple Transcend instances, you may find the need to make minor modifications to your configurations between environments. The most notable difference would be the domain where your webhook URLs are hosted on.
 
-The `transcend inventory push` command accepts `--parameters` as a comma-separated list of `key:value` pairs.
+The `transcend inventory push` command accepts `--parameters` as a comma-separated list of `key:value` pairs. Colons are preserved in values; escape a literal comma as `\,` inside a quoted flag value.
 
 This command could fill out multiple parameters in a YAML file like [./examples/multi-instance.yml](./examples/multi-instance.yml), copied below:
 

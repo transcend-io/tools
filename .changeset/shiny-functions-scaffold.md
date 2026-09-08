@@ -14,3 +14,5 @@ The guided setup previews its changes and finishes with clear next steps and a c
 Use `--parameters=name:value` to fill `<<parameters.name>>` placeholders. The existing `--variables` spelling remains available as a compatibility alias.
 
 For safe local runs without network access, unresolved environment-only parameters receive synthetic placeholder values with a warning; pushes and file-path parameters still require explicit values.
+
+Validation rejects local runtime imports because only a function's entry source is deployed. Parameter values preserve colons and support escaped commas, formatting fixes use the same transactional safeguards as scaffolding, and generated skills and CI remain updateable without overwriting user customizations.
