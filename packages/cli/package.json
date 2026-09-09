@@ -1,6 +1,6 @@
 {
   "name": "@transcend-io/cli",
-  "version": "10.27.5",
+  "version": "10.28.0",
   "description": "A command line interface for programmatic operations across Transcend.",
   "homepage": "https://github.com/transcend-io/tools/tree/main/packages/cli",
   "license": "Apache-2.0",
@@ -124,7 +124,7 @@
     "newtype-ts": "^0.3.5",
     "query-string": "=7.0.0",
     "semver": "catalog:",
-    "undici": "6.28.0",
+    "undici": "^6.28.1",
     "yaml": "catalog:",
     "yargs-parser": "^21.1.1"
   },

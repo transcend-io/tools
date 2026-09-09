@@ -277,6 +277,59 @@ describe('runCustomFunctionChecks with mocked Deno', () => {
     ]);
   });
 
+  it('extracts inline deno.json imports for export inspection', async () => {
+    const root = makeTemporaryRoot();
+    const { manifestPath } = writeGeneralProject(root);
+    writeFileSync(
+      join(root, 'deno.json'),
+      JSON.stringify(
+        {
+          imports: {
+            '@transcend-io/custom-function-types': 'npm:@transcend-io/custom-function-types@0.1.0',
+          },
+          tasks: { 'custom-functions:check': 'transcend custom-functions check' },
+          compilerOptions: { strict: true },
+        },
+        null,
+        2,
+      ),
+    );
+    const context = buildContextForTest({ cwd: root });
+    const calls: string[][] = [];
+    const runner: CapturedProcessRunner = (_command, args) => {
+      calls.push([...args]);
+      if (args[0] === '--version') {
+        return Promise.resolve(processResult({ stdout: recommendedDenoOutput }));
+      }
+      if (args[0] === 'info') {
+        return Promise.resolve(processResult({ stdout: emptyModuleGraph(args.at(-1)!) }));
+      }
+      if (args[0] === 'doc') {
+        return Promise.resolve(processResult({ stdout: '[{"name":"default"}]' }));
+      }
+      return Promise.resolve(processResult());
+    };
+
+    const result = await runCustomFunctionChecks(context, { manifestPath, fix: false }, runner);
+    const docCall = calls.find(([command]) => command === 'doc')!;
+    const importMapDataUrl = docCall[3]!;
+
+    expect(result.status).toBe('passed');
+    expect(importMapDataUrl).toMatch(/^data:application\/json,/u);
+    expect(JSON.parse(decodeURIComponent(importMapDataUrl.split(',', 2)[1]!))).toEqual({
+      imports: {
+        '@transcend-io/custom-function-types': 'npm:@transcend-io/custom-function-types@0.1.0',
+      },
+    });
+    expect(calls).toContainEqual([
+      'doc',
+      '--json',
+      '--import-map',
+      importMapDataUrl,
+      join(root, 'function.ts'),
+    ]);
+  });
+
   it('only treats top-level Deno document nodes as exports', async () => {
     const root = makeTemporaryRoot();
     const { manifestPath } = writeGeneralProject(root);
