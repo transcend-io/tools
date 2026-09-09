@@ -2545,12 +2545,12 @@ USAGE
   transcend custom-functions new [--manifest value] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
   transcend custom-functions new --help
 
-Adds a deterministic General or DSR starter to an initialized Custom Function project and safely appends its manifest entry without credentials.
+Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions supporting data point resolvers, preflight checks, or both.
 
 FLAGS
      [--manifest]       Path to an existing transcend-functions.yml
      [--name]           Customer-visible Custom Function display name
-     [--template]       Generated handler and fixture shape                        [general|dsr-datapoint|dsr-enricher|dsr-both]
+     [--template]       Function type and generated handler shape                  [general|dsr-datapoint|dsr-enricher|dsr-both]
      [--noInteractive]  Disable prompts and require every missing answer as a flag [default = false]
      [--dryRun]         Preview all changes without writing files                  [default = false]
      [--yes]            Skip only the final plan confirmation                      [default = false]
@@ -2571,7 +2571,7 @@ transcend custom-functions new ./transcend/custom-functions \
   --yes
 ```
 
-Run `transcend custom-functions init` once before adding functions. The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
+Run `transcend custom-functions init` once before adding functions. There are two Custom Function types: General functions, which are triggered by Rules Automation, and DSR functions. Choose `general` for a General function. For a DSR function, choose `dsr-datapoint` for a data point resolver, `dsr-enricher` for a preflight check, or `dsr-both` to support both. The `dsr-enricher` flag retains the API's technical export name, but the user-facing workflow is called preflight. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
 
 Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill. The final output includes a short, copyable AI handoff naming the generated source and validation command.
 
