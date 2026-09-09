@@ -1,13 +1,10 @@
-import { spawn } from 'node:child_process';
-import { platform } from 'node:os';
-
 import colors from 'colors';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { openLogTailWindowMulti } from '../openTerminal.js';
+import { openLogTailWindowMulti, type OpenTerminalPorts } from '../openTerminal.js';
 
 /**
- * Mock external deps BEFORE importing the SUT.
+ * Normalize color output for error assertions.
  */
 vi.mock('colors', () => ({
   default: {
@@ -15,16 +12,14 @@ vi.mock('colors', () => ({
     red: vi.fn((s: string) => `[red]${s}`),
   },
 }));
-vi.mock('node:child_process', () => ({
-  spawn: vi.fn(),
-}));
-vi.mock('node:os', () => ({
-  platform: vi.fn(),
-}));
 
-const mSpawn = vi.mocked(spawn);
-const mPlatform = vi.mocked(platform);
+const mSpawn = vi.fn();
+const mPlatform = vi.fn((): NodeJS.Platform => 'linux');
 const mRed = vi.mocked(colors.red);
+const ports: OpenTerminalPorts = {
+  platform: mPlatform,
+  spawn: mSpawn as unknown as OpenTerminalPorts['spawn'],
+};
 
 /**
  * Build a fake ChildProcess-like object that supports `.unref()`.
@@ -42,13 +37,15 @@ function fakeChild(): {
 
 describe('openLogTailWindowMulti', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mSpawn.mockReset();
+    mPlatform.mockReset();
+    mRed.mockClear();
   });
 
   it('does nothing when isSilent is true', () => {
     mPlatform.mockReturnValue('darwin');
 
-    openLogTailWindowMulti(['/a.log'], 'My Title', true);
+    openLogTailWindowMulti(['/a.log'], 'My Title', true, ports);
 
     expect(mSpawn).not.toHaveBeenCalled();
     // No need to assert logger calls here; silent path short-circuits.
@@ -62,7 +59,7 @@ describe('openLogTailWindowMulti', () => {
     const paths = ['/var/log/app.log', "weird name's.log"];
     const title = 'Pool Tail';
 
-    openLogTailWindowMulti(paths, title);
+    openLogTailWindowMulti(paths, title, false, ports);
 
     expect(mSpawn).toHaveBeenCalledTimes(1);
     const [cmd, args, opts] = mSpawn.mock.calls[0]!;
@@ -87,7 +84,7 @@ describe('openLogTailWindowMulti', () => {
     const paths = ['C:\\logs\\one.log', "C:\\O'Brien\\two.log"];
     const title = 'Tail Window';
 
-    openLogTailWindowMulti(paths, title);
+    openLogTailWindowMulti(paths, title, false, ports);
 
     expect(mSpawn).toHaveBeenCalledTimes(1);
     const [cmd, args, opts] = mSpawn.mock.calls[0]!;
@@ -114,7 +111,7 @@ describe('openLogTailWindowMulti', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mSpawn.mockReturnValue(child as any);
 
-    openLogTailWindowMulti(['/tmp/a.log', '/tmp/b.log'], 'Linux Tail');
+    openLogTailWindowMulti(['/tmp/a.log', '/tmp/b.log'], 'Linux Tail', false, ports);
 
     expect(mSpawn).toHaveBeenCalledTimes(1);
     const [cmd, args, opts] = mSpawn.mock.calls[0]!;
@@ -142,7 +139,7 @@ describe('openLogTailWindowMulti', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mSpawn.mockImplementationOnce(() => child as any);
 
-    openLogTailWindowMulti(['/var/log/x.log'], 'Fallback Tail');
+    openLogTailWindowMulti(['/var/log/x.log'], 'Fallback Tail', false, ports);
 
     expect(mSpawn).toHaveBeenCalledTimes(2);
 
@@ -169,7 +166,7 @@ describe('openLogTailWindowMulti', () => {
       throw boom;
     });
 
-    expect(() => openLogTailWindowMulti(['/x.log'], 'Err Tail')).toThrow(boom);
+    expect(() => openLogTailWindowMulti(['/x.log'], 'Err Tail', false, ports)).toThrow(boom);
 
     // We can reliably assert that colors.red was called to format the error line.
     expect(mRed).toHaveBeenCalled();

@@ -141,6 +141,30 @@ describe('Consent Tools', () => {
       });
     });
   });
+  describe('consent_list_regimes', () => {
+    it('trims the extra row the experiences query returns beyond `first`', async () => {
+      // The API answers `first: n` with n+1 rows, so without trimming a caller
+      // asking for 3 regimes gets 4 and offset paging double-counts the seam.
+      mockGraphql.makeRequest.mockResolvedValue({
+        experiences: {
+          totalCount: 10,
+          nodes: [
+            { id: 'e1', name: 'CDPA' },
+            { id: 'e2', name: 'CPA' },
+            { id: 'e3', name: 'LGPD' },
+            { id: 'e4', name: 'Unknown' },
+          ],
+        },
+      });
+
+      const tool = getTools().find((t) => t.name === 'consent_list_regimes')!;
+      const result: any = await tool.handler({ limit: 3, offset: 0 });
+
+      expect(result.data).toHaveLength(3);
+      expect(result.data.map((n: any) => n.id)).toEqual(['e1', 'e2', 'e3']);
+      expect(result.hasNextPage).toBe(true);
+    });
+  });
 
   describe('consent_list_purposes', () => {
     it('returns list on success', async () => {
@@ -233,7 +257,7 @@ describe('Consent Tools', () => {
       expect(variables.filterBy).not.toHaveProperty('showZeroActivity');
     });
 
-    it('defaults OffsetPaginationSchema first/offset and forwards first to GraphQL', async () => {
+    it('defaults limit/offset and forwards limit as GraphQL `first`', async () => {
       const variables = await runDataFlows({ status: 'NEEDS_REVIEW' });
       expect(variables.first).toBe(50);
       expect(variables.offset).toBe(0);
@@ -517,7 +541,7 @@ describe('Consent Tools', () => {
       });
     });
 
-    it('defaults OffsetPaginationSchema first/offset and forwards first to GraphQL', async () => {
+    it('defaults limit/offset and forwards limit as GraphQL `first`', async () => {
       mockGraphql.makeRequest.mockResolvedValueOnce({
         consentManager: { consentManager: { id: 'bundle-1' } },
       });
@@ -526,7 +550,7 @@ describe('Consent Tools', () => {
       });
       const tool = getTools().find((t) => t.name === 'consent_list_cookies')!;
       const parsed = tool.zodSchema.parse({ status: 'LIVE' });
-      expect(parsed.first).toBe(50);
+      expect(parsed.limit).toBe(50);
       expect(parsed.offset).toBe(0);
       await tool.handler(parsed);
       const variables = mockGraphql.makeRequest.mock.calls[1][1];

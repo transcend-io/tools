@@ -14,7 +14,7 @@ import { ElicitRequestSchema, type ElicitResult } from '@modelcontextprotocol/sd
 import { describe, expect, it, vi } from 'vitest';
 
 import { buildMcpServer } from '../src/server/build-server.js';
-import { APPROVAL_TOKEN_ARG, ConfirmationCode } from '../src/tools/confirmation.js';
+import { APPROVAL_TOKEN_ARG, ConfirmationCode } from '../src/tools/confirmation/index.js';
 import { defineTool, type ToolDefinition } from '../src/tools/types.js';
 import { z } from '../src/validation/index.js';
 

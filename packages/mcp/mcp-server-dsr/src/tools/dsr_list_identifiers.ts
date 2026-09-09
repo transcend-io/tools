@@ -22,10 +22,10 @@ export function createDsrListIdentifiersTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     requireSombra: true,
     zodSchema: listIdentifiersSchema,
-    handler: async ({ requestId, first, offset }) => {
-      const identifiers = await rest.listRequestIdentifiers(requestId, { first, offset });
+    handler: async ({ requestId, limit, offset }) => {
+      const identifiers = await rest.listRequestIdentifiers(requestId, { first: limit, offset });
 
-      const hasNextPage = identifiers.length === first;
+      const hasNextPage = identifiers.length === limit;
 
       return createListResult(identifiers, { hasNextPage });
     },

@@ -30,7 +30,7 @@ export const pushCommand = buildCommand({
         kind: 'parsed',
         parse: String,
         brief:
-          'The variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.',
+          'Variables to template into the manifest file (e.g. secret env values). Comma-separated list of key:value pairs.',
         default: '',
       },
       dryRun: {

@@ -1,5 +1,47 @@
 # @transcend-io/cli
 
+## 10.28.0
+
+### Minor Changes
+
+- 7384caa: Add a guided local workflow for developing Custom Functions without Transcend credentials.
+
+  `custom-functions init` creates a project and can set up Deno, editor recommendations, an AI authoring skill, and CI checks. `custom-functions new` adds a General or DSR starter with test payloads. `custom-functions run` exercises those payloads in a credential-free local Deno simulator and shows function logs. `custom-functions check` validates the project locally with Deno before it is pushed.
+
+  The same `transcend-custom-functions` skill can also be installed directly from the Transcend tools repository with `npx skills`.
+
+  The guided setup previews its changes and finishes with clear next steps and a compact prompt for handing remaining implementation or CI work to an AI coding agent.
+
+### Patch Changes
+
+- cfc269d: Fix Custom Function export checks for Deno configurations that contain non-import-map settings.
+- 7630f48: Widen undici range for security patches
+- Updated dependencies [7384caa]
+  - @transcend-io/custom-function-types@0.2.0
+
+## 10.27.5
+
+### Patch Changes
+
+- 46488a6: Route CLI runtime I/O through Stricli's isolated command context and centralize pooling UI
+  wiring so embedded and test invocations can provide their own process streams, filesystem, and
+  logger.
+- 118c5b6: Move CSV and YAML filesystem access to Stricli command boundaries while preserving reusable,
+  pure parsing, serialization, and file-selection helpers.
+- c5fb568: Move consent CSV parsing and row mapping into pure functions while routing command filesystem,
+  logging, network, and exit behavior through the isolated CLI context.
+- Updated dependencies [7e7d797]
+  - @transcend-io/sdk@2.1.5
+
+## 10.27.4
+
+### Patch Changes
+
+- Updated dependencies [a19b07e]
+  - @transcend-io/privacy-types@5.26.0
+  - @transcend-io/airgap.js-types@14.2.41
+  - @transcend-io/sdk@2.1.4
+
 ## 10.27.3
 
 ### Patch Changes

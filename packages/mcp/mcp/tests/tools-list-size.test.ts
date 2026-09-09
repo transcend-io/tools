@@ -1,6 +1,7 @@
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import {
   isVisibleToModel,
+  toolInputSchema,
   TranscendRestClient,
   type AuthCredentials,
 } from '@transcend-io/mcp-server-base';
@@ -17,10 +18,6 @@ const MAX_TOOL_DESCRIPTION_CHARS = 700;
 /**
  * Ceiling for the full stdio-shaped tools/list JSON (name, description,
  * inputSchema, annotations). Character length of JSON.stringify.
- * Measured at 76,087 across 82 tools after relocating TRANSCEND_SCOPES. Prefer
- * consolidating or trimming descriptors over raising this cap.
- * App-only tools (`visibility` omitting `model`) are excluded — they are not
- * sent in tools/list and do not consume model context.
  */
 const MAX_TOOLS_LIST_JSON_CHARS = 85_000;
 

@@ -1,4 +1,5 @@
 import {
+  derivePageInfo,
   TranscendGraphQLBase,
   type EmailTemplate,
   type ListOptions,
@@ -10,8 +11,8 @@ import {
 import { graphql } from './__generated__/gql.js';
 
 const ListWorkflowsDoc = graphql(/* GraphQL */ `
-  query WorkflowsList($first: Int) {
-    workflows(first: $first) {
+  query WorkflowsList($first: Int, $offset: Int) {
+    workflows(first: $first, offset: $offset) {
       nodes {
         id
         title {
@@ -82,8 +83,10 @@ const ListEmailTemplatesDoc = graphql(/* GraphQL */ `
 
 export class WorkflowsMixin extends TranscendGraphQLBase {
   async listWorkflows(options?: ListOptions): Promise<PaginatedResponse<Workflow>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListWorkflowsDoc, {
       first: Math.min(options?.first ?? 50, 100),
+      offset,
     });
     return {
       nodes: data.workflows.nodes.map((w) => ({
@@ -94,10 +97,11 @@ export class WorkflowsMixin extends TranscendGraphQLBase {
         actionType: w.action?.type ?? undefined,
         subjectType: w.subject?.type ?? undefined,
       })),
-      pageInfo: {
-        hasNextPage: data.workflows.nodes.length < data.workflows.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: data.workflows.nodes.length,
+        totalCount: data.workflows.totalCount,
+      }),
       totalCount: data.workflows.totalCount,
     };
   }
@@ -126,9 +130,10 @@ export class WorkflowsMixin extends TranscendGraphQLBase {
   }
 
   async listEmailTemplates(options?: ListOptions): Promise<PaginatedResponse<EmailTemplate>> {
+    const offset = options?.offset ?? 0;
     const data = await this.makeRequest(ListEmailTemplatesDoc, {
       first: Math.min(options?.first ?? 50, 100),
-      offset: options?.offset ?? 0,
+      offset,
     });
     const templates: EmailTemplate[] = data.templates.nodes.map((t) => ({
       id: t.id,
@@ -142,10 +147,11 @@ export class WorkflowsMixin extends TranscendGraphQLBase {
     }));
     return {
       nodes: templates,
-      pageInfo: {
-        hasNextPage: templates.length < data.templates.totalCount,
-        hasPreviousPage: false,
-      },
+      pageInfo: derivePageInfo({
+        offset,
+        nodeCount: templates.length,
+        totalCount: data.templates.totalCount,
+      }),
       totalCount: data.templates.totalCount,
     };
   }

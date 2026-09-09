@@ -1,6 +1,7 @@
 import {
   createListResult,
   defineTool,
+  derivePageInfo,
   OffsetPaginationSchema,
   z,
   type ToolClients,
@@ -78,7 +79,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListCookiesSchema,
     handler: async ({
-      first,
+      limit,
       offset,
       status,
       isJunk,
@@ -95,7 +96,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       const airgapBundleId = await resolveAirgapBundleId(clients.graphql);
       const data = await clients.graphql.makeRequest<TranscendCliCookiesResponse>(COOKIES, {
         input: { airgapBundleId },
-        first,
+        first: limit,
         offset,
         filterBy: {
           status,
@@ -124,7 +125,7 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       const { nodes, totalCount } = data.cookies;
       return createListResult(nodes, {
         totalCount,
-        hasNextPage: offset + nodes.length < totalCount,
+        hasNextPage: derivePageInfo({ offset, nodeCount: nodes.length, totalCount }).hasNextPage,
       });
     },
   });

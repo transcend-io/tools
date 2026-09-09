@@ -9,7 +9,6 @@ import {
   syncOneTrustAssessmentsFromOneTrust,
 } from '../../../lib/oneTrust/helpers/index.js';
 import { createOneTrustGotInstance } from '../../../lib/oneTrust/index.js';
-import { logger } from '../../../logger.js';
 
 // Command flag interface
 export interface SyncOtCommandFlags {
@@ -101,7 +100,7 @@ export async function syncOt(
     }
   }
 
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   // instantiate a client to talk to OneTrust
   const oneTrust =
@@ -140,7 +139,7 @@ export async function syncOt(
   }
 
   // Indicate success
-  logger.info(
+  this.logger.info(
     colors.green(
       `Successfully synced OneTrust ${resource} to ${dryRun ? `disk at "${file}"` : 'Transcend'}!`,
     ),
