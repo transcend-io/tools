@@ -282,6 +282,7 @@ export async function init(
             ),
           }
         : {}),
+      hasSkill: features.includes(PolicySetupFeature.Skill),
       lintCommand: plan.nextSteps[0]!,
     });
     const result = buildPolicyInitPlanResult(plan, {

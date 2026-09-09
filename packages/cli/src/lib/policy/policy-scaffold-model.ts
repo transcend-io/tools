@@ -33,6 +33,8 @@ export interface PolicyProjectState {
   usesGithub: boolean;
   /** Case-preserving relative paths below the policy directory. */
   relativePaths: string[];
+  /** Relative file and link paths below the policy directory. */
+  relativeFilePaths: string[];
 }
 
 /** A complete, validated policy initialization plan. */

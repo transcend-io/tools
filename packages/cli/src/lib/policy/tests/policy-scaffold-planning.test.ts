@@ -33,6 +33,7 @@ function buildState(
     existingSkillDirectories: [],
     usesGithub: true,
     relativePaths: [],
+    relativeFilePaths: [],
   };
 }
 
@@ -60,6 +61,7 @@ function initializedState(state: PolicyProjectState): {
 } {
   const snapshots = absentSnapshots(getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS));
   const relativePaths = new Set<string>();
+  const relativeFilePaths: string[] = [];
   generatePolicyStarterFiles().forEach((file) => {
     const path = join(state.targetDirectory, file.path);
     snapshots[path] = {
@@ -68,7 +70,9 @@ function initializedState(state: PolicyProjectState): {
       contents: file.contents,
       mode: 0o100644,
     };
-    relativePaths.add(relative(state.targetDirectory, path).split(sep).join('/'));
+    const relativePath = relative(state.targetDirectory, path).split(sep).join('/');
+    relativePaths.add(relativePath);
+    relativeFilePaths.push(relativePath);
     let parent = dirname(path);
     while (parent !== state.targetDirectory) {
       relativePaths.add(relative(state.targetDirectory, parent).split(sep).join('/'));
@@ -76,7 +80,11 @@ function initializedState(state: PolicyProjectState): {
     }
   });
   return {
-    state: { ...state, relativePaths: [...relativePaths].sort() },
+    state: {
+      ...state,
+      relativePaths: [...relativePaths].sort(),
+      relativeFilePaths: relativeFilePaths.sort(),
+    },
     snapshots,
   };
 }
@@ -111,9 +119,32 @@ describe('buildPolicyInitPlan', () => {
     );
   });
 
+  it('initializes a target containing only empty directories', () => {
+    // Why: Git reverts can leave an empty directory tree behind.
+    // Given: A policy target with no authored or generated policy files.
+    // When: Initialization plans the core starter.
+    // Then: It creates every starter file without deleting the empty directories.
+    const state = {
+      ...buildState('/repo'),
+      relativePaths: ['.regal', 'policy_engine', 'policy_engine/example'],
+    };
+    const paths = getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS);
+
+    const plan = buildPolicyInitPlan({ state, snapshots: absentSnapshots(paths) }, CORE_OPTIONS);
+
+    expect(plan.changes).toHaveLength(7);
+    expect(plan.directoryPreconditions).toEqual([
+      {
+        path: '/repo/transcend/policy',
+        relativePaths: state.relativePaths,
+      },
+    ]);
+  });
+
   it('is a clean no-op when rerun against its exact starter and local input', () => {
     const initial = initializedState(buildState('/repo'));
     initial.state.relativePaths.push('input.json');
+    initial.state.relativeFilePaths.push('input.json');
 
     const plan = buildPolicyInitPlan(initial, CORE_OPTIONS);
 
@@ -126,6 +157,7 @@ describe('buildPolicyInitPlan', () => {
     const state = {
       ...buildState('/repo'),
       relativePaths: ['README.md', 'custom.rego'],
+      relativeFilePaths: ['README.md', 'custom.rego'],
     };
     const paths = getPolicyInitPlanningCandidatePaths(state, CORE_OPTIONS);
     const snapshots = absentSnapshots(paths);

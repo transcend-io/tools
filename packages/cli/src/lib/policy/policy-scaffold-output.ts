@@ -3,6 +3,7 @@ import {
   type PublicPlannedChange,
 } from '../scaffolding/project-plan-output.js';
 import type { PolicyInitProjectPlan, PolicySetupFeature } from './policy-scaffold-model.js';
+import { POLICY_SKILL_NAME } from './policy-skill.js';
 
 /** Detected local policy tool versions. */
 export interface PolicyInitToolVersions {
@@ -51,18 +52,26 @@ export function buildPolicyInitAiHandoff(options: {
   projectPath: string;
   /** Display path to an exact disposable example. */
   examplePath?: string;
+  /** Whether the policy authoring skill was installed. */
+  hasSkill: boolean;
   /** Copyable lint command. */
   lintCommand: string;
 }): string {
   if (!options.examplePath) {
+    const instruction = options.hasSkill
+      ? `Use the \`${POLICY_SKILL_NAME}\` skill to review`
+      : 'Review';
     return (
-      `Ask your coding agent to review the existing policy project in ${options.projectPath}, ` +
+      `${instruction} the existing policy project in ${options.projectPath}, ` +
       `align its document tree and input/output contract with the intended application, adapt ` +
       `repository validation as needed, and rerun ${options.lintCommand}.`
     );
   }
+  const instruction = options.hasSkill
+    ? `Use the \`${POLICY_SKILL_NAME}\` skill to replace`
+    : 'Replace';
   return (
-    `Ask your coding agent to replace the disposable example in ${options.examplePath} with ` +
+    `${instruction} the disposable example in ${options.examplePath} with ` +
     `the intended policy document tree and input/output contract, adapt repository validation ` +
     `to local conventions, and rerun ${options.lintCommand}.`
   );

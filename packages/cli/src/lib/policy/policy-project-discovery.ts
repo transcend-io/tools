@@ -39,6 +39,9 @@ export function discoverPolicyProject(
     targetDirectory,
     ...repository,
     relativePaths: collectProjectRelativePaths(context, targetDirectory),
+    relativeFilePaths: collectProjectRelativePaths(context, targetDirectory, {
+      includeDirectories: false,
+    }),
   };
 }
 

@@ -128,9 +128,17 @@ function isPathContained(root: string, path: string): boolean {
  *
  * @param context - CLI context
  * @param root - Directory to inspect
+ * @param options - Directory-entry inclusion
  * @returns Relative file, link, and directory paths
  */
-export function collectProjectRelativePaths(context: LocalContext, root: string): string[] {
+export function collectProjectRelativePaths(
+  context: LocalContext,
+  root: string,
+  options: {
+    /** Include directory entries in addition to files and links. */
+    includeDirectories?: boolean;
+  } = {},
+): string[] {
   if (!context.fs.existsSync(root)) {
     return [];
   }
@@ -141,8 +149,11 @@ export function collectProjectRelativePaths(context: LocalContext, root: string)
         return;
       }
       const absolute = join(directory, entry.name);
-      paths.push(relative(root, absolute).split(sep).join('/'));
-      if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      const isDirectory = entry.isDirectory() && !entry.isSymbolicLink();
+      if (options.includeDirectories !== false || !isDirectory) {
+        paths.push(relative(root, absolute).split(sep).join('/'));
+      }
+      if (isDirectory) {
         visit(absolute);
       }
     });

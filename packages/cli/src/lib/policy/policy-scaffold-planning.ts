@@ -232,12 +232,12 @@ export function buildPolicyInitPlan(
   candidatePaths.forEach((path) => assertContained(state.projectRoot, path));
 
   let hasDisposableExample = false;
-  if (state.relativePaths.length === 0) {
+  if (state.relativeFilePaths.length === 0) {
     hasDisposableExample = true;
     plan.directoryPreconditions = [
       {
         path: state.targetDirectory,
-        relativePaths: [],
+        relativePaths: [...state.relativePaths],
       },
     ];
     files.forEach((file) => {
@@ -276,7 +276,7 @@ export function buildPolicyInitPlan(
     hasDisposableExample = allStarterFilesMatch;
 
     const allowedPaths = starterRelativePaths(files);
-    const hasCustomPaths = state.relativePaths.some((path) => !allowedPaths.has(path));
+    const hasCustomPaths = state.relativeFilePaths.some((path) => !allowedPaths.has(path));
     if (!allStarterFilesMatch || hasCustomPaths) {
       plan.warnings.push(
         `Existing policy target contains custom or partial content, so no starter files were added or overwritten. ` +

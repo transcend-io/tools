@@ -33,6 +33,7 @@ function buildState(
     existingSkillDirectories,
     usesGithub: true,
     relativePaths: [],
+    relativeFilePaths: [],
   };
 }
 
@@ -96,6 +97,17 @@ function starterRelativePaths(state: PolicyProjectState): string[] {
   return [...paths].sort();
 }
 
+/**
+ * Enumerate target-relative files created by the core starter.
+ *
+ * @returns Relative starter files
+ */
+function starterFilePaths(): string[] {
+  return generatePolicyStarterFiles()
+    .map(({ path }) => path)
+    .sort();
+}
+
 describe('Policy Engine repository integration planning', () => {
   it('plans editor setup, the managed skill, and validation CI together', () => {
     const state = buildState();
@@ -132,6 +144,7 @@ describe('Policy Engine repository integration planning', () => {
     const paths = getPolicyInitPlanningCandidatePaths(state, options);
     const first = buildPolicyInitPlan({ state, snapshots: absentSnapshots(paths) }, options);
     state.relativePaths = starterRelativePaths(state);
+    state.relativeFilePaths = starterFilePaths();
 
     const second = buildPolicyInitPlan(
       { state, snapshots: snapshotsAfterPlan(paths, first) },
@@ -183,6 +196,7 @@ describe('Policy Engine repository integration planning', () => {
       ),
     };
     state.relativePaths = starterRelativePaths(state);
+    state.relativeFilePaths = starterFilePaths();
 
     const plan = buildPolicyInitPlan({ state, snapshots }, options);
 

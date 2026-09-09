@@ -127,10 +127,42 @@ describe('policy init', () => {
     });
     expect(invocations).toEqual(['opa version', 'regal version']);
     expect(context.stderr).toBe('');
+    expect(JSON.parse(context.stdout).aiHandoff).not.toContain('Ask your coding agent');
     expect(existsSync(join(root, 'manifest.json'))).toBe(false);
     expect(existsSync(join(root, '.vscode'))).toBe(false);
     expect(existsSync(join(root, '.agents'))).toBe(false);
     expect(existsSync(join(root, '.github'))).toBe(false);
+  });
+
+  it('creates the complete starter in a pre-existing empty directory tree', async () => {
+    // Why: Reverting generated files can leave their empty parent directories on disk.
+    // Given: A target containing only the starter's empty directory structure.
+    // When: Policy initialization runs against the default target.
+    // Then: The complete starter is restored, including the example Rego policy.
+    const root = makeTemporaryRoot();
+    const target = join(root, 'transcend', 'policy');
+    mkdirSync(join(target, '.regal'), { recursive: true });
+    mkdirSync(join(target, 'policy_engine', 'example'), { recursive: true });
+    const context = buildContextForTest({
+      cwd: root,
+      env: { HOME: root },
+      stdinIsTTY: false,
+    });
+
+    await init.call(context, buildFlags(), undefined, buildRunner());
+
+    generatePolicyStarterFiles().forEach((file) => {
+      expect(readFileSync(join(target, file.path), 'utf8')).toBe(file.contents);
+    });
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      applied: true,
+      changes: expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'create',
+          target: 'transcend/policy/policy_engine/example/result.rego',
+        }),
+      ]),
+    });
   });
 
   it('previews the complete plan without writing any files', async () => {
@@ -168,6 +200,7 @@ describe('policy init', () => {
       dryRun: true,
       targetDirectory: target,
       features: Object.values(PolicySetupFeature),
+      aiHandoff: expect.stringContaining('Use the `transcend-policy-engine` skill'),
       changes: expect.arrayContaining([
         expect.objectContaining({
           kind: 'create',
@@ -367,7 +400,7 @@ describe('policy init', () => {
       ]),
     );
     expect(result.nextSteps).toEqual(["transcend policy lint --dir 'policy' --noInteractive"]);
-    expect(result.aiHandoff).toContain("review the existing policy project in 'policy'");
+    expect(result.aiHandoff).toContain("Review the existing policy project in 'policy'");
     expect(result.aiHandoff).not.toContain('disposable example');
     expect(result.aiHandoff).not.toContain('policy_engine/example/result.rego');
   });
@@ -437,7 +470,7 @@ describe('policy init', () => {
     expect(lines).toContain("Edit 'transcend/policy/policy_engine/example/result.rego'");
     const handoffHeading = lines.indexOf('AI handoff — paste into your coding agent');
     expect(handoffHeading).toBeGreaterThan(-1);
-    expect(lines[handoffHeading + 1]).toMatch(/^Ask /u);
+    expect(lines[handoffHeading + 1]).toMatch(/^Replace /u);
   });
 
   it('requires explicit approval without an interactive terminal', async () => {
