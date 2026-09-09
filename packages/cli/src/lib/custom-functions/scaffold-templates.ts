@@ -316,13 +316,13 @@ export default async function customFunction({
 }
 
 /**
- * Build the DSR request-enricher named export.
+ * Build the DSR preflight named export.
  *
  * @returns TypeScript source
  */
 function buildEnricherHandler(): string {
   return `/**
- * Enrich identifiers before a data subject request runs.
+ * Run a preflight check to enrich identifiers before a privacy request runs.
  *
  * @param argument - Services and payload supplied by Transcend
  */
@@ -387,7 +387,7 @@ function buildDataPointPayload(): object {
 }
 
 /**
- * Build a representative DSR request-enricher test payload.
+ * Build a representative DSR preflight test payload.
  *
  * @returns JSON-compatible payload
  */

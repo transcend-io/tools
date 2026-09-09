@@ -122,12 +122,24 @@ export async function _new(
       flags.template ??
       (interactive
         ? await prompts.select<CustomFunctionTemplateName>(
-            'Starter type:',
+            'Function type and starter:',
             [
-              { name: 'General', value: 'general' },
-              { name: 'DSR datapoint', value: 'dsr-datapoint' },
-              { name: 'DSR request enricher', value: 'dsr-enricher' },
-              { name: 'Combined DSR datapoint + enricher', value: 'dsr-both' },
+              {
+                name: 'General Custom Function — triggered by Rules Automation',
+                value: 'general',
+              },
+              {
+                name: 'DSR Custom Function',
+                value: 'dsr-both',
+              },
+              {
+                name: 'DSR Custom Function — data point resolver only',
+                value: 'dsr-datapoint',
+              },
+              {
+                name: 'DSR Custom Function — preflight check only',
+                value: 'dsr-enricher',
+              },
             ],
             'general',
           )
