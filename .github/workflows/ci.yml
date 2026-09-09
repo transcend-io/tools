@@ -12,7 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  global:
+  global_checks:
+    name: Global checks
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -91,6 +92,23 @@ jobs:
 
       - name: Test external runtime integrations
         run: pnpm test:integration
+
+  global:
+    if: always()
+    needs:
+      - global_checks
+      - integration
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Verify required checks
+        env:
+          GLOBAL_CHECKS_RESULT: ${{ needs.global_checks.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+        run: |
+          test "$GLOBAL_CHECKS_RESULT" = "success"
+          test "$INTEGRATION_RESULT" = "success"
 
   cli:
     runs-on: ubuntu-24.04-arm
