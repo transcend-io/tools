@@ -488,7 +488,7 @@ export interface RocUserRecord {
   /** Preferences at the current time */
   preferencesAtCurrentTime: RocPreference[];
   /** Changes from the previous state */
-  changeFromPrevState: RocUserRecordDiff;
+  changeFromPrevState?: RocUserRecordDiff;
   /** Raw archived Record of Consent (ROC) payload; only present if includeRawRequest is true */
   rawRequest?: RocRawConsentRecord;
 }
