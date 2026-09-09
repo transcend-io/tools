@@ -6,6 +6,7 @@ describe('Assessment Tools', () => {
   let mockGraphql: {
     listAssessments: ReturnType<typeof vi.fn>;
     listAssessmentGroups: ReturnType<typeof vi.fn>;
+    listAssessmentTemplates: ReturnType<typeof vi.fn>;
     createAssessment: ReturnType<typeof vi.fn>;
     getAssessment: ReturnType<typeof vi.fn>;
     createAssessmentFormTemplate: ReturnType<typeof vi.fn>;
@@ -19,6 +20,7 @@ describe('Assessment Tools', () => {
     mockGraphql = {
       listAssessments: vi.fn(),
       listAssessmentGroups: vi.fn(),
+      listAssessmentTemplates: vi.fn(),
       createAssessment: vi.fn(),
       getAssessment: vi.fn(),
       createAssessmentFormTemplate: vi.fn(),
@@ -313,6 +315,152 @@ describe('Assessment Tools', () => {
       expect(shape.dueAfter.description).toContain('strictly after');
       expect(shape.createdBefore.description).toContain('on or before');
       expect(shape.dueBefore.description).toContain('on or before');
+    });
+  });
+
+  describe('assessments_list_templates', () => {
+    const templatesTool = () => getTools().find((t) => t.name === 'assessments_list_templates')!;
+
+    it('narrows by title instead of scanning pages', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-7', title: 'Vendor Onboarding' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      await tool.handler(
+        tool.zodSchema.parse({ text: 'Vendor Onboarding', statuses: ['PUBLISHED'] }) as never,
+      );
+
+      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          filterBy: { text: 'Vendor Onboarding', statuses: ['PUBLISHED'] },
+        }),
+      );
+    });
+
+    it('pages with offset', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-9', title: 'Template 9' }],
+        totalCount: 200,
+        pageInfo: { hasNextPage: true },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ limit: 50, offset: 100 }) as never,
+      )) as { hasNextPage: boolean; totalCount: number };
+
+      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 50, offset: 100 }),
+      );
+      expect(result).toMatchObject({ hasNextPage: true, totalCount: 200 });
+    });
+
+    it('rejects a status outside DRAFT and PUBLISHED', () => {
+      const result = templatesTool().zodSchema.safeParse({ statuses: ['ARCHIVED'] });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects an offset past the end', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 13,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+
+      await expect(
+        tool.handler(tool.zodSchema.parse({ offset: 500 }) as never),
+      ).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+        message: expect.stringContaining('past the end'),
+        details: { offset: 500, totalCount: 13 },
+      });
+    });
+
+    it('passes template metadata through without inventing values', async () => {
+      // This mapper used to stamp every row with version 1.0.0, isActive true
+      // and createdAt = now, which reported every template as created today.
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [
+          {
+            id: 'tpl-7',
+            title: 'Vendor Onboarding',
+            status: 'PUBLISHED',
+            isArchived: false,
+            createdAt: '2024-03-01T00:00:00.000Z',
+          },
+        ],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        data: Array<Record<string, unknown>>;
+      };
+
+      expect(result.data[0]).toMatchObject({
+        status: 'PUBLISHED',
+        createdAt: '2024-03-01T00:00:00.000Z',
+      });
+      expect(result.data[0]).not.toHaveProperty('version');
+      expect(result.data[0]).not.toHaveProperty('isActive');
+    });
+
+    it('says a filter matched nothing rather than returning a bare empty page', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ text: 'Nothing By This Name' }) as never,
+      )) as { paginationNote?: string };
+
+      // An empty array alone reads exactly like a failed lookup, and a probe
+      // agent spent a second unfiltered call before it would trust the zero.
+      expect(result.paginationNote).toContain('text');
+      expect(result.paginationNote).toContain('query succeeded');
+    });
+
+    it('distinguishes an empty organization from an over-narrow filter', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        paginationNote?: string;
+      };
+
+      expect(result.paginationNote).toContain('no templates');
+    });
+
+    it('carries how the template was made without a filter for it', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-7', title: 'Vendor Onboarding', source: 'IMPORT' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        data: Array<Record<string, unknown>>;
+      };
+
+      // Row fields cost nothing in the tools/list budget, so `source` rides
+      // along; a filter for it would have cost roughly 280 characters to save
+      // an in-model match over a list that is tens of rows long.
+      expect(result.data[0]).toMatchObject({ source: 'IMPORT' });
     });
   });
 

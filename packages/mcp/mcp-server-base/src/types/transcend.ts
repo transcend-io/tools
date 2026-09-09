@@ -1221,13 +1221,27 @@ export interface Assessment {
 }
 
 export interface AssessmentTemplate {
+  /** Unique identifier, usable as `templateId` in `assessments_export_template` */
   id: string;
+  /** Display title */
   title: string;
+  /** Optional description */
   description?: string;
-  version: string;
+  /** Publication status, `DRAFT` or `PUBLISHED` */
+  status?: string;
+  /**
+   * How the template came to exist: `MANUAL` if someone built it,
+   * `DATA_INVENTORY` if it was generated from the data inventory, `IMPORT` if
+   * it came in with a OneTrust import
+   */
+  source?: string;
+  /** Sections in the template, when expanded */
   sections?: AssessmentTemplateSection[];
-  isActive: boolean;
-  createdAt: string;
+  /** Whether the template has been archived out of the working set */
+  isArchived?: boolean;
+  /** When the template was created (ISO 8601) */
+  createdAt?: string;
+  /** When the template was last updated (ISO 8601) */
   updatedAt?: string;
 }
 

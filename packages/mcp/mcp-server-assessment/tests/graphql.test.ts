@@ -132,6 +132,63 @@ describe('AssessmentsMixin (normalizeQuestion / generateUUID)', () => {
   });
 });
 
+describe('AssessmentsMixin (listAssessmentTemplates)', () => {
+  const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
+
+  const template = {
+    id: 'tpl-1',
+    title: 'Vendor Onboarding',
+    description: 'Questions for a new vendor',
+    status: 'PUBLISHED',
+    source: 'IMPORT',
+    isArchived: false,
+    createdAt: '2024-03-01T00:00:00.000Z',
+    updatedAt: '2024-04-01T00:00:00.000Z',
+  };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends the filters to the API under its own names', async () => {
+    const mockFetch = createMockFetchResponse({
+      assessmentFormTemplates: { nodes: [], totalCount: 0 },
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    await client.listAssessmentTemplates({
+      filterBy: { text: 'Vendor', statuses: ['PUBLISHED'] },
+    });
+
+    const { variables } = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body) as {
+      variables: Record<string, unknown>;
+    };
+    expect(variables.filterBy).toEqual({ text: 'Vendor', statuses: ['PUBLISHED'] });
+  });
+
+  it('reports when the template was really created rather than the time of the call', async () => {
+    vi.stubGlobal(
+      'fetch',
+      createMockFetchResponse({
+        assessmentFormTemplates: { nodes: [template], totalCount: 1 },
+      }),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const result = await client.listAssessmentTemplates();
+
+    expect(result.nodes[0]).toMatchObject({
+      status: 'PUBLISHED',
+      source: 'IMPORT',
+      createdAt: '2024-03-01T00:00:00.000Z',
+      updatedAt: '2024-04-01T00:00:00.000Z',
+    });
+    expect(result.nodes[0]).not.toHaveProperty('version');
+    expect(result.nodes[0]).not.toHaveProperty('isActive');
+  });
+});
+
 describe('AssessmentsMixin (row shapes that callers audit against)', () => {
   const API_KEY_AUTH: AuthCredentials = { type: 'apiKey', apiKey: 'test-api-key-12345' };
 
