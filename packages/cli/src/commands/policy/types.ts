@@ -101,7 +101,7 @@ export interface DeactivatePolicyBundleResponse {
 /**
  * Response from fetching a policy bundle version with a short-lived download URL.
  *
- * `GET /v1/policy-engine/policy-bundles/:policyBundleId/versions/:versionId`
+ * `GET /v1/policy-engine/policy-bundle-versions/:versionId`
  */
 export interface GetPolicyBundleVersionResponse {
   /** Version UUID */
