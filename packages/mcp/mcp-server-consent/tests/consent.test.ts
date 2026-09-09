@@ -1,4 +1,9 @@
-import { ErrorCode, ToolError, type RocQueryResponse } from '@transcend-io/mcp-server-base';
+import {
+  ErrorCode,
+  ToolError,
+  type RocQueryResponse,
+  type RocUserRecord,
+} from '@transcend-io/mcp-server-base';
 import {
   AirgapBundleAnalyticsDimension,
   AirgapBundleAnalyticsMetric,
@@ -317,9 +322,17 @@ describe('Consent Tools', () => {
 
     const mockRocQueryResponse: RocQueryResponse = {
       records: [
+        // The initial record has no previous state to diff against, which is why`changeFromPrevState` is optional.
+        { preferencesAtCurrentTime: [{ topic: 'Marketing', choice: { booleanValue: false } }] },
         {
           preferencesAtCurrentTime: [{ topic: 'Marketing', choice: { booleanValue: true } }],
-          changeFromPrevState: { added: [], removed: [], updated: [] },
+          changeFromPrevState: {
+            added: [],
+            removed: [],
+            updated: [
+              { purpose: 'Marketing', consent: true, timestamp: '2026-01-02T00:00:00.000Z' },
+            ],
+          },
         },
       ],
       containsInitialRecord: true,
@@ -343,6 +356,9 @@ describe('Consent Tools', () => {
           containsInitialRecord: true,
         },
       });
+      // The initial record doesn't have a previous state to diff against, so it shouldn't have a diff.
+      const { records } = (result as { data: { records: RocUserRecord[] } }).data;
+      expect(records[0]).not.toHaveProperty('changeFromPrevState');
     });
 
     it('reports an empty timeline as found: false rather than an error', async () => {
