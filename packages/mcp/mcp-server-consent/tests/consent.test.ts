@@ -1,4 +1,4 @@
-import { ErrorCode, ToolError } from '@transcend-io/mcp-server-base';
+import { ErrorCode, ToolError, type RocQueryResponse } from '@transcend-io/mcp-server-base';
 import {
   AirgapBundleAnalyticsDimension,
   AirgapBundleAnalyticsMetric,
@@ -315,11 +315,18 @@ describe('Consent Tools', () => {
 
     const getRocTool = () => getTools().find((t) => t.name === 'consent_list_roc_records')!;
 
+    const mockRocQueryResponse: RocQueryResponse = {
+      records: [
+        {
+          preferencesAtCurrentTime: [{ topic: 'Marketing', choice: { booleanValue: true } }],
+          changeFromPrevState: { added: [], removed: [], updated: [] },
+        },
+      ],
+      containsInitialRecord: true,
+    };
+
     it('forwards the identifier as a name/value pair and returns the timeline', async () => {
-      mockRest.listRocRecords.mockResolvedValue({
-        nodes: [{ preferencesAtCurrentTime: [] }],
-        containsInitialRecord: true,
-      });
+      mockRest.listRocRecords.mockResolvedValue(mockRocQueryResponse);
 
       const result = await getRocTool().handler({ ...validInput, limit: 50 });
 
@@ -332,14 +339,15 @@ describe('Consent Tools', () => {
       expect(result).toMatchObject({
         success: true,
         data: {
-          records: [{ preferencesAtCurrentTime: [] }],
+          records: mockRocQueryResponse.records,
           containsInitialRecord: true,
         },
       });
     });
 
     it('reports an empty timeline as found: false rather than an error', async () => {
-      mockRest.listRocRecords.mockResolvedValue({ nodes: [], containsInitialRecord: false });
+      const emptyRocQueryResponse: RocQueryResponse = { records: [], containsInitialRecord: false };
+      mockRest.listRocRecords.mockResolvedValue(emptyRocQueryResponse);
 
       expect(await getRocTool().handler(validInput)).toMatchObject({
         success: true,

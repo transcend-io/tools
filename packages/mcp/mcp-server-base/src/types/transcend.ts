@@ -505,8 +505,8 @@ export interface RocQueryInput {
 }
 
 export interface RocQueryResponse {
-  /** List of user records */
-  nodes: RocUserRecord[];
+  /** Consent change timeline for the user, oldest-first */
+  records: RocUserRecord[];
   /** Whether the response contains the initial record */
   containsInitialRecord: boolean;
 }

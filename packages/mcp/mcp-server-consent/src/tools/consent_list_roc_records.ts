@@ -73,14 +73,14 @@ export function createConsentListRocRecordsTool(clients: ToolClients) {
         throw error;
       }
 
-      if (result.nodes.length === 0) {
+      if (result.records.length === 0) {
         return createToolResult(true, {
           found: false,
           message: 'No ROC records found for this identifier',
         });
       }
       return createToolResult(true, {
-        records: result.nodes,
+        records: result.records,
         containsInitialRecord: result.containsInitialRecord,
       });
     },
