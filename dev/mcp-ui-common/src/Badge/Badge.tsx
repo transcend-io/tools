@@ -1,6 +1,8 @@
 import { makeEnum } from '@transcend-io/type-utils';
 import type { ReactNode } from 'react';
 
+import { CompactCount } from '../CompactCount/CompactCount.tsx';
+
 /** Visual tone for {@link CountBadge}. */
 export const CountBadgeTone = makeEnum({
   /** Active / selected tab */
@@ -17,18 +19,24 @@ export interface CountBadgeProps {
   count: number;
   /** Visual tone; defaults to idle */
   tone?: CountBadgeTone;
+  /** When true, replaces the count with a ~3ch leading shimmer */
+  busy?: boolean;
 }
 
 const TONE_CLASS: Record<CountBadgeTone, string> = {
-  [CountBadgeTone.Active]:
-    'inline-flex min-w-5 items-center justify-center rounded-full bg-brand px-1.5 py-0.5 text-xs font-medium text-content-inverse',
-  [CountBadgeTone.Idle]:
-    'inline-flex min-w-5 items-center justify-center rounded-full bg-content-subtle px-1.5 py-0.5 text-xs font-medium text-content-inverse',
+  [CountBadgeTone.Active]: 'bg-brand',
+  [CountBadgeTone.Idle]: 'bg-content-subtle',
 };
 
 /** Pill count used in tabs and similar chrome. */
-export function CountBadge({ count, tone = CountBadgeTone.Idle }: CountBadgeProps) {
-  return <span className={TONE_CLASS[tone]}>{count}</span>;
+export function CountBadge({ count, tone = CountBadgeTone.Idle, busy = false }: CountBadgeProps) {
+  return (
+    <span
+      className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-sm font-medium tabular-nums text-on-fill ${TONE_CLASS[tone]}`}
+    >
+      <CompactCount value={count} busy={busy} />
+    </span>
+  );
 }
 
 /** Visual tone for {@link StatusBadge}. */
@@ -51,9 +59,9 @@ export interface StatusBadgeProps {
 
 const STATUS_CLASS: Record<StatusBadgeTone, string> = {
   [StatusBadgeTone.Neutral]:
-    'inline-flex items-center rounded-sm bg-fill-neutral px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-brand-text',
+    'inline-flex items-center rounded-sm bg-fill-neutral px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-on-card-subtle',
   [StatusBadgeTone.Emphasis]:
-    'inline-flex w-fit items-center rounded-sm bg-fill-dormant px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-content-inverse',
+    'inline-flex w-fit items-center rounded-sm bg-fill-dormant px-1.5 py-0.5 text-sm font-semibold uppercase tracking-wide text-on-fill',
 };
 
 /** Small status chip for labels like Note or Dormant. */

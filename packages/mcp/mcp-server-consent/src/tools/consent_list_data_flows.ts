@@ -121,7 +121,16 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
           ...(lastDiscoveredAtAfter ? { lastDiscoveredAtAfter } : {}),
         },
         ...(orderField && orderDirection
-          ? { orderBy: [{ field: orderField, direction: orderDirection }] }
+          ? {
+              orderBy: [
+                { field: orderField, direction: orderDirection },
+                // Stable tie-breaker so offset pages don't overlap when
+                // many rows share the same occurrences value.
+                ...(orderField === DataFlowOrderField.Occurrences
+                  ? [{ field: DataFlowOrderField.Value, direction: OrderDirection.Asc }]
+                  : []),
+              ],
+            }
           : {}),
       });
       const { nodes, totalCount } = data.dataFlows;

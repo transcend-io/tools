@@ -314,7 +314,7 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
       <button
         ref={buttonRef}
         type="button"
-        className="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-sm border border-line bg-surface px-1.5 py-1.5 text-left disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full min-w-0 cursor-pointer items-start gap-2 rounded-sm border border-card-line bg-card px-1.5 py-1.5 text-left disabled:cursor-not-allowed disabled:opacity-60"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listboxId}
@@ -322,23 +322,23 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
         disabled={disabled || selectOptions.length === 0}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="flex min-w-0 flex-1 flex-wrap gap-1">
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
           {orderedSelected.length === 0 ? (
-            <span className="inline-flex h-6 items-center rounded-sm bg-fill-neutral px-1.5 text-sm text-content-muted">
+            <span className="inline-flex h-6 items-center rounded-sm bg-fill-neutral px-1.5 text-sm text-on-card-muted">
               Select
             </span>
           ) : (
             orderedSelected.map((slug) => (
               <span
                 key={slug}
-                className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm text-content-inverse ${purposeBadgeClass(slug)}`}
+                className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm text-on-fill ${purposeBadgeClass(slug)}`}
               >
                 {purposeSlugLabel(slug, selectOptions)}
               </span>
             ))
           )}
         </span>
-        <span className="shrink-0 text-content-muted" aria-hidden="true">
+        <span className="mt-0.5 shrink-0 text-on-card-muted" aria-hidden="true">
           <ChevronDownIcon />
         </span>
       </button>
@@ -351,7 +351,7 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
               aria-multiselectable="true"
               aria-label={`Choose tracking purposes for ${itemName}`}
               aria-describedby={disabledTooltip ? tooltipId : undefined}
-              className="fixed z-[100] w-max overflow-y-auto rounded-sm border border-line bg-surface-raised py-1 shadow-sm"
+              className="fixed z-[100] w-max overflow-y-auto rounded-sm border border-card-line bg-card py-1 shadow-sm"
               style={{
                 top: listboxPosition.top,
                 bottom: listboxPosition.bottom,
@@ -370,10 +370,10 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
                 return (
                   <label
                     key={option.slug}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 text-sm text-content ${
+                    className={`flex items-center gap-2 px-2.5 py-1.5 text-sm text-on-card ${
                       optionDisabled
                         ? 'cursor-not-allowed opacity-60'
-                        : 'cursor-pointer hover:bg-surface-sunken'
+                        : 'cursor-pointer hover:bg-card-sunken'
                     }`}
                     role="option"
                     aria-selected={checked}
@@ -393,7 +393,7 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
                   >
                     <input
                       type="checkbox"
-                      className={`size-3.5 accent-brand-text ${
+                      className={`size-3.5 bg-card accent-brand [color-scheme:light] ${
                         optionDisabled ? 'pointer-events-none' : ''
                       }`}
                       checked={checked}
@@ -415,7 +415,7 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
             <div
               id={tooltipId}
               role="tooltip"
-              className="pointer-events-none fixed z-[100] max-w-64 rounded-sm border border-line bg-surface-raised px-2.5 py-1.5 text-xs leading-snug text-content shadow-sm"
+              className="pointer-events-none fixed z-[100] max-w-64 rounded-sm border border-card-line bg-card px-2.5 py-1.5 text-xs leading-snug text-on-card shadow-sm"
               style={{
                 top: disabledTooltip.top,
                 left: disabledTooltip.left,

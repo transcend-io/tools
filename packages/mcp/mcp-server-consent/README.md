@@ -114,7 +114,9 @@ See [CONTRIBUTING.md](../../../CONTRIBUTING.md#mcp-servers) for workspace layout
 - `consent_get_timeseries_analytics` — Timeseries consent analytics (`airgapBundleTimeseriesAnalytics`)
 - `consent_get_analytics_data` — Consent metrics via `analyticsData` (opt-in/out, signals, sessions)
 - `consent_update_cookies` — Update cookies (approve, junk, assign purposes)
+- `consent_delete_cookies` — Permanently delete cookies by ID (MCP App only; hidden from agents)
 - `consent_update_data_flows` — Update data flows
+- `consent_delete_data_flows` — Permanently delete data flows by ID (MCP App only; hidden from agents)
 - `consent_bulk_triage` — Bulk approve or junk cookies and data flows
 
 Analytics tools require the **ViewConsentManager** scope (included in this server's OAuth scopes). See [Consent Analytics Using GraphQL API](https://docs.transcend.io/docs/articles/consent-management/configuration/consent-stats-with-gql-api).

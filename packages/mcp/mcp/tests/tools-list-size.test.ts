@@ -1,5 +1,9 @@
 import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
-import { TranscendRestClient, type AuthCredentials } from '@transcend-io/mcp-server-base';
+import {
+  isVisibleToModel,
+  TranscendRestClient,
+  type AuthCredentials,
+} from '@transcend-io/mcp-server-base';
 import { describe, expect, it } from 'vitest';
 
 import { TranscendGraphQLClient } from '../src/graphql-client.js';
@@ -15,16 +19,21 @@ const MAX_TOOL_DESCRIPTION_CHARS = 700;
  * inputSchema, annotations). Character length of JSON.stringify.
  * Measured at 76,087 across 82 tools after relocating TRANSCEND_SCOPES. Prefer
  * consolidating or trimming descriptors over raising this cap.
+ * App-only tools (`visibility` omitting `model`) are excluded — they are not
+ * sent in tools/list and do not consume model context.
  */
 const MAX_TOOLS_LIST_JSON_CHARS = 85_000;
 
 function listDescriptors(registry: ToolRegistry) {
-  return registry.getAllTools().map((tool) => ({
-    name: tool.name,
-    description: tool.description,
-    inputSchema: toJsonSchemaCompat(tool.zodSchema as never),
-    annotations: tool.annotations,
-  }));
+  return registry
+    .getAllTools()
+    .filter((tool) => isVisibleToModel(tool))
+    .map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      inputSchema: toJsonSchemaCompat(tool.zodSchema as never),
+      annotations: tool.annotations,
+    }));
 }
 
 describe('umbrella tools/list size', () => {
@@ -37,8 +46,8 @@ describe('umbrella tools/list size', () => {
       dashboardUrl: 'https://app.transcend.io',
     });
 
-    const oversized = registry
-      .getAllTools()
+    const modelTools = registry.getAllTools().filter((tool) => isVisibleToModel(tool));
+    const oversized = modelTools
       .filter((tool) => tool.description.length > MAX_TOOL_DESCRIPTION_CHARS)
       .map((tool) => `${tool.name} (${tool.description.length} chars)`);
     expect(

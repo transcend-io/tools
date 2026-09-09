@@ -109,7 +109,16 @@ export function createConsentListCookiesTool(clients: ToolClients) {
           ...(lastDiscoveredAtAfter ? { lastDiscoveredAtAfter } : {}),
         },
         ...(orderField && orderDirection
-          ? { orderBy: [{ field: orderField, direction: orderDirection }] }
+          ? {
+              orderBy: [
+                { field: orderField, direction: orderDirection },
+                // Stable tie-breaker so offset pages don't overlap when
+                // many rows share the same occurrences value.
+                ...(orderField === CookieOrderField.Occurrences
+                  ? [{ field: CookieOrderField.Name, direction: OrderDirection.Asc }]
+                  : []),
+              ],
+            }
           : {}),
       });
       const { nodes, totalCount } = data.cookies;

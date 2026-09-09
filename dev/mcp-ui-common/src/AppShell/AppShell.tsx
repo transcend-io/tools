@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
  * to content. The root caps at `max-h-[100dvh]` so this can shrink below the
  * basis when the window is shorter; `min-h-0` lets nested tables scroll.
  */
-export const APP_SHELL_INLINE_CONTENT_BASIS = 'basis-[min(85dvh,52rem)]';
+export const APP_SHELL_INLINE_CONTENT_BASIS = 'basis-[min(85dvh,32rem)]';
 
 /** Props for {@link AppShell}. */
 export interface AppShellProps {
@@ -24,6 +24,8 @@ export interface AppShellProps {
   inlineContentClassName?: string;
 }
 
+const APP_SHELL_CLASSNAME = 'bg-card flex flex-col overflow-hidden p-6 text-on-card';
+
 /**
  * Fullscreen-aware page shell for interactive MCP Apps.
  *
@@ -41,8 +43,8 @@ export function AppShell({
     <div
       className={
         isFullscreen
-          ? 'flex h-[100dvh] w-full flex-col overflow-hidden p-6'
-          : 'mx-auto flex max-h-[100dvh] max-w-view flex-col overflow-hidden p-6'
+          ? `h-[90dvh] w-full ${APP_SHELL_CLASSNAME}`
+          : `mx-auto max-w-view ${APP_SHELL_CLASSNAME}`
       }
     >
       <div className="shrink-0">{header}</div>

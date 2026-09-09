@@ -35,6 +35,11 @@ export {
   UpdateCookiesSchema,
   type UpdateCookiesInput,
 } from './tools/consent_update_cookies.js';
+export { DeleteCookiesSchema, type DeleteCookiesInput } from './tools/consent_delete_cookies.js';
+export {
+  DeleteDataFlowsSchema,
+  type DeleteDataFlowsInput,
+} from './tools/consent_delete_data_flows.js';
 export {
   UpdateDataFlowItemSchema,
   type UpdateDataFlowItemInput,

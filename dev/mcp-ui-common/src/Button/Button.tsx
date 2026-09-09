@@ -7,7 +7,7 @@ import { Spinner, SpinnerVariant } from '../Spinner/Spinner.tsx';
 export const ButtonVariant = makeEnum({
   /** Filled brand action */
   Primary: 'primary',
-  /** Compact outlined control matching fullscreen / toolbar chrome */
+  /** Compact outlined control */
   Secondary: 'secondary',
   /** Taller text action used in dense rows */
   Action: 'action',
@@ -25,28 +25,35 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   busy?: boolean;
   /** Accessible label announced while busy; defaults to children text when string */
   busyLabel?: string;
-  /** Whether the icon variant is in its pressed / selected look */
+  /** Whether the control is in its pressed / selected look (non-primary variants) */
   active?: boolean;
   /** Button contents */
   children?: ReactNode;
 }
 
+/** Shared look for secondary / action / icon. */
+const BUTTON_BASE =
+  'inline-flex shrink-0 cursor-pointer items-center rounded-sm border bg-card hover:not-disabled:bg-card-sunken disabled:cursor-not-allowed disabled:opacity-60';
+
+const BUTTON_BORDER = {
+  idle: 'border-card-line',
+  active: 'border-brand',
+} as const;
+
 const VARIANT_CLASS: Record<ButtonVariant, string> = {
   [ButtonVariant.Primary]:
-    'inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm bg-brand px-3 py-1.5 text-sm font-medium text-content-inverse hover:bg-brand-hovered disabled:cursor-not-allowed disabled:opacity-60',
-  [ButtonVariant.Secondary]:
-    'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-surface px-2 py-1 text-sm text-content disabled:cursor-not-allowed disabled:opacity-60',
-  [ButtonVariant.Action]:
-    'inline-flex h-9 shrink-0 cursor-pointer items-center rounded-sm border border-line bg-surface px-2.5 text-sm font-medium text-content-muted hover:text-content disabled:cursor-not-allowed disabled:opacity-60',
-  [ButtonVariant.Icon]:
-    'inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-sm border bg-surface disabled:cursor-not-allowed disabled:opacity-60',
+    'inline-flex cursor-pointer items-center justify-center gap-2 rounded-sm bg-brand px-3 py-1.5 text-sm font-medium text-on-fill hover:bg-brand-hovered disabled:cursor-not-allowed disabled:opacity-60',
+  [ButtonVariant.Secondary]: `${BUTTON_BASE} gap-1.5 px-2 py-1 text-sm text-on-card`,
+  [ButtonVariant.Action]: `${BUTTON_BASE} h-9 px-2.5 text-sm font-medium`,
+  [ButtonVariant.Icon]: `${BUTTON_BASE} size-9 justify-center`,
 };
 
 /**
- * Shared button for MCP App chrome and row actions.
+ * Shared button for MCP App and row actions.
  *
- * Icon variant defaults to a muted border; pass `active` for the brand-selected look.
- * When `busy`, a small spinner is prepended — callers typically hide leading icons.
+ * Secondary, action, and icon share `bg-card`, inherited text color, and a subtle
+ * border — pass `active` for the brand-selected border. When `busy`, a small
+ * spinner is prepended — callers typically hide leading icons.
  */
 export function Button({
   variant = ButtonVariant.Secondary,
@@ -59,11 +66,10 @@ export function Button({
   type = 'button',
   ...rest
 }: ButtonProps) {
-  const iconClass = active
-    ? `${VARIANT_CLASS[ButtonVariant.Icon]} border-brand-text text-brand-text`
-    : `${VARIANT_CLASS[ButtonVariant.Icon]} border-line text-content-muted`;
-
-  const baseClass = variant === ButtonVariant.Icon ? iconClass : VARIANT_CLASS[variant];
+  const usesBase = variant !== ButtonVariant.Primary;
+  const baseClass = usesBase
+    ? `${VARIANT_CLASS[variant]} ${active ? BUTTON_BORDER.active : BUTTON_BORDER.idle}`
+    : VARIANT_CLASS[variant];
 
   return (
     <button
@@ -79,7 +85,7 @@ export function Button({
           label={busyLabel ?? (typeof children === 'string' ? children : 'Loading')}
         />
       ) : null}
-      {children}
+      {variant !== ButtonVariant.Icon || !busy ? children : null}
     </button>
   );
 }

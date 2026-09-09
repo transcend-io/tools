@@ -1,6 +1,14 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
 import { useTool } from '@transcend-io/mcp-server-base/ui';
-import { createContext, useContext, useEffect, useReducer, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 
 import {
   COOKIE_TRIAGE_AUTOFILL_PAGES,
@@ -10,6 +18,7 @@ import {
   buildTriagePendingCountArgs,
   buildTriagePurposeCountArgs,
   buildTriagePurposesUpdateArgs,
+  buildTriageBulkUpdateArgs,
   buildTriageUpdateArgs,
 } from '../../lib/cookieTriageQuery.ts';
 import type { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
@@ -29,6 +38,7 @@ import {
   selectCustomPurposeSlugs,
   selectPurposes,
   selectSummary,
+  suggestRowDecision,
   type CookieTriageAction,
   type CookieTriageCategoriesState,
   type CookieTriageCategoryState,
@@ -47,6 +57,12 @@ const UPDATE_TOOL_NAME = {
   data_flows: 'consent_update_data_flows',
 } as const;
 
+/** App-only permanent delete tools, keyed by triage type. */
+const DELETE_TOOL_NAME = {
+  cookies: 'consent_delete_cookies',
+  data_flows: 'consent_delete_data_flows',
+} as const;
+
 const PURPOSES_TOOL_NAME = 'consent_list_purposes';
 
 const CookieTriageStateContext = createContext<CookieTriageSessionState | null>(null);
@@ -62,6 +78,19 @@ export interface CookieTriageActions {
     name: string,
     decision: CookieTriageDecision,
   ) => Promise<void>;
+  /**
+   * Apply static approve/junk suggestions for all undecided loaded rows in a
+   * purpose tab in one update-tool call. Rejects if the tool call fails (local
+   * state is left unchanged). Successful names are stored for
+   * {@link undoSuggestions}.
+   */
+  applySuggestions: (purpose: CookieTriagePurposeCategory) => Promise<void>;
+  /**
+   * Undo the last successful {@link applySuggestions} batch for a purpose tab
+   * in one update-tool call. Rejects if the tool call fails (local state is
+   * left unchanged).
+   */
+  undoSuggestions: (purpose: CookieTriagePurposeCategory) => Promise<void>;
   /**
    * Restore NEEDS_REVIEW via the update tool, then clear the local decision.
    * Rejects if the tool call fails (local state is left unchanged).
@@ -97,9 +126,18 @@ export interface CookieTriageActions {
    * Resolves when the host accepts the chat message (or rejects / errors).
    */
   askOpinion: (purpose: CookieTriagePurposeCategory, name: string) => Promise<void>;
+  /**
+   * Permanently delete a cookie or data flow via the matching delete tool,
+   * then remove it from local state.
+   */
+  remove: (purpose: CookieTriagePurposeCategory, name: string) => Promise<void>;
 }
 
 const CookieTriageActionsContext = createContext<CookieTriageActions | null>(null);
+
+type AppliedSuggestionsByPurpose = Partial<Record<CookieTriagePurposeCategory, readonly string[]>>;
+
+const AppliedSuggestionsContext = createContext<AppliedSuggestionsByPurpose>({});
 
 interface CookieTriageProviderProps {
   /** Cookies vs data flows for this session */
@@ -113,19 +151,27 @@ interface CookieTriageProviderProps {
 /** Provides cookie triage session state and list fetching to the view tree. */
 export function CookieTriageProvider({ triageType, app, children }: CookieTriageProviderProps) {
   const [state, dispatch] = useReducer(cookieTriageReducer, triageType, createEmptySession);
+  const [appliedSuggestionsByPurpose, setAppliedSuggestionsByPurpose] =
+    useState<AppliedSuggestionsByPurpose>({});
   const listTool = useTool(app, LIST_TOOL_NAME[triageType]);
   const updateTool = useTool(app, UPDATE_TOOL_NAME[triageType]);
+  const deleteTool = useTool(app, DELETE_TOOL_NAME[triageType]);
   const purposesTool = useTool<ConsentPurposeListNode[]>(app, PURPOSES_TOOL_NAME);
 
   const stateRef = useRef(state);
   stateRef.current = state;
+  const appliedSuggestionsRef = useRef(appliedSuggestionsByPurpose);
+  appliedSuggestionsRef.current = appliedSuggestionsByPurpose;
   const callRef = useRef(listTool.call);
   callRef.current = listTool.call;
   const updateCallRef = useRef(updateTool.call);
   updateCallRef.current = updateTool.call;
+  const deleteCallRef = useRef(deleteTool.call);
+  deleteCallRef.current = deleteTool.call;
   const purposesCallRef = useRef(purposesTool.call);
   purposesCallRef.current = purposesTool.call;
   const inFlightRef = useRef(new Set<CookieTriagePurposeCategory>());
+  const countInFlightRef = useRef(new Set<CookieTriagePurposeCategory>());
   const mutatingRowsRef = useRef(new Set<string>());
   const notesChainRef = useRef(new Map<string, Promise<void>>());
   const pendingNotesRef = useRef(new Map<string, string>());
@@ -176,6 +222,113 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
       }
     } finally {
       mutatingRowsRef.current.delete(key);
+    }
+  }
+
+  async function applySuggestions(purpose: CookieTriagePurposeCategory): Promise<void> {
+    const targets = stateRef.current.categories[purpose].cookies.flatMap((row) => {
+      const suggestion = suggestRowDecision(row);
+      if (suggestion === undefined) {
+        return [];
+      }
+      return [{ row, decision: suggestion }];
+    });
+
+    if (targets.length === 0) {
+      return;
+    }
+
+    const keys = targets.map((target) => rowMutationKey(purpose, target.row.name));
+    for (const key of keys) {
+      if (mutatingRowsRef.current.has(key)) {
+        throw new Error('A triage update is already in progress for one or more rows');
+      }
+    }
+    for (const key of keys) {
+      mutatingRowsRef.current.add(key);
+    }
+
+    try {
+      const result = await updateCallRef.current(
+        buildTriageBulkUpdateArgs(
+          stateRef.current.triageType,
+          targets.map(({ row, decision }) => ({ item: row.initial, decision })),
+        ),
+      );
+      if (result.error !== undefined) {
+        throw new Error(result.error);
+      }
+
+      for (const { row, decision } of targets) {
+        dispatch({ type: 'decide', purpose, name: row.name, decision });
+      }
+      setAppliedSuggestionsByPurpose((previous) => ({
+        ...previous,
+        [purpose]: targets.map(({ row }) => row.name),
+      }));
+    } finally {
+      for (const key of keys) {
+        mutatingRowsRef.current.delete(key);
+      }
+    }
+  }
+
+  async function undoSuggestions(purpose: CookieTriagePurposeCategory): Promise<void> {
+    const names = appliedSuggestionsRef.current[purpose] ?? [];
+    if (names.length === 0) {
+      return;
+    }
+
+    const targets = names.flatMap((name) => {
+      const row = stateRef.current.categories[purpose].cookies.find(
+        (candidate) => candidate.name === name,
+      );
+      if (!row || row.decision === undefined) {
+        return [];
+      }
+      return [row];
+    });
+
+    if (targets.length === 0) {
+      setAppliedSuggestionsByPurpose((previous) => ({
+        ...previous,
+        [purpose]: [],
+      }));
+      return;
+    }
+
+    const keys = targets.map((row) => rowMutationKey(purpose, row.name));
+    for (const key of keys) {
+      if (mutatingRowsRef.current.has(key)) {
+        throw new Error('A triage update is already in progress for one or more rows');
+      }
+    }
+    for (const key of keys) {
+      mutatingRowsRef.current.add(key);
+    }
+
+    try {
+      const result = await updateCallRef.current(
+        buildTriageBulkUpdateArgs(
+          stateRef.current.triageType,
+          targets.map((row) => ({ item: row.initial, decision: undefined })),
+        ),
+      );
+      if (result.error !== undefined) {
+        throw new Error(result.error);
+      }
+
+      for (const row of targets) {
+        dispatch({ type: 'undo', purpose, name: row.name });
+      }
+      setAppliedSuggestionsByPurpose((previous) => ({
+        ...previous,
+        [purpose]: [],
+      }));
+    } finally {
+      for (const key of keys) {
+        mutatingRowsRef.current.delete(key);
+      }
     }
   }
 
@@ -231,6 +384,37 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
     }
   }
 
+  async function persistRemove(purpose: CookieTriagePurposeCategory, name: string): Promise<void> {
+    const key = rowMutationKey(purpose, name);
+    if (mutatingRowsRef.current.has(key)) {
+      throw new Error('A triage update is already in progress for this row');
+    }
+
+    const triageType = stateRef.current.triageType;
+    const itemNoun = triageType === 'cookies' ? 'cookie' : 'data flow';
+    const row = stateRef.current.categories[purpose].cookies.find(
+      (candidate) => candidate.name === name,
+    );
+    if (!row) {
+      throw new Error(`Row not found: ${name}`);
+    }
+    if (!row.initial.id) {
+      throw new Error(`${itemNoun} "${name}" is missing an id and cannot be deleted`);
+    }
+
+    mutatingRowsRef.current.add(key);
+    try {
+      const result = await deleteCallRef.current({ ids: [row.initial.id] });
+      if (result.error !== undefined) {
+        throw new Error(result.error);
+      }
+
+      dispatch({ type: 'remove', purpose, name });
+    } finally {
+      mutatingRowsRef.current.delete(key);
+    }
+  }
+
   async function persistPurposes(
     purpose: CookieTriagePurposeCategory,
     name: string,
@@ -275,6 +459,7 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
   }
 
   async function fetchSummaryTotals(isCancelled?: () => boolean): Promise<void> {
+    dispatch({ type: 'summaryLoadStart' });
     const [pendingResult, dormantResult] = await Promise.all([
       callRef.current(buildTriagePendingCountArgs()),
       callRef.current(buildTriageDormantCountArgs()),
@@ -285,9 +470,6 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
 
     const pendingTotal = pendingResult.error === undefined ? pendingResult.totalCount : undefined;
     const dormantTotal = dormantResult.error === undefined ? dormantResult.totalCount : undefined;
-    if (pendingTotal === undefined && dormantTotal === undefined) {
-      return;
-    }
 
     dispatch({
       type: 'setSummaryTotals',
@@ -298,13 +480,19 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
 
   /**
    * Lightweight `totalCount` fetch for a purpose tab badge.
-   * When `afterRefresh` is set, clears pending rows first and leaves the tab
-   * idle so selecting it triggers a full list load.
+   *
+   * - `afterRefresh`: clear pending rows, list-load shimmer, then leave the tab
+   *   idle so selecting it triggers a full list load.
+   * - `markBusy`: badge-only shimmer via `countBusy` (inactive tabs on first
+   *   paint). Kept separate from `loadStatus` so clicking a tab mid-fetch still
+   *   starts its list load. The selected tab is loaded via
+   *   {@link fetchPurposePages} instead.
    */
   async function fetchCategoryCount(
     purpose: CookieTriagePurposeCategory,
     options?: {
       afterRefresh?: boolean;
+      markBusy?: boolean;
       isCancelled?: () => boolean;
     },
   ): Promise<void> {
@@ -325,6 +513,19 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
       session = cookieTriageReducer(session, startAction);
       dispatch(startAction);
       stateRef.current = session;
+    } else if (options?.markBusy) {
+      // `countBusy` may already be true (e.g. Custom shimmering while purpose
+      // options load) — only skip when a count request is actually in flight.
+      if (countInFlightRef.current.has(purpose)) {
+        return;
+      }
+      countInFlightRef.current.add(purpose);
+      if (!session.categories[purpose].countBusy) {
+        const startAction: CookieTriageAction = { type: 'countFetchStart', purpose };
+        session = cookieTriageReducer(session, startAction);
+        dispatch(startAction);
+        stateRef.current = session;
+      }
     }
 
     try {
@@ -336,6 +537,15 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
         ),
       );
       if (options?.isCancelled?.()) {
+        if (options.markBusy) {
+          const clearBusy: CookieTriageAction = {
+            type: 'setCategoryCount',
+            purpose,
+            totalCount: stateRef.current.categories[purpose].totalCount,
+          };
+          dispatch(clearBusy);
+          stateRef.current = cookieTriageReducer(stateRef.current, clearBusy);
+        }
         return;
       }
       if (result.error !== undefined) {
@@ -347,16 +557,24 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
           };
           dispatch(loadError);
           stateRef.current = cookieTriageReducer(stateRef.current, loadError);
+        } else if (options?.markBusy) {
+          const clearBusy: CookieTriageAction = {
+            type: 'setCategoryCount',
+            purpose,
+            totalCount: stateRef.current.categories[purpose].totalCount,
+          };
+          dispatch(clearBusy);
+          stateRef.current = cookieTriageReducer(stateRef.current, clearBusy);
         }
         return;
       }
       if (result.totalCount === undefined) {
-        if (options?.afterRefresh) {
+        if (options?.afterRefresh || options?.markBusy) {
           const defer: CookieTriageAction = {
             type: 'setCategoryCount',
             purpose,
             totalCount: stateRef.current.categories[purpose].totalCount,
-            deferListLoad: true,
+            ...(options.afterRefresh ? { deferListLoad: true } : {}),
           };
           dispatch(defer);
           stateRef.current = cookieTriageReducer(stateRef.current, defer);
@@ -375,6 +593,9 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
     } finally {
       if (options?.afterRefresh) {
         inFlightRef.current.delete(purpose);
+      }
+      if (options?.markBusy) {
+        countInFlightRef.current.delete(purpose);
       }
     }
   }
@@ -507,15 +728,27 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
     let cancelled = false;
 
     void (async () => {
+      // Selected tab gets a full list load (and its own shimmer) below. Other
+      // tabs only need badge totals — mark them busy so every badge shimmers.
+      // Custom waits on purpose options before it can fetch; shimmer until then.
+      const selected = stateRef.current.selectedPurpose;
+      if (selected !== 'Custom') {
+        const customBusy: CookieTriageAction = { type: 'countFetchStart', purpose: 'Custom' };
+        dispatch(customBusy);
+        stateRef.current = cookieTriageReducer(stateRef.current, customBusy);
+      }
       await Promise.all(
         COOKIE_TRIAGE_PURPOSE_ORDER.map((purpose) => {
-          if (
-            purpose === 'Custom' &&
-            selectCustomPurposeSlugs(stateRef.current.purposeOptions).length === 0
-          ) {
+          if (purpose === 'Custom') {
             return Promise.resolve();
           }
-          return fetchCountRef.current(purpose, { isCancelled: () => cancelled });
+          if (purpose === selected) {
+            return Promise.resolve();
+          }
+          return fetchCountRef.current(purpose, {
+            markBusy: true,
+            isCancelled: () => cancelled,
+          });
         }),
       );
     })();
@@ -549,18 +782,32 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
   const customPurposeSlugsKey = selectCustomPurposeSlugs(state.purposeOptions).join(',');
 
   useEffect(() => {
-    if (!app || customPurposeSlugsKey.length === 0) {
+    if (!app || !state.purposeOptionsLoaded) {
       return;
     }
+
+    if (customPurposeSlugsKey.length === 0) {
+      // No custom purposes — drop the placeholder shimmer; the tab hides next.
+      const clearBusy: CookieTriageAction = {
+        type: 'setCategoryCount',
+        purpose: 'Custom',
+        totalCount: stateRef.current.categories.Custom.totalCount,
+      };
+      dispatch(clearBusy);
+      return;
+    }
+
     if (stateRef.current.selectedPurpose === 'Custom') {
       void fetchRef.current('Custom', 'initial');
     } else {
-      void fetchCountRef.current('Custom');
+      void fetchCountRef.current('Custom', { markBusy: true });
     }
-  }, [app, customPurposeSlugsKey]);
+  }, [app, customPurposeSlugsKey, state.purposeOptionsLoaded]);
 
   const actions: CookieTriageActions = {
     decide: (purpose, name, decision) => persistDecision(purpose, name, decision),
+    applySuggestions,
+    undoSuggestions,
     undo: (purpose, name) => persistDecision(purpose, name, undefined),
     updateNotes: (purpose, name, notes) => persistNotes(purpose, name, notes),
     updatePurpose: (purpose, name, trackingPurposes) =>
@@ -601,7 +848,6 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
             type: 'text',
             text: buildAskOpinionPrompt({
               triageType: stateRef.current.triageType,
-              purpose,
               item: row.initial,
             }),
           },
@@ -611,13 +857,16 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
         throw new Error('Host rejected the recommendation request');
       }
     },
+    remove: (purpose, name) => persistRemove(purpose, name),
   };
 
   return (
     <CookieTriageStateContext.Provider value={state}>
-      <CookieTriageActionsContext.Provider value={actions}>
-        {children}
-      </CookieTriageActionsContext.Provider>
+      <AppliedSuggestionsContext.Provider value={appliedSuggestionsByPurpose}>
+        <CookieTriageActionsContext.Provider value={actions}>
+          {children}
+        </CookieTriageActionsContext.Provider>
+      </AppliedSuggestionsContext.Provider>
     </CookieTriageStateContext.Provider>
   );
 }
@@ -665,6 +914,11 @@ export function useCookieTriageCategory(
   purpose: CookieTriagePurposeCategory,
 ): CookieTriageCategoryState {
   return useCookieTriageState().categories[purpose];
+}
+
+/** Names successfully applied by the last Apply suggestions for a purpose tab. */
+export function useAppliedSuggestionNames(purpose: CookieTriagePurposeCategory): readonly string[] {
+  return useContext(AppliedSuggestionsContext)[purpose] ?? [];
 }
 
 /** Category state for the selected purpose tab. */

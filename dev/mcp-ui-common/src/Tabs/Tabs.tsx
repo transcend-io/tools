@@ -10,6 +10,8 @@ export interface TabItem {
   label: ReactNode;
   /** Optional count shown in a pill */
   count?: number;
+  /** When true, the count badge shows a shimmer placeholder */
+  countBusy?: boolean;
 }
 
 /** Props for {@link Tabs}. */
@@ -86,8 +88,8 @@ export const Tabs = memo(function Tabs({
               id={`${idPrefix}-${item.id}`}
               className={
                 isActive
-                  ? 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand-text'
-                  : 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-content'
+                  ? 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand'
+                  : 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-on-card-subtle'
               }
               onClick={() => onSelect(item.id)}
               onKeyDown={(event) => onTabKeyDown(event, index)}
@@ -96,6 +98,7 @@ export const Tabs = memo(function Tabs({
               {item.count !== undefined ? (
                 <CountBadge
                   count={item.count}
+                  busy={item.countBusy}
                   tone={isActive ? CountBadgeTone.Active : CountBadgeTone.Idle}
                 />
               ) : null}

@@ -1,7 +1,8 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
-import { memo, type SVGProps } from 'react';
+import { memo, useEffect, type SVGProps } from 'react';
 
-import { useHostDisplayMode } from './use-host-display-mode.js';
+import { Button, ButtonVariant } from '../Button/Button.tsx';
+import { useHostDisplayMode } from '../useHostDisplayMode/useHostDisplayMode.ts';
 
 type IconProps = SVGProps<SVGSVGElement>;
 
@@ -97,24 +98,44 @@ export const FullscreenButton = memo(function FullscreenButton({
 }: FullscreenButtonProps) {
   const { canFullscreen, isFullscreen, requestDisplayMode } = useHostDisplayMode(app);
 
+  useEffect(() => {
+    if (!isFullscreen) {
+      return undefined;
+    }
+
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape' || event.defaultPrevented) {
+        return;
+      }
+      // Leave Escape for open dialogs / listboxes (e.g. ConfirmDialog, PurposeMultiSelect).
+      if (document.querySelector('[aria-modal="true"], [role="listbox"]')) {
+        return;
+      }
+      event.preventDefault();
+      void requestDisplayMode('inline');
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isFullscreen, requestDisplayMode]);
+
   if (!canFullscreen) {
     return null;
   }
 
-  const baseClassName =
-    'inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-sm border border-line bg-surface px-2 py-1 text-sm text-content';
-
   return (
-    <button
+    <Button
       type="button"
-      className={className ? `${baseClassName} ${className}` : baseClassName}
+      className={className}
       aria-pressed={isFullscreen}
+      variant={ButtonVariant.Icon}
       onClick={() => {
         void requestDisplayMode(isFullscreen ? 'inline' : 'fullscreen');
       }}
     >
       {isFullscreen ? <CollapseIcon /> : <ExpandIcon />}
-      {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-    </button>
+    </Button>
   );
 });

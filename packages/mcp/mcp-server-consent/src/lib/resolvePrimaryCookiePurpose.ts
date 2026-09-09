@@ -24,7 +24,7 @@ export const COOKIE_TRIAGE_PURPOSE_LABELS: Record<CookieTriagePurposeCategory, s
   Functional: 'Functional',
   Advertising: 'Advertising',
   Analytics: 'Analytics',
-  SaleOfInfo: 'Sale of Personal Info',
+  SaleOfInfo: 'Sale of Info',
   Unknown: 'Unknown',
   Custom: 'Custom',
 };

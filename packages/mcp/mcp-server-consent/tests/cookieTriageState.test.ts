@@ -7,29 +7,41 @@ import {
   cookieTriageReducer,
   createEmptySession,
   decisionReadLabel,
+  formatApplySuggestionsLabel,
   formatCategorySummaryLine,
+  formatUndoSuggestionsLabel,
+  selectUndoableAppliedNames,
   formatEncounters,
   formatLastActivity,
+  hasAssignedPurpose,
+  hasMinimalOccurrences,
   isDormantCookie,
   selectCategorySummary,
   selectCustomPurposeSlugs,
   selectPurposes,
   selectSummary,
+  suggestRowDecision,
+  suggestTriageDecision,
   type CookieTriageSessionState,
 } from '../src/ui/cookie-triage/cookieTriageState.js';
+
+const recentActivityAt = '2026-08-26T17:22:08.000Z';
+const staleActivityAt = '2025-01-01T00:00:00.000Z';
 
 const analyticsCookies: CookieTriageAnalysis[] = [
   {
     name: '_ga',
     id: 'analytics-ga',
     trackingPurposes: ['Analytics'],
-    lastActivityAt: '2026-08-26T17:22:08.000Z',
+    occurrences: 31204,
+    lastActivityAt: recentActivityAt,
   },
   {
     name: '_stale',
     id: 'analytics-stale',
     trackingPurposes: ['Analytics'],
-    lastActivityAt: '2025-01-01T00:00:00.000Z',
+    occurrences: 12,
+    lastActivityAt: staleActivityAt,
   },
 ];
 
@@ -107,16 +119,32 @@ describe('appendPage', () => {
     expect(state.categories.Analytics.cookies[0]?.decision).toBeUndefined();
   });
 
-  it('keeps only rows whose primary purpose matches the tab', () => {
+  it('keeps rows that include the tab purpose, including mixed-purpose items', () => {
     const state = seedPurpose(createEmptySession('cookies'), 'Advertising', [
       { name: 'ads', id: 'ads-1', trackingPurposes: ['Advertising'] },
       { name: 'also-essential', id: 'ads-2', trackingPurposes: ['Essential', 'Advertising'] },
+      { name: 'analytics-only', id: 'ads-3', trackingPurposes: ['Analytics'] },
     ]);
 
-    expect(state.categories.Advertising.cookies.map((row) => row.name)).toEqual(['ads']);
+    expect(state.categories.Advertising.cookies.map((row) => row.name)).toEqual([
+      'ads',
+      'also-essential',
+    ]);
   });
 
-  it('skips rows already present in the session', () => {
+  it('shows the same mixed-purpose item on every matching purpose tab', () => {
+    let state = seedPurpose(createEmptySession('cookies'), 'Essential', [
+      { name: 'mixed', id: 'mixed-1', trackingPurposes: ['Essential', 'Advertising'] },
+    ]);
+    state = seedPurpose(state, 'Advertising', [
+      { name: 'mixed', id: 'mixed-1', trackingPurposes: ['Essential', 'Advertising'] },
+    ]);
+
+    expect(state.categories.Essential.cookies.map((row) => row.name)).toEqual(['mixed']);
+    expect(state.categories.Advertising.cookies.map((row) => row.name)).toEqual(['mixed']);
+  });
+
+  it('skips rows already present on the same tab', () => {
     let state = seedPurpose(createEmptySession('cookies'), 'Analytics', [
       { name: '_ga', id: 'c1', trackingPurposes: ['Analytics'] },
     ]);
@@ -213,6 +241,7 @@ describe('selectSummary', () => {
       pendingCount: 606,
       dormantCount: 42,
       triagedCount: 0,
+      summaryBusy: false,
     });
 
     state = cookieTriageReducer(state, {
@@ -226,6 +255,7 @@ describe('selectSummary', () => {
       pendingCount: 606,
       dormantCount: 42,
       triagedCount: 1,
+      summaryBusy: false,
     });
   });
 
@@ -234,7 +264,21 @@ describe('selectSummary', () => {
       pendingCount: 0,
       dormantCount: 0,
       triagedCount: 0,
+      summaryBusy: true,
     });
+  });
+
+  it('marks overview KPIs busy while summary counts refresh', () => {
+    let state = cookieTriageReducer(seededSession(), {
+      type: 'setSummaryTotals',
+      pendingTotal: 10,
+      dormantTotal: 2,
+    });
+    expect(selectSummary(state).summaryBusy).toBe(false);
+
+    state = cookieTriageReducer(state, { type: 'summaryLoadStart' });
+    expect(selectSummary(state).summaryBusy).toBe(true);
+    expect(selectSummary(state).pendingCount).toBe(10);
   });
 });
 
@@ -244,9 +288,111 @@ describe('isDormantCookie', () => {
       isDormantCookie({
         name: 'x',
         id: 'x-1',
-        lastActivityAt: '2025-01-01T00:00:00.000Z',
+        lastActivityAt: staleActivityAt,
       }),
     ).toBe(true);
+  });
+});
+
+describe('suggestTriageDecision', () => {
+  it('suggests junk when purpose is missing or Unknown', () => {
+    expect(
+      suggestTriageDecision({
+        name: 'a',
+        id: 'a',
+        occurrences: 99,
+        lastActivityAt: recentActivityAt,
+      }),
+    ).toBe('junk');
+    expect(
+      suggestTriageDecision({
+        name: 'b',
+        id: 'b',
+        trackingPurposes: ['Unknown'],
+        occurrences: 99,
+        lastActivityAt: recentActivityAt,
+      }),
+    ).toBe('junk');
+    expect(hasAssignedPurpose({ name: 'b', id: 'b', trackingPurposes: ['Unknown'] })).toBe(false);
+  });
+
+  it('suggests junk when dormant even with purpose and volume', () => {
+    expect(
+      suggestTriageDecision({
+        name: 'stale',
+        id: 'stale',
+        trackingPurposes: ['Analytics'],
+        occurrences: 99,
+        lastActivityAt: staleActivityAt,
+      }),
+    ).toBe('junk');
+  });
+
+  it('suggests junk for minimal or missing occurrences', () => {
+    expect(
+      suggestTriageDecision({
+        name: 'low',
+        id: 'low',
+        trackingPurposes: ['Analytics'],
+        occurrences: 4,
+        lastActivityAt: recentActivityAt,
+      }),
+    ).toBe('junk');
+    expect(
+      suggestTriageDecision({
+        name: 'zero',
+        id: 'zero',
+        trackingPurposes: ['Analytics'],
+        occurrences: 0,
+        lastActivityAt: recentActivityAt,
+      }),
+    ).toBe('junk');
+    expect(
+      hasMinimalOccurrences({
+        name: 'missing',
+        id: 'missing',
+        trackingPurposes: ['Analytics'],
+        lastActivityAt: recentActivityAt,
+      }),
+    ).toBe(true);
+    expect(
+      suggestTriageDecision({
+        name: 'missing',
+        id: 'missing',
+        trackingPurposes: ['Analytics'],
+        lastActivityAt: recentActivityAt,
+      }),
+    ).toBe('junk');
+  });
+
+  it('suggests approve when purpose, recent activity, and enough occurrences align', () => {
+    expect(
+      suggestTriageDecision({
+        name: 'healthy',
+        id: 'healthy',
+        trackingPurposes: ['Analytics'],
+        occurrences: 5,
+        lastActivityAt: recentActivityAt,
+      }),
+    ).toBe('approve');
+  });
+
+  it('excludes decided rows from suggestRowDecision', () => {
+    expect(
+      suggestRowDecision({
+        name: '_ga',
+        initial: analyticsCookies[0],
+        decision: 'approve',
+        notes: '',
+      }),
+    ).toBeUndefined();
+    expect(
+      suggestRowDecision({
+        name: '_ga',
+        initial: analyticsCookies[0],
+        notes: '',
+      }),
+    ).toBe('approve');
   });
 });
 
@@ -265,6 +411,29 @@ describe('cookieTriageReducer', () => {
       'approve',
     );
     expect(selectSummary(state).triagedCount).toBe(1);
+  });
+
+  it('removes a pending row and decrements overview counts', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'setSummaryTotals',
+      pendingTotal: 3,
+      dormantTotal: 1,
+    });
+
+    state = cookieTriageReducer(state, {
+      type: 'remove',
+      purpose: 'Analytics',
+      name: '_stale',
+    });
+
+    expect(state.categories.Analytics.cookies.map((row) => row.name)).toEqual(['_ga']);
+    expect(state.categories.Analytics.totalCount).toBe(1);
+    expect(selectSummary(state)).toMatchObject({
+      pendingCount: 2,
+      dormantCount: 0,
+      triagedCount: 0,
+    });
   });
 
   it('updates notes for one row without changing its decision', () => {
@@ -545,12 +714,32 @@ describe('cookieTriageReducer', () => {
     expect(state.categories.Essential.totalCount).toBe(7);
     expect(state.categories.Essential.loadStatus).toBe('idle');
   });
+
+  it('tracks countBusy separately from list loadStatus', () => {
+    let state = createEmptySession('cookies');
+    state = cookieTriageReducer(state, { type: 'countFetchStart', purpose: 'Advertising' });
+
+    expect(state.categories.Advertising.countBusy).toBe(true);
+    expect(state.categories.Advertising.loadStatus).toBe('idle');
+
+    state = cookieTriageReducer(state, {
+      type: 'setCategoryCount',
+      purpose: 'Advertising',
+      totalCount: 12,
+    });
+
+    expect(state.categories.Advertising.countBusy).toBe(false);
+    expect(state.categories.Advertising.totalCount).toBe(12);
+    expect(state.categories.Advertising.loadStatus).toBe('idle');
+  });
 });
 
 describe('format helpers', () => {
   it('formats encounters and relative last activity', () => {
+    expect(formatEncounters(1200)).toBe('1,200');
     expect(formatEncounters(31204)).toBe('31,204');
     expect(formatEncounters(undefined)).toBe('—');
+    expect(formatEncounters(Number.NaN)).toBe('—');
     expect(decisionReadLabel('approve')).toBe('Approved');
     expect(decisionReadLabel('junk')).toBe('Junked');
 
@@ -559,22 +748,71 @@ describe('format helpers', () => {
     expect(formatLastActivity(undefined, now)).toBe('—');
   });
 
-  it('builds category summary lines', () => {
+  it('builds category summary lines from suggestions', () => {
     const state = seededSession();
     const summary = selectCategorySummary(state.categories.Analytics);
 
     expect(summary).toEqual({
-      pendingCount: 2,
-      dormantCount: 1,
+      approveSuggestionCount: 1,
+      junkSuggestionCount: 1,
       triagedCount: 0,
     });
-    expect(formatCategorySummaryLine(summary)).toBe('2 pending · 1 dormant, worth a look');
+    expect(formatCategorySummaryLine(summary)).toBe('1 to approve as-is · 1 suggested junk');
+    expect(formatApplySuggestionsLabel(summary)).toBe('Apply suggestions · 1 approve · 1 junk');
+  });
+
+  it('excludes decided rows from suggestion counts and omits empty apply segments', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'decide',
+      purpose: 'Analytics',
+      name: '_stale',
+      decision: 'junk',
+    });
+
+    const summary = selectCategorySummary(state.categories.Analytics);
+    expect(summary).toEqual({
+      approveSuggestionCount: 1,
+      junkSuggestionCount: 0,
+      triagedCount: 1,
+    });
+    expect(formatCategorySummaryLine(summary)).toBe('1 to approve as-is · 1 decided');
+    expect(formatApplySuggestionsLabel(summary)).toBe('Apply suggestions · 1 approve');
+  });
+
+  it('formats undo suggestions from still-decided applied names', () => {
+    let state = seededSession();
+    state = cookieTriageReducer(state, {
+      type: 'decide',
+      purpose: 'Analytics',
+      name: '_ga',
+      decision: 'approve',
+    });
+    state = cookieTriageReducer(state, {
+      type: 'decide',
+      purpose: 'Analytics',
+      name: '_stale',
+      decision: 'junk',
+    });
+
+    const undoable = selectUndoableAppliedNames(state.categories.Analytics, [
+      '_ga',
+      '_stale',
+      'missing',
+    ]);
+    expect(undoable).toEqual(['_ga', '_stale']);
+    expect(formatUndoSuggestionsLabel(undoable.length)).toBe('Undo suggestions · 2');
+
+    state = cookieTriageReducer(state, { type: 'undo', purpose: 'Analytics', name: '_ga' });
+    expect(selectUndoableAppliedNames(state.categories.Analytics, ['_ga', '_stale'])).toEqual([
+      '_stale',
+    ]);
+    expect(formatUndoSuggestionsLabel(0)).toBeUndefined();
   });
 
   it('builds an ask-opinion prompt with row context', () => {
     const prompt = buildAskOpinionPrompt({
       triageType: 'cookies',
-      purpose: 'Analytics',
       item: {
         name: '_ga',
         id: 'cookie-1',
@@ -589,7 +827,7 @@ describe('format helpers', () => {
     expect(prompt).toContain('Name: _ga');
     expect(prompt).toContain('Service: Google Analytics');
     expect(prompt).toContain('Assigned purposes: Analytics');
-    expect(prompt).toContain('Primary purpose tab: Analytics');
+    expect(prompt).not.toContain('Purpose tab:');
     expect(prompt).toContain('Recommend one of: approve, junk, or review.');
   });
 });

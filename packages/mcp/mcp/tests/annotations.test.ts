@@ -82,6 +82,8 @@ describe('MCP Tool Annotations', () => {
       'admin_create_api_key',
       'assessments_submit_response',
       'consent_bulk_triage',
+      'consent_delete_cookies',
+      'consent_delete_data_flows',
       'consent_update_cookies',
       'consent_update_data_flows',
       'dsr_cancel',

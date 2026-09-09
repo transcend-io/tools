@@ -1,6 +1,5 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
-import { useHostDisplayMode } from '@transcend-io/mcp-server-base/ui';
-import { AppShell } from '@transcend-io/mcp-ui-common';
+import { AppShell, useHostDisplayMode, A } from '@transcend-io/mcp-ui-common';
 
 import { useCookieTriageState, useSelectedPurpose } from './CookieTriageContext.tsx';
 import { Header } from './Header.tsx';
@@ -34,10 +33,8 @@ export function CookieTriageLoaded({ app }: CookieTriageLoadedProps) {
           <span className="flex-1 shrink-1 text-sm">
             {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} needing review are grouped by the
             purpose Transcend assigned. Review each row and set a decision. You can also{' '}
-            <a className="cursor-pointer" href={appPath}>
-              go to the Transcend App
-            </a>{' '}
-            to review and triage {itemNoun}.
+            <A app={app} href={appPath} label="go to the Transcend App" /> to review and triage{' '}
+            {itemNoun}.
           </span>
           <Overviews />
         </>
@@ -46,7 +43,7 @@ export function CookieTriageLoaded({ app }: CookieTriageLoadedProps) {
       <div className="shrink-0">
         <PurposeTabs />
       </div>
-      <PurposeCategorySection purpose={selectedPurpose} />
+      <PurposeCategorySection app={app} purpose={selectedPurpose} />
     </AppShell>
   );
 }

@@ -25,6 +25,8 @@ export const PurposeTabs = memo(function PurposeTabs() {
         id: purpose,
         label: COOKIE_TRIAGE_PURPOSE_LABELS[purpose],
         count: categories[purpose]?.totalCount ?? 0,
+        countBusy:
+          categories[purpose]?.countBusy === true || categories[purpose]?.loadStatus === 'loading',
       })),
     [purposes, categories],
   );

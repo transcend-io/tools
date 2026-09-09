@@ -16,7 +16,8 @@
  *
  * @example
  * ```tsx
- * import { FullscreenButton, useMcpApp, useTool } from '@transcend-io/mcp-server-base/ui';
+ * import { useMcpApp, useTool } from '@transcend-io/mcp-server-base/ui';
+ * import { FullscreenButton } from '@transcend-io/mcp-ui-common';
  *
  * export function View() {
  *   const { app, data, isConnected } = useMcpApp<{ greeting: string }>({
@@ -34,7 +35,5 @@
  * ```
  */
 
-export { FullscreenButton, type FullscreenButtonProps } from './FullscreenButton.js';
-export { useHostDisplayMode, type HostDisplayModeState } from './use-host-display-mode.js';
 export { useMcpApp, type McpAppState, type UseMcpAppOptions } from './use-mcp-app.js';
 export { useTool, type UseToolState, type ParsedToolResult } from './use-tool.js';

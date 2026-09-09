@@ -27,7 +27,9 @@ const EXPECTED_TOOL_NAMES = [
   'consent_get_timeseries_analytics',
   'consent_get_analytics_data',
   'consent_update_cookies',
+  'consent_delete_cookies',
   'consent_update_data_flows',
+  'consent_delete_data_flows',
   'consent_bulk_triage',
 ] as const;
 
@@ -69,6 +71,74 @@ describe('Consent Tools', () => {
       expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
         expect.arrayContaining(['cookies']),
       );
+    });
+  });
+
+  describe('consent_delete_cookies', () => {
+    it('is app-only and not listed to the model', () => {
+      const tool = getTools().find((t) => t.name === 'consent_delete_cookies')!;
+      expect(tool.visibility).toEqual(['app']);
+    });
+
+    it('zodSchema rejects input when ids are missing', () => {
+      const tool = getTools().find((t) => t.name === 'consent_delete_cookies')!;
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
+        expect.arrayContaining(['ids']),
+      );
+    });
+
+    it('deletes cookies by id via DeleteCookies', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({ deleteCookies: { clientMutationId: null, success: true } });
+
+      const tool = getTools().find((t) => t.name === 'consent_delete_cookies')!;
+      const ids = ['81db4ed5-1648-4c87-a064-fd5c46095267'];
+      const result = await tool.handler(tool.zodSchema.parse({ ids }));
+
+      expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(expect.anything(), {
+        input: { airgapBundleId: 'bundle-1', ids },
+      });
+      expect(result).toMatchObject({
+        success: true,
+        data: { deleted: 1, ids, success: true },
+      });
+    });
+  });
+
+  describe('consent_delete_data_flows', () => {
+    it('is app-only and not listed to the model', () => {
+      const tool = getTools().find((t) => t.name === 'consent_delete_data_flows')!;
+      expect(tool.visibility).toEqual(['app']);
+    });
+
+    it('zodSchema rejects input when ids are missing', () => {
+      const tool = getTools().find((t) => t.name === 'consent_delete_data_flows')!;
+      const result = tool.zodSchema.safeParse({});
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues.map((i: any) => i.path[0])).toEqual(
+        expect.arrayContaining(['ids']),
+      );
+    });
+
+    it('deletes data flows by id via DeleteDataFlows', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({ deleteDataFlows: { clientMutationId: null, success: true } });
+
+      const tool = getTools().find((t) => t.name === 'consent_delete_data_flows')!;
+      const ids = ['a1b2c3d4-5678-90ab-cdef-111213141516'];
+      const result = await tool.handler(tool.zodSchema.parse({ ids }));
+
+      expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(expect.anything(), {
+        input: { airgapBundleId: 'bundle-1', ids },
+      });
+      expect(result).toMatchObject({
+        success: true,
+        data: { deleted: 1, ids, success: true },
+      });
     });
   });
 
@@ -144,6 +214,18 @@ describe('Consent Tools', () => {
       const tool = getTools().find((t) => t.name === 'consent_list_data_flows')!;
       const result = tool.zodSchema.safeParse({ status: 'LIVE', trackingTypes: [] });
       expect(result.success).toBe(false);
+    });
+
+    it('forwards orderBy with a value tie-breaker when sorting by occurrences', async () => {
+      const variables = await runDataFlows({
+        status: 'NEEDS_REVIEW',
+        orderField: 'occurrences',
+        orderDirection: 'DESC',
+      });
+      expect(variables.orderBy).toEqual([
+        { field: 'occurrences', direction: 'DESC' },
+        { field: 'value', direction: 'ASC' },
+      ]);
     });
 
     it('omits showZeroActivity by default for NEEDS_REVIEW so counts match inventory stats', async () => {
@@ -361,7 +443,7 @@ describe('Consent Tools', () => {
   });
 
   describe('consent_list_cookies', () => {
-    it('forwards orderBy when sorting by occurrences', async () => {
+    it('forwards orderBy with a name tie-breaker when sorting by occurrences', async () => {
       mockGraphql.makeRequest.mockResolvedValueOnce({
         consentManager: { consentManager: { id: 'bundle-1' } },
       });
@@ -377,7 +459,10 @@ describe('Consent Tools', () => {
         }),
       );
       const variables = mockGraphql.makeRequest.mock.calls[1][1];
-      expect(variables.orderBy).toEqual([{ field: 'occurrences', direction: 'DESC' }]);
+      expect(variables.orderBy).toEqual([
+        { field: 'occurrences', direction: 'DESC' },
+        { field: 'name', direction: 'ASC' },
+      ]);
     });
 
     it('forwards trackingPurposes into filterBy', async () => {
@@ -576,7 +661,10 @@ describe('cookie-triage MCP App document', () => {
   it('includes cookie triage chrome and theme utilities', () => {
     expect(cookieTriageHtml).toContain('Could not reach the host');
     expect(cookieTriageHtml).toContain('Connecting to the host');
-    expect(cookieTriageHtml).toContain('Load more');
+    expect(cookieTriageHtml).toContain('Show next');
+    expect(cookieTriageHtml).toContain('All caught up');
+    expect(cookieTriageHtml).toContain('Open in admin dashboard');
+    expect(cookieTriageHtml).toContain('admin dashboard');
     expect(cookieTriageHtml).toMatch(/\.max-w-view\{max-width:var\(--container-view\)}/);
     expect(cookieTriageHtml).toContain('text-content-muted');
   });

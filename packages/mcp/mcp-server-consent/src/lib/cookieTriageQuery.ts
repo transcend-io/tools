@@ -45,6 +45,9 @@ export function buildTriageListArgs(
     offset,
     orderField: 'occurrences',
     orderDirection: 'DESC',
+    // Data-flow triage includes never-active rows; cookie triage keeps the
+    // default (omit) so NEEDS_REVIEW totals stay aligned with inventory stats.
+    ...(triageType === 'data_flows' ? { showZeroActivity: true } : {}),
     ...purposeFilter,
   };
 }
@@ -112,6 +115,45 @@ function triageUpdateFields(
 }
 
 /**
+ * One row in a batched triage update payload.
+ */
+export interface TriageUpdateTarget {
+  /** Cookie or data-flow snapshot to update */
+  item: CookieTriageAnalysis;
+  /** Decision to persist; `undefined` restores `NEEDS_REVIEW` */
+  decision: CookieTriageDecision | undefined;
+}
+
+/**
+ * Arguments for `consent_update_cookies` or `consent_update_data_flows`
+ * covering one or more triage rows in a single tool call.
+ *
+ * Pass `decision: undefined` on a target to restore `NEEDS_REVIEW` (undo).
+ */
+export function buildTriageBulkUpdateArgs(
+  triageType: ConsentTriageType,
+  targets: readonly TriageUpdateTarget[],
+): Record<string, unknown> {
+  if (targets.length === 0) {
+    throw new Error('At least one triage update target is required');
+  }
+  if (triageType === 'cookies') {
+    return {
+      cookies: targets.map(({ item, decision }) => ({
+        name: item.name,
+        ...triageUpdateFields(decision, item),
+      })),
+    };
+  }
+  return {
+    dataFlows: targets.map(({ item, decision }) => ({
+      id: item.id,
+      ...triageUpdateFields(decision, item),
+    })),
+  };
+}
+
+/**
  * Arguments for `consent_update_cookies` or `consent_update_data_flows`.
  *
  * Pass `decision: undefined` to restore `NEEDS_REVIEW` (undo).
@@ -121,25 +163,7 @@ export function buildTriageUpdateArgs(
   item: CookieTriageAnalysis,
   decision: CookieTriageDecision | undefined,
 ): Record<string, unknown> {
-  const fields = triageUpdateFields(decision, item);
-  if (triageType === 'cookies') {
-    return {
-      cookies: [
-        {
-          name: item.name,
-          ...fields,
-        },
-      ],
-    };
-  }
-  return {
-    dataFlows: [
-      {
-        id: item.id,
-        ...fields,
-      },
-    ],
-  };
+  return buildTriageBulkUpdateArgs(triageType, [{ item, decision }]);
 }
 
 /**

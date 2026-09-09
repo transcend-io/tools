@@ -1,5 +1,11 @@
-import { Button, ButtonVariant, StatusBadge, StatusBadgeTone } from '@transcend-io/mcp-ui-common';
-import { memo, useEffect, useRef, useState } from 'react';
+import {
+  Button,
+  ButtonVariant,
+  ConfirmDialog,
+  StatusBadge,
+  StatusBadgeTone,
+} from '@transcend-io/mcp-ui-common';
+import { memo, useState } from 'react';
 
 import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { ApproveCheckIcon } from '../_shared/icons/ApproveCheckIcon.tsx';
@@ -13,6 +19,7 @@ import {
   formatLastActivity,
   isDormantCookie,
   selectRowPurposeSlugs,
+  suggestRowDecision,
   type CookieRowState,
   type CookieTriageDecision,
 } from './cookieTriageState.ts';
@@ -25,27 +32,21 @@ interface CookieRowProps {
   row: CookieRowState;
 }
 
-/** Quiet period before persisting notes after the last keystroke */
-const NOTES_SAVE_DEBOUNCE_MS = 1000;
-
 /** One cookie/data-flow triage table row. */
 export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProps) {
   const { triageType, purposeOptions } = useCookieTriageState();
-  const { decide, undo, askOpinion, updateNotes, updatePurpose } = useCookieTriageActions();
+  const { decide, undo, askOpinion, updateNotes, updatePurpose, remove } = useCookieTriageActions();
   const [asking, setAsking] = useState(false);
   const [mutating, setMutating] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [actionError, setActionError] = useState<string | undefined>();
   const [notesOpen, setNotesOpen] = useState(false);
   const [notesDraft, setNotesDraft] = useState(row.notes);
   const [notesError, setNotesError] = useState<string | undefined>();
   const [notesSaving, setNotesSaving] = useState(false);
-  const notesDraftRef = useRef(notesDraft);
-  notesDraftRef.current = notesDraft;
-  const updateNotesRef = useRef(updateNotes);
-  updateNotesRef.current = updateNotes;
-  const notesSaveIdRef = useRef(0);
   const cookie = row.initial;
   const dormant = isDormantCookie(cookie);
+  const suggestion = suggestRowDecision(row);
   const selectedPurposes = selectRowPurposeSlugs(row);
   const decided = row.decision;
   const isDecided = decided === 'approve' || decided === 'junk';
@@ -53,43 +54,6 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
   const notesDirty = notesDraft !== row.notes;
   const itemNoun = triageType === 'cookies' ? 'cookie' : 'data flow';
   const hasSavedNotes = row.notes.trim().length > 0;
-
-  useEffect(() => {
-    if (!notesDirty) {
-      return undefined;
-    }
-
-    const handle = window.setTimeout(() => {
-      const value = notesDraftRef.current;
-      if (value === row.notes) {
-        return;
-      }
-
-      const saveId = notesSaveIdRef.current + 1;
-      notesSaveIdRef.current = saveId;
-      setNotesSaving(true);
-      setNotesError(undefined);
-      void updateNotesRef
-        .current(purpose, row.name, value)
-        .catch((error: unknown) => {
-          if (saveId !== notesSaveIdRef.current) {
-            return;
-          }
-          const message = error instanceof Error ? error.message : 'Failed to save note';
-          setNotesError(message);
-          console.error('[cookie-triage] updateNotes failed', error);
-        })
-        .finally(() => {
-          if (saveId === notesSaveIdRef.current) {
-            setNotesSaving(false);
-          }
-        });
-    }, NOTES_SAVE_DEBOUNCE_MS);
-
-    return () => {
-      window.clearTimeout(handle);
-    };
-  }, [notesDirty, notesDraft, purpose, row.name, row.notes]);
 
   async function onDecision(next: CookieTriageDecision): Promise<void> {
     if (mutating || next === row.decision) {
@@ -102,7 +66,6 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save decision';
       setActionError(message);
-      console.error('[cookie-triage] decide failed', error);
     } finally {
       setMutating(false);
     }
@@ -119,7 +82,6 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to undo decision';
       setActionError(message);
-      console.error('[cookie-triage] undo failed', error);
     } finally {
       setMutating(false);
     }
@@ -136,7 +98,6 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to ask for a recommendation';
       setActionError(message);
-      console.error('[cookie-triage] askOpinion failed', error);
     } finally {
       setAsking(false);
     }
@@ -153,39 +114,91 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update purposes';
       setActionError(message);
-      console.error('[cookie-triage] updatePurpose failed', error);
     } finally {
       setMutating(false);
     }
   }
 
+  async function onDelete(): Promise<void> {
+    if (mutating) {
+      return;
+    }
+    setConfirmDeleteOpen(true);
+  }
+
+  async function onConfirmDelete(): Promise<void> {
+    if (mutating) {
+      return;
+    }
+    setMutating(true);
+    setActionError(undefined);
+    try {
+      await remove(purpose, row.name);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Failed to delete ${itemNoun}`;
+      setActionError(message);
+      console.error('[cookie-triage] remove failed', error);
+      setMutating(false);
+      setConfirmDeleteOpen(false);
+    }
+  }
+
+  function openNotes(): void {
+    setNotesError(undefined);
+    setNotesDraft(row.notes);
+    setNotesOpen(true);
+  }
+
+  function cancelNotes(): void {
+    if (notesSaving) {
+      return;
+    }
+    setNotesError(undefined);
+    setNotesDraft(row.notes);
+    setNotesOpen(false);
+  }
+
   function onToggleNotes(): void {
-    setNotesOpen((open) => {
-      if (!open) {
-        setNotesError(undefined);
-        if (!notesDirty) {
-          setNotesDraft(row.notes);
-        }
-      }
-      return !open;
-    });
+    if (notesOpen) {
+      cancelNotes();
+      return;
+    }
+    openNotes();
+  }
+
+  async function onSaveNotes(): Promise<void> {
+    if (notesSaving || !notesDirty) {
+      return;
+    }
+    setNotesSaving(true);
+    setNotesError(undefined);
+    try {
+      await updateNotes(purpose, row.name, notesDraft);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save note';
+      setNotesError(message);
+    } finally {
+      setNotesSaving(false);
+    }
   }
 
   return (
     <>
       <tr
-        className={`align-middle ${hasSavedNotes || notesOpen ? '' : 'border-b border-line-subtle'}`}
+        className={`align-middle ${hasSavedNotes || notesOpen ? '' : 'border-b border-card-line'}`}
       >
         <td className="px-4 py-3">
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium text-content break-all">{cookie.name}</span>
-            <span className="text-sm text-content-muted">{cookie.service ?? 'Unknown'}</span>
+            <span className="text-sm font-medium text-on-card break-all">{cookie.name}</span>
+            <span className="text-sm text-on-card-muted">{cookie.service ?? 'Unknown'}</span>
           </div>
         </td>
-        <td className="px-4 py-3">
+        <td className="px-4 py-3 whitespace-nowrap">
           <div className="flex flex-col gap-0.5">
-            <span className="text-sm text-content">{formatEncounters(cookie.occurrences)}</span>
-            <span className="text-sm text-content-muted">
+            <span className="text-sm tabular-nums text-on-card">
+              {formatEncounters(cookie.occurrences)}
+            </span>
+            <span className="text-sm text-on-card-muted">
               {formatLastActivity(cookie.lastActivityAt)}
             </span>
             {dormant ? (
@@ -195,7 +208,7 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
             ) : null}
           </div>
         </td>
-        <td className="px-4 py-3">
+        <td className="min-w-0 px-4 py-3">
           <PurposeMultiSelect
             itemName={cookie.name}
             selected={selectedPurposes}
@@ -216,7 +229,7 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                   void onAskOpinion();
                 }}
               >
-                {asking ? 'Asking…' : 'Ask Agent'}
+                Ask Agent
               </Button>
               <Button
                 variant={ButtonVariant.Icon}
@@ -229,15 +242,18 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                 <CommentIcon />
               </Button>
               {isDecided ? (
-                <>
+                <span className="inline-flex items-baseline gap-2 text-sm">
                   <span
-                    className="inline-flex h-9 shrink-0 items-center rounded-sm border border-brand-text bg-surface px-2.5 text-sm font-medium text-brand-text"
+                    className={`font-semibold ${
+                      decided === 'approve' ? 'text-success' : 'text-danger'
+                    }`}
                     aria-label={`Decision: ${decisionReadLabel(decided)}`}
                   >
                     {decisionReadLabel(decided)}
                   </span>
-                  <Button
-                    variant={ButtonVariant.Action}
+                  <button
+                    type="button"
+                    className="cursor-pointer bg-transparent text-on-card-muted hover:underline disabled:cursor-not-allowed disabled:opacity-60"
                     aria-label="Undo decision"
                     disabled={busy}
                     aria-busy={mutating}
@@ -245,13 +261,14 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                       void onUndo();
                     }}
                   >
-                    {mutating ? 'Undoing…' : 'Undo'}
-                  </Button>
-                </>
+                    {mutating ? 'Undoing' : 'Undo'}
+                  </button>
+                </span>
               ) : (
                 <>
                   <Button
                     variant={ButtonVariant.Icon}
+                    active={suggestion === 'approve'}
                     aria-label="Approve"
                     disabled={busy}
                     aria-busy={mutating}
@@ -263,6 +280,7 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                   </Button>
                   <Button
                     variant={ButtonVariant.Icon}
+                    active={suggestion === 'junk'}
                     aria-label="Junk"
                     disabled={busy}
                     aria-busy={mutating}
@@ -275,8 +293,12 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                   <Button
                     variant={ButtonVariant.Icon}
                     aria-label="Delete"
-                    disabled
-                    title="Delete is not available yet"
+                    disabled={busy}
+                    aria-busy={mutating}
+                    title={`Permanently delete this ${itemNoun}`}
+                    onClick={() => {
+                      void onDelete();
+                    }}
                   >
                     <TrashIcon />
                   </Button>
@@ -292,16 +314,16 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
         </td>
       </tr>
       {hasSavedNotes && !notesOpen ? (
-        <tr className="border-b border-line-subtle">
+        <tr className="border-b border-card-line">
           <td colSpan={4} className="px-4 pb-3">
-            <div className="flex flex-wrap items-baseline gap-1.5">
+            <div className="inline-flex items-baseline gap-1.5 max-w-[60%]">
               <StatusBadge>Note</StatusBadge>
-              <span className="min-w-0 flex-1 text-sm text-content-muted break-words">
+              <span className="min-w-0 flex-1 text-sm text-on-card-muted break-words">
                 {row.notes}
               </span>
               <button
                 type="button"
-                className="shrink-0 cursor-pointer text-sm font-medium text-brand-text hover:underline"
+                className="bg-card flex-0 cursor-pointer text-sm font-semibold text-on-card-subtle hover:underline"
                 onClick={onToggleNotes}
               >
                 Edit
@@ -311,32 +333,72 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
         </tr>
       ) : null}
       {notesOpen ? (
-        <tr className="border-b border-line-subtle bg-surface-sunken">
+        <tr className="border-b border-card-line bg-card-sunken">
           <td colSpan={4} className="px-4 py-3">
             <label className="flex flex-col gap-2">
               <span className="sr-only">Note for {cookie.name}</span>
               <textarea
-                className="min-h-24 w-full resize-y rounded-sm border border-line bg-surface px-3 py-2 text-sm text-content placeholder:text-content-muted focus:border-brand-text focus:outline-none"
+                className="min-h-24 w-full resize-y rounded-sm border border-card-line bg-card px-3 py-2 text-sm text-on-card placeholder:text-on-card-muted focus:border-brand-text focus:outline-none"
                 placeholder={`Note for the team — why this decision, who owns the ${itemNoun}, what to check next`}
                 value={notesDraft}
+                disabled={notesSaving}
                 onChange={(event) => {
                   setNotesDraft(event.target.value);
                 }}
               />
             </label>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <p className="text-sm text-content-muted">
-                Writes to the Notes field on this {itemNoun} in the dashboard.
-                {notesSaving ? ' Saving…' : notesDirty ? ' Unsaved changes…' : null}
-              </p>
-              {notesError ? (
-                <p className="text-sm text-danger" role="alert">
-                  {notesError}
-                </p>
-              ) : null}
+              <Button
+                variant={ButtonVariant.Primary}
+                busy={notesSaving}
+                busyLabel="Saving"
+                disabled={!notesDirty}
+                onClick={() => {
+                  void onSaveNotes();
+                }}
+              >
+                Save note
+              </Button>
+              <button
+                type="button"
+                className="cursor-pointer bg-transparent text-sm font-medium text-on-card-subtle hover:underline disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={notesSaving}
+                onClick={cancelNotes}
+              >
+                Cancel
+              </button>
             </div>
+            <p className="mt-2 text-sm text-on-card-muted">
+              Writes to the Notes field on this {itemNoun} in the dashboard.
+            </p>
+            {notesError ? (
+              <p className="mt-1 text-sm text-danger" role="alert">
+                {notesError}
+              </p>
+            ) : null}
           </td>
         </tr>
+      ) : null}
+      {confirmDeleteOpen ? (
+        <ConfirmDialog
+          title={`Delete ${itemNoun} "${cookie.name}"?`}
+          confirmLabel="Delete permanently"
+          busyLabel="Deleting"
+          busy={mutating}
+          onCancel={() => {
+            if (!mutating) {
+              setConfirmDeleteOpen(false);
+            }
+          }}
+          onConfirm={() => {
+            void onConfirmDelete();
+          }}
+        >
+          <p>
+            This permanently removes the {itemNoun} from your consent manager. It cannot be undone.
+          </p>
+          <p className="mt-2">Prefer Junk if you only want to hide it from review.</p>
+        </ConfirmDialog>
       ) : null}
     </>
   );

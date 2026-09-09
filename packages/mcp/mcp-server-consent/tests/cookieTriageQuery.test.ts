@@ -4,6 +4,7 @@ import {
   buildTriageDormantCountArgs,
   buildTriageListArgs,
   buildTriageNotesUpdateArgs,
+  buildTriageBulkUpdateArgs,
   buildTriagePendingCountArgs,
   buildTriagePurposeCountArgs,
   buildTriagePurposesUpdateArgs,
@@ -42,15 +43,37 @@ describe('buildTriageListArgs', () => {
   });
 
   it('filters data flows by trackingTypes, including Unknown and custom slugs', () => {
-    expect(buildTriageListArgs('data_flows', 'Analytics', 0)).toMatchObject({
+    expect(buildTriageListArgs('data_flows', 'Analytics', 0)).toEqual({
+      status: 'NEEDS_REVIEW',
+      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+      offset: 0,
+      orderField: 'occurrences',
+      orderDirection: 'DESC',
+      showZeroActivity: true,
       trackingTypes: ['Analytics'],
     });
-    expect(buildTriageListArgs('data_flows', 'Custom', 0, ['Loyalty'])).toMatchObject({
+    expect(buildTriageListArgs('data_flows', 'Custom', 0, ['Loyalty'])).toEqual({
+      status: 'NEEDS_REVIEW',
+      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+      offset: 0,
+      orderField: 'occurrences',
+      orderDirection: 'DESC',
+      showZeroActivity: true,
       trackingTypes: ['Loyalty'],
     });
-    expect(buildTriageListArgs('data_flows', 'Unknown', 0)).toMatchObject({
+    expect(buildTriageListArgs('data_flows', 'Unknown', 0)).toEqual({
+      status: 'NEEDS_REVIEW',
+      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+      offset: 0,
+      orderField: 'occurrences',
+      orderDirection: 'DESC',
+      showZeroActivity: true,
       trackingTypes: ['Unknown'],
     });
+  });
+
+  it('omits showZeroActivity for cookie triage list args', () => {
+    expect(buildTriageListArgs('cookies', 'Advertising', 0)).not.toHaveProperty('showZeroActivity');
   });
 });
 
@@ -72,8 +95,13 @@ describe('purpose count args', () => {
       orderDirection: 'DESC',
       trackingPurposes: ['Loyalty'],
     });
-    expect(buildTriagePurposeCountArgs('data_flows', 'Analytics')).toMatchObject({
+    expect(buildTriagePurposeCountArgs('data_flows', 'Analytics')).toEqual({
+      status: 'NEEDS_REVIEW',
       first: 1,
+      offset: 0,
+      orderField: 'occurrences',
+      orderDirection: 'DESC',
+      showZeroActivity: true,
       trackingTypes: ['Analytics'],
     });
   });
@@ -153,6 +181,25 @@ describe('buildTriageUpdateArgs', () => {
     });
     expect(buildTriageUpdateArgs('data_flows', dataFlow, undefined)).toEqual({
       dataFlows: [{ id: 'df-1', status: 'NEEDS_REVIEW', isJunk: false }],
+    });
+  });
+
+  it('batches mixed approve and junk targets into one payload', () => {
+    expect(
+      buildTriageBulkUpdateArgs('cookies', [
+        { item: cookie, decision: 'approve' },
+        { item: { name: '_stale', id: 'cookie-2' }, decision: 'junk' },
+      ]),
+    ).toEqual({
+      cookies: [
+        {
+          name: '_ga',
+          status: 'LIVE',
+          isJunk: false,
+          trackingPurposes: ['Analytics'],
+        },
+        { name: '_stale', status: 'LIVE', isJunk: true },
+      ],
     });
   });
 });

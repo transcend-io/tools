@@ -68,6 +68,11 @@
   --color-on-card-muted: var(--text-subtle, #55535f);
   --color-on-card-subtle: var(--text-subtlest, #85838f);
   --color-card-line: var(--border-default, #d6d5db);
+  /*
+   * White label on bold fills (`bg-brand`, `bg-fill-*`, purpose badges). Skips
+   * host `--color-text-inverse`, which a dark host may flip to a dark color.
+   */
+  --color-on-fill: var(--text-inverse, #ffffff);
 
   /*
    * Fills for bars and swatches. Separate from the `--color-success` family

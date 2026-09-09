@@ -1,6 +1,12 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
-import { FullscreenButton, useTool } from '@transcend-io/mcp-server-base/ui';
-import { Button, RefreshIcon, ViewToolbar } from '@transcend-io/mcp-ui-common';
+import { useTool } from '@transcend-io/mcp-server-base/ui';
+import {
+  Button,
+  ButtonVariant,
+  FullscreenButton,
+  RefreshIcon,
+  ViewToolbar,
+} from '@transcend-io/mcp-ui-common';
 import { memo, useEffect } from 'react';
 
 import {
@@ -49,9 +55,13 @@ export const Header = memo(function Header({ app }: HeaderProps) {
 
   return (
     <ViewToolbar labels={labels}>
-      <Button busy={isRefreshing} busyLabel={`Refreshing ${itemNoun}`} onClick={() => refresh()}>
-        {isRefreshing ? null : <RefreshIcon />}
-        Refresh
+      <Button
+        variant={ButtonVariant.Icon}
+        busy={isRefreshing}
+        busyLabel={`Refreshing ${itemNoun}`}
+        onClick={() => refresh()}
+      >
+        <RefreshIcon />
       </Button>
       <FullscreenButton app={app} />
     </ViewToolbar>

@@ -12,6 +12,17 @@ export {
   type StatusBadgeProps,
 } from './Badge/Badge.tsx';
 export { Button, ButtonVariant, type ButtonProps } from './Button/Button.tsx';
+export {
+  CompactCount,
+  CompactCountShimmer,
+  formatCompactCount,
+  type CompactCountProps,
+} from './CompactCount/CompactCount.tsx';
+export { ConfirmDialog, type ConfirmDialogProps } from './ConfirmDialog/ConfirmDialog.tsx';
+export {
+  FullscreenButton,
+  type FullscreenButtonProps,
+} from './FullscreenButton/FullscreenButton.tsx';
 export { Grid, type GridProps } from './Grid/Grid.tsx';
 export { Heading, HeadingVariant, type HeadingProps } from './Heading/Heading.tsx';
 export {
@@ -47,3 +58,9 @@ export {
   type ViewLoadingCardProps,
 } from './ViewState/ViewState.tsx';
 export { ViewToolbar, type ViewToolbarProps } from './ViewToolbar/ViewToolbar.tsx';
+export {
+  useHostDisplayMode,
+  type HostDisplayModeState,
+} from './useHostDisplayMode/useHostDisplayMode.ts';
+
+export { A, type AProps } from './A/A.tsx';
