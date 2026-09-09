@@ -35,7 +35,7 @@ const allTools = [
 const toolByName = (name: string) => allTools.find((t) => t.name === name)!;
 
 describe('MCP Tool Annotations', () => {
-  it('registers all umbrella tools (deduped like ToolRegistry)', () => {
+  it('defines all umbrella tools across domain packages', () => {
     expect(allTools.length).toBe(EXPECTED_UMBRELLA_TOOL_COUNT);
   });
 

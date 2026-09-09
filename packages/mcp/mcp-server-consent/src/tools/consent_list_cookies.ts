@@ -24,9 +24,8 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
     .boolean()
     .optional()
     .describe(
-      'Include items with zero activity. Omit (default) so the NEEDS_REVIEW total matches ' +
-        'consent_get_inventory_stats cookies.needReviewCount; set true for the full triage ' +
-        'backlog including never-active cookies.',
+      'Include zero-activity cookies. Omit so NEEDS_REVIEW totals match ' +
+        'consent_get_inventory_stats; set true for the full never-active backlog.',
     ),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
@@ -35,8 +34,7 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
     .min(1)
     .optional()
     .describe(
-      'Filter to cookies assigned any of these tracking purpose slugs ' +
-        '(e.g. ["Advertising", "Analytics"]). Use consent_list_purposes for valid slugs.',
+      'Filter by tracking purpose slugs (e.g. ["Advertising"]). Use consent_list_purposes.',
     ),
   minOccurrences: z
     .number()
@@ -47,13 +45,12 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
     .string()
     .optional()
     .describe(
-      'ISO 8601 upper bound for lastDiscoveredAt (exclusive of newer activity). ' +
-        'Use with first=1 to count dormant NEEDS_REVIEW cookies last seen before this time.',
+      'ISO 8601 upper bound for lastDiscoveredAt. Use with first=1 to count dormant items.',
     ),
   lastDiscoveredAtAfter: z
     .string()
     .optional()
-    .describe('ISO 8601 lower bound for lastDiscoveredAt (cookies last seen on/after this time)'),
+    .describe('ISO 8601 lower bound for lastDiscoveredAt'),
   orderField: z.nativeEnum(CookieOrderField).optional().describe('Sort field (e.g. occurrences).'),
   orderDirection: z
     .nativeEnum(OrderDirection)
@@ -69,10 +66,8 @@ export function createConsentListCookiesTool(clients: ToolClients) {
       'List cookies in your consent manager. ' +
       'Requires status: NEEDS_REVIEW (triage) or LIVE (approved). ' +
       'Returns name, service, tracking purposes, occurrences, junk status, and more. ' +
-      'Filter with trackingPurposes (slugs from consent_list_purposes). ' +
-      'Optional lastDiscoveredAtBefore/After for last-seen windows, ' +
-      'orderField/orderDirection and minOccurrences for ad-hoc listing. ' +
-      'consent_cookie_triage_review_app pages NEEDS_REVIEW cookies via this tool when triageType is cookies.',
+      'Filter with trackingPurposes (slugs from consent_list_purposes), ' +
+      'lastDiscoveredAtBefore/After, orderField/orderDirection, and minOccurrences.',
 
     category: 'Consent Management',
     readOnly: true,

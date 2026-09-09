@@ -25,9 +25,8 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .boolean()
     .optional()
     .describe(
-      'Include items with zero activity. Omit (default) so the NEEDS_REVIEW total matches ' +
-        'consent_get_inventory_stats dataFlows.needReviewCount (the Consent Manager table). ' +
-        'Set true for the full triage backlog including never-active flows.',
+      'Include zero-activity flows. Omit so NEEDS_REVIEW totals match ' +
+        'consent_get_inventory_stats; set true for the full never-active backlog.',
     ),
   text: z.string().optional().describe('Search text filter'),
   service: z.string().optional().describe('Filter by service name'),
@@ -35,8 +34,7 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .boolean()
     .optional()
     .describe(
-      'Return only unmapped/orphaned flows with no associated service (catalog integration). ' +
-        'Useful with status=LIVE to find approved flows that are not mapped to a service.',
+      'Only unmapped flows (no service). Useful with status=LIVE for approved orphans.',
     ),
   type: z
     .nativeEnum(DataFlowScope)
@@ -47,8 +45,7 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .min(1)
     .optional()
     .describe(
-      'Filter to data flows assigned any of these tracking purpose slugs ' +
-        '(e.g. ["Advertising", "Analytics"]). Use consent_list_purposes for valid slugs.',
+      'Filter by tracking purpose slugs (e.g. ["Advertising"]). Use consent_list_purposes.',
     ),
   minOccurrences: z
     .number()
@@ -59,13 +56,12 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .string()
     .optional()
     .describe(
-      'ISO 8601 upper bound for lastDiscoveredAt (exclusive of newer activity). ' +
-        'Use with first=1 to count dormant NEEDS_REVIEW flows last seen before this time.',
+      'ISO 8601 upper bound for lastDiscoveredAt. Use with first=1 to count dormant items.',
     ),
   lastDiscoveredAtAfter: z
     .string()
     .optional()
-    .describe('ISO 8601 lower bound for lastDiscoveredAt (flows last seen on/after this time)'),
+    .describe('ISO 8601 lower bound for lastDiscoveredAt'),
   orderField: z.nativeEnum(DataFlowOrderField).optional().describe('Field to sort by'),
   orderDirection: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
 });
@@ -76,11 +72,10 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
     name: 'consent_list_data_flows',
     description:
       'List data flows (network requests) in your consent manager. ' +
-      'Requires a status filter: NEEDS_REVIEW for triage backlog, LIVE for approved flows. ' +
-      'Returns value (URL/host), service, tracking purposes, activity (occurrences), and more. ' +
-      'Use unmappedOnly to find approved flows with no service, type to filter by scope ' +
-      '(e.g. CSP), trackingTypes (slugs from consent_list_purposes), minOccurrences ' +
-      'for high-traffic flows, and lastDiscoveredAtBefore/After for last-seen windows.',
+      'Requires status: NEEDS_REVIEW (triage) or LIVE (approved). ' +
+      'Returns value (URL/host), service, tracking purposes, occurrences, and more. ' +
+      'Filter with unmappedOnly, type, trackingTypes (slugs from consent_list_purposes), ' +
+      'minOccurrences, and lastDiscoveredAtBefore/After.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
