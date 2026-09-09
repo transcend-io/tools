@@ -1,16 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import fs from 'node:fs';
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import type { LocalContext } from '../../../../context.js';
+import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
 import { deletePreferenceRecords, type DeletePreferenceRecordsCommandFlags } from '../impl.js';
 
 const H = vi.hoisted(() => {
-  const logger = {
-    info: vi.fn(),
-    debug: vi.fn(),
-    error: vi.fn(),
-  };
-
   // colors passthrough so assertions don’t include ANSI codes
   const colors = {
     green: (s: string) => s,
@@ -20,44 +16,37 @@ const H = vi.hoisted(() => {
     red: (s: string) => s,
   };
 
-  const doneInputValidation = vi.fn();
-
   // Sombra GOT instance returned by factory
   const sombra = { tag: 'sombra' };
 
   // spies for preference-management exports
-  const bulkDeletePreferenceRecords = vi.fn(); // we'll .mockImplementationOnce per test to drive streaming
+  const bulkDeletePreferenceRecordsFromRows = vi.fn();
 
   // // CSV helpers (new code path)
   const writeCsv = vi.fn();
 
   const reaDirSync = vi.fn((): string[] => []);
+  const readFileSync = vi.fn(() => 'name,value\nemail,test@example.com\n');
 
   return {
-    logger,
     colors,
-    doneInputValidation,
     sombra,
-    bulkDeletePreferenceRecords,
+    bulkDeletePreferenceRecordsFromRows,
     writeCsv,
     reaDirSync,
+    readFileSync,
   };
 });
 
 /* ----------------- Mocks (must be declared before importing SUT) ----------------- */
-vi.mock('../../../../logger.js', () => ({ logger: H.logger }));
-
 vi.mock('colors', () => ({
   __esModule: true,
   default: H.colors,
   ...H.colors,
 }));
 
-vi.mock('../../../../lib/cli/done-input-validation.js', () => ({
-  doneInputValidation: H.doneInputValidation,
-}));
-
-vi.mock('@transcend-io/sdk', () => ({
+vi.mock('@transcend-io/sdk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@transcend-io/sdk')>()),
   // eslint-disable-next-line require-await
   createSombraGotInstance: vi.fn(async () => H.sombra),
 }));
@@ -70,28 +59,26 @@ vi.mock('../../../../lib/helpers/index.js', () => ({
 // preference-management: forward and record args, then delegate to our spies
 vi.mock('../../../../lib/preference-management/index.js', () => ({
   // eslint-disable-next-line require-await
-  bulkDeletePreferenceRecords: async (sombra: unknown, opts: any) =>
-    H.bulkDeletePreferenceRecords(sombra, opts),
-}));
-
-vi.mock('node:fs', () => ({
-  readdirSync: H.reaDirSync,
+  bulkDeletePreferenceRecordsFromRows: async (sombra: unknown, opts: any) =>
+    H.bulkDeletePreferenceRecordsFromRows(sombra, opts),
 }));
 
 describe('deletePreferenceRecordsImpl', () => {
-  const ctx: LocalContext = {
-    exit: vi.fn(),
-    log: vi.fn(),
-    process: {
-      exit: vi.fn(),
+  const ctx = buildContextForTest({
+    env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'false' },
+    fs: {
+      ...fs,
+      readdirSync: H.reaDirSync as unknown as typeof fs.readdirSync,
+      readFileSync: H.readFileSync as unknown as typeof fs.readFileSync,
     },
-  } as unknown as LocalContext;
+  });
 
   beforeEach(() => {
     vi.clearAllMocks();
+    ctx.reset();
   });
 
-  it('calls doneInputValidation with ctx.process.exit', async () => {
+  it('exits before doing work in validation-only mode', async () => {
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -104,11 +91,18 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
+    const validationContext = buildContextForTest({
+      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
+      fs: ctx.fs,
+    });
 
-    await deletePreferenceRecords.call(ctx, flags);
+    await expect(deletePreferenceRecords.call(validationContext, flags)).rejects.toMatchObject({
+      code: 0,
+    });
 
-    expect(H.doneInputValidation).toHaveBeenCalledTimes(1);
-    expect(H.doneInputValidation).toHaveBeenCalledWith(ctx.process.exit);
+    expect(validationContext.exit).toHaveBeenCalledWith(0);
+    expect(H.bulkDeletePreferenceRecordsFromRows).not.toHaveBeenCalled();
+    expect(H.writeCsv).not.toHaveBeenCalled();
   });
 
   it('errors if both file and directory are provided', async () => {
@@ -125,11 +119,11 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePreferenceRecords.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(
-      H.colors.red('Cannot provide both a directory and a file. Please provide only one.'),
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain(
+      'Cannot provide both a directory and a file. Please provide only one.',
     );
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('errors if neither file nor directory is provided', async () => {
@@ -144,13 +138,11 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePreferenceRecords.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(
-      H.colors.red(
-        'A file or directory must be provided. Please provide one using --file=./preferences.csv or --directory=./preferences',
-      ),
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain(
+      'A file or directory must be provided. Please provide one using --file=./preferences.csv or --directory=./preferences',
     );
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('errors if file is not a CSV', async () => {
@@ -166,18 +158,13 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePreferenceRecords.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(H.colors.red('File must be a CSV file'));
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain('File must be a CSV file');
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('errors if directory has no CSV files', async () => {
-    // Mock readdirSync to return no CSVs
-    vi.doMock('node:fs', () => ({
-      readdirSync: vi.fn(() => ['not-a-csv.txt']),
-    }));
-    // Re-import impl to use new mock
-    const { deletePreferenceRecords: deletePrefRecs } = await import('../impl.js');
+    H.reaDirSync.mockReturnValueOnce(['not-a-csv.txt']);
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -190,15 +177,13 @@ describe('deletePreferenceRecordsImpl', () => {
       receiptDirectory: '/tmp/receipts',
       fileConcurrency: 5,
     };
-    await deletePrefRecs.call(ctx, flags);
-    expect(H.logger.error).toHaveBeenCalledWith(
-      H.colors.red('No CSV files found in directory: /tmp/dir'),
-    );
-    expect(ctx.process.exit).toHaveBeenCalledWith(1);
+    await expect(deletePreferenceRecords.call(ctx, flags)).rejects.toMatchObject({ code: 1 });
+    expect(ctx.stderr).toContain('No CSV files found in directory: /tmp/dir');
+    expect(ctx.exit).toHaveBeenCalledWith(1);
   });
 
   it('processes a single CSV file successfully', async () => {
-    H.bulkDeletePreferenceRecords.mockResolvedValueOnce([]);
+    H.bulkDeletePreferenceRecordsFromRows.mockResolvedValueOnce([]);
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -212,11 +197,14 @@ describe('deletePreferenceRecordsImpl', () => {
       fileConcurrency: 5,
     };
     await deletePreferenceRecords.call(ctx, flags);
-    expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledWith(
+    expect(H.bulkDeletePreferenceRecordsFromRows).toHaveBeenCalledWith(
       H.sombra,
-      expect.objectContaining({ filePath: '/tmp/out.csv' }),
+      expect.objectContaining({
+        anchorIdentifiers: [{ name: 'email', value: 'test@example.com' }],
+        logger: ctx.logger,
+      }),
     );
-    expect(H.logger.info).toHaveBeenCalledWith(expect.stringContaining('Deletion Summary Report'));
+    expect(ctx.stdout).toContain('Deletion Summary Report');
     expect(H.writeCsv).not.toHaveBeenCalled();
   });
 
@@ -237,16 +225,18 @@ describe('deletePreferenceRecordsImpl', () => {
     };
     H.reaDirSync.mockReturnValueOnce(['a.csv', 'b.csv', 'c.csv']);
     await deletePreferenceRecords.call(ctx, flags);
-    expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledTimes(3);
-    expect(H.bulkDeletePreferenceRecords).toHaveBeenCalledWith(
+    expect(H.bulkDeletePreferenceRecordsFromRows).toHaveBeenCalledTimes(3);
+    expect(H.bulkDeletePreferenceRecordsFromRows).toHaveBeenCalledWith(
       H.sombra,
-      expect.objectContaining({ filePath: expect.stringContaining('a.csv') }),
+      expect.objectContaining({
+        anchorIdentifiers: [{ name: 'email', value: 'test@example.com' }],
+      }),
     );
-    expect(H.logger.info).toHaveBeenCalledWith(expect.stringContaining('Deletion Summary Report'));
+    expect(ctx.stdout).toContain('Deletion Summary Report');
   });
 
   it('writes a receipt if there are failed deletions', async () => {
-    H.bulkDeletePreferenceRecords.mockResolvedValueOnce([{ id: 1, error: 'fail' }]);
+    H.bulkDeletePreferenceRecordsFromRows.mockResolvedValueOnce([{ id: 1, error: 'fail' }]);
     const flags: DeletePreferenceRecordsCommandFlags = {
       auth: 'tok',
       partition: 'part-1',
@@ -265,7 +255,7 @@ describe('deletePreferenceRecordsImpl', () => {
       [{ id: 1, error: 'fail' }],
       true,
     );
-    expect(H.logger.info).toHaveBeenCalledWith(expect.stringContaining('Receipt Path:'));
+    expect(ctx.stdout).toContain('Receipt Path:');
   });
 });
 /* eslint-enable @typescript-eslint/no-explicit-any */

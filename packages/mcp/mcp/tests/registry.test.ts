@@ -50,6 +50,17 @@ describe('ToolRegistry', () => {
     expect(unique.size).toBe(names.length);
   });
 
+  // A `cursor` param is only honest where the underlying API threads it through to a real
+  // endCursor. Everywhere else it was silently dropped, so callers paged forever on page one.
+  it('only exposes cursor on the tools whose API actually pages by cursor', () => {
+    const withCursor = allTools
+      .filter((tool) => 'cursor' in (tool.zodSchema as { shape: Record<string, unknown> }).shape)
+      .map((tool) => tool.name)
+      .sort();
+
+    expect(withCursor).toEqual(['dsr_list', 'preferences_query']);
+  });
+
   it('ToolRegistry registers all tools with correct count', () => {
     const rest = new TranscendRestClient(TEST_AUTH, 'http://localhost:0');
     const graphql = new TranscendGraphQLClient(TEST_AUTH, 'http://localhost:0');

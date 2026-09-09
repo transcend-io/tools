@@ -1,4 +1,10 @@
-import { createListResult, defineTool, z, type ToolClients } from '@transcend-io/mcp-server-base';
+import {
+  createListResult,
+  defineTool,
+  OffsetPaginationSchema,
+  z,
+  type ToolClients,
+} from '@transcend-io/mcp-server-base';
 import { OrderDirection, ScopeName } from '@transcend-io/privacy-types';
 
 import type { ScopeName as GraphqlScopeName } from '../__generated__/graphql.js';
@@ -17,20 +23,7 @@ const scopeNameString = z.string().refine(isScopeName, {
   message: 'Unknown scope. Call admin_list_scopes for valid ScopeName values.',
 });
 
-export const ListUsersSchema = z.object({
-  limit: z.coerce
-    .number()
-    .min(1)
-    .max(100)
-    .optional()
-    .default(50)
-    .describe('Results per page (1-100, default: 50)'),
-  offset: z.coerce
-    .number()
-    .min(0)
-    .optional()
-    .default(0)
-    .describe('Number of results to skip for offset pagination (default: 0)'),
+export const ListUsersSchema = OffsetPaginationSchema.extend({
   text: z
     .string()
     .optional()
@@ -103,7 +96,7 @@ export function createAdminListUsersTool(clients: ToolClients) {
       'text searches name and email (case-insensitive substring). ' +
       'Team filters need UUIDs — call admin_list_teams then pass teamIds. ' +
       'scopeNames / derivedScopeNames use ScopeName values from admin_list_scopes. ' +
-      'Pagination is offset-based (limit + offset); default sort is name ASC.',
+      'Default sort is name ASC.',
     category: 'Admin',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

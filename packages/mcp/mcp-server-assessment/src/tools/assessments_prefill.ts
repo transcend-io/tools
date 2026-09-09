@@ -1,6 +1,8 @@
 import {
   createToolResult,
   defineTool,
+  ErrorCode,
+  ToolError,
   z,
   type ToolClients,
   type Assessment,
@@ -10,22 +12,54 @@ import {
 import type { AssessmentsMixin } from '../graphql.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
+/**
+ * Re-raise a failure from after the form was created, naming the form.
+ *
+ * This tool creates before it does anything else, so every later step fails
+ * with a form already on the dashboard. A bare error names none of it, leaving
+ * the caller no handle on what it made and no recovery but to create a second
+ * one, which is how half-built duplicates end up in a group.
+ *
+ * @param assessmentId - The form that already exists
+ * @param title - Its title, so the message reads without a second lookup
+ * @param step - What was being attempted, phrased to follow "but "
+ * @param error - The underlying failure
+ * @throws ToolError naming the form and the step that failed
+ */
+function failWithFormId(assessmentId: string, title: string, step: string, error: unknown): never {
+  throw new ToolError(
+    ErrorCode.API_ERROR,
+    `Assessment "${title}" was created but ${step} failed: ${
+      error instanceof Error ? error.message : String(error)
+    }. The form exists. Read it with assessments_get and finish it there rather than ` +
+      'creating another.',
+    false,
+    { assessmentId, step },
+  );
+}
+
 export const PrefillSchema = z.object({
   title: z.string().describe('Title for the new assessment form'),
   templateId: z
     .string()
     .optional()
     .describe(
-      'Template ID to create the form from. Will auto-resolve to the first matching assessment group.',
+      'Fallback for when no group is known. Lands the form in whichever group happens to be ' +
+        'first among those built from this template, so never use it when the user named a group.',
     ),
   assessmentGroupId: z
     .string()
     .optional()
-    .describe('Assessment group ID (alternative to templateId)'),
+    .describe(
+      'Group to create the form in (preferred). Resolve by name with `assessments_list_groups`.',
+    ),
   answers: z
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .describe(
-      'Map of answers keyed by question title or referenceId. Values should be strings for text/single-select, or arrays of strings for multi-select.',
+      'Map of answers keyed by question title or referenceId, both of which come from ' +
+        'assessments_export_template on the template you are creating from. A string for text ' +
+        'and single-select, an array for multi-select. Select answers must match the option ' +
+        'text exactly.',
     ),
   assigneeIds: z
     .array(z.string())
@@ -61,11 +95,10 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_prefill',
     description:
-      'Create an assessment, assign it, prefill its answers, validate completeness, and optionally submit it. ' +
-      'Provide assigneeIds or assigneeEmails: assignment moves the form from DRAFT to SHARED before answers move it to IN_PROGRESS. ' +
-      'Provide answers as a map of {questionTitle: answer} or {referenceId: answer}. ' +
-      'For SINGLE_SELECT/MULTI_SELECT, the answer should match the exact text of the answer option(s). ' +
-      'For text questions, provide a string; for multi-select, provide an array.',
+      'Create an assessment form, fill in the answers you supply, and assign it for review in ' +
+      'one call. Combines: create form → assign it → read its questions → answer each → ' +
+      'optionally submit. Requires assigneeIds or assigneeEmails: a form accepts no answers ' +
+      'until it is assigned. The answers are yours to provide; nothing is generated for you.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
@@ -113,20 +146,26 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       });
       const assessmentId = assessment.id;
 
-      const assignmentResult = await graphql.updateAssessmentFormAssignees({
-        id: assessmentId,
-        assigneeIds,
-        externalAssigneeEmails: assigneeEmails,
-      });
+      const assignmentResult = await graphql
+        .updateAssessmentFormAssignees({
+          id: assessmentId,
+          assigneeIds,
+          externalAssigneeEmails: assigneeEmails,
+        })
+        .catch((error) => failWithFormId(assessmentId, title, 'assigning it', error));
 
       if (reviewerIds) {
-        await graphql.updateAssessment({
-          id: assessmentId,
-          reviewerIds,
-        });
+        await graphql
+          .updateAssessment({
+            id: assessmentId,
+            reviewerIds,
+          })
+          .catch((error) => failWithFormId(assessmentId, title, 'setting its reviewers', error));
       }
 
-      const fullForm = await graphql.getAssessment(assessmentId);
+      const fullForm = await graphql
+        .getAssessment(assessmentId)
+        .catch((error) => failWithFormId(assessmentId, title, 'reading its questions', error));
       if (!fullForm.sections || fullForm.sections.length === 0) {
         return createToolResult(true, {
           assessment: fullForm,
@@ -233,7 +272,11 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         }
       }
 
-      const verifiedForm = await graphql.getAssessment(assessmentId);
+      const verifiedForm = await graphql
+        .getAssessment(assessmentId)
+        .catch((error) =>
+          failWithFormId(assessmentId, title, 'checking the answers landed', error),
+        );
       const unansweredQuestions = (verifiedForm.sections as AssessmentSection[] | undefined)
         ?.flatMap((section) => section.questions ?? [])
         .filter((question) => !question.selectedAnswers?.length)
@@ -263,10 +306,14 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       if (submitForReview) {
         const sectionIds = (fullForm.sections as AssessmentSection[]).map((s) => s.id);
         if (sectionIds.length > 0) {
-          submitResult = await graphql.submitAssessmentForReview({
-            id: assessmentId,
-            assessmentSectionIds: sectionIds,
-          });
+          submitResult = await graphql
+            .submitAssessmentForReview({
+              id: assessmentId,
+              assessmentSectionIds: sectionIds,
+            })
+            .catch((error) =>
+              failWithFormId(assessmentId, title, 'submitting it for review', error),
+            );
         }
       }
 

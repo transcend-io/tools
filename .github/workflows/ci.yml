@@ -27,6 +27,11 @@ jobs:
       - name: Bootstrap
         uses: ./.github/commands/bootstrap
 
+      - name: Install Deno for Custom Function contract tests
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: 2.4.5
+
       - if: github.event_name == 'pull_request'
         name: Check changeset
         run: pnpm check:changeset

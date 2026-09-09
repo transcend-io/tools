@@ -12,7 +12,7 @@ export async function skipPreflightJobs(
   this: LocalContext,
   { auth, transcendUrl, enricherIds }: SkipPreflightJobsCommandFlags,
 ): Promise<void> {
-  doneInputValidation(this.process.exit);
+  doneInputValidation(this.process);
 
   await skipPreflightJobsHelper({
     transcendUrl,

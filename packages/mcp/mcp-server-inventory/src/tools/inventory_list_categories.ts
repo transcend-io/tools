@@ -27,15 +27,15 @@ export function createInventoryListCategoriesTool(clients: ToolClients) {
       'List data category subcategories (PII types) from the Data Categories table. ' +
       'Each row includes `id`, `name`, `category`, and optional `description`. ' +
       'Optional `text` is a HAVING search over name, attributes, and DataCategoryType labels. ' +
-      'Paginate with `offset` (increment by `first`) until `hasNextPage` is false. Use these IDs or ' +
-      'name+category pairs when assigning field-level categories via inventory_update_or_create_data_point.',
+      'Use these IDs or name+category pairs when assigning field-level categories via ' +
+      'inventory_update_or_create_data_point.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: ListCategoriesSchema,
-    handler: async ({ text, first, offset }) => {
+    handler: async ({ text, limit, offset }) => {
       const result = await graphql.listDataCategories({
-        first,
+        first: limit,
         offset,
         text,
       });

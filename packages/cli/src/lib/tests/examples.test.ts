@@ -8,9 +8,8 @@ import { fdir } from 'fdir';
 import { describe, expect, test, vi } from 'vitest';
 
 import { app } from '../../app.js';
-import { buildContext } from '../../context.js';
 import { getFlagList, type Example } from '../docgen/buildExamples.js';
-import { captureLogs } from './helpers/captureLogs.js';
+import { buildContextForTest } from './helpers/buildContextForTest.js';
 
 /**
  * Gets the example commands. Uses a mock to intercept `buildExampleCommand` from readme.ts files to populate the command lists.
@@ -282,35 +281,19 @@ async function getShellcheckFailures(commands: string[]): Promise<string[]> {
 describe('Example commands', async () => {
   const { commandsToTest, unalteredCommands } = await getExampleCommands();
 
-  // Enable validation only mode, so that commands exit early after input validation.
-  vi.stubEnv('DEVELOPMENT_MODE_VALIDATE_ONLY', 'true');
-
   test.each(commandsToTest)('Command %j passes input validation', async (commandToTest) => {
-    let exitCode: number | undefined;
-
-    const logCapturer = captureLogs();
+    const context = buildContextForTest({
+      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
+    });
 
     try {
-      await run(
-        app,
-        commandToTest.split(' '),
-        buildContext({
-          ...globalThis.process,
-          exit: (code?: number) => {
-            exitCode = code;
-            throw new Error(`Process exited with code ${code}`);
-          },
-        }),
-      );
+      await run(app, commandToTest.split(' '), context);
     } catch {
       // empty
     }
 
-    const { stderr } = logCapturer.getLogs();
-    logCapturer.restore();
-
-    if (exitCode === 1) {
-      throw new Error(`Failed to run command: ${commandToTest}\n${stderr}`);
+    if (context.exit.mock.calls.some(([code]) => code === 1)) {
+      throw new Error(`Failed to run command: ${commandToTest}\n${context.stderr}`);
     }
   });
 

@@ -1,5 +1,11 @@
 # @transcend-io/privacy-types
 
+## 5.26.0
+
+### Minor Changes
+
+- a19b07e: Add `viewportHeightOverride` to `LoadOptions` and `overrideLocale` to `SharedLoadOptions` in UI v2 load options.
+
 ## 5.25.0
 
 ### Minor Changes
