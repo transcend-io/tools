@@ -1,3 +1,5 @@
+import { CustomFunctionPayloadType, CustomFunctionType } from '@transcend-io/privacy-types';
+
 import type { CustomFunctionManifestEntry } from './manifest.js';
 
 /** Supported Custom Function scaffold templates. */
@@ -10,6 +12,33 @@ export const CUSTOM_FUNCTION_TEMPLATE_NAMES = [
 
 /** A supported Custom Function scaffold template. */
 export type CustomFunctionTemplateName = (typeof CUSTOM_FUNCTION_TEMPLATE_NAMES)[number];
+
+/**
+ * Starter templates available after choosing a product-level Custom Function type.
+ *
+ * General currently has one template; DSR has three payload-shape variants.
+ */
+export const TEMPLATES_FOR_CUSTOM_FUNCTION_TYPE: Record<
+  CustomFunctionType,
+  readonly CustomFunctionTemplateName[]
+> = {
+  [CustomFunctionType.General]: ['general'],
+  [CustomFunctionType.Dsr]: ['dsr-both', 'dsr-datapoint', 'dsr-enricher'],
+};
+
+/** Interactive labels for the product-level Custom Function type prompt. */
+export const CUSTOM_FUNCTION_TYPE_PROMPT_LABELS: Record<CustomFunctionType, string> = {
+  [CustomFunctionType.General]: 'General — triggered by Rules Automation',
+  [CustomFunctionType.Dsr]: 'DSR — triggered by a step in a Workflow',
+};
+
+/** Interactive labels for each starter template. */
+export const CUSTOM_FUNCTION_TEMPLATE_PROMPT_LABELS: Record<CustomFunctionTemplateName, string> = {
+  general: 'General',
+  'dsr-both': 'Data point resolver and preflight check',
+  'dsr-datapoint': 'Data point resolver only',
+  'dsr-enricher': 'Preflight check only',
+};
 
 /** One generated, manifest-relative scaffold file. */
 export interface GeneratedCustomFunctionFile {
@@ -110,7 +139,7 @@ export function generateCustomFunctionTemplate(
   const manifestEntry: CustomFunctionManifestEntry = {
     name: normalizedName,
     code: toManifestPath(sourcePath),
-    type: 'DSR',
+    type: CustomFunctionType.Dsr,
     env: {
       TRANSCEND_API_KEY: '<<parameters.TRANSCEND_API_KEY>>',
     },
@@ -118,19 +147,19 @@ export function generateCustomFunctionTemplate(
 
   if (templateName === 'dsr-datapoint') {
     manifestEntry['test-payload'] = toManifestPath(payloadFiles[0]!.path);
-    manifestEntry['test-payload-type'] = 'DATA_POINT';
+    manifestEntry['test-payload-type'] = CustomFunctionPayloadType.DataPoint;
   } else if (templateName === 'dsr-enricher') {
     manifestEntry['test-payload'] = toManifestPath(payloadFiles[0]!.path);
-    manifestEntry['test-payload-type'] = 'REQUEST_ENRICHER';
+    manifestEntry['test-payload-type'] = CustomFunctionPayloadType.RequestEnricher;
   } else if (templateName === 'dsr-both') {
     manifestEntry['test-payloads'] = [
       {
         payload: toManifestPath(payloadFiles[0]!.path),
-        'payload-type': 'DATA_POINT',
+        'payload-type': CustomFunctionPayloadType.DataPoint,
       },
       {
         payload: toManifestPath(payloadFiles[1]!.path),
-        'payload-type': 'REQUEST_ENRICHER',
+        'payload-type': CustomFunctionPayloadType.RequestEnricher,
       },
     ];
   } else {

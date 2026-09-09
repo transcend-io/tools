@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 
+import { CustomFunctionType } from '@transcend-io/privacy-types';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
@@ -30,13 +31,13 @@ import {
 } from '../../../lib/custom-functions/scaffold-planning.js';
 import {
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
+  CUSTOM_FUNCTION_TEMPLATE_PROMPT_LABELS,
+  CUSTOM_FUNCTION_TYPE_PROMPT_LABELS,
+  TEMPLATES_FOR_CUSTOM_FUNCTION_TYPE,
   type CustomFunctionTemplateName,
   validateCustomFunctionDisplayName,
 } from '../../../lib/custom-functions/scaffold-templates.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
-
-/** Product-level Custom Function type selected before its starter template. */
-type CustomFunctionType = 'general' | 'dsr';
 
 /** Flags for `custom-functions new`. */
 export interface CustomFunctionNewFlags {
@@ -86,36 +87,31 @@ export async function selectInteractiveTemplate(
     'Custom Function type:',
     [
       {
-        name: 'General — triggered by Rules Automation',
-        value: 'general',
+        name: CUSTOM_FUNCTION_TYPE_PROMPT_LABELS[CustomFunctionType.General],
+        value: CustomFunctionType.General,
       },
       {
-        name: 'DSR — triggered by a step in a Workflow',
-        value: 'dsr',
+        name: CUSTOM_FUNCTION_TYPE_PROMPT_LABELS[CustomFunctionType.Dsr],
+        value: CustomFunctionType.Dsr,
       },
     ],
-    'general',
+    CustomFunctionType.General,
   );
-  if (functionType === 'general') {
-    return 'general';
+  const templates = TEMPLATES_FOR_CUSTOM_FUNCTION_TYPE[functionType];
+  if (templates.length < 2) {
+    const [onlyTemplate] = templates;
+    if (onlyTemplate === undefined) {
+      throw new Error(`No Custom Function templates are defined for type ${functionType}.`);
+    }
+    return onlyTemplate;
   }
   return prompts.select<CustomFunctionTemplateName>(
-    'DSR template:',
-    [
-      {
-        name: 'Data point resolver and preflight check',
-        value: 'dsr-both',
-      },
-      {
-        name: 'Data point resolver only',
-        value: 'dsr-datapoint',
-      },
-      {
-        name: 'Preflight check only',
-        value: 'dsr-enricher',
-      },
-    ],
-    'dsr-both',
+    'Template:',
+    templates.map((value) => ({
+      name: CUSTOM_FUNCTION_TEMPLATE_PROMPT_LABELS[value],
+      value,
+    })),
+    templates[0],
   );
 }
 

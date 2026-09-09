@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
+import { CustomFunctionType } from '@transcend-io/privacy-types';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { parseCustomFunctionsManifest } from '../../../../lib/custom-functions/manifest.js';
@@ -82,7 +83,7 @@ afterEach(() => {
 
 describe('custom-functions new', () => {
   it('selects the only General template without a second prompt', async () => {
-    const select = vi.fn().mockResolvedValue('general');
+    const select = vi.fn().mockResolvedValue(CustomFunctionType.General);
     const prompts = { select } as unknown as Parameters<typeof selectInteractiveTemplate>[0];
 
     await expect(selectInteractiveTemplate(prompts)).resolves.toBe('general');
@@ -92,25 +93,28 @@ describe('custom-functions new', () => {
       [
         {
           name: 'General — triggered by Rules Automation',
-          value: 'general',
+          value: CustomFunctionType.General,
         },
         {
           name: 'DSR — triggered by a step in a Workflow',
-          value: 'dsr',
+          value: CustomFunctionType.Dsr,
         },
       ],
-      'general',
+      CustomFunctionType.General,
     );
   });
 
   it('asks for a DSR template after selecting the DSR type', async () => {
-    const select = vi.fn().mockResolvedValueOnce('dsr').mockResolvedValueOnce('dsr-enricher');
+    const select = vi
+      .fn()
+      .mockResolvedValueOnce(CustomFunctionType.Dsr)
+      .mockResolvedValueOnce('dsr-enricher');
     const prompts = { select } as unknown as Parameters<typeof selectInteractiveTemplate>[0];
 
     await expect(selectInteractiveTemplate(prompts)).resolves.toBe('dsr-enricher');
     expect(select).toHaveBeenCalledTimes(2);
     expect(select).toHaveBeenLastCalledWith(
-      'DSR template:',
+      'Template:',
       [
         {
           name: 'Data point resolver and preflight check',
