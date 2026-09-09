@@ -20,7 +20,7 @@ describe('PurposeMultiSelect helpers', () => {
 
   it('labels known and unknown purpose slugs', () => {
     expect(purposeSlugLabel('Analytics', options)).toBe('Analytics');
-    expect(purposeSlugLabel('SaleOfInfo', options)).toBe('Sale of Personal Info');
+    expect(purposeSlugLabel('SaleOfInfo', options)).toBe('Sale of Info');
     expect(purposeSlugLabel('Mystery', options)).toBe('Mystery');
   });
 

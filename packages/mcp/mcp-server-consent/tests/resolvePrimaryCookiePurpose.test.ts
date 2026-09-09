@@ -24,7 +24,7 @@ describe('COOKIE_TRIAGE_PURPOSE_ORDER', () => {
 
 describe('COOKIE_TRIAGE_PURPOSE_LABELS', () => {
   it('maps SaleOfInfo, Custom, and Unknown to app copy', () => {
-    expect(COOKIE_TRIAGE_PURPOSE_LABELS.SaleOfInfo).toBe('Sale of Personal Info');
+    expect(COOKIE_TRIAGE_PURPOSE_LABELS.SaleOfInfo).toBe('Sale of Info');
     expect(COOKIE_TRIAGE_PURPOSE_LABELS.Custom).toBe('Custom');
     expect(COOKIE_TRIAGE_PURPOSE_LABELS.Unknown).toBe('Unknown');
   });
