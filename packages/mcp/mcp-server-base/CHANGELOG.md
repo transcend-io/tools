@@ -1,5 +1,83 @@
 # @transcend-io/mcp-server-base
 
+## 2.0.0
+
+### Major Changes
+
+- 2e8558d: Give `assessments_list` the filters, sorting and paging the API already supports.
+
+  It previously accepted a single `status` and nothing else, so every other question — who owns
+  this, what is overdue, which forms belong to this group — meant paging the whole index and
+  matching in-model. It now forwards `text`, `ids`, `statuses`, `assigneeIds`, `reviewerIds`,
+  `externalAssigneeEmails`, `assessmentGroupIds` and four date bounds to
+  `AssessmentFormFiltersInput`, sorts by `title`, `status` or `submittedAt`, and pages with
+  `offset`.
+
+  Rows carry the group title alongside its ID, and an opt-in `includeDetails` fetches assignees,
+  reviewers, external assignees, dates and lock state — roughly triple the bytes per row, so a
+  caller who only wants titles and statuses does not pay for them.
+
+  There is deliberately no `templateIds` filter. `AssessmentFormFiltersInput` declares one and the
+  server rejects it: a form reaches its template only through its group. Resolve the group with
+  `assessments_list_groups` and filter on its ID.
+
+  Two things read as bugs rather than results, and no longer do: an empty page from an `offset`
+  past the end is now a validation error naming `totalCount`, and an array filter must hold at
+  least one value, so a caller that resolved a lookup to nothing gets an error instead of the
+  whole organization.
+
+  Breaking: `status` is replaced by `statuses`, and `Assessment` replaces the single `assignee`
+  and `reviewer` with the `assignees`, `reviewers` and `externalAssignees` lists the API returns.
+  `dueDate` is now explicitly `null` when unset rather than absent, since a dropped key reads as
+  broken plumbing behind `dueBefore`.
+
+- 2730f0d: Let `assessments_list_templates` filter, and stop inventing the fields it returns.
+
+  The tool took nothing but `limit`, so finding a template by name meant paging the catalog. It now
+  forwards `text`, `ids` and `statuses` to `AssessmentFormTemplateFiltersInput`, and pages with
+  `offset`.
+
+  Rows carry the real `status`, `source`, `isArchived`, `createdAt` and `updatedAt`. The mapper
+  previously hardcoded `version: '1.0.0'`, `isActive: true` and `createdAt: new Date()`, which
+  reported every template in the organization as created today and active — three fields that were
+  never anything but fiction.
+
+  The description said templates are what you build assessments from, without saying that only
+  `PUBLISHED` ones can be, so a caller could pick a draft and fail at create time.
+
+  Breaking: `AssessmentTemplate` drops `version` and `isActive`, and `createdAt` is now optional
+  since it comes from the API rather than the clock.
+
+### Minor Changes
+
+- 6dccc24: Let `assessments_list_groups` filter instead of paging.
+
+  The tool took nothing but `limit`, so resolving a group by name meant walking the whole catalog.
+  It now forwards `text`, `ids` and `templateIds` to `AssessmentGroupFiltersInput`, and pages with
+  `offset` rather than the `cursor` it advertised and never honored.
+
+  `text` matches a group's description as well as its title, so `AssessmentGroup` now carries
+  `description`. Without it a caller cannot see why a group it does not recognize came back, and
+  has no way to audit its own search.
+
+  Group rows are also the only route from a form to its template — `AssessmentFormRaw` reaches its
+  group but not its template — which is what makes `templateIds` worth having here and not on
+  `assessments_list`.
+
+- 746e2da: Add two helpers for the two ways an empty list page misleads a cold-read agent.
+
+  `describeNoMatches(subject, appliedFilters)` builds the `paginationNote` for a genuinely empty
+  result. A bare `[]` reads like a failed lookup, so agents re-derive the answer with a second
+  unfiltered call, or report the zero as a tool failure. The note says the query succeeded and
+  names the filters that produced the zero.
+
+  `assertOffsetInRange({ subject, offset, totalCount, appliedFilters })` throws a validation error
+  when a caller pages past the end. That page is byte-identical to "nothing matched", so an agent
+  that overshoots concludes the records do not exist instead of correcting the offset. Offset zero
+  is left alone — an empty first page is a real no-match and belongs to `describeNoMatches`.
+
+  List tools adopt these separately; nothing changes for existing callers.
+
 ## 1.9.0
 
 ### Minor Changes
