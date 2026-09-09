@@ -33,9 +33,7 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
   unmappedOnly: z
     .boolean()
     .optional()
-    .describe(
-      'Only unmapped flows (no service). Useful with status=LIVE for approved orphans.',
-    ),
+    .describe('Only unmapped flows (no service). Useful with status=LIVE for approved orphans.'),
   type: z
     .nativeEnum(DataFlowScope)
     .optional()
