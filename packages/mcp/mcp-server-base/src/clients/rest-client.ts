@@ -14,6 +14,7 @@ import {
   resolveMcpClientName,
   resolveMcpPackageVersion,
 } from '../mcp-caller-context.js';
+import { tenantCacheKey } from '../tenant-cache-key.js';
 import { getToolCallIdHeader } from '../tool-call-context.js';
 import type {
   DSRSubmission,
@@ -56,7 +57,7 @@ export interface TranscendRestClientOptions {
   sombraCustomerKey?: string;
   /**
    * Lazy host resolver used when {@link baseUrl} is unset.
-   * Invoked once; the result is sticky for the client lifetime.
+   * Invoked once per tenant ({@link tenantCacheKey}); results are sticky per tenant.
    */
   resolveBaseUrl?: () => Promise<string>;
   /**
@@ -70,11 +71,14 @@ export interface TranscendRestClientOptions {
 
 export class TranscendRestClient {
   private auth: AuthCredentials | null;
-  private baseUrl: string | null;
+  /** Constructor sticky host (SOMBRA_URL / explicit baseUrl); never tenant-swapped */
+  private stickyBaseUrl: string | null;
   private readonly sombraCustomerKey: string | undefined;
   private readonly resolveBaseUrl: (() => Promise<string>) | undefined;
   private readonly assertReady: (() => Promise<void>) | undefined;
-  private resolvePromise: Promise<string> | null = null;
+  /** Resolved hosts keyed by {@link tenantCacheKey} for lazy GraphQL resolve */
+  private readonly resolvedUrlsByTenant = new Map<string, string>();
+  private readonly resolvePromisesByTenant = new Map<string, Promise<string>>();
   private logger: Logger;
   private defaultTimeout: number;
   private defaultRetries: number;
@@ -94,7 +98,7 @@ export class TranscendRestClient {
     this.auth = auth;
 
     if (typeof baseUrlOrOptions === 'string') {
-      this.baseUrl = baseUrlOrOptions.replace(/\/$/, '');
+      this.stickyBaseUrl = baseUrlOrOptions.replace(/\/$/, '');
       this.sombraCustomerKey = undefined;
       this.resolveBaseUrl = undefined;
       this.assertReady = undefined;
@@ -102,7 +106,7 @@ export class TranscendRestClient {
     } else {
       const opts = baseUrlOrOptions;
       const trimmed = opts.baseUrl?.trim();
-      this.baseUrl = trimmed ? trimmed.replace(/\/$/, '') : null;
+      this.stickyBaseUrl = trimmed ? trimmed.replace(/\/$/, '') : null;
       this.sombraCustomerKey = opts.sombraCustomerKey?.trim() || undefined;
       this.resolveBaseUrl = opts.resolveBaseUrl;
       this.assertReady = opts.assertReady;
@@ -114,8 +118,16 @@ export class TranscendRestClient {
   }
 
   /**
+   * Auth for the current call: per-request AsyncLocalStorage credentials when
+   * present (HTTP), otherwise the constructor credentials (stdio).
+   */
+  private effectiveAuth(): AuthCredentials | null {
+    return getRequestAuth() ?? this.auth;
+  }
+
+  /**
    * Runs the non-sticky readiness gate (e.g. org AiSettings), then ensures the
-   * Sombra host is resolved. Host resolution remains sticky; the gate does not.
+   * Sombra host is resolved. Host resolution is sticky per tenant; the gate is not.
    */
   async prepareRequest(): Promise<string> {
     if (this.assertReady) {
@@ -125,27 +137,44 @@ export class TranscendRestClient {
   }
 
   /**
-   * Ensures the Sombra host is resolved and sticky.
-   * Safe to call multiple times; only the first resolve runs.
+   * Ensures the Sombra host is resolved.
+   *
+   * Explicit constructor / `baseUrl` overrides stay process-sticky. Lazy
+   * GraphQL resolve is sticky per {@link tenantCacheKey} so HTTP sessions that
+   * swap org credentials do not reuse another tenant's customerUrl.
+   *
    * Does not re-check org enablement — use {@link prepareRequest} for that.
    */
   async ensureResolved(): Promise<string> {
-    if (this.baseUrl) {
-      return this.baseUrl;
+    if (this.stickyBaseUrl) {
+      return this.stickyBaseUrl;
     }
     if (!this.resolveBaseUrl) {
       throw new Error(
         'Sombra URL is not configured. Set SOMBRA_URL or provide a GraphQL-backed host resolver.',
       );
     }
-    if (!this.resolvePromise) {
-      this.resolvePromise = this.resolveBaseUrl().then((url) => {
-        this.baseUrl = url.replace(/\/$/, '');
-        this.logger.info(`Using sombra: ${this.baseUrl}`);
-        return this.baseUrl;
-      });
+
+    const key = tenantCacheKey(this.effectiveAuth());
+    const cached = this.resolvedUrlsByTenant.get(key);
+    if (cached) return cached;
+
+    let resolvePromise = this.resolvePromisesByTenant.get(key);
+    if (!resolvePromise) {
+      resolvePromise = this.resolveBaseUrl()
+        .then((url) => {
+          const normalized = url.replace(/\/$/, '');
+          this.resolvedUrlsByTenant.set(key, normalized);
+          this.logger.info(`Using sombra: ${normalized}`, { tenant: key });
+          return normalized;
+        })
+        .catch((error: unknown) => {
+          this.resolvePromisesByTenant.delete(key);
+          throw error;
+        });
+      this.resolvePromisesByTenant.set(key, resolvePromise);
     }
-    return this.resolvePromise;
+    return resolvePromise;
   }
 
   private sombraAuthHeaders(): Record<string, string> {
@@ -170,7 +199,7 @@ export class TranscendRestClient {
     endpoint: string,
     options: RequestInit & RequestOptions = {},
   ): Promise<T> {
-    const effectiveAuth = getRequestAuth() ?? this.auth;
+    const effectiveAuth = this.effectiveAuth();
     if (!effectiveAuth) {
       throw new Error('No authentication configured. Provide an API key or session cookie.');
     }
@@ -611,10 +640,12 @@ export class TranscendRestClient {
   }
 
   /**
-   * Returns the resolved Sombra base URL, or an empty string if not yet resolved.
+   * Returns the resolved Sombra base URL for the current tenant, or an empty
+   * string if not yet resolved.
    */
   getBaseUrl(): string {
-    return this.baseUrl ?? '';
+    if (this.stickyBaseUrl) return this.stickyBaseUrl;
+    return this.resolvedUrlsByTenant.get(tenantCacheKey(this.effectiveAuth())) ?? '';
   }
 }
 

@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
 import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
+import { resetAirgapBundleIdCacheForTests } from '../src/resolveAirgapBundleId.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
 import { getConsentTools } from '../src/tools/index.js';
@@ -32,13 +33,16 @@ describe('Consent Tools', () => {
     makeRequest: ReturnType<typeof vi.fn>;
     testConnection: ReturnType<typeof vi.fn>;
     getBaseUrl: ReturnType<typeof vi.fn>;
+    effectiveAuth: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
+    resetAirgapBundleIdCacheForTests();
     mockGraphql = {
       makeRequest: vi.fn(),
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
+      effectiveAuth: vi.fn().mockReturnValue({ type: 'apiKey', apiKey: 'test-key' }),
     };
   });
 

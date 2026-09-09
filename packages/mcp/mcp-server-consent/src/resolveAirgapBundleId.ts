@@ -1,18 +1,21 @@
-import type { TranscendGraphQLBase } from '@transcend-io/mcp-server-base';
+import { type TranscendGraphQLBase, tenantCacheKey } from '@transcend-io/mcp-server-base';
 import {
   FETCH_CONSENT_MANAGER_ID,
   type TranscendCliFetchConsentManagerIdResponse,
 } from '@transcend-io/sdk';
 
-const bundleIdCache = new WeakMap<TranscendGraphQLBase, string>();
+/** Bundle IDs keyed by {@link tenantCacheKey} (org / API key / OAuth). */
+const bundleIdCache = new Map<string, string>();
 
 /**
- * Lazily resolve the airgap bundle ID from the API key.
- * Caches the result per GraphQL client instance so subsequent
- * calls return instantly without an extra network request.
+ * Lazily resolve the airgap bundle ID from the API key / session org.
+ *
+ * Caches per tenant so HTTP sessions that swap per-request auth do not reuse
+ * another organization's consent manager ID.
  */
 export async function resolveAirgapBundleId(graphql: TranscendGraphQLBase): Promise<string> {
-  const cached = bundleIdCache.get(graphql);
+  const key = tenantCacheKey(graphql.effectiveAuth());
+  const cached = bundleIdCache.get(key);
   if (cached) return cached;
 
   const data = await graphql.makeRequest<TranscendCliFetchConsentManagerIdResponse>(
@@ -21,6 +24,11 @@ export async function resolveAirgapBundleId(graphql: TranscendGraphQLBase): Prom
   );
 
   const id = data.consentManager.consentManager.id;
-  bundleIdCache.set(graphql, id);
+  bundleIdCache.set(key, id);
   return id;
+}
+
+/** Clears the in-memory bundle ID cache (for tests). */
+export function resetAirgapBundleIdCacheForTests(): void {
+  bundleIdCache.clear();
 }
