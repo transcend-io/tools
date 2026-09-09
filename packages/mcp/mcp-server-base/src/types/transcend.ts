@@ -1150,6 +1150,24 @@ export type AssessmentFormStatus =
 /** @deprecated Use AssessmentFormStatus */
 export type AssessmentStatus = AssessmentFormStatus;
 
+/** A Transcend user attached to an assessment as an assignee or reviewer. */
+export interface AssessmentParticipant {
+  /** Transcend user ID, usable as `assigneeIds`/`reviewerIds` in `assessments_list` */
+  id: string;
+  /** Display name */
+  name: string;
+  /** Email address */
+  email: string;
+}
+
+/** Someone outside the organization a form was shared with. */
+export interface AssessmentExternalParticipant {
+  /** External assignee ID */
+  id: string;
+  /** Email address, usable as `externalAssigneeEmails` in `assessments_list` */
+  email: string;
+}
+
 export interface Assessment {
   /** Unique identifier */
   id: string;
@@ -1165,14 +1183,31 @@ export interface Assessment {
    * `listAssessments` so callers can build deep links to the group view.
    */
   assessmentGroupId?: string;
+  /** Title of the assessment group, so callers can name it without a second lookup */
+  assessmentGroupTitle?: string;
   /** Source template, when expanded */
   template?: AssessmentTemplate;
-  /** Primary assignee */
-  assignee?: User;
-  /** Reviewer */
-  reviewer?: User;
-  /** Optional due date (ISO 8601) */
-  dueDate?: string;
+  /**
+   * Internal Transcend users the form is assigned to. A form can carry several,
+   * which is why this is a list rather than a single assignee.
+   */
+  assignees?: AssessmentParticipant[];
+  /** Internal Transcend users reviewing the form */
+  reviewers?: AssessmentParticipant[];
+  /** Non-Transcend recipients the form was shared with, identified by email only */
+  externalAssignees?: AssessmentExternalParticipant[];
+  /** Whether the form has been archived out of the working set */
+  isArchived?: boolean;
+  /** Whether the form is locked against further edits */
+  isLocked?: boolean;
+  /**
+   * Due date (ISO 8601), or `null` where none is set.
+   *
+   * Explicitly null rather than absent: a dropped key is indistinguishable from
+   * a field the query never asked for, which reads as broken plumbing behind
+   * the `dueBefore` filter rather than as a form nobody gave a deadline.
+   */
+  dueDate?: string | null;
   /** When the form was submitted for review (ISO 8601) */
   submittedAt?: string;
   /** When the form was fully completed (ISO 8601) */
@@ -1186,13 +1221,27 @@ export interface Assessment {
 }
 
 export interface AssessmentTemplate {
+  /** Unique identifier, usable as `templateId` in `assessments_export_template` */
   id: string;
+  /** Display title */
   title: string;
+  /** Optional description */
   description?: string;
-  version: string;
+  /** Publication status, `DRAFT` or `PUBLISHED` */
+  status?: string;
+  /**
+   * How the template came to exist: `MANUAL` if someone built it,
+   * `DATA_INVENTORY` if it was generated from the data inventory, `IMPORT` if
+   * it came in with a OneTrust import
+   */
+  source?: string;
+  /** Sections in the template, when expanded */
   sections?: AssessmentTemplateSection[];
-  isActive: boolean;
-  createdAt: string;
+  /** Whether the template has been archived out of the working set */
+  isArchived?: boolean;
+  /** When the template was created (ISO 8601) */
+  createdAt?: string;
+  /** When the template was last updated (ISO 8601) */
   updatedAt?: string;
 }
 
@@ -1300,6 +1349,8 @@ export interface AssessmentResponse {
 export interface AssessmentGroup {
   id: string;
   title: string;
+  /** Free-text summary of the group. Searched by the `text` filter. */
+  description: string;
   assessmentFormTemplate?: {
     id: string;
     title: string;

@@ -83,9 +83,15 @@ describe('Custom Function authoring contract', () => {
     expectTypeOf<CustomFunction.DataPointTestPayload['extras']['profile']['type']>().toEqualTypeOf<
       string | null | undefined
     >();
+    expectTypeOf<CustomFunction.DataPointTestPayload['extras']['dataSilo']>().toEqualTypeOf<
+      CustomFunction.DataSilo | undefined
+    >();
     expectTypeOf<CustomFunction.EnricherTestPayload['extras']['dataSilo']>().toEqualTypeOf<
       CustomFunction.DataSilo | undefined
     >();
+    expectTypeOf<
+      IsOptional<CustomFunction.DataPointTestPayload['extras'], 'dataSilo'>
+    >().toEqualTypeOf<true>();
     expectTypeOf<
       IsOptional<CustomFunction.DataPointTestPayload['extras'], 'pollId'>
     >().toEqualTypeOf<true>();
