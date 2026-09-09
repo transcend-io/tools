@@ -4,6 +4,9 @@ export const ALLOW_TEST_OVERRIDES_ENV = 'ALLOW_TEST_OVERRIDES';
 /** Environment variable that disables server confirmation gates when set to `1`. */
 export const MCP_SKIP_CONFIRMATION_ENV = 'MCP_SKIP_CONFIRMATION';
 
+/** Environment variable that registers tools marked `experimental: true` when set to `1`. */
+export const TRANSCEND_MCP_EXPERIMENTAL_ENV = 'TRANSCEND_MCP_EXPERIMENTAL';
+
 /**
  * Returns true when test-only environment overrides are enabled.
  * Requires `ALLOW_TEST_OVERRIDES=1`; unset or any other value is treated as disabled.
@@ -18,6 +21,14 @@ export function allowTestOverrides(): boolean {
  */
 export function skipConfirmation(): boolean {
   return process.env[MCP_SKIP_CONFIRMATION_ENV] === '1';
+}
+
+/**
+ * Returns true when tools marked `experimental: true` should be registered.
+ * Requires `TRANSCEND_MCP_EXPERIMENTAL=1`; unset or any other value omits them.
+ */
+export function experimentalToolsEnabled(): boolean {
+  return process.env[TRANSCEND_MCP_EXPERIMENTAL_ENV] === '1';
 }
 
 /**
