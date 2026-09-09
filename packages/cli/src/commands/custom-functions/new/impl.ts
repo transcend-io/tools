@@ -78,7 +78,7 @@ function isInteractiveInvocation(
  * @returns Selected starter template
  */
 export async function selectInteractiveTemplate(
-  prompts: Pick<CustomFunctionPrompts, 'select'>,
+  prompts: Pick<ScaffoldPrompts, 'select'>,
 ): Promise<CustomFunctionTemplateName> {
   const functionType = await prompts.select<CustomFunctionType>(
     'Custom Function type:',

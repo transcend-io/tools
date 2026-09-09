@@ -200,7 +200,6 @@ describe('policy init', () => {
       dryRun: true,
       targetDirectory: target,
       features: Object.values(PolicySetupFeature),
-      aiHandoff: expect.stringContaining('Use the `transcend-policy-engine` skill'),
       changes: expect.arrayContaining([
         expect.objectContaining({
           kind: 'create',
@@ -208,6 +207,9 @@ describe('policy init', () => {
         }),
       ]),
     });
+    expect(JSON.parse(context.stdout).aiHandoff).not.toContain(
+      'Use the `transcend-policy-engine` skill',
+    );
     expect(context.stderr).toBe('');
   });
 
@@ -243,6 +245,7 @@ describe('policy init', () => {
     expect(existsSync(join(root, '.vscode', 'settings.json'))).toBe(true);
     expect(existsSync(join(root, '.agents', 'skills', POLICY_SKILL_NAME, 'SKILL.md'))).toBe(true);
     expect(existsSync(join(root, '.github', 'workflows', 'transcend-policy.yml'))).toBe(true);
+    expect(context.stdout).toContain('Use the `transcend-policy-engine` skill');
   });
 
   it('selects editor, skill, and CI by default in the interactive checklist', async () => {
@@ -468,7 +471,9 @@ describe('policy init', () => {
     const lines = context.stdout.split('\n');
     expect(lines).toContain("transcend policy lint --dir 'transcend/policy' --noInteractive");
     expect(lines).toContain("Edit 'transcend/policy/policy_engine/example/result.rego'");
-    const handoffHeading = lines.indexOf('AI handoff — paste into your coding agent');
+    const handoffHeading = lines.findIndex((line) =>
+      line.includes('AI handoff — paste into your coding agent'),
+    );
     expect(handoffHeading).toBeGreaterThan(-1);
     expect(lines[handoffHeading + 1]).toMatch(/^Replace /u);
   });

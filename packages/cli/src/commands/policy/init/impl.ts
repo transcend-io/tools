@@ -271,6 +271,7 @@ export async function init(
       await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
+    const setupAvailable = approved && !flags.dryRun;
     const aiHandoff = buildPolicyInitAiHandoff({
       projectPath: quoteShellArgument(
         displayProjectPath(this.process.cwd(), state.targetDirectory),
@@ -282,7 +283,7 @@ export async function init(
             ),
           }
         : {}),
-      hasSkill: features.includes(PolicySetupFeature.Skill),
+      hasSkill: setupAvailable && features.includes(PolicySetupFeature.Skill),
       lintCommand: plan.nextSteps[0]!,
     });
     const result = buildPolicyInitPlanResult(plan, {

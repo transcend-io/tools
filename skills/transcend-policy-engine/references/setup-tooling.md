@@ -1,5 +1,13 @@
 # Setup and tooling
 
+## Install the CLI
+
+Install the Transcend CLI:
+
+```sh
+npm install --global @transcend-io/cli
+```
+
 ## Initialize safely
 
 Run `transcend policy init --help` before choosing flags. The default target is `transcend/policy`.
