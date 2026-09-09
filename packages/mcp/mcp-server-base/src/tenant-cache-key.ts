@@ -1,19 +1,30 @@
 import { createHash } from 'node:crypto';
 
-import type { AuthCredentials } from './auth.js';
+import { getRequestAuth } from './auth-context.js';
 
 /**
- * Stable cache key for org-scoped values resolved under a given auth context.
+ * Cache key used outside an HTTP per-request auth context (stdio MCP).
  *
- * Session cookies key by organization ID (the tenant boundary for dashboard /
- * sidecar HTTP). API keys and OAuth tokens do not carry an org id on the
- * credential, so the credential material itself is the tenant stand-in.
- *
- * Used so HTTP sessions that swap per-request auth via AsyncLocalStorage do not
- * reuse another tenant's cached airgap bundle ID.
+ * Stdio is one process / one tenant; keep this stable across OAuth access-token
+ * refresh so org-scoped lookups are not re-fetched.
  */
-export function tenantCacheKey(auth: AuthCredentials | null): string {
-  if (!auth) return 'anonymous';
+export const STDIO_TENANT_CACHE_KEY = 'stdio';
+
+/**
+ * Stable cache key for org-scoped values resolved under the current auth context.
+ *
+ * - **Stdio / no ALS auth:** {@link STDIO_TENANT_CACHE_KEY} (arbitrary stable
+ *   string). Avoids busting caches when OAuth tokens refresh.
+ * - **HTTP with per-request auth:** session cookies key by organization ID;
+ *   API keys / OAuth use a hash of the credential as the tenant stand-in.
+ */
+export function tenantCacheKey(): string {
+  // Per-request ALS is only set for HTTP transport. When absent, do not key by
+  // credential material — OAuth refresh would otherwise look like a new tenant.
+  const auth = getRequestAuth();
+  if (!auth) {
+    return STDIO_TENANT_CACHE_KEY;
+  }
 
   if (auth.type === 'sessionCookie') {
     return `org:${auth.organizationId}`;

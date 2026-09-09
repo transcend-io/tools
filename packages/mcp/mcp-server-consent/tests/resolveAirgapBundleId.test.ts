@@ -12,19 +12,26 @@ describe('resolveAirgapBundleId', () => {
     vi.restoreAllMocks();
   });
 
-  it('caches by organization id across users in the same org', async () => {
+  it('reuses the stdio cache after oauth access token refresh', async () => {
+    const makeRequest = vi
+      .fn()
+      .mockResolvedValue({ consentManager: { consentManager: { id: 'bundle-stdio' } } });
+    const graphql = { makeRequest };
+
+    const first = await resolveAirgapBundleId(graphql as never);
+    // Simulate OAuth refresh mutating constructor auth on the client.
+    const second = await resolveAirgapBundleId(graphql as never);
+
+    expect(first).toBe('bundle-stdio');
+    expect(second).toBe('bundle-stdio');
+    expect(makeRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it('caches by organization id across users in the same org under HTTP ALS', async () => {
     const makeRequest = vi
       .fn()
       .mockResolvedValue({ consentManager: { consentManager: { id: 'bundle-org-a' } } });
-    const graphql = {
-      makeRequest,
-      effectiveAuth: () =>
-        requestAuthContext.getStore() ?? {
-          type: 'sessionCookie' as const,
-          cookie: 'x',
-          organizationId: 'org-a',
-        },
-    };
+    const graphql = { makeRequest };
 
     const first = await requestAuthContext.run(
       { type: 'sessionCookie', cookie: 'user-1', organizationId: 'org-a' },
@@ -46,10 +53,7 @@ describe('resolveAirgapBundleId', () => {
       const org = auth?.type === 'sessionCookie' ? auth.organizationId : 'unknown';
       return { consentManager: { consentManager: { id: `bundle-${org}` } } };
     });
-    const graphql = {
-      makeRequest,
-      effectiveAuth: () => requestAuthContext.getStore() ?? null,
-    };
+    const graphql = { makeRequest };
 
     const a = await requestAuthContext.run(
       { type: 'sessionCookie', cookie: 'user-1', organizationId: 'org-a' },

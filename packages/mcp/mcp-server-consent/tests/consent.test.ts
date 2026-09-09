@@ -33,7 +33,6 @@ describe('Consent Tools', () => {
     makeRequest: ReturnType<typeof vi.fn>;
     testConnection: ReturnType<typeof vi.fn>;
     getBaseUrl: ReturnType<typeof vi.fn>;
-    effectiveAuth: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -42,7 +41,6 @@ describe('Consent Tools', () => {
       makeRequest: vi.fn(),
       testConnection: vi.fn(),
       getBaseUrl: vi.fn().mockReturnValue('https://api.transcend.io'),
-      effectiveAuth: vi.fn().mockReturnValue({ type: 'apiKey', apiKey: 'test-key' }),
     };
   });
 

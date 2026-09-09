@@ -3,7 +3,7 @@ export type { AuthCredentials, ApiKeyAuth, OAuthTokenAuth, SessionCookieAuth } f
 
 export { requestAuthContext, getRequestAuth } from './auth-context.js';
 
-export { tenantCacheKey } from './tenant-cache-key.js';
+export { tenantCacheKey, STDIO_TENANT_CACHE_KEY } from './tenant-cache-key.js';
 
 export {
   MCP_CALLER_HEADER,
