@@ -16,7 +16,8 @@ export const CreateAssessmentSchema = z.object({
     .string()
     .optional()
     .describe(
-      'ID of the assessment template. If assessmentGroupId is not provided, the first group using this template will be used.',
+      'Fallback for when no group is known. Lands the assessment in whichever group happens to ' +
+        'be first among those built from this template, so never use it when the user named a group.',
     ),
   assigneeIds: z
     .array(z.string())
@@ -31,10 +32,11 @@ export function createAssessmentsCreateTool(clients: ToolClients) {
   return defineTool({
     name: 'assessments_create',
     description:
-      'Create a new privacy assessment within an assessment group. Assessment groups are linked ' +
-      'to templates. You can provide either an assessmentGroupId directly, or a templateId to ' +
-      'auto-resolve the first matching group. Use assessments_list_groups to find available ' +
-      'groups. Surface the returned `url` verbatim; never build assessment URLs from IDs.',
+      'Create a new privacy assessment inside an assessment group. Prefer assessmentGroupId, ' +
+      'resolved by name through assessments_list_groups. templateId is a fallback that lands in ' +
+      'whichever group happens to be first among those built from that template, so never use ' +
+      'it when the user named a particular group. ' +
+      'Surface the returned `url` verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },

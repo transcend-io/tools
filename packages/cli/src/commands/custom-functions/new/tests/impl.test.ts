@@ -2,7 +2,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
-import { afterEach, describe, expect, it } from 'vitest';
+import { CustomFunctionType } from '@transcend-io/privacy-types';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { parseCustomFunctionsManifest } from '../../../../lib/custom-functions/manifest.js';
 import {
@@ -10,7 +11,11 @@ import {
   generateCustomFunctionTemplate,
 } from '../../../../lib/custom-functions/scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import { newCustomFunction, type CustomFunctionNewFlags } from '../impl.js';
+import {
+  newCustomFunction,
+  selectInteractiveTemplate,
+  type CustomFunctionNewFlags,
+} from '../impl.js';
 
 const temporaryRoots: string[] = [];
 
@@ -77,6 +82,57 @@ afterEach(() => {
 });
 
 describe('custom-functions new', () => {
+  it('selects the only General template without a second prompt', async () => {
+    const select = vi.fn().mockResolvedValue(CustomFunctionType.General);
+    const prompts = { select } as unknown as Parameters<typeof selectInteractiveTemplate>[0];
+
+    await expect(selectInteractiveTemplate(prompts)).resolves.toBe('general');
+    expect(select).toHaveBeenCalledOnce();
+    expect(select).toHaveBeenCalledWith(
+      'Custom Function type:',
+      [
+        {
+          name: 'General — triggered by Rules Automation',
+          value: CustomFunctionType.General,
+        },
+        {
+          name: 'DSR — triggered by a step in a Workflow',
+          value: CustomFunctionType.Dsr,
+        },
+      ],
+      CustomFunctionType.General,
+    );
+  });
+
+  it('asks for a DSR template after selecting the DSR type', async () => {
+    const select = vi
+      .fn()
+      .mockResolvedValueOnce(CustomFunctionType.Dsr)
+      .mockResolvedValueOnce('dsr-enricher');
+    const prompts = { select } as unknown as Parameters<typeof selectInteractiveTemplate>[0];
+
+    await expect(selectInteractiveTemplate(prompts)).resolves.toBe('dsr-enricher');
+    expect(select).toHaveBeenCalledTimes(2);
+    expect(select).toHaveBeenLastCalledWith(
+      'Template:',
+      [
+        {
+          name: 'Data point resolver and preflight check',
+          value: 'dsr-both',
+        },
+        {
+          name: 'Data point resolver only',
+          value: 'dsr-datapoint',
+        },
+        {
+          name: 'Preflight check only',
+          value: 'dsr-enricher',
+        },
+      ],
+      'dsr-both',
+    );
+  });
+
   it('prints a compact implementation handoff', async () => {
     const root = makeTemporaryRoot();
     const target = join(root, 'project');
@@ -86,10 +142,12 @@ describe('custom-functions new', () => {
     await newCustomFunction.call(context, buildFlags({ json: false }), target);
 
     const lines = context.stdout.split('\n');
-    const handoffHeading = lines.indexOf('AI handoff — paste into your coding agent');
+    const handoffHeading = lines.findIndex((line) =>
+      line.includes('AI handoff — paste into your coding agent'),
+    );
     expect(handoffHeading).toBeGreaterThan(-1);
-    expect(lines[handoffHeading + 1]).toMatch(/^(?:Ask|Use) /u);
-    const nextStepsHeading = lines.indexOf('Next steps');
+    expect(lines[handoffHeading + 1]).toMatch(/(?:Ask|Use) /u);
+    const nextStepsHeading = lines.findIndex((line) => line.includes('Next steps'));
     const nextSteps = lines.slice(nextStepsHeading + 1, handoffHeading).filter(Boolean);
     expect(nextSteps).toHaveLength(4);
     expect(nextSteps[0]).toMatch(/^Edit /u);

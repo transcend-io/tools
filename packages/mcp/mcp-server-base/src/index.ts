@@ -87,6 +87,7 @@ export {
   DEFAULT_TOOL_VISIBILITY,
   defineTool,
   isVisibleToModel,
+  shouldRegisterTool,
 } from './tools/types.js';
 
 export { describeArgs } from './tools/describe-args.js';
@@ -139,7 +140,14 @@ export type {
   ToolVariants,
 } from './tools/define-tool-with-capabilities.js';
 
-export { createToolResult, createErrorResult, createListResult, groupBy } from './tools/helpers.js';
+export {
+  assertOffsetInRange,
+  createToolResult,
+  createErrorResult,
+  createListResult,
+  describeNoMatches,
+  groupBy,
+} from './tools/helpers.js';
 export { toolInputSchema } from './tools/input-schema.js';
 
 export type {
@@ -198,7 +206,9 @@ export { ensureOAuthStartupReady } from './oauth/startup.js';
 export {
   ALLOW_TEST_OVERRIDES_ENV,
   MCP_SKIP_CONFIRMATION_ENV,
+  TRANSCEND_MCP_EXPERIMENTAL_ENV,
   allowTestOverrides,
+  experimentalToolsEnabled,
   resolveTestOverride,
   skipConfirmation,
 } from './oauth/env.js';

@@ -8,6 +8,7 @@ import {
   expandToolsForClient,
   isVisibleToModel,
   resolveToolVariant,
+  shouldRegisterTool,
   SimpleLogger,
   toolInputSchema,
   withConfirmation,
@@ -70,6 +71,9 @@ export class ToolRegistry {
 
   private registerToolsFromModule(tools: ToolDefinition[]): void {
     for (const tool of tools) {
+      if (!shouldRegisterTool(tool)) {
+        continue;
+      }
       if (this.tools.has(tool.name)) {
         this.logger.warn('Duplicate tool name - skipping', { toolName: tool.name });
         continue;

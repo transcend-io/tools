@@ -1,5 +1,6 @@
 import { join } from 'node:path';
 
+import { CustomFunctionType } from '@transcend-io/privacy-types';
 import colors from 'colors';
 
 import type { LocalContext } from '../../../context.js';
@@ -21,6 +22,9 @@ import {
 } from '../../../lib/custom-functions/scaffold-planning.js';
 import {
   CUSTOM_FUNCTION_TEMPLATE_NAMES,
+  CUSTOM_FUNCTION_TEMPLATE_PROMPT_LABELS,
+  CUSTOM_FUNCTION_TYPE_PROMPT_LABELS,
+  TEMPLATES_FOR_CUSTOM_FUNCTION_TYPE,
   type CustomFunctionTemplateName,
   validateCustomFunctionDisplayName,
 } from '../../../lib/custom-functions/scaffold-templates.js';
@@ -63,6 +67,49 @@ function isInteractiveInvocation(
   stderrIsTTY: boolean | undefined,
 ): boolean {
   return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
+}
+
+/**
+ * Ask for the product-level function type, then its available starter template.
+ *
+ * General currently has one template, so selecting it completes the choice immediately.
+ *
+ * @param prompts - Context-bound prompt adapter
+ * @returns Selected starter template
+ */
+export async function selectInteractiveTemplate(
+  prompts: Pick<CustomFunctionPrompts, 'select'>,
+): Promise<CustomFunctionTemplateName> {
+  const functionType = await prompts.select<CustomFunctionType>(
+    'Custom Function type:',
+    [
+      {
+        name: CUSTOM_FUNCTION_TYPE_PROMPT_LABELS[CustomFunctionType.General],
+        value: CustomFunctionType.General,
+      },
+      {
+        name: CUSTOM_FUNCTION_TYPE_PROMPT_LABELS[CustomFunctionType.Dsr],
+        value: CustomFunctionType.Dsr,
+      },
+    ],
+    CustomFunctionType.General,
+  );
+  const templates = TEMPLATES_FOR_CUSTOM_FUNCTION_TYPE[functionType];
+  if (templates.length < 2) {
+    const [onlyTemplate] = templates;
+    if (onlyTemplate === undefined) {
+      throw new Error(`No Custom Function templates are defined for type ${functionType}.`);
+    }
+    return onlyTemplate;
+  }
+  return prompts.select<CustomFunctionTemplateName>(
+    'Template:',
+    templates.map((value) => ({
+      name: CUSTOM_FUNCTION_TEMPLATE_PROMPT_LABELS[value],
+      value,
+    })),
+    templates[0],
+  );
 }
 
 /**
@@ -116,19 +163,7 @@ export async function _new(
       throw new Error('Missing Custom Function name. Pass --name in a non-interactive invocation.');
     }
     const template =
-      flags.template ??
-      (interactive
-        ? await prompts.select<CustomFunctionTemplateName>(
-            'Starter type:',
-            [
-              { name: 'General', value: 'general' },
-              { name: 'DSR datapoint', value: 'dsr-datapoint' },
-              { name: 'DSR request enricher', value: 'dsr-enricher' },
-              { name: 'Combined DSR datapoint + enricher', value: 'dsr-both' },
-            ],
-            'general',
-          )
-        : undefined);
+      flags.template ?? (interactive ? await selectInteractiveTemplate(prompts) : undefined);
     if (!template || !CUSTOM_FUNCTION_TEMPLATE_NAMES.includes(template)) {
       throw new Error(
         'Missing Custom Function template. Pass --template=general, --template=dsr-datapoint, --template=dsr-enricher, or --template=dsr-both.',
