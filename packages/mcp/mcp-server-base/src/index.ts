@@ -87,6 +87,7 @@ export {
   DEFAULT_TOOL_VISIBILITY,
   defineTool,
   isVisibleToModel,
+  shouldRegisterTool,
 } from './tools/types.js';
 
 export { describeArgs } from './tools/describe-args.js';
@@ -205,7 +206,9 @@ export { ensureOAuthStartupReady } from './oauth/startup.js';
 export {
   ALLOW_TEST_OVERRIDES_ENV,
   MCP_SKIP_CONFIRMATION_ENV,
+  TRANSCEND_MCP_EXPERIMENTAL_ENV,
   allowTestOverrides,
+  experimentalToolsEnabled,
   resolveTestOverride,
   skipConfirmation,
 } from './oauth/env.js';
