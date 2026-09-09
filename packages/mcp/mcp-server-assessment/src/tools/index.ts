@@ -8,6 +8,7 @@ import { createAssessmentsCreateTemplateTool } from './assessments_create_templa
 import { createAssessmentsExportTemplateTool } from './assessments_export_template.js';
 import { createAssessmentsGetTool } from './assessments_get.js';
 import { createAssessmentsListTool } from './assessments_list.js';
+import { createAssessmentsListCommentsTool } from './assessments_list_comments.js';
 import { createAssessmentsListGroupsTool } from './assessments_list_groups.js';
 import { createAssessmentsListTemplatesTool } from './assessments_list_templates.js';
 import { createAssessmentsPrefillTool } from './assessments_prefill.js';
@@ -22,6 +23,7 @@ export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
     createAssessmentsCreateTool(clients),
     createAssessmentsCreateGroupTool(clients),
     createAssessmentsListGroupsTool(clients),
+    createAssessmentsListCommentsTool(clients),
     createAssessmentsUpdateTool(clients),
     createAssessmentsListTemplatesTool(clients),
     createAssessmentsUpdateAssigneesTool(clients),

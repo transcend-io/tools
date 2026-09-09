@@ -46,8 +46,9 @@ export function createAssessmentsGetTool(clients: ToolClients) {
       'it returns the section list with a question count each, NOT the question text. To read ' +
       'the questions, either pass questionText to get just the ones on a topic wherever they ' +
       'sit, or sectionIds to expand whole sections; every sectionId must exist or the call ' +
-      'fails, and reading the form in full means passing every one of them. Surface the ' +
-      'returned `url` verbatim; never build assessment URLs from IDs.',
+      'fails, and reading the form in full means passing every one of them. Reviewer feedback ' +
+      'is counted here but read with assessments_list_comments. Surface the returned `url` ' +
+      'verbatim; never build assessment URLs from IDs.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -55,17 +56,26 @@ export function createAssessmentsGetTool(clients: ToolClients) {
     handler: async ({ assessmentId, sectionIds, questionText }) => {
       const search = questionText !== undefined && questionText.length > 0;
       const expand = !search && sectionIds !== undefined && sectionIds.length > 0;
-      const read = search
-        ? await graphql.searchAssessmentQuestions(assessmentId, questionText, { sectionIds })
-        : expand
-          ? await graphql.getAssessment(assessmentId, { sectionIds })
-          : await graphql.getAssessmentSkeleton(assessmentId);
+      // Counts come from a separate pass because they are cheap at every level,
+      // where the form query can only reach question comments through sections
+      // the caller happened to expand. Counting separately is what stops the
+      // total meaning one thing on a bare read and another on an expanded one.
+      const [read, byLevel] = await Promise.all([
+        search
+          ? graphql.searchAssessmentQuestions(assessmentId, questionText, { sectionIds })
+          : expand
+            ? graphql.getAssessment(assessmentId, { sectionIds })
+            : graphql.getAssessmentSkeleton(assessmentId),
+        graphql.countAssessmentComments(assessmentId),
+      ]);
       const found = 'matches' in read ? read : undefined;
       const result = found ? found.form : (read as Assessment);
+      const links = buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id });
+      const totalCount = byLevel.FORM + byLevel.SECTION + byLevel.QUESTION;
 
       return createToolResult(true, {
         ...result,
-        ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: result.id }),
+        ...links,
         ...(found && {
           questionMatches: found.matches,
           // A search that found nothing is a real answer — the form does not
@@ -84,6 +94,20 @@ export function createAssessmentsGetTool(clients: ToolClients) {
                   'topic, since this matches question text rather than answers.',
               }),
         }),
+        commentSummary: {
+          totalCount,
+          byLevel,
+          // Counts cover resolved and open alike, so this is the whole of the
+          // feedback rather than the part still outstanding.
+          includesResolved: true,
+          ...(totalCount > 0
+            ? {
+                readWith:
+                  'Call assessments_list_comments with this assessmentId to read the feedback, ' +
+                  'filter it by author, or include the resolved ones.',
+              }
+            : {}),
+        },
         ...(expand || search
           ? {}
           : {
