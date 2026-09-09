@@ -1,5 +1,14 @@
 # @transcend-io/mcp-server-base
 
+## 2.1.0
+
+### Minor Changes
+
+- 60d1ea0: Add an `experimental` flag on tools and gate registration behind `TRANSCEND_MCP_EXPERIMENTAL=1`.
+
+  Tools marked `experimental: true` are omitted from server and umbrella registry registration unless
+  the env var is exactly `1`, so unfinished surfaces stay out of the default catalog.
+
 ## 2.0.0
 
 ### Major Changes
