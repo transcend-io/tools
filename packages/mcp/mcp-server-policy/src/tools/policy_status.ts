@@ -39,7 +39,7 @@ export function createPolicyStatusTool(clients: PolicyToolClients) {
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     zodSchema: PolicyStatusSchema,
-    handler: async ({ first, offset, bundleId, bundleName, versionId, after }) => {
+    handler: async ({ limit, offset, bundleId, bundleName, versionId, after }) => {
       const client = createPolicyEngineClient(clients);
 
       if (bundleId || bundleName) {
@@ -63,7 +63,7 @@ export function createPolicyStatusTool(clients: PolicyToolClients) {
         }
 
         const versions = await listPolicyBundleVersions(client, bundle.id, {
-          limit: first,
+          limit,
           after,
         });
 
@@ -86,7 +86,7 @@ export function createPolicyStatusTool(clients: PolicyToolClients) {
         });
       }
 
-      const bundles = await listPolicyBundles(client, { limit: first, offset });
+      const bundles = await listPolicyBundles(client, { limit, offset });
       const nodes = bundles.nodes.map((bundle) => ({
         id: bundle.id,
         bundleName: bundle.bundleName,
