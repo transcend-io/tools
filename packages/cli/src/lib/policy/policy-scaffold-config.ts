@@ -186,21 +186,6 @@ export function mergePolicyEditorSettings(
     warnings.push('VS Code setting "opa.roots" is customized and was left unchanged.');
   }
 
-  const languageServers = current['opa.languageServers'];
-  if (languageServers === undefined) {
-    updates.push({ path: ['opa.languageServers'], value: ['regal'] });
-  } else if (
-    Array.isArray(languageServers) &&
-    languageServers.every((value) => typeof value === 'string')
-  ) {
-    const merged = mergeStringArray(languageServers, ['regal']);
-    if (!configurationValuesEqual(merged, languageServers)) {
-      updates.push({ path: ['opa.languageServers'], value: merged });
-    }
-  } else {
-    warnings.push('VS Code setting "opa.languageServers" is customized and was left unchanged.');
-  }
-
   collectSafeScalarUpdates(
     current,
     [

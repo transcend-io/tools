@@ -63,6 +63,10 @@ describe('Policy Engine Agent Skill', () => {
       'OPA evaluates queries against one document tree',
     );
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('import rego.v1');
+    expect(POLICY_AUTHORING_REFERENCE_MD).toContain('import data.policy_engine.facts');
+    expect(POLICY_AUTHORING_REFERENCE_MD).toContain(
+      'Do not use a fully qualified `data.policy_engine...` reference',
+    );
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('default decision := "deny"');
     expect(POLICY_AUTHORING_REFERENCE_MD).toContain('"reason_code": reason_code');
     expect(POLICY_AUTHORING_REFERENCE_MD.match(/^result :=/gmu)).toHaveLength(1);
@@ -73,7 +77,10 @@ describe('Policy Engine Agent Skill', () => {
   it('covers tests, debugging, manifest coverage, lint, fix, and publish flow', () => {
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('_test.rego');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('opa test --fail-on-empty');
-    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('opa check --strict --v0-compatible');
+    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('production-only OPA check');
+    expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain(
+      'Regal lint with warnings treated as failures',
+    );
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('transcend policy lint');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('--fix');
     expect(POLICY_TESTING_DEBUGGING_REFERENCE_MD).toContain('input.example.json');

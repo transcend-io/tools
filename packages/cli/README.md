@@ -4357,7 +4357,7 @@ USAGE
   transcend policy lint [--dir value] [--fix] [--noInteractive] [--json]
   transcend policy lint --help
 
-Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs `opa check --strict --v0-compatible`, `regal lint`, and `opa test --fail-on-empty`. No Transcend API key is needed.
+Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. No Transcend API key is needed.
 
 FLAGS
      [--dir]            Directory containing the local policy project                  [default = transcend/policy]

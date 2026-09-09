@@ -42,8 +42,11 @@ export function generatePolicyGithubActionsWorkflow(options: {
 }): string {
   const watchedPaths = [
     targetPath(options.targetDirectory, '**/*.rego'),
-    targetPath(options.targetDirectory, 'manifest.json'),
+    targetPath(options.targetDirectory, '**/*.json'),
+    targetPath(options.targetDirectory, '**/*.yaml'),
+    targetPath(options.targetDirectory, '**/*.yml'),
     targetPath(options.targetDirectory, '.regal/config.yaml'),
+    targetPath(options.targetDirectory, '.regal.yaml'),
     POLICY_CI_WORKFLOW_PATH,
   ];
   const pathFilters = watchedPaths.map((path) => `      - ${JSON.stringify(path)}`).join('\n');

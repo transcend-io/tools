@@ -32,7 +32,6 @@ describe('Policy Engine VS Code setup', () => {
     expect(parse(first.contents)).toEqual({
       'files.trimTrailingWhitespace': true,
       'opa.roots': ['${workspaceFolder}/shared', "${workspaceFolder}/policies/customer's policy"],
-      'opa.languageServers': ['regal'],
       'opa.checkOnSave': true,
       'opa.strictMode': true,
       'opa.bundleMode': true,

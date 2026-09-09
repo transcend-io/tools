@@ -34,7 +34,7 @@ export const lintCommand = buildCommand({
     brief: 'Verify a local policy project with OPA and Regal',
     fullDescription:
       'Validates manifest roots and package coverage, verifies OPA 1.x and Regal, checks or repairs OPA formatting, ' +
-      'runs `opa check --strict --v0-compatible`, `regal lint`, and `opa test --fail-on-empty`. ' +
+      'runs a production-only strict OPA check, treats Regal warnings as failures, and requires non-empty OPA tests. ' +
       'No Transcend API key is needed.',
   },
 });

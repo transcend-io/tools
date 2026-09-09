@@ -1,3 +1,5 @@
+import { findDirectDataReferences, parseRegoPackageReference } from './rego-reference.js';
+
 /** Shape of the policy bundle `manifest.json` accepted by Policy Engine. */
 export interface PolicyBundleManifest {
   /** Roots of the bundle, such as `policy_engine/transcend`. */
@@ -66,21 +68,60 @@ export function parsePolicyBundleManifest(contents: string | undefined): PolicyB
   if (!roots.every((root) => typeof root === 'string' && root.length > 0)) {
     throw new Error('manifest.json "roots" must be an array of non-empty strings.');
   }
+  if (
+    !roots.every((root) =>
+      root.split('/').every((segment: string) => /^[A-Za-z_][A-Za-z0-9_]*$/u.test(segment)),
+    )
+  ) {
+    throw new Error(
+      'manifest.json "roots" must contain slash-separated Rego identifiers so Policy Engine can re-namespace them safely.',
+    );
+  }
 
   return { roots };
 }
 
-/** Matches a Rego `package <path>` declaration. */
-const PACKAGE_DECLARATION_PATTERN = /^\s*package\s+([A-Za-z_][\w.]*)/mu;
+/**
+ * Determine whether one document path starts with another.
+ *
+ * @param segments - Complete document path
+ * @param prefix - Candidate root
+ * @returns Whether the root covers the document path
+ */
+function hasSegmentPrefix(segments: readonly string[], prefix: readonly string[]): boolean {
+  return (
+    segments.length >= prefix.length &&
+    prefix.every((segment, index) => segment === segments[index])
+  );
+}
 
 /**
- * Read the dotted package path declared by Rego source.
+ * Match the package syntax supported by Policy Engine activation.
  *
- * @param contents - Rego source
- * @returns Package path, or undefined when no declaration is present
+ * Bracketed segments remain supported below a declared dotted root.
+ *
+ * @param reference - Parsed package reference
+ * @param root - Declared manifest root
+ * @returns Whether activation can re-namespace the package
  */
-export function parseRegoPackagePath(contents: string): string | undefined {
-  return PACKAGE_DECLARATION_PATTERN.exec(contents)?.[1];
+function rootCoversPackage(reference: { source: string }, root: readonly string[]): boolean {
+  const dottedRoot = root.join('.');
+  const suffix = reference.source.slice(dottedRoot.length);
+  return (
+    reference.source.startsWith(dottedRoot) &&
+    (suffix === '' || suffix.startsWith('.') || /^\s*\[/u.test(suffix))
+  );
+}
+
+/**
+ * Determine whether `data.<root>` is referenced directly.
+ *
+ * @param segments - Parsed `data` reference segments
+ * @param root - Declared manifest root
+ * @returns Whether the reference targets the declared root
+ */
+function referencesDeclaredRoot(segments: readonly string[], root: readonly string[]): boolean {
+  return hasSegmentPrefix(segments.slice(1), root);
 }
 
 /**
@@ -98,6 +139,7 @@ export function validatePolicyBundleContents(
   regoFiles: readonly PolicyBundleRegoFile[],
 ): ValidatedPolicyBundleContents {
   const manifest = parsePolicyBundleManifest(manifestContents);
+  const renderedRoots = manifest.roots.join(', ');
   const publishableFiles = regoFiles
     .filter(({ path }) => isPublishableRegoFile(path))
     .slice()
@@ -106,17 +148,17 @@ export function validatePolicyBundleContents(
     throw new Error('Policy bundle directory must contain at least one .rego policy file.');
   }
 
-  const rootPrefixes = manifest.roots.map((root) => root.replace(/\//gu, '.'));
+  const rootPrefixes = manifest.roots.map((root) => root.split('/'));
   const uncovered = publishableFiles.flatMap(({ path, contents }) => {
-    const packagePath = parseRegoPackagePath(contents);
+    const packageReference = parseRegoPackageReference(contents);
     if (
-      !packagePath ||
-      rootPrefixes.some((prefix) => packagePath === prefix || packagePath.startsWith(`${prefix}.`))
+      !packageReference ||
+      rootPrefixes.some((prefix) => rootCoversPackage(packageReference, prefix))
     ) {
       return [];
     }
     return [
-      `  - ${path} (package ${packagePath}) is not covered by roots [${manifest.roots.join(', ')}]`,
+      `  - ${path} (package ${packageReference.source}) is not covered by roots [${renderedRoots}]`,
     ];
   });
   if (uncovered.length > 0) {
@@ -125,6 +167,25 @@ export function validatePolicyBundleContents(
         'manifest.json "roots" do not cover all Rego packages in the bundle; ' +
           'uncovered packages will fail-closed at decide time. Either broaden "roots" or move the policy under a covered package:',
         ...uncovered,
+      ].join('\n'),
+    );
+  }
+
+  const unsupportedReferences = publishableFiles.flatMap(({ path, contents }) =>
+    findDirectDataReferences(contents)
+      .filter(({ reference }) =>
+        rootPrefixes.some((prefix) => referencesDeclaredRoot(reference.segments, prefix)),
+      )
+      .map(
+        ({ reference, line }) =>
+          `  - ${path}:${line} references ${reference.source}; import that package and use its local name`,
+      ),
+  );
+  if (unsupportedReferences.length > 0) {
+    throw new Error(
+      [
+        'Publishable Rego must not reference its declared bundle roots directly because Policy Engine re-namespaces package imports during activation:',
+        ...unsupportedReferences,
       ].join('\n'),
     );
   }

@@ -71,8 +71,11 @@ describe('Policy Engine GitHub Actions workflow', () => {
     };
     const expectedPaths = [
       `${target}/**/*.rego`,
-      `${target}/manifest.json`,
+      `${target}/**/*.json`,
+      `${target}/**/*.yaml`,
+      `${target}/**/*.yml`,
       `${target}/.regal/config.yaml`,
+      `${target}/.regal.yaml`,
       POLICY_CI_WORKFLOW_PATH,
     ];
 
@@ -91,8 +94,11 @@ describe('Policy Engine GitHub Actions workflow', () => {
     });
 
     expect(workflow).toContain('"**/*.rego"');
-    expect(workflow).toContain('"manifest.json"');
+    expect(workflow).toContain('"**/*.json"');
+    expect(workflow).toContain('"**/*.yaml"');
+    expect(workflow).toContain('"**/*.yml"');
     expect(workflow).toContain('".regal/config.yaml"');
-    expect(workflow).not.toContain('"./manifest.json"');
+    expect(workflow).toContain('".regal.yaml"');
+    expect(workflow).not.toContain('"./**/*.json"');
   });
 });

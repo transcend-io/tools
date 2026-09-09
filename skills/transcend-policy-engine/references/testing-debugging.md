@@ -44,8 +44,8 @@ Use `transcend policy lint --help` to inspect `--fix` and JSON output. The lint 
 - manifest shape and package-root coverage;
 - compatible OPA and Regal versions;
 - OPA formatting;
-- `opa check --strict --v0-compatible`;
-- Regal lint;
+- a strict production-only OPA check that excludes local test modules;
+- Regal lint with warnings treated as failures;
 - non-empty OPA tests.
 
 Use `--fix` only for OPA formatting. Review Regal findings deliberately instead of applying broad rewrites.

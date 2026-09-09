@@ -176,8 +176,16 @@ describe('policy lint', () => {
       ['opa', 'version'],
       ['regal', 'version'],
       ['opa', 'fmt', '--list', directory],
-      ['opa', 'check', '--strict', '--v0-compatible', directory],
-      ['regal', 'lint', '--config-file', join(directory, '.regal', 'config.yaml'), directory],
+      ['opa', 'check', '--strict', '--v0-compatible', '--ignore', '*_test.rego', directory],
+      [
+        'regal',
+        'lint',
+        '--fail-level',
+        'warning',
+        '--config-file',
+        join(directory, '.regal', 'config.yaml'),
+        directory,
+      ],
       ['opa', 'test', '--fail-on-empty', directory],
     ]);
     expect(invocations.every(({ cwd }) => cwd === directory)).toBe(true);
@@ -421,5 +429,38 @@ describe('policy lint', () => {
         }),
       ],
     });
+  });
+
+  it('promotes configured Regal warnings into failing diagnostics', async () => {
+    const directory = createPolicyProject();
+    const context = buildContextForTest({ stdinIsTTY: false });
+    const { runner, invocations } = buildRunner({
+      'regal lint': {
+        code: 2,
+        stdout: 'Rule: todo-comment',
+        stderr: '',
+      },
+    });
+
+    await lint.call(context, buildFlags(directory), runner);
+
+    expect(JSON.parse(context.stdout)).toMatchObject({
+      status: 'failed',
+      diagnostics: [
+        expect.objectContaining({
+          code: 'regal.lint',
+          message: 'Rule: todo-comment',
+        }),
+      ],
+    });
+    expect(invocations.map(({ command, args }) => [command, ...args])).toContainEqual([
+      'regal',
+      'lint',
+      '--fail-level',
+      'warning',
+      '--config-file',
+      join(directory, '.regal', 'config.yaml'),
+      directory,
+    ]);
   });
 });

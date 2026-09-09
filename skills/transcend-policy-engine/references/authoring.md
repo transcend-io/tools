@@ -18,6 +18,16 @@ package policy_engine.example
 import rego.v1
 ```
 
+When one publishable package reads another package under the same manifest root, import it and use the local name:
+
+```rego
+import data.policy_engine.facts
+
+allow if facts.subject_is_trusted
+```
+
+Do not use a fully qualified `data.policy_engine...` reference directly in a rule body. Policy Engine re-namespaces package declarations and imports during activation, and `transcend policy lint` rejects direct self-root references that would change meaning.
+
 ## Define the contract before implementation
 
 Find the actual caller and document:

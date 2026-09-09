@@ -18,7 +18,7 @@ Use `--dryRun` to inspect the complete transactional plan. Existing policy files
 - Use Regal for idiomatic Rego linting and editor language-server features.
 - Run `opa version` and `regal version` to confirm the active executables.
 
-The generated reference project and CI pin OPA 1.13.1 and Regal 0.42.0. Follow the official installation links printed by `policy init` or `policy lint` when a compatible tool is missing.
+The generated Regal configuration targets OPA 1.13.1 capabilities. Generated CI installs OPA 1.13.1 and Regal 0.42.0; local tools only need to satisfy the compatible versions reported by `policy init` and `policy lint`. Follow their official installation links when a compatible tool is missing.
 
 ## Editor and CI
 

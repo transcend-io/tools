@@ -19,6 +19,28 @@ export interface PolicyLintCheck {
   status: PolicyLintStatus;
 }
 
+/** Stable verification execution order. */
+export const POLICY_LINT_CHECK_NAMES: PolicyLintCheck['name'][] = [
+  'manifest',
+  'opa-version',
+  'regal-version',
+  'format',
+  'opa-check',
+  'regal-lint',
+  'opa-test',
+];
+
+/** User-facing verification labels. */
+export const POLICY_LINT_CHECK_LABELS: Readonly<Record<PolicyLintCheck['name'], string>> = {
+  manifest: 'Manifest and package roots',
+  'opa-version': 'OPA 1.x',
+  'regal-version': 'Regal',
+  format: 'OPA formatting',
+  'opa-check': 'OPA strict check',
+  'regal-lint': 'Regal lint',
+  'opa-test': 'OPA tests',
+};
+
 /** One machine-readable policy lint diagnostic. */
 export interface PolicyLintDiagnostic {
   /** Stable diagnostic identifier. */

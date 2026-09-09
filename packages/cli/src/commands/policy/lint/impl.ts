@@ -6,7 +6,6 @@ import type { LocalContext } from '../../../context.js';
 import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import {
   runCapturedProcess,
-  type CapturedProcessResult,
   type CapturedProcessRunner,
 } from '../../../lib/cli/run-captured-process.js';
 import { inquirerConfirmBoolean } from '../../../lib/helpers/inquirer.js';
@@ -18,8 +17,14 @@ import {
   type PolicyLintCheck,
   type PolicyLintDiagnostic,
   type PolicyLintResult,
+  POLICY_LINT_CHECK_LABELS,
+  POLICY_LINT_CHECK_NAMES,
   POLICY_LINT_RESULT_VERSION,
 } from '../../../lib/policy/policy-lint-model.js';
+import {
+  getPolicyProcessFailureMessage,
+  parseUnformattedPolicyFiles,
+} from '../../../lib/policy/policy-lint-output.js';
 import {
   OPA_MISSING_MESSAGE,
   parsePolicyToolVersion,
@@ -39,28 +44,6 @@ export interface LintCommandFlags {
   /** Emit one stable JSON result on stdout. */
   json: boolean;
 }
-
-/** Stable verification execution order. */
-const CHECK_NAMES: PolicyLintCheck['name'][] = [
-  'manifest',
-  'opa-version',
-  'regal-version',
-  'format',
-  'opa-check',
-  'regal-lint',
-  'opa-test',
-];
-
-/** User-facing verification labels. */
-const CHECK_LABELS: Readonly<Record<PolicyLintCheck['name'], string>> = {
-  manifest: 'Manifest and package roots',
-  'opa-version': 'OPA 1.x',
-  'regal-version': 'Regal',
-  format: 'OPA formatting',
-  'opa-check': 'OPA strict check',
-  'regal-lint': 'Regal lint',
-  'opa-test': 'OPA tests',
-};
 
 /**
  * Collect Rego source snapshots without following symlinks.
@@ -96,41 +79,6 @@ function collectRegoFiles(
 }
 
 /**
- * Use captured tool output as a concise diagnostic.
- *
- * @param result - Captured process result
- * @param fallback - Message used when the tool emitted no output
- * @returns Diagnostic message
- */
-function processFailureMessage(result: CapturedProcessResult, fallback: string): string {
-  const output = [result.stdout.trim(), result.stderr.trim()].filter(Boolean).join('\n');
-  return output || fallback;
-}
-
-/**
- * Convert absolute OPA formatter paths to stable project-relative paths.
- *
- * @param stdout - `opa fmt --list` output
- * @param projectDirectory - Absolute policy directory
- * @returns Sorted unique paths
- */
-function parseUnformattedFiles(stdout: string, projectDirectory: string): string[] {
-  return [
-    ...new Set(
-      stdout
-        .split(/\r?\n/gu)
-        .map((file) => file.trim())
-        .filter(Boolean)
-        .map((file) =>
-          path.isAbsolute(file)
-            ? path.relative(projectDirectory, file).split(path.sep).join('/')
-            : file.split(path.sep).join('/'),
-        ),
-    ),
-  ].sort();
-}
-
-/**
  * Render the terminal summary for a policy verification result.
  *
  * @param context - CLI context
@@ -152,7 +100,7 @@ function renderResult(context: LocalContext, result: PolicyLintResult): void {
         : name === 'regal-version' && result.tools.regal
           ? ` (${result.tools.regal})`
           : '';
-    context.logger.info(`${styledLabel} ${CHECK_LABELS[name]}${version}`);
+    context.logger.info(`${styledLabel} ${POLICY_LINT_CHECK_LABELS[name]}${version}`);
   });
   if (result.diagnostics.length > 0) {
     context.logger.error('');
@@ -187,7 +135,10 @@ export async function lint(
   doneInputValidation(this.process);
 
   const resolvedDir = path.resolve(this.process.cwd(), dir);
-  const checks: PolicyLintCheck[] = CHECK_NAMES.map((name) => ({ name, status: 'skipped' }));
+  const checks: PolicyLintCheck[] = POLICY_LINT_CHECK_NAMES.map((name) => ({
+    name,
+    status: 'skipped',
+  }));
   const diagnostics: PolicyLintDiagnostic[] = [];
   const result: PolicyLintResult = {
     version: POLICY_LINT_RESULT_VERSION,
@@ -248,7 +199,7 @@ export async function lint(
         addError(
           'opa.version',
           unsupportedOpa ??
-            processFailureMessage(
+            getPolicyProcessFailureMessage(
               opaVersionResult,
               'Unable to determine the installed OPA version.',
             ),
@@ -271,7 +222,7 @@ export async function lint(
         addError(
           'regal.version',
           unsupportedRegal ??
-            processFailureMessage(
+            getPolicyProcessFailureMessage(
               regalVersionResult,
               'Unable to determine the installed Regal version.',
             ),
@@ -293,13 +244,13 @@ export async function lint(
         setStatus('format', 'failed');
         addError(
           'opa.format',
-          processFailureMessage(
+          getPolicyProcessFailureMessage(
             formatResult,
             `opa fmt --list failed with exit code ${formatResult.code}`,
           ),
         );
       } else {
-        result.unformattedFiles = parseUnformattedFiles(formatResult.stdout, resolvedDir);
+        result.unformattedFiles = parseUnformattedPolicyFiles(formatResult.stdout, resolvedDir);
         if (result.unformattedFiles.length === 0) {
           setStatus('format', 'passed');
         } else {
@@ -349,7 +300,7 @@ export async function lint(
               setStatus('format', 'failed');
               addError(
                 'opa.format-fix',
-                processFailureMessage(
+                getPolicyProcessFailureMessage(
                   writeResult,
                   `opa fmt --write failed with exit code ${writeResult.code}`,
                 ),
@@ -367,7 +318,7 @@ export async function lint(
 
       const checkResult = await runner(
         'opa',
-        ['check', '--strict', '--v0-compatible', resolvedDir],
+        ['check', '--strict', '--v0-compatible', '--ignore', '*_test.rego', resolvedDir],
         { cwd: resolvedDir },
         this,
       );
@@ -377,7 +328,10 @@ export async function lint(
         setStatus('opa-check', 'failed');
         addError(
           'opa.check',
-          processFailureMessage(checkResult, `opa check failed with exit code ${checkResult.code}`),
+          getPolicyProcessFailureMessage(
+            checkResult,
+            `opa check failed with exit code ${checkResult.code}`,
+          ),
         );
       }
     }
@@ -392,7 +346,13 @@ export async function lint(
           : undefined;
       const regalResult = await runner(
         'regal',
-        ['lint', ...(regalConfig ? ['--config-file', regalConfig] : []), resolvedDir],
+        [
+          'lint',
+          '--fail-level',
+          'warning',
+          ...(regalConfig ? ['--config-file', regalConfig] : []),
+          resolvedDir,
+        ],
         { cwd: resolvedDir },
         this,
       );
@@ -402,7 +362,7 @@ export async function lint(
         setStatus('regal-lint', 'failed');
         addError(
           'regal.lint',
-          processFailureMessage(
+          getPolicyProcessFailureMessage(
             regalResult,
             `regal lint failed with exit code ${regalResult.code}`,
           ),
@@ -423,7 +383,7 @@ export async function lint(
         setStatus('opa-test', 'failed');
         addError(
           'opa.test',
-          processFailureMessage(
+          getPolicyProcessFailureMessage(
             testResult,
             `opa test --fail-on-empty failed with exit code ${testResult.code}`,
           ),
