@@ -18,6 +18,13 @@ Assignment now happens immediately after create, `assigneeIds` or `assigneeEmail
 and checked before anything is created, and the form is re-read after prefilling to confirm the
 answers landed.
 
+Answers keyed by `referenceId` now match. The tool documents `referenceId` as a key and
+`assessments_export_template` leads with it, but the form read never selected the field and the
+mapper dropped it, so that arm compared against `undefined` and every `referenceId`-keyed answer
+missed. A caller following the documented path got zero answers applied on a form that had already
+been created and assigned. The identifier is unchanged from template to form, so keying by it now
+works as described — and it is the stable choice, since titles break when a template is reworded.
+
 That re-read distinguishes an answer that failed from a question nobody answered. Answer keys are
 matched against the form, so a key naming no question was never visited and its answer vanished
 with an empty `errors` array to explain it — one dropped `?` in a question title silently cost an

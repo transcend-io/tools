@@ -916,6 +916,49 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
     });
 
+    it('matches answers keyed by the referenceId taken from the template export', async () => {
+      // referenceId is the stable key across template edits and the one the
+      // export leads with, but the form read dropped the field, so every
+      // referenceId-keyed answer fell through to "matched no question".
+      const form = {
+        id: 'assess-refid',
+        title: 'RefId Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [{ id: 'a1', index: 0, value: 'answer' }],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'RefId Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'ref-1': 'answer' },
+      } as never);
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { answersApplied: 1, answersSkipped: 0, totalQuestions: 1 },
+      });
+    });
+
     it('names answer keys that matched no question instead of dropping them', async () => {
       // Keys are matched against the form, so a key with a typo is never
       // visited and its answer vanishes with nothing to say it did.
