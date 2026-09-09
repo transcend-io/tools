@@ -10,6 +10,7 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import type { AssessmentsMixin } from '../graphql.js';
+import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
 
 /**
@@ -20,28 +21,43 @@ import { resolveTemplateToGroupId } from './_helpers.js';
  * the caller no handle on what it made and no recovery but to create a second
  * one, which is how half-built duplicates end up in a group.
  *
+ * The message also reports how many answers had landed by then. "Created but
+ * submitting failed" alone does not say whether the form holds every answer or
+ * none, and that is the difference between finishing it and starting over.
+ *
  * @param assessmentId - The form that already exists
  * @param title - Its title, so the message reads without a second lookup
  * @param step - What was being attempted, phrased to follow "but "
  * @param error - The underlying failure
+ * @param progress - Answers written before the failure, out of the form's total
  * @param hint - What to do differently, when the step has a known cause
- * @throws ToolError naming the form and the step that failed
+ * @throws ToolError naming the form, its progress and the step that failed
  */
+/** Progress for a failure that landed before any answer was attempted. */
+const NOT_STARTED = { answersApplied: 0, totalQuestions: 0 };
+
 function failWithFormId(
   assessmentId: string,
   title: string,
   step: string,
   error: unknown,
+  progress: { answersApplied: number; totalQuestions: number },
   hint?: string,
 ): never {
+  const { answersApplied, totalQuestions } = progress;
+  // Failing before the questions were read means nothing was written yet, and
+  // "0/0 answers" would read as a form that came back empty.
+  const held = totalQuestions
+    ? `holds ${answersApplied}/${totalQuestions} answers`
+    : 'holds no answers yet';
   throw new ToolError(
     ErrorCode.API_ERROR,
     `Assessment "${title}" was created but ${step} failed: ${
       error instanceof Error ? error.message : String(error)
-    }. The form exists. Read it with assessments_get and finish it there rather than ` +
-      `creating another.${hint ? ` ${hint}` : ''}`,
+    }. The form exists and ${held}. Read it with ` +
+      `assessments_get and finish it there rather than creating another.${hint ? ` ${hint}` : ''}`,
     false,
-    { assessmentId, step },
+    { assessmentId, step, answersApplied, totalQuestions },
   );
 }
 
@@ -101,13 +117,15 @@ export type PrefillInput = z.infer<typeof PrefillSchema>;
 
 export function createAssessmentsPrefillTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
+  const { dashboardUrl } = clients;
   return defineTool({
     name: 'assessments_prefill',
     description:
       'Create an assessment form, fill in the answers you supply, and assign it for review in ' +
       'one call. Combines: create form → assign it → read its questions → answer each → ' +
       'optionally submit. Requires assigneeIds or assigneeEmails: a form accepts no answers ' +
-      'until it is assigned. The answers are yours to provide; nothing is generated for you.',
+      'until it is assigned. The answers are yours to provide; nothing is generated for you. ' +
+      'Surface the returned `url` verbatim.',
     category: 'Assessments',
     readOnly: false,
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
@@ -147,6 +165,20 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           },
         );
       }
+      // External assignees can answer a form but cannot submit it, so this
+      // combination can only ever fail — and it would fail at the last step,
+      // after a form was created and every answer written.
+      if (submitForReview && !assigneeIds?.length) {
+        return createToolResult(
+          false,
+          undefined,
+          'submitForReview needs assigneeIds. Submitting acts as the calling user, so that user must be among the internal assignees. External assignees can answer a form but cannot submit it, so assigneeEmails alone would create the form, fill it in, and then fail to submit.',
+          {
+            code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
+            retryable: false,
+          },
+        );
+      }
 
       const assessment = await graphql.createAssessment({
         title,
@@ -161,7 +193,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           assigneeIds,
           externalAssigneeEmails: assigneeEmails,
         })
-        .catch((error) => failWithFormId(assessmentId, title, 'assigning it', error));
+        .catch((error) => failWithFormId(assessmentId, title, 'assigning it', error, NOT_STARTED));
 
       if (reviewerIds) {
         await graphql
@@ -169,15 +201,20 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
             id: assessmentId,
             reviewerIds,
           })
-          .catch((error) => failWithFormId(assessmentId, title, 'setting its reviewers', error));
+          .catch((error) =>
+            failWithFormId(assessmentId, title, 'setting its reviewers', error, NOT_STARTED),
+          );
       }
 
       const fullForm = await graphql
         .getAssessment(assessmentId)
-        .catch((error) => failWithFormId(assessmentId, title, 'reading its questions', error));
+        .catch((error) =>
+          failWithFormId(assessmentId, title, 'reading its questions', error, NOT_STARTED),
+        );
       if (!fullForm.sections || fullForm.sections.length === 0) {
         return createToolResult(true, {
           assessment: fullForm,
+          ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: assessmentId }),
           message: 'Assessment created but has no sections/questions to prefill.',
           answersApplied: 0,
         });
@@ -281,11 +318,12 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         }
       }
 
-      const verifiedForm = await graphql
-        .getAssessment(assessmentId)
-        .catch((error) =>
-          failWithFormId(assessmentId, title, 'checking the answers landed', error),
-        );
+      const verifiedForm = await graphql.getAssessment(assessmentId).catch((error) =>
+        failWithFormId(assessmentId, title, 'checking the answers landed', error, {
+          answersApplied,
+          totalQuestions: results.length,
+        }),
+      );
       const unansweredQuestions = (verifiedForm.sections as AssessmentSection[] | undefined)
         ?.flatMap((section) => section.questions ?? [])
         .filter((question) => !question.selectedAnswers?.length)
@@ -302,6 +340,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
             retryable: true,
             details: {
               assessmentId,
+              ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: assessmentId }),
               answersApplied,
               totalQuestions: results.length,
               unansweredQuestions: unansweredQuestions ?? [],
@@ -326,11 +365,11 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
                 title,
                 'submitting it for review',
                 error,
-                // Submitting acts as the calling user, so assigneeEmails alone
-                // leaves nobody who can submit even though the form left DRAFT
-                // and took every answer.
-                'Submitting acts as the calling user, so that user must be among assigneeIds. ' +
-                  'External assignees can answer a form but cannot submit it.',
+                { answersApplied, totalQuestions: results.length },
+                // The caller may be assigned to some other user, which reads as
+                // the same "not assigned to this user" error as having only
+                // external assignees.
+                'Submitting acts as the calling user, so that user must be among assigneeIds.',
               ),
             );
         }
@@ -338,6 +377,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
 
       return createToolResult(true, {
         assessmentId,
+        ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: assessmentId }),
         title,
         answersApplied,
         answersSkipped,

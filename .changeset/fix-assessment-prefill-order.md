@@ -23,6 +23,14 @@ Every failure after the form exists now names it, so a half-built form can be re
 failures in the notification step, which previously aborted the call without naming what it built.
 
 Submitting acts as the calling user, so `assigneeEmails` alone cannot submit — external assignees
-can answer a form but not submit it. That is now stated on the argument and in the submit failure.
+can answer a form but not submit it. `submitForReview` without `assigneeIds` is now rejected up
+front rather than after a form has been created and filled in.
+
+Failures also report how far the prefill got. "Created but submitting failed" does not say whether
+the form holds every answer or none, which is the difference between finishing it and starting
+over.
+
+The response carries the form's `url`, so a caller no longer needs a second read to link to what
+it just built.
 
 `includeDetails` returns the per-question rows, which are otherwise summarized as counts.

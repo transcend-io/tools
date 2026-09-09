@@ -969,6 +969,26 @@ describe('Assessment Tools', () => {
       ).rejects.toThrow('Create failed');
     });
 
+    it('rejects submitForReview with only external assignees before creating anything', async () => {
+      // External assignees can answer but cannot submit, so this combination
+      // would otherwise create a form, fill it in, and fail at the last step.
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+
+      const result = await tool.handler({
+        title: 'External only',
+        assessmentGroupId: 'grp-1',
+        assigneeEmails: ['counsel@example.com'],
+        answers: { Q1: 'A1' },
+        submitForReview: true,
+      } as never);
+
+      expect(result).toMatchObject({
+        success: false,
+        error: expect.stringContaining('submitForReview needs assigneeIds'),
+      });
+      expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
+    });
+
     it.each([
       ['updateAssessmentFormAssignees', 'assigning it'],
       ['submitAssessmentForReview', 'submitting it for review'],
@@ -1011,6 +1031,47 @@ describe('Assessment Tools', () => {
         code: 'API_ERROR',
         message: expect.stringContaining(step),
         details: { assessmentId: 'form-1' },
+      });
+    });
+
+    it('reports how many answers landed when the submit step fails', async () => {
+      // "Created but submitting failed" does not say whether the form holds
+      // every answer or none, which is the difference between finishing it and
+      // starting over.
+      mockGraphql.createAssessment.mockResolvedValue({ id: 'form-1', title: 'Partly filled' });
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue({ status: 'SHARED' });
+      mockGraphql.getAssessment.mockResolvedValue({
+        id: 'form-1',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q-1',
+                title: 'Q1',
+                type: 'LONG_ANSWER_TEXT',
+                selectedAnswers: [{ id: 'a-1' }],
+              },
+            ],
+          },
+        ],
+      });
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+      mockGraphql.submitAssessmentForReview.mockRejectedValue(new Error('not assigned'));
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+
+      await expect(
+        tool.handler({
+          title: 'Partly filled',
+          assessmentGroupId: 'grp-1',
+          assigneeIds: ['user-1'],
+          answers: { Q1: 'A1' },
+          submitForReview: true,
+        } as never),
+      ).rejects.toMatchObject({
+        message: expect.stringContaining('holds 1/1 answers'),
+        details: { answersApplied: 1, totalQuestions: 1 },
       });
     });
   });
