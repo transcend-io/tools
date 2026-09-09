@@ -916,6 +916,107 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
     });
 
+    it('names answer keys that matched no question instead of dropping them', async () => {
+      // Keys are matched against the form, so a key with a typo is never
+      // visited and its answer vanishes with nothing to say it did.
+      const form = {
+        id: 'assess-typo',
+        title: 'Typo Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Typo Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'Question one?': 'answer' },
+        submitForReview: true,
+      } as never);
+
+      expect(result).toMatchObject({
+        success: false,
+        code: 'ASSESSMENT_PREFILL_INCOMPLETE',
+        error: expect.stringContaining('matched no question'),
+        details: { unmatchedAnswerKeys: ['Question one?'] },
+      });
+      expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
+    });
+
+    it('treats questions nobody answered as a partial fill, not a failure', async () => {
+      // Leaving a question blank for a human is often the right call on a
+      // compliance record, and calling it a failure pushes the caller to
+      // invent an answer.
+      const form = {
+        id: 'assess-partial',
+        title: 'Partial Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Question one',
+                referenceId: 'ref-1',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [{ id: 'a1', index: 0, value: 'answer' }],
+              },
+              {
+                id: 'q2',
+                title: 'Question two',
+                referenceId: 'ref-2',
+                type: 'SHORT_ANSWER_TEXT',
+                answerOptions: [],
+                selectedAnswers: [],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      const result = await tool.handler({
+        title: 'Partial Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'Question one': 'answer' },
+      } as never);
+
+      expect(result).toMatchObject({
+        success: true,
+        data: {
+          answersApplied: 1,
+          totalQuestions: 2,
+          unansweredQuestions: ['Question two'],
+        },
+      });
+    });
+
     it('returns early success when form has no sections', async () => {
       const mockAssessment = {
         id: 'assess-empty',

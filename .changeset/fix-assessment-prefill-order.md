@@ -15,8 +15,23 @@ With `submitForReview`, that submitted an empty form for review and reported
 named no form, leaving one orphaned in the group.
 
 Assignment now happens immediately after create, `assigneeIds` or `assigneeEmails` is required
-and checked before anything is created, and the form is re-read after prefilling — any question
-still unanswered fails the call with `ASSESSMENT_PREFILL_INCOMPLETE` and never submits.
+and checked before anything is created, and the form is re-read after prefilling to confirm the
+answers landed.
+
+That re-read distinguishes an answer that failed from a question nobody answered. Answer keys are
+matched against the form, so a key naming no question was never visited and its answer vanished
+with an empty `errors` array to explain it — one dropped `?` in a question title silently cost an
+answer. Unmatched keys are now reported in `unmatchedAnswerKeys` and fail the call with
+`ASSESSMENT_PREFILL_INCOMPLETE`, alongside answers the API rejected.
+
+A question the caller simply supplied no answer for is no longer a failure. Leaving one blank for
+a human is often correct on a compliance record, and calling it an error told the caller to go
+back and invent a value. Those questions are named in `unansweredQuestions` on the success
+payload instead, so a partial fill is visible rather than either silent or fatal.
+
+`assessments_prefill` only creates, so "retry" would have built a second form. The failure now
+names `assessments_answer_question` and `assessments_submit_response` as the way to finish the
+form that already exists.
 
 Every failure after the form exists now names it, so a half-built form can be read with
 `assessments_get` and finished rather than abandoned for a second attempt. This also covers

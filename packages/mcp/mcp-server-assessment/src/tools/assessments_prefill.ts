@@ -224,6 +224,10 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
       const results: { question: string; status: string; answer?: string }[] = [];
       let answersApplied = 0;
       let answersSkipped = 0;
+      // Keys are matched against the form, not the other way round, so a key
+      // that matches nothing is never visited. Recording the ones that hit
+      // leaves the misses to be reported instead of dropped in silence.
+      const matchedAnswerKeys = new Set<string>();
 
       for (const section of fullForm.sections as AssessmentSection[]) {
         if (!section.questions) continue;
@@ -235,6 +239,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
               key.toLowerCase() === (question.title || '').toLowerCase() ||
               key === question.id,
           );
+          if (answerKey) matchedAnswerKeys.add(answerKey);
 
           if (!answerKey) {
             results.push({
@@ -330,12 +335,30 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         .filter((question) => !question.selectedAnswers?.length)
         .map((question) => question.title || question.id);
       const failedResults = results.filter((result) => result.status.startsWith('error:'));
+      const unmatchedAnswerKeys = Object.keys(answers).filter((key) => !matchedAnswerKeys.has(key));
 
-      if (failedResults.length > 0 || unansweredQuestions?.length) {
+      // A question nobody supplied an answer for is a caller leaving it blank,
+      // which on a compliance record is often the correct thing to do. Only an
+      // answer that was given and did not land is a failure: either the write
+      // was rejected, or the key named a question the form does not have.
+      if (failedResults.length > 0 || unmatchedAnswerKeys.length > 0) {
+        const causes = [
+          failedResults.length > 0
+            ? `${failedResults.length} answer${failedResults.length === 1 ? ' was' : 's were'} rejected`
+            : '',
+          unmatchedAnswerKeys.length > 0
+            ? `${unmatchedAnswerKeys.length} answer key${
+                unmatchedAnswerKeys.length === 1 ? '' : 's'
+              } matched no question on the form`
+            : '',
+        ].filter(Boolean);
         return createToolResult(
           false,
           undefined,
-          `Assessment "${title}" was created and assigned, but only ${answersApplied}/${results.length} questions were answered. Retry the unanswered questions before submitting.`,
+          `Assessment "${title}" was created and assigned, but ${causes.join(' and ')}. ` +
+            'Keys must match a question title or referenceId from assessments_export_template. ' +
+            'The form exists, so finish it with assessments_answer_question and then ' +
+            'assessments_submit_response; calling assessments_prefill again would create a second form.',
           {
             ...PREFILL_INCOMPLETE,
             details: {
@@ -343,6 +366,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
               ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: assessmentId }),
               answersApplied,
               totalQuestions: results.length,
+              unmatchedAnswerKeys,
               unansweredQuestions: unansweredQuestions ?? [],
               errors: failedResults.map(({ question, status }) => ({ question, status })),
             },
@@ -382,6 +406,9 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         answersApplied,
         answersSkipped,
         totalQuestions: results.length,
+        // Named so a caller can tell a form it deliberately left partly blank
+        // from one it believes it filled, which the counts alone do not say.
+        ...(unansweredQuestions?.length && { unansweredQuestions }),
         ...(includeDetails && { results }),
         assignment: {
           status: assignmentResult.status,
@@ -391,6 +418,9 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         message:
           `Assessment "${title}" created and prefilled with ${answersApplied}/${results.length} answers. ` +
           'Assigned before prefilling. ' +
+          (unansweredQuestions?.length
+            ? `${unansweredQuestions.length} questions were left unanswered because no answer was supplied for them. `
+            : '') +
           (submitResult ? 'Submitted for review.' : 'Ready for manual submission.'),
       });
     },
