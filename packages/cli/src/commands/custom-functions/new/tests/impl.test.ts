@@ -10,6 +10,7 @@ import {
   generateCustomFunctionTemplate,
 } from '../../../../lib/custom-functions/scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
+import { stripAnsi } from '../../../../lib/tests/helpers/stripAnsi.js';
 import { newCustomFunction, type CustomFunctionNewFlags } from '../impl.js';
 
 const temporaryRoots: string[] = [];
@@ -85,7 +86,7 @@ describe('custom-functions new', () => {
 
     await newCustomFunction.call(context, buildFlags({ json: false }), target);
 
-    const lines = context.stdout.split('\n');
+    const lines = stripAnsi(context.stdout).split('\n');
     const handoffHeading = lines.indexOf('AI handoff — paste into your coding agent');
     expect(handoffHeading).toBeGreaterThan(-1);
     expect(lines[handoffHeading + 1]).toMatch(/^(?:Ask|Use) /u);
