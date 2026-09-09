@@ -8,6 +8,7 @@ export type DsrBulkErrorMessageMap = {
   [DsrBulkErrorCode.MixedCekContext]: () => string;
   [DsrBulkErrorCode.DhContextRequired]: () => string;
   [DsrBulkErrorCode.ConcurrentSubmissionConflict]: () => string;
+  [DsrBulkErrorCode.InvalidBulkInput]: () => string;
 };
 
 type _AssertAllBulkCodesHaveBuilders = DsrBulkErrorCode extends keyof DsrBulkErrorMessageMap
@@ -33,4 +34,5 @@ export const DSR_BULK_ERROR_MESSAGE = {
   [DsrBulkErrorCode.DhContextRequired]: () => 'No encrypted data subject payload provided',
   [DsrBulkErrorCode.ConcurrentSubmissionConflict]: () =>
     'A concurrent DROP submission already created one or more of these requests. Retry the batch.',
+  [DsrBulkErrorCode.InvalidBulkInput]: () => 'Bulk submission input must be an array',
 } as const satisfies DsrBulkErrorMessageMap;

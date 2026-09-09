@@ -26,6 +26,11 @@ export const DsrBulkErrorCode = makeEnum({
    * input index can be attributed.
    */
   ConcurrentSubmissionConflict: 'CONCURRENT_SUBMISSION_CONFLICT',
+  /**
+   * The bulk submission's top-level `input` was not an array (malformed body
+   * before per-item processing).
+   */
+  InvalidBulkInput: 'INVALID_BULK_INPUT',
 });
 
 /** Type override */
