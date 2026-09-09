@@ -67,6 +67,6 @@ export const newCommand = buildCommand({
   docs: {
     brief: 'Scaffold one local Custom Function and its test fixtures',
     fullDescription:
-      'Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions supporting data point resolvers, preflight checks, or both.',
+      'Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions triggered by a Workflow step and supporting data point resolvers, preflight checks, or both.',
   },
 });

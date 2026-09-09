@@ -35,6 +35,9 @@ import {
 } from '../../../lib/custom-functions/scaffold-templates.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
 
+/** Product-level Custom Function type selected before its starter template. */
+type CustomFunctionType = 'general' | 'dsr';
+
 /** Flags for `custom-functions new`. */
 export interface CustomFunctionNewFlags {
   /** Explicit existing manifest path. */
@@ -66,6 +69,54 @@ function isInteractiveInvocation(
   stderrIsTTY: boolean | undefined,
 ): boolean {
   return !flags.json && !flags.noInteractive && Boolean(stdinIsTTY && stderrIsTTY);
+}
+
+/**
+ * Ask for the product-level function type, then its available starter template.
+ *
+ * General currently has one template, so selecting it completes the choice immediately.
+ *
+ * @param prompts - Context-bound prompt adapter
+ * @returns Selected starter template
+ */
+export async function selectInteractiveTemplate(
+  prompts: Pick<CustomFunctionPrompts, 'select'>,
+): Promise<CustomFunctionTemplateName> {
+  const functionType = await prompts.select<CustomFunctionType>(
+    'Custom Function type:',
+    [
+      {
+        name: 'General — triggered by Rules Automation',
+        value: 'general',
+      },
+      {
+        name: 'DSR — triggered by a step in a Workflow',
+        value: 'dsr',
+      },
+    ],
+    'general',
+  );
+  if (functionType === 'general') {
+    return 'general';
+  }
+  return prompts.select<CustomFunctionTemplateName>(
+    'DSR template:',
+    [
+      {
+        name: 'Data point resolver and preflight check',
+        value: 'dsr-both',
+      },
+      {
+        name: 'Data point resolver only',
+        value: 'dsr-datapoint',
+      },
+      {
+        name: 'Preflight check only',
+        value: 'dsr-enricher',
+      },
+    ],
+    'dsr-both',
+  );
 }
 
 /**
@@ -119,31 +170,7 @@ export async function _new(
       throw new Error('Missing Custom Function name. Pass --name in a non-interactive invocation.');
     }
     const template =
-      flags.template ??
-      (interactive
-        ? await prompts.select<CustomFunctionTemplateName>(
-            'Function type and starter:',
-            [
-              {
-                name: 'General Custom Function — triggered by Rules Automation',
-                value: 'general',
-              },
-              {
-                name: 'DSR Custom Function',
-                value: 'dsr-both',
-              },
-              {
-                name: 'DSR Custom Function — data point resolver only',
-                value: 'dsr-datapoint',
-              },
-              {
-                name: 'DSR Custom Function — preflight check only',
-                value: 'dsr-enricher',
-              },
-            ],
-            'general',
-          )
-        : undefined);
+      flags.template ?? (interactive ? await selectInteractiveTemplate(prompts) : undefined);
     if (!template || !CUSTOM_FUNCTION_TEMPLATE_NAMES.includes(template)) {
       throw new Error(
         'Missing Custom Function template. Pass --template=general, --template=dsr-datapoint, --template=dsr-enricher, or --template=dsr-both.',
