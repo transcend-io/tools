@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-assessment
 
+## 2.0.1
+
+### Patch Changes
+
+- Updated dependencies [60d1ea0]
+  - @transcend-io/mcp-server-base@2.1.0
+
 ## 2.0.0
 
 ### Major Changes
