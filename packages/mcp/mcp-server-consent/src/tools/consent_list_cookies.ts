@@ -33,24 +33,16 @@ export const ListCookiesSchema = OffsetPaginationSchema.extend({
     .array(z.string())
     .min(1)
     .optional()
-    .describe(
-      'Filter by tracking purpose slugs (e.g. ["Advertising"]). Use consent_list_purposes.',
-    ),
-  minOccurrences: z
-    .number()
-    .min(0)
-    .optional()
-    .describe('Only return cookies with at least this many occurrences (traffic)'),
+    .describe('Purpose slugs from consent_list_purposes (e.g. Advertising).'),
+  minOccurrences: z.number().min(0).optional().describe('Minimum occurrence (traffic) count.'),
   lastDiscoveredAtBefore: z
     .string()
     .optional()
-    .describe(
-      'ISO 8601 upper bound for lastDiscoveredAt. Use with first=1 to count dormant items.',
-    ),
+    .describe('ISO 8601 upper bound on lastDiscoveredAt.'),
   lastDiscoveredAtAfter: z
     .string()
     .optional()
-    .describe('ISO 8601 lower bound for lastDiscoveredAt'),
+    .describe('ISO 8601 lower bound on lastDiscoveredAt.'),
   orderField: z.nativeEnum(CookieOrderField).optional().describe('Sort field (e.g. occurrences).'),
   orderDirection: z
     .nativeEnum(OrderDirection)
@@ -65,9 +57,8 @@ export function createConsentListCookiesTool(clients: ToolClients) {
     description:
       'List cookies in your consent manager. ' +
       'Requires status: NEEDS_REVIEW (triage) or LIVE (approved). ' +
-      'Returns name, service, tracking purposes, occurrences, junk status, and more. ' +
-      'Filter with trackingPurposes (slugs from consent_list_purposes), ' +
-      'lastDiscoveredAtBefore/After, orderField/orderDirection, and minOccurrences.',
+      'Returns name, service, purposes, occurrences, junk status. ' +
+      'Filter via trackingPurposes, lastDiscoveredAtBefore/After, minOccurrences, orderField.',
 
     category: 'Consent Management',
     readOnly: true,

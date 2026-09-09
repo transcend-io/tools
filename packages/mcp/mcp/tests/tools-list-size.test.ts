@@ -1,4 +1,3 @@
-import { toJsonSchemaCompat } from '@modelcontextprotocol/sdk/server/zod-json-schema-compat.js';
 import {
   isVisibleToModel,
   toolInputSchema,
@@ -28,7 +27,7 @@ function listDescriptors(registry: ToolRegistry) {
     .map((tool) => ({
       name: tool.name,
       description: tool.description,
-      inputSchema: toJsonSchemaCompat(tool.zodSchema as never),
+      inputSchema: toolInputSchema(tool.zodSchema),
       annotations: tool.annotations,
     }));
 }

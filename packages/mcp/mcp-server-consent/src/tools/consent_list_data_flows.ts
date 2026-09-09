@@ -42,24 +42,16 @@ export const ListDataFlowsSchema = OffsetPaginationSchema.extend({
     .array(z.string())
     .min(1)
     .optional()
-    .describe(
-      'Filter by tracking purpose slugs (e.g. ["Advertising"]). Use consent_list_purposes.',
-    ),
-  minOccurrences: z
-    .number()
-    .min(0)
-    .optional()
-    .describe('Only return flows with at least this many occurrences (traffic)'),
+    .describe('Purpose slugs from consent_list_purposes (e.g. Advertising).'),
+  minOccurrences: z.number().min(0).optional().describe('Minimum occurrence (traffic) count.'),
   lastDiscoveredAtBefore: z
     .string()
     .optional()
-    .describe(
-      'ISO 8601 upper bound for lastDiscoveredAt. Use with first=1 to count dormant items.',
-    ),
+    .describe('ISO 8601 upper bound on lastDiscoveredAt.'),
   lastDiscoveredAtAfter: z
     .string()
     .optional()
-    .describe('ISO 8601 lower bound for lastDiscoveredAt'),
+    .describe('ISO 8601 lower bound on lastDiscoveredAt.'),
   orderField: z.nativeEnum(DataFlowOrderField).optional().describe('Field to sort by'),
   orderDirection: z.nativeEnum(OrderDirection).optional().describe('Sort direction: ASC or DESC'),
 });
@@ -71,9 +63,8 @@ export function createConsentListDataFlowsTool(clients: ToolClients) {
     description:
       'List data flows (network requests) in your consent manager. ' +
       'Requires status: NEEDS_REVIEW (triage) or LIVE (approved). ' +
-      'Returns value (URL/host), service, tracking purposes, occurrences, and more. ' +
-      'Filter with unmappedOnly, type, trackingTypes (slugs from consent_list_purposes), ' +
-      'minOccurrences, and lastDiscoveredAtBefore/After.',
+      'Returns value (URL/host), service, purposes, occurrences. ' +
+      'Filter via unmappedOnly, type, trackingTypes, minOccurrences, lastDiscoveredAtBefore/After.',
     category: 'Consent Management',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
