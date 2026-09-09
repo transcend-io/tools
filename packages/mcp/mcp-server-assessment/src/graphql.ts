@@ -102,6 +102,32 @@ function normalizeQuestion(q: AssessmentQuestionInput): Record<string, unknown> 
   };
 }
 
+/**
+ * Who a form is assigned to and who reviews it.
+ *
+ * A caller that has just assigned a form has no other way to confirm it took:
+ * the write tools echo back a status and nothing else, so without these on the
+ * form itself the only read-back is the list index, queried for a single form
+ * whose id the caller is already holding.
+ *
+ * @param node - An assessment form as the API returns it
+ * @returns The participant lists, each undefined when the API omitted it
+ */
+function mapParticipants(node: {
+  /** Internal users the form is assigned to */
+  assignees?: readonly { id: string; name: string; email: string }[] | null;
+  /** Internal users who review the submitted form */
+  reviewers?: readonly { id: string; name: string; email: string }[] | null;
+  /** People outside the org the form is shared with */
+  externalAssignees?: readonly { id: string; email: string }[] | null;
+}): Pick<Assessment, 'assignees' | 'reviewers' | 'externalAssignees'> {
+  return {
+    assignees: node.assignees?.map(({ id, name, email }) => ({ id, name, email })),
+    reviewers: node.reviewers?.map(({ id, name, email }) => ({ id, name, email })),
+    externalAssignees: node.externalAssignees?.map(({ id, email }) => ({ id, email })),
+  };
+}
+
 /** Narrow an API answer option to the fields a reader needs. */
 function toAnswerOption(option: {
   id: string;
@@ -242,6 +268,20 @@ const GetAssessmentDoc = graphql(/* GraphQL */ `
         assessmentGroup {
           id
         }
+        assignees {
+          id
+          name
+          email
+        }
+        reviewers {
+          id
+          name
+          email
+        }
+        externalAssignees {
+          id
+          email
+        }
         sections {
           id
           title
@@ -292,6 +332,20 @@ const GetAssessmentSkeletonDoc = graphql(/* GraphQL */ `
         updatedAt
         assessmentGroup {
           id
+        }
+        assignees {
+          id
+          name
+          email
+        }
+        reviewers {
+          id
+          name
+          email
+        }
+        externalAssignees {
+          id
+          email
         }
         sections {
           id
@@ -656,6 +710,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       createdAt: node.createdAt,
       updatedAt: node.updatedAt ?? undefined,
       assessmentGroupId: node.assessmentGroup?.id,
+      ...mapParticipants(node),
       sections: node.sections?.map((section) => ({
         id: section.id,
         title: section.title ?? undefined,
@@ -828,6 +883,7 @@ export class AssessmentsMixin extends TranscendGraphQLBase {
       createdAt: node.createdAt,
       updatedAt: node.updatedAt ?? undefined,
       assessmentGroupId: node.assessmentGroup?.id,
+      ...mapParticipants(node),
       sections: sections.map((section) => ({
         id: section.id,
         title: section.title ?? undefined,

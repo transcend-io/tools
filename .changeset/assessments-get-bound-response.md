@@ -18,6 +18,10 @@ Free-text answers no longer come back twice. The API models a typed response as 
 option, so the same paragraph appeared under both `answerOptions` and `selectedAnswers`.
 Options are now dropped only when every one was selected, so select questions are unaffected.
 
+Forms now carry `assignees`, `reviewers` and `externalAssignees`. The write tools echo back only
+a status, so confirming an assignment took previously meant querying the list index for a single
+form whose ID the caller was already holding.
+
 Also: a missing assessment raises a `NOT_FOUND` `ToolError` naming `assessments_list` instead
 of a bare `Error`, and the `assessmentName` argument, accepted but never read, is gone.
 

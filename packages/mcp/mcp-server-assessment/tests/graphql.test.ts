@@ -518,4 +518,37 @@ describe('AssessmentsMixin (row shapes that callers audit against)', () => {
     expect(result.nodes[0]).toHaveProperty('dueDate');
     expect(result.nodes[0].dueDate).toBeNull();
   });
+
+  it('returns who a form is assigned to on the skeleton read', async () => {
+    // A caller that just assigned a form otherwise has to query the list index
+    // for a single form whose id it is already holding.
+    vi.stubGlobal(
+      'fetch',
+      createMockFetchResponse({
+        assessmentForms: {
+          nodes: [
+            {
+              id: 'form-1',
+              title: 'Vendor review',
+              status: 'IN_PROGRESS',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              assignees: [{ id: 'user-1', name: 'Ada', email: 'ada@example.com' }],
+              reviewers: [{ id: 'user-2', name: 'Grace', email: 'grace@example.com' }],
+              externalAssignees: [{ id: 'ext-1', email: 'counsel@example.com' }],
+              sections: [
+                { id: 'sec-1', title: 'One', index: 0, status: 'IN_PROGRESS', questions: [] },
+              ],
+            },
+          ],
+        },
+      }),
+    );
+
+    const client = new AssessmentsMixin(API_KEY_AUTH);
+    const result = await client.getAssessmentSkeleton('form-1');
+
+    expect(result.assignees).toEqual([{ id: 'user-1', name: 'Ada', email: 'ada@example.com' }]);
+    expect(result.reviewers).toEqual([{ id: 'user-2', name: 'Grace', email: 'grace@example.com' }]);
+    expect(result.externalAssignees).toEqual([{ id: 'ext-1', email: 'counsel@example.com' }]);
+  });
 });
