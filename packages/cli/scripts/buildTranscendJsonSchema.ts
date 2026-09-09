@@ -64,15 +64,19 @@ for (const fileName of readdirSync(schemaRoot)) {
     properties?: Record<string, Record<string, unknown>>;
   };
 
-  // Mark legacy `enrichers` key as deprecated in favor of `preflights`
-  if (jsonSchema.properties?.enrichers) {
-    jsonSchema.properties.enrichers.deprecated = true;
-    jsonSchema.properties.enrichers.description =
-      'Deprecated: use `preflights` instead. Legacy alias for preflight check definitions.';
-  }
+  // Canonical preflight checks key, plus a deprecated `enrichers` alias that $ref's it
+  // (draft-07: sibling keywords next to $ref are unreliable, so use allOf).
   if (jsonSchema.properties?.preflights) {
     jsonSchema.properties.preflights.description =
       'Preflight check definitions (identity enrichment, fraud checks, etc.) run before privacy request workflows.';
+  }
+  if (jsonSchema.properties?.enrichers && jsonSchema.properties?.preflights) {
+    jsonSchema.properties.enrichers = {
+      deprecated: true,
+      description:
+        'Deprecated: use `preflights` instead. Legacy alias for preflight check definitions.',
+      allOf: [{ $ref: '#/properties/preflights' }],
+    };
   }
 
   const schemaFilePath = join(schemaRoot, fileName);
