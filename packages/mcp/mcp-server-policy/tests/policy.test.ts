@@ -303,13 +303,33 @@ describe('Policy MCP tools', () => {
       mockClient.get.mockReturnValue({
         json: vi
           .fn()
+          // resolveBundle by name
           .mockResolvedValueOnce({
             nodes: [{ id: 'b1', bundleName: 'main', activeVersionId: null }],
             totalCount: 1,
           })
+          // GET /policy-bundle-versions/:versionId
           .mockResolvedValueOnce({
-            nodes: [{ id: 'v1', version: 'main-2026-01-01', createdAt: '2026-01-01T00:00:00Z' }],
-            pageInfo: { hasNextPage: false, hasPreviousPage: false },
+            versionId: 'v1',
+            version: 'main-2026-01-01',
+            bundleName: 'main',
+            uploadedAt: '2026-01-01T00:00:00Z',
+            activatedAt: null,
+            deactivatedAt: null,
+            description: null,
+            sha256: 'abc',
+            sizeBytes: 100,
+            downloadUrl: 'https://example.com/bundle.tar.gz',
+          })
+          // GET /policy-bundles/:bundleId (ownership check)
+          .mockResolvedValueOnce({
+            id: 'b1',
+            bundleName: 'main',
+            description: null,
+            activeVersionId: null,
+            lastActivatedAt: null,
+            createdAt: '2026-01-01T00:00:00Z',
+            updatedAt: '2026-01-01T00:00:00Z',
           }),
       });
       mockClient.post.mockReturnValue({
