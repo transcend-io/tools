@@ -71,4 +71,30 @@ describe('readTranscendYaml', () => {
       ],
     });
   });
+
+  it('serializes legacy enrichers using only the canonical preflights key', () => {
+    expect(
+      serializeTranscendYaml({
+        preflights: [
+          {
+            title: 'Canonical Preflight',
+            'output-identifiers': ['email'],
+          },
+        ],
+        enrichers: [
+          {
+            title: 'Legacy Enricher',
+            'output-identifiers': ['phone'],
+          },
+        ],
+      }),
+    ).toBe(`preflights:
+  - title: Canonical Preflight
+    output-identifiers:
+      - email
+  - title: Legacy Enricher
+    output-identifiers:
+      - phone
+`);
+  });
 });

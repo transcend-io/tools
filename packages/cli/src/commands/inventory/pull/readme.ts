@@ -108,7 +108,7 @@ const examples = buildExamples<PullCommandFlags>(
     },
     {
       description:
-        'Pull preflight checks and identifiers (see [this example](./examples/enrichers.yml))',
+        'Pull preflight checks and identifiers (see [this example](./examples/preflights.yml))',
       flags: {
         auth: '$TRANSCEND_API_KEY',
         resources: [TranscendPullResource.Enrichers, TranscendPullResource.Identifiers],

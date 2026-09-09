@@ -3005,7 +3005,7 @@ transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=businessEntitie
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=processingActivities
 ```
 
-**Pull preflight checks and identifiers (see [this example](./examples/enrichers.yml))**
+**Pull preflight checks and identifiers (see [this example](./examples/preflights.yml))**
 
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=enrichers,identifiers
