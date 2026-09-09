@@ -1,11 +1,11 @@
 import { parse } from 'jsonc-parser';
 import { describe, expect, it } from 'vitest';
 
+import { mergeJsonc } from '../../scaffolding/jsonc.js';
 import {
   mergeDenoConfiguration,
   mergeEditorExtensions,
   mergeEditorSettings,
-  mergeJsonc,
 } from '../scaffold-config.js';
 
 describe('JSONC configuration merging', () => {

@@ -2,7 +2,7 @@ import inquirer from 'inquirer';
 
 import type { LocalContext } from '../../context.js';
 
-/** One select/checkbox option. */
+/** One select or checkbox option. */
 export interface PromptChoice<T extends string> {
   /** User-facing label. */
   name: string;
@@ -38,8 +38,8 @@ function normalizePromptError(error: unknown): Error {
   return error instanceof Error ? error : new Error(message);
 }
 
-/** Context-stream-bound prompt adapters. */
-export class CustomFunctionPrompts {
+/** Context-stream-bound scaffold prompt adapters. */
+export class ScaffoldPrompts {
   /** Inquirer prompt module. */
   private readonly prompt: ReturnType<typeof inquirer.createPromptModule>;
 

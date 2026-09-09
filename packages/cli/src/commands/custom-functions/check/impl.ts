@@ -5,11 +5,8 @@ import { doneInputValidation } from '../../../lib/cli/done-input-validation.js';
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
 import { resolveCustomFunctionProjectPaths } from '../../../lib/custom-functions/paths.js';
 import { discoverCustomFunctionManifests } from '../../../lib/custom-functions/project-discovery.js';
-import {
-  CustomFunctionPrompts,
-  PromptCancelledError,
-} from '../../../lib/custom-functions/prompts.js';
 import { parseVariablesFromString } from '../../../lib/helpers/parseVariablesFromString.js';
+import { PromptCancelledError, ScaffoldPrompts } from '../../../lib/scaffolding/prompts.js';
 import { runCustomFunctionChecks } from './helpers.js';
 
 /** CLI flags for `transcend custom-functions check`. */
@@ -55,7 +52,7 @@ export async function check(
     !flags.json &&
     !flags.noInteractive &&
     Boolean(this.process.stdin.isTTY && this.process.stderr.isTTY);
-  const prompts = new CustomFunctionPrompts(this);
+  const prompts = new ScaffoldPrompts(this);
   try {
     const result = await runCustomFunctionChecks(this, {
       manifestPath,

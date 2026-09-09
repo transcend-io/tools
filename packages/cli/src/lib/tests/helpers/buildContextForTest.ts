@@ -23,6 +23,8 @@ export interface BuildContextForTestOptions {
   readonly cwd?: string;
   /** Whether the fake stdin is attached to a TTY */
   readonly stdinIsTTY?: boolean;
+  /** Whether the fake stderr is attached to a TTY */
+  readonly stderrIsTTY?: boolean;
   /** How calls to process.exit should behave */
   readonly exitBehavior?: TestExitBehavior;
   /** Filesystem implementation */
@@ -68,16 +70,17 @@ export class TestProcessExitError extends Error {
  * Build an in-memory writable stream.
  *
  * @param chunks - Destination for written chunks.
+ * @param isTTY - Whether the stream is attached to a TTY.
  * @returns A writable stream compatible with Node process streams.
  */
-function buildCapturedStream(chunks: string[]): NodeJS.WriteStream {
+function buildCapturedStream(chunks: string[], isTTY = false): NodeJS.WriteStream {
   const stream = new Writable({
     write(chunk, _encoding, callback) {
       chunks.push(String(chunk));
       callback();
     },
   });
-  Object.defineProperty(stream, 'isTTY', { value: false });
+  Object.defineProperty(stream, 'isTTY', { value: isTTY });
   return stream as NodeJS.WriteStream;
 }
 
@@ -95,7 +98,7 @@ export function buildContextForTest(options: BuildContextForTestOptions = {}): T
   const stdoutChunks: string[] = [];
   const stderrChunks: string[] = [];
   const stdout = buildCapturedStream(stdoutChunks);
-  const stderr = buildCapturedStream(stderrChunks);
+  const stderr = buildCapturedStream(stderrChunks, options.stderrIsTTY);
   const stdin = new Readable({ read() {} }) as NodeJS.ReadStream;
   Object.defineProperty(stdin, 'isTTY', {
     value: options.stdinIsTTY ?? true,

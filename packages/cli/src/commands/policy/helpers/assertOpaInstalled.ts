@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 
-import { OPA_INSTALL_HINT } from '../constants.js';
+import { OPA_CLI_MISSING_MESSAGE } from '../../../lib/policy/policy-runtime.js';
 
 /** Options used to suppress output from the availability check. */
 interface OpaSpawnOptions {
@@ -24,6 +24,6 @@ type SpawnSync = (
 export function assertOpaInstalled(runSpawnSync: SpawnSync = spawnSync): void {
   const result = runSpawnSync('opa', ['version'], { stdio: 'ignore' });
   if (result.error || result.status !== 0) {
-    throw new Error(OPA_INSTALL_HINT);
+    throw new Error(OPA_CLI_MISSING_MESSAGE);
   }
 }

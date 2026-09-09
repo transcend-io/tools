@@ -12,7 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  global:
+  global_checks:
+    name: Global checks
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -26,11 +27,6 @@ jobs:
 
       - name: Bootstrap
         uses: ./.github/commands/bootstrap
-
-      - name: Install Deno for Custom Function contract tests
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
-        with:
-          deno-version: 2.4.5
 
       - if: github.event_name == 'pull_request'
         name: Check changeset
@@ -65,6 +61,54 @@ jobs:
 
       - name: Check publish compatibility
         run: pnpm check:publint
+
+  integration:
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Bootstrap
+        uses: ./.github/commands/bootstrap
+
+      - name: Install Deno for Custom Function integration tests
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: 2.4.5
+
+      - name: Install OPA for Policy Engine integration tests
+        uses: open-policy-agent/setup-opa@b2b258e089860efaadaaf71bf6e3aecb4a3eeff1 # v2.4.0
+        with:
+          version: 1.13.1
+
+      - name: Install Regal for Policy Engine integration tests
+        uses: open-policy-agent/setup-regal@761188c3b435761fa254beca508a44875619648f # v2.0.0
+        with:
+          version: 0.42.0
+
+      - name: Test external runtime integrations
+        run: pnpm test:integration
+
+  global:
+    if: always()
+    needs:
+      - global_checks
+      - integration
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Verify required checks
+        env:
+          GLOBAL_CHECKS_RESULT: ${{ needs.global_checks.result }}
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+        run: |
+          test "$GLOBAL_CHECKS_RESULT" = "success"
+          test "$INTEGRATION_RESULT" = "success"
 
   cli:
     runs-on: ubuntu-24.04-arm

@@ -17,7 +17,8 @@
     ".oxfmtrc.jsonc",
     "codegen.ts",
     "schema.graphql",
-    "skills/transcend-custom-functions/**"
+    "skills/transcend-custom-functions/**",
+    "skills/transcend-policy-engine/**"
   ],
   "tasks": {
     "build": {
@@ -26,6 +27,11 @@
     },
     "test": {
       "dependsOn": ["transit", "//#codegen"],
+      "outputs": []
+    },
+    "test:integration": {
+      "dependsOn": ["transit", "//#codegen"],
+      "cache": false,
       "outputs": []
     },
     "quality": {
