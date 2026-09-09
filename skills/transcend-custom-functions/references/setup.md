@@ -1,5 +1,13 @@
 # Project setup and CI
 
+## Install the CLI
+
+Install the Transcend CLI:
+
+```sh
+npm install --global @transcend-io/cli
+```
+
 ## Initialize
 
 Run:
