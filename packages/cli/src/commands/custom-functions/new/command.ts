@@ -19,7 +19,7 @@ const customFunctionNewFlagParameters = {
   template: {
     kind: 'enum',
     values: CUSTOM_FUNCTION_TEMPLATE_NAMES,
-    brief: 'Generated handler and fixture shape',
+    brief: 'Function type and generated handler shape',
     optional: true,
   },
   noInteractive: {
@@ -67,6 +67,6 @@ export const newCommand = buildCommand({
   docs: {
     brief: 'Scaffold one local Custom Function and its test fixtures',
     fullDescription:
-      'Adds a deterministic General or DSR starter to an initialized Custom Function project and safely appends its manifest entry without credentials.',
+      'Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions triggered by a Workflow step and supporting data point resolvers, preflight checks, or both.',
   },
 });
