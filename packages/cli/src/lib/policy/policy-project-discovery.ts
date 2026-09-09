@@ -30,6 +30,7 @@ export function discoverPolicyProject(
     throw new Error(`Policy target is not a directory: ${targetDirectory}`);
   }
   const repository = discoverProjectRepository(context, {
+    invocationDirectory,
     targetDirectory,
     standaloneProjectRoot: invocationDirectory,
   });

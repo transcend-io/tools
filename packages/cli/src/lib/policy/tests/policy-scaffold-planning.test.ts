@@ -94,6 +94,9 @@ describe('buildPolicyInitPlan', () => {
     expect(second).toEqual(first);
     expect(input).toEqual(before);
     expect(first.rootDirectory).toBe('/repo');
+    expect(first.directoryPreconditions).toEqual([
+      { path: '/repo/transcend/policy', relativePaths: [] },
+    ]);
     expect(first.changes).toHaveLength(7);
     expect(
       first.changes.every(
@@ -102,6 +105,9 @@ describe('buildPolicyInitPlan', () => {
     ).toBe(true);
     expect(first.nextSteps[0]).toBe(
       "transcend policy lint --dir 'transcend/policy' --noInteractive",
+    );
+    expect(first.disposableExamplePath).toBe(
+      '/repo/transcend/policy/policy_engine/example/result.rego',
     );
   });
 
@@ -142,6 +148,10 @@ describe('buildPolicyInitPlan', () => {
     expect(plan.warnings.at(-1)).toContain(
       "transcend policy lint --dir 'transcend/policy' --noInteractive",
     );
+    expect(plan.nextSteps).toEqual([
+      "transcend policy lint --dir 'transcend/policy' --noInteractive",
+    ]);
+    expect(plan.disposableExamplePath).toBeUndefined();
   });
 
   it('uses a portable quoted custom path in raw next steps', () => {

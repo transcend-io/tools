@@ -47,15 +47,24 @@ export interface PolicyInitPlanResult {
  * @returns Raw one-line prompt
  */
 export function buildPolicyInitAiHandoff(options: {
-  /** Display path to the disposable example. */
-  examplePath: string;
+  /** Display path to the policy project. */
+  projectPath: string;
+  /** Display path to an exact disposable example. */
+  examplePath?: string;
   /** Copyable lint command. */
   lintCommand: string;
 }): string {
+  if (!options.examplePath) {
+    return (
+      `Ask your coding agent to review the existing policy project in ${options.projectPath}, ` +
+      `align its document tree and input/output contract with the intended application, adapt ` +
+      `repository validation as needed, and rerun ${options.lintCommand}.`
+    );
+  }
   return (
     `Ask your coding agent to replace the disposable example in ${options.examplePath} with ` +
-    `the intended policy document tree and input/output contract, adapt the generated GitHub ` +
-    `Actions validation to repository conventions, and rerun ${options.lintCommand}.`
+    `the intended policy document tree and input/output contract, adapt repository validation ` +
+    `to local conventions, and rerun ${options.lintCommand}.`
   );
 }
 

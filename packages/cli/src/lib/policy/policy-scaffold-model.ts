@@ -51,6 +51,8 @@ export interface PolicyInitProjectPlan extends ProjectPlan {
   warnings: string[];
   /** Raw commands shown after a successful apply. */
   nextSteps: string[];
+  /** Exact generated example that remains safe to replace. */
+  disposableExamplePath?: string;
   /** Selected repository integrations. */
   features: PolicySetupFeature[];
 }

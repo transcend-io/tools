@@ -328,7 +328,7 @@ describe('policy init', () => {
       "transcend policy lint --dir 'policies/customer'\\''s policy' --noInteractive",
     );
     expect(result.aiHandoff).not.toContain('\n');
-    expect(result.aiHandoff).toContain('adapt the generated GitHub Actions validation');
+    expect(result.aiHandoff).toContain('adapt repository validation');
     expect(result.aiHandoff).toContain('rerun transcend policy lint');
   });
 
@@ -366,6 +366,10 @@ describe('policy init', () => {
         expect.stringContaining('no starter files were added or overwritten'),
       ]),
     );
+    expect(result.nextSteps).toEqual(["transcend policy lint --dir 'policy' --noInteractive"]);
+    expect(result.aiHandoff).toContain("review the existing policy project in 'policy'");
+    expect(result.aiHandoff).not.toContain('disposable example');
+    expect(result.aiHandoff).not.toContain('policy_engine/example/result.rego');
   });
 
   it('preserves customized editor, skill, and workflow artifacts on rerun', async () => {

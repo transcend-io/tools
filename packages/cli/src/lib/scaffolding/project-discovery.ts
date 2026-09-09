@@ -1,4 +1,4 @@
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 
 import type { LocalContext } from '../../context.js';
 import {
@@ -109,6 +109,18 @@ export function findExistingAncestor(context: LocalContext, target: string): str
   }
   const stat = context.fs.statSync(current);
   return stat.isDirectory() ? current : dirname(current);
+}
+
+/**
+ * Determine whether a path is lexically at or below a root.
+ *
+ * @param root - Candidate parent directory
+ * @param path - Candidate descendant
+ * @returns Whether the path is contained without resolving links
+ */
+function isPathContained(root: string, path: string): boolean {
+  const child = relative(root, path);
+  return child !== '..' && !child.startsWith(`..${sep}`) && !isAbsolute(child);
 }
 
 /**
@@ -231,6 +243,16 @@ export function repositoryUsesGithub(
       gitDirectory = resolve(repositoryRoot, marker);
     }
   }
+  const commonDirectoryPath = join(gitDirectory, 'commondir');
+  if (
+    context.fs.existsSync(commonDirectoryPath) &&
+    context.fs.statSync(commonDirectoryPath).isFile()
+  ) {
+    gitDirectory = resolve(
+      gitDirectory,
+      context.fs.readFileSync(commonDirectoryPath, 'utf8').trim(),
+    );
+  }
   const configPath = join(gitDirectory, 'config');
   return (
     context.fs.existsSync(configPath) &&
@@ -248,15 +270,28 @@ export function repositoryUsesGithub(
 export function discoverProjectRepository(
   context: LocalContext,
   options: {
+    /** Directory from which the CLI was invoked. */
+    invocationDirectory: string;
     /** Absolute project target used to locate a surrounding repository. */
     targetDirectory: string;
     /** Root to use when the target is not inside a repository. */
     standaloneProjectRoot: string;
   },
 ): ProjectRepositoryState {
-  const existingAncestor = findExistingAncestor(context, options.targetDirectory);
-  const repositoryRoot = findRepositoryRoot(context, existingAncestor);
-  const projectRoot = repositoryRoot ?? options.standaloneProjectRoot;
+  const invocationAncestor = findExistingAncestor(context, options.invocationDirectory);
+  const invocationRepositoryRoot = findRepositoryRoot(context, invocationAncestor);
+  const targetRepositoryRoot =
+    invocationRepositoryRoot && isPathContained(invocationRepositoryRoot, options.targetDirectory)
+      ? invocationRepositoryRoot
+      : findRepositoryRoot(context, findExistingAncestor(context, options.targetDirectory));
+  const shouldAnchorToStandaloneRoot =
+    options.standaloneProjectRoot !== options.targetDirectory &&
+    isPathContained(options.standaloneProjectRoot, options.targetDirectory);
+  const repositoryRoot = targetRepositoryRoot;
+  const projectRoot = shouldAnchorToStandaloneRoot
+    ? (invocationRepositoryRoot ?? options.standaloneProjectRoot)
+    : (repositoryRoot ?? options.standaloneProjectRoot);
+  assertPathPhysicallyContained(context, projectRoot, options.targetDirectory);
   return {
     projectRoot,
     ...(repositoryRoot ? { repositoryRoot } : {}),

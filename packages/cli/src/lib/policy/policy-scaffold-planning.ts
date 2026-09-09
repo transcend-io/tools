@@ -223,10 +223,7 @@ export function buildPolicyInitPlan(
     changes: [],
     unchanged: [],
     warnings: [],
-    nextSteps: [
-      lintCommand,
-      `Edit ${quoteShellArgument(displayProjectPath(state.invocationDirectory, resultPath))}`,
-    ],
+    nextSteps: [lintCommand],
     features: [...options.features],
   };
 
@@ -234,7 +231,15 @@ export function buildPolicyInitPlan(
   assertContained(state.projectRoot, state.targetDirectory);
   candidatePaths.forEach((path) => assertContained(state.projectRoot, path));
 
+  let hasDisposableExample = false;
   if (state.relativePaths.length === 0) {
+    hasDisposableExample = true;
+    plan.directoryPreconditions = [
+      {
+        path: state.targetDirectory,
+        relativePaths: [],
+      },
+    ];
     files.forEach((file) => {
       const path = join(state.targetDirectory, file.path);
       const snapshot = getPlanningPathSnapshot(input.snapshots, path);
@@ -268,6 +273,7 @@ export function buildPolicyInitPlan(
         );
       }
     });
+    hasDisposableExample = allStarterFilesMatch;
 
     const allowedPaths = starterRelativePaths(files);
     const hasCustomPaths = state.relativePaths.some((path) => !allowedPaths.has(path));
@@ -280,6 +286,12 @@ export function buildPolicyInitPlan(
           )} manually, then run \`${lintCommand}\`.`,
       );
     }
+  }
+  if (hasDisposableExample) {
+    plan.disposableExamplePath = resultPath;
+    plan.nextSteps.push(
+      `Edit ${quoteShellArgument(displayProjectPath(state.invocationDirectory, resultPath))}`,
+    );
   }
 
   const selected = new Set(options.features);

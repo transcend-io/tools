@@ -80,6 +80,7 @@ export function discoverCustomFunctionProject(
     options,
   );
   const repository = discoverProjectRepository(context, {
+    invocationDirectory: cwd,
     targetDirectory,
     standaloneProjectRoot:
       targetDirectory === resolve(cwd, DEFAULT_CUSTOM_FUNCTION_DIRECTORY) ? cwd : targetDirectory,

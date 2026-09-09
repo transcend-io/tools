@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -52,5 +52,22 @@ describe('discoverPolicyProject', () => {
     expect(state.targetDirectory).toBe(target);
     expect(state.projectRoot).toBe(root);
     expect(state.repositoryRoot).toBeUndefined();
+  });
+
+  it('rejects a default target symlink that escapes its repository', () => {
+    // Why: repository setup must remain anchored to the repository where init ran.
+    // Given: the default target is a link to another repository.
+    // When: project discovery resolves repository ownership.
+    // Then: discovery rejects the physical escape before planning any writes.
+    const root = makeTemporaryRoot();
+    const outside = makeTemporaryRoot();
+    mkdirSync(join(root, '.git'));
+    mkdirSync(join(root, 'transcend'));
+    mkdirSync(join(outside, '.git'));
+    symlinkSync(outside, join(root, 'transcend', 'policy'), 'dir');
+
+    expect(() =>
+      discoverPolicyProject(buildContextForTest({ cwd: root }), DEFAULT_POLICY_PROJECT_DIRECTORY),
+    ).toThrow('outside project root through a symlink');
   });
 });

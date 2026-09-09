@@ -1,5 +1,3 @@
-import { join } from 'node:path';
-
 import colors from 'colors';
 
 import { version as CLI_VERSION } from '../../../constants.js';
@@ -273,14 +271,17 @@ export async function init(
       await applyProjectPlan(this, plan);
     }
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
-    const displayedExamplePath = quoteShellArgument(
-      displayProjectPath(
-        this.process.cwd(),
-        join(state.targetDirectory, 'policy_engine', 'example', 'result.rego'),
-      ),
-    );
     const aiHandoff = buildPolicyInitAiHandoff({
-      examplePath: displayedExamplePath,
+      projectPath: quoteShellArgument(
+        displayProjectPath(this.process.cwd(), state.targetDirectory),
+      ),
+      ...(plan.disposableExamplePath
+        ? {
+            examplePath: quoteShellArgument(
+              displayProjectPath(this.process.cwd(), plan.disposableExamplePath),
+            ),
+          }
+        : {}),
       lintCommand: plan.nextSteps[0]!,
     });
     const result = buildPolicyInitPlanResult(plan, {

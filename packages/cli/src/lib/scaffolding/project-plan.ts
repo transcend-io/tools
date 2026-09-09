@@ -81,10 +81,20 @@ export interface PlannedLinkChange {
 /** One staged project mutation. */
 export type PlannedChange = PlannedFileChange | PlannedLinkChange;
 
+/** Directory contents that must still match their planning snapshot. */
+export interface PlannedDirectoryPrecondition {
+  /** Directory inspected during planning. */
+  path: string;
+  /** Sorted relative entries expected immediately before apply. */
+  relativePaths: string[];
+}
+
 /** Minimal plan consumed by the transactional filesystem applicator. */
 export interface ProjectPlan {
   /** Approved physical root for every planned mutation. */
   rootDirectory: string;
+  /** Directory-wide state that must still match the preview. */
+  directoryPreconditions?: PlannedDirectoryPrecondition[];
   /** Ordered staged mutations. */
   changes: PlannedChange[];
 }
