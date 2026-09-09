@@ -1,32 +1,17 @@
-import { readFileSync } from 'node:fs';
-
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import { readSafe } from '../readSafe.js';
 
-/**
- * Mock fs BEFORE importing the SUT.
- * Use a factory so the mock is hoist-safe under Vitest.
- */
-vi.mock('node:fs', () => ({
-  readFileSync: vi.fn(),
-}));
-
 describe('readSafe', () => {
-  const mRead = vi.mocked(readFileSync);
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   /**
    * When path is undefined, it should return an empty string
    * and not call fs at all.
    */
   it('returns empty string when path is undefined', () => {
-    const out = readSafe(undefined);
+    const readFile = vi.fn();
+    const out = readSafe(undefined, readFile);
     expect(out).toBe('');
-    expect(mRead).not.toHaveBeenCalled();
+    expect(readFile).not.toHaveBeenCalled();
   });
 
   /**
@@ -34,11 +19,11 @@ describe('readSafe', () => {
    * and calls fs.readFileSync with 'utf8' encoding.
    */
   it('reads and returns file contents with utf8', () => {
-    mRead.mockReturnValue('hello world');
-    const out = readSafe('/tmp/test.txt');
+    const readFile = vi.fn().mockReturnValue('hello world');
+    const out = readSafe('/tmp/test.txt', readFile);
     expect(out).toBe('hello world');
-    expect(mRead).toHaveBeenCalledTimes(1);
-    expect(mRead).toHaveBeenCalledWith('/tmp/test.txt', 'utf8');
+    expect(readFile).toHaveBeenCalledTimes(1);
+    expect(readFile).toHaveBeenCalledWith('/tmp/test.txt', 'utf8');
   });
 
   /**
@@ -46,12 +31,12 @@ describe('readSafe', () => {
    * and return an empty string.
    */
   it('returns empty string when readFileSync throws', () => {
-    mRead.mockImplementation(() => {
+    const readFile = vi.fn(() => {
       throw new Error('boom');
     });
-    const out = readSafe('/tmp/missing.txt');
+    const out = readSafe('/tmp/missing.txt', readFile);
     expect(out).toBe('');
-    expect(mRead).toHaveBeenCalledTimes(1);
+    expect(readFile).toHaveBeenCalledTimes(1);
   });
 
   /**
@@ -59,8 +44,9 @@ describe('readSafe', () => {
    * without calling fs.
    */
   it('returns empty string when path is an empty string', () => {
-    const out = readSafe('');
+    const readFile = vi.fn();
+    const out = readSafe('', readFile);
     expect(out).toBe('');
-    expect(mRead).not.toHaveBeenCalled();
+    expect(readFile).not.toHaveBeenCalled();
   });
 });

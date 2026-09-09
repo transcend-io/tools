@@ -12,10 +12,10 @@ TypeScript types and JSON Schemas for building Transcend Custom Functions:
 npm install --save-dev @transcend-io/custom-function-types
 ```
 
-For a Deno-only project, pin the npm package in the type-only import:
+For a Deno-only project:
 
 ```ts
-import type { CustomFunction } from 'npm:@transcend-io/custom-function-types@0.1.0';
+import type { CustomFunction } from 'npm:@transcend-io/custom-function-types';
 ```
 
 ## Type a Custom Function
@@ -54,6 +54,23 @@ const schema = getCustomFunctionPayloadSchema(CustomFunctionSchemaType.DsrDataPo
 
 The generated draft-07 JSON Schemas are also available from the package's
 `./schemas/*` exports.
+
+DSR test payload contracts describe raw test files before `push` prepares the
+runtime payload. Both DSR schemas therefore allow `extras.dataSilo` to be
+omitted when `push` will inject the resolved integration.
+
+## Pin generated imports
+
+Generators can use the runtime version export to create exact npm specifiers
+without duplicating this package's version:
+
+```ts
+import { CUSTOM_FUNCTION_TYPES_VERSION } from '@transcend-io/custom-function-types';
+
+const specifier = `npm:@transcend-io/custom-function-types@${CUSTOM_FUNCTION_TYPES_VERSION}`;
+```
+
+`CUSTOM_FUNCTION_TYPES_VERSION` is sourced from this package's own manifest.
 
 ## Compatibility and versioning
 

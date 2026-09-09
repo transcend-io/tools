@@ -6,6 +6,7 @@ describe('Assessment Tools', () => {
   let mockGraphql: {
     listAssessments: ReturnType<typeof vi.fn>;
     listAssessmentGroups: ReturnType<typeof vi.fn>;
+    listAssessmentTemplates: ReturnType<typeof vi.fn>;
     createAssessment: ReturnType<typeof vi.fn>;
     getAssessment: ReturnType<typeof vi.fn>;
     getAssessmentSkeleton: ReturnType<typeof vi.fn>;
@@ -25,6 +26,7 @@ describe('Assessment Tools', () => {
     mockGraphql = {
       listAssessments: vi.fn(),
       listAssessmentGroups: vi.fn(),
+      listAssessmentTemplates: vi.fn(),
       createAssessment: vi.fn(),
       getAssessment: vi.fn(),
       getAssessmentSkeleton: vi.fn(),
@@ -680,51 +682,428 @@ describe('Assessment Tools', () => {
   });
 
   describe('assessments_list', () => {
-    it('zodSchema rejects invalid status', () => {
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_list')!;
+    const listTool = () => getTools().find((t) => t.name === 'assessments_list')!;
 
-      const result = tool.zodSchema.safeParse({ status: 'INVALID_STATUS' });
+    /** Parse through the schema so defaults land the way the server applies them. */
+    const call = async (input: Record<string, unknown>) => {
+      const tool = listTool();
+      const parsed = tool.zodSchema.parse(input);
+      return tool.handler(parsed as never);
+    };
+
+    const resolveList = (nodes: unknown[], totalCount = nodes.length, offset = 0) => {
+      mockGraphql.listAssessments.mockResolvedValue({
+        nodes,
+        totalCount,
+        pageInfo: {
+          hasNextPage: offset + nodes.length < totalCount,
+          hasPreviousPage: offset > 0,
+        },
+      });
+    };
+
+    const NODES = [
+      { id: 'a1', title: 'Assessment 1', status: 'DRAFT' },
+      { id: 'a2', title: 'Assessment 2', status: 'IN_PROGRESS' },
+    ];
+
+    it('rejects a status value outside the AssessmentFormStatus enum', () => {
+      const result = listTool().zodSchema.safeParse({ statuses: ['INVALID_STATUS'] });
       expect(result.success).toBe(false);
-      expect((result as any).error.issues[0].path).toEqual(['status']);
+      expect((result as any).error.issues[0].path).toEqual(['statuses', 0]);
     });
 
-    it('returns assessments on success', async () => {
-      const mockNodes = [
-        { id: 'a1', title: 'Assessment 1', status: 'DRAFT' },
-        { id: 'a2', title: 'Assessment 2', status: 'IN_PROGRESS' },
-      ];
-      mockGraphql.listAssessments.mockResolvedValue({
-        nodes: mockNodes,
-        totalCount: 2,
-        pageInfo: { hasNextPage: false },
-      });
+    it('no longer declares the singular status argument', () => {
+      // Replaced by `statuses`. The server refuses unknown arguments (see
+      // strict-arguments in mcp-server-base), so dropping it from the shape is
+      // what turns the old name into an error rather than a silent no-op.
+      const { shape } = listTool().zodSchema as unknown as { shape: Record<string, unknown> };
+      expect(shape).not.toHaveProperty('status');
+      expect(shape).toHaveProperty('statuses');
+    });
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_list')!;
+    it('returns assessments with dashboard links on success', async () => {
+      resolveList(NODES);
 
-      const result = await tool.handler({ status: 'DRAFT', limit: 25 });
+      const result = await call({ statuses: ['DRAFT'], limit: 25 });
 
       expect(result).toMatchObject({
         success: true,
-        data: mockNodes,
         count: 2,
         totalCount: 2,
         hasNextPage: false,
       });
-      expect(mockGraphql.listAssessments).toHaveBeenCalledWith({
-        first: 25,
-        filterBy: { statuses: ['DRAFT'] },
+      expect((result as any).data[0]).toMatchObject({
+        id: 'a1',
+        url: expect.stringContaining('a1'),
       });
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          first: 25,
+          offset: 0,
+          includeDetails: false,
+          filterBy: { statuses: ['DRAFT'] },
+        }),
+      );
+    });
+
+    it('forwards every filter to the API rather than filtering client-side', async () => {
+      resolveList(NODES);
+
+      await call({
+        statuses: ['IN_REVIEW'],
+        text: 'rideshare',
+        ids: ['a1'],
+        assigneeIds: ['u1'],
+        reviewerIds: ['u2'],
+        externalAssigneeEmails: ['vendor@example.com'],
+        assessmentGroupIds: ['g1'],
+        createdAfter: '2026-01-01',
+        createdBefore: '2026-04-01',
+        dueAfter: '2026-02-01',
+        dueBefore: '2026-03-01',
+      });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({
+          filterBy: {
+            statuses: ['IN_REVIEW'],
+            text: 'rideshare',
+            ids: ['a1'],
+            assigneeIds: ['u1'],
+            reviewerIds: ['u2'],
+            externalAssigneeEmails: ['vendor@example.com'],
+            assessmentGroupIds: ['g1'],
+            createdAtAfter: '2026-01-01',
+            createdAtBefore: '2026-04-01',
+            dueDateAfter: '2026-02-01',
+            dueDateBefore: '2026-03-01',
+          },
+        }),
+      );
+    });
+
+    it('rejects a date that is not ISO 8601 and names the field', () => {
+      const result = listTool().zodSchema.safeParse({ dueBefore: 'last friday' });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].message).toContain('dueBefore');
+      expect((result as any).error.issues[0].message).toContain('2026-01-31');
+    });
+
+    it('accepts a full timestamp as well as a bare date', () => {
+      expect(listTool().zodSchema.safeParse({ createdAfter: '2026-01-31T09:30:00Z' }).success).toBe(
+        true,
+      );
+    });
+
+    it('maps caller sort names onto the GraphQL order field', async () => {
+      resolveList(NODES);
+
+      await call({ sortBy: 'status', sortDirection: 'DESC' });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({ sortField: 'statusRank', sortDirection: 'DESC' }),
+      );
+    });
+
+    it('omits sorting entirely when sortBy is not given', async () => {
+      resolveList(NODES);
+
+      await call({});
+
+      const [args] = mockGraphql.listAssessments.mock.calls[0];
+      expect(args).not.toHaveProperty('sortField');
+    });
+
+    it('rejects an unknown sortBy and lists the valid columns', () => {
+      const result = listTool().zodSchema.safeParse({ sortBy: 'dueDate' });
+      expect(result.success).toBe(false);
+      expect((result as any).error.issues[0].message).toContain('title, status, submittedAt');
+    });
+
+    it('gates the expensive detail fields behind includeDetails', async () => {
+      resolveList(NODES);
+
+      await call({ includeDetails: true });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({ includeDetails: true }),
+      );
+    });
+
+    it('pages with offset and reports that more remain', async () => {
+      resolveList(NODES, 120, 50);
+
+      const result = await call({ limit: 50, offset: 50 });
+
+      expect(mockGraphql.listAssessments).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 50, offset: 50 }),
+      );
+      expect(result).toMatchObject({ hasNextPage: true, totalCount: 120 });
+      expect((result as any).paginationNote).toContain('offset 100');
+    });
+
+    it('says so plainly on the last page', async () => {
+      resolveList(NODES, 52, 50);
+
+      const result = await call({ limit: 50, offset: 50 });
+
+      expect((result as any).paginationNote).toContain('No further pages');
+      expect((result as any).paginationNote).toContain('the last');
+    });
+
+    it('does not call a single page of results "the last" one', async () => {
+      resolveList(NODES.slice(0, 2), 2, 0);
+
+      const result = await call({ limit: 50, offset: 0 });
+
+      // "the last 2 of 2" implies a page came before this one.
+      expect((result as any).paginationNote).toBe('Showing all 2 matches. No further pages.');
+    });
+
+    it('does not say "1 matches"', async () => {
+      resolveList(NODES.slice(0, 1), 1, 0);
+
+      const result = await call({ limit: 50, offset: 0 });
+
+      expect((result as any).paginationNote).toBe('Showing all 1 match. No further pages.');
+    });
+
+    it('distinguishes no matches from a broken query and names the filters', async () => {
+      resolveList([], 0);
+
+      const result = await call({ statuses: ['APPROVED'], text: 'nope' });
+
+      expect(result).toMatchObject({ success: true, count: 0 });
+      const note = (result as any).paginationNote;
+      expect(note).toContain('statuses');
+      expect(note).toContain('text');
+      expect(note).toContain('query succeeded');
+    });
+
+    it('reports an empty organization differently from an over-filtered one', async () => {
+      resolveList([], 0);
+
+      const result = await call({});
+
+      expect((result as any).paginationNote).toContain('no assessments');
+    });
+
+    it('rejects an empty filter list instead of reading it as no filter', () => {
+      // An empty array is dropped during filter assembly, so a caller that
+      // resolved a lookup to nothing and passed the result through would get
+      // back every assessment in the organization.
+      const result = listTool().zodSchema.safeParse({ assessmentGroupIds: [] });
+
+      expect(result.success).toBe(false);
+      expect(JSON.stringify(result)).toContain('omit the filter entirely');
+    });
+
+    it('rejects an empty status list too', () => {
+      expect(listTool().zodSchema.safeParse({ statuses: [] }).success).toBe(false);
+    });
+
+    it('has no template filter, since a form reaches its template only through its group', () => {
+      const { shape } = listTool().zodSchema as unknown as { shape: Record<string, unknown> };
+
+      expect(shape).not.toHaveProperty('templateIds');
+      expect(shape).toHaveProperty('assessmentGroupIds');
+    });
+
+    it('names filters as the caller passed them, not as the API spells them', async () => {
+      resolveList([], 0);
+
+      const result = await call({ dueAfter: '2026-02-01', createdBefore: '2026-04-01' });
+
+      // dueDateAfter is the API's name; an agent told that would go looking for
+      // an argument this tool does not have.
+      const note = (result as any).paginationNote;
+      expect(note).toContain('dueAfter');
+      expect(note).toContain('createdBefore');
+      expect(note).not.toContain('dueDateAfter');
+      expect(note).not.toContain('createdAtBefore');
+    });
+
+    it('rejects an offset past the end instead of implying nothing matched', async () => {
+      resolveList([], 12, 500);
+
+      await expect(call({ offset: 500 })).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+        message: expect.stringContaining('past the end'),
+        details: { offset: 500, totalCount: 12 },
+      });
+    });
+
+    it('allows offset 0 against an empty result set', async () => {
+      resolveList([], 0);
+
+      await expect(call({ offset: 0 })).resolves.toMatchObject({ count: 0 });
     });
 
     it('throws when client throws', async () => {
       mockGraphql.listAssessments.mockRejectedValue(new Error('API unavailable'));
 
-      const tools = getTools();
-      const tool = tools.find((t) => t.name === 'assessments_list')!;
+      await expect(call({ limit: 50 })).rejects.toThrow('API unavailable');
+    });
 
-      await expect(tool.handler({ limit: 50 })).rejects.toThrow('API unavailable');
+    it('describes the date bounds as the API actually applies them', () => {
+      // Verified against a live index: a row whose timestamp equals the bound
+      // is excluded by `After` and included by `Before`. The asymmetry is the
+      // API's, so the copy has to carry it rather than round it off.
+      const { shape } = listTool().zodSchema as unknown as {
+        shape: Record<string, { description?: string }>;
+      };
+
+      expect(shape.createdAfter.description).toContain('strictly after');
+      expect(shape.dueAfter.description).toContain('strictly after');
+      expect(shape.createdBefore.description).toContain('on or before');
+      expect(shape.dueBefore.description).toContain('on or before');
+    });
+  });
+
+  describe('assessments_list_templates', () => {
+    const templatesTool = () => getTools().find((t) => t.name === 'assessments_list_templates')!;
+
+    it('narrows by title instead of scanning pages', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-7', title: 'Vendor Onboarding' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      await tool.handler(
+        tool.zodSchema.parse({ text: 'Vendor Onboarding', statuses: ['PUBLISHED'] }) as never,
+      );
+
+      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          filterBy: { text: 'Vendor Onboarding', statuses: ['PUBLISHED'] },
+        }),
+      );
+    });
+
+    it('pages with offset', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-9', title: 'Template 9' }],
+        totalCount: 200,
+        pageInfo: { hasNextPage: true },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ limit: 50, offset: 100 }) as never,
+      )) as { hasNextPage: boolean; totalCount: number };
+
+      expect(mockGraphql.listAssessmentTemplates).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 50, offset: 100 }),
+      );
+      expect(result).toMatchObject({ hasNextPage: true, totalCount: 200 });
+    });
+
+    it('rejects a status outside DRAFT and PUBLISHED', () => {
+      const result = templatesTool().zodSchema.safeParse({ statuses: ['ARCHIVED'] });
+      expect(result.success).toBe(false);
+    });
+
+    it('rejects an offset past the end', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 13,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+
+      await expect(
+        tool.handler(tool.zodSchema.parse({ offset: 500 }) as never),
+      ).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+        message: expect.stringContaining('past the end'),
+        details: { offset: 500, totalCount: 13 },
+      });
+    });
+
+    it('passes template metadata through without inventing values', async () => {
+      // This mapper used to stamp every row with version 1.0.0, isActive true
+      // and createdAt = now, which reported every template as created today.
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [
+          {
+            id: 'tpl-7',
+            title: 'Vendor Onboarding',
+            status: 'PUBLISHED',
+            isArchived: false,
+            createdAt: '2024-03-01T00:00:00.000Z',
+          },
+        ],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        data: Array<Record<string, unknown>>;
+      };
+
+      expect(result.data[0]).toMatchObject({
+        status: 'PUBLISHED',
+        createdAt: '2024-03-01T00:00:00.000Z',
+      });
+      expect(result.data[0]).not.toHaveProperty('version');
+      expect(result.data[0]).not.toHaveProperty('isActive');
+    });
+
+    it('says a filter matched nothing rather than returning a bare empty page', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ text: 'Nothing By This Name' }) as never,
+      )) as { paginationNote?: string };
+
+      // An empty array alone reads exactly like a failed lookup, and a probe
+      // agent spent a second unfiltered call before it would trust the zero.
+      expect(result.paginationNote).toContain('text');
+      expect(result.paginationNote).toContain('query succeeded');
+    });
+
+    it('distinguishes an empty organization from an over-narrow filter', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        paginationNote?: string;
+      };
+
+      expect(result.paginationNote).toContain('no templates');
+    });
+
+    it('carries how the template was made without a filter for it', async () => {
+      mockGraphql.listAssessmentTemplates.mockResolvedValue({
+        nodes: [{ id: 'tpl-7', title: 'Vendor Onboarding', source: 'IMPORT' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = templatesTool();
+      const result = (await tool.handler(tool.zodSchema.parse({}) as never)) as {
+        data: Array<Record<string, unknown>>;
+      };
+
+      // Row fields cost nothing in the tools/list budget, so `source` rides
+      // along; a filter for it would have cost roughly 280 characters to save
+      // an in-model match over a list that is tens of rows long.
+      expect(result.data[0]).toMatchObject({ source: 'IMPORT' });
     });
   });
 
@@ -1268,6 +1647,114 @@ describe('Assessment Tools', () => {
       expect(result.success).toBe(true);
       expect(result.data[0]!.groupUrl).toBe('https://app.transcend.io/assessments/groups/grp-1');
       expect(result.data[1]!.groupUrl).toBe('https://app.transcend.io/assessments/groups/grp-2');
+    });
+
+    it('assessments_list_groups narrows by title instead of scanning pages', async () => {
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [{ id: 'grp-1', title: 'Vendor Onboarding' }],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      await tool.handler(
+        tool.zodSchema.parse({ text: 'Vendor Onboarding', templateIds: ['tpl-1'] }) as never,
+      );
+
+      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith(
+        expect.objectContaining({
+          offset: 0,
+          filterBy: { text: 'Vendor Onboarding', templateIds: ['tpl-1'] },
+        }),
+      );
+    });
+
+    it('assessments_list_groups pages with offset', async () => {
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [{ id: 'grp-3', title: 'Group 3' }],
+        totalCount: 120,
+        pageInfo: { hasNextPage: true },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ limit: 50, offset: 50 }) as never,
+      )) as { hasNextPage: boolean; totalCount: number };
+
+      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith(
+        expect.objectContaining({ first: 50, offset: 50 }),
+      );
+      expect(result).toMatchObject({ hasNextPage: true, totalCount: 120 });
+    });
+
+    it('assessments_list_groups resolves a form to its template via assessmentGroupId', async () => {
+      // The documented bridge to assessments_export_template: AssessmentFormRaw
+      // reaches its group but not its template, so the group row carries it.
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [
+          {
+            id: 'grp-1',
+            title: 'Vendor Onboarding',
+            assessmentFormTemplate: { id: 'tpl-7', title: 'Vendor Onboarding' },
+          },
+        ],
+        totalCount: 1,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const result = (await tool.handler(tool.zodSchema.parse({ ids: ['grp-1'] }) as never)) as {
+        data: Array<Record<string, any>>;
+      };
+
+      expect(mockGraphql.listAssessmentGroups).toHaveBeenCalledWith(
+        expect.objectContaining({ filterBy: { ids: ['grp-1'] } }),
+      );
+      expect(result.data[0]!.assessmentFormTemplate.id).toBe('tpl-7');
+    });
+
+    it('assessments_list_groups says a filter matched nothing', async () => {
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [],
+        totalCount: 0,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const result = (await tool.handler(
+        tool.zodSchema.parse({ text: 'Nothing By This Name' }) as never,
+      )) as { paginationNote?: string };
+
+      expect(result.paginationNote).toContain('text');
+      expect(result.paginationNote).toContain('query succeeded');
+    });
+
+    it('assessments_list_groups no longer accepts a cursor', () => {
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+      const { shape } = tool.zodSchema as unknown as { shape: Record<string, unknown> };
+      expect(shape).not.toHaveProperty('cursor');
+      expect(shape).toHaveProperty('offset');
+    });
+
+    it('assessments_list_groups rejects an offset past the end', async () => {
+      // Overshooting a catalog of thirteen returns an empty page whose
+      // totalCount is still thirteen, so it carries no empty-result note
+      // either — a bare empty array that reads as "nothing exists".
+      mockGraphql.listAssessmentGroups.mockResolvedValue({
+        nodes: [],
+        totalCount: 13,
+        pageInfo: { hasNextPage: false },
+      });
+
+      const tool = getTools().find((t) => t.name === 'assessments_list_groups')!;
+
+      await expect(
+        tool.handler(tool.zodSchema.parse({ offset: 500 }) as never),
+      ).rejects.toMatchObject({
+        code: 'VALIDATION_ERROR',
+        message: expect.stringContaining('past the end'),
+        details: { offset: 500, totalCount: 13 },
+      });
     });
 
     it('honors a caller-supplied dashboard URL on the ToolClients', async () => {
