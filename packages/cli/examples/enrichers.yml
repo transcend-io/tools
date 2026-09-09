@@ -47,7 +47,7 @@ identifiers:
     type: coreIdentifier
     regex: ^.*$
     isRequiredInForm: false
-enrichers:
+preflights:
   - title: Transcend Email Verification
     type: email
     input-identifier: email

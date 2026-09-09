@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { decodeCodec, ObjByString } from '@transcend-io/type-utils';
 import yaml from 'js-yaml';
 
-import { TranscendInput } from '../codecs.js';
+import { normalizeTranscendInput, TranscendInput } from '../codecs.js';
 
 export const VARIABLE_PARAMETERS_REGEXP = /<<parameters\.(.+?)>>/;
 export const VARIABLE_PARAMETERS_NAME = 'parameters';
@@ -62,7 +62,7 @@ export function parseTranscendYaml(
       : '',
   );
 
-  return decodeCodec(TranscendInput, yaml.load(replacedVariables));
+  return normalizeTranscendInput(decodeCodec(TranscendInput, yaml.load(replacedVariables)));
 }
 
 /**
@@ -72,7 +72,7 @@ export function parseTranscendYaml(
  * @returns YAML contents.
  */
 export function serializeTranscendYaml(input: TranscendInput): string {
-  return yaml.dump(decodeCodec(TranscendInput, input));
+  return yaml.dump(decodeCodec(TranscendInput, normalizeTranscendInput(input)));
 }
 
 /**

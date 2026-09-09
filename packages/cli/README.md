@@ -131,13 +131,13 @@ api-keys:
 
 # Manage at: https://app.transcend.io/privacy-requests/identifiers
 # See https://docs.transcend.io/docs/identity-enrichment
-# Define enricher or pre-flight check webhooks that will be executed
+# Define preflight check webhooks that will be executed
 # prior to privacy request workflows. Some examples may include:
 #   - identity enrichment: look up additional identifiers for that user.
 #                          i.e. map an email address to a user ID
 #   - fraud check: auto-cancel requests if the user is flagged for fraudulent behavior
 #   - customer check: auto-cancel request for some custom business criteria
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     url: https://example.acme.com/transcend-enrichment-webhook
@@ -2545,12 +2545,12 @@ USAGE
   transcend custom-functions new [--manifest value] [--name value] [--template general|dsr-datapoint|dsr-enricher|dsr-both] [--noInteractive] [--dryRun] [--yes] [--json] [<directory>]
   transcend custom-functions new --help
 
-Adds a deterministic General or DSR starter to an initialized Custom Function project and safely appends its manifest entry without credentials.
+Adds a deterministic starter for one of two Custom Function types: General functions triggered by Rules Automation, or DSR functions supporting data point resolvers, preflight checks, or both.
 
 FLAGS
      [--manifest]       Path to an existing transcend-functions.yml
      [--name]           Customer-visible Custom Function display name
-     [--template]       Generated handler and fixture shape                        [general|dsr-datapoint|dsr-enricher|dsr-both]
+     [--template]       Function type and generated handler shape                  [general|dsr-datapoint|dsr-enricher|dsr-both]
      [--noInteractive]  Disable prompts and require every missing answer as a flag [default = false]
      [--dryRun]         Preview all changes without writing files                  [default = false]
      [--yes]            Skip only the final plan confirmation                      [default = false]
@@ -2571,7 +2571,7 @@ transcend custom-functions new ./transcend/custom-functions \
   --yes
 ```
 
-Run `transcend custom-functions init` once before adding functions. The four templates are `general`, `dsr-datapoint`, `dsr-enricher`, and `dsr-both`. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
+Run `transcend custom-functions init` once before adding functions. There are two Custom Function types: General functions, which are triggered by Rules Automation, and DSR functions. Choose `general` for a General function. For a DSR function, choose `dsr-datapoint` for a data point resolver, `dsr-enricher` for a preflight check, or `dsr-both` to support both. The `dsr-enricher` flag retains the API's technical export name, but the user-facing workflow is called preflight. Without a directory argument, `new` uses the initialized project at `transcend/custom-functions`. If that manifest is missing, it reports any other project manifest it discovers as an explicit suggestion.
 
 Generated code contains only the selected handler exports and focused TODOs. Customer-specific API and mapping choices remain for the developer or the installed `transcend-custom-functions` skill. The final output includes a short, copyable AI handoff naming the generated source and validation command.
 
@@ -2901,7 +2901,7 @@ The API key permissions for this command vary based on the `resources` argument:
 | `customFields`              | `attributes`                  | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                                               | View Global Attributes                                           | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
 | `templates`                 | `templates`                   | Email templates. Only template titles can be created and mapped to other resources.                                                                                                      | View Email Templates                                             | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
 | `dataSilos`                 | `data-silos`                  | The Data System (formerly "Data Silo") definitions.                                                                                                                                      | View Data Map, View Data Subject Request Settings, View API Keys | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
-| `enrichers`                 | `enrichers`                   | The Privacy Request enricher configurations.                                                                                                                                             | View Identity Verification Settings                              | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `enrichers`                 | `preflights`                  | The Privacy Request preflight check configurations (formerly "enrichers").                                                                                                               | View Identity Verification Settings                              | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
 | `dataFlows`                 | `data-flows`                  | Consent Manager Data Flow definitions.                                                                                                                                                   | View Data Flows                                                  | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
 | `businessEntities`          | `business-entities`           | The business entities in the Data Inventory.                                                                                                                                             | View Data Inventory                                              | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
 | `processingActivities`      | `processing-activities`       | The processing activities in the Data Inventory.                                                                                                                                         | View Data Inventory                                              | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
@@ -3005,7 +3005,7 @@ transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=businessEntitie
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=processingActivities
 ```
 
-**Pull enrichers and identifiers (see [this example](./examples/enrichers.yml))**
+**Pull preflight checks and identifiers (see [this example](./examples/enrichers.yml))**
 
 ```sh
 transcend inventory pull --auth="$TRANSCEND_API_KEY" --resources=enrichers,identifiers
@@ -3110,7 +3110,7 @@ The API key permissions for this command vary based on the resources declared as
 | `customFields`              | `attributes`                  | Custom Field definitions that define extra metadata for each table in the Admin Dashboard.                                                                                               | Manage Global Attributes                                                                                                    | [Custom Fields](https://app.transcend.io/infrastructure/attributes)                                                                                                                                                                                    |
 | `templates`                 | `templates`                   | Email templates. Only template titles can be created and mapped to other resources.                                                                                                      | Manage Email Templates                                                                                                      | [DSR Automation -> Email Settings -> Templates](https://app.transcend.io/privacy-requests/email-settings/templates)                                                                                                                                    |
 | `dataSilos`                 | `data-silos`                  | The Data System (formerly "Data Silo") definitions.                                                                                                                                      | Manage Data Map, Connect Data Silos, View API Keys                                                                          | [Data Inventory -> Data Systems](https://app.transcend.io/data-map/data-inventory/data-silos)<br>[Infrastructure -> Integrations](https://app.transcend.io/infrastructure/integrations)                                                                |
-| `enrichers`                 | `enrichers`                   | The Privacy Request enricher configurations.                                                                                                                                             | Manage Request Identity Verification                                                                                        | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
+| `enrichers`                 | `preflights`                  | The Privacy Request preflight check configurations (formerly "enrichers").                                                                                                               | Manage Request Identity Verification                                                                                        | [DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)                                                                                                                                                                 |
 | `dataFlows`                 | `data-flows`                  | Consent Manager Data Flow definitions.                                                                                                                                                   | Manage Data Flows                                                                                                           | [Consent Management -> Data Flows](https://app.transcend.io/consent-manager/data-flows/approved)                                                                                                                                                       |
 | `businessEntities`          | `business-entities`           | The business entities in the Data Inventory.                                                                                                                                             | Manage Data Inventory                                                                                                       | [Data Inventory -> Business Entities](https://app.transcend.io/data-map/data-inventory/business-entities)                                                                                                                                              |
 | `processingActivities`      | `processing-activities`       | The processing activities in the Data Inventory.                                                                                                                                         | Manage Data Map                                                                                                             | [Data Inventory -> Processing Activities](https://app.transcend.io/data-map/data-inventory/processing-activities)                                                                                                                                      |
@@ -3307,7 +3307,7 @@ This command can fill out multiple variables in a YAML file like [./examples/mul
 ```yml
 api-keys:
   - title: Webhook Key
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     # The data silo webhook URL is the same in each environment,
