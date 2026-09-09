@@ -25,6 +25,16 @@ missed. A caller following the documented path got zero answers applied on a for
 been created and assigned. The identifier is unchanged from template to form, so keying by it now
 works as described — and it is the stable choice, since titles break when a template is reworded.
 
+A multi-select where only some values match an option keeps both halves. Matched options were
+written on their own and the remaining values dropped, while the question still reported as
+answered — so asking for `["Usage data", "Location data"]` against a list without the latter
+silently stored one of the two. Matches and custom values are now sent together.
+
+The `answers` description no longer says select values "must match the option text exactly", which
+was never what the code did: an unmatched value is recorded as a custom answer. Callers believed
+the stricter wording and left real content out rather than risk it being dropped. It now also
+points at `referenceId` as the key to prefer, since titles break when a template is reworded.
+
 That re-read distinguishes an answer that failed from a question nobody answered. Answer keys are
 matched against the form, so a key naming no question was never visited and its answer vanished
 with an empty `errors` array to explain it — one dropped `?` in a question title silently cost an

@@ -916,6 +916,49 @@ describe('Assessment Tools', () => {
       expect(mockGraphql.submitAssessmentForReview).not.toHaveBeenCalled();
     });
 
+    it('keeps both halves of a multi-select where only some values match an option', async () => {
+      // Writing just the matched ids dropped the rest and still reported the
+      // question answered, so a value the option list did not cover vanished.
+      const form = {
+        id: 'assess-mixed',
+        title: 'Mixed Assessment',
+        status: 'SHARED',
+        sections: [
+          {
+            id: 'sec-1',
+            questions: [
+              {
+                id: 'q1',
+                title: 'Which categories?',
+                referenceId: 'ref-1',
+                type: 'MULTI_SELECT',
+                answerOptions: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+                selectedAnswers: [{ id: 'opt-1', index: 0, value: 'Usage data' }],
+              },
+            ],
+          },
+        ],
+      };
+      mockGraphql.createAssessment.mockResolvedValue(form);
+      mockGraphql.updateAssessmentFormAssignees.mockResolvedValue(form);
+      mockGraphql.getAssessment.mockResolvedValue(form);
+      mockGraphql.selectAssessmentQuestionAnswers.mockResolvedValue({});
+
+      const tool = getTools().find((t) => t.name === 'assessments_prefill')!;
+      await tool.handler({
+        title: 'Mixed Assessment',
+        assessmentGroupId: 'grp-1',
+        assigneeIds: ['user-1'],
+        answers: { 'ref-1': ['Usage data', 'Location data'] },
+      } as never);
+
+      expect(mockGraphql.selectAssessmentQuestionAnswers).toHaveBeenCalledWith({
+        assessmentQuestionId: 'q1',
+        assessmentAnswerIds: ['opt-1'],
+        assessmentAnswerValues: [{ value: 'Location data', isUserCreated: true }],
+      });
+    });
+
     it('matches answers keyed by the referenceId taken from the template export', async () => {
       // referenceId is the stable key across template edits and the one the
       // export leads with, but the form read dropped the field, so every

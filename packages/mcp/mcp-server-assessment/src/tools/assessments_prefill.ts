@@ -86,9 +86,10 @@ export const PrefillSchema = z.object({
     .record(z.string(), z.union([z.string(), z.array(z.string())]))
     .describe(
       'Map of answers keyed by question title or referenceId, both of which come from ' +
-        'assessments_export_template on the template you are creating from. A string for text ' +
-        'and single-select, an array for multi-select. Select answers must match the option ' +
-        'text exactly.',
+        'assessments_export_template on the template you are creating from. Prefer referenceId; ' +
+        'it survives rewording. A string for text and single-select, an array for multi-select. ' +
+        'A select value matching an option text selects it, and anything else is kept as a ' +
+        'custom answer, so do not drop a value the options do not cover.',
     ),
   assigneeIds: z
     .array(z.string())
@@ -266,6 +267,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
             if (qType === 'SINGLE_SELECT' || qType === 'MULTI_SELECT') {
               const answerValues = Array.isArray(answerValue) ? answerValue : [answerValue];
               const matchedIds: string[] = [];
+              const customValues: string[] = [];
 
               for (const val of answerValues) {
                 const matchedOption = (question.answerOptions || []).find(
@@ -273,35 +275,30 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
                 );
                 if (matchedOption) {
                   matchedIds.push(matchedOption.id);
+                } else {
+                  customValues.push(val);
                 }
               }
 
-              if (matchedIds.length > 0) {
-                await graphql.selectAssessmentQuestionAnswers({
-                  assessmentQuestionId: question.id,
-                  assessmentAnswerIds: matchedIds,
-                });
-                answersApplied++;
-                results.push({
-                  question: question.title || question.id,
-                  status: 'answered',
-                  answer: answerValues.join(', '),
-                });
-              } else {
-                await graphql.selectAssessmentQuestionAnswers({
-                  assessmentQuestionId: question.id,
-                  assessmentAnswerValues: answerValues.map((v) => ({
+              // Sent together so a multi-select that half matches keeps both
+              // halves. Writing only the matches dropped the rest while still
+              // reporting the question answered.
+              await graphql.selectAssessmentQuestionAnswers({
+                assessmentQuestionId: question.id,
+                ...(matchedIds.length > 0 && { assessmentAnswerIds: matchedIds }),
+                ...(customValues.length > 0 && {
+                  assessmentAnswerValues: customValues.map((v) => ({
                     value: v,
                     isUserCreated: true,
                   })),
-                });
-                answersApplied++;
-                results.push({
-                  question: question.title || question.id,
-                  status: 'answered (custom value)',
-                  answer: answerValues.join(', '),
-                });
-              }
+                }),
+              });
+              answersApplied++;
+              results.push({
+                question: question.title || question.id,
+                status: customValues.length > 0 ? 'answered (custom value)' : 'answered',
+                answer: answerValues.join(', '),
+              });
             } else {
               const textValue = Array.isArray(answerValue) ? answerValue.join('\n') : answerValue;
               await graphql.selectAssessmentQuestionAnswers({
