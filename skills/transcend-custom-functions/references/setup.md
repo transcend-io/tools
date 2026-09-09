@@ -37,7 +37,7 @@ The generated GitHub Actions workflow is a secure reference implementation: it u
 Adapt it to existing repository conventions instead of creating a parallel CI system. For another CI provider, preserve this validation recipe:
 
 1. Trigger when the Custom Function manifest, source, payloads, or Deno configuration changes.
-2. Install Deno 2.
+2. Install Deno 2.4.5.
 3. Install a pinned `@transcend-io/cli` version.
 4. Run:
 

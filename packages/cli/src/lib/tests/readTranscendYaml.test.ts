@@ -47,12 +47,54 @@ describe('readTranscendYaml', () => {
       stage: 'Staging',
     });
 
-    expect(result!.enrichers![0].url).to.equal(
+    expect(result!.preflights![0].url).to.equal(
       'https://example.acme.com/transcend-enrichment-webhook',
     );
-    expect(result!.enrichers![1].url).to.equal('https://example.acme.com/transcend-fraud-check');
+    expect(result!.preflights![1].url).to.equal('https://example.acme.com/transcend-fraud-check');
     expect(result!['data-silos']![0].description).to.equal(
       'The mega-warehouse that contains a copy over all SQL backed databases - Staging',
     );
+  });
+
+  it('normalizes legacy enrichers key to preflights', () => {
+    const result = parseTranscendYaml(`enrichers:
+  - title: Legacy Enricher
+    output-identifiers:
+      - email
+`);
+    expect(result).to.deep.equal({
+      preflights: [
+        {
+          title: 'Legacy Enricher',
+          'output-identifiers': ['email'],
+        },
+      ],
+    });
+  });
+
+  it('serializes legacy enrichers using only the canonical preflights key', () => {
+    expect(
+      serializeTranscendYaml({
+        preflights: [
+          {
+            title: 'Canonical Preflight',
+            'output-identifiers': ['email'],
+          },
+        ],
+        enrichers: [
+          {
+            title: 'Legacy Enricher',
+            'output-identifiers': ['phone'],
+          },
+        ],
+      }),
+    ).toBe(`preflights:
+  - title: Canonical Preflight
+    output-identifiers:
+      - email
+  - title: Legacy Enricher
+    output-identifiers:
+      - phone
+`);
   });
 });

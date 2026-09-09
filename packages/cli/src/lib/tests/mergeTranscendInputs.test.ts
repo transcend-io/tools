@@ -19,7 +19,7 @@ describe('mergeTranscendInputs', () => {
         integrationName: 'server',
       },
     ],
-    enrichers: [
+    preflights: [
       {
         title: 'Test Enricher A',
         url: 'https://test.trancsend.io',
@@ -50,7 +50,7 @@ describe('mergeTranscendInputs', () => {
         integrationName: 'server',
       },
     ],
-    enrichers: [
+    preflights: [
       {
         title: 'Test Enricher A',
         url: 'https://test.trancsend.io',
@@ -81,7 +81,7 @@ describe('mergeTranscendInputs', () => {
         integrationName: 'server',
       },
     ],
-    enrichers: [
+    preflights: [
       {
         title: 'Test Enricher A',
         url: 'https://test.trancsend.io',
@@ -107,5 +107,39 @@ describe('mergeTranscendInputs', () => {
 
   it('should merge together in swapped order', () => {
     expect(mergeTranscendInputs(test2, test)).to.deep.equal(mergedReverse);
+  });
+
+  it('should merge legacy enrichers into preflights', () => {
+    expect(
+      mergeTranscendInputs(
+        {
+          enrichers: [
+            {
+              title: 'Legacy',
+              'output-identifiers': ['email'],
+            },
+          ],
+        },
+        {
+          preflights: [
+            {
+              title: 'Canonical',
+              'output-identifiers': ['email'],
+            },
+          ],
+        },
+      ),
+    ).to.deep.equal({
+      preflights: [
+        {
+          title: 'Canonical',
+          'output-identifiers': ['email'],
+        },
+        {
+          title: 'Legacy',
+          'output-identifiers': ['email'],
+        },
+      ],
+    });
   });
 });
