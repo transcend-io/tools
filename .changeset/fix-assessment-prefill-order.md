@@ -19,6 +19,10 @@ and checked before anything is created, and the form is re-read after prefilling
 still unanswered fails the call with `ASSESSMENT_PREFILL_INCOMPLETE` and never submits.
 
 Every failure after the form exists now names it, so a half-built form can be read with
-`assessments_get` and finished rather than abandoned for a second attempt.
+`assessments_get` and finished rather than abandoned for a second attempt. This also covers
+failures in the notification step, which previously aborted the call without naming what it built.
+
+Submitting acts as the calling user, so `assigneeEmails` alone cannot submit — external assignees
+can answer a form but not submit it. That is now stated on the argument and in the submit failure.
 
 `includeDetails` returns the per-question rows, which are otherwise summarized as counts.

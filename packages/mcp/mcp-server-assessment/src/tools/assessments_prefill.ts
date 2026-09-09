@@ -24,15 +24,22 @@ import { resolveTemplateToGroupId } from './_helpers.js';
  * @param title - Its title, so the message reads without a second lookup
  * @param step - What was being attempted, phrased to follow "but "
  * @param error - The underlying failure
+ * @param hint - What to do differently, when the step has a known cause
  * @throws ToolError naming the form and the step that failed
  */
-function failWithFormId(assessmentId: string, title: string, step: string, error: unknown): never {
+function failWithFormId(
+  assessmentId: string,
+  title: string,
+  step: string,
+  error: unknown,
+  hint?: string,
+): never {
   throw new ToolError(
     ErrorCode.API_ERROR,
     `Assessment "${title}" was created but ${step} failed: ${
       error instanceof Error ? error.message : String(error)
     }. The form exists. Read it with assessments_get and finish it there rather than ` +
-      'creating another.',
+      `creating another.${hint ? ` ${hint}` : ''}`,
     false,
     { assessmentId, step },
   );
@@ -71,7 +78,9 @@ export const PrefillSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      'External email addresses to assign before prefilling. Provide this or assigneeIds so the form can leave DRAFT.',
+      'External email addresses to assign before prefilling. Provide this or assigneeIds so the ' +
+        'form can leave DRAFT. They can answer but cannot submit, so submitForReview also needs ' +
+        'assigneeIds.',
     ),
   reviewerIds: z.array(z.string()).optional().describe('User IDs to set as reviewers (optional)'),
   includeDetails: z
@@ -312,7 +321,17 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
               assessmentSectionIds: sectionIds,
             })
             .catch((error) =>
-              failWithFormId(assessmentId, title, 'submitting it for review', error),
+              failWithFormId(
+                assessmentId,
+                title,
+                'submitting it for review',
+                error,
+                // Submitting acts as the calling user, so assigneeEmails alone
+                // leaves nobody who can submit even though the form left DRAFT
+                // and took every answer.
+                'Submitting acts as the calling user, so that user must be among assigneeIds. ' +
+                  'External assignees can answer a form but cannot submit it.',
+              ),
             );
         }
       }
