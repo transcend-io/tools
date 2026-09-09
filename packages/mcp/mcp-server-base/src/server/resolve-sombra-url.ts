@@ -137,8 +137,8 @@ export async function fetchOrganizationSombraContext(
 /**
  * Fetches org Sombra context, enforces AiSettings, and resolves the sticky host.
  *
- * Prefer {@link createTranscendRestClient}, which keeps the host sticky per
- * tenant but re-checks AiSettings on every Sombra call.
+ * Prefer {@link createTranscendRestClient}, which keeps the host sticky but
+ * re-checks AiSettings on every Sombra call.
  */
 export async function resolveSombraHostForMcp(
   graphql: TranscendGraphQLBase,
@@ -202,11 +202,11 @@ export function readSombraEnvConfig(): {
 
 /**
  * Builds a Sombra REST client that lazy-resolves the customer host via GraphQL
- * (sticky per tenant), re-checks org AiSettings on every Sombra call, and
- * optionally sends `X-Sombra-Authorization`.
+ * (sticky), re-checks org AiSettings on every Sombra call, and optionally sends
+ * `X-Sombra-Authorization`.
  *
  * AiSettings GraphQL runs on each REST call even when `SOMBRA_URL` is set as a
- * sticky host override. The host itself is resolved once per tenant cache key.
+ * sticky host override. The host itself is resolved once.
  */
 export function createTranscendRestClient(
   auth: AuthCredentials | null,

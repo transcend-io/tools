@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { getRequestAuth, requestAuthContext } from '../src/auth-context.js';
 import { TranscendRestClient } from '../src/clients/rest-client.js';
 import { SOMBRA_AUTHORIZATION_HEADER } from '../src/http-header-names.js';
 
@@ -77,51 +76,6 @@ describe('TranscendRestClient Sombra host and headers', () => {
       'https://resolved.sombra.example.com/public-keys/sombra-general-signing-key',
     );
     expect(client.getBaseUrl()).toBe('https://resolved.sombra.example.com');
-  });
-
-  it('lazy-resolves a distinct Sombra host per session org on the same client', async () => {
-    const resolveBaseUrl = vi.fn().mockImplementation(async () => {
-      const auth = getRequestAuth();
-      if (auth?.type === 'sessionCookie' && auth.organizationId === 'org-a') {
-        return 'https://sombra-a.example.com';
-      }
-      return 'https://sombra-b.example.com';
-    });
-    const mockFetch = vi.fn().mockImplementation(() =>
-      Promise.resolve(
-        new Response(JSON.stringify({ key: 'pk' }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
-      ),
-    );
-    vi.stubGlobal('fetch', mockFetch);
-
-    const client = new TranscendRestClient(null, { resolveBaseUrl });
-
-    await requestAuthContext.run(
-      { type: 'sessionCookie', cookie: 'laravel_session=a', organizationId: 'org-a' },
-      () => client.getSombraPublicKey(),
-    );
-    await requestAuthContext.run(
-      { type: 'sessionCookie', cookie: 'laravel_session=b', organizationId: 'org-b' },
-      () => client.getSombraPublicKey(),
-    );
-    await requestAuthContext.run(
-      { type: 'sessionCookie', cookie: 'laravel_session=a2', organizationId: 'org-a' },
-      () => client.getSombraPublicKey(),
-    );
-
-    expect(resolveBaseUrl).toHaveBeenCalledTimes(2);
-    expect(mockFetch.mock.calls[0]![0]).toBe(
-      'https://sombra-a.example.com/public-keys/sombra-general-signing-key',
-    );
-    expect(mockFetch.mock.calls[1]![0]).toBe(
-      'https://sombra-b.example.com/public-keys/sombra-general-signing-key',
-    );
-    expect(mockFetch.mock.calls[2]![0]).toBe(
-      'https://sombra-a.example.com/public-keys/sombra-general-signing-key',
-    );
   });
 
   it('re-runs assertReady on every Sombra call while keeping host sticky', async () => {

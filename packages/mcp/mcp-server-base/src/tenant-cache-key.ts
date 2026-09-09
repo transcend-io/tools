@@ -10,7 +10,7 @@ import type { AuthCredentials } from './auth.js';
  * credential, so the credential material itself is the tenant stand-in.
  *
  * Used so HTTP sessions that swap per-request auth via AsyncLocalStorage do not
- * reuse another tenant's cached airgap bundle ID or Sombra host.
+ * reuse another tenant's cached airgap bundle ID.
  */
 export function tenantCacheKey(auth: AuthCredentials | null): string {
   if (!auth) return 'anonymous';
