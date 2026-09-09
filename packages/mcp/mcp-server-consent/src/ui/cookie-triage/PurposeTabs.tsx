@@ -5,30 +5,25 @@ import {
   COOKIE_TRIAGE_PURPOSE_LABELS,
   type CookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
-import {
-  useCookieTriageActions,
-  useCookieTriageCategories,
-  useCookieTriagePurposes,
-  useSelectedPurpose,
-} from './CookieTriageContext.tsx';
+import { useCookieTriageActions, useCookieTriageChrome } from './CookieTriageContext.tsx';
 
 /** Purpose category tabs with count badges and an active underline. */
 export const PurposeTabs = memo(function PurposeTabs() {
-  const purposes = useCookieTriagePurposes();
-  const categories = useCookieTriageCategories();
-  const selectedPurpose = useSelectedPurpose();
+  const { purposes, selectedPurpose, tabs } = useCookieTriageChrome();
   const { selectPurpose } = useCookieTriageActions();
 
   const items = useMemo(
     () =>
-      purposes.map((purpose) => ({
-        id: purpose,
-        label: COOKIE_TRIAGE_PURPOSE_LABELS[purpose],
-        count: categories[purpose]?.totalCount ?? 0,
-        countBusy:
-          categories[purpose]?.countBusy === true || categories[purpose]?.loadStatus === 'loading',
-      })),
-    [purposes, categories],
+      purposes.map((purpose) => {
+        const tab = tabs.find((candidate) => candidate.id === purpose);
+        return {
+          id: purpose,
+          label: COOKIE_TRIAGE_PURPOSE_LABELS[purpose],
+          count: tab?.totalCount ?? 0,
+          countBusy: tab?.countBusy === true,
+        };
+      }),
+    [purposes, tabs],
   );
 
   return (

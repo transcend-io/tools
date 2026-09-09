@@ -1,7 +1,15 @@
 import type { App } from '@modelcontextprotocol/ext-apps';
-import { AppShell, useHostDisplayMode, A } from '@transcend-io/mcp-ui-common';
+import { AppShell, useHostDisplayMode, A, ConfirmDialog } from '@transcend-io/mcp-ui-common';
+import { useCallback, useState } from 'react';
 
-import { useCookieTriageState, useSelectedPurpose } from './CookieTriageContext.tsx';
+import {
+  CookieTriageDeleteRequestContext,
+  useCookieTriageActions,
+  useCookieTriageMeta,
+  useSelectedPurpose,
+  type CookieTriageDeleteRequest,
+} from './CookieTriageContext.tsx';
+import { triageCopy } from './cookieTriageCopy.ts';
 import { Header } from './Header.tsx';
 import { Overviews } from './Overviews.tsx';
 import { PurposeCategorySection } from './PurposeCategorySection.tsx';
@@ -15,35 +23,87 @@ export interface CookieTriageLoadedProps {
 
 /** Loaded-state cookie triage UI */
 export function CookieTriageLoaded({ app }: CookieTriageLoadedProps) {
-  const { triageType } = useCookieTriageState();
+  const { triageType } = useCookieTriageMeta();
   const selectedPurpose = useSelectedPurpose();
+  const { remove } = useCookieTriageActions();
   const { isFullscreen } = useHostDisplayMode(app);
-  const itemNoun = triageType === 'cookies' ? 'cookies' : 'data flows';
-  const appPath =
-    triageType === 'cookies'
-      ? 'https://app.transcend.io/consent-manager/cookies'
-      : 'https://app.transcend.io/consent-manager/data-flows';
+  const { singular, plural, pluralTitle, dashboardUrl } = triageCopy(triageType);
+  const [deleteTarget, setDeleteTarget] = useState<CookieTriageDeleteRequest | undefined>();
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | undefined>();
+
+  const requestDelete = useCallback((target: CookieTriageDeleteRequest) => {
+    setDeleteError(undefined);
+    setDeleteTarget(target);
+  }, []);
+
+  async function onConfirmDelete(): Promise<void> {
+    if (!deleteTarget || deleteBusy) {
+      return;
+    }
+    setDeleteBusy(true);
+    setDeleteError(undefined);
+    try {
+      await remove(deleteTarget.purpose, deleteTarget.name);
+      setDeleteTarget(undefined);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : `Failed to delete ${singular}`;
+      setDeleteError(message);
+      console.error('[cookie-triage] remove failed', error);
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
 
   return (
-    <AppShell
-      isFullscreen={isFullscreen}
-      header={<Header app={app} />}
-      subheader={
-        <>
-          <span className="flex-1 shrink-1 text-sm">
-            {itemNoun.charAt(0).toUpperCase() + itemNoun.slice(1)} needing review are grouped by the
-            purpose Transcend assigned. Review each row and set a decision. You can also{' '}
-            <A app={app} href={appPath} label="go to the Transcend App" /> to review and triage{' '}
-            {itemNoun}.
-          </span>
-          <Overviews />
-        </>
-      }
-    >
-      <div className="shrink-0">
-        <PurposeTabs />
-      </div>
-      <PurposeCategorySection app={app} purpose={selectedPurpose} />
-    </AppShell>
+    <CookieTriageDeleteRequestContext.Provider value={requestDelete}>
+      <AppShell
+        isFullscreen={isFullscreen}
+        header={<Header app={app} />}
+        subheader={
+          <>
+            <span className="flex-1 shrink-1 text-sm">
+              {pluralTitle} needing review are grouped by the purpose Transcend assigned. Review
+              each row and set a decision. You can also{' '}
+              <A app={app} href={dashboardUrl} label="go to the Transcend App" /> to review and
+              triage {plural}.
+            </span>
+            <Overviews />
+          </>
+        }
+      >
+        <div className="shrink-0">
+          <PurposeTabs />
+        </div>
+        <PurposeCategorySection app={app} purpose={selectedPurpose} />
+      </AppShell>
+      {deleteTarget ? (
+        <ConfirmDialog
+          title={`Delete ${singular} "${deleteTarget.itemLabel}"?`}
+          confirmLabel="Delete permanently"
+          busyLabel="Deleting"
+          busy={deleteBusy}
+          onCancel={() => {
+            if (!deleteBusy) {
+              setDeleteError(undefined);
+              setDeleteTarget(undefined);
+            }
+          }}
+          onConfirm={() => {
+            void onConfirmDelete();
+          }}
+        >
+          <p>
+            This permanently removes the {singular} from your consent manager. It cannot be undone.
+          </p>
+          <p className="mt-2">Prefer Junk if you only want to hide it from review.</p>
+          {deleteError ? (
+            <p className="mt-2 text-sm text-danger" role="alert">
+              {deleteError}
+            </p>
+          ) : null}
+        </ConfirmDialog>
+      ) : null}
+    </CookieTriageDeleteRequestContext.Provider>
   );
 }

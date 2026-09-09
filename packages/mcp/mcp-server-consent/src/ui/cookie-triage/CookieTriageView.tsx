@@ -3,8 +3,8 @@ import { ViewConnectionError, ViewLoadingCard } from '@transcend-io/mcp-ui-commo
 import { useEffect, useState } from 'react';
 
 import type { ConsentTriageType, CookieTriageAppPayload } from '../../lib/cookieTriageTypes.ts';
-import { CookieTriageProvider } from './CookieTriageContext.tsx';
 import { CookieTriageLoaded } from './CookieTriageLoaded.tsx';
+import { CookieTriageProvider } from './CookieTriageProvider.tsx';
 
 /** Handles MCP connection, then mounts the session-owned triage queue. */
 export function CookieTriageView() {

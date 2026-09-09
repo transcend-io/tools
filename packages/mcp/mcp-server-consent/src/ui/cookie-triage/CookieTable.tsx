@@ -3,6 +3,7 @@ import { memo, type ReactNode } from 'react';
 import type { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
 import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { CookieRow } from './CookieRow.tsx';
+import { triageCopy } from './cookieTriageCopy.ts';
 import type { CookieRowState } from './cookieTriageState.ts';
 
 interface CookieTableProps {
@@ -25,7 +26,7 @@ export const CookieTable = memo(function CookieTable({
   cookies,
   footer,
 }: CookieTableProps) {
-  const itemLabel = triageType === 'cookies' ? 'Cookie' : 'Data flow';
+  const { singularTitle } = triageCopy(triageType);
 
   return (
     <div className="min-h-0 w-full flex-1 overflow-auto">
@@ -40,7 +41,7 @@ export const CookieTable = memo(function CookieTable({
         <thead className="sticky top-0 z-10">
           <tr className="border-b border-card-line bg-card">
             <th scope="col" className={HEADER_CELL}>
-              <span className="block">{itemLabel}</span>
+              <span className="block">{singularTitle}</span>
               <span className="block font-normal text-on-card-subtle">Service</span>
             </th>
             <th scope="col" className={`${HEADER_CELL} whitespace-nowrap`}>

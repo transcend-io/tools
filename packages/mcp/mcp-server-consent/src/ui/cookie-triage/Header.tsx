@@ -11,9 +11,10 @@ import { memo, useEffect } from 'react';
 
 import {
   useCookieTriageActions,
-  useCookieTriageCategories,
-  useCookieTriageState,
+  useCookieTriageChrome,
+  useCookieTriageMeta,
 } from './CookieTriageContext.tsx';
+import { triageCopy } from './cookieTriageCopy.ts';
 
 interface HeaderProps {
   /** Connected MCP App instance used for org lookup and the fullscreen control */
@@ -27,8 +28,8 @@ interface OrganizationPayload {
 
 export const Header = memo(function Header({ app }: HeaderProps) {
   const organization = useTool<OrganizationPayload>(app, 'admin_get_organization');
-  const { triageType } = useCookieTriageState();
-  const categories = useCookieTriageCategories();
+  const { triageType } = useCookieTriageMeta();
+  const { isRefreshing } = useCookieTriageChrome();
   const { refresh } = useCookieTriageActions();
 
   useEffect(() => {
@@ -48,17 +49,14 @@ export const Header = memo(function Header({ app }: HeaderProps) {
     (label): label is string => typeof label === 'string' && label.length > 0,
   );
 
-  const itemNoun = triageType === 'cookies' ? 'cookies' : 'data flows';
-  const isRefreshing = Object.values(categories).some(
-    (category) => category.loadStatus === 'loading',
-  );
+  const { plural } = triageCopy(triageType);
 
   return (
     <ViewToolbar labels={labels}>
       <Button
         variant={ButtonVariant.Icon}
         busy={isRefreshing}
-        busyLabel={`Refreshing ${itemNoun}`}
+        busyLabel={`Refreshing ${plural}`}
         onClick={() => refresh()}
       >
         <RefreshIcon />

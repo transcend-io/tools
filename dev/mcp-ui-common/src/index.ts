@@ -13,6 +13,18 @@ export {
 } from './Badge/Badge.tsx';
 export { Button, ButtonVariant, type ButtonProps } from './Button/Button.tsx';
 export {
+  CheckboxMultiSelect,
+  type CheckboxMultiSelectOption,
+  type CheckboxMultiSelectProps,
+} from './CheckboxMultiSelect/CheckboxMultiSelect.tsx';
+export {
+  positionAnchoredListbox,
+  positionDisabledOptionTooltip,
+  DISABLED_OPTION_TOOLTIP_MAX_WIDTH_PX,
+  type AnchoredListboxPosition,
+  type DisabledOptionTooltip,
+} from './CheckboxMultiSelect/positionAnchoredListbox.ts';
+export {
   CompactCount,
   CompactCountShimmer,
   formatCompactCount,
@@ -26,6 +38,8 @@ export {
 export { Grid, type GridProps } from './Grid/Grid.tsx';
 export { Heading, HeadingVariant, type HeadingProps } from './Heading/Heading.tsx';
 export {
+  ApproveCheckIcon,
+  CancelIcon,
   CheckIcon,
   ChevronDownIcon,
   CloseIcon,
@@ -50,6 +64,7 @@ export {
 export { Spinner, SpinnerVariant, type SpinnerProps } from './Spinner/Spinner.tsx';
 export { StatChip, type StatChipProps } from './StatChip/StatChip.tsx';
 export { Tabs, type TabItem, type TabsProps } from './Tabs/Tabs.tsx';
+export { TableListFooter, type TableListFooterProps } from './TableListFooter/TableListFooter.tsx';
 export {
   VIEW_STATE_CARD,
   ViewConnectionError,

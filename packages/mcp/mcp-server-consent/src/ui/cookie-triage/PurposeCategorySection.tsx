@@ -6,7 +6,7 @@ import {
   ChevronDownIcon,
   InlineAlert,
   Spinner,
-  SpinnerVariant,
+  TableListFooter,
 } from '@transcend-io/mcp-ui-common';
 import { memo, useMemo, useState } from 'react';
 
@@ -19,9 +19,10 @@ import { CookieTable } from './CookieTable.tsx';
 import {
   useAppliedSuggestionNames,
   useCookieTriageActions,
-  useCookieTriageCategory,
-  useCookieTriageState,
+  useCookieTriageActiveCategory,
+  useCookieTriageMeta,
 } from './CookieTriageContext.tsx';
+import { triageCopy } from './cookieTriageCopy.ts';
 import {
   formatApplySuggestionsLabel,
   formatUndoSuggestionsLabel,
@@ -41,12 +42,13 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
   app,
   purpose,
 }: PurposeCategorySectionProps) {
-  const { triageType } = useCookieTriageState();
-  const category = useCookieTriageCategory(purpose);
+  const { triageType } = useCookieTriageMeta();
+  const category = useCookieTriageActiveCategory();
   const appliedSuggestionNames = useAppliedSuggestionNames(purpose);
   const { loadMore, applySuggestions, undoSuggestions } = useCookieTriageActions();
   const [busyMode, setBusyMode] = useState<'apply' | 'undo' | undefined>();
   const [actionError, setActionError] = useState<{ title: string; message: string } | undefined>();
+  const { plural, dashboardUrl } = triageCopy(triageType);
 
   const applyLabel = useMemo(
     () => formatApplySuggestionsLabel(selectCategorySummary(category)),
@@ -72,7 +74,6 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
             : undefined;
 
   const label = COOKIE_TRIAGE_PURPOSE_LABELS[purpose];
-  const itemNoun = triageType === 'cookies' ? 'cookies' : 'data flows';
   const isLoading = category.loadStatus === 'loading';
   const isInitialLoading = isLoading && category.cookies.length === 0;
   const isLoadingMore = isLoading && category.cookies.length > 0;
@@ -82,10 +83,6 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
     COOKIE_TRIAGE_UI_PAGE_SIZE,
     Math.max(0, category.totalCount - shownCount),
   );
-  const dashboardUrl =
-    triageType === 'cookies'
-      ? 'https://app.transcend.io/consent-manager/cookies'
-      : 'https://app.transcend.io/consent-manager/data-flows';
 
   async function onApplySuggestions(): Promise<void> {
     setBusyMode('apply');
@@ -132,7 +129,7 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
               {label}
             </h2>
             <span className="text-sm text-on-card-subtle">
-              {category.totalCount.toLocaleString('en-US')} {itemNoun}
+              {category.totalCount.toLocaleString('en-US')} {plural}
             </span>
           </div>
         </div>
@@ -156,12 +153,12 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
       {actionError ? <InlineAlert title={actionError.title} message={actionError.message} /> : null}
       {isInitialLoading ? (
         <div className="shrink-0" aria-busy="true">
-          <Spinner label={`Loading ${itemNoun}…`} />
+          <Spinner label={`Loading ${plural}…`} />
         </div>
       ) : null}
       {category.loadError ? (
         <InlineAlert
-          title={`Failed to load ${itemNoun}`}
+          title={`Failed to load ${plural}`}
           message={category.loadError}
           action={
             <Button variant={ButtonVariant.Primary} onClick={() => loadMore(purpose)}>
@@ -178,40 +175,36 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
           footer={
             category.loadStatus === 'ready' || isLoadingMore ? (
               category.hasNextPage ? (
-                <div className="flex flex-col items-center gap-2 py-5 text-center">
-                  <p className="text-sm text-on-card-subtle">
-                    {shownCount.toLocaleString('en-US')} of{' '}
-                    {category.totalCount.toLocaleString('en-US')} shown
-                  </p>
-                  <button
-                    type="button"
-                    className="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-md font-medium text-on-card disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={isLoadingMore || nextCount === 0}
-                    aria-busy={isLoadingMore || undefined}
-                    onClick={() => loadMore(purpose)}
-                  >
-                    {isLoadingMore ? (
-                      <Spinner variant={SpinnerVariant.Small} label="Loading more" />
-                    ) : null}
-                    Show next {nextCount.toLocaleString('en-US')} rows
-                    <ChevronDownIcon width={16} height={16} className="shrink-0" />
-                  </button>
-                  <p className="text-sm text-on-card-subtle">
-                    Prefer the full list?{' '}
-                    <A app={app} href={dashboardUrl} label="Open in admin dashboard ↗" />
-                  </p>
-                </div>
+                <TableListFooter
+                  status="more"
+                  shownCount={shownCount}
+                  totalCount={category.totalCount}
+                  action={
+                    <Button
+                      variant={ButtonVariant.Text}
+                      className="text-md font-medium text-on-card"
+                      disabled={isLoadingMore || nextCount === 0}
+                      busy={isLoadingMore}
+                      busyLabel="Loading more"
+                      onClick={() => loadMore(purpose)}
+                    >
+                      Show next {nextCount.toLocaleString('en-US')} rows
+                      <ChevronDownIcon width={16} height={16} className="shrink-0" />
+                    </Button>
+                  }
+                >
+                  Prefer the full list?{' '}
+                  <A app={app} href={dashboardUrl} label="Open in admin dashboard ↗" />
+                </TableListFooter>
               ) : (
-                <div className="flex flex-col items-center gap-2 py-8 text-center">
-                  <p className="text-heading-sm font-semibold text-on-card">All caught up</p>
-                  <p className="text-md text-on-card-muted">
-                    No more {itemNoun} to triage under this purpose.
-                  </p>
-                  <p className="text-sm text-on-card-subtle">
-                    Double check in the{' '}
-                    <A app={app} href={dashboardUrl} label="admin dashboard ↗" />
-                  </p>
-                </div>
+                <TableListFooter
+                  status="done"
+                  shownCount={shownCount}
+                  totalCount={category.totalCount}
+                  message={`No more ${plural} to triage under this purpose.`}
+                >
+                  Double check in the <A app={app} href={dashboardUrl} label="admin dashboard ↗" />
+                </TableListFooter>
               )
             ) : null
           }

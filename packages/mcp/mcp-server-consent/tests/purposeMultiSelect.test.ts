@@ -1,3 +1,4 @@
+import { positionAnchoredListbox } from '@transcend-io/mcp-ui-common';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -6,7 +7,6 @@ import {
   isEssentialPurposeSlug,
   mergePurposeSelectOptions,
   orderSelectedPurposeSlugs,
-  positionPurposeListbox,
   purposeOptionExclusiveDisabledReason,
   purposeSlugLabel,
 } from '../src/ui/cookie-triage/PurposeMultiSelect.js';
@@ -81,7 +81,7 @@ describe('PurposeMultiSelect helpers', () => {
 
   it('opens the listbox downward when there is enough room below', () => {
     expect(
-      positionPurposeListbox(
+      positionAnchoredListbox(
         {
           top: 100,
           bottom: 140,
@@ -105,7 +105,7 @@ describe('PurposeMultiSelect helpers', () => {
 
   it('opens the listbox upward and shrinks when space below is tight', () => {
     expect(
-      positionPurposeListbox(
+      positionAnchoredListbox(
         {
           top: 520,
           bottom: 560,
@@ -129,7 +129,7 @@ describe('PurposeMultiSelect helpers', () => {
 
   it('caps listbox height to the available viewport space', () => {
     expect(
-      positionPurposeListbox(
+      positionAnchoredListbox(
         {
           top: 40,
           bottom: 80,

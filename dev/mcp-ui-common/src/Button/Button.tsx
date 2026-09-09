@@ -13,6 +13,8 @@ export const ButtonVariant = makeEnum({
   Action: 'action',
   /** Square icon-only control */
   Icon: 'icon',
+  /** Borderless underline text control */
+  Text: 'text',
 });
 
 export type ButtonVariant = (typeof ButtonVariant)[keyof typeof ButtonVariant];
@@ -46,6 +48,8 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
   [ButtonVariant.Secondary]: `${BUTTON_BASE} gap-1.5 px-2 py-1 text-sm text-on-card`,
   [ButtonVariant.Action]: `${BUTTON_BASE} h-9 px-2.5 text-sm font-medium`,
   [ButtonVariant.Icon]: `${BUTTON_BASE} size-9 justify-center`,
+  [ButtonVariant.Text]:
+    'inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-sm font-medium text-on-card-subtle hover:underline disabled:cursor-not-allowed disabled:opacity-60',
 };
 
 /**
@@ -66,7 +70,7 @@ export function Button({
   type = 'button',
   ...rest
 }: ButtonProps) {
-  const usesBase = variant !== ButtonVariant.Primary;
+  const usesBase = variant !== ButtonVariant.Primary && variant !== ButtonVariant.Text;
   const baseClass = usesBase
     ? `${VARIANT_CLASS[variant]} ${active ? BUTTON_BORDER.active : BUTTON_BORDER.idle}`
     : VARIANT_CLASS[variant];

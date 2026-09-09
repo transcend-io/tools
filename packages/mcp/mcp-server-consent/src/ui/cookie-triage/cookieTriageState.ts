@@ -13,6 +13,7 @@ import {
   isUnknownCookiePurposeSlug,
   type CookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
+import { triageCopy } from './cookieTriageCopy.ts';
 
 export type { CookieTriageDecision, CookieTriagePurposeOption };
 
@@ -494,7 +495,7 @@ export function buildAskOpinionPrompt(options: {
   item: CookieTriageAnalysis;
 }): string {
   const { triageType, item } = options;
-  const itemNoun = triageType === 'cookies' ? 'cookie' : 'data flow';
+  const { singular } = triageCopy(triageType);
   const purposes =
     item.trackingPurposes && item.trackingPurposes.length > 0
       ? item.trackingPurposes.join(', ')
@@ -502,7 +503,7 @@ export function buildAskOpinionPrompt(options: {
   const dormant = isDormantCookie(item);
 
   const lines = [
-    `Please recommend a triage action for this ${itemNoun} needing review.`,
+    `Please recommend a triage action for this ${singular} needing review.`,
     '',
     `Name: ${item.name}`,
     `Service: ${item.service ?? 'Unknown'}`,
