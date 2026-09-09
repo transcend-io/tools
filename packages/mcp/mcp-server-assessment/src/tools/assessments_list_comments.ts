@@ -113,7 +113,8 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
       'whole, on a section, or on a single question, each row naming what it sits on. Narrow ' +
       'with levels to one of those, authorIds to who wrote it, and resolution to whether it ' +
       'is still open. Use this rather than assessments_get, which reads the questions and ' +
-      'answers and only counts the feedback.',
+      'answers and only counts the feedback. To leave a reply, resolve a thread, or add a ' +
+      'new comment, call assessments_write_comment with the row id, level, and targetId.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },

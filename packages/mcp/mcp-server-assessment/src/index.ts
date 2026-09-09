@@ -31,6 +31,10 @@ export {
   type ListAssessmentCommentsInput,
 } from './tools/assessments_list_comments.js';
 export {
+  WriteAssessmentCommentSchema,
+  type WriteAssessmentCommentInput,
+} from './tools/assessments_write_comment.js';
+export {
   AssessmentStatusEnum,
   ListAssessmentsSchema,
   type AssessmentStatusEnumInput,
