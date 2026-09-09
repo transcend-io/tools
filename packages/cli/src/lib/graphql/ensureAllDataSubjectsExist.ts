@@ -19,7 +19,7 @@ export async function ensureAllDataSubjectsExist(
     'data-silos': dataSilos = [],
     'data-subjects': dataSubjects = [],
     'processing-activities': processingActivities = [],
-    enrichers = [],
+    preflights = [],
   }: TranscendInput,
   client: GraphQLClient,
   fetchAll = false,
@@ -27,7 +27,7 @@ export async function ensureAllDataSubjectsExist(
   const expectedDataSubjects = uniq([
     ...flatten(dataSilos.map((silo) => silo['data-subjects'] || []) || []),
     ...flatten(processingActivities.map(({ dataSubjectTypes }) => dataSubjectTypes ?? []) ?? []),
-    ...flatten(enrichers.map((enricher) => enricher['data-subjects'] || []) || []),
+    ...flatten(preflights.map((preflight) => preflight['data-subjects'] || []) || []),
     ...dataSubjects.map((subject) => subject.type),
   ]);
   if (expectedDataSubjects.length === 0 && !fetchAll) {

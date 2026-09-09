@@ -46,7 +46,7 @@ const RESOURCE_DOCUMENTATION: Record<
     ],
   },
   [TranscendPullResource.Enrichers]: {
-    description: 'The Privacy Request enricher configurations.',
+    description: 'The Privacy Request preflight check configurations (formerly "enrichers").',
     markdownLinks: [
       '[DSR Automation -> Identifiers](https://app.transcend.io/privacy-requests/identifiers)',
     ],

@@ -350,7 +350,7 @@
         }
       }
     },
-    "enrichers": {
+    "preflights": {
       "type": "array",
       "items": {
         "allOf": [
@@ -5873,7 +5873,17 @@
             }
           }
         ]
-      }
+      },
+      "description": "Preflight check definitions (identity enrichment, fraud checks, etc.) run before privacy request workflows."
+    },
+    "enrichers": {
+      "deprecated": true,
+      "description": "Deprecated: use `preflights` instead. Legacy alias for preflight check definitions.",
+      "allOf": [
+        {
+          "$ref": "#/properties/preflights"
+        }
+      ]
     },
     "attributes": {
       "type": "array",

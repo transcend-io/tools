@@ -228,7 +228,7 @@ This command can fill out multiple variables in a YAML file like [./examples/mul
 \`\`\`yml
 api-keys:
   - title: Webhook Key
-enrichers:
+preflights:
   - title: Basic Identity Enrichment
     description: Enrich an email address to the userId and phone number
     # The data silo webhook URL is the same in each environment,
