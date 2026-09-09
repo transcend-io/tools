@@ -745,6 +745,8 @@ describe('Assessment Tools', () => {
       expect(result).toMatchObject({
         success: false,
         error: expect.stringContaining('templateId or assessmentGroupId'),
+        code: 'ASSESSMENT_PREFILL_GROUP_REQUIRED',
+        retryable: false,
       });
       expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });
@@ -985,6 +987,10 @@ describe('Assessment Tools', () => {
       expect(result).toMatchObject({
         success: false,
         error: expect.stringContaining('submitForReview needs assigneeIds'),
+        // Distinct from ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED: this caller did
+        // supply assignees, and still has to add an internal one.
+        code: 'ASSESSMENT_PREFILL_INTERNAL_ASSIGNEE_REQUIRED',
+        retryable: false,
       });
       expect(mockGraphql.createAssessment).not.toHaveBeenCalled();
     });

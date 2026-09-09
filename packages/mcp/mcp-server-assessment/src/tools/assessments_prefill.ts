@@ -9,6 +9,12 @@ import {
   type AssessmentSection,
 } from '@transcend-io/mcp-server-base';
 
+import {
+  PREFILL_ASSIGNEE_REQUIRED,
+  PREFILL_GROUP_REQUIRED,
+  PREFILL_INCOMPLETE,
+  PREFILL_INTERNAL_ASSIGNEE_REQUIRED,
+} from '../errors.js';
 import type { AssessmentsMixin } from '../graphql.js';
 import { buildAssessmentLinks } from '../helpers/buildAssessmentLinks.js';
 import { resolveTemplateToGroupId } from './_helpers.js';
@@ -151,7 +157,8 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
         return createToolResult(
           false,
           undefined,
-          'Either templateId or assessmentGroupId is required.',
+          'Either templateId or assessmentGroupId is required. Resolve a group by name with assessments_list_groups.',
+          PREFILL_GROUP_REQUIRED,
         );
       }
       if (!assigneeIds?.length && !assigneeEmails?.length) {
@@ -159,10 +166,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           false,
           undefined,
           'Provide assigneeIds or assigneeEmails before prefilling. An assessment must be assigned so it can move from DRAFT to SHARED before answers move it to IN_PROGRESS.',
-          {
-            code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
-            retryable: false,
-          },
+          PREFILL_ASSIGNEE_REQUIRED,
         );
       }
       // External assignees can answer a form but cannot submit it, so this
@@ -173,10 +177,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           false,
           undefined,
           'submitForReview needs assigneeIds. Submitting acts as the calling user, so that user must be among the internal assignees. External assignees can answer a form but cannot submit it, so assigneeEmails alone would create the form, fill it in, and then fail to submit.',
-          {
-            code: 'ASSESSMENT_PREFILL_ASSIGNEE_REQUIRED',
-            retryable: false,
-          },
+          PREFILL_INTERNAL_ASSIGNEE_REQUIRED,
         );
       }
 
@@ -336,8 +337,7 @@ export function createAssessmentsPrefillTool(clients: ToolClients) {
           undefined,
           `Assessment "${title}" was created and assigned, but only ${answersApplied}/${results.length} questions were answered. Retry the unanswered questions before submitting.`,
           {
-            code: 'ASSESSMENT_PREFILL_INCOMPLETE',
-            retryable: true,
+            ...PREFILL_INCOMPLETE,
             details: {
               assessmentId,
               ...buildAssessmentLinks({ dashboardUrl, assessmentFormId: assessmentId }),

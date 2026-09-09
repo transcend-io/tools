@@ -33,4 +33,10 @@ over.
 The response carries the form's `url`, so a caller no longer needs a second read to link to what
 it just built.
 
+The tool's error codes now live in one place, each paired with its `retryable` flag so two call
+sites cannot give opposite retry advice under one code. The missing-group error gained a code and
+a flag, having shipped with neither. The assignee guard split in two, since the remedies differ:
+one code for no assignee at all, and a new
+`ASSESSMENT_PREFILL_INTERNAL_ASSIGNEE_REQUIRED` for submitting with only external ones.
+
 `includeDetails` returns the per-question rows, which are otherwise summarized as counts.
