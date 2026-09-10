@@ -38,9 +38,9 @@ export const ListAssessmentCommentsSchema = z
       .optional()
       .default('OPEN')
       .describe(
-        'OPEN returns only unresolved feedback, which is the feedback still asking for ' +
-          'something. RESOLVED returns only what has been dealt with, ALL returns both. ' +
-          'Default OPEN.',
+        'OPEN / RESOLVED filter by the root of each thread (the row with no ' +
+          'parentCommentId). A reply is open only while its root is unresolved — replies ' +
+          'are not resolved on their own. ALL returns both. Default OPEN.',
       ),
     levels: z
       .array(z.enum(['FORM', 'SECTION', 'QUESTION']))
@@ -102,6 +102,23 @@ function describeTarget(
   };
 }
 
+/**
+ * Open/closed follows the root of the thread. Replies keep their own
+ * `resolvedAt` unset; only resolving the root closes them. When the parent is
+ * missing from the pool (e.g. an author filter dropped it), fall back to the
+ * row's own stamp rather than inventing a state we cannot see.
+ */
+function threadResolvedAt(
+  comment: AssessmentComment,
+  byId: Map<string, AssessmentComment>,
+): string | undefined {
+  if (comment.parentCommentId === undefined) {
+    return comment.resolvedAt;
+  }
+  const parent = byId.get(comment.parentCommentId);
+  return parent === undefined ? comment.resolvedAt : parent.resolvedAt;
+}
+
 export function createAssessmentsListCommentsTool(clients: ToolClients) {
   const graphql = clients.graphql as AssessmentsMixin;
   const { dashboardUrl } = clients;
@@ -110,10 +127,11 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
     description:
       'Read the reviewer feedback on one assessment — the comments left on it during review. ' +
       'Returns feedback from all three levels at once, whether it was left on the form as a ' +
-      'whole, on a section, or on a single question, each row naming what it sits on. Narrow ' +
-      'with levels to one of those, authorIds to who wrote it, and resolution to whether it ' +
-      'is still open. Use this rather than assessments_get, which reads the questions and ' +
-      'answers and only counts the feedback.',
+      'whole, on a section, or on a single question, each row naming what it sits on. ' +
+      'Resolution is per thread on the root comment (no parentCommentId); replies close when ' +
+      'that root is resolved. Narrow with levels, authorIds, and resolution (OPEN/RESOLVED/' +
+      'ALL). Use this rather than assessments_get, which only counts feedback. To reply or ' +
+      'resolve a thread, call assessments_write_comment with the root id, level, and targetId.',
     category: 'Assessments',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
@@ -155,15 +173,22 @@ export function createAssessmentsListCommentsTool(clients: ToolClients) {
         const id = comment.author?.id;
         return id !== undefined && authorIds.includes(id);
       };
-      const matchesResolution = (comment: AssessmentComment): boolean =>
-        resolution === 'ALL' ||
-        (resolution === 'RESOLVED' ? comment.resolvedAt !== undefined : !comment.resolvedAt);
 
-      const matched = [...formComments, ...sectionComments, ...questions.nodes]
-        .filter(
-          (comment) =>
-            wanted(comment.level) && matchesAuthor(comment) && matchesResolution(comment),
-        )
+      // Index the level-matched pool before author/resolution filters so a
+      // reply can still see its root's resolvedAt when the author filter would
+      // otherwise have dropped the root from the returned page.
+      const pool = [...formComments, ...sectionComments, ...questions.nodes].filter((comment) =>
+        wanted(comment.level),
+      );
+      const byId = new Map(pool.map((comment) => [comment.id, comment]));
+      const matchesResolution = (comment: AssessmentComment): boolean => {
+        if (resolution === 'ALL') return true;
+        const resolvedAt = threadResolvedAt(comment, byId);
+        return resolution === 'RESOLVED' ? resolvedAt !== undefined : resolvedAt === undefined;
+      };
+
+      const matched = pool
+        .filter((comment) => matchesAuthor(comment) && matchesResolution(comment))
         .sort(byCreationThenId);
 
       const totalByLevel: Record<AssessmentCommentLevel, number> = {
