@@ -8,15 +8,15 @@ import {
 } from '@transcend-io/sdk';
 
 import { resolveAirgapBundleId } from '../resolveAirgapBundleId.js';
-import type { ConsentTriageType, CookieTriageAnalysis } from './cookieTriageTypes.js';
-import { COOKIE_TRIAGE_MAX_PER_PURPOSE } from './groupCookiesForTriage.js';
+import { COOKIE_TRIAGE_FETCH_MAX, COOKIE_TRIAGE_FETCH_PAGE_SIZE } from './cookieTriageConfig.js';
+import {
+  ConsentTriageType,
+  type ConsentTriageType as ConsentTriageTypeValue,
+  type CookieTriageAnalysis,
+} from './cookieTriageTypes.js';
 import { projectCookieForTriage, projectDataFlowForTriage } from './projectTriageItem.js';
 
-/** Page size when the triage app pulls NEEDS_REVIEW items */
-export const COOKIE_TRIAGE_FETCH_PAGE_SIZE = 100;
-
-/** Soft cap for a single triage app open across all purpose tabs */
-export const COOKIE_TRIAGE_FETCH_MAX = COOKIE_TRIAGE_MAX_PER_PURPOSE * 6;
+export { COOKIE_TRIAGE_FETCH_MAX, COOKIE_TRIAGE_FETCH_PAGE_SIZE } from './cookieTriageConfig.js';
 
 const ORGANIZATION_NAME_QUERY = `
   query ConsentTriageOrganization {
@@ -118,9 +118,9 @@ export async function fetchDataFlowsForTriage(
  */
 export async function fetchConsentTriageItems(
   clients: ToolClients,
-  triageType: ConsentTriageType,
+  triageType: ConsentTriageTypeValue,
 ): Promise<CookieTriageAnalysis[]> {
-  return triageType === 'cookies'
+  return triageType === ConsentTriageType.Cookies
     ? fetchCookiesForTriage(clients)
     : fetchDataFlowsForTriage(clients);
 }

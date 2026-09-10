@@ -1,19 +1,21 @@
-import type { MutableRefObject } from 'react';
+import type { RefObject } from 'react';
 
 import {
   COOKIE_TRIAGE_AUTOFILL_PAGES,
+  COOKIE_TRIAGE_PURPOSE_ORDER,
+  CookieTriagePurposeCategory,
+} from '../../lib/cookieTriageConfig.ts';
+import {
   buildTriageDormantCountArgs,
   buildTriageListArgs,
   buildTriagePendingCountArgs,
   buildTriagePurposeCountArgs,
 } from '../../lib/cookieTriageQuery.ts';
 import { projectListNodeForTriage } from '../../lib/projectTriageItem.ts';
-import {
-  COOKIE_TRIAGE_PURPOSE_ORDER,
-  type CookieTriagePurposeCategory,
-} from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { dispatchAndSync, type CookieTriageToolCall } from './cookieTriagePersist.ts';
 import {
+  CookieTriageLoadStatus,
+  getCategory,
   selectCustomPurposeSlugs,
   selectPurposes,
   type CookieTriageAction,
@@ -23,15 +25,15 @@ import {
 /** Mutable refs the fetch factory closes over. */
 export interface CookieTriageFetchDeps {
   /** Live session snapshot */
-  stateRef: MutableRefObject<CookieTriageSessionState>;
+  stateRef: RefObject<CookieTriageSessionState>;
   /** List-tool call (cookies or data flows) */
-  callRef: MutableRefObject<CookieTriageToolCall>;
+  callRef: RefObject<CookieTriageToolCall>;
   /** Purposes-catalog tool call */
-  purposesCallRef: MutableRefObject<CookieTriageToolCall>;
+  purposesCallRef: RefObject<CookieTriageToolCall>;
   /** In-flight list loads keyed by purpose */
-  inFlightRef: MutableRefObject<Set<CookieTriagePurposeCategory>>;
+  inFlightRef: RefObject<Set<CookieTriagePurposeCategory>>;
   /** In-flight count-only fetches keyed by purpose */
-  countInFlightRef: MutableRefObject<Set<CookieTriagePurposeCategory>>;
+  countInFlightRef: RefObject<Set<CookieTriagePurposeCategory>>;
   /** Session reducer dispatch */
   dispatch: (action: CookieTriageAction) => void;
 }
@@ -97,7 +99,12 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
   ): Promise<void> {
     let session = deps.stateRef.current;
     const triageType = session.triageType;
-    if (purpose === 'Custom' && selectCustomPurposeSlugs(session.purposeOptions).length === 0) {
+    const countArgs = buildTriagePurposeCountArgs(
+      triageType,
+      purpose,
+      selectCustomPurposeSlugs(session.purposeOptions),
+    );
+    if (countArgs === null) {
       return;
     }
 
@@ -105,7 +112,7 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
       if (deps.inFlightRef.current.has(purpose)) {
         return;
       }
-      if (session.categories[purpose].loadStatus === 'loading') {
+      if (getCategory(session.categories, purpose).loadStatus === CookieTriageLoadStatus.Loading) {
         return;
       }
       deps.inFlightRef.current.add(purpose);
@@ -115,25 +122,19 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
         return;
       }
       deps.countInFlightRef.current.add(purpose);
-      if (!session.categories[purpose].countBusy) {
+      if (!getCategory(session.categories, purpose).countBusy) {
         session = dispatchLocal({ type: 'countFetchStart', purpose });
       }
     }
 
     try {
-      const result = await deps.callRef.current(
-        buildTriagePurposeCountArgs(
-          triageType,
-          purpose,
-          selectCustomPurposeSlugs(deps.stateRef.current.purposeOptions),
-        ),
-      );
+      const result = await deps.callRef.current(countArgs);
       if (options?.isCancelled?.()) {
         if (options.markBusy) {
           dispatchLocal({
             type: 'setCategoryCount',
             purpose,
-            totalCount: deps.stateRef.current.categories[purpose].totalCount,
+            totalCount: getCategory(deps.stateRef.current.categories, purpose).totalCount,
           });
         }
         return;
@@ -149,7 +150,7 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
           dispatchLocal({
             type: 'setCategoryCount',
             purpose,
-            totalCount: deps.stateRef.current.categories[purpose].totalCount,
+            totalCount: getCategory(deps.stateRef.current.categories, purpose).totalCount,
           });
         }
         return;
@@ -159,7 +160,7 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
           dispatchLocal({
             type: 'setCategoryCount',
             purpose,
-            totalCount: deps.stateRef.current.categories[purpose].totalCount,
+            totalCount: getCategory(deps.stateRef.current.categories, purpose).totalCount,
             ...(options.afterRefresh ? { deferListLoad: true } : {}),
           });
         }
@@ -192,21 +193,30 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
 
     let session = deps.stateRef.current;
     const triageType = session.triageType;
-    const category = session.categories[purpose];
+    const category = getCategory(session.categories, purpose);
     if (
       mode === 'initial' &&
-      (category.loadStatus === 'ready' || category.loadStatus === 'loading')
+      (category.loadStatus === CookieTriageLoadStatus.Ready ||
+        category.loadStatus === CookieTriageLoadStatus.Loading)
     ) {
       return;
     }
-    if ((mode === 'more' || mode === 'refresh') && category.loadStatus === 'loading') {
+    if (
+      (mode === 'more' || mode === 'refresh') &&
+      category.loadStatus === CookieTriageLoadStatus.Loading
+    ) {
       return;
     }
-    if (mode === 'more' && !category.hasNextPage && category.loadStatus !== 'error') {
+    if (
+      mode === 'more' &&
+      !category.hasNextPage &&
+      category.loadStatus !== CookieTriageLoadStatus.Error
+    ) {
       return;
     }
 
-    if (purpose === 'Custom' && selectCustomPurposeSlugs(session.purposeOptions).length === 0) {
+    const customPurposeSlugs = selectCustomPurposeSlugs(session.purposeOptions);
+    if (buildTriageListArgs(triageType, purpose, 0, customPurposeSlugs) === null) {
       return;
     }
 
@@ -215,22 +225,19 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
       mode === 'refresh' ? { type: 'refreshStart', purpose } : { type: 'loadStart', purpose },
     );
 
-    const pendingBefore = session.categories[purpose].cookies.filter(
+    const pendingBefore = getCategory(session.categories, purpose).cookies.filter(
       (row) => row.decision === undefined,
     ).length;
     const maxPages = 1 + COOKIE_TRIAGE_AUTOFILL_PAGES;
 
     try {
       for (let pages = 0; pages < maxPages; pages += 1) {
-        const offset = session.categories[purpose].nextOffset;
-        const result = await deps.callRef.current(
-          buildTriageListArgs(
-            triageType,
-            purpose,
-            offset,
-            selectCustomPurposeSlugs(session.purposeOptions),
-          ),
-        );
+        const offset = getCategory(session.categories, purpose).nextOffset;
+        const listArgs = buildTriageListArgs(triageType, purpose, offset, customPurposeSlugs);
+        if (listArgs === null) {
+          return;
+        }
+        const result = await deps.callRef.current(listArgs);
         if (result.error !== undefined) {
           dispatchLocal({
             type: 'loadError',
@@ -254,10 +261,10 @@ export function createCookieTriageFetch(deps: CookieTriageFetchDeps): CookieTria
           hasNextPage: result.hasNextPage ?? false,
         });
 
-        const pendingAfter = session.categories[purpose].cookies.filter(
+        const pendingAfter = getCategory(session.categories, purpose).cookies.filter(
           (row) => row.decision === undefined,
         ).length;
-        if (pendingAfter > pendingBefore || !session.categories[purpose].hasNextPage) {
+        if (pendingAfter > pendingBefore || !getCategory(session.categories, purpose).hasNextPage) {
           return;
         }
       }
@@ -292,6 +299,6 @@ export function initialCountPurposes(
   selected: CookieTriagePurposeCategory,
 ): CookieTriagePurposeCategory[] {
   return COOKIE_TRIAGE_PURPOSE_ORDER.filter(
-    (purpose) => purpose !== 'Custom' && purpose !== selected,
+    (purpose) => purpose !== CookieTriagePurposeCategory.Custom && purpose !== selected,
   );
 }

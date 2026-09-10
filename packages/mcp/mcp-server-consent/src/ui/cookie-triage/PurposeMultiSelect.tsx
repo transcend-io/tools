@@ -3,14 +3,15 @@ import { memo, useCallback, useMemo } from 'react';
 
 import type { CookieTriagePurposeOption } from '../../lib/cookieTriageTypes.ts';
 import {
-  COOKIE_TRIAGE_PURPOSE_LABELS,
+  CookieTriageDefaultPurpose,
+  getPurposeLabel,
+  isCookieTriagePurposeCategory,
   isUnknownCookiePurposeSlug,
-  type CookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { purposeBadgeClass } from './purposeBadgeClasses.ts';
 
 /** Built-in Essential purpose slug (case-insensitive match). */
-const ESSENTIAL_PURPOSE_SLUG = 'Essential';
+const ESSENTIAL_PURPOSE_SLUG = CookieTriageDefaultPurpose.Essential;
 
 /** Tooltip when Essential is selected and another purpose cannot be chosen. */
 export const ESSENTIAL_BLOCKS_OTHER_PURPOSES_TOOLTIP =
@@ -70,7 +71,7 @@ export function purposeSlugLabel(
   if (fromOptions) {
     return fromOptions;
   }
-  return COOKIE_TRIAGE_PURPOSE_LABELS[slug as CookieTriagePurposeCategory] ?? slug;
+  return isCookieTriagePurposeCategory(slug) ? getPurposeLabel(slug) : slug;
 }
 
 /**

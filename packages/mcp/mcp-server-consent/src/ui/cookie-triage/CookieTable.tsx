@@ -31,12 +31,12 @@ export const CookieTable = memo(function CookieTable({
   return (
     <div className="min-h-0 w-full flex-1 overflow-auto">
       {/* Preferred widths only — auto layout can still shrink when space is tight. */}
-      <table className="w-full min-w-[44rem] border-collapse">
+      <table className="w-full min-w-176 border-collapse">
         <colgroup>
           <col className="w-[28%]" />
-          <col className="w-[10rem]" />
-          <col className="w-[11rem]" />
-          <col className="w-[18rem]" />
+          <col className="w-40" />
+          <col className="w-44" />
+          <col className="w-72" />
         </colgroup>
         <thead className="sticky top-0 z-10">
           <tr className="border-b border-card-line bg-card">

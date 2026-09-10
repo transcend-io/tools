@@ -10,9 +10,9 @@ import {
 } from '@transcend-io/mcp-ui-common';
 import { memo, useMemo, useState } from 'react';
 
-import { COOKIE_TRIAGE_UI_PAGE_SIZE } from '../../lib/cookieTriageQuery.ts';
+import { COOKIE_TRIAGE_UI_PAGE_SIZE } from '../../lib/cookieTriageConfig.ts';
 import {
-  COOKIE_TRIAGE_PURPOSE_LABELS,
+  getPurposeLabel,
   type CookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { CookieTable } from './CookieTable.tsx';
@@ -24,6 +24,7 @@ import {
 } from './CookieTriageContext.tsx';
 import { triageCopy } from './cookieTriageCopy.ts';
 import {
+  CookieTriageLoadStatus,
   formatApplySuggestionsLabel,
   formatUndoSuggestionsLabel,
   selectCategorySummary,
@@ -73,8 +74,8 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
             ? { mode: 'apply' as const, label: applyLabel }
             : undefined;
 
-  const label = COOKIE_TRIAGE_PURPOSE_LABELS[purpose];
-  const isLoading = category.loadStatus === 'loading';
+  const label = getPurposeLabel(purpose);
+  const isLoading = category.loadStatus === CookieTriageLoadStatus.Loading;
   const isInitialLoading = isLoading && category.cookies.length === 0;
   const isLoadingMore = isLoading && category.cookies.length > 0;
   const busy = busyMode !== undefined;
@@ -173,7 +174,7 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
           purpose={purpose}
           cookies={category.cookies}
           footer={
-            category.loadStatus === 'ready' || isLoadingMore ? (
+            category.loadStatus === CookieTriageLoadStatus.Ready || isLoadingMore ? (
               category.hasNextPage ? (
                 <TableListFooter
                   status="more"

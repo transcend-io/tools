@@ -1,4 +1,8 @@
-import type { ConsentTriageType, CookieTriageAnalysis } from './cookieTriageTypes.js';
+import {
+  ConsentTriageType,
+  type ConsentTriageType as ConsentTriageTypeValue,
+  type CookieTriageAnalysis,
+} from './cookieTriageTypes.js';
 
 /** Structural cookie/data-flow list node the triage view can project without SDK imports. */
 export interface ConsentTriageListNode {
@@ -67,7 +71,7 @@ export function projectDataFlowForTriage(flow: ConsentTriageListNode): CookieTri
 
 /** Project an unknown list-tool row, or `undefined` when it cannot be shown. */
 export function projectListNodeForTriage(
-  triageType: ConsentTriageType,
+  triageType: ConsentTriageTypeValue,
   node: unknown,
 ): CookieTriageAnalysis | undefined {
   const shaped = asListNode(node);
@@ -76,7 +80,7 @@ export function projectListNodeForTriage(
   }
 
   try {
-    return triageType === 'cookies'
+    return triageType === ConsentTriageType.Cookies
       ? projectCookieForTriage(shaped)
       : projectDataFlowForTriage(shaped);
   } catch {

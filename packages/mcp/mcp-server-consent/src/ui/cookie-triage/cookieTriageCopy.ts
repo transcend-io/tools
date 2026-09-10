@@ -1,4 +1,7 @@
-import type { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
+import {
+  ConsentTriageType,
+  type ConsentTriageType as ConsentTriageTypeValue,
+} from '../../lib/cookieTriageTypes.ts';
 
 /** User-facing copy for cookies vs data-flow triage. */
 export interface CookieTriageCopy {
@@ -31,6 +34,6 @@ const DATA_FLOW_COPY: CookieTriageCopy = {
 };
 
 /** Nouns and dashboard URL for the active triage type. */
-export function triageCopy(triageType: ConsentTriageType): CookieTriageCopy {
-  return triageType === 'cookies' ? COOKIE_COPY : DATA_FLOW_COPY;
+export function triageCopy(triageType: ConsentTriageTypeValue): CookieTriageCopy {
+  return triageType === ConsentTriageType.Cookies ? COOKIE_COPY : DATA_FLOW_COPY;
 }

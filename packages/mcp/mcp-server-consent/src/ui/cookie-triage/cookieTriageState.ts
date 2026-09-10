@@ -1,24 +1,26 @@
-import { COOKIE_TRIAGE_DORMANT_MS } from '../../lib/cookieTriageQuery.ts';
-import type {
-  CookieTriageAnalysis,
+import {
+  COOKIE_TRIAGE_DORMANT_MS,
+  COOKIE_TRIAGE_MIN_OCCURRENCES,
+  CookieTriagePurposeCategory,
+  getPurposeLabel,
+} from '../../lib/cookieTriageConfig.ts';
+import {
   CookieTriageDecision,
-  CookieTriagePurposeOption,
-  ConsentTriageType,
+  CookieTriageLoadStatus,
+  type CookieTriageAnalysis,
+  type CookieTriagePurposeOption,
+  type ConsentTriageType,
 } from '../../lib/cookieTriageTypes.ts';
 import {
   COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS,
-  COOKIE_TRIAGE_PURPOSE_LABELS,
   COOKIE_TRIAGE_PURPOSE_ORDER,
   isDefaultCookiePurposeSlug,
   isUnknownCookiePurposeSlug,
-  type CookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { triageCopy } from './cookieTriageCopy.ts';
 
-export type { CookieTriageDecision, CookieTriagePurposeOption };
-
-/** Per-tab list fetch status */
-export type CookieTriageLoadStatus = 'idle' | 'loading' | 'ready' | 'error';
+export type { CookieTriagePurposeOption };
+export { COOKIE_TRIAGE_MIN_OCCURRENCES, CookieTriageDecision, CookieTriageLoadStatus };
 
 /** Live state for one cookie/data-flow row within a purpose category */
 export interface CookieRowState {
@@ -231,9 +233,6 @@ export type CookieTriageAction =
       name: string;
     };
 
-/** Encounter count below which a row is suggested as junk. */
-export const COOKIE_TRIAGE_MIN_OCCURRENCES = 5;
-
 /** Whether an item has had no telemetry activity in the last 30 days. */
 export function isDormantCookie(cookie: CookieTriageAnalysis): boolean {
   return (
@@ -260,17 +259,17 @@ export function hasMinimalOccurrences(cookie: CookieTriageAnalysis): boolean {
  */
 export function suggestTriageDecision(
   cookie: CookieTriageAnalysis,
-): Extract<CookieTriageDecision, 'approve' | 'junk'> | undefined {
+): typeof CookieTriageDecision.Approve | typeof CookieTriageDecision.Junk | undefined {
   if (!hasAssignedPurpose(cookie) || isDormantCookie(cookie) || hasMinimalOccurrences(cookie)) {
-    return 'junk';
+    return CookieTriageDecision.Junk;
   }
-  return 'approve';
+  return CookieTriageDecision.Approve;
 }
 
 /** Suggestion for an undecided row; decided rows never suggest. */
 export function suggestRowDecision(
   row: CookieRowState,
-): Extract<CookieTriageDecision, 'approve' | 'junk'> | undefined {
+): typeof CookieTriageDecision.Approve | typeof CookieTriageDecision.Junk | undefined {
   if (row.decision !== undefined) {
     return undefined;
   }
@@ -281,18 +280,63 @@ function emptyCategory(): CookieTriageCategoryState {
   return {
     totalCount: 0,
     cookies: [],
-    loadStatus: 'idle',
+    loadStatus: CookieTriageLoadStatus.Idle,
     nextOffset: 0,
     hasNextPage: true,
     countBusy: false,
   };
 }
 
+/** Seed every purpose tab — explicit keys, no `Object.fromEntries` cast. */
+function emptyCategories(): CookieTriageCategoriesState {
+  return {
+    [CookieTriagePurposeCategory.Essential]: emptyCategory(),
+    [CookieTriagePurposeCategory.Functional]: emptyCategory(),
+    [CookieTriagePurposeCategory.Advertising]: emptyCategory(),
+    [CookieTriagePurposeCategory.Analytics]: emptyCategory(),
+    [CookieTriagePurposeCategory.SaleOfInfo]: emptyCategory(),
+    [CookieTriagePurposeCategory.Unknown]: emptyCategory(),
+    [CookieTriagePurposeCategory.Custom]: emptyCategory(),
+  };
+}
+
+/**
+ * Read a purpose tab from session state.
+ *
+ * Indexes with a literal key after an exhaustive switch so
+ * `noUncheckedIndexedAccess` cannot widen the result to `| undefined`.
+ */
+export function getCategory(
+  categories: CookieTriageCategoriesState,
+  purpose: CookieTriagePurposeCategory,
+): CookieTriageCategoryState {
+  switch (purpose) {
+    case CookieTriagePurposeCategory.Essential:
+      return categories[CookieTriagePurposeCategory.Essential];
+    case CookieTriagePurposeCategory.Functional:
+      return categories[CookieTriagePurposeCategory.Functional];
+    case CookieTriagePurposeCategory.Advertising:
+      return categories[CookieTriagePurposeCategory.Advertising];
+    case CookieTriagePurposeCategory.Analytics:
+      return categories[CookieTriagePurposeCategory.Analytics];
+    case CookieTriagePurposeCategory.SaleOfInfo:
+      return categories[CookieTriagePurposeCategory.SaleOfInfo];
+    case CookieTriagePurposeCategory.Unknown:
+      return categories[CookieTriagePurposeCategory.Unknown];
+    case CookieTriagePurposeCategory.Custom:
+      return categories[CookieTriagePurposeCategory.Custom];
+    default: {
+      const _exhaustive: never = purpose;
+      return _exhaustive;
+    }
+  }
+}
+
 /** Known default purpose options used until `consent_list_purposes` loads. */
 export function defaultPurposeOptions(): CookieTriagePurposeOption[] {
   return COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS.map((purpose) => ({
     slug: purpose,
-    label: COOKIE_TRIAGE_PURPOSE_LABELS[purpose],
+    label: getPurposeLabel(purpose),
   }));
 }
 
@@ -307,24 +351,22 @@ export function selectCustomPurposeSlugs(
 
 /** Build an empty session with every purpose tab seeded. */
 export function createEmptySession(triageType: ConsentTriageType): CookieTriageSessionState {
-  const categories = Object.fromEntries(
-    COOKIE_TRIAGE_PURPOSE_ORDER.map((purpose) => [purpose, emptyCategory()]),
-  ) as CookieTriageCategoriesState;
-
   return {
     triageType,
-    categories,
-    selectedPurpose: 'Essential',
+    categories: emptyCategories(),
+    selectedPurpose: CookieTriagePurposeCategory.Essential,
     purposeOptions: defaultPurposeOptions(),
     purposeOptionsLoaded: false,
-    summaryLoadStatus: 'loading',
+    summaryLoadStatus: CookieTriageLoadStatus.Loading,
   };
 }
 
 /** Ordered purpose keys shown as tabs. Custom is last and drops after purposes load with none. */
 export function selectPurposes(state: CookieTriageSessionState): CookieTriagePurposeCategory[] {
   if (state.purposeOptionsLoaded && selectCustomPurposeSlugs(state.purposeOptions).length === 0) {
-    return COOKIE_TRIAGE_PURPOSE_ORDER.filter((purpose) => purpose !== 'Custom');
+    return COOKIE_TRIAGE_PURPOSE_ORDER.filter(
+      (purpose) => purpose !== CookieTriagePurposeCategory.Custom,
+    );
   }
   return [...COOKIE_TRIAGE_PURPOSE_ORDER];
 }
@@ -350,7 +392,7 @@ export function selectSummary(state: CookieTriageSessionState): CookieTriageSumm
     pendingCount: state.pendingTotal ?? 0,
     dormantCount: state.dormantTotal ?? 0,
     triagedCount: selectTriagedCount(state.categories),
-    summaryBusy: state.summaryLoadStatus === 'loading',
+    summaryBusy: state.summaryLoadStatus === CookieTriageLoadStatus.Loading,
   };
 }
 
@@ -383,9 +425,9 @@ export function selectCategorySummary(
       continue;
     }
     const suggestion = suggestTriageDecision(row.initial);
-    if (suggestion === 'approve') {
+    if (suggestion === CookieTriageDecision.Approve) {
       approveSuggestionCount++;
-    } else if (suggestion === 'junk') {
+    } else if (suggestion === CookieTriageDecision.Junk) {
       junkSuggestionCount++;
     }
   }
@@ -473,11 +515,11 @@ export function formatLastActivity(lastActivityAt: string | undefined, now = Dat
 /** Past-tense tag label for a committed triage decision. */
 export function decisionReadLabel(decision: CookieTriageDecision): string {
   switch (decision) {
-    case 'approve':
+    case CookieTriageDecision.Approve:
       return 'Approved';
-    case 'junk':
+    case CookieTriageDecision.Junk:
       return 'Junked';
-    case 'review':
+    case CookieTriageDecision.Review:
       return 'Review';
     default:
       return decision;
@@ -540,7 +582,7 @@ function findRow(
   purpose: CookieTriagePurposeCategory,
   name: string,
 ): CookieRowState | undefined {
-  return categories[purpose].cookies.find((row) => row.name === name);
+  return getCategory(categories, purpose).cookies.find((row) => row.name === name);
 }
 
 function updateCategoryRow(
@@ -615,7 +657,7 @@ function itemBelongsOnPurposeTab(
   purpose: CookieTriagePurposeCategory,
   trackingPurposes: string[] | undefined,
 ): boolean {
-  if (purpose === 'Custom') {
+  if (purpose === CookieTriagePurposeCategory.Custom) {
     return (trackingPurposes ?? []).some(
       (slug) =>
         slug.trim().length > 0 &&
@@ -623,7 +665,7 @@ function itemBelongsOnPurposeTab(
         !isUnknownCookiePurposeSlug(slug),
     );
   }
-  if (purpose === 'Unknown') {
+  if (purpose === CookieTriagePurposeCategory.Unknown) {
     if (!trackingPurposes?.length) {
       return true;
     }
@@ -649,7 +691,7 @@ export function claimPageItems(
   /** Decided overlays on this tab that should be replaced by API pending rows */
   revived: CookieTriageAnalysis[];
 } {
-  const category = categories[purpose];
+  const category = getCategory(categories, purpose);
   const decided = category.cookies.filter((row) => row.decision !== undefined);
   const remainingDecided = [...decided];
   const keys = categoryRowKeys(category);
@@ -688,7 +730,7 @@ export function cookieTriageReducer(
 ): CookieTriageSessionState {
   switch (action.type) {
     case 'decide': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row) {
         return state;
@@ -705,7 +747,7 @@ export function cookieTriageReducer(
       };
     }
     case 'undo': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row || row.decision === undefined) {
         return state;
@@ -720,7 +762,7 @@ export function cookieTriageReducer(
       };
     }
     case 'setNotes': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row || row.notes === action.notes) {
         return state;
@@ -735,7 +777,7 @@ export function cookieTriageReducer(
       };
     }
     case 'setTrackingPurposes': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row || samePurposeList(row.initial.trackingPurposes, action.trackingPurposes)) {
         return state;
@@ -760,9 +802,9 @@ export function cookieTriageReducer(
       }
       const purposeOptionsLoaded = true;
       const selectedPurpose =
-        state.selectedPurpose === 'Custom' &&
+        state.selectedPurpose === CookieTriagePurposeCategory.Custom &&
         selectCustomPurposeSlugs(action.purposeOptions).length === 0
-          ? 'Unknown'
+          ? CookieTriagePurposeCategory.Unknown
           : state.selectedPurpose;
       return {
         ...state,
@@ -782,8 +824,8 @@ export function cookieTriageReducer(
       return { ...state, selectedPurpose: action.purpose };
     }
     case 'loadStart': {
-      const category = state.categories[action.purpose];
-      if (category.loadStatus === 'loading') {
+      const category = getCategory(state.categories, action.purpose);
+      if (category.loadStatus === CookieTriageLoadStatus.Loading) {
         return state;
       }
 
@@ -793,15 +835,15 @@ export function cookieTriageReducer(
           ...state.categories,
           [action.purpose]: {
             ...category,
-            loadStatus: 'loading',
+            loadStatus: CookieTriageLoadStatus.Loading,
             loadError: undefined,
           },
         },
       };
     }
     case 'refreshStart': {
-      const category = state.categories[action.purpose];
-      if (category.loadStatus === 'loading') {
+      const category = getCategory(state.categories, action.purpose);
+      if (category.loadStatus === CookieTriageLoadStatus.Loading) {
         return state;
       }
 
@@ -816,7 +858,7 @@ export function cookieTriageReducer(
             cookies: decided,
             nextOffset: 0,
             hasNextPage: true,
-            loadStatus: 'loading',
+            loadStatus: CookieTriageLoadStatus.Loading,
             loadError: undefined,
             totalCount: category.totalCount,
           },
@@ -824,7 +866,7 @@ export function cookieTriageReducer(
       };
     }
     case 'appendPage': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       const { claimed, revived } = claimPageItems(state.categories, action.purpose, action.items);
 
       let cookies = category.cookies;
@@ -859,28 +901,28 @@ export function cookieTriageReducer(
             totalCount,
             nextOffset: category.nextOffset + action.fetchedCount,
             hasNextPage: action.hasNextPage,
-            loadStatus: 'ready',
+            loadStatus: CookieTriageLoadStatus.Ready,
             loadError: undefined,
           },
         },
       };
     }
     case 'loadError': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       return {
         ...state,
         categories: {
           ...state.categories,
           [action.purpose]: {
             ...category,
-            loadStatus: 'error',
+            loadStatus: CookieTriageLoadStatus.Error,
             loadError: action.error,
           },
         },
       };
     }
     case 'setCategoryCount': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       return {
         ...state,
         categories: {
@@ -889,13 +931,15 @@ export function cookieTriageReducer(
             ...category,
             totalCount: action.totalCount,
             countBusy: false,
-            ...(action.deferListLoad ? { loadStatus: 'idle' as const, loadError: undefined } : {}),
+            ...(action.deferListLoad
+              ? { loadStatus: CookieTriageLoadStatus.Idle, loadError: undefined }
+              : {}),
           },
         },
       };
     }
     case 'countFetchStart': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       if (category.countBusy) {
         return state;
       }
@@ -911,24 +955,24 @@ export function cookieTriageReducer(
       };
     }
     case 'summaryLoadStart': {
-      if (state.summaryLoadStatus === 'loading') {
+      if (state.summaryLoadStatus === CookieTriageLoadStatus.Loading) {
         return state;
       }
       return {
         ...state,
-        summaryLoadStatus: 'loading',
+        summaryLoadStatus: CookieTriageLoadStatus.Loading,
       };
     }
     case 'setSummaryTotals': {
       return {
         ...state,
-        summaryLoadStatus: 'ready',
+        summaryLoadStatus: CookieTriageLoadStatus.Ready,
         ...(action.pendingTotal !== undefined ? { pendingTotal: action.pendingTotal } : {}),
         ...(action.dormantTotal !== undefined ? { dormantTotal: action.dormantTotal } : {}),
       };
     }
     case 'remove': {
-      const category = state.categories[action.purpose];
+      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row) {
         return state;

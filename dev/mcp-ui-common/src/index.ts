@@ -43,7 +43,9 @@ export {
   CheckIcon,
   ChevronDownIcon,
   CloseIcon,
+  CollapseIcon,
   CommentIcon,
+  ExpandIcon,
   RefreshIcon,
   TrashIcon,
 } from './Icons/Icons.tsx';

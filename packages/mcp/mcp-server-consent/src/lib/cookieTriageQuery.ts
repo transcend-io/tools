@@ -1,18 +1,28 @@
-import type {
+import {
+  ConsentTrackerStatus,
+  CookieOrderField,
+  OrderDirection,
+} from '@transcend-io/privacy-types';
+
+import {
+  COOKIE_TRIAGE_DORMANT_MS,
+  COOKIE_TRIAGE_UI_PAGE_SIZE,
+  CookieTriagePurposeCategory,
+  type CookieTriagePurposeCategory as CookieTriagePurposeCategoryValue,
+} from './cookieTriageConfig.js';
+import {
   ConsentTriageType,
-  CookieTriageAnalysis,
   CookieTriageDecision,
+  type CookieTriageAnalysis,
+  type ConsentTriageType as ConsentTriageTypeValue,
+  type CookieTriageDecision as CookieTriageDecisionValue,
 } from './cookieTriageTypes.js';
-import type { CookieTriagePurposeCategory } from './resolvePrimaryCookiePurpose.js';
 
-/** Page size the triage view requests from list tools */
-export const COOKIE_TRIAGE_UI_PAGE_SIZE = 20;
-
-/** Extra list pages to pull when a page claims zero rows for the active tab */
-export const COOKIE_TRIAGE_AUTOFILL_PAGES = 5;
-
-/** Items with no telemetry in this window are treated as dormant */
-export const COOKIE_TRIAGE_DORMANT_MS = 1000 * 60 * 60 * 24 * 30;
+export {
+  COOKIE_TRIAGE_AUTOFILL_PAGES,
+  COOKIE_TRIAGE_DORMANT_MS,
+  COOKIE_TRIAGE_UI_PAGE_SIZE,
+} from './cookieTriageConfig.js';
 
 /** ISO 8601 cutoff for dormant last-seen filters (`now - 30 days`). */
 export function dormantCutoffIso(now = Date.now()): string {
@@ -23,46 +33,56 @@ export function dormantCutoffIso(now = Date.now()): string {
  * Arguments for `consent_list_cookies` or `consent_list_data_flows` for one purpose tab.
  *
  * `Custom` filters to every non-default purpose slug; other tabs filter by their slug
- * (including `Unknown`).
+ * (including `Unknown`). Returns `null` when `Custom` is requested with no custom slugs —
+ * callers must skip the fetch instead of issuing an unfiltered query.
  */
 export function buildTriageListArgs(
-  triageType: ConsentTriageType,
-  purpose: CookieTriagePurposeCategory,
+  triageType: ConsentTriageTypeValue,
+  purpose: CookieTriagePurposeCategoryValue,
   offset: number,
   customPurposeSlugs: readonly string[] = [],
-): Record<string, unknown> {
-  const purposeSlugs = purpose === 'Custom' ? [...customPurposeSlugs] : [purpose];
+): Record<string, unknown> | null {
+  const purposeSlugs =
+    purpose === CookieTriagePurposeCategory.Custom ? [...customPurposeSlugs] : [purpose];
+  // Custom purposes are expected to provide a customPurposeSlug.
+  if (purposeSlugs.length === 0) {
+    return null;
+  }
+
   const purposeFilter =
-    purposeSlugs.length === 0
-      ? {}
-      : triageType === 'cookies'
-        ? { trackingPurposes: purposeSlugs }
-        : { trackingTypes: purposeSlugs };
+    triageType === ConsentTriageType.Cookies
+      ? { trackingPurposes: purposeSlugs }
+      : { trackingTypes: purposeSlugs };
 
   return {
-    status: 'NEEDS_REVIEW',
-    first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+    status: ConsentTrackerStatus.NeedsReview,
+    limit: COOKIE_TRIAGE_UI_PAGE_SIZE,
     offset,
-    orderField: 'occurrences',
-    orderDirection: 'DESC',
+    orderField: CookieOrderField.Occurrences,
+    orderDirection: OrderDirection.Desc,
     // Data-flow triage includes never-active rows; cookie triage keeps the
     // default (omit) so NEEDS_REVIEW totals stay aligned with inventory stats.
-    ...(triageType === 'data_flows' ? { showZeroActivity: true } : {}),
+    ...(triageType === ConsentTriageType.DataFlows ? { showZeroActivity: true } : {}),
     ...purposeFilter,
   };
 }
 
 /**
- * Count-only args for one purpose tab badge (`first: 1`, same purpose filters as the list).
+ * Count-only args for one purpose tab badge (`limit: 1`, same purpose filters as the list).
+ * Returns `null` when Custom has no custom purpose slugs (same as `buildTriageListArgs`).
  */
 export function buildTriagePurposeCountArgs(
-  triageType: ConsentTriageType,
-  purpose: CookieTriagePurposeCategory,
+  triageType: ConsentTriageTypeValue,
+  purpose: CookieTriagePurposeCategoryValue,
   customPurposeSlugs: readonly string[] = [],
-): Record<string, unknown> {
+): Record<string, unknown> | null {
+  const listArgs = buildTriageListArgs(triageType, purpose, 0, customPurposeSlugs);
+  if (listArgs === null) {
+    return null;
+  }
   return {
-    ...buildTriageListArgs(triageType, purpose, 0, customPurposeSlugs),
-    first: 1,
+    ...listArgs,
+    limit: 1,
   };
 }
 
@@ -71,8 +91,8 @@ export function buildTriagePurposeCountArgs(
  */
 export function buildTriagePendingCountArgs(): Record<string, unknown> {
   return {
-    status: 'NEEDS_REVIEW',
-    first: 1,
+    status: ConsentTrackerStatus.NeedsReview,
+    limit: 1,
     offset: 0,
   };
 }
@@ -82,8 +102,8 @@ export function buildTriagePendingCountArgs(): Record<string, unknown> {
  */
 export function buildTriageDormantCountArgs(now = Date.now()): Record<string, unknown> {
   return {
-    status: 'NEEDS_REVIEW',
-    first: 1,
+    status: ConsentTrackerStatus.NeedsReview,
+    limit: 1,
     offset: 0,
     lastDiscoveredAtBefore: dormantCutoffIso(now),
   };
@@ -93,23 +113,23 @@ export function buildTriageDormantCountArgs(now = Date.now()): Record<string, un
  * Fields shared by cookie and data-flow update payloads for one triage mutation.
  */
 function triageUpdateFields(
-  decision: CookieTriageDecision | undefined,
+  decision: CookieTriageDecisionValue | undefined,
   item: CookieTriageAnalysis,
 ): Record<string, unknown> {
   if (decision === undefined) {
-    return { status: 'NEEDS_REVIEW', isJunk: false };
+    return { status: ConsentTrackerStatus.NeedsReview, isJunk: false };
   }
-  if (decision === 'approve') {
+  if (decision === CookieTriageDecision.Approve) {
     return {
-      status: 'LIVE',
+      status: ConsentTrackerStatus.Live,
       isJunk: false,
       ...(item.trackingPurposes && item.trackingPurposes.length > 0
         ? { trackingPurposes: item.trackingPurposes }
         : {}),
     };
   }
-  if (decision === 'junk') {
-    return { status: 'LIVE', isJunk: true };
+  if (decision === CookieTriageDecision.Junk) {
+    return { status: ConsentTrackerStatus.Live, isJunk: true };
   }
   throw new Error(`Unsupported triage decision: ${decision}`);
 }
@@ -121,7 +141,7 @@ export interface TriageUpdateTarget {
   /** Cookie or data-flow snapshot to update */
   item: CookieTriageAnalysis;
   /** Decision to persist; `undefined` restores `NEEDS_REVIEW` */
-  decision: CookieTriageDecision | undefined;
+  decision: CookieTriageDecisionValue | undefined;
 }
 
 /**
@@ -131,13 +151,13 @@ export interface TriageUpdateTarget {
  * Pass `decision: undefined` on a target to restore `NEEDS_REVIEW` (undo).
  */
 export function buildTriageBulkUpdateArgs(
-  triageType: ConsentTriageType,
+  triageType: ConsentTriageTypeValue,
   targets: readonly TriageUpdateTarget[],
 ): Record<string, unknown> {
   if (targets.length === 0) {
     throw new Error('At least one triage update target is required');
   }
-  if (triageType === 'cookies') {
+  if (triageType === ConsentTriageType.Cookies) {
     return {
       cookies: targets.map(({ item, decision }) => ({
         name: item.name,
@@ -159,9 +179,9 @@ export function buildTriageBulkUpdateArgs(
  * Pass `decision: undefined` to restore `NEEDS_REVIEW` (undo).
  */
 export function buildTriageUpdateArgs(
-  triageType: ConsentTriageType,
+  triageType: ConsentTriageTypeValue,
   item: CookieTriageAnalysis,
-  decision: CookieTriageDecision | undefined,
+  decision: CookieTriageDecisionValue | undefined,
 ): Record<string, unknown> {
   return buildTriageBulkUpdateArgs(triageType, [{ item, decision }]);
 }
@@ -170,11 +190,11 @@ export function buildTriageUpdateArgs(
  * Arguments to persist only the Notes (`description`) field for one triage row.
  */
 export function buildTriageNotesUpdateArgs(
-  triageType: ConsentTriageType,
+  triageType: ConsentTriageTypeValue,
   item: CookieTriageAnalysis,
   notes: string,
 ): Record<string, unknown> {
-  if (triageType === 'cookies') {
+  if (triageType === ConsentTriageType.Cookies) {
     return {
       cookies: [
         {
@@ -198,11 +218,11 @@ export function buildTriageNotesUpdateArgs(
  * Arguments to persist only tracking purpose slugs for one triage row.
  */
 export function buildTriagePurposesUpdateArgs(
-  triageType: ConsentTriageType,
+  triageType: ConsentTriageTypeValue,
   item: CookieTriageAnalysis,
   trackingPurposes: string[],
 ): Record<string, unknown> {
-  if (triageType === 'cookies') {
+  if (triageType === ConsentTriageType.Cookies) {
     return {
       cookies: [
         {

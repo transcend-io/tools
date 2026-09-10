@@ -1,12 +1,14 @@
+import {
+  COOKIE_TRIAGE_MAX_PER_PURPOSE,
+  COOKIE_TRIAGE_PURPOSE_ORDER,
+} from './cookieTriageConfig.js';
 import type { CookieTriageAnalysis, CookieTriageCategoryPayload } from './cookieTriageTypes.js';
 import {
-  COOKIE_TRIAGE_PURPOSE_ORDER,
   resolvePrimaryCookiePurpose,
   type CookieTriagePurposeCategory,
 } from './resolvePrimaryCookiePurpose.js';
 
-/** Max cookies shown per purpose bucket in the triage UI */
-export const COOKIE_TRIAGE_MAX_PER_PURPOSE = 100;
+export { COOKIE_TRIAGE_MAX_PER_PURPOSE } from './cookieTriageConfig.js';
 
 /** Sort cookies highest traffic first; missing occurrences rank last. */
 export function compareCookiesByOccurrencesDesc(

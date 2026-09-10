@@ -9,31 +9,32 @@ import {
 } from '@transcend-io/mcp-server-base';
 
 import { COOKIE_TRIAGE_APP_RESOURCE } from '../apps/cookie-triage.js';
-import type {
-  ConsentTriageType,
-  CookieTriageAppInput,
-  CookieTriageAppPayload,
-} from '../lib/cookieTriageTypes.js';
 import {
   COOKIE_TRIAGE_FETCH_MAX,
   COOKIE_TRIAGE_FETCH_PAGE_SIZE,
+  COOKIE_TRIAGE_MAX_PER_PURPOSE,
+} from '../lib/cookieTriageConfig.js';
+import {
+  ConsentTriageType,
+  type ConsentTriageType as ConsentTriageTypeValue,
+  type CookieTriageAppInput,
+  type CookieTriageAppPayload,
+} from '../lib/cookieTriageTypes.js';
+import {
   fetchConsentTriageItems,
   fetchTriageOrganizationName,
 } from '../lib/fetchConsentTriageItems.js';
-import {
-  COOKIE_TRIAGE_MAX_PER_PURPOSE,
-  groupCookiesForTriage,
-} from '../lib/groupCookiesForTriage.js';
+import { groupCookiesForTriage } from '../lib/groupCookiesForTriage.js';
 
 export const ConsentTriageTypeSchema = z
-  .enum(['cookies', 'data_flows'])
+  .enum([ConsentTriageType.Cookies, ConsentTriageType.DataFlows])
   .describe('Open the review UI for cookies or data flows that need review');
 
 export const CookieTriageAppSchema = z.object({
   triageType: ConsentTriageTypeSchema,
 }) satisfies z.ZodType<CookieTriageAppInput>;
 
-const COOKIE_TRIAGE_APP_DESCRIPTION = `Opens an interactive consent triage review UI for cookies or data flows. Pass triageType ("cookies" | "data_flows"). On MCP App hosts the tool returns a fast shell and the view pages consent_list_cookies or consent_list_data_flows; elsewhere the tool fetches the organization name and items (pages of ${COOKIE_TRIAGE_FETCH_PAGE_SIZE}, cap ~${COOKIE_TRIAGE_FETCH_MAX}), groups by purpose (≤${COOKIE_TRIAGE_MAX_PER_PURPOSE}/tab), and sorts by traffic. No agent classification suggestions. Use the consent-triage prompt for the full workflow.`;
+const COOKIE_TRIAGE_APP_DESCRIPTION = `Opens an interactive consent triage review UI for cookies or data flows. Pass triageType ("${ConsentTriageType.Cookies}" | "${ConsentTriageType.DataFlows}"). On MCP App hosts the tool returns a fast shell and the view pages consent_list_cookies or consent_list_data_flows; elsewhere the tool fetches the organization name and items (pages of ${COOKIE_TRIAGE_FETCH_PAGE_SIZE}, cap ~${COOKIE_TRIAGE_FETCH_MAX}), groups by purpose (≤${COOKIE_TRIAGE_MAX_PER_PURPOSE}/tab), and sorts by traffic. No agent classification suggestions. Use the consent-triage prompt for the full workflow.`;
 
 /**
  * Re-throw a fetch failure with the step name so the UI/agent can see what broke.
@@ -43,8 +44,8 @@ const COOKIE_TRIAGE_APP_DESCRIPTION = `Opens an interactive consent triage revie
  * @param error - Underlying failure
  */
 function wrapTriageFetchError(
-  step: 'organization' | ConsentTriageType,
-  triageType: ConsentTriageType,
+  step: 'organization' | ConsentTriageTypeValue,
+  triageType: ConsentTriageTypeValue,
   error: unknown,
 ): ToolError {
   const message = error instanceof Error ? error.message : String(error);

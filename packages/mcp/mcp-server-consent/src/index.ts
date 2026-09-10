@@ -54,16 +54,25 @@ export {
 } from './tools/consent_bulk_triage.js';
 export { ConsentTriageTypeSchema, CookieTriageAppSchema } from './tools/cookie_triage_app.js';
 export {
-  type ConsentTriageType,
+  COOKIE_TRIAGE_FETCH_MAX,
+  COOKIE_TRIAGE_FETCH_PAGE_SIZE,
+  COOKIE_TRIAGE_MAX_PER_PURPOSE,
+  COOKIE_TRIAGE_MIN_OCCURRENCES,
+  COOKIE_TRIAGE_PURPOSE_LABELS,
+  COOKIE_TRIAGE_PURPOSE_ORDER,
+  COOKIE_TRIAGE_UI_PAGE_SIZE,
+  CookieTriagePurposeCategory,
+} from './lib/cookieTriageConfig.js';
+export {
+  ConsentTriageType,
+  CookieTriageDecision,
+  CookieTriageLoadStatus,
   type CookieTriageAnalysis,
   type CookieTriageAppInput,
   type CookieTriageAppPayload,
   type CookieTriageCategoryPayload,
-  type CookieTriageDecision,
 } from './lib/cookieTriageTypes.js';
 export {
-  COOKIE_TRIAGE_FETCH_MAX,
-  COOKIE_TRIAGE_FETCH_PAGE_SIZE,
   fetchConsentTriageItems,
   fetchCookiesForTriage,
   fetchDataFlowsForTriage,
@@ -76,11 +85,7 @@ export {
   type ConsentTriageListNode,
 } from './lib/projectTriageItem.js';
 export {
-  COOKIE_TRIAGE_MAX_PER_PURPOSE,
   compareCookiesByOccurrencesDesc,
   groupCookiesForTriage,
 } from './lib/groupCookiesForTriage.js';
-export {
-  resolvePrimaryCookiePurpose,
-  type CookieTriagePurposeCategory,
-} from './lib/resolvePrimaryCookiePurpose.js';
+export { resolvePrimaryCookiePurpose } from './lib/resolvePrimaryCookiePurpose.js';

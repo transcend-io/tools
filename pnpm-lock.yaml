@@ -841,6 +841,9 @@ importers:
       '@transcend-io/sdk':
         specifier: workspace:*
         version: link:../../sdk
+      '@transcend-io/type-utils':
+        specifier: workspace:*
+        version: link:../../type-utils
       zod:
         specifier: 'catalog:'
         version: 4.4.3

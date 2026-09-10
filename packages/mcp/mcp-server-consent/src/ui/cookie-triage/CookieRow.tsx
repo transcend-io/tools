@@ -19,6 +19,7 @@ import {
 } from './CookieTriageContext.tsx';
 import { triageCopy } from './cookieTriageCopy.ts';
 import {
+  CookieTriageDecision,
   decisionReadLabel,
   formatEncounters,
   formatLastActivity,
@@ -26,7 +27,6 @@ import {
   selectRowPurposeSlugs,
   suggestRowDecision,
   type CookieRowState,
-  type CookieTriageDecision,
 } from './cookieTriageState.ts';
 import { PurposeMultiSelect } from './PurposeMultiSelect.tsx';
 
@@ -51,7 +51,8 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
   const suggestion = suggestRowDecision(row);
   const selectedPurposes = selectRowPurposeSlugs(row);
   const decided = row.decision;
-  const isDecided = decided === 'approve' || decided === 'junk';
+  const isDecided =
+    decided === CookieTriageDecision.Approve || decided === CookieTriageDecision.Junk;
   const busy = asking || mutating;
   const hasSavedNotes = row.notes.trim().length > 0;
   const { singular } = triageCopy(triageType);
@@ -198,7 +199,7 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                 <span className="inline-flex items-baseline gap-2 text-sm">
                   <span
                     className={`font-semibold ${
-                      decided === 'approve' ? 'text-success' : 'text-danger'
+                      decided === CookieTriageDecision.Approve ? 'text-success' : 'text-danger'
                     }`}
                     aria-label={`Decision: ${decisionReadLabel(decided)}`}
                   >
@@ -221,24 +222,24 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                 <>
                   <Button
                     variant={ButtonVariant.Icon}
-                    active={suggestion === 'approve'}
+                    active={suggestion === CookieTriageDecision.Approve}
                     aria-label="Approve"
                     disabled={busy}
                     aria-busy={mutating}
                     onClick={() => {
-                      void onDecision('approve');
+                      void onDecision(CookieTriageDecision.Approve);
                     }}
                   >
                     <ApproveCheckIcon />
                   </Button>
                   <Button
                     variant={ButtonVariant.Icon}
-                    active={suggestion === 'junk'}
+                    active={suggestion === CookieTriageDecision.Junk}
                     aria-label="Junk"
                     disabled={busy}
                     aria-busy={mutating}
                     onClick={() => {
-                      void onDecision('junk');
+                      void onDecision(CookieTriageDecision.Junk);
                     }}
                   >
                     <CancelIcon />

@@ -1,6 +1,7 @@
 import { positionAnchoredListbox } from '@transcend-io/mcp-ui-common';
 import { describe, expect, it } from 'vitest';
 
+import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
 import {
   ESSENTIAL_BLOCKS_OTHER_PURPOSES_TOOLTIP,
   OTHER_PURPOSE_BLOCKS_ESSENTIAL_TOOLTIP,
@@ -34,8 +35,8 @@ describe('PurposeMultiSelect helpers', () => {
   it('never offers Unknown as a selectable option', () => {
     expect(
       mergePurposeSelectOptions(
-        [...options, { slug: 'Unknown', label: 'Unknown' }],
-        ['Unknown', 'Analytics'],
+        [...options, { slug: CookieTriagePurposeCategory.Unknown, label: 'Unknown' }],
+        [CookieTriagePurposeCategory.Unknown, CookieTriagePurposeCategory.Analytics],
       ),
     ).toEqual(options);
   });

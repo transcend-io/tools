@@ -2,12 +2,12 @@ import type { App } from '@modelcontextprotocol/ext-apps';
 import { useTool } from '@transcend-io/mcp-server-base/ui';
 import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 
-import type { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
+import { CookieTriagePurposeCategory } from '../../lib/cookieTriageConfig.ts';
+import { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
 import {
   projectPurposeOptions,
   type ConsentPurposeListNode,
 } from '../../lib/projectPurposeOptions.ts';
-import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import {
   AppliedSuggestionsContext,
   CookieTriageActionsContext,
@@ -27,8 +27,10 @@ import {
 } from './cookieTriagePersist.ts';
 import {
   buildAskOpinionPrompt,
+  CookieTriageLoadStatus,
   cookieTriageReducer,
   createEmptySession,
+  getCategory,
   selectCustomPurposeSlugs,
   selectPurposes,
   selectTriagedCount,
@@ -37,19 +39,19 @@ import {
 } from './cookieTriageState.ts';
 
 const LIST_TOOL_NAME = {
-  cookies: 'consent_list_cookies',
-  data_flows: 'consent_list_data_flows',
+  [ConsentTriageType.Cookies]: 'consent_list_cookies',
+  [ConsentTriageType.DataFlows]: 'consent_list_data_flows',
 } as const;
 
 const UPDATE_TOOL_NAME = {
-  cookies: 'consent_update_cookies',
-  data_flows: 'consent_update_data_flows',
+  [ConsentTriageType.Cookies]: 'consent_update_cookies',
+  [ConsentTriageType.DataFlows]: 'consent_update_data_flows',
 } as const;
 
 /** App-only permanent delete tools, keyed by triage type. */
 const DELETE_TOOL_NAME = {
-  cookies: 'consent_delete_cookies',
-  data_flows: 'consent_delete_data_flows',
+  [ConsentTriageType.Cookies]: 'consent_delete_cookies',
+  [ConsentTriageType.DataFlows]: 'consent_delete_data_flows',
 } as const;
 
 const PURPOSES_TOOL_NAME = 'consent_list_purposes';
@@ -69,14 +71,15 @@ function projectChrome(state: CookieTriageSessionState): CookieTriageChrome {
     selectedPurpose: state.selectedPurpose,
     purposes,
     isRefreshing: Object.values(state.categories).some(
-      (category) => category.loadStatus === 'loading',
+      (category) => category.loadStatus === CookieTriageLoadStatus.Loading,
     ),
     tabs: purposes.map((purpose) => {
-      const category = state.categories[purpose];
+      const category = getCategory(state.categories, purpose);
       return {
         id: purpose,
         totalCount: category.totalCount,
-        countBusy: category.countBusy === true || category.loadStatus === 'loading',
+        countBusy:
+          category.countBusy === true || category.loadStatus === CookieTriageLoadStatus.Loading,
         loadStatus: category.loadStatus,
       };
     }),
@@ -186,8 +189,11 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
 
     void (async () => {
       const selected = stateRef.current.selectedPurpose;
-      if (selected !== 'Custom') {
-        dispatchAndSync(stateRef, dispatch, { type: 'countFetchStart', purpose: 'Custom' });
+      if (selected !== CookieTriagePurposeCategory.Custom) {
+        dispatchAndSync(stateRef, dispatch, {
+          type: 'countFetchStart',
+          purpose: CookieTriagePurposeCategory.Custom,
+        });
       }
       await Promise.all(
         initialCountPurposes(selected).map((purpose) =>
@@ -235,16 +241,17 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
     if (customPurposeSlugsKey.length === 0) {
       dispatch({
         type: 'setCategoryCount',
-        purpose: 'Custom',
-        totalCount: stateRef.current.categories.Custom.totalCount,
+        purpose: CookieTriagePurposeCategory.Custom,
+        totalCount: getCategory(stateRef.current.categories, CookieTriagePurposeCategory.Custom)
+          .totalCount,
       });
       return;
     }
 
-    if (stateRef.current.selectedPurpose === 'Custom') {
-      void fetchApi.fetchPurposePages('Custom', 'initial');
+    if (stateRef.current.selectedPurpose === CookieTriagePurposeCategory.Custom) {
+      void fetchApi.fetchPurposePages(CookieTriagePurposeCategory.Custom, 'initial');
     } else {
-      void fetchApi.fetchCategoryCount('Custom', { markBusy: true });
+      void fetchApi.fetchCategoryCount(CookieTriagePurposeCategory.Custom, { markBusy: true });
     }
   }, [app, customPurposeSlugsKey, fetchApi, state.purposeOptionsLoaded]);
 
@@ -268,7 +275,7 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
         if (!connected) {
           throw new Error('Not connected to the host');
         }
-        const row = stateRef.current.categories[purpose].cookies.find(
+        const row = getCategory(stateRef.current.categories, purpose).cookies.find(
           (candidate) => candidate.name === name,
         );
         if (!row) {
@@ -310,7 +317,7 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
       pendingCount: state.pendingTotal ?? 0,
       dormantCount: state.dormantTotal ?? 0,
       triagedCount,
-      summaryBusy: state.summaryLoadStatus === 'loading',
+      summaryBusy: state.summaryLoadStatus === CookieTriageLoadStatus.Loading,
     }),
     [state.dormantTotal, state.pendingTotal, state.summaryLoadStatus, triagedCount],
   );
@@ -323,7 +330,7 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
   }
   const chrome = chromeRef.current;
 
-  const activeCategory = state.categories[state.selectedPurpose];
+  const activeCategory = getCategory(state.categories, state.selectedPurpose);
 
   return (
     <CookieTriageMetaContext.Provider value={meta}>

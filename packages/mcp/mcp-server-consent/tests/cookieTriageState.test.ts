@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CookieTriageAnalysis } from '../src/lib/cookieTriageTypes.js';
+import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
+import {
+  ConsentTriageType,
+  CookieTriageDecision,
+  CookieTriageLoadStatus,
+  type CookieTriageAnalysis,
+} from '../src/lib/cookieTriageTypes.js';
 import {
   buildAskOpinionPrompt,
   canUndoRow,
@@ -32,14 +38,14 @@ const analyticsCookies: CookieTriageAnalysis[] = [
   {
     name: '_ga',
     id: 'analytics-ga',
-    trackingPurposes: ['Analytics'],
+    trackingPurposes: [CookieTriagePurposeCategory.Analytics],
     occurrences: 31204,
     lastActivityAt: recentActivityAt,
   },
   {
     name: '_stale',
     id: 'analytics-stale',
-    trackingPurposes: ['Analytics'],
+    trackingPurposes: [CookieTriagePurposeCategory.Analytics],
     occurrences: 12,
     lastActivityAt: staleActivityAt,
   },
@@ -47,7 +53,7 @@ const analyticsCookies: CookieTriageAnalysis[] = [
 
 function seedPurpose(
   state: CookieTriageSessionState,
-  purpose: 'Analytics' | 'Custom' | 'Unknown' | 'Essential' | 'Advertising',
+  purpose: CookieTriagePurposeCategory,
   items: CookieTriageAnalysis[],
   totalCount = items.length,
 ): CookieTriageSessionState {
@@ -62,37 +68,39 @@ function seedPurpose(
 }
 
 function seededSession(): CookieTriageSessionState {
-  let state = createEmptySession('cookies');
-  state = seedPurpose(state, 'Analytics', analyticsCookies);
-  state = seedPurpose(state, 'Unknown', [{ name: '_unknown', id: 'unknown-1' }]);
+  let state = createEmptySession(ConsentTriageType.Cookies);
+  state = seedPurpose(state, CookieTriagePurposeCategory.Analytics, analyticsCookies);
+  state = seedPurpose(state, CookieTriagePurposeCategory.Unknown, [
+    { name: '_unknown', id: 'unknown-1' },
+  ]);
   return state;
 }
 
 describe('createEmptySession', () => {
   it('seeds every purpose tab idle with Essential selected', () => {
-    const state = createEmptySession('cookies');
+    const state = createEmptySession(ConsentTriageType.Cookies);
 
-    expect(state.triageType).toBe('cookies');
-    expect(state.selectedPurpose).toBe('Essential');
+    expect(state.triageType).toBe(ConsentTriageType.Cookies);
+    expect(state.selectedPurpose).toBe(CookieTriagePurposeCategory.Essential);
     expect(state.purposeOptions.map((option) => option.slug)).toEqual([
-      'Essential',
-      'Functional',
-      'Advertising',
-      'Analytics',
-      'SaleOfInfo',
+      CookieTriagePurposeCategory.Essential,
+      CookieTriagePurposeCategory.Functional,
+      CookieTriagePurposeCategory.Advertising,
+      CookieTriagePurposeCategory.Analytics,
+      CookieTriagePurposeCategory.SaleOfInfo,
     ]);
     expect(selectPurposes(state)).toEqual([
-      'Essential',
-      'Functional',
-      'Advertising',
-      'Analytics',
-      'SaleOfInfo',
-      'Unknown',
-      'Custom',
+      CookieTriagePurposeCategory.Essential,
+      CookieTriagePurposeCategory.Functional,
+      CookieTriagePurposeCategory.Advertising,
+      CookieTriagePurposeCategory.Analytics,
+      CookieTriagePurposeCategory.SaleOfInfo,
+      CookieTriagePurposeCategory.Unknown,
+      CookieTriagePurposeCategory.Custom,
     ]);
     expect(state.purposeOptionsLoaded).toBe(false);
     expect(selectCustomPurposeSlugs(state.purposeOptions)).toEqual([]);
-    expect(state.categories.Analytics.loadStatus).toBe('idle');
+    expect(state.categories.Analytics.loadStatus).toBe(CookieTriageLoadStatus.Idle);
     expect(state.categories.Analytics.cookies).toEqual([]);
     expect(state.categories.Analytics.nextOffset).toBe(0);
     expect(state.categories.Analytics.hasNextPage).toBe(true);
@@ -104,10 +112,15 @@ describe('appendPage', () => {
     const item: CookieTriageAnalysis = {
       name: '_ga',
       id: 'ga-1',
-      trackingPurposes: ['Analytics'],
+      trackingPurposes: [CookieTriagePurposeCategory.Analytics],
       description: 'session analytics',
     };
-    const state = seedPurpose(createEmptySession('cookies'), 'Analytics', [item], 2);
+    const state = seedPurpose(
+      createEmptySession(ConsentTriageType.Cookies),
+      CookieTriagePurposeCategory.Analytics,
+      [item],
+      2,
+    );
 
     expect(state.categories.Analytics.cookies).toEqual([
       { name: '_ga', initial: item, notes: 'session analytics' },
@@ -115,16 +128,31 @@ describe('appendPage', () => {
     expect(state.categories.Analytics.cookies[0]?.initial).not.toBe(item);
     expect(state.categories.Analytics.totalCount).toBe(2);
     expect(state.categories.Analytics.nextOffset).toBe(1);
-    expect(state.categories.Analytics.loadStatus).toBe('ready');
+    expect(state.categories.Analytics.loadStatus).toBe(CookieTriageLoadStatus.Ready);
     expect(state.categories.Analytics.cookies[0]?.decision).toBeUndefined();
   });
 
   it('keeps rows that include the tab purpose, including mixed-purpose items', () => {
-    const state = seedPurpose(createEmptySession('cookies'), 'Advertising', [
-      { name: 'ads', id: 'ads-1', trackingPurposes: ['Advertising'] },
-      { name: 'also-essential', id: 'ads-2', trackingPurposes: ['Essential', 'Advertising'] },
-      { name: 'analytics-only', id: 'ads-3', trackingPurposes: ['Analytics'] },
-    ]);
+    const state = seedPurpose(
+      createEmptySession(ConsentTriageType.Cookies),
+      CookieTriagePurposeCategory.Advertising,
+      [
+        { name: 'ads', id: 'ads-1', trackingPurposes: [CookieTriagePurposeCategory.Advertising] },
+        {
+          name: 'also-essential',
+          id: 'ads-2',
+          trackingPurposes: [
+            CookieTriagePurposeCategory.Essential,
+            CookieTriagePurposeCategory.Advertising,
+          ],
+        },
+        {
+          name: 'analytics-only',
+          id: 'ads-3',
+          trackingPurposes: [CookieTriagePurposeCategory.Analytics],
+        },
+      ],
+    );
 
     expect(state.categories.Advertising.cookies.map((row) => row.name)).toEqual([
       'ads',
@@ -133,11 +161,29 @@ describe('appendPage', () => {
   });
 
   it('shows the same mixed-purpose item on every matching purpose tab', () => {
-    let state = seedPurpose(createEmptySession('cookies'), 'Essential', [
-      { name: 'mixed', id: 'mixed-1', trackingPurposes: ['Essential', 'Advertising'] },
-    ]);
-    state = seedPurpose(state, 'Advertising', [
-      { name: 'mixed', id: 'mixed-1', trackingPurposes: ['Essential', 'Advertising'] },
+    let state = seedPurpose(
+      createEmptySession(ConsentTriageType.Cookies),
+      CookieTriagePurposeCategory.Essential,
+      [
+        {
+          name: 'mixed',
+          id: 'mixed-1',
+          trackingPurposes: [
+            CookieTriagePurposeCategory.Essential,
+            CookieTriagePurposeCategory.Advertising,
+          ],
+        },
+      ],
+    );
+    state = seedPurpose(state, CookieTriagePurposeCategory.Advertising, [
+      {
+        name: 'mixed',
+        id: 'mixed-1',
+        trackingPurposes: [
+          CookieTriagePurposeCategory.Essential,
+          CookieTriagePurposeCategory.Advertising,
+        ],
+      },
     ]);
 
     expect(state.categories.Essential.cookies.map((row) => row.name)).toEqual(['mixed']);
@@ -145,24 +191,26 @@ describe('appendPage', () => {
   });
 
   it('skips rows already present on the same tab', () => {
-    let state = seedPurpose(createEmptySession('cookies'), 'Analytics', [
-      { name: '_ga', id: 'c1', trackingPurposes: ['Analytics'] },
-    ]);
-    state = seedPurpose(state, 'Analytics', [
-      { name: '_ga', id: 'c1', trackingPurposes: ['Analytics'] },
-      { name: '_gid', id: 'c2', trackingPurposes: ['Analytics'] },
+    let state = seedPurpose(
+      createEmptySession(ConsentTriageType.Cookies),
+      CookieTriagePurposeCategory.Analytics,
+      [{ name: '_ga', id: 'c1', trackingPurposes: [CookieTriagePurposeCategory.Analytics] }],
+    );
+    state = seedPurpose(state, CookieTriagePurposeCategory.Analytics, [
+      { name: '_ga', id: 'c1', trackingPurposes: [CookieTriagePurposeCategory.Analytics] },
+      { name: '_gid', id: 'c2', trackingPurposes: [CookieTriagePurposeCategory.Analytics] },
     ]);
 
     expect(state.categories.Analytics.cookies.map((row) => row.name)).toEqual(['_ga', '_gid']);
   });
 
   it('uses API totalCount for Unknown and Custom', () => {
-    const unknownState = cookieTriageReducer(createEmptySession('cookies'), {
+    const unknownState = cookieTriageReducer(createEmptySession(ConsentTriageType.Cookies), {
       type: 'appendPage',
-      purpose: 'Unknown',
+      purpose: CookieTriagePurposeCategory.Unknown,
       items: [
         { name: '_unknown', id: 'u1' },
-        { name: '_ga', id: 'ga-1', trackingPurposes: ['Analytics'] },
+        { name: '_ga', id: 'ga-1', trackingPurposes: [CookieTriagePurposeCategory.Analytics] },
       ],
       fetchedCount: 20,
       totalCount: 400,
@@ -174,12 +222,12 @@ describe('appendPage', () => {
     expect(unknownState.categories.Unknown.nextOffset).toBe(20);
     expect(unknownState.categories.Unknown.hasNextPage).toBe(true);
 
-    const customState = cookieTriageReducer(createEmptySession('cookies'), {
+    const customState = cookieTriageReducer(createEmptySession(ConsentTriageType.Cookies), {
       type: 'appendPage',
-      purpose: 'Custom',
+      purpose: CookieTriagePurposeCategory.Custom,
       items: [
         { name: '_loyalty', id: 'l1', trackingPurposes: ['Loyalty'] },
-        { name: '_ga', id: 'ga-1', trackingPurposes: ['Analytics'] },
+        { name: '_ga', id: 'ga-1', trackingPurposes: [CookieTriagePurposeCategory.Analytics] },
       ],
       fetchedCount: 20,
       totalCount: 400,
@@ -191,22 +239,26 @@ describe('appendPage', () => {
   });
 
   it('claims Custom rows that also have a default purpose, even if already on that tab', () => {
-    let state = seedPurpose(createEmptySession('cookies'), 'Advertising', [
-      {
-        name: 'c_review-me',
-        id: 'mixed-1',
-        trackingPurposes: ['CustomPurpose', 'Advertising'],
-      },
-    ]);
+    let state = seedPurpose(
+      createEmptySession(ConsentTriageType.Cookies),
+      CookieTriagePurposeCategory.Advertising,
+      [
+        {
+          name: 'c_review-me',
+          id: 'mixed-1',
+          trackingPurposes: ['CustomPurpose', CookieTriagePurposeCategory.Advertising],
+        },
+      ],
+    );
 
     state = cookieTriageReducer(state, {
       type: 'appendPage',
-      purpose: 'Custom',
+      purpose: CookieTriagePurposeCategory.Custom,
       items: [
         {
           name: 'c_review-me',
           id: 'mixed-1',
-          trackingPurposes: ['CustomPurpose', 'Advertising'],
+          trackingPurposes: ['CustomPurpose', CookieTriagePurposeCategory.Advertising],
         },
         {
           name: "'review-me",
@@ -246,9 +298,9 @@ describe('selectSummary', () => {
 
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
 
     expect(selectSummary(state)).toEqual({
@@ -303,17 +355,23 @@ describe('suggestTriageDecision', () => {
         occurrences: 99,
         lastActivityAt: recentActivityAt,
       }),
-    ).toBe('junk');
+    ).toBe(CookieTriageDecision.Junk);
     expect(
       suggestTriageDecision({
         name: 'b',
         id: 'b',
-        trackingPurposes: ['Unknown'],
+        trackingPurposes: [CookieTriagePurposeCategory.Unknown],
         occurrences: 99,
         lastActivityAt: recentActivityAt,
       }),
-    ).toBe('junk');
-    expect(hasAssignedPurpose({ name: 'b', id: 'b', trackingPurposes: ['Unknown'] })).toBe(false);
+    ).toBe(CookieTriageDecision.Junk);
+    expect(
+      hasAssignedPurpose({
+        name: 'b',
+        id: 'b',
+        trackingPurposes: [CookieTriagePurposeCategory.Unknown],
+      }),
+    ).toBe(false);
   });
 
   it('suggests junk when dormant even with purpose and volume', () => {
@@ -321,11 +379,11 @@ describe('suggestTriageDecision', () => {
       suggestTriageDecision({
         name: 'stale',
         id: 'stale',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 99,
         lastActivityAt: staleActivityAt,
       }),
-    ).toBe('junk');
+    ).toBe(CookieTriageDecision.Junk);
   });
 
   it('suggests junk for minimal or missing occurrences', () => {
@@ -333,25 +391,25 @@ describe('suggestTriageDecision', () => {
       suggestTriageDecision({
         name: 'low',
         id: 'low',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 4,
         lastActivityAt: recentActivityAt,
       }),
-    ).toBe('junk');
+    ).toBe(CookieTriageDecision.Junk);
     expect(
       suggestTriageDecision({
         name: 'zero',
         id: 'zero',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 0,
         lastActivityAt: recentActivityAt,
       }),
-    ).toBe('junk');
+    ).toBe(CookieTriageDecision.Junk);
     expect(
       hasMinimalOccurrences({
         name: 'missing',
         id: 'missing',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         lastActivityAt: recentActivityAt,
       }),
     ).toBe(true);
@@ -359,10 +417,10 @@ describe('suggestTriageDecision', () => {
       suggestTriageDecision({
         name: 'missing',
         id: 'missing',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         lastActivityAt: recentActivityAt,
       }),
-    ).toBe('junk');
+    ).toBe(CookieTriageDecision.Junk);
   });
 
   it('suggests approve when purpose, recent activity, and enough occurrences align', () => {
@@ -370,11 +428,11 @@ describe('suggestTriageDecision', () => {
       suggestTriageDecision({
         name: 'healthy',
         id: 'healthy',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 5,
         lastActivityAt: recentActivityAt,
       }),
-    ).toBe('approve');
+    ).toBe(CookieTriageDecision.Approve);
   });
 
   it('excludes decided rows from suggestRowDecision', () => {
@@ -382,7 +440,7 @@ describe('suggestTriageDecision', () => {
       suggestRowDecision({
         name: '_ga',
         initial: analyticsCookies[0],
-        decision: 'approve',
+        decision: CookieTriageDecision.Approve,
         notes: '',
       }),
     ).toBeUndefined();
@@ -392,7 +450,7 @@ describe('suggestTriageDecision', () => {
         initial: analyticsCookies[0],
         notes: '',
       }),
-    ).toBe('approve');
+    ).toBe(CookieTriageDecision.Approve);
   });
 });
 
@@ -402,13 +460,13 @@ describe('cookieTriageReducer', () => {
 
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
 
     expect(state.categories.Analytics.cookies.find((row) => row.name === '_ga')?.decision).toBe(
-      'approve',
+      CookieTriageDecision.Approve,
     );
     expect(selectSummary(state).triagedCount).toBe(1);
   });
@@ -423,7 +481,7 @@ describe('cookieTriageReducer', () => {
 
     state = cookieTriageReducer(state, {
       type: 'remove',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_stale',
     });
 
@@ -440,35 +498,39 @@ describe('cookieTriageReducer', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
     state = cookieTriageReducer(state, {
       type: 'setNotes',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
       notes: 'owned by growth',
     });
 
     const row = state.categories.Analytics.cookies.find((candidate) => candidate.name === '_ga');
     expect(row?.notes).toBe('owned by growth');
-    expect(row?.decision).toBe('approve');
+    expect(row?.decision).toBe(CookieTriageDecision.Approve);
   });
 
   it('reverts a row to its initial pending state on undo', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
 
     const row = state.categories.Analytics.cookies.find((candidate) => candidate.name === '_ga')!;
     expect(canUndoRow(row)).toBe(true);
 
-    state = cookieTriageReducer(state, { type: 'undo', purpose: 'Analytics', name: '_ga' });
+    state = cookieTriageReducer(state, {
+      type: 'undo',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+    });
 
     expect(
       state.categories.Analytics.cookies.find((candidate) => candidate.name === '_ga')?.decision,
@@ -484,9 +546,9 @@ describe('cookieTriageReducer', () => {
 
     const next = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
 
     expect(next.categories.Unknown.cookies[0]).toBe(unchanged);
@@ -498,30 +560,41 @@ describe('cookieTriageReducer', () => {
   });
 
   it('updates the selected purpose tab', () => {
-    let state = createEmptySession('cookies');
-    expect(state.selectedPurpose).toBe('Essential');
+    let state = createEmptySession(ConsentTriageType.Cookies);
+    expect(state.selectedPurpose).toBe(CookieTriagePurposeCategory.Essential);
 
-    state = cookieTriageReducer(state, { type: 'selectPurpose', purpose: 'Unknown' });
-    expect(state.selectedPurpose).toBe('Unknown');
+    state = cookieTriageReducer(state, {
+      type: 'selectPurpose',
+      purpose: CookieTriagePurposeCategory.Unknown,
+    });
+    expect(state.selectedPurpose).toBe(CookieTriagePurposeCategory.Unknown);
   });
 
   it('ignores selecting the already-selected purpose', () => {
-    const state = createEmptySession('cookies');
+    const state = createEmptySession(ConsentTriageType.Cookies);
 
-    expect(cookieTriageReducer(state, { type: 'selectPurpose', purpose: 'Essential' })).toBe(state);
+    expect(
+      cookieTriageReducer(state, {
+        type: 'selectPurpose',
+        purpose: CookieTriagePurposeCategory.Essential,
+      }),
+    ).toBe(state);
   });
 
   it('tracks loadStart and loadError on a tab', () => {
-    let state = createEmptySession('cookies');
-    state = cookieTriageReducer(state, { type: 'loadStart', purpose: 'Analytics' });
-    expect(state.categories.Analytics.loadStatus).toBe('loading');
+    let state = createEmptySession(ConsentTriageType.Cookies);
+    state = cookieTriageReducer(state, {
+      type: 'loadStart',
+      purpose: CookieTriagePurposeCategory.Analytics,
+    });
+    expect(state.categories.Analytics.loadStatus).toBe(CookieTriageLoadStatus.Loading);
 
     state = cookieTriageReducer(state, {
       type: 'loadError',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       error: 'boom',
     });
-    expect(state.categories.Analytics.loadStatus).toBe('error');
+    expect(state.categories.Analytics.loadStatus).toBe(CookieTriageLoadStatus.Error);
     expect(state.categories.Analytics.loadError).toBe('boom');
   });
 
@@ -529,15 +602,18 @@ describe('cookieTriageReducer', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'setTrackingPurposes',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      trackingPurposes: ['Analytics', 'SaleOfInfo'],
+      trackingPurposes: [
+        CookieTriagePurposeCategory.Analytics,
+        CookieTriagePurposeCategory.SaleOfInfo,
+      ],
     });
 
     expect(
       state.categories.Analytics.cookies.find((row) => row.name === '_ga')?.initial
         .trackingPurposes,
-    ).toEqual(['Analytics', 'SaleOfInfo']);
+    ).toEqual([CookieTriagePurposeCategory.Analytics, CookieTriagePurposeCategory.SaleOfInfo]);
     expect(state.categories.SaleOfInfo.cookies.find((row) => row.name === '_ga')).toBeUndefined();
   });
 
@@ -545,71 +621,79 @@ describe('cookieTriageReducer', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'setTrackingPurposes',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      trackingPurposes: ['Essential'],
+      trackingPurposes: [CookieTriagePurposeCategory.Essential],
     });
 
     expect(
       state.categories.Analytics.cookies.find((row) => row.name === '_ga')?.initial
         .trackingPurposes,
-    ).toEqual(['Essential']);
+    ).toEqual([CookieTriagePurposeCategory.Essential]);
     expect(state.categories.Essential.cookies.find((row) => row.name === '_ga')).toBeUndefined();
   });
 
   it('stores org purpose options from consent_list_purposes', () => {
-    let state = createEmptySession('cookies');
+    let state = createEmptySession(ConsentTriageType.Cookies);
     state = cookieTriageReducer(state, {
       type: 'setPurposeOptions',
       purposeOptions: [
-        { slug: 'Essential', label: 'Essential' },
+        { slug: CookieTriagePurposeCategory.Essential, label: 'Essential' },
         { slug: 'CustomPurpose', label: 'Custom Purpose' },
       ],
     });
     expect(state.purposeOptions).toEqual([
-      { slug: 'Essential', label: 'Essential' },
+      { slug: CookieTriagePurposeCategory.Essential, label: 'Essential' },
       { slug: 'CustomPurpose', label: 'Custom Purpose' },
     ]);
     expect(state.purposeOptionsLoaded).toBe(true);
-    expect(selectPurposes(state)).toContain('Custom');
+    expect(selectPurposes(state)).toContain(CookieTriagePurposeCategory.Custom);
   });
 
   it('hides the Custom tab after purposes load with only defaults', () => {
-    let state = createEmptySession('cookies');
-    state = cookieTriageReducer(state, { type: 'selectPurpose', purpose: 'Custom' });
+    let state = createEmptySession(ConsentTriageType.Cookies);
+    state = cookieTriageReducer(state, {
+      type: 'selectPurpose',
+      purpose: CookieTriagePurposeCategory.Custom,
+    });
     state = cookieTriageReducer(state, {
       type: 'setPurposeOptions',
-      purposeOptions: [{ slug: 'Essential', label: 'Essential' }],
+      purposeOptions: [{ slug: CookieTriagePurposeCategory.Essential, label: 'Essential' }],
     });
 
-    expect(selectPurposes(state)).not.toContain('Custom');
-    expect(state.selectedPurpose).toBe('Unknown');
+    expect(selectPurposes(state)).not.toContain(CookieTriagePurposeCategory.Custom);
+    expect(state.selectedPurpose).toBe(CookieTriagePurposeCategory.Unknown);
   });
 
   it('keeps decided overlays and clears pending rows on refreshStart', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
     state = cookieTriageReducer(state, {
       type: 'appendPage',
-      purpose: 'Analytics',
-      items: [{ name: '_gid', id: 'gid-1', trackingPurposes: ['Analytics'] }],
+      purpose: CookieTriagePurposeCategory.Analytics,
+      items: [
+        { name: '_gid', id: 'gid-1', trackingPurposes: [CookieTriagePurposeCategory.Analytics] },
+      ],
       fetchedCount: 1,
       totalCount: 3,
       hasNextPage: true,
     });
 
-    state = cookieTriageReducer(state, { type: 'refreshStart', purpose: 'Analytics' });
+    state = cookieTriageReducer(state, {
+      type: 'refreshStart',
+      purpose: CookieTriagePurposeCategory.Analytics,
+    });
 
     expect(state.categories.Analytics.cookies.map((row) => row.name)).toEqual(['_ga']);
-    expect(state.categories.Analytics.cookies[0]?.decision).toBe('approve');
+    expect(state.categories.Analytics.cookies[0]?.decision).toBe(CookieTriageDecision.Approve);
     expect(state.categories.Analytics.nextOffset).toBe(0);
     expect(state.categories.Analytics.hasNextPage).toBe(true);
-    expect(state.categories.Analytics.loadStatus).toBe('loading');
+    expect(state.categories.Analytics.loadStatus).toBe(CookieTriageLoadStatus.Loading);
     expect(canUndoRow(state.categories.Analytics.cookies[0]!)).toBe(true);
   });
 
@@ -617,19 +701,22 @@ describe('cookieTriageReducer', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'junk',
+      decision: CookieTriageDecision.Junk,
     });
-    state = cookieTriageReducer(state, { type: 'refreshStart', purpose: 'Analytics' });
+    state = cookieTriageReducer(state, {
+      type: 'refreshStart',
+      purpose: CookieTriagePurposeCategory.Analytics,
+    });
     state = cookieTriageReducer(state, {
       type: 'appendPage',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       items: [
         {
           name: '_fresh',
           id: 'fresh-1',
-          trackingPurposes: ['Analytics'],
+          trackingPurposes: [CookieTriagePurposeCategory.Analytics],
           description: 'new pending',
         },
       ],
@@ -639,13 +726,17 @@ describe('cookieTriageReducer', () => {
     });
 
     expect(state.categories.Analytics.cookies.map((row) => row.name)).toEqual(['_ga', '_fresh']);
-    expect(state.categories.Analytics.cookies[0]?.decision).toBe('junk');
+    expect(state.categories.Analytics.cookies[0]?.decision).toBe(CookieTriageDecision.Junk);
     expect(state.categories.Analytics.cookies[1]?.decision).toBeUndefined();
     expect(state.categories.Analytics.cookies[1]?.notes).toBe('new pending');
     expect(state.categories.Analytics.totalCount).toBe(10);
-    expect(state.categories.Analytics.loadStatus).toBe('ready');
+    expect(state.categories.Analytics.loadStatus).toBe(CookieTriageLoadStatus.Ready);
 
-    state = cookieTriageReducer(state, { type: 'undo', purpose: 'Analytics', name: '_ga' });
+    state = cookieTriageReducer(state, {
+      type: 'undo',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+    });
     expect(
       state.categories.Analytics.cookies.find((row) => row.name === '_ga')?.decision,
     ).toBeUndefined();
@@ -655,19 +746,22 @@ describe('cookieTriageReducer', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
-    state = cookieTriageReducer(state, { type: 'refreshStart', purpose: 'Analytics' });
+    state = cookieTriageReducer(state, {
+      type: 'refreshStart',
+      purpose: CookieTriagePurposeCategory.Analytics,
+    });
     state = cookieTriageReducer(state, {
       type: 'appendPage',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       items: [
         {
           name: '_ga',
           id: 'analytics-ga',
-          trackingPurposes: ['Analytics'],
+          trackingPurposes: [CookieTriagePurposeCategory.Analytics],
           description: 'back in review',
           occurrences: 99,
         },
@@ -689,48 +783,54 @@ describe('cookieTriageReducer', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
-    state = cookieTriageReducer(state, { type: 'refreshStart', purpose: 'Analytics' });
+    state = cookieTriageReducer(state, {
+      type: 'refreshStart',
+      purpose: CookieTriagePurposeCategory.Analytics,
+    });
     state = cookieTriageReducer(state, {
       type: 'setCategoryCount',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       totalCount: 42,
       deferListLoad: true,
     });
 
     expect(state.categories.Analytics.totalCount).toBe(42);
-    expect(state.categories.Analytics.loadStatus).toBe('idle');
+    expect(state.categories.Analytics.loadStatus).toBe(CookieTriageLoadStatus.Idle);
     expect(state.categories.Analytics.cookies.map((row) => row.name)).toEqual(['_ga']);
     expect(state.categories.Analytics.loadError).toBeUndefined();
 
     state = cookieTriageReducer(state, {
       type: 'setCategoryCount',
-      purpose: 'Essential',
+      purpose: CookieTriagePurposeCategory.Essential,
       totalCount: 7,
     });
     expect(state.categories.Essential.totalCount).toBe(7);
-    expect(state.categories.Essential.loadStatus).toBe('idle');
+    expect(state.categories.Essential.loadStatus).toBe(CookieTriageLoadStatus.Idle);
   });
 
   it('tracks countBusy separately from list loadStatus', () => {
-    let state = createEmptySession('cookies');
-    state = cookieTriageReducer(state, { type: 'countFetchStart', purpose: 'Advertising' });
+    let state = createEmptySession(ConsentTriageType.Cookies);
+    state = cookieTriageReducer(state, {
+      type: 'countFetchStart',
+      purpose: CookieTriagePurposeCategory.Advertising,
+    });
 
     expect(state.categories.Advertising.countBusy).toBe(true);
-    expect(state.categories.Advertising.loadStatus).toBe('idle');
+    expect(state.categories.Advertising.loadStatus).toBe(CookieTriageLoadStatus.Idle);
 
     state = cookieTriageReducer(state, {
       type: 'setCategoryCount',
-      purpose: 'Advertising',
+      purpose: CookieTriagePurposeCategory.Advertising,
       totalCount: 12,
     });
 
     expect(state.categories.Advertising.countBusy).toBe(false);
     expect(state.categories.Advertising.totalCount).toBe(12);
-    expect(state.categories.Advertising.loadStatus).toBe('idle');
+    expect(state.categories.Advertising.loadStatus).toBe(CookieTriageLoadStatus.Idle);
   });
 });
 
@@ -740,8 +840,8 @@ describe('format helpers', () => {
     expect(formatEncounters(31204)).toBe('31,204');
     expect(formatEncounters(undefined)).toBe('—');
     expect(formatEncounters(Number.NaN)).toBe('—');
-    expect(decisionReadLabel('approve')).toBe('Approved');
-    expect(decisionReadLabel('junk')).toBe('Junked');
+    expect(decisionReadLabel(CookieTriageDecision.Approve)).toBe('Approved');
+    expect(decisionReadLabel(CookieTriageDecision.Junk)).toBe('Junked');
 
     const now = Date.parse('2026-08-27T12:00:00.000Z');
     expect(formatLastActivity('2026-08-27T11:48:00.000Z', now)).toBe('12 minutes ago');
@@ -765,9 +865,9 @@ describe('format helpers', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_stale',
-      decision: 'junk',
+      decision: CookieTriageDecision.Junk,
     });
 
     const summary = selectCategorySummary(state.categories.Analytics);
@@ -784,15 +884,15 @@ describe('format helpers', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_ga',
-      decision: 'approve',
+      decision: CookieTriageDecision.Approve,
     });
     state = cookieTriageReducer(state, {
       type: 'decide',
-      purpose: 'Analytics',
+      purpose: CookieTriagePurposeCategory.Analytics,
       name: '_stale',
-      decision: 'junk',
+      decision: CookieTriageDecision.Junk,
     });
 
     const undoable = selectUndoableAppliedNames(state.categories.Analytics, [
@@ -803,7 +903,11 @@ describe('format helpers', () => {
     expect(undoable).toEqual(['_ga', '_stale']);
     expect(formatUndoSuggestionsLabel(undoable.length)).toBe('Undo suggestions · 2');
 
-    state = cookieTriageReducer(state, { type: 'undo', purpose: 'Analytics', name: '_ga' });
+    state = cookieTriageReducer(state, {
+      type: 'undo',
+      purpose: CookieTriagePurposeCategory.Analytics,
+      name: '_ga',
+    });
     expect(selectUndoableAppliedNames(state.categories.Analytics, ['_ga', '_stale'])).toEqual([
       '_stale',
     ]);
@@ -812,12 +916,12 @@ describe('format helpers', () => {
 
   it('builds an ask-opinion prompt with row context', () => {
     const prompt = buildAskOpinionPrompt({
-      triageType: 'cookies',
+      triageType: ConsentTriageType.Cookies,
       item: {
         name: '_ga',
         id: 'cookie-1',
         service: 'Google Analytics',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 31204,
         lastActivityAt: '2026-08-26T17:22:08.000Z',
       },

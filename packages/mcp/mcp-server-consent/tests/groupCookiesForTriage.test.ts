@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
 import type { CookieTriageAnalysis } from '../src/lib/cookieTriageTypes.js';
 import { groupCookiesForTriage } from '../src/lib/groupCookiesForTriage.js';
 
@@ -8,17 +9,20 @@ describe('groupCookiesForTriage', () => {
     const cookies: CookieTriageAnalysis[] = [
       {
         name: 'low-analytics',
-        trackingPurposes: ['Analytics'],
+        trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         occurrences: 1,
       },
       {
         name: 'essential',
-        trackingPurposes: ['Essential'],
+        trackingPurposes: [CookieTriagePurposeCategory.Essential],
         occurrences: 5,
       },
       {
         name: 'high-analytics',
-        trackingPurposes: ['Analytics', 'Advertising'],
+        trackingPurposes: [
+          CookieTriagePurposeCategory.Analytics,
+          CookieTriagePurposeCategory.Advertising,
+        ],
         occurrences: 100,
       },
       {
@@ -34,34 +38,41 @@ describe('groupCookiesForTriage', () => {
     const categories = groupCookiesForTriage(cookies);
 
     expect(categories.map((category) => category.purpose)).toEqual([
-      'Essential',
-      'Advertising',
-      'Analytics',
-      'Unknown',
-      'Custom',
+      CookieTriagePurposeCategory.Essential,
+      CookieTriagePurposeCategory.Advertising,
+      CookieTriagePurposeCategory.Analytics,
+      CookieTriagePurposeCategory.Unknown,
+      CookieTriagePurposeCategory.Custom,
     ]);
     expect(
-      categories.find((category) => category.purpose === 'Advertising')?.cookies[0]?.name,
+      categories.find((category) => category.purpose === CookieTriagePurposeCategory.Advertising)
+        ?.cookies[0]?.name,
     ).toBe('high-analytics');
     expect(
-      categories.find((category) => category.purpose === 'Analytics')?.cookies.map((c) => c.name),
+      categories
+        .find((category) => category.purpose === CookieTriagePurposeCategory.Analytics)
+        ?.cookies.map((c) => c.name),
     ).toEqual(['low-analytics']);
-    expect(categories.find((category) => category.purpose === 'Custom')?.cookies[0]?.name).toBe(
-      'custom-purpose',
-    );
-    expect(categories.find((category) => category.purpose === 'Unknown')?.totalCount).toBe(1);
+    expect(
+      categories.find((category) => category.purpose === CookieTriagePurposeCategory.Custom)
+        ?.cookies[0]?.name,
+    ).toBe('custom-purpose');
+    expect(
+      categories.find((category) => category.purpose === CookieTriagePurposeCategory.Unknown)
+        ?.totalCount,
+    ).toBe(1);
   });
 
   it('caps each purpose at 100 cookies and keeps full totalCount', () => {
     const cookies: CookieTriageAnalysis[] = Array.from({ length: 105 }, (_, index) => ({
       name: `cookie-${index}`,
-      trackingPurposes: ['Essential'],
+      trackingPurposes: [CookieTriagePurposeCategory.Essential],
       occurrences: index,
     }));
 
     const [essential] = groupCookiesForTriage(cookies);
 
-    expect(essential?.purpose).toBe('Essential');
+    expect(essential?.purpose).toBe(CookieTriagePurposeCategory.Essential);
     expect(essential?.totalCount).toBe(105);
     expect(essential?.shownCount).toBe(100);
     expect(essential?.cookies).toHaveLength(100);

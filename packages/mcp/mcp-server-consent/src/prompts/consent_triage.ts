@@ -1,5 +1,7 @@
 import type { PromptDefinition } from '@transcend-io/mcp-server-base';
 
+import { ConsentTriageType } from '../lib/cookieTriageTypes.js';
+
 export const consentTriagePrompt: PromptDefinition = {
   name: 'consent-triage',
   description:
@@ -8,7 +10,7 @@ export const consentTriagePrompt: PromptDefinition = {
   arguments: [
     {
       name: 'triage_type',
-      description: 'What to triage: "cookies", "data_flows", or "both" (default: "both")',
+      description: `What to triage: "${ConsentTriageType.Cookies}", "${ConsentTriageType.DataFlows}", or "both" (default: "both")`,
       required: false,
     },
     {
@@ -73,11 +75,11 @@ Present triage stats from \`consent_get_inventory_stats\` (cookie and data-flow 
 Call \`consent_cookie_triage_review_app\` with only \`triageType\`:
 
 ${[
-  triageType === 'cookies' || triageType === 'both'
-    ? '- Cookies: `{ "triageType": "cookies" }` — opens the review UI (App hosts page consent_list_cookies in the view; otherwise the tool returns them grouped by purpose)'
+  triageType === ConsentTriageType.Cookies || triageType === 'both'
+    ? `- Cookies: \`{ "triageType": "${ConsentTriageType.Cookies}" }\` — opens the review UI (App hosts page consent_list_cookies in the view; otherwise the tool returns them grouped by purpose)`
     : '',
-  triageType === 'data_flows' || triageType === 'both'
-    ? '- Data flows: `{ "triageType": "data_flows" }` — opens the review UI (App hosts page consent_list_data_flows in the view; otherwise the tool returns them grouped by purpose)'
+  triageType === ConsentTriageType.DataFlows || triageType === 'both'
+    ? `- Data flows: \`{ "triageType": "${ConsentTriageType.DataFlows}" }\` — opens the review UI (App hosts page consent_list_data_flows in the view; otherwise the tool returns them grouped by purpose)`
     : '',
 ]
   .filter(Boolean)
@@ -92,13 +94,13 @@ When triaging both, open cookies first, then data flows (or ask the user which t
 If the host cannot render MCP Apps, fetch a batch and present findings in markdown:
 
 ${[
-  triageType === 'cookies' || triageType === 'both'
-    ? '- Cookies: `consent_list_cookies { status: "NEEDS_REVIEW", first: ' +
+  triageType === ConsentTriageType.Cookies || triageType === 'both'
+    ? '- Cookies: `consent_list_cookies { status: "NEEDS_REVIEW", limit: ' +
       batchSize +
       ', orderField: "occurrences", orderDirection: "DESC" }`'
     : '',
-  triageType === 'data_flows' || triageType === 'both'
-    ? '- Data flows: `consent_list_data_flows { status: "NEEDS_REVIEW", first: ' +
+  triageType === ConsentTriageType.DataFlows || triageType === 'both'
+    ? '- Data flows: `consent_list_data_flows { status: "NEEDS_REVIEW", limit: ' +
       batchSize +
       ', orderField: "occurrences", orderDirection: "DESC" }`'
     : '',

@@ -1,36 +1,26 @@
-/** Rank order: highest wins when a cookie has multiple purposes */
-const PURPOSE_RANK = ['Essential', 'Functional', 'Advertising', 'Analytics', 'SaleOfInfo'] as const;
+import {
+  COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS,
+  COOKIE_TRIAGE_UNKNOWN_PURPOSE_SLUG,
+  CookieTriageDefaultPurpose,
+  CookieTriagePurposeCategory,
+} from './cookieTriageConfig.js';
 
-/** Built-in tracking-purpose slugs used by the default triage tabs */
-export const COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS: readonly (typeof PURPOSE_RANK)[number][] =
-  PURPOSE_RANK;
-
-/** API / tab slug for cookies with no assigned tracking purpose */
-export const COOKIE_TRIAGE_UNKNOWN_PURPOSE_SLUG = 'Unknown';
-
-/** Primary purpose bucket used when grouping cookies for triage */
-export type CookieTriagePurposeCategory = (typeof PURPOSE_RANK)[number] | 'Custom' | 'Unknown';
-
-/** Display order for purpose tabs in the cookie triage UI */
-export const COOKIE_TRIAGE_PURPOSE_ORDER: readonly CookieTriagePurposeCategory[] = [
-  ...PURPOSE_RANK,
-  'Unknown',
-  'Custom',
-];
-
-/** Human-readable labels for purpose category tabs */
-export const COOKIE_TRIAGE_PURPOSE_LABELS: Record<CookieTriagePurposeCategory, string> = {
-  Essential: 'Essential',
-  Functional: 'Functional',
-  Advertising: 'Advertising',
-  Analytics: 'Analytics',
-  SaleOfInfo: 'Sale of Info',
-  Unknown: 'Unknown',
-  Custom: 'Custom',
-};
+export {
+  COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS,
+  COOKIE_TRIAGE_PURPOSE_LABELS,
+  COOKIE_TRIAGE_PURPOSE_ORDER,
+  COOKIE_TRIAGE_UNKNOWN_PURPOSE_SLUG,
+  CookieTriageDefaultPurpose,
+  CookieTriagePurposeCategory,
+  getPurposeLabel,
+  isCookieTriagePurposeCategory,
+} from './cookieTriageConfig.js';
 
 const PURPOSE_RANK_LOOKUP = new Map(
-  PURPOSE_RANK.map((purpose, index) => [purpose.toLowerCase(), { purpose, index }]),
+  COOKIE_TRIAGE_DEFAULT_PURPOSE_SLUGS.map((purpose, index) => [
+    purpose.toLowerCase(),
+    { purpose, index },
+  ]),
 );
 
 const DEFAULT_PURPOSE_LOOKUP = new Set(
@@ -62,10 +52,10 @@ export function resolvePrimaryCookiePurpose(
   trackingPurposes: string[] | undefined | null,
 ): CookieTriagePurposeCategory {
   if (!trackingPurposes?.length) {
-    return 'Unknown';
+    return CookieTriagePurposeCategory.Unknown;
   }
 
-  let best: { purpose: (typeof PURPOSE_RANK)[number]; index: number } | undefined;
+  let best: { purpose: CookieTriageDefaultPurpose; index: number } | undefined;
 
   for (const slug of trackingPurposes) {
     const match = PURPOSE_RANK_LOOKUP.get(slug.toLowerCase());
@@ -81,5 +71,7 @@ export function resolvePrimaryCookiePurpose(
   const hasNonUnknownCustom = trackingPurposes.some(
     (slug) => slug.trim().length > 0 && !isUnknownCookiePurposeSlug(slug),
   );
-  return hasNonUnknownCustom ? 'Custom' : 'Unknown';
+  return hasNonUnknownCustom
+    ? CookieTriagePurposeCategory.Custom
+    : CookieTriagePurposeCategory.Unknown;
 }

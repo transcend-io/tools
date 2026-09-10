@@ -10,10 +10,11 @@ import {
 import type { CookieTriagePurposeCategory } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { triageCopy } from './cookieTriageCopy.ts';
 import {
+  CookieTriageDecision,
   cookieTriageReducer,
+  getCategory,
   suggestRowDecision,
   type CookieTriageAction,
-  type CookieTriageDecision,
   type CookieTriageSessionState,
 } from './cookieTriageState.ts';
 
@@ -148,13 +149,17 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
     name: string,
     decision: CookieTriageDecision | undefined,
   ): Promise<void> {
-    const row = deps.stateRef.current.categories[purpose].cookies.find(
+    const row = getCategory(deps.stateRef.current.categories, purpose).cookies.find(
       (candidate) => candidate.name === name,
     );
     if (!row) {
       throw new Error(`Row not found: ${name}`);
     }
-    if (decision !== undefined && decision !== 'approve' && decision !== 'junk') {
+    if (
+      decision !== undefined &&
+      decision !== CookieTriageDecision.Approve &&
+      decision !== CookieTriageDecision.Junk
+    ) {
       throw new Error(`Unsupported triage decision: ${decision}`);
     }
     if (decision === undefined && row.decision === undefined) {
@@ -180,13 +185,15 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
   }
 
   async function applySuggestions(purpose: CookieTriagePurposeCategory): Promise<void> {
-    const targets = deps.stateRef.current.categories[purpose].cookies.flatMap((row) => {
-      const suggestion = suggestRowDecision(row);
-      if (suggestion === undefined) {
-        return [];
-      }
-      return [{ row, decision: suggestion }];
-    });
+    const targets = getCategory(deps.stateRef.current.categories, purpose).cookies.flatMap(
+      (row) => {
+        const suggestion = suggestRowDecision(row);
+        if (suggestion === undefined) {
+          return [];
+        }
+        return [{ row, decision: suggestion }];
+      },
+    );
 
     if (targets.length === 0) {
       return;
@@ -219,7 +226,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
     }
 
     const targets = names.flatMap((name) => {
-      const row = deps.stateRef.current.categories[purpose].cookies.find(
+      const row = getCategory(deps.stateRef.current.categories, purpose).cookies.find(
         (candidate) => candidate.name === name,
       );
       if (!row || row.decision === undefined) {
@@ -273,7 +280,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
           return;
         }
 
-        const row = deps.stateRef.current.categories[purpose].cookies.find(
+        const row = getCategory(deps.stateRef.current.categories, purpose).cookies.find(
           (candidate) => candidate.name === name,
         );
         if (!row) {
@@ -311,7 +318,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
     await withRowLocks(deps.mutatingRowsRef.current, [key], async () => {
       const triageType = deps.stateRef.current.triageType;
       const { singular } = triageCopy(triageType);
-      const row = deps.stateRef.current.categories[purpose].cookies.find(
+      const row = getCategory(deps.stateRef.current.categories, purpose).cookies.find(
         (candidate) => candidate.name === name,
       );
       if (!row) {
@@ -335,7 +342,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
   ): Promise<void> {
     const next = trackingPurposes.map((slug) => slug.trim()).filter((slug) => slug.length > 0);
 
-    const row = deps.stateRef.current.categories[purpose].cookies.find(
+    const row = getCategory(deps.stateRef.current.categories, purpose).cookies.find(
       (candidate) => candidate.name === name,
     );
     if (!row) {

@@ -2,8 +2,8 @@ import { Tabs } from '@transcend-io/mcp-ui-common';
 import { memo, useMemo } from 'react';
 
 import {
-  COOKIE_TRIAGE_PURPOSE_LABELS,
-  type CookieTriagePurposeCategory,
+  getPurposeLabel,
+  isCookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 import { useCookieTriageActions, useCookieTriageChrome } from './CookieTriageContext.tsx';
 
@@ -18,7 +18,7 @@ export const PurposeTabs = memo(function PurposeTabs() {
         const tab = tabs.find((candidate) => candidate.id === purpose);
         return {
           id: purpose,
-          label: COOKIE_TRIAGE_PURPOSE_LABELS[purpose],
+          label: getPurposeLabel(purpose),
           count: tab?.totalCount ?? 0,
           countBusy: tab?.countBusy === true,
         };
@@ -32,7 +32,11 @@ export const PurposeTabs = memo(function PurposeTabs() {
       selectedId={selectedPurpose}
       ariaLabel="Cookie purposes"
       idPrefix="cookie-triage-tab"
-      onSelect={(id) => selectPurpose(id as CookieTriagePurposeCategory)}
+      onSelect={(id) => {
+        if (isCookieTriagePurposeCategory(id)) {
+          selectPurpose(id);
+        }
+      }}
     />
   );
 });

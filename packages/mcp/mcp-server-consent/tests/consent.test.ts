@@ -6,6 +6,8 @@ import {
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
+import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
+import { ConsentTriageType } from '../src/lib/cookieTriageTypes.js';
 import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
@@ -343,17 +345,19 @@ describe('Consent Tools', () => {
         });
 
       const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
-      const result = await tool.handler(tool.zodSchema.parse({ triageType: 'cookies' }));
+      const result = await tool.handler(
+        tool.zodSchema.parse({ triageType: ConsentTriageType.Cookies }),
+      );
 
       expect(result).toMatchObject({
         success: true,
         data: {
-          triageType: 'cookies',
+          triageType: ConsentTriageType.Cookies,
           organizationName: 'Acme Corp',
           loaded: true,
           categories: [
             {
-              purpose: 'Analytics',
+              purpose: CookieTriagePurposeCategory.Analytics,
               totalCount: 1,
               shownCount: 1,
               cookies: [
@@ -365,7 +369,7 @@ describe('Consent Tools', () => {
               ],
             },
             {
-              purpose: 'Unknown',
+              purpose: CookieTriagePurposeCategory.Unknown,
               totalCount: 1,
               shownCount: 1,
               cookies: [{ name: '_unknown' }],
@@ -384,13 +388,15 @@ describe('Consent Tools', () => {
 
       const appVariant = tool.variants[McpClientCapability.McpApp];
       expect(appVariant).toBeDefined();
-      const result = await appVariant!.handler(tool.zodSchema.parse({ triageType: 'data_flows' }));
+      const result = await appVariant!.handler(
+        tool.zodSchema.parse({ triageType: ConsentTriageType.DataFlows }),
+      );
 
       expect(mockGraphql.makeRequest).not.toHaveBeenCalled();
       expect(result).toMatchObject({
         success: true,
         data: {
-          triageType: 'data_flows',
+          triageType: ConsentTriageType.DataFlows,
           organizationName: '',
           categories: [],
           loaded: false,
@@ -420,17 +426,19 @@ describe('Consent Tools', () => {
         });
 
       const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
-      const result = await tool.handler(tool.zodSchema.parse({ triageType: 'data_flows' }));
+      const result = await tool.handler(
+        tool.zodSchema.parse({ triageType: ConsentTriageType.DataFlows }),
+      );
 
       expect(result).toMatchObject({
         success: true,
         data: {
-          triageType: 'data_flows',
+          triageType: ConsentTriageType.DataFlows,
           organizationName: 'Acme Corp',
           loaded: true,
           categories: [
             {
-              purpose: 'Advertising',
+              purpose: CookieTriagePurposeCategory.Advertising,
               totalCount: 1,
               shownCount: 1,
               cookies: [
@@ -460,7 +468,9 @@ describe('Consent Tools', () => {
         .mockRejectedValueOnce(new Error('cookies GraphQL boom'));
 
       const tool = getTools().find((t) => t.name === 'consent_cookie_triage_review_app')!;
-      await expect(tool.handler(tool.zodSchema.parse({ triageType: 'cookies' }))).rejects.toThrow(
+      await expect(
+        tool.handler(tool.zodSchema.parse({ triageType: ConsentTriageType.Cookies })),
+      ).rejects.toThrow(
         /Failed to fetch cookies for consent triage \(cookies\): cookies GraphQL boom/,
       );
     });

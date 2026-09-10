@@ -47,6 +47,9 @@ export function useHostDisplayMode(app: App | null): HostDisplayModeState {
 
     syncFromHost();
     app.addEventListener('hostcontextchanged', syncFromHost);
+    return () => {
+      app.removeEventListener('hostcontextchanged', syncFromHost);
+    };
   }, [app]);
 
   const requestDisplayMode = useCallback(

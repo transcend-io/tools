@@ -1,10 +1,46 @@
-import type { CookieTriagePurposeCategory } from './resolvePrimaryCookiePurpose.js';
+import { makeEnum } from '@transcend-io/type-utils';
+
+import type { CookieTriagePurposeCategory } from './cookieTriageConfig.js';
 
 /** What the consent triage review app loads from the API */
-export type ConsentTriageType = 'cookies' | 'data_flows';
+export const ConsentTriageType = makeEnum({
+  /** Cookie inventory triage */
+  Cookies: 'cookies',
+  /** Data-flow inventory triage */
+  DataFlows: 'data_flows',
+});
+
+/** Override type */
+export type ConsentTriageType = (typeof ConsentTriageType)[keyof typeof ConsentTriageType];
 
 /** User triage decision for a cookie or data-flow row */
-export type CookieTriageDecision = 'approve' | 'junk' | 'review';
+export const CookieTriageDecision = makeEnum({
+  /** Approve and mark LIVE */
+  Approve: 'approve',
+  /** Mark LIVE + junk */
+  Junk: 'junk',
+  /** Keep in review (explicit review decision) */
+  Review: 'review',
+});
+
+/** Override type */
+export type CookieTriageDecision = (typeof CookieTriageDecision)[keyof typeof CookieTriageDecision];
+
+/** Per-tab / overview fetch status */
+export const CookieTriageLoadStatus = makeEnum({
+  /** Not started */
+  Idle: 'idle',
+  /** In flight */
+  Loading: 'loading',
+  /** Succeeded */
+  Ready: 'ready',
+  /** Failed */
+  Error: 'error',
+});
+
+/** Override type */
+export type CookieTriageLoadStatus =
+  (typeof CookieTriageLoadStatus)[keyof typeof CookieTriageLoadStatus];
 
 /** One selectable tracking purpose from `consent_list_purposes`. */
 export interface CookieTriagePurposeOption {

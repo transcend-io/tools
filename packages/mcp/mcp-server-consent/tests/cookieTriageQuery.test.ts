@@ -1,108 +1,159 @@
+import {
+  ConsentTrackerStatus,
+  CookieOrderField,
+  OrderDirection,
+} from '@transcend-io/privacy-types';
 import { describe, expect, it } from 'vitest';
 
 import {
+  COOKIE_TRIAGE_UI_PAGE_SIZE,
+  CookieTriagePurposeCategory,
+} from '../src/lib/cookieTriageConfig.js';
+import {
+  buildTriageBulkUpdateArgs,
   buildTriageDormantCountArgs,
   buildTriageListArgs,
   buildTriageNotesUpdateArgs,
-  buildTriageBulkUpdateArgs,
   buildTriagePendingCountArgs,
   buildTriagePurposeCountArgs,
   buildTriagePurposesUpdateArgs,
   buildTriageUpdateArgs,
-  COOKIE_TRIAGE_UI_PAGE_SIZE,
   dormantCutoffIso,
 } from '../src/lib/cookieTriageQuery.js';
+import { ConsentTriageType, CookieTriageDecision } from '../src/lib/cookieTriageTypes.js';
 
 describe('buildTriageListArgs', () => {
   it('filters cookies by trackingPurposes, including Unknown and custom slugs', () => {
-    expect(buildTriageListArgs('cookies', 'Advertising', 20)).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+    expect(
+      buildTriageListArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Advertising, 20),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: COOKIE_TRIAGE_UI_PAGE_SIZE,
       offset: 20,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
-      trackingPurposes: ['Advertising'],
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
+      trackingPurposes: [CookieTriagePurposeCategory.Advertising],
     });
 
-    expect(buildTriageListArgs('cookies', 'Custom', 0, ['Loyalty', 'Support'])).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+    expect(
+      buildTriageListArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Custom, 0, [
+        'Loyalty',
+        'Support',
+      ]),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: COOKIE_TRIAGE_UI_PAGE_SIZE,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
       trackingPurposes: ['Loyalty', 'Support'],
     });
-    expect(buildTriageListArgs('cookies', 'Unknown', 0)).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+    expect(
+      buildTriageListArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Unknown, 0),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: COOKIE_TRIAGE_UI_PAGE_SIZE,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
-      trackingPurposes: ['Unknown'],
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
+      trackingPurposes: [CookieTriagePurposeCategory.Unknown],
     });
   });
 
   it('filters data flows by trackingTypes, including Unknown and custom slugs', () => {
-    expect(buildTriageListArgs('data_flows', 'Analytics', 0)).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+    expect(
+      buildTriageListArgs(ConsentTriageType.DataFlows, CookieTriagePurposeCategory.Analytics, 0),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: COOKIE_TRIAGE_UI_PAGE_SIZE,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
       showZeroActivity: true,
-      trackingTypes: ['Analytics'],
+      trackingTypes: [CookieTriagePurposeCategory.Analytics],
     });
-    expect(buildTriageListArgs('data_flows', 'Custom', 0, ['Loyalty'])).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+    expect(
+      buildTriageListArgs(ConsentTriageType.DataFlows, CookieTriagePurposeCategory.Custom, 0, [
+        'Loyalty',
+      ]),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: COOKIE_TRIAGE_UI_PAGE_SIZE,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
       showZeroActivity: true,
       trackingTypes: ['Loyalty'],
     });
-    expect(buildTriageListArgs('data_flows', 'Unknown', 0)).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: COOKIE_TRIAGE_UI_PAGE_SIZE,
+    expect(
+      buildTriageListArgs(ConsentTriageType.DataFlows, CookieTriagePurposeCategory.Unknown, 0),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: COOKIE_TRIAGE_UI_PAGE_SIZE,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
       showZeroActivity: true,
-      trackingTypes: ['Unknown'],
+      trackingTypes: [CookieTriagePurposeCategory.Unknown],
     });
   });
 
   it('omits showZeroActivity for cookie triage list args', () => {
-    expect(buildTriageListArgs('cookies', 'Advertising', 0)).not.toHaveProperty('showZeroActivity');
+    expect(
+      buildTriageListArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Advertising, 0),
+    ).not.toHaveProperty('showZeroActivity');
+  });
+
+  it('returns null when Custom is requested with no purpose slugs', () => {
+    expect(
+      buildTriageListArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Custom, 0, []),
+    ).toBeNull();
+    expect(
+      buildTriagePurposeCountArgs(ConsentTriageType.DataFlows, CookieTriagePurposeCategory.Custom),
+    ).toBeNull();
   });
 });
 
 describe('purpose count args', () => {
-  it('reuses purpose filters with first: 1 for tab badges', () => {
-    expect(buildTriagePurposeCountArgs('cookies', 'Advertising')).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: 1,
+  it('reuses purpose filters with limit: 1 for tab badges', () => {
+    expect(
+      buildTriagePurposeCountArgs(
+        ConsentTriageType.Cookies,
+        CookieTriagePurposeCategory.Advertising,
+      ),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
-      trackingPurposes: ['Advertising'],
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
+      trackingPurposes: [CookieTriagePurposeCategory.Advertising],
     });
-    expect(buildTriagePurposeCountArgs('cookies', 'Custom', ['Loyalty'])).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: 1,
+    expect(
+      buildTriagePurposeCountArgs(ConsentTriageType.Cookies, CookieTriagePurposeCategory.Custom, [
+        'Loyalty',
+      ]),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
       trackingPurposes: ['Loyalty'],
     });
-    expect(buildTriagePurposeCountArgs('data_flows', 'Analytics')).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: 1,
+    expect(
+      buildTriagePurposeCountArgs(
+        ConsentTriageType.DataFlows,
+        CookieTriagePurposeCategory.Analytics,
+      ),
+    ).toEqual({
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
       offset: 0,
-      orderField: 'occurrences',
-      orderDirection: 'DESC',
+      orderField: CookieOrderField.Occurrences,
+      orderDirection: OrderDirection.Desc,
       showZeroActivity: true,
-      trackingTypes: ['Analytics'],
+      trackingTypes: [CookieTriagePurposeCategory.Analytics],
     });
   });
 });
@@ -110,8 +161,8 @@ describe('purpose count args', () => {
 describe('summary count args', () => {
   it('requests a single-row NEEDS_REVIEW page for the pending total', () => {
     expect(buildTriagePendingCountArgs()).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: 1,
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
       offset: 0,
     });
   });
@@ -119,8 +170,8 @@ describe('summary count args', () => {
   it('filters dormant counts to lastDiscoveredAt before the 30-day cutoff', () => {
     const now = Date.parse('2026-09-03T12:00:00.000Z');
     expect(buildTriageDormantCountArgs(now)).toEqual({
-      status: 'NEEDS_REVIEW',
-      first: 1,
+      status: ConsentTrackerStatus.NeedsReview,
+      limit: 1,
       offset: 0,
       lastDiscoveredAtBefore: dormantCutoffIso(now),
     });
@@ -132,73 +183,81 @@ describe('buildTriageUpdateArgs', () => {
   const cookie = {
     name: '_ga',
     id: 'cookie-1',
-    trackingPurposes: ['Analytics'],
+    trackingPurposes: [CookieTriagePurposeCategory.Analytics],
   };
   const dataFlow = {
     name: 'example.com',
     id: 'df-1',
-    trackingPurposes: ['Advertising'],
+    trackingPurposes: [CookieTriagePurposeCategory.Advertising],
   };
 
   it('approves cookies as LIVE with existing purposes', () => {
-    expect(buildTriageUpdateArgs('cookies', cookie, 'approve')).toEqual({
+    expect(
+      buildTriageUpdateArgs(ConsentTriageType.Cookies, cookie, CookieTriageDecision.Approve),
+    ).toEqual({
       cookies: [
         {
           name: '_ga',
-          status: 'LIVE',
+          status: ConsentTrackerStatus.Live,
           isJunk: false,
-          trackingPurposes: ['Analytics'],
+          trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         },
       ],
     });
   });
 
   it('junks cookies as LIVE + isJunk', () => {
-    expect(buildTriageUpdateArgs('cookies', cookie, 'junk')).toEqual({
-      cookies: [{ name: '_ga', status: 'LIVE', isJunk: true }],
+    expect(
+      buildTriageUpdateArgs(ConsentTriageType.Cookies, cookie, CookieTriageDecision.Junk),
+    ).toEqual({
+      cookies: [{ name: '_ga', status: ConsentTrackerStatus.Live, isJunk: true }],
     });
   });
 
   it('undoes cookies back to NEEDS_REVIEW', () => {
-    expect(buildTriageUpdateArgs('cookies', cookie, undefined)).toEqual({
-      cookies: [{ name: '_ga', status: 'NEEDS_REVIEW', isJunk: false }],
+    expect(buildTriageUpdateArgs(ConsentTriageType.Cookies, cookie, undefined)).toEqual({
+      cookies: [{ name: '_ga', status: ConsentTrackerStatus.NeedsReview, isJunk: false }],
     });
   });
 
   it('updates data flows by id', () => {
-    expect(buildTriageUpdateArgs('data_flows', dataFlow, 'approve')).toEqual({
+    expect(
+      buildTriageUpdateArgs(ConsentTriageType.DataFlows, dataFlow, CookieTriageDecision.Approve),
+    ).toEqual({
       dataFlows: [
         {
           id: 'df-1',
-          status: 'LIVE',
+          status: ConsentTrackerStatus.Live,
           isJunk: false,
-          trackingPurposes: ['Advertising'],
+          trackingPurposes: [CookieTriagePurposeCategory.Advertising],
         },
       ],
     });
-    expect(buildTriageUpdateArgs('data_flows', dataFlow, 'junk')).toEqual({
-      dataFlows: [{ id: 'df-1', status: 'LIVE', isJunk: true }],
+    expect(
+      buildTriageUpdateArgs(ConsentTriageType.DataFlows, dataFlow, CookieTriageDecision.Junk),
+    ).toEqual({
+      dataFlows: [{ id: 'df-1', status: ConsentTrackerStatus.Live, isJunk: true }],
     });
-    expect(buildTriageUpdateArgs('data_flows', dataFlow, undefined)).toEqual({
-      dataFlows: [{ id: 'df-1', status: 'NEEDS_REVIEW', isJunk: false }],
+    expect(buildTriageUpdateArgs(ConsentTriageType.DataFlows, dataFlow, undefined)).toEqual({
+      dataFlows: [{ id: 'df-1', status: ConsentTrackerStatus.NeedsReview, isJunk: false }],
     });
   });
 
   it('batches mixed approve and junk targets into one payload', () => {
     expect(
-      buildTriageBulkUpdateArgs('cookies', [
-        { item: cookie, decision: 'approve' },
-        { item: { name: '_stale', id: 'cookie-2' }, decision: 'junk' },
+      buildTriageBulkUpdateArgs(ConsentTriageType.Cookies, [
+        { item: cookie, decision: CookieTriageDecision.Approve },
+        { item: { name: '_stale', id: 'cookie-2' }, decision: CookieTriageDecision.Junk },
       ]),
     ).toEqual({
       cookies: [
         {
           name: '_ga',
-          status: 'LIVE',
+          status: ConsentTrackerStatus.Live,
           isJunk: false,
-          trackingPurposes: ['Analytics'],
+          trackingPurposes: [CookieTriagePurposeCategory.Analytics],
         },
-        { name: '_stale', status: 'LIVE', isJunk: true },
+        { name: '_stale', status: ConsentTrackerStatus.Live, isJunk: true },
       ],
     });
   });
@@ -208,19 +267,19 @@ describe('buildTriageNotesUpdateArgs', () => {
   const cookie = {
     name: '_ga',
     id: 'cookie-1',
-    trackingPurposes: ['Analytics'],
+    trackingPurposes: [CookieTriagePurposeCategory.Analytics],
   };
   const dataFlow = {
     name: 'example.com',
     id: 'df-1',
-    trackingPurposes: ['Advertising'],
+    trackingPurposes: [CookieTriagePurposeCategory.Advertising],
   };
 
   it('writes description for cookies and data flows', () => {
-    expect(buildTriageNotesUpdateArgs('cookies', cookie, 'team note')).toEqual({
+    expect(buildTriageNotesUpdateArgs(ConsentTriageType.Cookies, cookie, 'team note')).toEqual({
       cookies: [{ name: '_ga', description: 'team note' }],
     });
-    expect(buildTriageNotesUpdateArgs('data_flows', dataFlow, '')).toEqual({
+    expect(buildTriageNotesUpdateArgs(ConsentTriageType.DataFlows, dataFlow, '')).toEqual({
       dataFlows: [{ id: 'df-1', description: '' }],
     });
   });
@@ -230,20 +289,28 @@ describe('buildTriagePurposesUpdateArgs', () => {
   const cookie = {
     name: '_ga',
     id: 'cookie-1',
-    trackingPurposes: ['Analytics'],
+    trackingPurposes: [CookieTriagePurposeCategory.Analytics],
   };
   const dataFlow = {
     name: 'example.com',
     id: 'df-1',
-    trackingPurposes: ['Advertising'],
+    trackingPurposes: [CookieTriagePurposeCategory.Advertising],
   };
 
   it('writes trackingPurposes for cookies and data flows', () => {
-    expect(buildTriagePurposesUpdateArgs('cookies', cookie, ['Essential'])).toEqual({
-      cookies: [{ name: '_ga', trackingPurposes: ['Essential'] }],
+    expect(
+      buildTriagePurposesUpdateArgs(ConsentTriageType.Cookies, cookie, [
+        CookieTriagePurposeCategory.Essential,
+      ]),
+    ).toEqual({
+      cookies: [{ name: '_ga', trackingPurposes: [CookieTriagePurposeCategory.Essential] }],
     });
-    expect(buildTriagePurposesUpdateArgs('data_flows', dataFlow, ['Functional'])).toEqual({
-      dataFlows: [{ id: 'df-1', trackingPurposes: ['Functional'] }],
+    expect(
+      buildTriagePurposesUpdateArgs(ConsentTriageType.DataFlows, dataFlow, [
+        CookieTriagePurposeCategory.Functional,
+      ]),
+    ).toEqual({
+      dataFlows: [{ id: 'df-1', trackingPurposes: [CookieTriagePurposeCategory.Functional] }],
     });
   });
 });
