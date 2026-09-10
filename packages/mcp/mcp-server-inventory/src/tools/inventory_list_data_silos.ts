@@ -55,7 +55,8 @@ export const ListDataSilosSchema = z
       .default(false)
       .describe(
         'Also return description, notes, vendor, purposes, business entities, country, ' +
-          'contacts and classified-field count. Roughly triples the bytes per row.',
+          'contacts and classified-field count. Owners and teams come back either way. ' +
+          'Roughly triples the bytes per row.',
       ),
   })
   .merge(OffsetPaginationSchema);
@@ -77,13 +78,8 @@ export function createInventoryListDataSilosTool(clients: ToolClients) {
   return defineTool({
     name: 'inventory_list_data_silos',
     description:
-      'List the data systems (data silos) in your data map. Every row carries its owners and ' +
-      'teams, so ownership questions — who owns this, which systems are unassigned — are ' +
-      'answered from the list itself rather than a detail read per system. Pass ' +
-      '`unassignedOnly` for systems with no owner, `ownerIds` / `teamIds` to filter by ' +
-      'assignment, or `types` to scope to one kind of integration. `includeDetails` adds ' +
-      'vendor, purposes, business entities, contacts and field counts. `totalCount` is the ' +
-      'full match count, not the size of this page.',
+      'List data silos (data systems and integrations) in your organization. `totalCount` is ' +
+      'the full match count, not the size of this page.',
     category: 'Data Inventory',
     readOnly: true,
     annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
