@@ -10,19 +10,10 @@ import { CUSTOM_FUNCTION_SKILL_NAME } from '../../../lib/custom-functions/custom
 import { formatMissingManifestMessage } from '../../../lib/custom-functions/missing-manifest.js';
 import { buildCustomFunctionProjectArguments } from '../../../lib/custom-functions/paths.js';
 import {
-  collectPlanningSnapshots,
   discoverCustomFunctionManifests,
   discoverCustomFunctionProject,
 } from '../../../lib/custom-functions/project-discovery.js';
-import {
-  CustomFunctionPrompts,
-  PromptCancelledError,
-} from '../../../lib/custom-functions/prompts.js';
-import {
-  buildPlanResult,
-  displayPath,
-  renderProjectPlan,
-} from '../../../lib/custom-functions/scaffold-output.js';
+import { buildPlanResult } from '../../../lib/custom-functions/scaffold-output.js';
 import {
   buildAddFunctionPlan,
   getAddFunctionPlanningCandidatePaths,
@@ -37,7 +28,13 @@ import {
   type CustomFunctionTemplateName,
   validateCustomFunctionDisplayName,
 } from '../../../lib/custom-functions/scaffold-templates.js';
+import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-discovery.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
+import {
+  displayProjectPath,
+  renderProjectPlan,
+} from '../../../lib/scaffolding/project-plan-output.js';
+import { PromptCancelledError, ScaffoldPrompts } from '../../../lib/scaffolding/prompts.js';
 
 /** Flags for `custom-functions new`. */
 export interface CustomFunctionNewFlags {
@@ -81,7 +78,7 @@ function isInteractiveInvocation(
  * @returns Selected starter template
  */
 export async function selectInteractiveTemplate(
-  prompts: Pick<CustomFunctionPrompts, 'select'>,
+  prompts: Pick<ScaffoldPrompts, 'select'>,
 ): Promise<CustomFunctionTemplateName> {
   const functionType = await prompts.select<CustomFunctionType>(
     'Custom Function type:',
@@ -144,7 +141,7 @@ export async function _new(
         }),
       );
     }
-    const prompts = new CustomFunctionPrompts(this);
+    const prompts = new ScaffoldPrompts(this);
     const interactive = isInteractiveInvocation(
       flags,
       this.process.stdin.isTTY,
@@ -196,7 +193,16 @@ export async function _new(
       );
     }
     if (!flags.json) {
-      this.logger.info(renderProjectPlan(plan, this.process.cwd()));
+      this.logger.info(
+        renderProjectPlan(plan, {
+          cwd: this.process.cwd(),
+          title: 'Custom Function plan',
+          details: [
+            { label: 'Target', path: plan.targetDirectory },
+            { label: 'Manifest', path: plan.manifestPath },
+          ],
+        }),
+      );
     }
 
     let approved = plan.changes.length === 0 || flags.dryRun;
@@ -221,12 +227,12 @@ export async function _new(
     );
     const aiHandoff = buildNewFunctionAiHandoff({
       displayName: generated.displayName,
-      sourcePath: displayPath(
+      sourcePath: displayProjectPath(
         this.process.cwd(),
         join(state.manifestDirectory, generated.sourceFile.path),
       ),
-      targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
-      manifestPath: displayPath(this.process.cwd(), state.manifestPath),
+      targetDirectory: displayProjectPath(this.process.cwd(), state.targetDirectory),
+      manifestPath: displayProjectPath(this.process.cwd(), state.manifestPath),
       hasSkill,
       variableNames: parameterNamesInManifestValue(generated.manifestEntry),
     });

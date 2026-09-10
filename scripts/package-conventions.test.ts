@@ -93,6 +93,11 @@ const requiredPackageScripts = {
   'check:exports': 'attw --pack . --ignore-rules cjs-resolves-to-esm',
 } as const;
 
+const requiredIntegrationTestScripts = {
+  test: `${requiredPackageScripts.test} --exclude '**/*.integration.test.ts'`,
+  'test:integration': `${requiredPackageScripts.test} .integration.test.ts`,
+} as const;
+
 const requiredPublishablePackageScripts = {
   'check:publint': 'publint --level warning --strict --pack pnpm',
 } as const;
@@ -170,7 +175,15 @@ describe('package conventions', () => {
       expect(exportDot?.types).toBe('./dist/index.d.mts');
       expect(exportDot?.default).toBe('./dist/index.mjs');
       expect(manifest.scripts?.build).toBe(requiredPackageScripts.build);
-      expect(manifest.scripts?.test).toBe(testScriptFor(directory));
+      expect(manifest.scripts?.['test:integration'] !== undefined).toBe(
+        packageHasIntegrationTests(directory),
+      );
+      expect(manifest.scripts?.test).toBe(testScriptFor(directory, manifest.scripts));
+      if (manifest.scripts?.['test:integration'] !== undefined) {
+        expect(manifest.scripts['test:integration']).toBe(
+          requiredIntegrationTestScripts['test:integration'],
+        );
+      }
       expect(manifest.scripts?.typecheck).toBe(requiredPackageScripts.typecheck);
       expect(manifest.scripts?.['check:exports']).toBe(requiredPackageScripts['check:exports']);
       expect(manifest.devDependencies?.['@arethetypeswrong/cli']).toBe(
@@ -310,13 +323,16 @@ describe('package conventions', () => {
     expect(viewPackages.length).toBeGreaterThan(0);
 
     const actual = Object.fromEntries(
-      viewPackages.map((directory) => [
-        directory,
-        readJsonFile<PackageManifest>(`${directory}/package.json`).scripts?.test,
-      ]),
+      viewPackages.map((directory) => {
+        const manifest = readJsonFile<PackageManifest>(`${directory}/package.json`);
+        return [directory, manifest.scripts?.test];
+      }),
     );
     const expected = Object.fromEntries(
-      viewPackages.map((directory) => [directory, testScriptFor(directory)]),
+      viewPackages.map((directory) => {
+        const manifest = readJsonFile<PackageManifest>(`${directory}/package.json`);
+        return [directory, testScriptFor(directory, manifest.scripts)];
+      }),
     );
 
     expect(actual).toEqual(expected);
@@ -385,14 +401,31 @@ function tsdownBaselineFor(directory: string): string {
  * would otherwise fail late, complaining of invalid JS syntax in an HTML file.
  *
  * @param directory - Package directory, relative to the repo root
- * @returns Expected `test` script
+ * @param scripts - Package scripts used to detect a separate integration suite
+ * @returns Expected hermetic `test` script
  */
-function testScriptFor(directory: string): string {
+function testScriptFor(directory: string, scripts: PackageManifest['scripts']): string {
+  const testScript =
+    scripts?.['test:integration'] === undefined
+      ? requiredPackageScripts.test
+      : requiredIntegrationTestScripts.test;
   if (!isMcpPackage(directory) && !buildsMcpAppView(directory)) {
-    return requiredPackageScripts.test;
+    return testScript;
   }
   const relativeRoot = '../'.repeat(directory.split('/').length);
-  return `${requiredPackageScripts.test} --config ${relativeRoot}${MCP_VITEST_BASELINE}`;
+  return `${testScript} --config ${relativeRoot}${MCP_VITEST_BASELINE}`;
+}
+
+/**
+ * Detect whether a package owns runtime-backed integration tests.
+ *
+ * @param directory - Package directory, relative to the repo root
+ * @returns Whether the package contains an integration test file
+ */
+function packageHasIntegrationTests(directory: string): boolean {
+  return readdirSync(join(repoRoot, directory, 'src'), { recursive: true }).some((path) =>
+    String(path).endsWith('.integration.test.ts'),
+  );
 }
 
 /**

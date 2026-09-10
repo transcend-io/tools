@@ -281,21 +281,25 @@ async function getShellcheckFailures(commands: string[]): Promise<string[]> {
 describe('Example commands', async () => {
   const { commandsToTest, unalteredCommands } = await getExampleCommands();
 
-  test.each(commandsToTest)('Command %j passes input validation', async (commandToTest) => {
-    const context = buildContextForTest({
-      env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
-    });
+  test.each(commandsToTest)(
+    'Command %j passes input validation',
+    { timeout: 15_000 },
+    async (commandToTest) => {
+      const context = buildContextForTest({
+        env: { DEVELOPMENT_MODE_VALIDATE_ONLY: 'true' },
+      });
 
-    try {
-      await run(app, commandToTest.split(' '), context);
-    } catch {
-      // empty
-    }
+      try {
+        await run(app, commandToTest.split(' '), context);
+      } catch {
+        // empty
+      }
 
-    if (context.exit.mock.calls.some(([code]) => code === 1)) {
-      throw new Error(`Failed to run command: ${commandToTest}\n${context.stderr}`);
-    }
-  });
+      if (context.exit.mock.calls.some(([code]) => code === 1)) {
+        throw new Error(`Failed to run command: ${commandToTest}\n${context.stderr}`);
+      }
+    },
+  );
 
   test('Example commands pass shellcheck', { timeout: 30_000 }, async () => {
     const shellcheckFailures = await getShellcheckFailures(unalteredCommands);

@@ -19,11 +19,6 @@ jobs:
       - name: Bootstrap
         uses: ./.github/commands/bootstrap
 
-      - name: Install Deno for Custom Function contract tests
-        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
-        with:
-          deno-version: 2.4.5
-
       - name: Build
         run: pnpm build
 
@@ -67,6 +62,7 @@ jobs:
           version: pnpm changeset:version:release
         env:
           GITHUB_TOKEN: ${{ steps.release_app.outputs.token }}
+          HUSKY: '0'
 
       - name: Request reviewer on Version Packages PR
         if: >-

@@ -1,5 +1,39 @@
 # @transcend-io/cli
 
+## 10.29.0
+
+### Minor Changes
+
+- f74e10f: Add local Policy Engine scaffolding and validation.
+
+  `policy init` creates a safe, publishable Rego v1 starter and can merge repository-level VS Code tooling, install a portable policy authoring skill, and generate credential-free GitHub Actions validation. The transactional setup preserves existing policy, editor, workflow, and customized skill content.
+
+  `policy lint` now requires a manifest, OPA 1.x, and Regal, and verifies formatting, production compilation, and tests. Existing lint invocations may newly fail until these requirements are met.
+
+- e03b2bd: Rename the `transcend.yml` `enrichers` key to `preflights`.
+
+  The legacy `enrichers` key still parses and is marked deprecated in the JSON Schema.
+  `inventory pull` writes `preflights` going forward.
+
+### Patch Changes
+
+- 27e7c7a: Say which Custom Function type each `custom-functions new` template produces.
+
+  The command described its templates by the code they emit ("General or DSR starter", "Generated
+  handler and fixture shape"), which does not map onto the two product concepts a caller is choosing
+  between: a General function triggered by Rules Automation, and a DSR function triggered by a
+  Workflow step. The interactive flow now asks for that type first, using
+  `CustomFunctionType` from `@transcend-io/privacy-types` rather than a parallel local union.
+  General continues immediately because it has only one template; DSR opens a second prompt for a
+  data point resolver, preflight check, or both. The flag brief, command description, and README
+  use the same language.
+
+  The scaffolded DSR enricher comments and the skill's CI recipe follow the same wording, and that
+  recipe now pins Deno 2.4.5 to match the version this repository validates against.
+
+- Updated dependencies [e03b2bd]
+  - @transcend-io/sdk@2.1.6
+
 ## 10.28.0
 
 ### Minor Changes

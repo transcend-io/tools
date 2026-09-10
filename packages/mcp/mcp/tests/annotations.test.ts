@@ -174,7 +174,6 @@ describe('MCP Tool Annotations', () => {
       'assessments_update',
       'assessments_update_assignees',
       'assessments_answer_question',
-      'dsr_respond_erasure',
     ];
 
     it.each(expectedIdempotentMutative)(

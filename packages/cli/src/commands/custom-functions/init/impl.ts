@@ -11,29 +11,27 @@ import {
   getDenoRuntimeCompatibility,
   SUPPORTED_DENO_MAJOR_VERSION,
 } from '../../../lib/custom-functions/deno-runtime.js';
-import {
-  collectPlanningSnapshots,
-  discoverCustomFunctionProject,
-} from '../../../lib/custom-functions/project-discovery.js';
-import {
-  CustomFunctionPrompts,
-  PromptCancelledError,
-  type PromptChoice,
-} from '../../../lib/custom-functions/prompts.js';
+import { discoverCustomFunctionProject } from '../../../lib/custom-functions/project-discovery.js';
 import {
   CustomFunctionSetupFeature,
   type CustomFunctionSetupFeature as CustomFunctionSetupFeatureType,
 } from '../../../lib/custom-functions/scaffold-model.js';
-import {
-  buildPlanResult,
-  displayPath,
-  renderProjectPlan,
-} from '../../../lib/custom-functions/scaffold-output.js';
+import { buildPlanResult } from '../../../lib/custom-functions/scaffold-output.js';
 import {
   buildInitPlan,
   getInitPlanningCandidatePaths,
 } from '../../../lib/custom-functions/scaffold-planning.js';
+import { collectPlanningSnapshots } from '../../../lib/scaffolding/project-discovery.js';
 import { applyProjectPlan } from '../../../lib/scaffolding/project-plan-apply.js';
+import {
+  displayProjectPath,
+  renderProjectPlan,
+} from '../../../lib/scaffolding/project-plan-output.js';
+import {
+  PromptCancelledError,
+  type PromptChoice,
+  ScaffoldPrompts,
+} from '../../../lib/scaffolding/prompts.js';
 
 /** Flags for `custom-functions init`. */
 export interface CustomFunctionInitFlags {
@@ -93,7 +91,7 @@ function isInteractiveInvocation(
  * @returns Selected setup features
  */
 async function resolveFeatures(
-  prompts: CustomFunctionPrompts,
+  prompts: ScaffoldPrompts,
   flags: CustomFunctionInitFlags,
   options: {
     /** Whether prompts are available. */
@@ -137,7 +135,7 @@ export async function init(
       ...(directory ? { directory } : {}),
       ...(flags.manifest ? { manifest: flags.manifest } : {}),
     });
-    const prompts = new CustomFunctionPrompts(this);
+    const prompts = new ScaffoldPrompts(this);
     const interactive = isInteractiveInvocation(
       flags,
       this.process.stdin.isTTY,
@@ -181,7 +179,16 @@ export async function init(
       }
     }
     if (!flags.json) {
-      this.logger.info(renderProjectPlan(plan, this.process.cwd()));
+      this.logger.info(
+        renderProjectPlan(plan, {
+          cwd: this.process.cwd(),
+          title: 'Custom Function plan',
+          details: [
+            { label: 'Target', path: plan.targetDirectory },
+            { label: 'Manifest', path: plan.manifestPath },
+          ],
+        }),
+      );
     }
 
     let approved = plan.changes.length === 0 || flags.dryRun;
@@ -203,8 +210,8 @@ export async function init(
     const applied = approved && !flags.dryRun && plan.changes.length > 0;
     const setupAvailable = approved && !flags.dryRun;
     const aiHandoff = buildInitAiHandoff({
-      targetDirectory: displayPath(this.process.cwd(), state.targetDirectory),
-      manifestPath: displayPath(this.process.cwd(), state.manifestPath),
+      targetDirectory: displayProjectPath(this.process.cwd(), state.targetDirectory),
+      manifestPath: displayProjectPath(this.process.cwd(), state.manifestPath),
       cliVersion: CLI_VERSION,
       hasSkill: setupAvailable && features.includes(CustomFunctionSetupFeature.Skill),
       hasGithubWorkflow:
