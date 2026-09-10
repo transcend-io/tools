@@ -1312,7 +1312,10 @@ export interface AssessmentComment {
   author?: AssessmentCommentAuthor;
   /** ID of the comment this one replies to, when it is a threaded reply */
   parentCommentId?: string;
-  /** When the comment was resolved (ISO 8601); absent while it is still open */
+  /**
+   * When the root of this thread was resolved (ISO 8601). Set on root comments
+   * only; replies stay open/closed with their parent and usually omit this.
+   */
   resolvedAt?: string;
   /** Number of files attached to the comment */
   fileCount?: number;

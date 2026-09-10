@@ -9,6 +9,7 @@ import { resolveAnalyticsDateRange } from '../src/analyticsDateRange.js';
 import { CookieTriagePurposeCategory } from '../src/lib/cookieTriageConfig.js';
 import { ConsentTriageType } from '../src/lib/cookieTriageTypes.js';
 import { normalizeAnalyticsMetric } from '../src/normalizeAnalyticsMetric.js';
+import { resetAirgapBundleIdCacheForTests } from '../src/resolveAirgapBundleId.js';
 import { GetAggregateAnalyticsSchema } from '../src/tools/consent_get_aggregate_analytics.js';
 import { GetTimeseriesAnalyticsSchema } from '../src/tools/consent_get_timeseries_analytics.js';
 import { CookieTriageAppSchema } from '../src/tools/cookie_triage_app.js';
@@ -43,6 +44,7 @@ describe('Consent Tools', () => {
   };
 
   beforeEach(() => {
+    resetAirgapBundleIdCacheForTests();
     mockGraphql = {
       makeRequest: vi.fn(),
       testConnection: vi.fn(),

@@ -15,6 +15,7 @@ import { createAssessmentsPrefillTool } from './assessments_prefill.js';
 import { createAssessmentsSubmitResponseTool } from './assessments_submit_response.js';
 import { createAssessmentsUpdateTool } from './assessments_update.js';
 import { createAssessmentsUpdateAssigneesTool } from './assessments_update_assignees.js';
+import { createAssessmentsWriteCommentTool } from './assessments_write_comment.js';
 
 export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
   return [
@@ -24,6 +25,7 @@ export function getAssessmentTools(clients: ToolClients): ToolDefinition[] {
     createAssessmentsCreateGroupTool(clients),
     createAssessmentsListGroupsTool(clients),
     createAssessmentsListCommentsTool(clients),
+    createAssessmentsWriteCommentTool(clients),
     createAssessmentsUpdateTool(clients),
     createAssessmentsListTemplatesTool(clients),
     createAssessmentsUpdateAssigneesTool(clients),

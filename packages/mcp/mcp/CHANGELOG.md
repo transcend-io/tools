@@ -1,5 +1,54 @@
 # @transcend-io/mcp
 
+## 1.0.2
+
+### Patch Changes
+
+- b3858b0: Clarify that assessment comment resolution is per thread on the root.
+
+  `assessments_list_comments` now filters OPEN/RESOLVED by the root comment's
+  `resolvedAt`, so replies under a resolved parent no longer look open. Both list
+  and write tool copy state that replies close when the root is resolved.
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-assessment@2.1.2
+  - @transcend-io/mcp-server-base@2.2.2
+  - @transcend-io/mcp-server-admin@1.0.5
+  - @transcend-io/mcp-server-consent@1.0.5
+  - @transcend-io/mcp-server-discovery@1.0.5
+  - @transcend-io/mcp-server-docs@0.4.7
+  - @transcend-io/mcp-server-dsr@2.0.2
+  - @transcend-io/mcp-server-inventory@1.0.5
+  - @transcend-io/mcp-server-preferences@0.7.8
+  - @transcend-io/mcp-server-workflows@1.0.5
+
+## 1.0.1
+
+### Patch Changes
+
+- b51afef: Fix HTTP multi-tenant cache bleed for airgap bundle IDs.
+
+  Shared MCP HTTP sessions swap per-request auth via AsyncLocalStorage, but the
+  consent bundle ID cache was keyed only by the GraphQL client instance. The first
+  tenant on a sidecar session could poison later orgs (wrong bundle on consent
+  list/update tools).
+
+  Under HTTP, the cache keys by org id for session cookies (API key / OAuth use a
+  hash of the credential). Outside HTTP (stdio), it uses a stable process key so
+  OAuth access-token refresh does not force a re-resolve.
+
+- Updated dependencies [b51afef]
+  - @transcend-io/mcp-server-base@2.2.1
+  - @transcend-io/mcp-server-consent@1.0.4
+  - @transcend-io/mcp-server-admin@1.0.4
+  - @transcend-io/mcp-server-assessment@2.1.1
+  - @transcend-io/mcp-server-discovery@1.0.4
+  - @transcend-io/mcp-server-docs@0.4.6
+  - @transcend-io/mcp-server-dsr@2.0.1
+  - @transcend-io/mcp-server-inventory@1.0.4
+  - @transcend-io/mcp-server-preferences@0.7.7
+  - @transcend-io/mcp-server-workflows@1.0.4
+
 ## 1.0.0
 
 ### Major Changes

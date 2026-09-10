@@ -156,6 +156,14 @@ export class TranscendGraphQLBase {
     this.defaultRetries = 3;
   }
 
+  /**
+   * Auth for the current call: per-request AsyncLocalStorage credentials when
+   * present (HTTP), otherwise the constructor credentials (stdio).
+   */
+  effectiveAuth(): AuthCredentials | null {
+    return getRequestAuth() ?? this.auth;
+  }
+
   private async rateLimitWait(): Promise<void> {
     const now = Date.now();
     const elapsed = now - this.lastRequestTime;
@@ -200,7 +208,7 @@ export class TranscendGraphQLBase {
           attempt,
         });
 
-        const effectiveAuth = getRequestAuth() ?? this.auth;
+        const effectiveAuth = this.effectiveAuth();
         if (!effectiveAuth) {
           throw new ToolError(
             ErrorCode.AUTH_ERROR,
