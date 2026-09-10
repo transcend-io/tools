@@ -11,7 +11,6 @@ import {
   generateCustomFunctionTemplate,
 } from '../../../../lib/custom-functions/scaffold-templates.js';
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import { stripAnsi } from '../../../../lib/tests/helpers/stripAnsi.js';
 import {
   newCustomFunction,
   selectInteractiveTemplate,

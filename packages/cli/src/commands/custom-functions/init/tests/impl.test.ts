@@ -5,7 +5,6 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildContextForTest } from '../../../../lib/tests/helpers/buildContextForTest.js';
-import { stripAnsi } from '../../../../lib/tests/helpers/stripAnsi.js';
 import { init, type CustomFunctionInitFlags } from '../impl.js';
 
 const temporaryRoots: string[] = [];
