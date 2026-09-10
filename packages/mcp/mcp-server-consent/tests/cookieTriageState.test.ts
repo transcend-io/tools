@@ -514,6 +514,71 @@ describe('cookieTriageReducer', () => {
     expect(row?.decision).toBe(CookieTriageDecision.Approve);
   });
 
+  it('mirrors notes, decision, and delete across mixed-purpose tabs', () => {
+    const mixed: CookieTriageAnalysis = {
+      name: 'mixed',
+      id: 'mixed-1',
+      trackingPurposes: [
+        CookieTriagePurposeCategory.Essential,
+        CookieTriagePurposeCategory.Advertising,
+      ],
+      lastActivityAt: recentActivityAt,
+    };
+    let state = seedPurpose(
+      createEmptySession(ConsentTriageType.Cookies),
+      CookieTriagePurposeCategory.Essential,
+      [mixed],
+    );
+    state = seedPurpose(state, CookieTriagePurposeCategory.Advertising, [mixed]);
+    state = cookieTriageReducer(state, {
+      type: 'setSummaryTotals',
+      pendingTotal: 1,
+      dormantTotal: 0,
+    });
+
+    state = cookieTriageReducer(state, {
+      type: 'setNotes',
+      purpose: CookieTriagePurposeCategory.Essential,
+      name: 'mixed',
+      notes: 'shared note',
+    });
+    expect(state.categories.Essential.cookies[0]?.notes).toBe('shared note');
+    expect(state.categories.Advertising.cookies[0]?.notes).toBe('shared note');
+
+    state = cookieTriageReducer(state, {
+      type: 'decide',
+      purpose: CookieTriagePurposeCategory.Advertising,
+      name: 'mixed',
+      decision: CookieTriageDecision.Approve,
+    });
+    expect(state.categories.Essential.cookies[0]?.decision).toBe(CookieTriageDecision.Approve);
+    expect(state.categories.Advertising.cookies[0]?.decision).toBe(CookieTriageDecision.Approve);
+    expect(selectSummary(state).triagedCount).toBe(1);
+
+    state = cookieTriageReducer(state, {
+      type: 'undo',
+      purpose: CookieTriagePurposeCategory.Essential,
+      name: 'mixed',
+    });
+    expect(state.categories.Essential.cookies[0]?.decision).toBeUndefined();
+    expect(state.categories.Advertising.cookies[0]?.decision).toBeUndefined();
+
+    state = cookieTriageReducer(state, {
+      type: 'remove',
+      purpose: CookieTriagePurposeCategory.Advertising,
+      name: 'mixed',
+    });
+    expect(state.categories.Essential.cookies).toEqual([]);
+    expect(state.categories.Advertising.cookies).toEqual([]);
+    expect(state.categories.Essential.totalCount).toBe(0);
+    expect(state.categories.Advertising.totalCount).toBe(0);
+    expect(selectSummary(state)).toMatchObject({
+      pendingCount: 0,
+      dormantCount: 0,
+      triagedCount: 0,
+    });
+  });
+
   it('reverts a row to its initial pending state on undo', () => {
     let state = seededSession();
     state = cookieTriageReducer(state, {

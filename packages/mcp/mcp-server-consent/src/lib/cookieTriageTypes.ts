@@ -94,6 +94,11 @@ export interface CookieTriageCategoryPayload {
 export interface CookieTriageAppPayload {
   /** Whether this payload is cookies or data flows */
   triageType: ConsentTriageType;
+  /**
+   * Admin dashboard base URL for deep links
+   * (`TRANSCEND_DASHBOARD_URL` when set, else production default).
+   */
+  dashboardUrl: string;
   /** Display name of the organization being triaged */
   organizationName: string;
   /** Purpose categories with items to review */
@@ -103,4 +108,9 @@ export interface CookieTriageAppPayload {
    * MCP App open returns `false` (fast shell); the baseline tool returns `true`.
    */
   loaded: boolean;
+  /**
+   * Agent-facing instruction on MCP App shell opens so the model does not
+   * immediately re-fetch list tools after mounting the interactive UI.
+   */
+  message?: string;
 }

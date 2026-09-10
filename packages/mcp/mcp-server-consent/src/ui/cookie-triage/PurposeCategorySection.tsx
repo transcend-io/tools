@@ -43,13 +43,13 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
   app,
   purpose,
 }: PurposeCategorySectionProps) {
-  const { triageType } = useCookieTriageMeta();
+  const { triageType, dashboardUrl: dashboardBaseUrl } = useCookieTriageMeta();
   const category = useCookieTriageActiveCategory();
   const appliedSuggestionNames = useAppliedSuggestionNames(purpose);
   const { loadMore, applySuggestions, undoSuggestions } = useCookieTriageActions();
   const [busyMode, setBusyMode] = useState<'apply' | 'undo' | undefined>();
   const [actionError, setActionError] = useState<{ title: string; message: string } | undefined>();
-  const { plural, dashboardUrl } = triageCopy(triageType);
+  const { plural, dashboardUrl } = triageCopy(triageType, dashboardBaseUrl);
 
   const applyLabel = useMemo(
     () => formatApplySuggestionsLabel(selectCategorySummary(category)),
@@ -117,7 +117,7 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
 
   return (
     <section
-      className="flex min-h-0 flex-1 flex-col gap-4 pt-4"
+      className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 pt-4"
       aria-labelledby={`cookie-triage-group-${purpose}`}
     >
       <div className="flex min-w-0 shrink-0 justify-between gap-4 items-center">
@@ -210,6 +210,17 @@ export const PurposeCategorySection = memo(function PurposeCategorySection({
             ) : null
           }
         />
+      ) : !isInitialLoading &&
+        !category.loadError &&
+        category.loadStatus === CookieTriageLoadStatus.Ready ? (
+        <TableListFooter
+          status="done"
+          shownCount={0}
+          totalCount={category.totalCount}
+          message={`No ${plural} to triage under this purpose.`}
+        >
+          Double check in the <A app={app} href={dashboardUrl} label="admin dashboard ↗" />
+        </TableListFooter>
       ) : null}
     </section>
   );

@@ -3,33 +3,33 @@ import {
   isCookieTriagePurposeCategory,
 } from '../../lib/resolvePrimaryCookiePurpose.ts';
 
-/** Background utility for a purpose token badge. */
-export const PURPOSE_BADGE_BG: Record<CookieTriagePurposeCategory, string> = {
-  [CookieTriagePurposeCategory.Essential]: 'bg-purpose-essential',
-  [CookieTriagePurposeCategory.Functional]: 'bg-purpose-functional',
-  [CookieTriagePurposeCategory.Advertising]: 'bg-purpose-advertising',
-  [CookieTriagePurposeCategory.Analytics]: 'bg-purpose-analytics',
-  [CookieTriagePurposeCategory.SaleOfInfo]: 'bg-purpose-sale',
-  [CookieTriagePurposeCategory.Custom]: 'bg-purpose-other',
-  [CookieTriagePurposeCategory.Unknown]: 'bg-purpose-other',
+/** Border + text utilities for a purpose outline badge. */
+export const PURPOSE_BADGE_TONE: Record<CookieTriagePurposeCategory, string> = {
+  [CookieTriagePurposeCategory.Essential]: 'border-purpose-essential text-purpose-essential',
+  [CookieTriagePurposeCategory.Functional]: 'border-purpose-functional text-purpose-functional',
+  [CookieTriagePurposeCategory.Advertising]: 'border-purpose-advertising text-purpose-advertising',
+  [CookieTriagePurposeCategory.Analytics]: 'border-purpose-analytics text-purpose-analytics',
+  [CookieTriagePurposeCategory.SaleOfInfo]: 'border-purpose-sale text-purpose-sale',
+  [CookieTriagePurposeCategory.Custom]: 'border-purpose-other text-purpose-other',
+  [CookieTriagePurposeCategory.Unknown]: 'border-purpose-other text-purpose-other',
 };
 
-function purposeBadgeBg(purpose: CookieTriagePurposeCategory): string {
+function purposeBadgeTone(purpose: CookieTriagePurposeCategory): string {
   switch (purpose) {
     case CookieTriagePurposeCategory.Essential:
-      return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.Essential];
+      return PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.Essential];
     case CookieTriagePurposeCategory.Functional:
-      return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.Functional];
+      return PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.Functional];
     case CookieTriagePurposeCategory.Advertising:
-      return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.Advertising];
+      return PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.Advertising];
     case CookieTriagePurposeCategory.Analytics:
-      return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.Analytics];
+      return PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.Analytics];
     case CookieTriagePurposeCategory.SaleOfInfo:
-      return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.SaleOfInfo];
+      return PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.SaleOfInfo];
     case CookieTriagePurposeCategory.Custom:
-      return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.Custom];
+      return PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.Custom];
     case CookieTriagePurposeCategory.Unknown:
-      return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.Unknown];
+      return PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.Unknown];
     default: {
       const _exhaustive: never = purpose;
       return _exhaustive;
@@ -37,10 +37,11 @@ function purposeBadgeBg(purpose: CookieTriagePurposeCategory): string {
   }
 }
 
-/** Badge background for a known tab purpose or any org purpose slug. */
+/** Outline badge classes for a known tab purpose or any org purpose slug. */
 export function purposeBadgeClass(purposeSlug: string | undefined): string {
-  if (purposeSlug !== undefined && isCookieTriagePurposeCategory(purposeSlug)) {
-    return purposeBadgeBg(purposeSlug);
-  }
-  return PURPOSE_BADGE_BG[CookieTriagePurposeCategory.Custom];
+  const tone =
+    purposeSlug !== undefined && isCookieTriagePurposeCategory(purposeSlug)
+      ? purposeBadgeTone(purposeSlug)
+      : PURPOSE_BADGE_TONE[CookieTriagePurposeCategory.Custom];
+  return `border bg-fill-neutral ${tone}`;
 }

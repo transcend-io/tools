@@ -143,6 +143,78 @@ describe('Consent Tools', () => {
       });
     });
   });
+
+  describe('consent_update_data_flows', () => {
+    it('sends purpose slugs as trackingType, not purposeIds', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({
+          updateDataFlows: {
+            dataFlows: [
+              {
+                id: 'df-1',
+                value: 'example.com',
+                status: 'LIVE',
+                isJunk: false,
+                purposes: [{ name: 'Analytics' }],
+                service: { title: 'Example' },
+              },
+            ],
+          },
+        });
+
+      const tool = getTools().find((t) => t.name === 'consent_update_data_flows')!;
+      await tool.handler(
+        tool.zodSchema.parse({
+          dataFlows: [{ id: 'df-1', trackingPurposes: ['Analytics'], status: 'LIVE' }],
+        }),
+      );
+
+      expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(expect.anything(), {
+        airgapBundleId: 'bundle-1',
+        dataFlows: [{ id: 'df-1', trackingType: ['Analytics'], status: 'LIVE' }],
+      });
+    });
+  });
+
+  describe('consent_bulk_triage', () => {
+    it('sends data flow purpose slugs as trackingType, not purposeIds', async () => {
+      mockGraphql.makeRequest
+        .mockResolvedValueOnce({ consentManager: { consentManager: { id: 'bundle-1' } } })
+        .mockResolvedValueOnce({
+          updateDataFlows: {
+            dataFlows: [{ id: 'df-1', status: 'LIVE', isJunk: false }],
+          },
+        });
+
+      const tool = getTools().find((t) => t.name === 'consent_bulk_triage')!;
+      await tool.handler(
+        tool.zodSchema.parse({
+          items: [
+            {
+              type: 'data_flow',
+              id: 'df-1',
+              action: 'APPROVE',
+              trackingPurposes: ['Advertising'],
+            },
+          ],
+        }),
+      );
+
+      expect(mockGraphql.makeRequest).toHaveBeenLastCalledWith(expect.anything(), {
+        airgapBundleId: 'bundle-1',
+        dataFlows: [
+          {
+            id: 'df-1',
+            status: 'LIVE',
+            isJunk: false,
+            trackingType: ['Advertising'],
+          },
+        ],
+      });
+    });
+  });
+
   describe('consent_list_regimes', () => {
     it('trims the extra row the experiences query returns beyond `first`', async () => {
       // The API answers `first: n` with n+1 rows, so without trimming a caller
@@ -353,6 +425,7 @@ describe('Consent Tools', () => {
         success: true,
         data: {
           triageType: ConsentTriageType.Cookies,
+          dashboardUrl: 'https://app.transcend.io',
           organizationName: 'Acme Corp',
           loaded: true,
           categories: [
@@ -397,9 +470,13 @@ describe('Consent Tools', () => {
         success: true,
         data: {
           triageType: ConsentTriageType.DataFlows,
+          dashboardUrl: 'https://app.transcend.io',
           organizationName: '',
           categories: [],
           loaded: false,
+          message: expect.stringContaining(
+            'Do not call consent_list_cookies or consent_list_data_flows.',
+          ),
         },
       });
       expect(appVariant!.appOnlyTools ?? []).toEqual([]);
@@ -434,6 +511,7 @@ describe('Consent Tools', () => {
         success: true,
         data: {
           triageType: ConsentTriageType.DataFlows,
+          dashboardUrl: 'https://app.transcend.io',
           organizationName: 'Acme Corp',
           loaded: true,
           categories: [

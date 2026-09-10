@@ -26,6 +26,7 @@ export {
 } from './CheckboxMultiSelect/positionAnchoredListbox.ts';
 export {
   CompactCount,
+  CompactCountFormat,
   CompactCountShimmer,
   formatCompactCount,
   type CompactCountProps,

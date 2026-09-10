@@ -59,6 +59,8 @@ const PURPOSES_TOOL_NAME = 'consent_list_purposes';
 interface CookieTriageProviderProps {
   /** Cookies vs data flows for this session */
   triageType: ConsentTriageType;
+  /** Admin dashboard base URL for deep links */
+  dashboardUrl: string;
   /** Connected MCP App used to call list tools */
   app: App | null;
   /** Triage UI subtree */
@@ -98,7 +100,12 @@ function chromeSignature(chrome: CookieTriageChrome): string {
 }
 
 /** Provides cookie triage session state and list fetching to the view tree. */
-export function CookieTriageProvider({ triageType, app, children }: CookieTriageProviderProps) {
+export function CookieTriageProvider({
+  triageType,
+  dashboardUrl,
+  app,
+  children,
+}: CookieTriageProviderProps) {
   const [state, dispatch] = useReducer(cookieTriageReducer, triageType, createEmptySession);
   const [appliedSuggestionsByPurpose, setAppliedSuggestionsByPurpose] =
     useState<AppliedSuggestionsByPurpose>({});
@@ -306,9 +313,10 @@ export function CookieTriageProvider({ triageType, app, children }: CookieTriage
   const meta = useMemo<CookieTriageMeta>(
     () => ({
       triageType: state.triageType,
+      dashboardUrl,
       purposeOptions: state.purposeOptions,
     }),
-    [state.purposeOptions, state.triageType],
+    [dashboardUrl, state.purposeOptions, state.triageType],
   );
 
   const triagedCount = selectTriagedCount(state.categories);

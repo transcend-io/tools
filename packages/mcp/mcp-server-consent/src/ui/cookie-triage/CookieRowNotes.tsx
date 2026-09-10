@@ -1,5 +1,5 @@
 import { Button, ButtonVariant, StatusBadge } from '@transcend-io/mcp-ui-common';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 
 import type { ConsentTriageType } from '../../lib/cookieTriageTypes.ts';
 import { triageCopy } from './cookieTriageCopy.ts';
@@ -27,11 +27,19 @@ export const CookieRowNotes = memo(function CookieRowNotes({
   onToggle,
 }: CookieRowNotesProps) {
   const { singular } = triageCopy(triageType);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const notesSavingRef = useRef(false);
+  const rowNotesRef = useRef(row.notes);
+  const onToggleRef = useRef(onToggle);
   const [notesDraft, setNotesDraft] = useState(row.notes);
   const [notesError, setNotesError] = useState<string | undefined>();
   const [notesSaving, setNotesSaving] = useState(false);
   const notesDirty = notesDraft !== row.notes;
   const hasSavedNotes = row.notes.trim().length > 0;
+
+  notesSavingRef.current = notesSaving;
+  rowNotesRef.current = row.notes;
+  onToggleRef.current = onToggle;
 
   useEffect(() => {
     if (open) {
@@ -39,6 +47,35 @@ export const CookieRowNotes = memo(function CookieRowNotes({
       setNotesDraft(row.notes);
     }
   }, [open, row.notes]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    textareaRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape' || notesSavingRef.current) {
+        return;
+      }
+      // Claim Escape so fullscreen exit (and similar host handlers) do not steal it.
+      event.preventDefault();
+      setNotesError(undefined);
+      setNotesDraft(rowNotesRef.current);
+      onToggleRef.current();
+    }
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
 
   function cancelNotes(): void {
     if (notesSaving) {
@@ -70,9 +107,9 @@ export const CookieRowNotes = memo(function CookieRowNotes({
       {hasSavedNotes && !open ? (
         <tr className="border-b border-card-line">
           <td colSpan={4} className="px-4 pb-3">
-            <div className="inline-flex items-baseline gap-1.5 max-w-[60%]">
+            <div className="inline-flex max-w-[60%] items-center gap-1.5">
               <StatusBadge>Note</StatusBadge>
-              <span className="min-w-0 flex-1 text-sm text-on-card-muted break-words">
+              <span className="min-w-0 flex-1 truncate text-sm text-on-card-muted">
                 {row.notes}
               </span>
               <Button
@@ -92,12 +129,19 @@ export const CookieRowNotes = memo(function CookieRowNotes({
             <label className="flex flex-col gap-2">
               <span className="sr-only">Note for {row.initial.name}</span>
               <textarea
+                ref={textareaRef}
                 className="min-h-24 w-full resize-y rounded-sm border border-card-line bg-card px-3 py-2 text-sm text-on-card placeholder:text-on-card-muted focus:border-brand-text focus:outline-none"
                 placeholder={`Note for the team — why this decision, who owns the ${singular}, what to check next`}
                 value={notesDraft}
                 disabled={notesSaving}
                 onChange={(event) => {
                   setNotesDraft(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                    event.preventDefault();
+                    void onSaveNotes();
+                  }
                 }}
               />
             </label>

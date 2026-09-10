@@ -69,14 +69,21 @@ function wrapTriageFetchError(
  * Fast shell so MCP App hosts can mount the iframe before GraphQL work starts.
  *
  * @param input - Open-app arguments
- * @returns Payload with `loaded: false` and empty categories
+ * @param dashboardUrl - Admin dashboard base URL from server config
+ * @returns Payload with `loaded: false`, empty categories, and an agent message
  */
-function buildShellPayload(input: CookieTriageAppInput): CookieTriageAppPayload {
+function buildShellPayload(
+  input: CookieTriageAppInput,
+  dashboardUrl: string,
+): CookieTriageAppPayload {
+  const kind = input.triageType === ConsentTriageType.DataFlows ? 'data flows' : 'cookies';
   return {
     triageType: input.triageType,
+    dashboardUrl,
     organizationName: '',
     categories: [],
     loaded: false,
+    message: `Interactive review UI opened for ${kind}. Tell the user: use the interactive UI to review ${kind} and ask any follow-up questions. Do not call consent_list_cookies or consent_list_data_flows.`,
   };
 }
 
@@ -88,6 +95,8 @@ function buildShellPayload(input: CookieTriageAppInput): CookieTriageAppPayload 
  * full payload from the main tool handler.
  */
 export function createConsentCookieTriageAppTool(clients: ToolClients) {
+  const { dashboardUrl } = clients;
+
   async function buildPayload(input: CookieTriageAppInput): Promise<CookieTriageAppPayload> {
     let organizationName: string;
     try {
@@ -107,6 +116,7 @@ export function createConsentCookieTriageAppTool(clients: ToolClients) {
 
     return {
       triageType: input.triageType,
+      dashboardUrl,
       organizationName,
       categories: groupCookiesForTriage(items),
       loaded: true,
@@ -125,7 +135,7 @@ export function createConsentCookieTriageAppTool(clients: ToolClients) {
     variants: {
       [McpClientCapability.McpApp]: {
         resource: COOKIE_TRIAGE_APP_RESOURCE,
-        handler: async (input) => createToolResult(true, buildShellPayload(input)),
+        handler: async (input) => createToolResult(true, buildShellPayload(input, dashboardUrl)),
       },
     },
   });

@@ -24,7 +24,7 @@ export interface AppShellProps {
   inlineContentClassName?: string;
 }
 
-const APP_SHELL_CLASSNAME = 'bg-card flex flex-col overflow-hidden p-6 text-on-card';
+const APP_SHELL_CLASSNAME = 'bg-card flex flex-col overflow-hidden p-6 text-on-card rounded-lg';
 
 /**
  * Fullscreen-aware page shell for interactive MCP Apps.
@@ -44,7 +44,7 @@ export function AppShell({
       className={
         isFullscreen
           ? `h-[90dvh] w-full ${APP_SHELL_CLASSNAME}`
-          : `mx-auto max-w-view ${APP_SHELL_CLASSNAME}`
+          : `mx-auto w-full min-w-0 max-w-view ${APP_SHELL_CLASSNAME}`
       }
     >
       <div className="shrink-0">{header}</div>

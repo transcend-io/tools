@@ -80,6 +80,8 @@ export interface CookieTriageActions {
 export interface CookieTriageMeta {
   /** Cookies vs data flows for this session */
   triageType: ConsentTriageType;
+  /** Admin dashboard base URL for deep links */
+  dashboardUrl: string;
   /** Org tracking purposes for the per-row purpose select */
   purposeOptions: CookieTriagePurposeOption[];
 }

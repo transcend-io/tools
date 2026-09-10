@@ -40,9 +40,9 @@ export interface CookieTriagePersistDeps {
   updateCallRef: MutableRefObject<CookieTriageToolCall>;
   /** Delete-tool call (cookies or data flows) */
   deleteCallRef: MutableRefObject<CookieTriageToolCall>;
-  /** In-flight row mutation keys (`purpose:name`) */
+  /** In-flight row mutation keys (`id:…` or `name:…`) */
   mutatingRowsRef: MutableRefObject<Set<string>>;
-  /** Serialized notes persist chain per row */
+  /** Serialized notes persist chain per entity */
   notesChainRef: MutableRefObject<Map<string, Promise<void>>>;
   /** Latest notes draft queued behind the persist chain */
   pendingNotesRef: MutableRefObject<Map<string, string>>;
@@ -81,9 +81,14 @@ export interface CookieTriagePersist {
   ) => Promise<void>;
 }
 
-/** Row lock key for concurrent mutation guards. */
-export function rowMutationKey(purpose: CookieTriagePurposeCategory, name: string): string {
-  return `${purpose}:${name}`;
+/** Entity lock key so mixed-purpose tab instances share one mutation guard. */
+export function rowMutationKey(item: {
+  /** Cookie name or data-flow value */
+  name: string;
+  /** Transcend id when available */
+  id?: string;
+}): string {
+  return item.id ? `id:${item.id}` : `name:${item.name}`;
 }
 
 /**
@@ -169,7 +174,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
       return;
     }
 
-    const key = rowMutationKey(purpose, name);
+    const key = rowMutationKey(row.initial);
     await withRowLocks(deps.mutatingRowsRef.current, [key], async () => {
       const result = await deps.updateCallRef.current(
         buildTriageUpdateArgs(deps.stateRef.current.triageType, row.initial, decision),
@@ -199,7 +204,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
       return;
     }
 
-    const keys = targets.map((target) => rowMutationKey(purpose, target.row.name));
+    const keys = targets.map((target) => rowMutationKey(target.row.initial));
     await withRowLocks(deps.mutatingRowsRef.current, keys, async () => {
       const result = await deps.updateCallRef.current(
         buildTriageBulkUpdateArgs(
@@ -243,7 +248,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
       return;
     }
 
-    const keys = targets.map((row) => rowMutationKey(purpose, row.name));
+    const keys = targets.map((row) => rowMutationKey(row.initial));
     await withRowLocks(deps.mutatingRowsRef.current, keys, async () => {
       const result = await deps.updateCallRef.current(
         buildTriageBulkUpdateArgs(
@@ -268,7 +273,14 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
     name: string,
     notes: string,
   ): Promise<void> {
-    const key = rowMutationKey(purpose, name);
+    const origin = getCategory(deps.stateRef.current.categories, purpose).cookies.find(
+      (candidate) => candidate.name === name,
+    );
+    if (!origin) {
+      throw new Error(`Row not found: ${name}`);
+    }
+
+    const key = rowMutationKey(origin.initial);
     deps.pendingNotesRef.current.set(key, notes);
 
     const previous = deps.notesChainRef.current.get(key) ?? Promise.resolve();
@@ -314,7 +326,14 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
   }
 
   async function persistRemove(purpose: CookieTriagePurposeCategory, name: string): Promise<void> {
-    const key = rowMutationKey(purpose, name);
+    const origin = getCategory(deps.stateRef.current.categories, purpose).cookies.find(
+      (candidate) => candidate.name === name,
+    );
+    if (!origin) {
+      throw new Error(`Row not found: ${name}`);
+    }
+
+    const key = rowMutationKey(origin.initial);
     await withRowLocks(deps.mutatingRowsRef.current, [key], async () => {
       const triageType = deps.stateRef.current.triageType;
       const { singular } = triageCopy(triageType);
@@ -358,7 +377,7 @@ export function createCookieTriagePersist(deps: CookieTriagePersistDeps): Cookie
       return;
     }
 
-    const key = rowMutationKey(purpose, name);
+    const key = rowMutationKey(row.initial);
     await withRowLocks(deps.mutatingRowsRef.current, [key], async () => {
       const result = await deps.updateCallRef.current(
         buildTriagePurposesUpdateArgs(deps.stateRef.current.triageType, row.initial, next),

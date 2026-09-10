@@ -1,4 +1,4 @@
-import { CompactCount } from '../CompactCount/CompactCount.tsx';
+import { CompactCount, CompactCountFormat } from '../CompactCount/CompactCount.tsx';
 
 /** Props for {@link StatChip}. */
 export interface StatChipProps {
@@ -28,7 +28,7 @@ export function StatChip({ label, value, valueClassName, busy = false }: StatChi
             : 'text-heading-md font-semibold tabular-nums'
         }
       >
-        <CompactCount value={value} busy={busy} />
+        <CompactCount value={value} busy={busy} format={CompactCountFormat.Significant} />
       </div>
     </div>
   );

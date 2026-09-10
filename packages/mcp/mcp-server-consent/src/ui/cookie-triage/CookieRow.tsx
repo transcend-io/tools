@@ -141,18 +141,20 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
       <tr
         className={`align-middle ${hasSavedNotes || notesOpen ? '' : 'border-b border-card-line'}`}
       >
-        <td className="px-4 py-3">
-          <div className="flex flex-col gap-0.5">
+        <td className="min-w-0 px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-sm font-medium text-on-card break-all">{cookie.name}</span>
-            <span className="text-sm text-on-card-muted">{cookie.service ?? 'Unknown'}</span>
+            <span className="text-sm text-on-card-muted break-words">
+              {cookie.service ?? 'Unknown'}
+            </span>
           </div>
         </td>
-        <td className="px-4 py-3 whitespace-nowrap">
-          <div className="flex flex-col gap-0.5">
+        <td className="min-w-0 px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
             <span className="text-sm tabular-nums text-on-card">
               {formatEncounters(cookie.occurrences)}
             </span>
-            <span className="text-sm text-on-card-muted">
+            <span className="text-sm text-on-card-muted break-words">
               {formatLastActivity(cookie.lastActivityAt)}
             </span>
             {dormant ? (
@@ -171,8 +173,8 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
             onChange={onPurposesChange}
           />
         </td>
-        <td className="px-4 py-3">
-          <div className="flex flex-col gap-1">
+        <td className="min-w-0 px-4 py-3">
+          <div className="flex min-w-0 flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2.5" role="group" aria-label="Decision">
               <Button
                 variant={ButtonVariant.Action}
@@ -251,6 +253,7 @@ export const CookieRow = memo(function CookieRow({ purpose, row }: CookieRowProp
                     aria-busy={mutating}
                     title={`Permanently delete this ${singular}`}
                     onClick={() => {
+                      setNotesOpen(false);
                       requestDelete({
                         purpose,
                         name: row.name,

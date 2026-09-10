@@ -1,7 +1,7 @@
 import { memo, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
-import { ChevronDownIcon } from '../Icons/Icons.tsx';
+import { CheckIcon, ChevronDownIcon } from '../Icons/Icons.tsx';
 import {
   DISABLED_OPTION_TOOLTIP_MAX_WIDTH_PX,
   positionAnchoredListbox,
@@ -41,6 +41,8 @@ export interface CheckboxMultiSelectProps {
     selected: readonly string[],
     options: readonly CheckboxMultiSelectOption[],
   ) => ReactNode;
+  /** Optional custom listbox row contents; defaults to the option label */
+  renderOption?: (option: CheckboxMultiSelectOption) => ReactNode;
 }
 
 /** Checkbox dropdown with a portaled listbox and optional disabled-option tooltips. */
@@ -52,6 +54,7 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
   disabled = false,
   onChange,
   renderValue,
+  renderOption,
 }: CheckboxMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [disabledTooltip, setDisabledTooltip] = useState<DisabledOptionTooltip | undefined>();
@@ -150,7 +153,9 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
       <button
         ref={buttonRef}
         type="button"
-        className="flex w-full min-w-0 cursor-pointer items-start gap-2 rounded-sm border border-card-line bg-card px-1.5 py-1.5 text-left disabled:cursor-not-allowed disabled:opacity-60"
+        className={`flex w-full min-w-0 cursor-pointer items-start gap-2 rounded-sm border bg-card px-1.5 py-1.5 text-left disabled:cursor-not-allowed disabled:opacity-60 ${
+          open ? 'border-focus' : 'border-card-line'
+        }`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listboxId}
@@ -158,7 +163,7 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
         disabled={disabled || options.length === 0}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
           {renderValue(selected, options)}
         </span>
         <span className="mt-0.5 shrink-0 text-on-card-muted" aria-hidden="true">
@@ -190,9 +195,13 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
                   <label
                     key={option.id}
                     className={`flex items-center gap-2 px-2.5 py-1.5 text-sm text-on-card ${
-                      optionDisabled
-                        ? 'cursor-not-allowed opacity-60'
-                        : 'cursor-pointer hover:bg-card-sunken'
+                      optionDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                    } ${
+                      checked
+                        ? 'bg-fill-brand-subtle'
+                        : optionDisabled
+                          ? ''
+                          : 'hover:bg-card-sunken'
                     }`}
                     role="option"
                     aria-selected={checked}
@@ -212,16 +221,24 @@ export const CheckboxMultiSelect = memo(function CheckboxMultiSelect({
                   >
                     <input
                       type="checkbox"
-                      className={`size-3.5 bg-card accent-brand [color-scheme:light] ${
-                        optionDisabled ? 'pointer-events-none' : ''
-                      }`}
+                      className="sr-only"
                       checked={checked}
                       disabled={optionDisabled}
                       onChange={() => {
                         void toggleId(option.id);
                       }}
                     />
-                    <span className="whitespace-nowrap">{option.label}</span>
+                    <span className="min-w-0 flex-1 whitespace-nowrap">
+                      {renderOption ? renderOption(option) : option.label}
+                    </span>
+                    <span
+                      className={`inline-flex size-4 shrink-0 items-center justify-center text-brand ${
+                        checked ? 'opacity-100' : 'opacity-0'
+                      }`}
+                      aria-hidden="true"
+                    >
+                      <CheckIcon width={12} height={12} />
+                    </span>
                   </label>
                 );
               })}

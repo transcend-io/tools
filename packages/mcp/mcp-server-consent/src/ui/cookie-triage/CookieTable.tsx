@@ -29,14 +29,14 @@ export const CookieTable = memo(function CookieTable({
   const { singularTitle } = triageCopy(triageType);
 
   return (
-    <div className="min-h-0 w-full flex-1 overflow-auto">
-      {/* Preferred widths only — auto layout can still shrink when space is tight. */}
-      <table className="w-full min-w-176 border-collapse">
+    <div className="min-h-0 min-w-0 w-full flex-1 overflow-y-auto overflow-x-hidden">
+      {/* Fixed layout keeps columns inside the shell — no horizontal scroll on narrow hosts. */}
+      <table className="w-full table-fixed border-collapse">
         <colgroup>
-          <col className="w-[28%]" />
-          <col className="w-40" />
-          <col className="w-44" />
-          <col className="w-72" />
+          <col className="w-[26%]" />
+          <col className="w-[16%]" />
+          <col className="w-[24%]" />
+          <col className="w-[34%]" />
         </colgroup>
         <thead className="sticky top-0 z-10">
           <tr className="border-b border-card-line bg-card">
@@ -44,7 +44,7 @@ export const CookieTable = memo(function CookieTable({
               <span className="block">{singularTitle}</span>
               <span className="block font-normal text-on-card-subtle">Service</span>
             </th>
-            <th scope="col" className={`${HEADER_CELL} whitespace-nowrap`}>
+            <th scope="col" className={HEADER_CELL}>
               <span className="block">Encounters</span>
               <span className="block font-normal text-on-card-subtle">Last activity</span>
             </th>
@@ -58,7 +58,7 @@ export const CookieTable = memo(function CookieTable({
         </thead>
         <tbody>
           {cookies.map((row) => (
-            <CookieRow key={row.name} purpose={purpose} row={row} />
+            <CookieRow key={`${purpose}:${row.name}`} purpose={purpose} row={row} />
           ))}
         </tbody>
       </table>

@@ -31,10 +31,13 @@ const TONE_CLASS: Record<CountBadgeTone, string> = {
 /** Pill count used in tabs and similar chrome. */
 export function CountBadge({ count, tone = CountBadgeTone.Idle, busy = false }: CountBadgeProps) {
   return (
-    <span
-      className={`inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-sm font-medium tabular-nums text-on-fill ${TONE_CLASS[tone]}`}
-    >
-      <CompactCount value={count} busy={busy} />
+    // Fixed slot keeps tab layout stable; inner pill snugs the digits and centers in the slot.
+    <span className="inline-flex w-8 shrink-0 items-center justify-center">
+      <span
+        className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-xs font-medium tabular-nums text-on-fill ${TONE_CLASS[tone]}`}
+      >
+        <CompactCount value={count} busy={busy} />
+      </span>
     </span>
   );
 }

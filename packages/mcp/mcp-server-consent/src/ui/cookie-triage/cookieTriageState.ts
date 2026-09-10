@@ -96,7 +96,7 @@ export interface CookieTriageSummary {
   pendingCount: number;
   /** API totalCount for NEEDS_REVIEW items last seen before the dormant cutoff */
   dormantCount: number;
-  /** Rows with a user decision in this session */
+  /** Unique cookies/data flows with a user decision in this session */
   triagedCount: number;
   /** True while overview pending/dormant counts are fetching */
   summaryBusy: boolean;
@@ -371,17 +371,22 @@ export function selectPurposes(state: CookieTriageSessionState): CookieTriagePur
   return [...COOKIE_TRIAGE_PURPOSE_ORDER];
 }
 
-/** Count rows with a session decision (overview Triaged). */
+/** Stable identity for a cookie/data-flow across purpose tabs. */
+function rowEntityKey(row: Pick<CookieRowState, 'name' | 'initial'>): string {
+  return row.initial.id || row.name;
+}
+
+/** Count unique entities with a session decision (overview Triaged). */
 export function selectTriagedCount(categories: CookieTriageCategoriesState): number {
-  let triagedCount = 0;
+  const seen = new Set<string>();
   for (const category of Object.values(categories)) {
     for (const row of category.cookies) {
       if (row.decision !== undefined) {
-        triagedCount++;
+        seen.add(rowEntityKey(row));
       }
     }
   }
-  return triagedCount;
+  return seen.size;
 }
 
 /**
@@ -585,6 +590,10 @@ function findRow(
   return getCategory(categories, purpose).cookies.find((row) => row.name === name);
 }
 
+function rowMatchesEntity(row: CookieRowState, name: string, id: string | undefined): boolean {
+  return row.name === name || (id !== undefined && row.initial.id === id);
+}
+
 function updateCategoryRow(
   category: CookieTriageCategoryState,
   name: string,
@@ -594,6 +603,38 @@ function updateCategoryRow(
     ...category,
     cookies: category.cookies.map((row) => (row.name === name ? { ...row, ...patch } : row)),
   };
+}
+
+/**
+ * Patch every loaded instance of the same cookie/data-flow across purpose tabs.
+ * Mixed-purpose items appear on each matching tab as separate row instances.
+ */
+function updateMatchingRowsAcrossCategories(
+  categories: CookieTriageCategoriesState,
+  name: string,
+  id: string | undefined,
+  patch: Partial<Pick<CookieRowState, 'decision' | 'notes' | 'initial'>>,
+): CookieTriageCategoriesState {
+  let changed = false;
+  const next: CookieTriageCategoriesState = { ...categories };
+
+  for (const purpose of COOKIE_TRIAGE_PURPOSE_ORDER) {
+    const category = getCategory(categories, purpose);
+    let categoryChanged = false;
+    const cookies = category.cookies.map((row) => {
+      if (!rowMatchesEntity(row, name, id)) {
+        return row;
+      }
+      categoryChanged = true;
+      return { ...row, ...patch };
+    });
+    if (categoryChanged) {
+      changed = true;
+      next[purpose] = { ...category, cookies };
+    }
+  }
+
+  return changed ? next : categories;
 }
 
 /**
@@ -730,7 +771,6 @@ export function cookieTriageReducer(
 ): CookieTriageSessionState {
   switch (action.type) {
     case 'decide': {
-      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row) {
         return state;
@@ -738,16 +778,15 @@ export function cookieTriageReducer(
 
       return {
         ...state,
-        categories: {
-          ...state.categories,
-          [action.purpose]: updateCategoryRow(category, action.name, {
-            decision: action.decision,
-          }),
-        },
+        categories: updateMatchingRowsAcrossCategories(
+          state.categories,
+          action.name,
+          row.initial.id,
+          { decision: action.decision },
+        ),
       };
     }
     case 'undo': {
-      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row || row.decision === undefined) {
         return state;
@@ -755,14 +794,15 @@ export function cookieTriageReducer(
 
       return {
         ...state,
-        categories: {
-          ...state.categories,
-          [action.purpose]: updateCategoryRow(category, action.name, { decision: undefined }),
-        },
+        categories: updateMatchingRowsAcrossCategories(
+          state.categories,
+          action.name,
+          row.initial.id,
+          { decision: undefined },
+        ),
       };
     }
     case 'setNotes': {
-      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row || row.notes === action.notes) {
         return state;
@@ -770,10 +810,12 @@ export function cookieTriageReducer(
 
       return {
         ...state,
-        categories: {
-          ...state.categories,
-          [action.purpose]: updateCategoryRow(category, action.name, { notes: action.notes }),
-        },
+        categories: updateMatchingRowsAcrossCategories(
+          state.categories,
+          action.name,
+          row.initial.id,
+          { notes: action.notes },
+        ),
       };
     }
     case 'setTrackingPurposes': {
@@ -972,7 +1014,6 @@ export function cookieTriageReducer(
       };
     }
     case 'remove': {
-      const category = getCategory(state.categories, action.purpose);
       const row = findRow(state.categories, action.purpose, action.name);
       if (!row) {
         return state;
@@ -980,17 +1021,34 @@ export function cookieTriageReducer(
 
       const wasPending = row.decision === undefined;
       const wasDormant = wasPending && isDormantCookie(row.initial);
+      const id = row.initial.id;
+      let removedAnywhere = false;
+      const categories: CookieTriageCategoriesState = { ...state.categories };
+
+      for (const purpose of COOKIE_TRIAGE_PURPOSE_ORDER) {
+        const category = getCategory(state.categories, purpose);
+        const nextCookies = category.cookies.filter(
+          (candidate) => !rowMatchesEntity(candidate, action.name, id),
+        );
+        const removedCount = category.cookies.length - nextCookies.length;
+        if (removedCount === 0) {
+          continue;
+        }
+        removedAnywhere = true;
+        categories[purpose] = {
+          ...category,
+          cookies: nextCookies,
+          totalCount: Math.max(0, category.totalCount - removedCount),
+        };
+      }
+
+      if (!removedAnywhere) {
+        return state;
+      }
 
       return {
         ...state,
-        categories: {
-          ...state.categories,
-          [action.purpose]: {
-            ...category,
-            cookies: category.cookies.filter((candidate) => candidate.name !== action.name),
-            totalCount: Math.max(0, category.totalCount - 1),
-          },
-        },
+        categories,
         ...(wasPending && state.pendingTotal !== undefined
           ? { pendingTotal: Math.max(0, state.pendingTotal - 1) }
           : {}),

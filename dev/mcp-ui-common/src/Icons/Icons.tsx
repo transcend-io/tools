@@ -73,15 +73,16 @@ export function ChevronDownIcon(props: IconProps) {
 /** Circular arrows icon for refresh controls. */
 export function RefreshIcon(props: IconProps) {
   return (
-    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" width={16} height={16} {...props}>
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
       <path
-        d="M13.5 8A5.5 5.5 0 1 1 11.3 3.4"
+        d="M12 3.99666C7.96456 3.99728 4.56082 7.00215 4.05982 11.0064C3.55881 15.0106 6.11729 18.7615 10.0282 19.7563C13.9391 20.7512 17.9789 18.6788 19.4521 14.9219C20.9254 11.165 19.3712 6.89889 15.8266 4.97006"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
+        strokeLinejoin="round"
       />
       <path
-        d="M11 1.5V4.5H14"
+        d="M15.8265 8.04635V4.50888H19.364"
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"

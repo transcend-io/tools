@@ -16,12 +16,16 @@ export function CookieTriageView() {
   });
 
   const [triageType, setTriageType] = useState<ConsentTriageType | undefined>();
+  const [dashboardUrl, setDashboardUrl] = useState<string | undefined>();
 
   useEffect(() => {
     if (data?.triageType) {
       setTriageType((current) => current ?? data.triageType);
     }
-  }, [data?.triageType]);
+    if (data?.dashboardUrl) {
+      setDashboardUrl((current) => current ?? data.dashboardUrl);
+    }
+  }, [data?.dashboardUrl, data?.triageType]);
 
   if (connectionError) {
     return (
@@ -32,12 +36,17 @@ export function CookieTriageView() {
     );
   }
 
-  if (!isConnected || triageType === undefined) {
+  if (!isConnected || triageType === undefined || dashboardUrl === undefined) {
     return <ViewLoadingCard label={!isConnected ? 'Connecting to the host…' : 'Loading triage…'} />;
   }
 
   return (
-    <CookieTriageProvider key={triageType} triageType={triageType} app={app}>
+    <CookieTriageProvider
+      key={triageType}
+      triageType={triageType}
+      dashboardUrl={dashboardUrl}
+      app={app}
+    >
       <CookieTriageLoaded app={app} />
     </CookieTriageProvider>
   );

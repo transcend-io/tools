@@ -23,11 +23,11 @@ export interface CookieTriageLoadedProps {
 
 /** Loaded-state cookie triage UI */
 export function CookieTriageLoaded({ app }: CookieTriageLoadedProps) {
-  const { triageType } = useCookieTriageMeta();
+  const { triageType, dashboardUrl: dashboardBaseUrl } = useCookieTriageMeta();
   const selectedPurpose = useSelectedPurpose();
   const { remove } = useCookieTriageActions();
   const { isFullscreen } = useHostDisplayMode(app);
-  const { singular, plural, pluralTitle, dashboardUrl } = triageCopy(triageType);
+  const { singular, plural, pluralTitle, dashboardUrl } = triageCopy(triageType, dashboardBaseUrl);
   const [deleteTarget, setDeleteTarget] = useState<CookieTriageDeleteRequest | undefined>();
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | undefined>();

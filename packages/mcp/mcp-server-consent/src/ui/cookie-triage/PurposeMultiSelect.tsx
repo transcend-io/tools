@@ -160,7 +160,7 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
     (selectedIds: readonly string[]) => {
       if (selectedIds.length === 0) {
         return (
-          <span className="inline-flex h-6 items-center rounded-sm bg-fill-neutral px-1.5 text-sm text-on-card-muted">
+          <span className="inline-flex h-6 items-center rounded-sm border border-card-line bg-card px-1.5 text-sm text-on-card-muted">
             Select
           </span>
         );
@@ -168,13 +168,24 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
       return selectedIds.map((slug) => (
         <span
           key={slug}
-          className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm text-on-fill ${purposeBadgeClass(slug)}`}
+          className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm ${purposeBadgeClass(slug)}`}
         >
           {purposeSlugLabel(slug, selectOptions)}
         </span>
       ));
     },
     [selectOptions],
+  );
+
+  const renderOption = useCallback(
+    (option: CheckboxMultiSelectOption) => (
+      <span
+        className={`inline-flex h-6 max-w-full items-center truncate rounded-sm px-1.5 text-sm ${purposeBadgeClass(option.id)}`}
+      >
+        {option.label}
+      </span>
+    ),
+    [],
   );
 
   return (
@@ -186,6 +197,7 @@ export const PurposeMultiSelect = memo(function PurposeMultiSelect({
       disabled={disabled}
       onChange={handleChange}
       renderValue={renderValue}
+      renderOption={renderOption}
     />
   );
 });

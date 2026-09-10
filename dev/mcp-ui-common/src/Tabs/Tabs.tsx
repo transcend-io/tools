@@ -88,8 +88,8 @@ export const Tabs = memo(function Tabs({
               id={`${idPrefix}-${item.id}`}
               className={
                 isActive
-                  ? 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand'
-                  : 'relative -mb-px flex cursor-pointer items-center gap-2 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-on-card-subtle'
+                  ? 'relative -mb-px flex cursor-pointer items-center gap-1 border-b-2 border-brand bg-transparent pb-2 pt-1 text-sm font-medium text-brand'
+                  : 'relative -mb-px flex cursor-pointer items-center gap-1 border-b-2 border-transparent bg-transparent pb-2 pt-1 text-sm font-medium text-on-card-subtle'
               }
               onClick={() => onSelect(item.id)}
               onKeyDown={(event) => onTabKeyDown(event, index)}
