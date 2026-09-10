@@ -1,5 +1,12 @@
 # @transcend-io/mcp-server-dsr
 
+## 2.0.2
+
+### Patch Changes
+
+- Updated dependencies [b3858b0]
+  - @transcend-io/mcp-server-base@2.2.2
+
 ## 2.0.1
 
 ### Patch Changes
